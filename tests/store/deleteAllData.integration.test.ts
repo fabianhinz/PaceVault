@@ -4,6 +4,7 @@ import { useUserStore } from '@/store/user.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
+import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
 import { makeCyclingRecords, makeLaps } from '@tests/factories/records.ts';
@@ -49,7 +50,11 @@ describe('delete all data', () => {
       );
 
     // Set non-default filters
-    useFiltersStore.setState({ timeRange: '90d', sportFilter: 'cycling' });
+    useFiltersStore.setState({
+      timeRange: '90d',
+      sportFilter: 'cycling',
+      attributeFilters: { duration: 3600, distance: 10000, elevationGain: 500 },
+    });
 
     // Verify everything is populated
     expect(useFiltersStore.getState().timeRange).toBe('90d');
@@ -71,6 +76,7 @@ describe('delete all data', () => {
       customRange: null,
       prevDashboardRange: null,
       sportFilter: 'all',
+      attributeFilters: createEmptyAttributeFilters(),
     });
     await clearAllRecords();
 
@@ -89,5 +95,10 @@ describe('delete all data', () => {
     // Verify filters are reset
     expect(useFiltersStore.getState().timeRange).toBe('all');
     expect(useFiltersStore.getState().sportFilter).toBe('all');
+    expect(useFiltersStore.getState().attributeFilters).toEqual({
+      duration: null,
+      distance: null,
+      elevationGain: null,
+    });
   });
 });

@@ -15,6 +15,7 @@ import { useUserStore } from '@/store/user.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
+import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
 import { clearAllRecords } from '@/lib/indexeddb.ts';
 interface DeleteAllDataDialogProps {
   open: boolean;
@@ -38,6 +39,7 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
       customRange: null,
       prevDashboardRange: null,
       sportFilter: 'all',
+      attributeFilters: createEmptyAttributeFilters(),
     });
     await clearAllRecords();
     setIsDeleting(false);
