@@ -5,6 +5,7 @@ import { useFiltersStore } from '@/store/filters.ts';
 import { SessionItem } from './SessionItem.tsx';
 import { useLocalSparklines } from './hooks/useLocalSparklines.ts';
 import { type TimeRange, rangeToCutoff, customRangeToCutoffs } from '@/lib/timeRange.ts';
+import { isAttributeFilterActive, matchesAttributeFilters } from '@/lib/attributeFilters.ts';
 
 // SessionItem collapsed: p-4 (16px × 2) + ~42px two-line text content + 8px gap
 const ESTIMATED_ROW_SIZE = 82;
@@ -14,6 +15,7 @@ export const SessionList = () => {
   const timeRange = useFiltersStore((s) => s.timeRange);
   const customRange = useFiltersStore((s) => s.customRange);
   const sportFilter = useFiltersStore((s) => s.sportFilter);
+  const attributeFilters = useFiltersStore((s) => s.attributeFilters);
   const sparklines = useLocalSparklines();
   const [scrollMargin, setScrollMargin] = useState(0);
   const listRef = useCallback((node: HTMLDivElement | null) => {
@@ -37,8 +39,11 @@ export const SessionList = () => {
     if (sportFilter !== 'all') {
       list = list.filter((s) => s.sport === sportFilter);
     }
+    if (isAttributeFilterActive(attributeFilters)) {
+      list = list.filter((s) => matchesAttributeFilters(s, attributeFilters));
+    }
     return list.sort((a, b) => b.date - a.date);
-  }, [sessions, sportFilter, timeRange, customRange]);
+  }, [sessions, sportFilter, timeRange, customRange, attributeFilters]);
 
   const virtualizer = useWindowVirtualizer({
     count: filtered.length,

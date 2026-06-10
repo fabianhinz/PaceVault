@@ -3,6 +3,12 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { idbStorage } from '@/lib/idbStorage.ts';
 import { rangeToCutoff, customRangeToCutoffs, type TimeRange } from '@/lib/timeRange.ts';
+import {
+  type AttributeFilters,
+  createEmptyAttributeFilters,
+  matchesAttributeFilters,
+  sanitizeAttributeFilters,
+} from '@/lib/attributeFilters.ts';
 import { getRecordsForSessions } from '@/lib/indexeddb.ts';
 import { computePBsForSessions, groupPBsBySport } from '@/lib/records.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
@@ -13,11 +19,14 @@ interface FiltersState {
   customRange: { from: string; to: string } | null;
   prevDashboardRange: Exclude<TimeRange, 'custom'> | null;
   sportFilter: Sport | 'all';
+  attributeFilters: AttributeFilters;
   groupedPBs: { data: Partial<Record<Sport, PersonalBest[]>>; loading: boolean };
   setTimeRange: (r: TimeRange) => void;
   setDashboardChartRange: (from: string, to: string) => void;
   clearDashboardChartRange: () => void;
   setSportFilter: (s: Sport | 'all') => void;
+  setAttributeFilters: (f: AttributeFilters) => void;
+  clearAttributeFilters: () => void;
   recomputePBs: () => Promise<void>;
 }
 
@@ -29,6 +38,7 @@ export const useFiltersStore = create<FiltersState>()(
         customRange: null,
         prevDashboardRange: null,
         sportFilter: 'all',
+        attributeFilters: createEmptyAttributeFilters(),
         groupedPBs: { data: {}, loading: false },
         setTimeRange: (r) => {
           set({ timeRange: r, customRange: null, prevDashboardRange: null });
@@ -56,8 +66,16 @@ export const useFiltersStore = create<FiltersState>()(
           set({ sportFilter });
           get().recomputePBs();
         },
+        setAttributeFilters: (f) => {
+          set({ attributeFilters: sanitizeAttributeFilters(f) });
+          get().recomputePBs();
+        },
+        clearAttributeFilters: () => {
+          set({ attributeFilters: createEmptyAttributeFilters() });
+          get().recomputePBs();
+        },
         recomputePBs: async () => {
-          const { groupedPBs, timeRange, customRange, sportFilter } = get();
+          const { groupedPBs, timeRange, customRange, sportFilter, attributeFilters } = get();
           if (groupedPBs.loading) {
             return;
           }
@@ -84,7 +102,8 @@ export const useFiltersStore = create<FiltersState>()(
                 s.date >= dateCutoff &&
                 s.date <= dateUpperBound &&
                 s.hasDetailedRecords &&
-                (sportFilter === 'all' || s.sport === sportFilter),
+                (sportFilter === 'all' || s.sport === sportFilter) &&
+                matchesAttributeFilters(s, attributeFilters),
             );
 
           if (filteredSessions.length === 0) {
@@ -126,6 +145,7 @@ export const useFiltersStore = create<FiltersState>()(
           customRange: state.customRange,
           prevDashboardRange: state.prevDashboardRange,
           sportFilter: state.sportFilter,
+          attributeFilters: state.attributeFilters,
         }),
       },
     ),

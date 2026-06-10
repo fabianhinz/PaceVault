@@ -115,4 +115,118 @@ test.describe('Dock filters', () => {
       await expect(page.locator('[data-testid="session-item"]')).toHaveCount(4);
     });
   });
+
+  test.describe('attribute filter', () => {
+    const openDialog = async (page: Page) => {
+      await dockButton(page, /advanced filters/i).click();
+      return page.getByRole('dialog');
+    };
+
+    const dockBadge = (page: Page) =>
+      dockButton(page, /advanced filters/i).getByTestId('icon-badge');
+
+    test.beforeEach(async ({ page }) => {
+      const now = Date.now();
+      await seedWithSessions(page, [
+        {
+          sport: 'running',
+          date: now - 1 * DAY_MS,
+          name: 'Short Run',
+          duration: 1800,
+          distance: 5000,
+          elevationGain: 50,
+        },
+        {
+          sport: 'running',
+          date: now - 2 * DAY_MS,
+          name: 'Target Run',
+          duration: 3600,
+          distance: 10000,
+          elevationGain: 500,
+        },
+        {
+          sport: 'cycling',
+          date: now - 3 * DAY_MS,
+          name: 'Long Ride',
+          duration: 7200,
+          distance: 30000,
+          elevationGain: 1500,
+        },
+      ]);
+      await page.getByRole('link', { name: /sessions/i }).click();
+      await page.waitForURL('/sessions');
+    });
+
+    test('filters by fuzzy duration and shows a badge on the dock button', async ({ page }) => {
+      await expect(dockBadge(page)).not.toBeVisible();
+
+      const dialog = await openDialog(page);
+      await dialog.getByLabel(/duration \(h\)/i).fill('1');
+      await dialog.getByRole('button', { name: /apply/i }).click();
+
+      const sessionLinks = page.locator('[data-testid="session-item"]');
+      await expect(sessionLinks).toHaveCount(1);
+      await expect(sessionLinks.first()).toContainText('Target Run');
+      await expect(dockBadge(page)).toBeVisible();
+    });
+
+    test('filters by fuzzy elevation gain', async ({ page }) => {
+      const dialog = await openDialog(page);
+      await dialog.getByLabel(/elevation gain \(m\)/i).fill('500');
+      await dialog.getByRole('button', { name: /apply/i }).click();
+
+      const sessionLinks = page.locator('[data-testid="session-item"]');
+      await expect(sessionLinks).toHaveCount(1);
+      await expect(sessionLinks.first()).toContainText('Target Run');
+    });
+
+    test('filters by fuzzy distance via Enter key', async ({ page }) => {
+      const dialog = await openDialog(page);
+      await dialog.getByLabel(/distance \(km\)/i).fill('30');
+      await dialog.getByLabel(/distance \(km\)/i).press('Enter');
+
+      const sessionLinks = page.locator('[data-testid="session-item"]');
+      await expect(sessionLinks).toHaveCount(1);
+      await expect(sessionLinks.first()).toContainText('Long Ride');
+    });
+
+    test('accepts comma decimals', async ({ page }) => {
+      const dialog = await openDialog(page);
+      await dialog.getByLabel(/duration \(h\)/i).fill('1,0');
+      await dialog.getByRole('button', { name: /apply/i }).click();
+
+      const sessionLinks = page.locator('[data-testid="session-item"]');
+      await expect(sessionLinks).toHaveCount(1);
+      await expect(sessionLinks.first()).toContainText('Target Run');
+    });
+
+    test('disables apply on invalid input', async ({ page }) => {
+      const dialog = await openDialog(page);
+      await dialog.getByLabel(/duration \(h\)/i).fill('abc');
+      await expect(dialog.getByRole('button', { name: /apply/i })).toBeDisabled();
+    });
+
+    test('reset restores the full list', async ({ page }) => {
+      let dialog = await openDialog(page);
+      await dialog.getByLabel(/duration \(h\)/i).fill('1');
+      await dialog.getByRole('button', { name: /apply/i }).click();
+      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
+
+      dialog = await openDialog(page);
+      await dialog.getByRole('button', { name: /reset/i }).click();
+      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(3);
+      await expect(dockBadge(page)).not.toBeVisible();
+    });
+
+    test('persists across reload', async ({ page }) => {
+      const dialog = await openDialog(page);
+      await dialog.getByLabel(/duration \(h\)/i).fill('1');
+      await dialog.getByRole('button', { name: /apply/i }).click();
+      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
+
+      await page.reload();
+      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
+      await expect(dockBadge(page)).toBeVisible();
+    });
+  });
 });

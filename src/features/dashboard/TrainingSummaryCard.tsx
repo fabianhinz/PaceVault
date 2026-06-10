@@ -7,6 +7,7 @@ import { StatItem } from '@/components/ui/StatItem.tsx';
 import { formatDistance, formatDuration } from '@/lib/formatters.ts';
 import { rangeToCutoff, customRangeToCutoffs } from '@/lib/timeRange.ts';
 import type { TimeRange } from '@/lib/timeRange.ts';
+import { matchesAttributeFilters } from '@/lib/attributeFilters.ts';
 import { m } from '@/paraglide/messages.js';
 
 export const TrainingSummaryCard = () => {
@@ -14,6 +15,7 @@ export const TrainingSummaryCard = () => {
   const timeRange = useFiltersStore((s) => s.timeRange);
   const customRange = useFiltersStore((s) => s.customRange);
   const sportFilter = useFiltersStore((s) => s.sportFilter);
+  const attributeFilters = useFiltersStore((s) => s.attributeFilters);
 
   const stats = useMemo(() => {
     let filtered: typeof sessions;
@@ -25,13 +27,17 @@ export const TrainingSummaryCard = () => {
           !s.isPlanned &&
           s.date >= bounds.from &&
           s.date <= bounds.to &&
-          (sportFilter === 'all' || s.sport === sportFilter),
+          (sportFilter === 'all' || s.sport === sportFilter) &&
+          matchesAttributeFilters(s, attributeFilters),
       );
     } else {
       const cutoff = rangeToCutoff(timeRange as Exclude<TimeRange, 'custom'>);
       filtered = sessions.filter(
         (s) =>
-          !s.isPlanned && s.date >= cutoff && (sportFilter === 'all' || s.sport === sportFilter),
+          !s.isPlanned &&
+          s.date >= cutoff &&
+          (sportFilter === 'all' || s.sport === sportFilter) &&
+          matchesAttributeFilters(s, attributeFilters),
       );
     }
 
@@ -45,7 +51,7 @@ export const TrainingSummaryCard = () => {
       duration: totalDuration,
       elevation: totalElevation,
     };
-  }, [sessions, timeRange, customRange, sportFilter]);
+  }, [sessions, timeRange, customRange, sportFilter, attributeFilters]);
 
   return (
     <Card>
