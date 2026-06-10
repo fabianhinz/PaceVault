@@ -1,4 +1,4 @@
-// Sources: [Ramer1972], [DouglasPeucker1973], [LiangBarsky1984]
+// Sources: [Ramer1972], [DouglasPeucker1973], [LiangBarsky1984], [Veness2019]
 // See src/engine/SOURCES.md for full citations.
 
 import { encode, decode } from '@googlemaps/polyline-codec';
@@ -10,6 +10,23 @@ import type { SessionRecord, GPSPoint, GPSBounds, SessionGPS } from './types.ts'
  */
 export const isValidCoordinate = (r: { lat?: number | null; lng?: number | null }): boolean =>
   r.lat != null && r.lng != null && r.lat >= -90 && r.lat <= 90 && r.lng >= -180 && r.lng <= 180;
+
+/**
+ * Compute the initial bearing (forward azimuth) of the great-circle path from `a` to `b`.
+ * @see [Veness2019] — standard initial-bearing formula.
+ * @param a - Start point.
+ * @param b - End point.
+ * @returns Bearing in degrees, `0–360` measured clockwise from true north.
+ */
+export const bearingDeg = (a: GPSPoint, b: GPSPoint): number => {
+  const toRad = (deg: number): number => (deg * Math.PI) / 180;
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+};
 
 /**
  * Extract valid GPS points from an array of session records, filtering out nulls and out-of-range values.

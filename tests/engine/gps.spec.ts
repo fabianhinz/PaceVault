@@ -4,8 +4,39 @@ import {
   buildSessionGPS,
   boundsOverlap,
   densestClusterBounds,
+  bearingDeg,
 } from '@/packages/engine/gps.ts';
 import { makeGPSRunningRecords, makeIndoorRecords } from '@tests/factories/gps.ts';
+
+describe('bearingDeg', () => {
+  const origin = { lat: 0, lng: 0 };
+
+  it('points north as 0°', () => {
+    expect(bearingDeg(origin, { lat: 1, lng: 0 })).toBeCloseTo(0, 1);
+  });
+
+  it('points east as 90°', () => {
+    expect(bearingDeg(origin, { lat: 0, lng: 1 })).toBeCloseTo(90, 1);
+  });
+
+  it('points south as 180°', () => {
+    expect(bearingDeg(origin, { lat: -1, lng: 0 })).toBeCloseTo(180, 1);
+  });
+
+  it('points west as 270°', () => {
+    expect(bearingDeg(origin, { lat: 0, lng: -1 })).toBeCloseTo(270, 1);
+  });
+
+  it('points northeast as ~45° near the equator', () => {
+    expect(bearingDeg(origin, { lat: 1, lng: 1 })).toBeCloseTo(45, 0);
+  });
+
+  it('always returns a value within [0, 360)', () => {
+    const b = bearingDeg({ lat: 48, lng: 11 }, { lat: 47.9, lng: 10.9 });
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(b).toBeLessThan(360);
+  });
+});
 
 describe('extractPathFromRecords', () => {
   it('extracts [lng, lat] pairs from records with valid GPS', () => {

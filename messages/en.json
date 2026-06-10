@@ -520,5 +520,8 @@
   "ui_weather_rain": "Rain",
   "ui_weather_snow": "Snow",
   "ui_weather_thunderstorm": "Thunderstorm",
-  "ui_weather_gusts": "Gusts"
+  "ui_weather_gusts": "Gusts",
+  "ui_weather_headwind": "Headwind",
+  "ui_weather_crosswind": "Crosswind",
+  "ui_weather_tailwind": "Tailwind"
 }

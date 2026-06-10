@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.t
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/features/sessions/session/SessionActionsMenu.tsx';
 import { WeatherChips } from '@/features/sessions/session/WeatherChips.tsx';
+import { WindExposureChips } from '@/features/sessions/session/WindExposureChips.tsx';
 import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
 import { OverviewTab } from '@/features/sessions/session/OverviewTab.tsx';
 import { LapsTab } from '@/features/sessions/laps/LapsTab.tsx';
@@ -70,7 +71,10 @@ export const SessionDetailPage = () => {
         <SessionActionsMenu session={session} />
       </SessionHeader>
 
-      <WeatherChips query={weather} />
+      <div className="space-y-1.5">
+        <WindExposureChips query={weather} records={records} sessionStartMs={session.date} />
+        <WeatherChips query={weather} />
+      </div>
 
       <Tabs defaultValue="overview" value={tab} onValueChange={handleTabChange}>
         <TabsList>
