@@ -4,6 +4,7 @@ import { useFiltersStore } from '@/store/filters.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { getSessionGPS } from '@/lib/indexeddb.ts';
 import { rangeToCutoff, customRangeToCutoffs } from '@/lib/timeRange.ts';
+import { matchesAttributeFilters } from '@/lib/attributeFilters.ts';
 import type { SessionGPS, Sport, TrainingSession } from '@/packages/engine/types.ts';
 
 export interface MapTrack {
@@ -18,6 +19,7 @@ export const useMapTracks = (gpsData: SessionGPS[] | null) => {
   const timeRange = useFiltersStore((s) => s.timeRange);
   const customRange = useFiltersStore((s) => s.customRange);
   const sportFilter = useFiltersStore((s) => s.sportFilter);
+  const attributeFilters = useFiltersStore((s) => s.attributeFilters);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
 
   const [tracks, setTracks] = useState<MapTrack[]>([]);
@@ -52,6 +54,7 @@ export const useMapTracks = (gpsData: SessionGPS[] | null) => {
 
       const filtered = sessions.filter((s) => {
         if (sportFilter !== 'all' && s.sport !== sportFilter) return false;
+        if (!matchesAttributeFilters(s, attributeFilters)) return false;
         if (timeRange === 'custom' && customRange) {
           const cutoffs = customRangeToCutoffs(customRange);
           return s.date >= cutoffs.from && s.date <= cutoffs.to;
@@ -79,7 +82,7 @@ export const useMapTracks = (gpsData: SessionGPS[] | null) => {
     return () => {
       cancelled = true;
     };
-  }, [sessions, timeRange, customRange, sportFilter, gpsData, openedSessionId]);
+  }, [sessions, timeRange, customRange, sportFilter, attributeFilters, gpsData, openedSessionId]);
 
   return { tracks, loading };
 };

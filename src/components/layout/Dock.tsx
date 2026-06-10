@@ -10,6 +10,7 @@ import {
   Activity,
   Clock,
   HeartPulse,
+  FunnelPlus,
 } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { useFileUpload } from '@/features/sessions/hooks/useFileUpload.ts';
@@ -23,6 +24,9 @@ import { Button } from '@/components/ui/Button.tsx';
 import { MobileMapFab } from './MobileMapFab.tsx';
 import { DockRevealPanel } from './DockRevealPanel.tsx';
 import { DockFilterOptions, type FilterOption } from './DockFilterOptions.tsx';
+import { AttributeFilterDialog } from './AttributeFilterDialog.tsx';
+import { IconBadge } from '@/components/ui/IconBadge.tsx';
+import { isAttributeFilterActive } from '@/lib/attributeFilters.ts';
 import { sportIcon } from '@/lib/sportIcons.ts';
 import {
   type TimeRange,
@@ -103,6 +107,14 @@ export const Dock = () => {
   const sportFilter = useFiltersStore((s) => s.sportFilter);
   const timeRange = useFiltersStore((s) => s.timeRange);
   const customRange = useFiltersStore((s) => s.customRange);
+  const attributeFilters = useFiltersStore((s) => s.attributeFilters);
+
+  const [attrDialogOpen, setAttrDialogOpen] = useState(false);
+  const attrActive = isAttributeFilterActive(attributeFilters);
+  const openAttrDialog = useCallback(() => {
+    setRevealStack([]);
+    setAttrDialogOpen(true);
+  }, []);
 
   const SportIcon = sportFilter === 'all' ? Activity : sportIcon[sportFilter];
   const sportLabel = sportOptions.find((o) => o.value === sportFilter)?.label ?? sportFilter;
@@ -220,6 +232,18 @@ export const Dock = () => {
               <Clock size={20} strokeWidth={1.5} />
               <span className="text-[10px] leading-none">{m.ui_dock_range()}</span>
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={revealItemClass}
+              onClick={openAttrDialog}
+              aria-label={m.ui_dock_attr_filter()}
+            >
+              <IconBadge show={attrActive}>
+                <FunnelPlus size={20} strokeWidth={1.5} />
+              </IconBadge>
+              <span className="text-[10px] leading-none">{m.ui_dock_attr()}</span>
+            </Button>
           </DockRevealPanel>
 
           {/* Main dock bar */}
@@ -293,6 +317,19 @@ export const Dock = () => {
                   <span className="text-[10px] leading-none truncate max-w-14">{timeLabel}</span>
                 </Button>
 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={dockItemMaxiClass}
+                  onClick={openAttrDialog}
+                  aria-label={m.ui_dock_attr_filter()}
+                >
+                  <IconBadge show={attrActive}>
+                    <FunnelPlus size={20} strokeWidth={1.5} />
+                  </IconBadge>
+                  <span className="text-[10px] leading-none">{m.ui_dock_attr()}</span>
+                </Button>
+
                 {/* Separator */}
                 <div
                   className={cn(
@@ -341,6 +378,8 @@ export const Dock = () => {
           />
         </nav>
       </div>
+
+      <AttributeFilterDialog open={attrDialogOpen} onOpenChange={setAttrDialogOpen} />
 
       {/* Backdrop — closes reveals on click, purely in React's event system */}
       {revealStack.length > 0 && (

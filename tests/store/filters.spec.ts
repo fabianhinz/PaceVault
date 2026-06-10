@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
+import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
 import type { PersonalBest, Sport } from '@/packages/engine/types.ts';
 
 vi.mock('@/lib/indexeddb.ts', () => ({
@@ -27,6 +28,7 @@ describe('useFiltersStore', () => {
       customRange: null,
       prevDashboardRange: null,
       sportFilter: 'all',
+      attributeFilters: createEmptyAttributeFilters(),
       groupedPBs: { data: {}, loading: false },
     });
     useSessionsStore.setState({ sessions: [] });
@@ -37,6 +39,7 @@ describe('useFiltersStore', () => {
     const state = useFiltersStore.getState();
     expect(state.timeRange).toBe('90d');
     expect(state.sportFilter).toBe('all');
+    expect(state.attributeFilters).toEqual({ duration: null, distance: null, elevationGain: null });
   });
 
   it('updates time range', () => {
@@ -47,6 +50,65 @@ describe('useFiltersStore', () => {
   it('updates sport filter', () => {
     useFiltersStore.getState().setSportFilter('cycling');
     expect(useFiltersStore.getState().sportFilter).toBe('cycling');
+  });
+
+  describe('attribute filters', () => {
+    it('sets attribute filters', () => {
+      useFiltersStore
+        .getState()
+        .setAttributeFilters({ duration: 3600, distance: 10000, elevationGain: 500 });
+      expect(useFiltersStore.getState().attributeFilters).toEqual({
+        duration: 3600,
+        distance: 10000,
+        elevationGain: 500,
+      });
+    });
+
+    it('sanitizes invalid targets to null', () => {
+      useFiltersStore
+        .getState()
+        .setAttributeFilters({ duration: -5, distance: NaN, elevationGain: 0 });
+      expect(useFiltersStore.getState().attributeFilters).toEqual({
+        duration: null,
+        distance: null,
+        elevationGain: null,
+      });
+    });
+
+    it('triggers PB recomputation', () => {
+      useSessionsStore.setState({ sessions: [makeSession({ id: 's-0' })] });
+      mockedGetRecords.mockResolvedValue(new Map());
+      mockedComputePBs.mockReturnValue([]);
+      mockedGroupPBs.mockReturnValue({});
+
+      useFiltersStore
+        .getState()
+        .setAttributeFilters({ duration: 3600, distance: null, elevationGain: null });
+
+      expect(mockedGetRecords).toHaveBeenCalledWith(['s-0']);
+    });
+
+    it('clears attribute filters', () => {
+      useFiltersStore.setState({
+        attributeFilters: { duration: 3600, distance: 10000, elevationGain: 500 },
+      });
+      useFiltersStore.getState().clearAttributeFilters();
+      expect(useFiltersStore.getState().attributeFilters).toEqual({
+        duration: null,
+        distance: null,
+        elevationGain: null,
+      });
+    });
+
+    it('persists attribute filters but not groupedPBs', () => {
+      const options = useFiltersStore.persist.getOptions();
+      if (!options.partialize) {
+        throw new Error('partialize missing');
+      }
+      const persisted = options.partialize(useFiltersStore.getState());
+      expect(persisted).toHaveProperty('attributeFilters');
+      expect(persisted).not.toHaveProperty('groupedPBs');
+    });
   });
 
   describe('setDashboardChartRange', () => {
@@ -179,6 +241,60 @@ describe('useFiltersStore', () => {
       await useFiltersStore.getState().recomputePBs();
 
       expect(mockedGetRecords).toHaveBeenCalledWith(['in']);
+    });
+
+    it('filters sessions by fuzzy duration target', async () => {
+      useSessionsStore.setState({
+        sessions: [
+          makeSession({ id: 'short', duration: 1800 }),
+          makeSession({ id: 'match', duration: 3600 }),
+          makeSession({ id: 'long', duration: 7200 }),
+        ],
+      });
+      useFiltersStore.setState({
+        attributeFilters: { duration: 3600, distance: null, elevationGain: null },
+      });
+      stubPBPipeline();
+
+      await useFiltersStore.getState().recomputePBs();
+
+      expect(mockedGetRecords).toHaveBeenCalledWith(['match']);
+    });
+
+    it('filters sessions by fuzzy distance target', async () => {
+      useSessionsStore.setState({
+        sessions: [
+          makeSession({ id: 'short', distance: 5000 }),
+          makeSession({ id: 'match', distance: 10000 }),
+          makeSession({ id: 'long', distance: 30000 }),
+        ],
+      });
+      useFiltersStore.setState({
+        attributeFilters: { duration: null, distance: 10000, elevationGain: null },
+      });
+      stubPBPipeline();
+
+      await useFiltersStore.getState().recomputePBs();
+
+      expect(mockedGetRecords).toHaveBeenCalledWith(['match']);
+    });
+
+    it('filters sessions by fuzzy elevation gain target', async () => {
+      useSessionsStore.setState({
+        sessions: [
+          makeSession({ id: 'flat', elevationGain: 100 }),
+          makeSession({ id: 'match', elevationGain: 500 }),
+          makeSession({ id: 'alpine', elevationGain: 2000 }),
+        ],
+      });
+      useFiltersStore.setState({
+        attributeFilters: { duration: null, distance: null, elevationGain: 500 },
+      });
+      stubPBPipeline();
+
+      await useFiltersStore.getState().recomputePBs();
+
+      expect(mockedGetRecords).toHaveBeenCalledWith(['match']);
     });
 
     it('skips recomputation when already loading', async () => {
