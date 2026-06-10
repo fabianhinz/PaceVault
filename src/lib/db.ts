@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { SessionRecord, SessionLap, SessionGPS } from '@/packages/engine/types.ts';
+import type { SessionWeather } from './weather.ts';
 
 export interface EnduranceTrackerDB extends DBSchema {
   'session-records': {
@@ -15,6 +16,10 @@ export interface EnduranceTrackerDB extends DBSchema {
     value: SessionGPS;
     indexes: { sessionId: string };
   };
+  'session-weather': {
+    key: string;
+    value: SessionWeather;
+  };
   'fit-files': {
     key: string;
     value: { sessionId: string; fileName: string; data: ArrayBuffer };
@@ -26,7 +31,7 @@ export interface EnduranceTrackerDB extends DBSchema {
 }
 
 const DB_NAME = 'endurance-tracker';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise: Promise<IDBPDatabase<EnduranceTrackerDB>> | null = null;
 
@@ -45,6 +50,9 @@ export const getDB = (): Promise<IDBPDatabase<EnduranceTrackerDB>> => {
         }
         if (oldVersion < 2) {
           db.createObjectStore('fit-files', { keyPath: 'sessionId' });
+        }
+        if (oldVersion < 3) {
+          db.createObjectStore('session-weather', { keyPath: 'sessionId' });
         }
       },
     });

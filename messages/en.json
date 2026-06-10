@@ -502,5 +502,14 @@
   "toast_devdata_generated": "Generated {count} sessions",
   "ui_btn_export_gpx": "Export as GPX",
   "toast_export_no_gps": "No GPS data to export",
-  "toast_export_failed": "Export failed"
+  "toast_export_failed": "Export failed",
+  "ui_weather_clear": "Clear",
+  "ui_weather_partly_cloudy": "Partly Cloudy",
+  "ui_weather_cloudy": "Cloudy",
+  "ui_weather_fog": "Fog",
+  "ui_weather_drizzle": "Drizzle",
+  "ui_weather_rain": "Rain",
+  "ui_weather_snow": "Snow",
+  "ui_weather_thunderstorm": "Thunderstorm",
+  "ui_weather_gusts": "Gusts"
 }

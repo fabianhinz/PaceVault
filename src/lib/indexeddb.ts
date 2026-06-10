@@ -42,6 +42,7 @@ export const clearAllRecords = async (): Promise<void> => {
   await db.clear('session-records');
   await db.clear('session-laps');
   await db.clear('session-gps');
+  await db.clear('session-weather');
   await db.clear('fit-files');
   await db.clear('kv');
 };

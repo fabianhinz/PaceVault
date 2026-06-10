@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastViewport } from './components/ui/Toast.tsx';
 import { App } from './App.tsx';
 import { useUserStore } from './store/user.ts';
@@ -19,12 +20,16 @@ const boot = async () => {
 
   const rootEl = document.getElementById('root');
   if (!rootEl) return;
+  const queryClient = new QueryClient();
+
   createRoot(rootEl).render(
     <StrictMode>
-      <BrowserRouter>
-        <App />
-        <ToastViewport />
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <App />
+          <ToastViewport />
+        </BrowserRouter>
+      </QueryClientProvider>
     </StrictMode>,
   );
 };

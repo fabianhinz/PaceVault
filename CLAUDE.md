@@ -1,7 +1,7 @@
 # PaceVault
 
 **WHY:** PaceVault is a local-first, Progressive Web App (PWA) designed for mapping, analyzing, and storing fitness/GPS activities (primarily parsing `.FIT` binaries).
-**WHAT:** A pure client-side SPA. There is no backend server, no external APIs to call, and no `fetch`/`axios`. The browser _is_ the database.
+**WHAT:** A pure client-side SPA with no backend server. The browser _is_ the database. The only external API call is to [Open-Meteo](https://open-meteo.com/) for historical weather data — fetched lazily on session detail view and cached in IndexedDB (`session-weather` store).
 
 ## 1. Tech Stack
 

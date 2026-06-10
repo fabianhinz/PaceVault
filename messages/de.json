@@ -502,5 +502,14 @@
   "toast_devdata_generated": "{count} Einheiten generiert",
   "ui_btn_export_gpx": "Als GPX exportieren",
   "toast_export_no_gps": "Keine GPS-Daten zum Exportieren",
-  "toast_export_failed": "Export fehlgeschlagen"
+  "toast_export_failed": "Export fehlgeschlagen",
+  "ui_weather_clear": "Klar",
+  "ui_weather_partly_cloudy": "Teilweise bewölkt",
+  "ui_weather_cloudy": "Bewölkt",
+  "ui_weather_fog": "Nebel",
+  "ui_weather_drizzle": "Nieselregen",
+  "ui_weather_rain": "Regen",
+  "ui_weather_snow": "Schnee",
+  "ui_weather_thunderstorm": "Gewitter",
+  "ui_weather_gusts": "Böen"
 }

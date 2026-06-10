@@ -7,6 +7,7 @@ import {
   deleteSessionGPS,
   deleteFitFile,
 } from '@/lib/indexeddb.ts';
+import { deleteSessionWeather } from '@/lib/weatherDb.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import {
   DialogRoot,
@@ -53,6 +54,7 @@ export const DeleteSessionDialog = (props: {
                 deleteSessionRecords(props.session.id),
                 deleteSessionLaps(props.session.id),
                 deleteSessionGPS(props.session.id),
+                deleteSessionWeather(props.session.id),
                 deleteFitFile(props.session.id),
               ]);
             }}

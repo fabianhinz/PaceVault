@@ -9,6 +9,8 @@ import { Typography } from '@/components/ui/Typography.tsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.tsx';
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/features/sessions/session/SessionActionsMenu.tsx';
+import { WeatherChips } from '@/features/sessions/session/WeatherChips.tsx';
+import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
 import { OverviewTab } from '@/features/sessions/session/OverviewTab.tsx';
 import { LapsTab } from '@/features/sessions/laps/LapsTab.tsx';
 import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
@@ -22,6 +24,7 @@ export const SessionDetailPage = () => {
 
   const params = useParams<{ id: string }>();
   const session = useSessionsStore((s) => s.sessions.find((session) => session.id === params.id));
+  const weather = useSessionWeather(params.id ?? '', session?.date ?? 0, session?.duration ?? 0);
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [laps, setLaps] = useState<SessionLap[]>([]);
 
@@ -66,6 +69,8 @@ export const SessionDetailPage = () => {
       <SessionHeader session={session} titleVariant="h2" titleAs="h1">
         <SessionActionsMenu session={session} />
       </SessionHeader>
+
+      <WeatherChips query={weather} />
 
       <Tabs defaultValue="overview" value={tab} onValueChange={handleTabChange}>
         <TabsList>
