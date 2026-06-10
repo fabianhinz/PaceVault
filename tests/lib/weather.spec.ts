@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   wmoToCondition,
   formatWindDirection,
   computeHourlyWaypoints,
   deduplicateWaypoints,
   buildWeatherUrl,
+  fetchSessionWeather,
 } from '@/lib/weather.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
@@ -213,12 +214,101 @@ describe('buildWeatherUrl', () => {
     expect(url).toContain('start_date=2026-04-08');
     expect(url).toContain('end_date=2026-04-08');
     expect(url).toContain('temperature_2m');
-    expect(url).toContain('timezone=auto');
+    expect(url).toContain('timezone=UTC');
+    expect(url).toContain('timeformat=unixtime');
   });
 
   it('supports different start and end dates for multi-day sessions', () => {
     const url = buildWeatherUrl(48.1, 11.5, '2026-04-08', '2026-04-09');
     expect(url).toContain('start_date=2026-04-08');
     expect(url).toContain('end_date=2026-04-09');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchSessionWeather — hour matching must be timezone-independent
+// ---------------------------------------------------------------------------
+
+// Hourly payload as the API returns it with timeformat=unixtime: epoch-second
+// timestamps starting at 2026-04-08T00:00Z. temperature_2m encodes the hour
+// index so assertions can pinpoint exactly which hours were matched.
+const DAY_START_SEC = Date.UTC(2026, 3, 8) / 1000;
+
+const makeHourly = (days: number) => {
+  const time = Array.from({ length: 24 * days }, (_, i) => DAY_START_SEC + i * 3600);
+  return {
+    time,
+    temperature_2m: time.map((_, i) => i),
+    apparent_temperature: time.map(() => 1),
+    relative_humidity_2m: time.map(() => 50),
+    wind_speed_10m: time.map(() => 10),
+    wind_gusts_10m: time.map(() => 20),
+    wind_direction_10m: time.map(() => 180),
+    weather_code: time.map(() => 0),
+  };
+};
+
+const stubFetch = (body: unknown, ok = true) => {
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok,
+    json: async () => body,
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+};
+
+describe('fetchSessionWeather', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('matches snapshots to hours via epoch timestamps, independent of the browser timezone', async () => {
+    const fetchMock = stubFetch({ hourly: makeHourly(1) });
+    // 10:30–11:00 UTC → hour boundaries 10:00 and 11:00 UTC
+    const sessionDate = Date.UTC(2026, 3, 8, 10, 30);
+    const records = [makeRecord(0, 48.1, 11.5), makeRecord(1800, 48.1001, 11.5001)];
+
+    const result = await fetchSessionWeather('s1', sessionDate, 1800, records);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result?.snapshots.map((s) => s.temperature)).toEqual([10, 11]);
+    expect(result?.snapshots.map((s) => s.time)).toEqual([
+      Date.UTC(2026, 3, 8, 10),
+      Date.UTC(2026, 3, 8, 11),
+    ]);
+  });
+
+  it('requests UTC days and matches hours across a UTC midnight crossing', async () => {
+    const fetchMock = stubFetch({ hourly: makeHourly(2) });
+    // 23:30–00:30 UTC → hour boundaries 23:00 (idx 23) and 00:00 next day (idx 24)
+    const sessionDate = Date.UTC(2026, 3, 8, 23, 30);
+    const records = [makeRecord(0, 48.1, 11.5), makeRecord(3600, 48.1001, 11.5001)];
+
+    const result = await fetchSessionWeather('s1', sessionDate, 3600, records);
+
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url).toContain('start_date=2026-04-08');
+    expect(url).toContain('end_date=2026-04-09');
+    expect(result?.snapshots.map((s) => s.temperature)).toEqual([23, 24]);
+  });
+
+  it('returns undefined when the response has ISO string times instead of unixtime', async () => {
+    stubFetch({ hourly: { ...makeHourly(1), time: ['2026-04-08T10:00'] } });
+    const sessionDate = Date.UTC(2026, 3, 8, 10, 30);
+    const records = [makeRecord(0, 48.1, 11.5)];
+
+    const result = await fetchSessionWeather('s1', sessionDate, 1800, records);
+
+    expect(result).toBeUndefined();
+  });
+
+  it('returns undefined when the API responds with an error status', async () => {
+    stubFetch({}, false);
+    const sessionDate = Date.UTC(2026, 3, 8, 10, 30);
+    const records = [makeRecord(0, 48.1, 11.5)];
+
+    const result = await fetchSessionWeather('s1', sessionDate, 1800, records);
+
+    expect(result).toBeUndefined();
   });
 });

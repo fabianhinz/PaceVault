@@ -184,11 +184,13 @@ export const deduplicateWaypoints = (
 // Open-Meteo API
 // ---------------------------------------------------------------------------
 
-const toDateStr = (ms: number): string => {
+// The API is queried with timezone=UTC, so date params must be UTC days —
+// browser-local dates would shift the requested window near midnight.
+const toUtcDateStr = (ms: number): string => {
   const d = new Date(ms);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 };
 
@@ -205,7 +207,8 @@ export const buildWeatherUrl = (
     end_date: endDate,
     hourly:
       'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,weather_code',
-    timezone: 'auto',
+    timezone: 'UTC',
+    timeformat: 'unixtime',
   });
   return `https://archive-api.open-meteo.com/v1/archive?${params.toString()}`;
 };
@@ -215,7 +218,8 @@ export const buildWeatherUrl = (
 // ---------------------------------------------------------------------------
 
 const openMeteoHourlySchema = z.object({
-  time: z.array(z.string()),
+  // unix epoch seconds (timeformat=unixtime)
+  time: z.array(z.number()),
   temperature_2m: z.array(z.number().nullable()),
   apparent_temperature: z.array(z.number().nullable()),
   relative_humidity_2m: z.array(z.number().nullable()),
@@ -250,14 +254,14 @@ const fetchClusterWeather = async (
   return result.data;
 };
 
-const isoToMs = (iso: string): number => new Date(iso).getTime();
-
-const pickHourIndex = (targetMs: number, times: string[]): number => {
+const pickHourIndex = (targetMs: number, timesEpochSec: number[]): number => {
   let bestIdx = 0;
-  let bestDiff = Math.abs(isoToMs(times[0] ?? '') - targetMs);
+  let bestDiff = Number.POSITIVE_INFINITY;
 
-  for (let i = 1; i < times.length; i++) {
-    const diff = Math.abs(isoToMs(times[i] ?? '') - targetMs);
+  for (let i = 0; i < timesEpochSec.length; i++) {
+    const timeSec = timesEpochSec[i];
+    if (timeSec === undefined) continue;
+    const diff = Math.abs(timeSec * 1000 - targetMs);
     if (diff < bestDiff) {
       bestIdx = i;
       bestDiff = diff;
@@ -280,8 +284,8 @@ export const fetchSessionWeather = async (
   if (clusters.length === 0) return undefined;
 
   const sessionEndMs = sessionDateMs + durationSec * 1000;
-  const startDate = toDateStr(sessionDateMs);
-  const endDate = toDateStr(sessionEndMs);
+  const startDate = toUtcDateStr(sessionDateMs);
+  const endDate = toUtcDateStr(sessionEndMs);
 
   const clusterResults = await Promise.all(
     clusters.map((c) => fetchClusterWeather(c.lat, c.lng, startDate, endDate)),

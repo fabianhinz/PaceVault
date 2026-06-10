@@ -51,7 +51,7 @@ export const seedOnboardingComplete = async (page: Page) => {
     });
 
     // Open IDB and write store keys
-    const openReq = indexedDB.open('endurance-tracker', 2);
+    const openReq = indexedDB.open('endurance-tracker', 3);
     await new Promise<void>((resolve, reject) => {
       openReq.onupgradeneeded = () => {
         const db = openReq.result;
@@ -70,6 +70,9 @@ export const seedOnboardingComplete = async (page: Page) => {
         }
         if (!db.objectStoreNames.contains('fit-files')) {
           db.createObjectStore('fit-files', { keyPath: 'sessionId' });
+        }
+        if (!db.objectStoreNames.contains('session-weather')) {
+          db.createObjectStore('session-weather', { keyPath: 'sessionId' });
         }
       };
       openReq.onsuccess = () => {
@@ -184,7 +187,7 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
         version: 1,
       });
 
-      const openReq = indexedDB.open('endurance-tracker', 2);
+      const openReq = indexedDB.open('endurance-tracker', 3);
       await new Promise<void>((resolve, reject) => {
         openReq.onupgradeneeded = () => {
           const db = openReq.result;
@@ -199,6 +202,8 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
           }
           if (!db.objectStoreNames.contains('fit-files'))
             db.createObjectStore('fit-files', { keyPath: 'sessionId' });
+          if (!db.objectStoreNames.contains('session-weather'))
+            db.createObjectStore('session-weather', { keyPath: 'sessionId' });
         };
         openReq.onsuccess = () => {
           const db = openReq.result;
@@ -301,7 +306,7 @@ export const seedCoachWithThresholdPace = async (
         version: 1,
       });
 
-      const openReq = indexedDB.open('endurance-tracker', 2);
+      const openReq = indexedDB.open('endurance-tracker', 3);
       await new Promise<void>((resolve, reject) => {
         openReq.onupgradeneeded = () => {
           const db = openReq.result;
@@ -316,6 +321,8 @@ export const seedCoachWithThresholdPace = async (
           }
           if (!db.objectStoreNames.contains('fit-files'))
             db.createObjectStore('fit-files', { keyPath: 'sessionId' });
+          if (!db.objectStoreNames.contains('session-weather'))
+            db.createObjectStore('session-weather', { keyPath: 'sessionId' });
         };
         openReq.onsuccess = () => {
           const db = openReq.result;
