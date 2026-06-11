@@ -520,5 +520,8 @@
   "ui_weather_rain": "Regen",
   "ui_weather_snow": "Schnee",
   "ui_weather_thunderstorm": "Gewitter",
-  "ui_weather_gusts": "Böen"
+  "ui_weather_gusts": "Böen",
+  "ui_weather_headwind": "Gegenwind",
+  "ui_weather_crosswind": "Seitenwind",
+  "ui_weather_tailwind": "Rückenwind"
 }

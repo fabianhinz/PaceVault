@@ -70,7 +70,7 @@ export const SessionDetailPage = () => {
         <SessionActionsMenu session={session} />
       </SessionHeader>
 
-      <WeatherChips query={weather} />
+      <WeatherChips query={weather} records={records} sessionStartMs={session.date} />
 
       <Tabs defaultValue="overview" value={tab} onValueChange={handleTabChange}>
         <TabsList>
