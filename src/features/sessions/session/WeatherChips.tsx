@@ -12,11 +12,20 @@ import {
   Thermometer,
   Droplets,
   Wind,
+  ArrowDown,
+  ArrowUp,
+  ArrowLeftRight,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
+import { cn } from '@/lib/utils.ts';
+import type { SessionRecord } from '@/packages/engine/types.ts';
 import type { SessionWeather, WeatherCondition } from '@/lib/weather.ts';
 import { formatWindDirection } from '@/lib/weather.ts';
+import type { WindExposure } from '@/packages/engine/windExposure.ts';
+import { useWindExposure } from './hooks/useWindExposure.ts';
+import { glassClass } from '@/components/ui/Card.tsx';
+import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 
 const conditionIcons: Record<WeatherCondition, LucideIcon> = {
   clear: Sun,
@@ -40,85 +49,148 @@ const conditionLabels: Record<WeatherCondition, () => string> = {
   thunderstorm: m.ui_weather_thunderstorm,
 };
 
-const chipClass =
-  'inline-flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-xs text-text-tertiary';
-
-const skeletonChipClass = 'h-6 animate-pulse rounded-lg bg-white/10';
+const baseChipClass = `${glassClass} text-text-secondary inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs`;
+const fillChipClass = `${baseChipClass} relative overflow-hidden`;
+const skeletonChipClass = `${baseChipClass} h-[26px] animate-pulse`;
 
 const formatRange = (values: number[], unit: string): string => {
   const min = Math.round(Math.min(...values));
   const max = Math.round(Math.max(...values));
   if (min === max) return `${min}${unit}`;
-  return `${min}\u2013${max}${unit}`;
+  return `${min}–${max}${unit}`;
 };
 
-const DEFAULT_VISIBLE_CHIPS = 3;
-
-interface ChipData {
-  icon: LucideIcon;
-  label: string;
+interface ChipFill {
+  pct: number;
+  fillClass: string;
+  textClass: string;
 }
 
-const buildChips = (weather: SessionWeather): ChipData[] => {
+interface ChipData {
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  fill?: ChipFill;
+}
+
+const buildWindExposureChips = (exposure: WindExposure): ChipData[] => [
+  {
+    key: 'tailwind',
+    icon: ArrowUp,
+    label: `${m.ui_weather_tailwind()} ${exposure.tailwindPct}%`,
+    fill: {
+      pct: exposure.tailwindPct,
+      fillClass: 'bg-gradient-to-r from-teal-500/40 to-emerald-500/40',
+      textClass: 'text-emerald-200',
+    },
+  },
+  {
+    key: 'headwind',
+    icon: ArrowDown,
+    label: `${m.ui_weather_headwind()} ${exposure.headwindPct}%`,
+    fill: {
+      pct: exposure.headwindPct,
+      fillClass: 'bg-gradient-to-r from-amber-500/40 to-red-500/40',
+      textClass: 'text-red-200',
+    },
+  },
+  {
+    key: 'crosswind',
+    icon: ArrowLeftRight,
+    label: `${m.ui_weather_crosswind()} ${exposure.crosswindPct}%`,
+    fill: {
+      pct: exposure.crosswindPct,
+      fillClass: 'bg-gradient-to-r from-slate-500/40 to-slate-400/40',
+      textClass: 'text-slate-200',
+    },
+  },
+];
+
+const buildChips = (weather: SessionWeather, exposure: WindExposure | null): ChipData[] => {
+  const chips: ChipData[] = [];
+
+  // Wind exposure leads — it's the headline insight — then the ambient weather summary.
+  if (exposure) {
+    chips.push(...buildWindExposureChips(exposure));
+  }
+
   const snapshots = weather.snapshots;
-  if (snapshots.length === 0) return [];
-
   const first = snapshots[0];
-  if (!first) return [];
+  if (first) {
+    const ConditionIcon = conditionIcons[first.condition];
+    const conditionLabel = conditionLabels[first.condition]();
+    const temps = snapshots.map((s) => s.temperature);
+    const humidities = snapshots.map((s) => s.humidity);
+    const winds = snapshots.map((s) => s.windSpeed);
+    const gusts = snapshots.map((s) => s.windGusts);
 
-  const ConditionIcon = conditionIcons[first.condition];
-  const conditionLabel = conditionLabels[first.condition]();
-  const temps = snapshots.map((s) => s.temperature);
-  const humidities = snapshots.map((s) => s.humidity);
-  const winds = snapshots.map((s) => s.windSpeed);
-  const gusts = snapshots.map((s) => s.windGusts);
+    chips.push(
+      { key: 'temperature', icon: Thermometer, label: formatRange(temps, '°C') },
+      {
+        key: 'wind',
+        icon: Wind,
+        label: `${formatRange(winds, ' km/h')} ${formatWindDirection(first.windDirection)}`,
+      },
+      { key: 'gusts', icon: Wind, label: `${m.ui_weather_gusts()} ${formatRange(gusts, ' km/h')}` },
+      { key: 'condition', icon: ConditionIcon, label: conditionLabel },
+      { key: 'humidity', icon: Droplets, label: formatRange(humidities, '%') },
+    );
+  }
 
-  return [
-    { icon: Thermometer, label: formatRange(temps, '\u00B0C') },
-    {
-      icon: Wind,
-      label: `${formatRange(winds, ' km/h')} ${formatWindDirection(first.windDirection)}`,
-    },
-    {
-      icon: Wind,
-      label: `${m.ui_weather_gusts()} ${formatRange(gusts, ' km/h')}`,
-    },
-    { icon: ConditionIcon, label: conditionLabel },
-    { icon: Droplets, label: formatRange(humidities, '%') },
-  ];
+  return chips;
 };
 
 interface WeatherChipsProps {
   query: UseQueryResult<SessionWeather | null, Error>;
+  records: SessionRecord[];
+  sessionStartMs: number;
 }
 
 export const WeatherChips = (props: WeatherChipsProps) => {
+  const exposure = useWindExposure(props.records, props.query.data ?? null, props.sessionStartMs);
+  const isDesktop = useIsDesktop();
   const [expanded, setExpanded] = useState(false);
 
   if (props.query.isLoading) {
     return (
       <div className="inline-flex gap-1">
+        <div className={`${skeletonChipClass} w-28`} />
+        <div className={`${skeletonChipClass} w-20`} />
         <div className={`${skeletonChipClass} w-24`} />
-        <div className={`${skeletonChipClass} w-16`} />
+        <div className={`${skeletonChipClass} w-8`} />
       </div>
     );
   }
 
   if (!props.query.data) return null;
 
-  const chips = buildChips(props.query.data);
+  const chips = buildChips(props.query.data, exposure);
   if (chips.length === 0) return null;
 
-  const hiddenCount = chips.length - DEFAULT_VISIBLE_CHIPS;
+  const defaultVisibleChips = isDesktop ? 4 : 2;
+  const hiddenCount = chips.length - defaultVisibleChips;
   const showToggle = hiddenCount > 0 && !expanded;
-  const visibleChips = expanded ? chips : chips.slice(0, DEFAULT_VISIBLE_CHIPS);
+  const visibleChips = expanded ? chips : chips.slice(0, defaultVisibleChips);
 
   return (
-    <div className="inline-flex flex-wrap gap-1">
+    <div className="flex flex-wrap gap-1">
       {visibleChips.map((chip) => {
         const Icon = chip.icon;
+        if (chip.fill) {
+          return (
+            <span key={chip.key} className={fillChipClass}>
+              <span
+                aria-hidden
+                className={cn('absolute inset-y-0 left-0 z-0', chip.fill.fillClass)}
+                style={{ width: `${chip.fill.pct}%` }}
+              />
+              <Icon size={12} className={cn('relative z-10', chip.fill.textClass)} />
+              <span className={cn('relative z-10', chip.fill.textClass)}>{chip.label}</span>
+            </span>
+          );
+        }
         return (
-          <span key={chip.label} className={chipClass}>
+          <span key={chip.key} className={baseChipClass}>
             <Icon size={12} />
             {chip.label}
           </span>
@@ -126,8 +198,7 @@ export const WeatherChips = (props: WeatherChipsProps) => {
       })}
       {showToggle && (
         <button
-          type="button"
-          className={`${chipClass} cursor-pointer hover:bg-white/20`}
+          className={`${baseChipClass} cursor-pointer hover:bg-white/20`}
           onClick={() => setExpanded(true)}
         >
           +{hiddenCount}
