@@ -2,7 +2,7 @@
 // See src/engine/SOURCES.md for full citations.
 
 import type { SessionRecord } from './types.ts';
-import { isValidCoordinate, bearingDeg } from './gps.ts';
+import { isValidCoordinate, bearingDeg, toRad } from './gps.ts';
 
 /**
  * A single wind observation. `direction` follows the meteorological convention: the compass bearing the
@@ -40,8 +40,6 @@ interface ValidPoint {
   lng: number;
   elapsedSec: number;
 }
-
-const toRad = (deg: number): number => (deg * Math.PI) / 180;
 
 /** Equirectangular metre distance — accurate enough over the short spans between consecutive records. */
 const segmentMetres = (a: ValidPoint, b: ValidPoint): number => {

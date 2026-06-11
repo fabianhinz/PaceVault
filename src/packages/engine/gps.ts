@@ -11,6 +11,9 @@ import type { SessionRecord, GPSPoint, GPSBounds, SessionGPS } from './types.ts'
 export const isValidCoordinate = (r: { lat?: number | null; lng?: number | null }): boolean =>
   r.lat != null && r.lng != null && r.lat >= -90 && r.lat <= 90 && r.lng >= -180 && r.lng <= 180;
 
+/** Convert an angle in degrees to radians. */
+export const toRad = (deg: number): number => (deg * Math.PI) / 180;
+
 /**
  * Compute the initial bearing (forward azimuth) of the great-circle path from `a` to `b`.
  * @see [Veness2019] — standard initial-bearing formula.
@@ -19,7 +22,6 @@ export const isValidCoordinate = (r: { lat?: number | null; lng?: number | null 
  * @returns Bearing in degrees, `0–360` measured clockwise from true north.
  */
 export const bearingDeg = (a: GPSPoint, b: GPSPoint): number => {
-  const toRad = (deg: number): number => (deg * Math.PI) / 180;
   const lat1 = toRad(a.lat);
   const lat2 = toRad(b.lat);
   const dLng = toRad(b.lng - a.lng);

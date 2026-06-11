@@ -176,23 +176,19 @@ export const WeatherChips = (props: WeatherChipsProps) => {
     <div className="flex flex-wrap gap-1">
       {visibleChips.map((chip) => {
         const Icon = chip.icon;
-        if (chip.fill) {
-          return (
-            <span key={chip.key} className={fillChipClass}>
+        const fill = chip.fill;
+        const fgClass = fill ? cn('relative z-10', fill.textClass) : undefined;
+        return (
+          <span key={chip.key} className={fill ? fillChipClass : baseChipClass}>
+            {fill && (
               <span
                 aria-hidden
-                className={cn('absolute inset-y-0 left-0 z-0', chip.fill.fillClass)}
-                style={{ width: `${chip.fill.pct}%` }}
+                className={cn('absolute inset-y-0 left-0 z-0', fill.fillClass)}
+                style={{ width: `${fill.pct}%` }}
               />
-              <Icon size={12} className={cn('relative z-10', chip.fill.textClass)} />
-              <span className={cn('relative z-10', chip.fill.textClass)}>{chip.label}</span>
-            </span>
-          );
-        }
-        return (
-          <span key={chip.key} className={baseChipClass}>
-            <Icon size={12} />
-            {chip.label}
+            )}
+            <Icon size={12} className={fgClass} />
+            <span className={fgClass}>{chip.label}</span>
           </span>
         );
       })}
