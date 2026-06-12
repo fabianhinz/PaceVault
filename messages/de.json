@@ -175,7 +175,7 @@
   "ui_attr_dialog_duration": "Dauer (h)",
   "ui_attr_dialog_distance": "Distanz (km)",
   "ui_attr_dialog_elevation": "Höhenmeter",
-  "ui_attr_dialog_reset": "Zurücksetzen",
+  "ui_attr_dialog_reset": "Löschen",
   "ui_attr_dialog_apply": "Anwenden",
   "ui_pb_longest": "Längste",
   "ui_pb_elevation_gain": "Höhenmeter",
