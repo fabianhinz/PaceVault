@@ -34,11 +34,22 @@ interface TypographyProps extends HTMLAttributes<HTMLElement> {
   color?: Color;
   as?: ElementType;
   tabularNums?: boolean;
+  noWrap?: boolean;
+  zeroMinWidth?: boolean;
   children?: ReactNode;
 }
 
 export const Typography = (props: TypographyProps) => {
-  const { variant: _, color: _c, as: _a, tabularNums: _t, className: _cls, ...rest } = props;
+  const {
+    variant: _,
+    color: _c,
+    as: _a,
+    tabularNums: _t,
+    noWrap: _n,
+    zeroMinWidth: _z,
+    className: _cls,
+    ...rest
+  } = props;
 
   const config = variants[props.variant ?? 'body1'];
   const resolvedColor = props.color ?? (config.defaultColor as Color);
@@ -50,6 +61,8 @@ export const Typography = (props: TypographyProps) => {
         config.classes,
         colorMap[resolvedColor],
         props.tabularNums && 'tabular-nums',
+        props.noWrap && 'truncate',
+        props.zeroMinWidth && 'min-w-0',
         props.className,
       )}
       {...rest}
