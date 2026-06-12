@@ -1,7 +1,10 @@
 import { useCallback, useEffect } from 'react';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useIsDesktop } from '@/lib/hooks/useIsDesktop';
 
 export const useSessionHover = (sessionId: string) => {
+  const isDesktop = useIsDesktop();
+
   useEffect(() => {
     return () => {
       useMapFocusStore.getState().setHoveredSession(null);
@@ -9,12 +12,16 @@ export const useSessionHover = (sessionId: string) => {
   }, []);
 
   const onPointerEnter = useCallback(() => {
-    useMapFocusStore.getState().setHoveredSession(sessionId);
-  }, [sessionId]);
+    if (isDesktop) {
+      useMapFocusStore.getState().setHoveredSession(sessionId);
+    }
+  }, [sessionId, isDesktop]);
 
   const onPointerLeave = useCallback(() => {
-    useMapFocusStore.getState().setHoveredSession(null);
-  }, []);
+    if (isDesktop) {
+      useMapFocusStore.getState().setHoveredSession(null);
+    }
+  }, [isDesktop]);
 
   return { onPointerEnter, onPointerLeave };
 };

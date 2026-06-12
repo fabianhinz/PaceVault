@@ -26,12 +26,6 @@ export const SessionItem = (props: SessionItemProps) => {
       tabIndex={0}
       className={cn('hover:bg-white/10 cursor-pointer', props.className)}
       onClick={handleNavigate}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleNavigate();
-        }
-      }}
       onPointerEnter={sessionHover.onPointerEnter}
       onPointerLeave={sessionHover.onPointerLeave}
     >
