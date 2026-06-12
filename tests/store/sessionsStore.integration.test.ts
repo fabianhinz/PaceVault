@@ -30,7 +30,7 @@ describe('sessions store', () => {
     const batch = [
       makeSession(),
       makeSession({ sport: 'running' }),
-      makeSession({ sport: 'swimming' }),
+      makeSession({ sport: 'cycling' }),
     ];
     const inputs = batch.map(({ id: _id, createdAt: _ca, ...data }) => data);
 
@@ -46,7 +46,7 @@ describe('sessions store', () => {
     expect(sessions).toHaveLength(3);
     expect(sessions[0].sport).toBe('cycling');
     expect(sessions[1].sport).toBe('running');
-    expect(sessions[2].sport).toBe('swimming');
+    expect(sessions[2].sport).toBe('cycling');
 
     // IDs returned match stored sessions
     ids.forEach((id, i) => {

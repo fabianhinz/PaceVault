@@ -177,21 +177,11 @@ const RUNNING_DISTANCE_LABELS: Record<number, string> = {
   42195: m.ui_pb_marathon(),
 };
 
-const SWIMMING_DISTANCE_LABELS: Record<number, string> = {
-  100: '100 m',
-  400: '400 m',
-  1000: '1000 m',
-  1500: '1500 m',
-};
-
 export const pbLabel = (pb: PersonalBest): string => {
   if (pb.category === 'peak-power') {
     return POWER_WINDOW_LABELS[pb.window] ?? `${pb.window}s`;
   }
   if (pb.category === 'fastest-distance') {
-    if (pb.sport === 'swimming') {
-      return SWIMMING_DISTANCE_LABELS[pb.window] ?? `${pb.window} m`;
-    }
     return RUNNING_DISTANCE_LABELS[pb.window] ?? `${pb.window} m`;
   }
   if (pb.category === 'longest') return m.ui_pb_longest();
@@ -219,8 +209,6 @@ const SUB_SPORT_LABELS: Record<string, string> = {
   track: m.ui_sub_sport_track(),
   gravel_cycling: m.ui_sub_sport_gravel(),
   treadmill: m.ui_sub_sport_treadmill(),
-  lap_swimming: m.ui_sub_sport_pool(),
-  open_water: m.ui_sub_sport_open_water(),
 };
 
 export const formatSubSport = (subSport: string): string => {

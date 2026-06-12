@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computePBsForSessions } from '@/lib/records.ts';
-import {
-  makeCyclingRecords,
-  makeRunningRecords,
-  makeSwimmingRecords,
-} from '../factories/records.ts';
+import { makeCyclingRecords, makeRunningRecords } from '../factories/records.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -131,26 +127,6 @@ describe('computePBsForSessions', () => {
 
     const distancePBs = result.filter((pb) => pb.category === 'fastest-distance');
     expect(distancePBs.every((pb) => pb.sessionId === 'fast')).toBe(true);
-  });
-
-  it('swimming sessions produce distance PBs', () => {
-    const now = Date.now();
-    // 1200s at ~1.5 m/s ≈ 1800m
-    const swimRecords = makeSwimmingRecords('swim', 1200, { baseSpeed: 1.5 });
-
-    const result = computePBsForSessions([
-      {
-        sessionId: 'swim',
-        date: now,
-        sport: 'swimming',
-        records: swimRecords,
-      },
-    ]);
-
-    const swimPBs = result.filter(
-      (pb) => pb.sport === 'swimming' && pb.category === 'fastest-distance',
-    );
-    expect(swimPBs.length).toBeGreaterThanOrEqual(3); // 100m, 400m, 1000m at least
   });
 
   it('tracks longest distance per sport', () => {

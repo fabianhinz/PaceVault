@@ -23,16 +23,6 @@ const RUNNING_DISTANCES = [
 ] as const;
 
 /**
- * Target distances (in metres) used for fastest-distance PB detection in swimming.
- */
-const SWIMMING_DISTANCES = [
-  { meters: 100 },
-  { meters: 400 },
-  { meters: 1000 },
-  { meters: 1500 },
-] as const;
-
-/**
  * Canonical PB slot definitions keyed by sport, listing every category and window to track.
  */
 export const PB_SLOTS: Record<Sport, Array<{ category: PBCategory; window: number }>> = {
@@ -52,13 +42,6 @@ export const PB_SLOTS: Record<Sport, Array<{ category: PBCategory; window: numbe
     { category: 'peak-power', window: 3600 },
     { category: 'longest', window: 0 },
     { category: 'most-elevation', window: 0 },
-  ],
-  swimming: [
-    { category: 'fastest-distance', window: 100 },
-    { category: 'fastest-distance', window: 400 },
-    { category: 'fastest-distance', window: 1000 },
-    { category: 'fastest-distance', window: 1500 },
-    { category: 'longest', window: 0 },
   ],
 };
 
@@ -190,18 +173,6 @@ const extractSessionPeaks = (
     }
   }
 
-  if (sport === 'swimming') {
-    const distances = extractFastestDistances(records, SWIMMING_DISTANCES);
-    for (const [meters, time] of distances) {
-      peaks.push({
-        category: 'fastest-distance',
-        window: meters,
-        value: time,
-        higherIsBetter: false,
-      });
-    }
-  }
-
   if (sessionMeta) {
     if (sessionMeta.distance > 0) {
       peaks.push({
@@ -308,7 +279,7 @@ export const groupPBsBySport = (pbs: PersonalBest[]): Partial<Record<Sport, Pers
 };
 
 /**
- * Compute the all-time personal bests across an arbitrary collection of sessions for all three sports.
+ * Compute the all-time personal bests across an arbitrary collection of sessions for all sports.
  * @param sessions - Array of session descriptors, each carrying its id, date, sport, time-series records, and optional distance/elevation metadata.
  * @returns Flat array of personal bests — one entry per unique sport+category+window combination — reflecting the best value seen across all sessions.
  */

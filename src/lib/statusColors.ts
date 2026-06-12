@@ -56,12 +56,10 @@ export const ACWR_ZONES = [
 export const sportColorClass: Record<string, string> = {
   running: 'bg-sport-running-muted text-sport-running',
   cycling: 'bg-sport-cycling-muted text-sport-cycling',
-  swimming: 'bg-sport-swimming-muted text-sport-swimming',
 };
 
 /** Sport icon watermark classes — very subtle tinted icon */
 export const sportIconWatermarkClass: Record<string, string> = {
   running: 'text-sport-running/10',
   cycling: 'text-sport-cycling/10',
-  swimming: 'text-sport-swimming/10',
 };

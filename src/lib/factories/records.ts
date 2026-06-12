@@ -262,20 +262,6 @@ export const makeRunningRecords = (
   return assembleRecords(sessionId, speeds, hrs, { elevations, cadences, grades });
 };
 
-export const makeSwimmingRecords = (
-  sessionId: string,
-  count: number,
-  options?: { baseSpeed?: number; baseHr?: number },
-): SessionRecord[] => {
-  const baseSpeed = options?.baseSpeed ?? 1.5;
-  const baseHr = options?.baseHr ?? 135;
-
-  const hrs = buildHrArray(count, baseHr);
-  const speeds = buildSpeedArray(count, baseSpeed, []);
-
-  return assembleRecords(sessionId, speeds, hrs);
-};
-
 export const makeLaps = (sessionId: string, count: number): SessionLap[] => {
   const laps: SessionLap[] = [];
   const lapDuration = 300;

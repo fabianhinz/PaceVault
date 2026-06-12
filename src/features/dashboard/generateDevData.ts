@@ -10,7 +10,6 @@ import { m } from '@/paraglide/messages.js';
 import {
   makeRunningRecords,
   makeCyclingRecords,
-  makeSwimmingRecords,
   makeLapsFromRecords,
 } from '@/lib/factories/records.ts';
 
@@ -51,22 +50,18 @@ const INTENSITY_CONFIG: Record<
   'long-run': {
     running: { durationRange: [3600, 5400], speedRange: [0.8, 0.9], hrRange: [0.6, 0.7] },
     cycling: { durationRange: [3600, 5400], speedRange: [0.8, 0.9], hrRange: [0.6, 0.7] },
-    swimming: { durationRange: [3600, 5400], speedRange: [0.8, 0.9], hrRange: [0.6, 0.7] },
   },
   'high-intensity': {
     running: { durationRange: [1800, 2700], speedRange: [0.95, 1.1], hrRange: [0.75, 0.85] },
     cycling: { durationRange: [1800, 2700], speedRange: [0.95, 1.1], hrRange: [0.75, 0.85] },
-    swimming: { durationRange: [1800, 2700], speedRange: [0.95, 1.1], hrRange: [0.75, 0.85] },
   },
   easy: {
     running: { durationRange: [1800, 3000], speedRange: [0.7, 0.85], hrRange: [0.55, 0.65] },
     cycling: { durationRange: [3600, 7200], speedRange: [0.55, 0.7], hrRange: [0.55, 0.65] },
-    swimming: { durationRange: [1800, 3000], speedRange: [0.8, 1.0], hrRange: [0.55, 0.65] },
   },
   recovery: {
     running: { durationRange: [1500, 2400], speedRange: [0.65, 0.75], hrRange: [0.5, 0.6] },
     cycling: { durationRange: [1500, 2400], speedRange: [0.65, 0.75], hrRange: [0.5, 0.6] },
-    swimming: { durationRange: [1500, 2400], speedRange: [0.65, 0.75], hrRange: [0.5, 0.6] },
   },
 };
 
@@ -129,27 +124,19 @@ const generateRecordsWithGPS = (
     const baseSpeed =
       (1000 / PERSONA.thresholdPace) * randomBetween(config.speedRange[0], config.speedRange[1]);
     records = makeRunningRecords(sessionId, durationSec, { baseSpeed, baseHr });
-  } else if (sport === 'cycling') {
+  } else {
     const basePower = PERSONA.ftp * randomBetween(config.speedRange[0], config.speedRange[1]);
     records = makeCyclingRecords(sessionId, durationSec, { basePower, baseHr });
-  } else {
-    records = makeSwimmingRecords(sessionId, durationSec, {
-      baseSpeed:
-        randomBetween(1.2, 1.5) * randomBetween(config.speedRange[0], config.speedRange[1]),
-      baseHr,
-    });
   }
 
-  // Overlay GPS coordinates from real routes (no GPS for swimming)
-  if (sport === 'running' || sport === 'cycling') {
-    const route = pickRoute(routeData, sport, intent);
-    const gpsPoints = decodeAndFitGPS(route.polyline, durationSec);
-    for (let ri = 0; ri < records.length; ri++) {
-      const gps = gpsPoints[ri];
-      const rec = records[ri];
-      if (gps && rec) {
-        records[ri] = { ...rec, lat: gps.lat, lng: gps.lng };
-      }
+  // Overlay GPS coordinates from real routes
+  const route = pickRoute(routeData, sport, intent);
+  const gpsPoints = decodeAndFitGPS(route.polyline, durationSec);
+  for (let ri = 0; ri < records.length; ri++) {
+    const gps = gpsPoints[ri];
+    const rec = records[ri];
+    if (gps && rec) {
+      records[ri] = { ...rec, lat: gps.lat, lng: gps.lng };
     }
   }
 
@@ -167,21 +154,21 @@ const WEEKLY_TEMPLATES: Array<DaySlot[]> = [
     /* Tue */ [{ sport: 'running', intent: 'high-intensity' }],
     /* Wed */ [
       { sport: 'cycling', intent: 'easy' },
-      { sport: 'swimming', intent: 'easy' },
+      { sport: 'running', intent: 'easy' },
     ],
     /* Thu */ [{ sport: 'running', intent: 'easy' }],
     /* Fri */ [],
     /* Sat */ [{ sport: 'running', intent: 'long-run' }],
     /* Sun */ [{ sport: 'cycling', intent: 'easy' }],
   ],
-  // Template B — swap double day to Thu, swim optional dropped
+  // Template B — swap double day to Thu
   [
     /* Mon */ [{ sport: 'running', intent: 'easy' }],
     /* Tue */ [{ sport: 'running', intent: 'high-intensity' }],
     /* Wed */ [{ sport: 'cycling', intent: 'easy' }],
     /* Thu */ [
       { sport: 'running', intent: 'easy' },
-      { sport: 'swimming', intent: 'easy' },
+      { sport: 'cycling', intent: 'easy' },
     ],
     /* Fri */ [],
     /* Sat */ [{ sport: 'running', intent: 'long-run' }],
@@ -193,7 +180,7 @@ const WEEKLY_TEMPLATES: Array<DaySlot[]> = [
     /* Tue */ [{ sport: 'running', intent: 'high-intensity' }],
     /* Wed */ [
       { sport: 'cycling', intent: 'easy' },
-      { sport: 'swimming', intent: 'easy' },
+      { sport: 'running', intent: 'easy' },
     ],
     /* Thu */ [{ sport: 'running', intent: 'easy' }],
     /* Fri */ [{ sport: 'running', intent: 'recovery' }],
@@ -340,21 +327,18 @@ export const generateDevData = async (): Promise<number> => {
       );
     }
 
-    let elevationGain: number | undefined = undefined;
-    if (sport !== 'swimming') {
-      elevationGain = Math.round(
-        records.reduce((sum, r, idx) => {
-          if (idx === 0 || r.elevation == null) return sum;
-          const prevElev = records[idx - 1]?.elevation;
-          if (prevElev == null) return sum;
-          const diff = r.elevation - prevElev;
-          if (diff > 0) {
-            return sum + diff;
-          }
-          return sum;
-        }, 0),
-      );
-    }
+    const elevationGain = Math.round(
+      records.reduce((sum, r, idx) => {
+        if (idx === 0 || r.elevation == null) return sum;
+        const prevElev = records[idx - 1]?.elevation;
+        if (prevElev == null) return sum;
+        const diff = r.elevation - prevElev;
+        if (diff > 0) {
+          return sum + diff;
+        }
+        return sum;
+      }, 0),
+    );
 
     const stress = calculateSessionStress(
       records,

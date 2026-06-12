@@ -3,7 +3,7 @@ import { useFiltersStore } from '@/store/filters.ts';
 import type { Sport } from '@/packages/engine/types.ts';
 import { SportRecordsCard } from './SportRecordsCard.tsx';
 
-const sports: Sport[] = ['running', 'cycling', 'swimming'];
+const sports: Sport[] = ['running', 'cycling'];
 
 export const SportsRecords: React.FC = () => {
   const groupedPBs = useFiltersStore((s) => s.groupedPBs);

@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { groupPBsBySport } from '@/lib/records.ts';
 import type { PersonalBest } from '@/packages/engine/types.ts';
 
-const makePB = (sport: 'running' | 'cycling' | 'swimming', window: number): PersonalBest => {
+const makePB = (sport: 'running' | 'cycling', window: number): PersonalBest => {
   let category: PersonalBest['category'] = 'fastest-distance';
   if (sport === 'cycling') {
     category = 'peak-power';
@@ -44,7 +44,6 @@ describe('groupPBsBySport', () => {
     const result = groupPBsBySport(pbs);
     expect(result.running).toHaveLength(2);
     expect(result.cycling).toHaveLength(2);
-    expect(result.swimming).toBeUndefined();
   });
 
   it('preserves PB data within groups', () => {

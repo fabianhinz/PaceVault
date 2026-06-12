@@ -12,13 +12,11 @@ import { m } from '@/paraglide/messages.js';
 const SPORT_NAMES: Record<Sport, () => string> = {
   running: m.ui_sport_running,
   cycling: m.ui_sport_cycling,
-  swimming: m.ui_sport_swimming,
 };
 
 const sportSubtitle: Record<Sport, () => string> = {
   running: m.ui_records_running_subtitle,
   cycling: m.ui_records_cycling_subtitle,
-  swimming: m.ui_records_swimming_subtitle,
 };
 
 export const SportRecordsCard = (props: {

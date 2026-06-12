@@ -35,7 +35,7 @@ export interface MetricExplanation {
   friendlyName: string;
   oneLiner: string;
   range: string;
-  sports: ('running' | 'cycling' | 'swimming' | 'all')[];
+  sports: ('running' | 'cycling' | 'all')[];
 }
 
 // ---------------------------------------------------------------------------
@@ -207,7 +207,7 @@ const avgPace: MetricExplanation = {
   friendlyName: m.exp_avgPace_friendlyName(),
   oneLiner: m.exp_avgPace_oneLiner(),
   range: m.exp_avgPace_range(),
-  sports: ['running', 'swimming'],
+  sports: ['running'],
 };
 
 const avgSpeed: MetricExplanation = {

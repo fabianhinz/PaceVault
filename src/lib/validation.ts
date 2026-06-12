@@ -13,7 +13,6 @@ const MAX_VALID_POWER = 2500;
 const MAX_SPEED_KMH: Record<Sport, number> = {
   cycling: 80,
   running: 25,
-  swimming: 15,
 };
 
 /** A warning produced when a sensor metric contains sustained implausible values. */

@@ -47,7 +47,7 @@ export const ATTRIBUTE_CONFIG = {
     placeholder: '1.5',
   },
   distance: {
-    // distances are nominal (5k, 10k …) — tightest band, small floor for swims/short runs
+    // distances are nominal (5k, 10k …) — tightest band, small floor for short runs
     tolerance: 0.15,
     minWindow: 500,
     toCanonical: kmToMetres,
