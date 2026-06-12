@@ -34,7 +34,8 @@ export const MapPopupShell = (props: MapPopupShellProps) => {
 
   let cardSizeClasses = '';
   if (!isDesktop) {
-    cardSizeClasses = 'w-full h-[50dvh] rounded-t-2xl rounded-b-none border-x-0 border-b-0';
+    cardSizeClasses =
+      'w-full h-[50dvh] rounded-t-2xl rounded-b-none border-x-0 border-b-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]';
   } else if (!props.isExpanded) {
     cardSizeClasses = props.desktopSizeClasses;
   }
