@@ -19,7 +19,6 @@ const getTimeOfDayLabel = (hour: number): string => {
 const SPORT_NOUN_MAP: Record<Sport, () => string> = {
   running: m.ui_sport_run,
   cycling: m.ui_sport_ride,
-  swimming: m.ui_sport_swim,
 };
 
 const SUB_SPORT_PREFIX_MAP: Record<string, () => string> = {
@@ -31,8 +30,6 @@ const SUB_SPORT_PREFIX_MAP: Record<string, () => string> = {
   virtual_activity: m.ui_sub_sport_virtual,
   gravel_cycling: m.ui_sub_sport_gravel,
   mountain: m.ui_sub_sport_mountain,
-  lap_swimming: m.ui_sub_sport_pool,
-  open_water: m.ui_sub_sport_open_water,
 };
 
 const ZONE_LABEL_MAP: Record<string, () => string> = {

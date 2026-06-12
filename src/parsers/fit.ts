@@ -41,10 +41,6 @@ const mapFitSportToAppSport = (fitSport?: string): Sport | undefined => {
       return 'running';
     case 'cycling':
       return 'cycling';
-    case 'swimming':
-    case 'lap_swimming':
-    case 'open_water':
-      return 'swimming';
     default:
       return;
   }

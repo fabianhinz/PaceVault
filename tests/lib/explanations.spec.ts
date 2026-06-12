@@ -33,7 +33,7 @@ const REQUIRED_FIELDS: (keyof MetricExplanation)[] = [
   'sports',
 ];
 
-const VALID_SPORTS = ['running', 'cycling', 'swimming', 'all'] as const;
+const VALID_SPORTS = ['running', 'cycling', 'all'] as const;
 
 describe('Metric Explanation Registry', () => {
   it('has an entry for every MetricId', () => {

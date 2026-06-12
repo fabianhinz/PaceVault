@@ -99,7 +99,7 @@ export const seedOnboardingComplete = async (page: Page) => {
  * the session list actually reads for rendering and filtering.
  */
 interface SeedSession {
-  sport: 'running' | 'cycling' | 'swimming';
+  sport: 'running' | 'cycling';
   date: number;
   name?: string;
   duration?: number;
@@ -225,7 +225,7 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
 };
 
 interface SeedCoachSession {
-  sport: 'running' | 'cycling' | 'swimming';
+  sport: 'running' | 'cycling';
   date: number;
   tss?: number;
 }

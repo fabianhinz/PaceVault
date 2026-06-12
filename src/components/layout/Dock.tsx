@@ -48,7 +48,6 @@ const sportOptions: FilterOption<Sport | 'all'>[] = [
   { value: 'all', label: m.ui_dock_sport_all() },
   { value: 'running', label: m.ui_dock_sport_run() },
   { value: 'cycling', label: m.ui_dock_sport_cycle() },
-  { value: 'swimming', label: m.ui_dock_sport_swim() },
 ];
 
 const dockItemMiniClass =

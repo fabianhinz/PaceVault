@@ -72,8 +72,6 @@
   --color-sport-running-muted: #22c55e33;
   --color-sport-cycling: var(--color-blue-400);
   --color-sport-cycling-muted: #3b82f633;
-  --color-sport-swimming: var(--color-cyan-400);
-  --color-sport-swimming-muted: #22d3ee33;
 
   /* ── Semantic: Chart data series ── */
   --color-chart-fitness: var(--color-blue-500);

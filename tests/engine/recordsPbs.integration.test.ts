@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { detectNewPBs, mergePBs } from '@/lib/records.ts';
-import {
-  makeCyclingRecords,
-  makeRunningRecords,
-  makeSwimmingRecords,
-} from '@tests/factories/records.ts';
+import { makeCyclingRecords, makeRunningRecords } from '@tests/factories/records.ts';
 import type { PersonalBest } from '@/packages/engine/types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -111,20 +107,6 @@ describe('detectNewPBs — running distances', () => {
     // Slow session should NOT beat fast session times
     const slowDistancePBs = slowPBs.filter((pb) => pb.category === 'fastest-distance');
     expect(slowDistancePBs.length).toBe(0);
-  });
-});
-
-describe('detectNewPBs — swimming distances', () => {
-  it('detects distance PBs for swimming', () => {
-    const now = Date.now();
-    // 1200s at 1.5 m/s ≈ 1800m
-    const records = makeSwimmingRecords('s1', 1200, { baseSpeed: 1.5 });
-
-    const newPBs = detectNewPBs('s1', now, 'swimming', records, []);
-    const distancePBs = newPBs.filter((pb) => pb.category === 'fastest-distance');
-
-    expect(distancePBs.length).toBeGreaterThanOrEqual(3); // 100m, 400m, 1000m at least
-    expect(distancePBs.every((pb) => pb.sport === 'swimming')).toBe(true);
   });
 });
 

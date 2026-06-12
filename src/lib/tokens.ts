@@ -40,7 +40,6 @@ export const tokens = {
   // Sport
   sportRunning: '#4ade80',
   sportCycling: '#60a5fa',
-  sportSwimming: '#22d3ee',
 
   // Chart data series
   chartFitness: '#3b82f6',

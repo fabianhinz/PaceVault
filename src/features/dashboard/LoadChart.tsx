@@ -33,18 +33,16 @@ import type { Sport } from '@/packages/engine/types.ts';
 
 type GroupBy = 'day' | 'week' | 'month';
 
-const SPORTS: Sport[] = ['running', 'cycling', 'swimming'];
+const SPORTS: Sport[] = ['running', 'cycling'];
 
 const sportColors: Record<Sport, string> = {
   running: tokens.sportRunning,
   cycling: tokens.sportCycling,
-  swimming: tokens.sportSwimming,
 };
 
 const sportNames: Record<Sport, () => string> = {
   running: m.ui_sport_running,
   cycling: m.ui_sport_cycling,
-  swimming: m.ui_sport_swimming,
 };
 
 const groupByTabs: { key: GroupBy; label: () => string; icon: LucideIcon }[] = [
@@ -94,7 +92,6 @@ export const LoadChart = () => {
         tss: d.tss,
         running: sportEntry.running ?? 0,
         cycling: sportEntry.cycling ?? 0,
-        swimming: sportEntry.swimming ?? 0,
       };
     });
   }, [
@@ -117,26 +114,21 @@ export const LoadChart = () => {
   const groupedData = useMemo(() => {
     if (groupBy === 'day') return chartData;
 
-    const buckets = new Map<
-      string,
-      { tss: number; running: number; cycling: number; swimming: number }
-    >();
+    const buckets = new Map<string, { tss: number; running: number; cycling: number }>();
     for (const d of chartData) {
       const key = groupBy === 'week' ? getMondayOfWeek(d.date) : getMonthKey(d.date);
-      const prev = buckets.get(key) ?? { tss: 0, running: 0, cycling: 0, swimming: 0 };
+      const prev = buckets.get(key) ?? { tss: 0, running: 0, cycling: 0 };
       prev.tss += d.tss;
       prev.running += d.running;
       prev.cycling += d.cycling;
-      prev.swimming += d.swimming;
       buckets.set(key, prev);
     }
 
-    return Array.from(buckets, ([date, { tss, running, cycling, swimming }]) => ({
+    return Array.from(buckets, ([date, { tss, running, cycling }]) => ({
       date,
       tss: parseFloat(tss.toFixed(1)),
       running: parseFloat(running.toFixed(1)),
       cycling: parseFloat(cycling.toFixed(1)),
-      swimming: parseFloat(swimming.toFixed(1)),
     }));
   }, [chartData, groupBy]);
 

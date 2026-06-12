@@ -82,17 +82,6 @@ describe('validateRecords', () => {
     expect(warnings.find((w) => w.field === 'speed')?.message).toContain('25 km/h');
   });
 
-  it('warns when swimming speed exceeds 15 km/h in more than 10 records', () => {
-    const records: SessionRecord[] = [];
-    for (let i = 0; i < 15; i++) {
-      // 20 km/h = 5.56 m/s
-      records.push(makeRecord({ timestamp: i, speed: 5.56 }));
-    }
-    const warnings = validateRecords(records, 'swimming');
-    expect(warnings.some((w) => w.field === 'speed')).toBe(true);
-    expect(warnings.find((w) => w.field === 'speed')?.message).toContain('15 km/h');
-  });
-
   it('returns multiple warnings when multiple sensor issues exist', () => {
     const records: SessionRecord[] = [];
     for (let i = 0; i < 20; i++) {

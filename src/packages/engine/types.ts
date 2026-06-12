@@ -2,7 +2,7 @@
 // Engine-owned types — all pure data definitions used by engine functions
 // ---------------------------------------------------------------------------
 
-export type Sport = 'running' | 'cycling' | 'swimming';
+export type Sport = 'running' | 'cycling';
 export type Gender = 'male' | 'female' | 'other';
 
 export type FormStatus = 'detraining' | 'fresh' | 'neutral' | 'optimal' | 'overload';

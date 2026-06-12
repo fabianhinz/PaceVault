@@ -26,13 +26,10 @@ describe('useFilteredMetrics — filtering sessions before computeMetrics', () =
 
   it('filtering to a sport with no sessions returns empty history', () => {
     const now = Date.now();
-    const sessions = [
-      makeSession({ id: 'c1', sport: 'cycling', date: now - 2 * DAY_MS, tss: 100 }),
-      makeSession({ id: 'r1', sport: 'running', date: now - 1 * DAY_MS, tss: 80 }),
-    ];
+    const sessions = [makeSession({ id: 'r1', sport: 'running', date: now - 1 * DAY_MS, tss: 80 })];
 
-    const swimmingOnly = sessions.filter((s) => s.sport === 'swimming');
-    const history = computeMetrics(swimmingOnly, { endDate: now });
+    const cyclingOnly = sessions.filter((s) => s.sport === 'cycling');
+    const history = computeMetrics(cyclingOnly, { endDate: now });
 
     expect(history).toEqual([]);
   });
@@ -42,7 +39,7 @@ describe('useFilteredMetrics — filtering sessions before computeMetrics', () =
     const sessions = [
       makeSession({ id: 'c1', sport: 'cycling', date: now - 3 * DAY_MS, tss: 100 }),
       makeSession({ id: 'r1', sport: 'running', date: now - 2 * DAY_MS, tss: 80 }),
-      makeSession({ id: 's1', sport: 'swimming', date: now - 1 * DAY_MS, tss: 60 }),
+      makeSession({ id: 'r2', sport: 'running', date: now - 1 * DAY_MS, tss: 60 }),
     ];
 
     const allHistory = computeMetrics(sessions, { endDate: now });
