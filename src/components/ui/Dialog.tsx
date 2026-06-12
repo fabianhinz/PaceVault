@@ -30,6 +30,7 @@ export const DialogContent = (props: DialogPrimitive.DialogContentProps) => {
           // max-lg variant so the safe-area padding survives consumer p-* overrides.
           'inset-x-0 bottom-0 w-full max-h-[85dvh] rounded-t-2xl',
           'max-lg:pb-[max(1.5rem,env(safe-area-inset-bottom))]',
+          'max-lg:pl-[max(1.5rem,env(safe-area-inset-left))] max-lg:pr-[max(1.5rem,env(safe-area-inset-right))]',
           'data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
           // lg+ (desktop): centered modal — max-w-lg, capped to viewport minus 200px padding, zooms in
           'lg:inset-x-auto lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-xl',

@@ -34,8 +34,11 @@ export const MapPopupShell = (props: MapPopupShellProps) => {
 
   let cardSizeClasses = '';
   if (!isDesktop) {
-    cardSizeClasses =
-      'w-full h-[50dvh] rounded-t-2xl rounded-b-none border-x-0 border-b-0 pb-[max(0.5rem,env(safe-area-inset-bottom))]';
+    cardSizeClasses = cn(
+      'w-full h-[50dvh] landscape:h-[75dvh] rounded-t-2xl rounded-b-none border-x-0 border-b-0',
+      'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
+      'pl-[max(0.5rem,env(safe-area-inset-left))] pr-[max(0.5rem,env(safe-area-inset-right))]',
+    );
   } else if (!props.isExpanded) {
     cardSizeClasses = props.desktopSizeClasses;
   }
