@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { SessionItem } from '@/features/sessions/SessionItem.tsx';
 import { useExpandCard } from '@/lib/hooks/useExpandCard.ts';
-import { useLocalSparklines } from './hooks/useLocalSparklines.ts';
 import { usePopupPosition } from '../map/hooks/usePopupPosition.ts';
 import { useDismiss } from '../map/hooks/useDismiss.ts';
 import { cn } from '@/lib/utils.ts';
@@ -29,7 +28,6 @@ export const SessionsPickPopup = (props: SessionsPickPopupProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const expandCard = useExpandCard(cardRef);
   const popupRef = useDismiss(props.onClose, !expandCard.isExpanded);
-  const sparklines = useLocalSparklines();
 
   const style = usePopupPosition(props.info.x, props.info.y);
 
@@ -77,9 +75,6 @@ export const SessionsPickPopup = (props: SessionsPickPopupProps) => {
             <SessionItem
               key={session.id}
               session={session}
-              syncId={`${session.id}-source:pickPopup`}
-              isToggled={sparklines.toggledIds.has(session.id)}
-              onToggleSparkline={() => sparklines.toggle(session.id)}
               onNavigate={() => {
                 props.onClose();
                 if (useLayoutStore.getState().mobileMapActive) {

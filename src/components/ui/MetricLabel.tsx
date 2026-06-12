@@ -80,10 +80,6 @@ export const MetricLabel = (props: MetricLabelProps) => {
 
             <Typography>{explanation.oneLiner}</Typography>
 
-            <Typography className="italic">
-              {m.ui_think_of_it_as()} {explanation.analogy}
-            </Typography>
-
             <Typography
               variant="caption"
               as="p"

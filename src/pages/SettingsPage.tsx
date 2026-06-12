@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { m } from '@/paraglide/messages.js';
 import { getLocale, setLocale, locales, type Locale } from '@/paraglide/runtime.js';
 import { useUserStore } from '@/store/user.ts';
-import { useLayoutStore } from '@/store/layout.ts';
 import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { List, ListItem } from '@/components/ui/List.tsx';
@@ -35,9 +34,6 @@ export const SettingsPage = () => {
   const tab = rawTab && validTabs.has(rawTab) ? rawTab : 'general';
 
   const profile = useUserStore((s) => s.profile);
-  const compactLayout = useLayoutStore((s) => s.compactLayout);
-  const dockExpanded = useLayoutStore((s) => s.dockExpanded);
-  const mapPitch = useLayoutStore((s) => s.mapPitch);
   const [, startTransition] = useTransition();
 
   const handleTabChange = (value: string) => {
@@ -89,50 +85,6 @@ export const SettingsPage = () => {
                 />
               </ListItem>
               <AutoSessionNamesToggle />
-            </List>
-          </Card>
-
-          <Card>
-            <CardHeader title={m.ui_settings_layout()} />
-            <List className="space-y-4">
-              <ListItem
-                primary={m.ui_settings_compact_layout()}
-                secondary={m.ui_settings_compact_layout_desc()}
-              >
-                <Switch
-                  checked={compactLayout}
-                  onCheckedChange={() => useLayoutStore.getState().toggleCompactLayout()}
-                />
-              </ListItem>
-              <ListItem
-                primary={m.ui_settings_expanded_dock()}
-                secondary={m.ui_settings_expanded_dock_desc()}
-              >
-                <Switch
-                  checked={dockExpanded}
-                  onCheckedChange={() => useLayoutStore.getState().toggleDock()}
-                />
-              </ListItem>
-              <ListItem
-                primary={m.ui_settings_map_pitch()}
-                secondary={m.ui_settings_map_pitch_desc()}
-              >
-                <SelectRoot
-                  value={String(mapPitch)}
-                  onValueChange={(v) =>
-                    useLayoutStore.getState().setMapPitch(Number(v) as 0 | 30 | 60)
-                  }
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">{m.ui_settings_map_pitch_flat()}</SelectItem>
-                    <SelectItem value="30">{m.ui_settings_map_pitch_low()}</SelectItem>
-                    <SelectItem value="60">{m.ui_settings_map_pitch_high()}</SelectItem>
-                  </SelectContent>
-                </SelectRoot>
-              </ListItem>
             </List>
           </Card>
 

@@ -217,16 +217,5 @@ test.describe('Dock filters', () => {
       await expect(page.locator('[data-testid="session-item"]')).toHaveCount(3);
       await expect(dockBadge(page)).not.toBeVisible();
     });
-
-    test('persists across reload', async ({ page }) => {
-      const dialog = await openDialog(page);
-      await dialog.getByLabel(/duration \(h\)/i).fill('1');
-      await dialog.getByRole('button', { name: /apply/i }).click();
-      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
-
-      await page.reload();
-      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
-      await expect(dockBadge(page)).toBeVisible();
-    });
   });
 });

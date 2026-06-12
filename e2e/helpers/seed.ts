@@ -21,11 +21,9 @@ export const seedOnboardingComplete = async (page: Page) => {
 
     const layoutState = JSON.stringify({
       state: {
-        dockExpanded: true,
-        compactLayout: true,
         onboardingComplete: true,
       },
-      version: 1,
+      version: 3,
     });
 
     const userState = JSON.stringify({
@@ -132,11 +130,9 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
 
       const layoutState = JSON.stringify({
         state: {
-          dockExpanded: true,
-          compactLayout: true,
           onboardingComplete: true,
         },
-        version: 1,
+        version: 3,
       });
 
       const userState = JSON.stringify({
@@ -264,8 +260,8 @@ export const seedCoachWithThresholdPace = async (
       const now = Date.now();
 
       const layoutState = JSON.stringify({
-        state: { dockExpanded: true, compactLayout: true, onboardingComplete: true },
-        version: 1,
+        state: { onboardingComplete: true },
+        version: 3,
       });
 
       const userState = JSON.stringify({

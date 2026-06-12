@@ -7,16 +7,14 @@ export const useMapCameraEffect = (
   mapRef: React.RefObject<MapRef | null>,
   tracks: MapTrack[],
   openedSessionId: string | null,
-  compactLayout: boolean,
   mapLoaded: boolean,
-  mapPitch: number,
 ) => {
   useEffect(() => {
     if (tracks.length === 0 || !mapRef.current || !mapLoaded) return;
 
     const isDesktop = window.matchMedia('(min-width: 768px)').matches;
     let rightPad = 0;
-    if (compactLayout && isDesktop) {
+    if (isDesktop) {
       rightPad = window.innerWidth * 0.4;
     }
 
@@ -32,7 +30,6 @@ export const useMapCameraEffect = (
         {
           padding: { top: 80, bottom: 80, left: 80, right: 80 + rightPad },
           duration: 1200,
-          pitch: mapPitch,
         },
       );
       return;
@@ -48,8 +45,7 @@ export const useMapCameraEffect = (
       {
         padding: { top: 50, bottom: 50, left: 50, right: 50 + rightPad },
         duration: 1000,
-        pitch: mapPitch,
       },
     );
-  }, [tracks, openedSessionId, compactLayout, mapLoaded, mapRef, mapPitch]);
+  }, [tracks, openedSessionId, mapLoaded, mapRef]);
 };
