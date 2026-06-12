@@ -29,7 +29,6 @@ const REQUIRED_FIELDS: (keyof MetricExplanation)[] = [
   'shortLabel',
   'friendlyName',
   'oneLiner',
-  'analogy',
   'range',
   'sports',
 ];

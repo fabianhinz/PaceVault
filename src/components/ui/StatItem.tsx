@@ -14,7 +14,7 @@ interface StatItemProps {
 export const StatItem = (props: StatItemProps) => {
   return (
     <div className="space-y-0.5 h-[70px]">
-      <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-1">
         <Typography variant="overline" as="span">
           {props.label}
         </Typography>

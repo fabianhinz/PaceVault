@@ -12,7 +12,6 @@ import { DeckMetricsOverlay } from './DeckMetricsOverlay.tsx';
 import { SessionsPickPopup } from '../sessions/SessionsPickPopup.tsx';
 import { LapPickPopup } from '../sessions/laps/LapPickPopup.tsx';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { useLayoutStore } from '@/store/layout.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map-attribution.css';
@@ -38,15 +37,13 @@ export const MapBackground = (props: MapBackgroundProps) => {
   const focusedSport = useMapFocusStore((s) => s.focusedSport);
   const focusedRecords = useMapFocusStore((s) => s.focusedRecords);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const compactLayout = useLayoutStore((s) => s.compactLayout);
-  const mapPitch = useLayoutStore((s) => s.mapPitch);
 
   const match = useMatch('/sessions/:id');
   useEffect(() => {
     useMapFocusStore.getState().setOpenedSession(match?.params.id ?? null);
   }, [match?.params.id]);
 
-  useMapCameraEffect(mapRef, mapTracks.tracks, openedSessionId, compactLayout, mapLoaded, mapPitch);
+  useMapCameraEffect(mapRef, mapTracks.tracks, openedSessionId, mapLoaded);
 
   const backfillPct =
     backfill.total > 0 ? Math.min(backfill.processed, backfill.total) / backfill.total : 0;

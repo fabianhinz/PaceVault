@@ -18,7 +18,7 @@ import { useFileDropEffect } from '@/features/sessions/hooks/useFileDropEffect.t
 import { cn } from '@/lib/utils.ts';
 import { cardClass } from '@/components/ui/Card.tsx';
 import { useSlideIndicator } from '@/components/ui/SlideIndicator.tsx';
-import { useDockExpanded } from '@/lib/hooks/useDockExpanded.ts';
+import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { MobileMapFab } from './MobileMapFab.tsx';
@@ -70,7 +70,7 @@ export const Dock = () => {
   const dockBarRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLElement | null)[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dockExpanded = useDockExpanded();
+  const dockExpanded = useIsDesktop();
   const indicatorElement = useSlideIndicator(dockBarRef, tabRefs, activeIndex, dockExpanded);
   const upload = useFileUpload(fileInputRef);
   useFileDropEffect(upload.handleFiles, !upload.uploading);
@@ -380,11 +380,6 @@ export const Dock = () => {
       </div>
 
       <AttributeFilterDialog open={attrDialogOpen} onOpenChange={setAttrDialogOpen} />
-
-      {/* Backdrop — closes reveals on click, purely in React's event system */}
-      {revealStack.length > 0 && (
-        <div className="fixed inset-0 z-40" onClick={closeAll} aria-hidden="true" />
-      )}
     </>
   );
 };

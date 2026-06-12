@@ -4,14 +4,8 @@ import { immer } from 'zustand/middleware/immer';
 import { idbStorage } from '@/lib/idbStorage.ts';
 
 interface LayoutState {
-  dockExpanded: boolean;
-  toggleDock: () => void;
-  compactLayout: boolean;
-  toggleCompactLayout: () => void;
   onboardingComplete: boolean;
   completeOnboarding: () => void;
-  mapPitch: 0 | 30 | 60;
-  setMapPitch: (pitch: 0 | 30 | 60) => void;
   demoMode: boolean;
   setDemoMode: (v: boolean) => void;
   mobileMapActive: boolean;
@@ -22,20 +16,8 @@ export const useLayoutStore = create<LayoutState>()(
   immer(
     persist(
       (set) => ({
-        dockExpanded: true,
-        toggleDock: () =>
-          set((draft) => {
-            draft.dockExpanded = !draft.dockExpanded;
-          }),
-        compactLayout: false,
-        toggleCompactLayout: () =>
-          set((draft) => {
-            draft.compactLayout = !draft.compactLayout;
-          }),
         onboardingComplete: false,
-        completeOnboarding: () => set({ onboardingComplete: true, compactLayout: true }),
-        mapPitch: 0,
-        setMapPitch: (pitch) => set({ mapPitch: pitch }),
+        completeOnboarding: () => set({ onboardingComplete: true }),
         demoMode: false,
         setDemoMode: (v) => set({ demoMode: v }),
         mobileMapActive: false,

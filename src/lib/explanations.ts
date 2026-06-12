@@ -34,7 +34,6 @@ export interface MetricExplanation {
   shortLabel: string;
   friendlyName: string;
   oneLiner: string;
-  analogy: string;
   range: string;
   sports: ('running' | 'cycling' | 'swimming' | 'all')[];
 }
@@ -48,7 +47,6 @@ const tss: MetricExplanation = {
   shortLabel: m.exp_tss_shortLabel(),
   friendlyName: m.exp_tss_friendlyName(),
   oneLiner: m.exp_tss_oneLiner(),
-  analogy: m.exp_tss_analogy(),
   range: m.exp_tss_range(),
   sports: ['cycling'],
 };
@@ -58,7 +56,6 @@ const trimp: MetricExplanation = {
   shortLabel: m.exp_trimp_shortLabel(),
   friendlyName: m.exp_trimp_friendlyName(),
   oneLiner: m.exp_trimp_oneLiner(),
-  analogy: m.exp_trimp_analogy(),
   range: m.exp_trimp_range(),
   sports: ['all'],
 };
@@ -68,7 +65,6 @@ const duration: MetricExplanation = {
   shortLabel: m.exp_duration_shortLabel(),
   friendlyName: m.exp_duration_friendlyName(),
   oneLiner: m.exp_duration_oneLiner(),
-  analogy: m.exp_duration_analogy(),
   range: m.exp_duration_range(),
   sports: ['all'],
 };
@@ -82,7 +78,6 @@ const ctl: MetricExplanation = {
   shortLabel: m.exp_ctl_shortLabel(),
   friendlyName: m.exp_ctl_friendlyName(),
   oneLiner: m.exp_ctl_oneLiner(),
-  analogy: m.exp_ctl_analogy(),
   range: m.exp_ctl_range(),
   sports: ['all'],
 };
@@ -92,7 +87,6 @@ const atl: MetricExplanation = {
   shortLabel: m.exp_atl_shortLabel(),
   friendlyName: m.exp_atl_friendlyName(),
   oneLiner: m.exp_atl_oneLiner(),
-  analogy: m.exp_atl_analogy(),
   range: m.exp_atl_range(),
   sports: ['all'],
 };
@@ -102,7 +96,6 @@ const tsb: MetricExplanation = {
   shortLabel: m.exp_tsb_shortLabel(),
   friendlyName: m.exp_tsb_friendlyName(),
   oneLiner: m.exp_tsb_oneLiner(),
-  analogy: m.exp_tsb_analogy(),
   range: m.exp_tsb_range(),
   sports: ['all'],
 };
@@ -112,7 +105,6 @@ const acwr: MetricExplanation = {
   shortLabel: m.exp_acwr_shortLabel(),
   friendlyName: m.exp_acwr_friendlyName(),
   oneLiner: m.exp_acwr_oneLiner(),
-  analogy: m.exp_acwr_analogy(),
   range: m.exp_acwr_range(),
   sports: ['all'],
 };
@@ -126,7 +118,6 @@ const normalizedPower: MetricExplanation = {
   shortLabel: m.exp_normalizedPower_shortLabel(),
   friendlyName: m.exp_normalizedPower_friendlyName(),
   oneLiner: m.exp_normalizedPower_oneLiner(),
-  analogy: m.exp_normalizedPower_analogy(),
   range: m.exp_normalizedPower_range(),
   sports: ['cycling'],
 };
@@ -136,7 +127,6 @@ const gradeAdjustedPace: MetricExplanation = {
   shortLabel: m.exp_gradeAdjustedPace_shortLabel(),
   friendlyName: m.exp_gradeAdjustedPace_friendlyName(),
   oneLiner: m.exp_gradeAdjustedPace_oneLiner(),
-  analogy: m.exp_gradeAdjustedPace_analogy(),
   range: m.exp_gradeAdjustedPace_range(),
   sports: ['running'],
 };
@@ -150,7 +140,6 @@ const recovery: MetricExplanation = {
   shortLabel: m.exp_recovery_shortLabel(),
   friendlyName: m.exp_recovery_friendlyName(),
   oneLiner: m.exp_recovery_oneLiner(),
-  analogy: m.exp_recovery_analogy(),
   range: m.exp_recovery_range(),
   sports: ['all'],
 };
@@ -160,7 +149,6 @@ const pacingTrend: MetricExplanation = {
   shortLabel: m.exp_pacingTrend_shortLabel(),
   friendlyName: m.exp_pacingTrend_friendlyName(),
   oneLiner: m.exp_pacingTrend_oneLiner(),
-  analogy: m.exp_pacingTrend_analogy(),
   range: m.exp_pacingTrend_range(),
   sports: ['running', 'cycling'],
 };
@@ -174,7 +162,6 @@ const trainingZones: MetricExplanation = {
   shortLabel: m.exp_trainingZones_shortLabel(),
   friendlyName: m.exp_trainingZones_friendlyName(),
   oneLiner: m.exp_trainingZones_oneLiner(),
-  analogy: m.exp_trainingZones_analogy(),
   range: m.exp_trainingZones_range(),
   sports: ['running'],
 };
@@ -188,7 +175,6 @@ const aerobicTE: MetricExplanation = {
   shortLabel: m.exp_aerobicTE_shortLabel(),
   friendlyName: m.exp_aerobicTE_friendlyName(),
   oneLiner: m.exp_aerobicTE_oneLiner(),
-  analogy: m.exp_aerobicTE_analogy(),
   range: m.exp_aerobicTE_range(),
   sports: ['all'],
 };
@@ -198,7 +184,6 @@ const anaerobicTE: MetricExplanation = {
   shortLabel: m.exp_anaerobicTE_shortLabel(),
   friendlyName: m.exp_anaerobicTE_friendlyName(),
   oneLiner: m.exp_anaerobicTE_oneLiner(),
-  analogy: m.exp_anaerobicTE_analogy(),
   range: m.exp_anaerobicTE_range(),
   sports: ['all'],
 };
@@ -212,7 +197,6 @@ const avgHr: MetricExplanation = {
   shortLabel: m.exp_avgHr_shortLabel(),
   friendlyName: m.exp_avgHr_friendlyName(),
   oneLiner: m.exp_avgHr_oneLiner(),
-  analogy: m.exp_avgHr_analogy(),
   range: m.exp_avgHr_range(),
   sports: ['all'],
 };
@@ -222,7 +206,6 @@ const avgPace: MetricExplanation = {
   shortLabel: m.exp_avgPace_shortLabel(),
   friendlyName: m.exp_avgPace_friendlyName(),
   oneLiner: m.exp_avgPace_oneLiner(),
-  analogy: m.exp_avgPace_analogy(),
   range: m.exp_avgPace_range(),
   sports: ['running', 'swimming'],
 };
@@ -232,7 +215,6 @@ const avgSpeed: MetricExplanation = {
   shortLabel: m.exp_avgSpeed_shortLabel(),
   friendlyName: m.exp_avgSpeed_friendlyName(),
   oneLiner: m.exp_avgSpeed_oneLiner(),
-  analogy: m.exp_avgSpeed_analogy(),
   range: m.exp_avgSpeed_range(),
   sports: ['cycling'],
 };
@@ -242,7 +224,6 @@ const avgPower: MetricExplanation = {
   shortLabel: m.exp_avgPower_shortLabel(),
   friendlyName: m.exp_avgPower_friendlyName(),
   oneLiner: m.exp_avgPower_oneLiner(),
-  analogy: m.exp_avgPower_analogy(),
   range: m.exp_avgPower_range(),
   sports: ['cycling'],
 };
@@ -252,7 +233,6 @@ const elevation: MetricExplanation = {
   shortLabel: m.exp_elevation_shortLabel(),
   friendlyName: m.exp_elevation_friendlyName(),
   oneLiner: m.exp_elevation_oneLiner(),
-  analogy: m.exp_elevation_analogy(),
   range: m.exp_elevation_range(),
   sports: ['all'],
 };
@@ -262,7 +242,6 @@ const cadence: MetricExplanation = {
   shortLabel: m.exp_cadence_shortLabel(),
   friendlyName: m.exp_cadence_friendlyName(),
   oneLiner: m.exp_cadence_oneLiner(),
-  analogy: m.exp_cadence_analogy(),
   range: m.exp_cadence_range(),
   sports: ['all'],
 };
@@ -276,7 +255,6 @@ const vdot: MetricExplanation = {
   shortLabel: m.exp_vdot_shortLabel(),
   friendlyName: m.exp_vdot_friendlyName(),
   oneLiner: m.exp_vdot_oneLiner(),
-  analogy: m.exp_vdot_analogy(),
   range: m.exp_vdot_range(),
   sports: ['running'],
 };

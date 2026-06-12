@@ -6,7 +6,8 @@ import { List, ListItem } from '@/components/ui/List.tsx';
 import { Typography } from '@/components/ui/Typography';
 
 const GITHUB_URL = 'https://github.com/fabianhinz/PaceVault';
-const SOURCES_URL = 'https://github.com/fabianhinz/PaceVault/blob/main/src/engine/SOURCES.md';
+const SOURCES_URL =
+  'https://github.com/fabianhinz/PaceVault/blob/main/src/packages/engine/SOURCES.md';
 
 const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
 
