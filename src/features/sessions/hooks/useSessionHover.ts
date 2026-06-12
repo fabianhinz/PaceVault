@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { useIsDesktop } from '@/lib/hooks/useIsDesktop';
+import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 
 export const useSessionHover = (sessionId: string) => {
   const isDesktop = useIsDesktop();

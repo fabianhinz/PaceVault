@@ -23,7 +23,6 @@ export const SessionItem = (props: SessionItemProps) => {
     <Card
       data-testid="session-item"
       role="button"
-      tabIndex={0}
       className={cn('hover:bg-white/10 cursor-pointer', props.className)}
       onClick={handleNavigate}
       onPointerEnter={sessionHover.onPointerEnter}
