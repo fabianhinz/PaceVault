@@ -30,8 +30,10 @@ export const AppLayout = () => {
             data-map-active={mobileMapActive || undefined}
             className={cn(
               'relative z-10 p-6 w-full transition-all duration-300 ease-in-out',
+              'pt-[max(1.5rem,env(safe-area-inset-top))]',
+              'pl-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))]',
               'mx-auto max-w-[1280px] lg:pl-0 lg:ml-auto lg:mr-0 lg:max-w-[40dvw]',
-              isDesktop ? 'pb-28' : 'pb-20',
+              isDesktop ? 'pb-28' : 'pb-[calc(5rem+env(safe-area-inset-bottom))]',
               !isDesktop && mobileMapActive && 'translate-x-full opacity-0 pointer-events-none',
             )}
           >

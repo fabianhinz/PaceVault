@@ -84,6 +84,11 @@ export const Dock = () => {
 
   const closeAll = useCallback(() => setRevealStack([]), []);
 
+  const handleTabClick = useCallback(() => {
+    closeAll();
+    window.scrollTo({ top: 0 });
+  }, [closeAll]);
+
   const closeFrom = useCallback(
     (layer: DockRevealLayer) =>
       setRevealStack((prev) => {
@@ -164,6 +169,7 @@ export const Dock = () => {
             cardClass,
             'lg:flex-row lg:items-center',
             'border-0 border-t rounded-none',
+            'pb-[env(safe-area-inset-bottom)] lg:pb-0',
             'lg:border lg:rounded-2xl',
           )}
         >
@@ -261,7 +267,7 @@ export const Dock = () => {
                 }}
                 to={tab.to}
                 end={tab.to === '/'}
-                onClick={closeAll}
+                onClick={handleTabClick}
                 aria-label={tab.label()}
                 className={({ isActive }) =>
                   cn(
