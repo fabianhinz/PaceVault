@@ -1,6 +1,6 @@
 import { Info } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
-import { PopoverRoot, PopoverTrigger, PopoverContent } from './Popover.tsx';
+import { ResponsivePopover } from './ResponsivePopover.tsx';
 import { METRIC_EXPLANATIONS, type MetricId } from '@/lib/explanations.ts';
 import { useUserStore } from '@/store/user.ts';
 import { cn } from '@/lib/utils.ts';
@@ -55,8 +55,11 @@ export const MetricLabel = (props: MetricLabelProps) => {
       </span>
 
       {showHelp && (
-        <PopoverRoot>
-          <PopoverTrigger asChild>
+        <ResponsivePopover
+          title={explanation.friendlyName}
+          side="top"
+          className="space-y-2"
+          trigger={
             <Button
               variant="ghost"
               size="icon"
@@ -66,30 +69,28 @@ export const MetricLabel = (props: MetricLabelProps) => {
             >
               <Info size={size === 'sm' ? 14 : 16} strokeWidth={1.5} className="shrink-0" />
             </Button>
-          </PopoverTrigger>
-
-          <PopoverContent side="top" className="space-y-2">
-            <div className="flex items-baseline gap-2">
-              <Typography variant="subtitle1" className="font-semibold">
-                {explanation.friendlyName}
-              </Typography>
-              <Typography variant="caption" className="rounded bg-white/10 px-1.5 py-0.5">
-                {explanation.shortLabel}
-              </Typography>
-            </div>
-
-            <Typography>{explanation.oneLiner}</Typography>
-
-            <Typography
-              variant="caption"
-              as="p"
-              color="textTertiary"
-              className="border-t border-white/10 pt-2"
-            >
-              {explanation.range}
+          }
+        >
+          <div className="flex items-baseline gap-2">
+            <Typography variant="subtitle1" className="font-semibold">
+              {explanation.friendlyName}
             </Typography>
-          </PopoverContent>
-        </PopoverRoot>
+            <Typography variant="caption" className="rounded bg-white/10 px-1.5 py-0.5">
+              {explanation.shortLabel}
+            </Typography>
+          </div>
+
+          <Typography>{explanation.oneLiner}</Typography>
+
+          <Typography
+            variant="caption"
+            as="p"
+            color="textTertiary"
+            className="border-t border-white/10 pt-2"
+          >
+            {explanation.range}
+          </Typography>
+        </ResponsivePopover>
       )}
     </span>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export const useDismiss = (onClose: () => void, escapeEnabled = true) => {
+export const useDismiss = (onClose: () => void, escapeEnabled = true, outsideEnabled = true) => {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -8,6 +8,7 @@ export const useDismiss = (onClose: () => void, escapeEnabled = true) => {
       if (e.key === 'Escape' && escapeEnabled) onClose();
     };
     const handleClickOutside = (e: MouseEvent) => {
+      if (!outsideEnabled) return;
       if (ref.current && !ref.current.contains(e.target as Node)) {
         onClose();
       }
@@ -18,7 +19,7 @@ export const useDismiss = (onClose: () => void, escapeEnabled = true) => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('pointerdown', handleClickOutside);
     };
-  }, [onClose, escapeEnabled]);
+  }, [onClose, escapeEnabled, outsideEnabled]);
 
   return ref;
 };
