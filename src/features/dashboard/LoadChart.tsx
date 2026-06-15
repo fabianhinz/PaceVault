@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   ComposedChart,
   Area,
@@ -66,12 +66,12 @@ export const LoadChart = () => {
   const dashboardZoom = useDashboardChartZoom();
   const sportFilter = useFiltersStore((s) => s.sportFilter);
 
-  const [showSportColors, setShowSportColors] = useState(false);
+  const showSportColors = useFiltersStore((s) => s.loadChartShowSportColors);
   const isSportColorDisabled = sportFilter !== 'all';
 
   useEffect(() => {
     if (isSportColorDisabled) {
-      setShowSportColors(false);
+      useFiltersStore.getState().setLoadChartShowSportColors(false);
     }
   }, [isSportColorDisabled]);
 
@@ -102,12 +102,12 @@ export const LoadChart = () => {
     showSportColors,
   ]);
 
-  const [groupBy, setGroupBy] = useState<GroupBy>('day');
+  const groupBy = useFiltersStore((s) => s.loadChartGroupBy);
   const isGroupingDisabled = dashboardZoom.range === '7d';
 
   useEffect(() => {
     if (isGroupingDisabled) {
-      setGroupBy('day');
+      useFiltersStore.getState().setLoadChartGroupBy('day');
     }
   }, [isGroupingDisabled]);
 
@@ -169,7 +169,9 @@ export const LoadChart = () => {
         <ListItem primary={m.ui_sport_color_title()} secondary={m.ui_sport_color_desc()}>
           <Switch
             checked={showSportColors}
-            onCheckedChange={setShowSportColors}
+            onCheckedChange={(checked) =>
+              useFiltersStore.getState().setLoadChartShowSportColors(checked)
+            }
             disabled={isSportColorDisabled}
           />
         </ListItem>
@@ -180,7 +182,7 @@ export const LoadChart = () => {
         return groupedData.length > 0 ? (
           <TabsPrimitive.Root
             value={groupBy}
-            onValueChange={(v) => setGroupBy(v as GroupBy)}
+            onValueChange={(v) => useFiltersStore.getState().setLoadChartGroupBy(v as GroupBy)}
             className="h-full flex flex-col"
           >
             <TabsPrimitive.List className="inline-flex gap-1 mb-1">

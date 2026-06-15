@@ -29,6 +29,8 @@ describe('useFiltersStore', () => {
       prevDashboardRange: null,
       sportFilter: 'all',
       attributeFilters: createEmptyAttributeFilters(),
+      loadChartShowSportColors: false,
+      loadChartGroupBy: 'week',
       groupedPBs: { data: {}, loading: false },
     });
     useSessionsStore.setState({ sessions: [] });
@@ -108,6 +110,39 @@ describe('useFiltersStore', () => {
       const persisted = options.partialize(useFiltersStore.getState());
       expect(persisted).toHaveProperty('attributeFilters');
       expect(persisted).not.toHaveProperty('groupedPBs');
+    });
+  });
+
+  describe('load chart preferences', () => {
+    it('defaults sport colors off and grouping to week', () => {
+      const state = useFiltersStore.getState();
+      expect(state.loadChartShowSportColors).toBe(false);
+      expect(state.loadChartGroupBy).toBe('week');
+    });
+
+    it('updates grouping to day', () => {
+      useFiltersStore.getState().setLoadChartGroupBy('day');
+      expect(useFiltersStore.getState().loadChartGroupBy).toBe('day');
+    });
+
+    it('toggles sport colors', () => {
+      useFiltersStore.getState().setLoadChartShowSportColors(true);
+      expect(useFiltersStore.getState().loadChartShowSportColors).toBe(true);
+    });
+
+    it('updates grouping', () => {
+      useFiltersStore.getState().setLoadChartGroupBy('week');
+      expect(useFiltersStore.getState().loadChartGroupBy).toBe('week');
+    });
+
+    it('persists load chart preferences', () => {
+      const options = useFiltersStore.persist.getOptions();
+      if (!options.partialize) {
+        throw new Error('partialize missing');
+      }
+      const persisted = options.partialize(useFiltersStore.getState());
+      expect(persisted).toHaveProperty('loadChartShowSportColors');
+      expect(persisted).toHaveProperty('loadChartGroupBy');
     });
   });
 
