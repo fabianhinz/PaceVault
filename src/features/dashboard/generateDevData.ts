@@ -67,7 +67,6 @@ const INTENSITY_CONFIG: Record<
   indoor: {
     running: { durationRange: [1800, 3000], speedRange: [0.7, 0.85], hrRange: [0.6, 0.7] },
     cycling: { durationRange: [1800, 3600], speedRange: [0.6, 0.75], hrRange: [0.6, 0.7] },
-    swimming: { durationRange: [1800, 3000], speedRange: [0.8, 1.0], hrRange: [0.6, 0.7] },
   },
 };
 

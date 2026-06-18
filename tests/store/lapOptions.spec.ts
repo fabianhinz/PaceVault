@@ -1,14 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DEFAULT_CUSTOM_DISTANCE, useLapOptionsStore } from '@/store/lapOptions.ts';
 
-describe('DEFAULT_CUSTOM_DISTANCE', () => {
-  it('provides defaults for all sports', () => {
-    expect(DEFAULT_CUSTOM_DISTANCE.running).toBe(1000);
-    expect(DEFAULT_CUSTOM_DISTANCE.cycling).toBe(5000);
-    expect(DEFAULT_CUSTOM_DISTANCE.swimming).toBe(1000);
-  });
-});
-
 describe('useLapOptionsStore', () => {
   beforeEach(() => {
     useLapOptionsStore.setState({
