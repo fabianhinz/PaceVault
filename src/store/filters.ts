@@ -45,7 +45,7 @@ export const useFiltersStore = create<FiltersState>()(
         prevDashboardRange: null,
         sportFilter: 'all',
         attributeFilters: createEmptyAttributeFilters(),
-        loadChartShowSportColors: false,
+        loadChartShowSportColors: true,
         loadChartGroupBy: 'week',
         groupedPBs: { data: {}, loading: false },
         setTimeRange: (r) => {
@@ -157,7 +157,7 @@ export const useFiltersStore = create<FiltersState>()(
         migrate: (persistedState, fromVersion) => {
           const state = persistedState as Partial<FiltersState>;
           if (fromVersion < 2) {
-            state.loadChartShowSportColors = false;
+            state.loadChartShowSportColors = true;
             state.loadChartGroupBy = 'week';
           }
           return state as FiltersState;
