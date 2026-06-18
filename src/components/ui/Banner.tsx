@@ -39,7 +39,7 @@ export const Banner = (props: BannerProps) => {
     <div
       {...rest}
       className={cn(
-        'flex flex-col justify-between gap-3 rounded-xl border px-4 py-2 text-sm',
+        'flex flex-col justify-between gap-3 rounded-xl border px-4 py-2 text-sm h-[80px]',
         classes.container,
         className,
       )}
@@ -48,7 +48,7 @@ export const Banner = (props: BannerProps) => {
         <Icon size={20} className={cn(classes.icon)} />
         <span>{children}</span>
       </div>
-      <div className="flex justify-end">{action}</div>
+      {action && <div className="flex justify-end">{action}</div>}
     </div>
   );
 };

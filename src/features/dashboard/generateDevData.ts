@@ -16,7 +16,7 @@ import {
 type RouteEntry = { name: string; polyline: string; distanceM: number };
 type RouteData = { running: RouteEntry[]; cycling: RouteEntry[] };
 
-type SessionIntent = 'long-run' | 'high-intensity' | 'easy' | 'recovery';
+type SessionIntent = 'long-run' | 'high-intensity' | 'easy' | 'recovery' | 'indoor';
 
 type ScheduledSession = {
   dayOffset: number;
@@ -62,6 +62,12 @@ const INTENSITY_CONFIG: Record<
   recovery: {
     running: { durationRange: [1500, 2400], speedRange: [0.65, 0.75], hrRange: [0.5, 0.6] },
     cycling: { durationRange: [1500, 2400], speedRange: [0.65, 0.75], hrRange: [0.5, 0.6] },
+  },
+  // Indoor/treadmill sessions: full records but no GPS — triggers the no-GPS banner
+  indoor: {
+    running: { durationRange: [1800, 3000], speedRange: [0.7, 0.85], hrRange: [0.6, 0.7] },
+    cycling: { durationRange: [1800, 3600], speedRange: [0.6, 0.75], hrRange: [0.6, 0.7] },
+    swimming: { durationRange: [1800, 3000], speedRange: [0.8, 1.0], hrRange: [0.6, 0.7] },
   },
 };
 
@@ -129,14 +135,16 @@ const generateRecordsWithGPS = (
     records = makeCyclingRecords(sessionId, durationSec, { basePower, baseHr });
   }
 
-  // Overlay GPS coordinates from real routes
-  const route = pickRoute(routeData, sport, intent);
-  const gpsPoints = decodeAndFitGPS(route.polyline, durationSec);
-  for (let ri = 0; ri < records.length; ri++) {
-    const gps = gpsPoints[ri];
-    const rec = records[ri];
-    if (gps && rec) {
-      records[ri] = { ...rec, lat: gps.lat, lng: gps.lng };
+  if (intent !== 'indoor') {
+    // Overlay GPS coordinates from real routes
+    const route = pickRoute(routeData, sport, intent);
+    const gpsPoints = decodeAndFitGPS(route.polyline, durationSec);
+    for (let ri = 0; ri < records.length; ri++) {
+      const gps = gpsPoints[ri];
+      const rec = records[ri];
+      if (gps && rec) {
+        records[ri] = { ...rec, lat: gps.lat, lng: gps.lng };
+      }
     }
   }
 
@@ -157,7 +165,7 @@ const WEEKLY_TEMPLATES: Array<DaySlot[]> = [
       { sport: 'running', intent: 'easy' },
     ],
     /* Thu */ [{ sport: 'running', intent: 'easy' }],
-    /* Fri */ [],
+    /* Fri */ [{ sport: 'running', intent: 'indoor' }],
     /* Sat */ [{ sport: 'running', intent: 'long-run' }],
     /* Sun */ [{ sport: 'cycling', intent: 'easy' }],
   ],
@@ -170,13 +178,13 @@ const WEEKLY_TEMPLATES: Array<DaySlot[]> = [
       { sport: 'running', intent: 'easy' },
       { sport: 'cycling', intent: 'easy' },
     ],
-    /* Fri */ [],
+    /* Fri */ [{ sport: 'cycling', intent: 'indoor' }],
     /* Sat */ [{ sport: 'running', intent: 'long-run' }],
     /* Sun */ [{ sport: 'running', intent: 'recovery' }],
   ],
   // Template C — long run on Sunday
   [
-    /* Mon */ [],
+    /* Mon */ [{ sport: 'running', intent: 'indoor' }],
     /* Tue */ [{ sport: 'running', intent: 'high-intensity' }],
     /* Wed */ [
       { sport: 'cycling', intent: 'easy' },

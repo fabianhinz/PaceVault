@@ -444,6 +444,7 @@
   "toast_reimport_failed": "{count} fehlgeschlagen",
   "ui_demo_banner_text": "Du erkundest PaceVault mit Testdaten",
   "ui_demo_banner_action": "Eigene Daten verwenden",
+  "ui_no_gps_banner_text": "Diese Einheit hat keine GPS-Daten — es gibt keine Route auf der Karte",
   "ui_label_min": "Min",
   "ui_label_avg": "Ø",
   "ui_label_max": "Max",

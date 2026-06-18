@@ -444,6 +444,7 @@
   "toast_reimport_failed": "{count} failed",
   "ui_demo_banner_text": "You're exploring PaceVault with test data",
   "ui_demo_banner_action": "Use your own data",
+  "ui_no_gps_banner_text": "This session has no GPS data — there's no route to map",
   "ui_label_min": "Min",
   "ui_label_avg": "Avg",
   "ui_label_max": "Max",
