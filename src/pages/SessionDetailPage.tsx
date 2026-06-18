@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.t
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/features/sessions/session/SessionActionsMenu.tsx';
 import { WeatherChips } from '@/features/sessions/session/WeatherChips.tsx';
+import { NoGpsBanner } from '@/features/sessions/session/NoGpsBanner.tsx';
 import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
 import { OverviewTab } from '@/features/sessions/session/OverviewTab.tsx';
 import { LapsTab } from '@/features/sessions/laps/LapsTab.tsx';
@@ -66,6 +67,8 @@ export const SessionDetailPage = () => {
 
   return (
     <div className="space-y-4">
+      <NoGpsBanner records={records} />
+
       <SessionHeader session={session} titleVariant="h2" titleAs="h1">
         <SessionActionsMenu session={session} />
       </SessionHeader>

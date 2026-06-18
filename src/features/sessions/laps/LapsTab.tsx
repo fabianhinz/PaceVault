@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Timer, Heart, Zap } from 'lucide-react';
 import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
 import { analyzeLaps, enrichAllLaps } from '@/lib/laps.ts';
@@ -6,7 +6,7 @@ import type { LapAnalysis, LapRecordEnrichment } from '@/lib/laps.ts';
 import { computeDynamicLaps } from '@/lib/dynamicLaps.ts';
 import { computeLapMarkers } from '@/lib/lapMarkers.ts';
 import type { LapMarkerMode } from '@/lib/lapMarkers.ts';
-import { DEFAULT_CUSTOM_DISTANCE } from '@/store/lapOptions.ts';
+import { useLapOptionsStore } from '@/store/lapOptions.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { prepareLapSplitsData, prepareLapHrData, prepareLapPowerData } from '@/lib/lapChartData.ts';
 import { tokens } from '@/lib/tokens.ts';
@@ -32,8 +32,8 @@ export const LapsTab = (props: LapsTabProps) => {
   const isRunning = props.session.sport === 'running';
   const sport = props.session.sport;
 
-  const [isDevice, setIsDevice] = useState(true);
-  const [splitDistance, setSplitDistance] = useState(() => DEFAULT_CUSTOM_DISTANCE[sport]);
+  const isDevice = useLapOptionsStore((s) => s.isDevice);
+  const splitDistance = useLapOptionsStore((s) => s.customDistance[sport]);
 
   const deviceAnalysis = useMemo(() => analyzeLaps(props.laps), [props.laps]);
   const deviceEnrichments = useMemo(
@@ -116,8 +116,10 @@ export const LapsTab = (props: LapsTabProps) => {
         maxKm={Math.max(1, Math.ceil((props.session.distance ?? 0) / 1000))}
         isDevice={isDevice}
         splitDistance={splitDistance}
-        onDeviceToggle={setIsDevice}
-        onSplitDistanceChange={setSplitDistance}
+        onDeviceToggle={(checked) => useLapOptionsStore.getState().setIsDevice(checked)}
+        onSplitDistanceChange={(distance) =>
+          useLapOptionsStore.getState().setCustomDistance(sport, distance)
+        }
       />
 
       {hrData.length > 0 && (

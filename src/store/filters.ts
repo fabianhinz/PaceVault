@@ -14,12 +14,16 @@ import { computePBsForSessions, groupPBsBySport } from '@/lib/records.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import type { PersonalBest, Sport } from '@/packages/engine/types.ts';
 
+type LoadChartGroupBy = 'day' | 'week' | 'month';
+
 interface FiltersState {
   timeRange: TimeRange;
   customRange: { from: string; to: string } | null;
   prevDashboardRange: Exclude<TimeRange, 'custom'> | null;
   sportFilter: Sport | 'all';
   attributeFilters: AttributeFilters;
+  loadChartShowSportColors: boolean;
+  loadChartGroupBy: LoadChartGroupBy;
   groupedPBs: { data: Partial<Record<Sport, PersonalBest[]>>; loading: boolean };
   setTimeRange: (r: TimeRange) => void;
   setDashboardChartRange: (from: string, to: string) => void;
@@ -27,6 +31,8 @@ interface FiltersState {
   setSportFilter: (s: Sport | 'all') => void;
   setAttributeFilters: (f: AttributeFilters) => void;
   clearAttributeFilters: () => void;
+  setLoadChartShowSportColors: (show: boolean) => void;
+  setLoadChartGroupBy: (groupBy: LoadChartGroupBy) => void;
   recomputePBs: () => Promise<void>;
 }
 
@@ -39,6 +45,8 @@ export const useFiltersStore = create<FiltersState>()(
         prevDashboardRange: null,
         sportFilter: 'all',
         attributeFilters: createEmptyAttributeFilters(),
+        loadChartShowSportColors: true,
+        loadChartGroupBy: 'week',
         groupedPBs: { data: {}, loading: false },
         setTimeRange: (r) => {
           set({ timeRange: r, customRange: null, prevDashboardRange: null });
@@ -73,6 +81,12 @@ export const useFiltersStore = create<FiltersState>()(
         clearAttributeFilters: () => {
           set({ attributeFilters: createEmptyAttributeFilters() });
           get().recomputePBs();
+        },
+        setLoadChartShowSportColors: (loadChartShowSportColors) => {
+          set({ loadChartShowSportColors });
+        },
+        setLoadChartGroupBy: (loadChartGroupBy) => {
+          set({ loadChartGroupBy });
         },
         recomputePBs: async () => {
           const { groupedPBs, timeRange, customRange, sportFilter, attributeFilters } = get();
@@ -139,13 +153,23 @@ export const useFiltersStore = create<FiltersState>()(
         name: 'store-filters',
         storage: createJSONStorage(() => idbStorage),
         skipHydration: true,
-        version: 1,
+        version: 2,
+        migrate: (persistedState, fromVersion) => {
+          const state = persistedState as Partial<FiltersState>;
+          if (fromVersion < 2) {
+            state.loadChartShowSportColors = true;
+            state.loadChartGroupBy = 'week';
+          }
+          return state as FiltersState;
+        },
         partialize: (state) => ({
           timeRange: state.timeRange,
           customRange: state.customRange,
           prevDashboardRange: state.prevDashboardRange,
           sportFilter: state.sportFilter,
           attributeFilters: state.attributeFilters,
+          loadChartShowSportColors: state.loadChartShowSportColors,
+          loadChartGroupBy: state.loadChartGroupBy,
         }),
       },
     ),
