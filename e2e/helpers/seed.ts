@@ -222,6 +222,49 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
   );
 
   await page.reload();
+  return sessionIds;
+};
+
+/**
+ * Seeds trips into IDB's kv store (the `store-trips` Zustand key).
+ * Call AFTER seeding sessions, then the page reloads to rehydrate.
+ */
+export const seedTrips = async (
+  page: Page,
+  trips: { name: string; description?: string; sessionIds: string[] }[],
+) => {
+  await page.evaluate(async (trips) => {
+    const now = Date.now();
+    const tripsState = JSON.stringify({
+      state: {
+        trips: trips.map((t, i) => ({
+          id: `trip-${i}`,
+          name: t.name,
+          description: t.description,
+          sessionIds: t.sessionIds,
+          createdAt: now,
+        })),
+      },
+      version: 1,
+    });
+
+    const openReq = indexedDB.open('endurance-tracker', 3);
+    await new Promise<void>((resolve, reject) => {
+      openReq.onsuccess = () => {
+        const db = openReq.result;
+        const tx = db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(tripsState, 'store-trips');
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+      openReq.onerror = () => reject(openReq.error);
+    });
+  }, trips);
+
+  await page.reload();
 };
 
 interface SeedCoachSession {

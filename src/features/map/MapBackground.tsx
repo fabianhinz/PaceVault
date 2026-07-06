@@ -37,13 +37,20 @@ export const MapBackground = (props: MapBackgroundProps) => {
   const focusedSport = useMapFocusStore((s) => s.focusedSport);
   const focusedRecords = useMapFocusStore((s) => s.focusedRecords);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
+  const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
 
   const match = useMatch('/sessions/:id');
   useEffect(() => {
     useMapFocusStore.getState().setOpenedSession(match?.params.id ?? null);
   }, [match?.params.id]);
 
-  useMapCameraEffect(mapRef, mapTracks.tracks, openedSessionId, mapLoaded);
+  useMapCameraEffect(
+    mapRef,
+    mapTracks.tracks,
+    openedSessionId,
+    mapLoaded,
+    focusedTripSessionIds.length > 0,
+  );
 
   const backfillPct =
     backfill.total > 0 ? Math.min(backfill.processed, backfill.total) / backfill.total : 0;

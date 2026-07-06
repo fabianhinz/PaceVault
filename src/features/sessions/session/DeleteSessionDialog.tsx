@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { m } from '@/paraglide/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
+import { useTripsStore } from '@/store/trips.ts';
 import {
   deleteSessionRecords,
   deleteSessionLaps,
@@ -45,9 +46,10 @@ export const DeleteSessionDialog = (props: {
             {m.ui_btn_cancel()}
           </Button>
           <Button
-            className="bg-status-danger text-white hover:bg-status-danger/80"
+            variant="danger"
             onClick={async () => {
               useSessionsStore.getState().deleteSession(props.session.id);
+              useTripsStore.getState().removeSessionFromAllTrips(props.session.id);
               props.onOpenChange(false);
               navigate('/sessions');
               await Promise.all([

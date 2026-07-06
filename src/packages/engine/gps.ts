@@ -134,7 +134,7 @@ export const boundsOverlap = (a: GPSBounds, b: GPSBounds): boolean =>
  * @param boundsArray - Array of bounding boxes to merge.
  * @returns Union `GPSBounds`, or `null` when `boundsArray` is empty.
  */
-const unionBounds = (boundsArray: GPSBounds[]): GPSBounds | null => {
+export const unionBounds = (boundsArray: GPSBounds[]): GPSBounds | null => {
   if (boundsArray.length === 0) return null;
   let minLat = Infinity;
   let maxLat = -Infinity;
