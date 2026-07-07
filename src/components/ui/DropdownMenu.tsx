@@ -21,12 +21,15 @@ export const DropdownMenuContent = (props: DropdownMenuPrimitive.DropdownMenuCon
   );
 };
 
-export const DropdownMenuItem = (props: DropdownMenuPrimitive.DropdownMenuItemProps) => {
-  const { className, ...rest } = props;
+export const DropdownMenuItem = (
+  props: DropdownMenuPrimitive.DropdownMenuItemProps & { variant?: 'default' | 'danger' },
+) => {
+  const { className, variant, ...rest } = props;
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
         'flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-primary outline-none transition-colors hover:bg-white/10 focus:bg-white/10 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        variant === 'danger' && 'text-status-danger focus:text-status-danger',
         className,
       )}
       {...rest}

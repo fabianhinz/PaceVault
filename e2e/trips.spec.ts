@@ -36,6 +36,34 @@ test.describe('Trips', () => {
     await expect(page.getByRole('button', { name: /create a trip/i })).toBeVisible();
   });
 
+  test('edits an existing trip from the ellipsis menu', async ({ page }) => {
+    const ids = await seedWithSessions(page, [
+      { sport: 'running', date: Date.now(), name: 'Morning Run' },
+      { sport: 'cycling', date: Date.now() - 86400000, name: 'Hill Ride' },
+    ]);
+    await seedTrips(page, [{ name: 'Weekend Tour', sessionIds: [ids[0]] }]);
+
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
+    await page.getByRole('tab', { name: /trips/i }).click();
+
+    // Open the edit dialog from the ellipsis menu
+    await page.getByRole('button', { name: /trip actions/i }).click();
+    await page.getByRole('menuitem', { name: /edit/i }).click();
+
+    // Dialog is prepopulated with the trip name
+    const nameInput = page.getByPlaceholder(/trip name/i);
+    await expect(nameInput).toHaveValue('Weekend Tour');
+
+    // Rename and save
+    await nameInput.fill('Coastal Tour');
+    await page.getByRole('button', { name: /^save$/i }).click();
+
+    // The trip reflects the new name
+    await expect(page.getByRole('button', { name: 'Coastal Tour' })).toBeVisible();
+    await expect(page.getByText('Weekend Tour')).toHaveCount(0);
+  });
+
   test('creates a trip from the CTA by naming it and selecting sessions', async ({ page }) => {
     await seedWithSessions(page, [
       { sport: 'running', date: Date.now(), name: 'Morning Run', distance: 10000, duration: 3600 },

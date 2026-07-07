@@ -30,12 +30,7 @@ export const ManageTripDialog = (props: {
   };
 
   return (
-    <DialogRoot
-      open={props.open}
-      onOpenChange={(open) => {
-        if (!open) props.onOpenChange(false);
-      }}
-    >
+    <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
       <DialogContent className="flex flex-col overflow-y-hidden">
         <DialogTitle className="shrink-0">{m.ui_trips_dialog_title()}</DialogTitle>
         <DialogDescription className="shrink-0">{m.ui_trips_dialog_desc()}</DialogDescription>

@@ -15,6 +15,7 @@ export interface Trip {
 interface TripsState {
   trips: Trip[];
   createTrip: (name: string, description?: string) => string;
+  updateTrip: (id: string, name: string, sessionIds: string[]) => void;
   deleteTrip: (id: string) => void;
   assignSession: (sessionId: string, tripId: string) => void;
   removeSessionFromTrip: (sessionId: string, tripId: string) => void;
@@ -41,6 +42,18 @@ export const useTripsStore = create<TripsState>()(
           });
           return id;
         },
+        updateTrip: (id, name, sessionIds) =>
+          set((draft) => {
+            const target = draft.trips.find((t) => t.id === id);
+            if (!target) return;
+            target.name = name;
+            const ids = new Set(sessionIds);
+            for (const trip of draft.trips) {
+              if (trip.id === id) continue;
+              trip.sessionIds = trip.sessionIds.filter((sId) => !ids.has(sId));
+            }
+            target.sessionIds = [...sessionIds];
+          }),
         deleteTrip: (id) =>
           set((draft) => {
             draft.trips = draft.trips.filter((t) => t.id !== id);

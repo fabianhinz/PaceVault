@@ -1,9 +1,8 @@
 import { m } from '@/paraglide/messages.js';
-import { useSessionsStore } from '@/store/sessions.ts';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { formatDistance, formatDuration } from '@/lib/formatters.ts';
 import type { Trip } from '@/store/trips.ts';
-import type { TrainingSession } from '@/packages/engine/types.ts';
+import { useTripSessions } from './hooks/useTripSessions.ts';
 
 /**
  * Shared trip header: name (primary) + a stats line (secondary) of session
@@ -11,19 +10,23 @@ import type { TrainingSession } from '@/packages/engine/types.ts';
  * manage dialog so both read identically — no ellipsis menu here.
  */
 export const TripHeader = (props: { trip: Trip }) => {
-  const sessions = useSessionsStore((s) => s.sessions);
-
-  const tripSessions = props.trip.sessionIds
-    .map((id) => sessions.find((s) => s.id === id))
-    .filter((s): s is TrainingSession => Boolean(s));
+  const tripSessions = useTripSessions(props.trip);
 
   const count = tripSessions.length;
   const stats: string[] = [
     count === 1 ? m.ui_count_sessions_one() : m.ui_count_sessions_other({ count: String(count) }),
   ];
   if (count > 0) {
-    stats.push(formatDistance(tripSessions.reduce((sum, s) => sum + s.distance, 0)));
-    stats.push(formatDuration(tripSessions.reduce((sum, s) => sum + s.duration, 0)));
+    const totals = tripSessions.reduce(
+      (acc, s) => {
+        acc.distance += s.distance;
+        acc.duration += s.duration;
+        return acc;
+      },
+      { distance: 0, duration: 0 },
+    );
+    stats.push(formatDistance(totals.distance));
+    stats.push(formatDuration(totals.duration));
   }
 
   return (

@@ -103,6 +103,8 @@
   "ui_trips_nudge_title": "Einheiten zu Touren gruppieren",
   "ui_trips_nudge_desc": "Bündle zusammengehörige Ausfahrten und sieh sie gemeinsam auf der Karte",
   "ui_trips_new_title": "Neue Tour",
+  "ui_trips_edit_title": "Tour bearbeiten",
+  "ui_trips_edit": "Bearbeiten",
   "ui_trips_name_placeholder": "Name der Tour",
   "ui_trips_actions": "Tour-Aktionen",
   "ui_trips_delete_title": "Tour löschen",

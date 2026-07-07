@@ -15,12 +15,7 @@ export const DeleteTripDialog = (props: {
   onOpenChange: (open: boolean) => void;
 }) => {
   return (
-    <DialogRoot
-      open={props.open}
-      onOpenChange={(open) => {
-        if (!open) props.onOpenChange(false);
-      }}
-    >
+    <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
       <DialogContent>
         <DialogTitle>{m.ui_trips_delete_title()}</DialogTitle>
         <DialogDescription>{m.ui_trips_delete_desc({ name: props.tripName })}</DialogDescription>

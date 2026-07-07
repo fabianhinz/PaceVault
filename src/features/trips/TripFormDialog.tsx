@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { cn } from '@/lib/utils.ts';
@@ -13,26 +13,30 @@ import {
   DialogDescription,
 } from '@/components/ui/Dialog.tsx';
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
+import type { Trip } from '@/store/trips.ts';
 
-export const CreateTripDialog = (props: {
+/** Create a new trip (no `trip`) or edit an existing one (prepopulated from `trip`). */
+export const TripFormDialog = (props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  trip?: Trip;
 }) => {
   const [name, setName] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const sessions = useSessionsStore((s) => s.sessions);
 
-  const selectableSessions = sessions.filter((s) => !s.isPlanned).sort((a, b) => b.date - a.date);
+  const selectableSessions = useMemo(
+    () => sessions.filter((s) => !s.isPlanned).sort((a, b) => b.date - a.date),
+    [sessions],
+  );
 
-  const reset = () => {
-    setName('');
-    setSelectedIds(new Set());
-  };
-
-  const close = () => {
-    reset();
-    props.onOpenChange(false);
-  };
+  // Seed from the edited trip (or blank for create) each time the dialog opens.
+  useEffect(() => {
+    if (props.open) {
+      setName(props.trip?.name ?? '');
+      setSelectedIds(new Set(props.trip?.sessionIds ?? []));
+    }
+  }, [props.open, props.trip]);
 
   const toggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -49,22 +53,23 @@ export const CreateTripDialog = (props: {
   const handleSave = () => {
     const trimmed = name.trim();
     if (!trimmed || selectedIds.size === 0) return;
-    const id = useTripsStore.getState().createTrip(trimmed);
-    for (const sessionId of selectedIds) {
-      useTripsStore.getState().assignSession(sessionId, id);
+    if (props.trip) {
+      useTripsStore.getState().updateTrip(props.trip.id, trimmed, [...selectedIds]);
+    } else {
+      const id = useTripsStore.getState().createTrip(trimmed);
+      for (const sessionId of selectedIds) {
+        useTripsStore.getState().assignSession(sessionId, id);
+      }
     }
-    close();
+    props.onOpenChange(false);
   };
 
   return (
-    <DialogRoot
-      open={props.open}
-      onOpenChange={(open) => {
-        if (!open) close();
-      }}
-    >
+    <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
       <DialogContent className="flex flex-col overflow-y-hidden">
-        <DialogTitle className="shrink-0">{m.ui_trips_new_title()}</DialogTitle>
+        <DialogTitle className="shrink-0">
+          {props.trip ? m.ui_trips_edit_title() : m.ui_trips_new_title()}
+        </DialogTitle>
         <DialogDescription className="shrink-0">{m.ui_trips_nudge_desc()}</DialogDescription>
 
         <div className="mt-4 shrink-0">
@@ -109,7 +114,7 @@ export const CreateTripDialog = (props: {
         </div>
 
         <div className="mt-4 flex shrink-0 justify-end gap-2">
-          <Button variant="secondary" onClick={close}>
+          <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
             {m.ui_btn_cancel()}
           </Button>
           <Button disabled={!name.trim() || selectedIds.size === 0} onClick={handleSave}>

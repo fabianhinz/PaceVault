@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button.tsx';
 import { Card } from '@/components/ui/Card.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { TripItem } from './TripItem.tsx';
-import { CreateTripDialog } from './CreateTripDialog.tsx';
+import { TripFormDialog } from './TripFormDialog.tsx';
 
 export const TripsTab = () => {
   const trips = useTripsStore((s) => s.trips);
@@ -16,13 +16,9 @@ export const TripsTab = () => {
 
   useEffect(() => {
     const trip = trips.find((t) => t.id === expandedTripId);
-    if (trip) {
-      useMapFocusStore.getState().setFocusedTripSessions(trip.sessionIds);
-    } else {
-      useMapFocusStore.getState().clearFocusedTripSessions();
-    }
+    useMapFocusStore.getState().setFocusedTripSessions(trip?.sessionIds ?? []);
     return () => {
-      useMapFocusStore.getState().clearFocusedTripSessions();
+      useMapFocusStore.getState().setFocusedTripSessions([]);
     };
   }, [expandedTripId, trips]);
 
@@ -55,7 +51,7 @@ export const TripsTab = () => {
         {m.ui_trips_cta_title()}
       </Button>
 
-      <CreateTripDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
+      <TripFormDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
     </div>
   );
 };

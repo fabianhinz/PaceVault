@@ -103,6 +103,8 @@
   "ui_trips_nudge_title": "Group sessions into trips",
   "ui_trips_nudge_desc": "Bundle related outings and revisit them together on the map",
   "ui_trips_new_title": "New trip",
+  "ui_trips_edit_title": "Edit trip",
+  "ui_trips_edit": "Edit",
   "ui_trips_name_placeholder": "Trip name",
   "ui_trips_actions": "Trip actions",
   "ui_trips_delete_title": "Delete Trip",

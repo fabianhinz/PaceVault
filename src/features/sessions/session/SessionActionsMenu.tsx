@@ -46,10 +46,7 @@ export const SessionActionsMenu = (props: { session: TrainingSession }) => {
               {m.ui_btn_export_gpx()}
             </DropdownMenuItem>
           ) : null}
-          <DropdownMenuItem
-            className="text-status-danger focus:text-status-danger"
-            onSelect={() => setShowDeleteDialog(true)}
-          >
+          <DropdownMenuItem variant="danger" onSelect={() => setShowDeleteDialog(true)}>
             <Trash2 size={14} />
             {m.ui_btn_delete()}
           </DropdownMenuItem>

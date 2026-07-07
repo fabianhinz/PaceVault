@@ -58,6 +58,23 @@ describe('useTripsStore', () => {
     expect(trips.find((t) => t.id === b)?.sessionIds).toEqual(['s2']);
   });
 
+  it('updates a trip name and session set, enforcing single membership', () => {
+    const a = useTripsStore.getState().createTrip('Trip A');
+    const b = useTripsStore.getState().createTrip('Trip B');
+    useTripsStore.getState().assignSession('s1', a);
+    useTripsStore.getState().assignSession('s2', b);
+
+    // Rename B and give it s1 and s3; s1 must leave A (single membership).
+    useTripsStore.getState().updateTrip(b, 'Trip B renamed', ['s1', 's3']);
+
+    const trips = useTripsStore.getState().trips;
+    const tripA = trips.find((t) => t.id === a);
+    const tripB = trips.find((t) => t.id === b);
+    expect(tripB?.name).toBe('Trip B renamed');
+    expect(tripB?.sessionIds).toEqual(['s1', 's3']);
+    expect(tripA?.sessionIds).toEqual([]);
+  });
+
   it('deletes a trip', () => {
     const a = useTripsStore.getState().createTrip('Trip A');
     useTripsStore.getState().createTrip('Trip B');
