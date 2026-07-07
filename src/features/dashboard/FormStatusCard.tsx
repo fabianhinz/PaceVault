@@ -7,7 +7,7 @@ import { getFormMessageDetailed } from '@/lib/coachingMessages.ts';
 import { ReadinessGauge } from '@/features/dashboard/ReadinessGauge';
 import { ACWRGauge } from '@/features/dashboard/ACWRGauge';
 
-export const CoachStatusCard = () => {
+export const FormStatusCard = () => {
   const metrics = useMetrics();
 
   return (
@@ -18,7 +18,10 @@ export const CoachStatusCard = () => {
         </Typography>
       }
     >
-      <CardHeader title={m.ui_coach_current_form()} subtitle={m.ui_coach_current_form_subtitle()} />
+      <CardHeader
+        title={m.ui_dashboard_current_form()}
+        subtitle={m.ui_dashboard_current_form_subtitle()}
+      />
 
       <div className="flex justify-center gap-6">
         <div className="w-28">

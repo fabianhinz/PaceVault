@@ -9,7 +9,7 @@ import {
   X,
   Activity,
   Clock,
-  HeartPulse,
+  FlaskConical,
   FunnelPlus,
 } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
@@ -40,7 +40,7 @@ import type { Sport } from '@/packages/engine/types.ts';
 const tabs = [
   { to: '/', label: m.ui_nav_dashboard, icon: LayoutDashboard },
   { to: '/sessions', label: m.ui_nav_sessions, icon: Zap },
-  { to: '/coach', label: m.ui_nav_coach, icon: HeartPulse },
+  { to: '/labs', label: m.ui_nav_labs, icon: FlaskConical },
   { to: '/settings', label: m.ui_nav_settings, icon: Settings },
 ];
 
