@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Compass } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { useTripsStore } from '@/store/trips.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { Card } from '@/components/ui/Card.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
@@ -11,28 +10,12 @@ import { TripFormDialog } from './TripFormDialog.tsx';
 
 export const TripsTab = () => {
   const trips = useTripsStore((s) => s.trips);
-  const [expandedTripId, setExpandedTripId] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  useEffect(() => {
-    const trip = trips.find((t) => t.id === expandedTripId);
-    useMapFocusStore.getState().setFocusedTripSessions(trip?.sessionIds ?? []);
-    return () => {
-      useMapFocusStore.getState().setFocusedTripSessions([]);
-    };
-  }, [expandedTripId, trips]);
-
-  const toggle = (id: string) => setExpandedTripId((cur) => (cur === id ? null : id));
-
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       {trips.map((trip) => (
-        <TripItem
-          key={trip.id}
-          trip={trip}
-          expanded={expandedTripId === trip.id}
-          onToggle={() => toggle(trip.id)}
-        />
+        <TripItem key={trip.id} trip={trip} />
       ))}
 
       {trips.length === 0 && (

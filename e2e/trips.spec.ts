@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 import { seedWithSessions, seedTrips } from './helpers/seed';
 
 test.describe('Trips', () => {
-  test('shows a seeded trip with stats, expands it, and deletes it', async ({ page }) => {
+  test('shows a seeded trip with stats, opens its detail page, and deletes it', async ({
+    page,
+  }) => {
     const ids = await seedWithSessions(page, [
       { sport: 'running', date: Date.now(), name: 'Morning Run', distance: 10000, duration: 3600 },
       { sport: 'cycling', date: Date.now() - 86400000, name: 'Hill Ride' },
@@ -19,24 +21,27 @@ test.describe('Trips', () => {
     await expect(tripCard).toContainText('1 session');
     await expect(tripCard).toContainText('10.0 km');
 
-    // Expand → the member session is revealed
+    // Click → navigates to the trip detail page, listing its member session
     await tripCard.click();
+    await page.waitForURL(/\/trips\/.+/);
+    await expect(page.getByRole('heading', { name: 'Weekend Tour' })).toBeVisible();
     await expect(page.locator('[data-testid="session-item"]').first()).toBeVisible({
       timeout: 10_000,
     });
 
-    // Delete the trip via the ellipsis menu + confirmation dialog
+    // Delete the trip via the actions menu + confirmation dialog
     await page.getByRole('button', { name: /trip actions/i }).click();
     await page.getByRole('menuitem', { name: /delete/i }).click();
     await expect(page.getByText(/your sessions stay/i)).toBeVisible();
     await page.getByRole('button', { name: /^delete$/i }).click();
 
-    // Trip is gone; the create CTA remains
+    // Returns to the trips tab; trip is gone and the create CTA remains
+    await page.waitForURL(/\/sessions\?tab=trips/);
     await expect(page.getByText('Weekend Tour')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /create a trip/i })).toBeVisible();
   });
 
-  test('edits an existing trip from the ellipsis menu', async ({ page }) => {
+  test('edits an existing trip from the detail page actions menu', async ({ page }) => {
     const ids = await seedWithSessions(page, [
       { sport: 'running', date: Date.now(), name: 'Morning Run' },
       { sport: 'cycling', date: Date.now() - 86400000, name: 'Hill Ride' },
@@ -47,7 +52,9 @@ test.describe('Trips', () => {
     await page.waitForURL('/sessions');
     await page.getByRole('tab', { name: /trips/i }).click();
 
-    // Open the edit dialog from the ellipsis menu
+    // Open the trip detail page, then the edit dialog from the actions menu
+    await page.getByRole('button', { name: 'Weekend Tour' }).click();
+    await page.waitForURL(/\/trips\/.+/);
     await page.getByRole('button', { name: /trip actions/i }).click();
     await page.getByRole('menuitem', { name: /edit/i }).click();
 
@@ -59,8 +66,8 @@ test.describe('Trips', () => {
     await nameInput.fill('Coastal Tour');
     await page.getByRole('button', { name: /^save$/i }).click();
 
-    // The trip reflects the new name
-    await expect(page.getByRole('button', { name: 'Coastal Tour' })).toBeVisible();
+    // The detail page header reflects the new name
+    await expect(page.getByRole('heading', { name: 'Coastal Tour' })).toBeVisible();
     await expect(page.getByText('Weekend Tour')).toHaveCount(0);
   });
 

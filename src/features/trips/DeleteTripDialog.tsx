@@ -13,6 +13,7 @@ export const DeleteTripDialog = (props: {
   tripName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDeleted?: () => void;
 }) => {
   return (
     <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
@@ -28,6 +29,7 @@ export const DeleteTripDialog = (props: {
             onClick={() => {
               useTripsStore.getState().deleteTrip(props.tripId);
               props.onOpenChange(false);
+              props.onDeleted?.();
             }}
           >
             {m.ui_btn_delete()}

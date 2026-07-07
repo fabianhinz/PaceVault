@@ -6,6 +6,7 @@ import { useTripsStore } from '@/store/trips.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { Input } from '@/components/ui/Input.tsx';
+import { Textarea } from '@/components/ui/Textarea.tsx';
 import {
   DialogRoot,
   DialogContent,
@@ -22,7 +23,9 @@ export const TripFormDialog = (props: {
   trip?: Trip;
 }) => {
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showAll, setShowAll] = useState(false);
   const sessions = useSessionsStore((s) => s.sessions);
 
   const selectableSessions = useMemo(
@@ -30,11 +33,19 @@ export const TripFormDialog = (props: {
     [sessions],
   );
 
+  // The list isn't virtualized; cap the initial render since trips are usually
+  // built from recent sessions. "Show all" reveals the full history on demand.
+  const INITIAL_LIMIT = 30;
+  const visibleSessions = showAll ? selectableSessions : selectableSessions.slice(0, INITIAL_LIMIT);
+  const hiddenCount = selectableSessions.length - visibleSessions.length;
+
   // Seed from the edited trip (or blank for create) each time the dialog opens.
   useEffect(() => {
     if (props.open) {
       setName(props.trip?.name ?? '');
+      setDescription(props.trip?.description ?? '');
       setSelectedIds(new Set(props.trip?.sessionIds ?? []));
+      setShowAll(false);
     }
   }, [props.open, props.trip]);
 
@@ -53,10 +64,13 @@ export const TripFormDialog = (props: {
   const handleSave = () => {
     const trimmed = name.trim();
     if (!trimmed || selectedIds.size === 0) return;
+    const trimmedDescription = description.trim() || undefined;
     if (props.trip) {
-      useTripsStore.getState().updateTrip(props.trip.id, trimmed, [...selectedIds]);
+      useTripsStore
+        .getState()
+        .updateTrip(props.trip.id, trimmed, [...selectedIds], trimmedDescription);
     } else {
-      const id = useTripsStore.getState().createTrip(trimmed);
+      const id = useTripsStore.getState().createTrip(trimmed, trimmedDescription);
       for (const sessionId of selectedIds) {
         useTripsStore.getState().assignSession(sessionId, id);
       }
@@ -66,23 +80,30 @@ export const TripFormDialog = (props: {
 
   return (
     <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
-      <DialogContent className="flex flex-col overflow-y-hidden">
+      <DialogContent className="flex flex-col overflow-y-hidden lg:max-h-[calc(100dvh-12rem)] lg:min-h-[min(32rem,calc(100dvh-12rem))]">
         <DialogTitle className="shrink-0">
           {props.trip ? m.ui_trips_edit_title() : m.ui_trips_new_title()}
         </DialogTitle>
         <DialogDescription className="shrink-0">{m.ui_trips_nudge_desc()}</DialogDescription>
 
-        <div className="mt-4 shrink-0">
+        <div className="mt-4 flex shrink-0 flex-col gap-2">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={m.ui_trips_name_placeholder()}
             autoFocus
           />
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={m.ui_trips_notes_placeholder()}
+            rows={6}
+            className="resize-none"
+          />
         </div>
 
         <div className="mt-4 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto border-t border-white/10 pt-4">
-          {selectableSessions.map((session) => {
+          {visibleSessions.map((session) => {
             const selected = selectedIds.has(session.id);
             return (
               <button
@@ -111,6 +132,12 @@ export const TripFormDialog = (props: {
               </button>
             );
           })}
+
+          {hiddenCount > 0 && (
+            <Button variant="secondary" onClick={() => setShowAll(true)}>
+              {m.ui_trips_show_more({ count: String(hiddenCount) })}
+            </Button>
+          )}
         </div>
 
         <div className="mt-4 flex shrink-0 justify-end gap-2">

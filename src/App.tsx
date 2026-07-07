@@ -4,6 +4,7 @@ import { AppLayout } from './components/layout/AppLayout.tsx';
 import { DashboardPage } from './pages/DashboardPage.tsx';
 import { SessionsPage } from './pages/SessionsPage.tsx';
 import { SessionDetailPage } from './pages/SessionDetailPage.tsx';
+import { TripDetailPage } from './pages/TripDetailPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { CoachPage } from './pages/CoachPage.tsx';
 import { enableMapSet } from 'immer';
@@ -30,6 +31,7 @@ export const App = () => {
           <Route index element={<DashboardPage />} />
           <Route path="/sessions" element={<SessionsPage />} />
           <Route path="/sessions/:id" element={<SessionDetailPage />} />
+          <Route path="/trips/:id" element={<TripDetailPage />} />
           <Route path="/coach" element={<CoachPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

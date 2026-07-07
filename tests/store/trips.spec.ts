@@ -75,6 +75,14 @@ describe('useTripsStore', () => {
     expect(tripA?.sessionIds).toEqual([]);
   });
 
+  it('updates a trip description (and clears it when omitted)', () => {
+    const a = useTripsStore.getState().createTrip('Trip A', 'Original');
+    useTripsStore.getState().updateTrip(a, 'Trip A', ['s1'], 'Updated');
+    expect(useTripsStore.getState().trips[0].description).toBe('Updated');
+    useTripsStore.getState().updateTrip(a, 'Trip A', ['s1']);
+    expect(useTripsStore.getState().trips[0].description).toBeUndefined();
+  });
+
   it('deletes a trip', () => {
     const a = useTripsStore.getState().createTrip('Trip A');
     useTripsStore.getState().createTrip('Trip B');
