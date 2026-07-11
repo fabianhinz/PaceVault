@@ -3,7 +3,7 @@ import type { RaceDistance } from '@/packages/engine/types.ts';
 import { RACE_DISTANCE_METERS } from '@/packages/engine/vdot.ts';
 import { DISTANCE_OPTIONS, usesLongFormat } from '@/lib/raceTime.ts';
 import { formatPaceInput, formatRaceTime } from '@/lib/formatters.ts';
-import { useRacePredictor } from '@/features/coach/hooks/useRacePredictor.ts';
+import { useRacePredictor } from '@/features/labs/hooks/useRacePredictor.ts';
 import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { Input } from '@/components/ui/Input.tsx';
@@ -27,7 +27,7 @@ export const RacePredictor = () => {
 
   return (
     <Card>
-      <CardHeader title={m.ui_coach_predictor_title()} subtitle={m.ui_coach_predictor_subtitle()} />
+      <CardHeader title={m.ui_labs_predictor_title()} subtitle={m.ui_labs_predictor_subtitle()} />
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
@@ -65,11 +65,11 @@ export const RacePredictor = () => {
           rowLabel={(row) => DISTANCE_OPTIONS.find((opt) => opt.value === row.key)?.label}
           fields={[
             {
-              label: m.ui_coach_predictor_time(),
+              label: m.ui_labs_predictor_time(),
               value: (row) => (row.pred ? formatRaceTime(row.pred.timeSeconds) : '--'),
             },
             {
-              label: m.ui_coach_predictor_pace(),
+              label: m.ui_labs_predictor_pace(),
               value: (row) => (row.pred ? `${formatPaceInput(row.pred.paceSecPerKm)} /km` : '--'),
             },
           ]}

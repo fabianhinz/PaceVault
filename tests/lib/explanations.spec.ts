@@ -5,6 +5,7 @@ const ALL_METRIC_IDS: MetricId[] = [
   'tss',
   'trimp',
   'duration',
+  'tripLoad',
   'ctl',
   'atl',
   'tsb',

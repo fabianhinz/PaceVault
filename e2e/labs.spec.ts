@@ -55,8 +55,8 @@ const expansionPanel = (page: Page) => page.locator('div.mt-3.rounded-xl');
 test.describe('no threshold pace', () => {
   test.beforeEach(async ({ page }) => {
     await seedOnboardingComplete(page);
-    await page.goto('/coach');
-    await page.waitForURL('/coach');
+    await page.goto('/labs?tab=training');
+    await page.waitForURL(/tab=training/);
   });
 
   test('shows Set Your Threshold Pace heading', async ({ page }) => {
@@ -76,8 +76,8 @@ test.describe('no sessions (no-data plan)', () => {
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-03-04T12:00:00'));
     await seedCoachWithThresholdPace(page, THRESHOLD_PACE, []);
-    await page.goto('/coach');
-    await page.waitForURL('/coach');
+    await page.goto('/labs?tab=training');
+    await page.waitForURL(/tab=training/);
   });
 
   test('renders 7 workout cards', async ({ page }) => {
@@ -106,8 +106,8 @@ test.describe('mature data (neutral plan)', () => {
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-03-04T12:00:00'));
     await seedCoachWithThresholdPace(page, THRESHOLD_PACE, steadyBaseline());
-    await page.goto('/coach');
-    await page.waitForURL('/coach');
+    await page.goto('/labs?tab=training');
+    await page.waitForURL(/tab=training/);
   });
 
   test('weekly plan subtitle is visible', async ({ page }) => {
@@ -160,8 +160,8 @@ test.describe('overload plan (load guard)', () => {
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-03-04T12:00:00'));
     await seedCoachWithThresholdPace(page, THRESHOLD_PACE, overloadSpike());
-    await page.goto('/coach');
-    await page.waitForURL('/coach');
+    await page.goto('/labs?tab=training');
+    await page.waitForURL(/tab=training/);
   });
 
   test('no high-intensity cards visible after load guard downgrade', async ({ page }) => {
