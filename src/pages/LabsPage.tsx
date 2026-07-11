@@ -16,8 +16,9 @@ import { RacePredictor } from '@/features/labs/RacePredictor.tsx';
 import { PaceCalculator } from '@/features/labs/PaceCalculator.tsx';
 import { Settings } from 'lucide-react';
 import { ZoneLegend } from '@/features/sessions/ZoneLegend.tsx';
+import { StudioTab } from '@/features/studio/StudioTab.tsx';
 
-const validTabs = new Set(['tools', 'training']);
+const validTabs = new Set(['tools', 'training', 'studio']);
 
 export const LabsPage = () => {
   const coach = useCoachPlan();
@@ -34,6 +35,7 @@ export const LabsPage = () => {
       <TabsList>
         <TabsTrigger value="tools">{m.ui_labs_tab_tools()}</TabsTrigger>
         <TabsTrigger value="training">{m.ui_labs_tab_training()}</TabsTrigger>
+        <TabsTrigger value="studio">{m.ui_labs_tab_studio()}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="tools">
@@ -99,6 +101,10 @@ export const LabsPage = () => {
             </div>
           </PageGrid>
         )}
+      </TabsContent>
+
+      <TabsContent value="studio">
+        <StudioTab />
       </TabsContent>
     </Tabs>
   );

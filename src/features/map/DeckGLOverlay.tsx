@@ -18,6 +18,7 @@ import { useLayoutStore } from '@/store/layout.ts';
 import { useDeckMetricsStore } from '@/store/deckMetrics.ts';
 import type { MapTrack } from './hooks/useMapTracks.ts';
 import { decodeCached, PICK_RADIUS, type TrackPickData } from './hooks/types.ts';
+import { useStudioMapTracks, type StudioMapRoute } from './hooks/useStudioMapTracks.ts';
 import { useControl } from 'react-map-gl/maplibre';
 
 type PickHandler = (info: PickingInfo, event: unknown) => boolean | void;
@@ -37,6 +38,8 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const focusedSport = useMapFocusStore((s) => s.focusedSport);
   const hoveredLapIndex = useMapFocusStore((s) => s.hoveredLapIndex);
   const zoneColorMode = useMapFocusStore((s) => s.zoneColorMode);
+  const hoveredStudioRouteId = useMapFocusStore((s) => s.hoveredStudioRouteId);
+  const studioTracks = useStudioMapTracks();
   const sessions = useSessionsStore((s) => s.sessions);
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
 
@@ -45,6 +48,10 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const match = useMatch('/sessions/:id');
   const highlightedSessionId = hoveredSessionId ?? match?.params.id ?? null;
 
+  // The studio is about future routes — session tracks are hidden while the
+  // studio tab or a route detail page is open.
+  const studioActive = studioTracks.active;
+
   const eventHandlers = useMemo(
     (): { onClick?: PickHandler; onHover?: PickHandler } =>
       onboardingComplete ? { onClick: props.onClick, onHover: props.onHover } : {},
@@ -52,7 +59,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   );
 
   const trackLayers = useMemo(() => {
-    if (openedSessionId) {
+    if (openedSessionId || studioActive) {
       return null;
     }
 
@@ -98,7 +105,14 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
         ...eventHandlers,
       }),
     ];
-  }, [openedSessionId, props.tracks, highlightedSessionId, hoveredSessionId, eventHandlers]);
+  }, [
+    openedSessionId,
+    studioActive,
+    props.tracks,
+    highlightedSessionId,
+    hoveredSessionId,
+    eventHandlers,
+  ]);
 
   const detailLayer = useMemo(() => {
     if (!detailPath) {
@@ -119,6 +133,48 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       ...eventHandlers,
     });
   }, [detailPath, zoneColorMode, openedSessionId, eventHandlers]);
+
+  const studioRouteLayer = useMemo(() => {
+    if (studioTracks.routes.length === 0) {
+      return null;
+    }
+
+    const versionKey = studioTracks.routes.map((r) => `${r.id}:${r.color.join(',')}`).join('|');
+
+    return new PathLayer<StudioMapRoute>({
+      id: 'studio-routes',
+      data: studioTracks.routes,
+      getPath: (d) => decodeCached(`studio-${d.id}`, d.encodedPolyline),
+      getColor: (d) => {
+        let alpha = trackModifiers.alpha.highlighted;
+        if (hoveredStudioRouteId && hoveredStudioRouteId !== d.id) {
+          alpha = 0;
+        }
+        return [d.color[0], d.color[1], d.color[2], alpha];
+      },
+      // Detail (single focused route) and the hovered route draw wider than
+      // the tab's all-routes overview.
+      getWidth: (d) => {
+        if (d.id === studioTracks.focusedRouteId || d.id === hoveredStudioRouteId) {
+          return trackModifiers.width.highlighted;
+        }
+        return trackModifiers.width.default;
+      },
+      widthMinPixels: 1,
+      jointRounded: true,
+      capRounded: true,
+      pickable: false,
+      updateTriggers: {
+        getPath: [versionKey],
+        getColor: [versionKey, hoveredStudioRouteId],
+        getWidth: [studioTracks.focusedRouteId, hoveredStudioRouteId],
+      },
+      transitions: {
+        getWidth: 300,
+        getColor: 300,
+      },
+    });
+  }, [studioTracks.routes, studioTracks.focusedRouteId, hoveredStudioRouteId]);
 
   const pickCircleLayer = useMemo(() => {
     if (!pickCircle) {
@@ -213,7 +269,14 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   );
 
   overlay.setProps({
-    layers: [trackLayers, detailLayer, pickCircleLayer, hoveredPointLayer, lapMarkerLayers],
+    layers: [
+      trackLayers,
+      detailLayer,
+      studioRouteLayer,
+      pickCircleLayer,
+      hoveredPointLayer,
+      lapMarkerLayers,
+    ],
     pickingRadius: PICK_RADIUS,
     _onMetrics: useDeckMetricsStore.getState().update,
   });

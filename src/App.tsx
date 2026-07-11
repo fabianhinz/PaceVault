@@ -5,6 +5,7 @@ import { DashboardPage } from './pages/DashboardPage.tsx';
 import { SessionsPage } from './pages/SessionsPage.tsx';
 import { SessionDetailPage } from './pages/SessionDetailPage.tsx';
 import { TripDetailPage } from './pages/TripDetailPage.tsx';
+import { StudioDetailPage } from './pages/StudioDetailPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { LabsPage } from './pages/LabsPage.tsx';
 import { enableMapSet } from 'immer';
@@ -32,6 +33,7 @@ export const App = () => {
           <Route path="/sessions" element={<SessionsPage />} />
           <Route path="/sessions/:id" element={<SessionDetailPage />} />
           <Route path="/trips/:id" element={<TripDetailPage />} />
+          <Route path="/studio/:id" element={<StudioDetailPage />} />
           <Route path="/labs" element={<LabsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

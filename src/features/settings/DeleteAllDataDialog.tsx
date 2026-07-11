@@ -12,6 +12,7 @@ import { Typography } from '@/components/ui/Typography.tsx';
 import { toast } from '@/components/ui/toastStore.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useTripsStore } from '@/store/trips.ts';
+import { useStudioStore } from '@/store/studio.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
@@ -33,6 +34,7 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
     setIsDeleting(true);
     useSessionsStore.getState().clearAll();
     useTripsStore.getState().clearAll();
+    useStudioStore.getState().clearAll();
     useUserStore.getState().resetProfile();
     useCoachPlanStore.getState().clearPlan();
     useLayoutStore.setState({ onboardingComplete: false, demoMode: false });

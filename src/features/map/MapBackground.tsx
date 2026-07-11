@@ -6,6 +6,7 @@ import { darkMatterStyle } from './mapStyle.ts';
 import { useMapTracks } from './hooks/useMapTracks.ts';
 import { useGPSBackfill } from './hooks/useGpsBackfill.ts';
 import { useMapCameraEffect } from './hooks/useMapCameraEffect.ts';
+import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
 import { useMapPopupState } from './hooks/useMapPopupState.ts';
 import { DeckGLOverlay } from './DeckGLOverlay.tsx';
 import { DeckMetricsOverlay } from './DeckMetricsOverlay.tsx';
@@ -38,6 +39,7 @@ export const MapBackground = (props: MapBackgroundProps) => {
   const focusedRecords = useMapFocusStore((s) => s.focusedRecords);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
+  const studioTracks = useStudioMapTracks();
 
   const match = useMatch('/sessions/:id');
   useEffect(() => {
@@ -50,6 +52,7 @@ export const MapBackground = (props: MapBackgroundProps) => {
     openedSessionId,
     mapLoaded,
     focusedTripSessionIds.length > 0,
+    studioTracks.bounds,
   );
 
   const backfillPct =

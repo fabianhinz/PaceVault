@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { densestClusterBounds, unionBounds } from '@/packages/engine/gps.ts';
+import type { GPSBounds } from '@/packages/engine/types.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import type { MapTrack } from './useMapTracks.ts';
 
@@ -9,15 +10,33 @@ export const useMapCameraEffect = (
   openedSessionId: string | null,
   mapLoaded: boolean,
   fitAll: boolean,
+  studioBounds: GPSBounds | null,
 ) => {
   useEffect(() => {
-    if (tracks.length === 0 || !mapRef.current || !mapLoaded) return;
+    if (!mapRef.current || !mapLoaded) return;
 
     const isDesktop = window.matchMedia('(min-width: 768px)').matches;
     let rightPad = 0;
     if (isDesktop) {
       rightPad = window.innerWidth * 0.4;
     }
+
+    // Studio detail focuses an imported route with no session tracks on the map.
+    if (studioBounds) {
+      mapRef.current.fitBounds(
+        [
+          [studioBounds.minLng, studioBounds.minLat],
+          [studioBounds.maxLng, studioBounds.maxLat],
+        ],
+        {
+          padding: { top: 80, bottom: 80, left: 80, right: 80 + rightPad },
+          duration: 1200,
+        },
+      );
+      return;
+    }
+
+    if (tracks.length === 0) return;
 
     if (openedSessionId) {
       const firstTrack = tracks[0];
@@ -54,5 +73,5 @@ export const useMapCameraEffect = (
         duration: 1000,
       },
     );
-  }, [tracks, openedSessionId, mapLoaded, mapRef, fitAll]);
+  }, [tracks, openedSessionId, mapLoaded, mapRef, fitAll, studioBounds]);
 };

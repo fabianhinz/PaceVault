@@ -49,7 +49,7 @@ export const seedOnboardingComplete = async (page: Page) => {
     });
 
     // Open IDB and write store keys
-    const openReq = indexedDB.open('endurance-tracker', 3);
+    const openReq = indexedDB.open('endurance-tracker', 4);
     await new Promise<void>((resolve, reject) => {
       openReq.onupgradeneeded = () => {
         const db = openReq.result;
@@ -71,6 +71,9 @@ export const seedOnboardingComplete = async (page: Page) => {
         }
         if (!db.objectStoreNames.contains('session-weather')) {
           db.createObjectStore('session-weather', { keyPath: 'sessionId' });
+        }
+        if (!db.objectStoreNames.contains('studio-route-points')) {
+          db.createObjectStore('studio-route-points', { keyPath: 'routeId' });
         }
       };
       openReq.onsuccess = () => {
@@ -183,7 +186,7 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
         version: 1,
       });
 
-      const openReq = indexedDB.open('endurance-tracker', 3);
+      const openReq = indexedDB.open('endurance-tracker', 4);
       await new Promise<void>((resolve, reject) => {
         openReq.onupgradeneeded = () => {
           const db = openReq.result;
@@ -200,6 +203,8 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
             db.createObjectStore('fit-files', { keyPath: 'sessionId' });
           if (!db.objectStoreNames.contains('session-weather'))
             db.createObjectStore('session-weather', { keyPath: 'sessionId' });
+          if (!db.objectStoreNames.contains('studio-route-points'))
+            db.createObjectStore('studio-route-points', { keyPath: 'routeId' });
         };
         openReq.onsuccess = () => {
           const db = openReq.result;
@@ -248,7 +253,7 @@ export const seedTrips = async (
       version: 1,
     });
 
-    const openReq = indexedDB.open('endurance-tracker', 3);
+    const openReq = indexedDB.open('endurance-tracker', 4);
     await new Promise<void>((resolve, reject) => {
       openReq.onsuccess = () => {
         const db = openReq.result;
@@ -345,7 +350,7 @@ export const seedCoachWithThresholdPace = async (
         version: 1,
       });
 
-      const openReq = indexedDB.open('endurance-tracker', 3);
+      const openReq = indexedDB.open('endurance-tracker', 4);
       await new Promise<void>((resolve, reject) => {
         openReq.onupgradeneeded = () => {
           const db = openReq.result;
@@ -362,6 +367,8 @@ export const seedCoachWithThresholdPace = async (
             db.createObjectStore('fit-files', { keyPath: 'sessionId' });
           if (!db.objectStoreNames.contains('session-weather'))
             db.createObjectStore('session-weather', { keyPath: 'sessionId' });
+          if (!db.objectStoreNames.contains('studio-route-points'))
+            db.createObjectStore('studio-route-points', { keyPath: 'routeId' });
         };
         openReq.onsuccess = () => {
           const db = openReq.result;
