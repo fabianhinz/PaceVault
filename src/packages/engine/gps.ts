@@ -14,7 +14,7 @@ export const isValidCoordinate = (r: { lat?: number | null; lng?: number | null 
 /** Convert an angle in degrees to radians. */
 export const toRad = (deg: number): number => (deg * Math.PI) / 180;
 
-const EARTH_RADIUS_M = 6371000;
+export const EARTH_RADIUS_M = 6371000;
 
 /**
  * Compute the great-circle distance between two GPS points using the haversine formula.

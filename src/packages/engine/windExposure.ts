@@ -2,7 +2,7 @@
 // See src/engine/SOURCES.md for full citations.
 
 import type { SessionRecord } from './types.ts';
-import { isValidCoordinate, bearingDeg, toRad } from './gps.ts';
+import { isValidCoordinate, bearingDeg, toRad, EARTH_RADIUS_M } from './gps.ts';
 
 /**
  * A single wind observation. `direction` follows the meteorological convention: the compass bearing the
@@ -33,7 +33,6 @@ const GAP_CAP_SEC = 30;
 const MIN_SEGMENT_M = 1;
 /** Half-width in degrees of the head- and tail-wind sectors. */
 const SECTOR_HALF_DEG = 45;
-const EARTH_RADIUS_M = 6_371_000;
 
 interface ValidPoint {
   lat: number;
