@@ -180,7 +180,9 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       widthMinPixels: 1,
       jointRounded: true,
       capRounded: true,
-      pickable: false,
+      // Pickable across the whole studio context: the detail page drops markers
+      // on its route, the studio tab lists the routes near the click.
+      pickable: studioTracks.active,
       updateTriggers: {
         getColor: [highlightedRouteId, hoveredStudioRouteId],
         getWidth: [highlightedRouteId],
@@ -190,8 +192,18 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
         getColor: 300,
       },
       parameters: ADDITIVE_BLEND,
+      // Without the shared click/hover handlers the pickable flag does nothing —
+      // deck routes picks through per-layer handlers, and onHover is what lights
+      // up the pick circle on the track.
+      ...eventHandlers,
     });
-  }, [studioSegments, studioTracks.focusedRouteId, hoveredStudioRouteId]);
+  }, [
+    studioSegments,
+    studioTracks.active,
+    studioTracks.focusedRouteId,
+    hoveredStudioRouteId,
+    eventHandlers,
+  ]);
 
   const pickCircleLayer = useMemo(() => {
     if (!pickCircle) {

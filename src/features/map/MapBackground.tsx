@@ -1,7 +1,8 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils.ts';
 import { useMatch } from 'react-router-dom';
 import MapGL from 'react-map-gl/maplibre';
+import type { PickingInfo } from '@deck.gl/core';
 import { darkMatterStyle } from './mapStyle.ts';
 import { useMapTracks } from './hooks/useMapTracks.ts';
 import { useGPSBackfill } from './hooks/useGpsBackfill.ts';
@@ -10,6 +11,11 @@ import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
 import { useMapPopupState } from './hooks/useMapPopupState.ts';
 import { DeckGLOverlay } from './DeckGLOverlay.tsx';
 import { DeckMetricsOverlay } from './DeckMetricsOverlay.tsx';
+import { StudioMarkerPins } from '../studio/markers/StudioMarkerPins.tsx';
+import { StudioTrackPickPopup } from '../studio/markers/StudioTrackPickPopup.tsx';
+import { StudioRoutesPickPopup } from '../studio/markers/StudioRoutesPickPopup.tsx';
+import { useStudioMapPopup } from '../studio/hooks/useStudioMapPopup.ts';
+import { useStudioRoutesPopup } from '../studio/hooks/useStudioRoutesPopup.ts';
 import { SessionsPickPopup } from '../sessions/SessionsPickPopup.tsx';
 import { LapPickPopup } from '../sessions/laps/LapPickPopup.tsx';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
@@ -34,6 +40,8 @@ export const MapBackground = (props: MapBackgroundProps) => {
   const backfill = useGPSBackfill();
   const mapTracks = useMapTracks(backfill.gpsData);
   const popupState = useMapPopupState(mapRef, mapTracks.tracks);
+  const studioPopup = useStudioMapPopup();
+  const studioRoutesPopup = useStudioRoutesPopup(mapRef);
   const focusedLaps = useMapFocusStore((s) => s.focusedLaps);
   const focusedSport = useMapFocusStore((s) => s.focusedSport);
   const focusedRecords = useMapFocusStore((s) => s.focusedRecords);
@@ -55,6 +63,27 @@ export const MapBackground = (props: MapBackgroundProps) => {
     studioTracks.bounds,
   );
 
+  // Clicks on a studio route open a studio popup; everything else routes to the
+  // session/lap pick handler.
+  const onMapClick = useCallback(
+    (info: PickingInfo) => {
+      if (info.layer?.id === 'studio-routes') {
+        // Detail page drops a marker on its route; the studio tab lists the
+        // routes near the click.
+        if (studioTracks.focusedRouteId) {
+          studioPopup.onClick(info);
+        } else {
+          studioRoutesPopup.onClick(info);
+        }
+        return;
+      }
+      return popupState.onClick(info);
+    },
+    [popupState, studioPopup, studioRoutesPopup, studioTracks.focusedRouteId],
+  );
+
+  const interactive = popupState.interactive && !studioPopup.popup && !studioRoutesPopup.popup;
+
   const backfillPct =
     backfill.total > 0 ? Math.min(backfill.processed, backfill.total) / backfill.total : 0;
   const backfillOffset = PROGRESS_CIRCUMFERENCE * (1 - backfillPct);
@@ -74,11 +103,11 @@ export const MapBackground = (props: MapBackgroundProps) => {
           latitude: 50,
           zoom: 4,
         }}
-        scrollZoom={popupState.interactive}
-        dragPan={popupState.interactive}
-        doubleClickZoom={popupState.interactive}
-        keyboard={popupState.interactive}
-        touchZoomRotate={popupState.interactive}
+        scrollZoom={interactive}
+        dragPan={interactive}
+        doubleClickZoom={interactive}
+        keyboard={interactive}
+        touchZoomRotate={interactive}
         dragRotate={false}
         pitchWithRotate={false}
         touchPitch={false}
@@ -87,11 +116,18 @@ export const MapBackground = (props: MapBackgroundProps) => {
       >
         <DeckGLOverlay
           tracks={mapTracks.tracks}
-          onClick={popupState.onClick}
+          onClick={onMapClick}
           onHover={popupState.onHover}
         />
+        {studioTracks.focusedRouteId && <StudioMarkerPins routeId={studioTracks.focusedRouteId} />}
       </MapGL>
       <DeckMetricsOverlay />
+      {studioPopup.popup && (
+        <StudioTrackPickPopup info={studioPopup.popup} onClose={studioPopup.close} />
+      )}
+      {studioRoutesPopup.popup && (
+        <StudioRoutesPickPopup info={studioRoutesPopup.popup} onClose={studioRoutesPopup.close} />
+      )}
       {popupState.popup && (
         <SessionsPickPopup info={popupState.popup} onClose={popupState.closePopup} />
       )}

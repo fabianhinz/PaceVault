@@ -9,6 +9,7 @@ import { StudioActionsMenu } from '@/features/studio/StudioActionsMenu.tsx';
 import { RouteStatsGrid } from '@/features/studio/RouteStatsGrid.tsx';
 import { RouteChartsExplorer } from '@/features/studio/charts/RouteChartsExplorer.tsx';
 import { StudioToolsTab } from '@/features/studio/StudioToolsTab.tsx';
+import { StudioMarkerDialog } from '@/features/studio/markers/StudioMarkerDialog.tsx';
 import { useStudioRoutePoints } from '@/features/studio/hooks/useStudioRoutePoints.ts';
 
 const validTabs = new Set(['overview', 'tools']);
@@ -60,9 +61,11 @@ const StudioDetail = (props: { route: StudioRoute }) => {
         </TabsContent>
 
         <TabsContent value="tools">
-          <StudioToolsTab />
+          <StudioToolsTab route={props.route} />
         </TabsContent>
       </Tabs>
+
+      <StudioMarkerDialog route={props.route} />
     </div>
   );
 };
