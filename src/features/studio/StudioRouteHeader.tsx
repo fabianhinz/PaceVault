@@ -1,15 +1,17 @@
 import type { ElementType, ReactNode } from 'react';
 import { Route } from 'lucide-react';
+import { m } from '@/paraglide/messages.js';
 import { Typography } from '@/components/ui/Typography.tsx';
 import type { TypographyVariants } from '@/components/ui/Typography.tsx';
-import { formatDistance } from '@/lib/formatters.ts';
+import { formatDate, formatDistance } from '@/lib/formatters.ts';
 import type { StudioRoute } from '@/store/studio.ts';
 import { routeColors } from './routeColors.ts';
 
 /**
- * Shared studio route header: colored badge + name (primary) + a stats line
- * (secondary) of distance and elevation gain. Used by the route list and the
- * detail page. Pass `children` to render an actions slot beside the title.
+ * Shared studio route header: colored badge + name (primary) + one secondary
+ * line of stats and import metadata. Both slots truncate instead of wrapping,
+ * like the session header. Used by the route list and the detail page. Pass
+ * `children` to render an actions slot beside the title.
  */
 export const StudioRouteHeader = (props: {
   route: StudioRoute;
@@ -21,6 +23,12 @@ export const StudioRouteHeader = (props: {
   if (props.route.elevation) {
     stats.push(`+${Math.round(props.route.elevation.gain)} m`);
   }
+  stats.push(
+    m.ui_studio_meta({
+      date: formatDate(props.route.importedAt),
+      file: props.route.sourceFileName,
+    }),
+  );
 
   return (
     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
@@ -35,7 +43,7 @@ export const StudioRouteHeader = (props: {
           <Typography variant={props.titleVariant ?? 'subtitle1'} as={props.titleAs} noWrap>
             {props.route.name}
           </Typography>
-          <Typography variant="caption" as="p" color="textSecondary">
+          <Typography variant="caption" as="p" color="textSecondary" className="truncate">
             {stats.join(' · ')}
           </Typography>
         </div>

@@ -143,8 +143,6 @@
   "ui_studio_stat_min_elevation": "Min elevation",
   "ui_studio_stat_max_elevation": "Max elevation",
   "ui_studio_stat_max_grade": "Max grade",
-  "ui_studio_profile_title": "Elevation profile",
-  "ui_studio_profile_subtitle": "Elevation over distance",
   "ui_studio_meta": "Imported {date} · {file}",
   "ui_labs_predictor_title": "Race Predictor",
   "ui_labs_predictor_subtitle": "Predict race times from a recent result using VDOT",

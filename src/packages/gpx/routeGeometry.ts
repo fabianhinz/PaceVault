@@ -31,7 +31,7 @@ const EARTH_RADIUS_M = 6371000;
 /** Elevation changes smaller than this are treated as GPS noise, not gain/loss. */
 const ELEVATION_HYSTERESIS_M = 3;
 /** Minimum horizontal distance over which a grade is considered sustained. */
-const GRADE_WINDOW_M = 50;
+export const GRADE_WINDOW_M = 50;
 
 const toRad = (deg: number): number => (deg * Math.PI) / 180;
 

@@ -25,7 +25,8 @@ test.describe('Studio', () => {
     await page.waitForURL(/\/studio\/.+/);
     await expect(page.getByRole('heading', { name: 'Alpine Loop' })).toBeVisible();
     await expect(page.getByText('Distance', { exact: true })).toBeVisible();
-    await expect(page.getByText(/elevation profile/i)).toBeVisible();
+    await expect(page.getByText('Elevation', { exact: true })).toBeVisible();
+    await expect(page.getByText('Grade', { exact: true })).toBeVisible();
     await expect(page.getByText(/route\.gpx/)).toBeVisible();
 
     // Elevation stats sit behind the collapsed stats-grid toggle

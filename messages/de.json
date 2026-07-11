@@ -143,8 +143,6 @@
   "ui_studio_stat_min_elevation": "Tiefster Punkt",
   "ui_studio_stat_max_elevation": "Höchster Punkt",
   "ui_studio_stat_max_grade": "Max. Steigung",
-  "ui_studio_profile_title": "Höhenprofil",
-  "ui_studio_profile_subtitle": "Höhe über Distanz",
   "ui_studio_meta": "Importiert am {date} · {file}",
   "ui_labs_predictor_title": "Rennzeit-Prognose",
   "ui_labs_predictor_subtitle": "Prognostiziere Rennzeiten anhand eines aktuellen Ergebnisses per VDOT",

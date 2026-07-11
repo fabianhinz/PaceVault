@@ -3,11 +3,10 @@ import { m } from '@/paraglide/messages.js';
 import { useStudioStore } from '@/store/studio.ts';
 import type { StudioRoute } from '@/store/studio.ts';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { formatDate } from '@/lib/formatters.ts';
 import { StudioRouteHeader } from '@/features/studio/StudioRouteHeader.tsx';
 import { StudioActionsMenu } from '@/features/studio/StudioActionsMenu.tsx';
 import { RouteStatsGrid } from '@/features/studio/RouteStatsGrid.tsx';
-import { RouteElevationProfile } from '@/features/studio/RouteElevationProfile.tsx';
+import { RouteChartsExplorer } from '@/features/studio/charts/RouteChartsExplorer.tsx';
 import { useStudioRoutePoints } from '@/features/studio/hooks/useStudioRoutePoints.ts';
 
 // The map picks up this page itself: useStudioMapTracks derives the focused
@@ -36,16 +35,9 @@ const StudioDetail = (props: { route: StudioRoute }) => {
         <StudioActionsMenu route={props.route} />
       </StudioRouteHeader>
 
-      <Typography variant="caption" as="p" color="textSecondary">
-        {m.ui_studio_meta({
-          date: formatDate(props.route.importedAt),
-          file: props.route.sourceFileName,
-        })}
-      </Typography>
-
       <RouteStatsGrid route={props.route} />
 
-      {routePoints.points && <RouteElevationProfile points={routePoints.points} />}
+      {routePoints.points && <RouteChartsExplorer points={routePoints.points} />}
     </div>
   );
 };
