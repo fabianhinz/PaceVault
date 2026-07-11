@@ -155,37 +155,41 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       return null;
     }
 
+    // Same highlight pattern as the session tracks: translucent by default,
+    // full opacity + wider stroke for the hovered route or the one whose
+    // detail page is open, everything else hidden while a route is hovered.
+    const highlightedRouteId = hoveredStudioRouteId ?? studioTracks.focusedRouteId;
+
     return new PathLayer<(typeof studioSegments)[number]>({
       id: 'studio-routes',
       data: studioSegments,
       getPath: (d) => decodeCached(`studio-${d.routeId}-${d.segIndex}`, d.encodedPolyline),
       getColor: (d) => {
-        let alpha = trackModifiers.alpha.highlighted;
+        let alpha = trackModifiers.alpha.default;
         if (hoveredStudioRouteId && hoveredStudioRouteId !== d.routeId) {
           alpha = 0;
+        } else if (highlightedRouteId === d.routeId) {
+          alpha = trackModifiers.alpha.highlighted;
         }
         return [d.color[0], d.color[1], d.color[2], alpha];
       },
-      // Detail (single focused route) and the hovered route draw wider than
-      // the tab's all-routes overview.
-      getWidth: (d) => {
-        if (d.routeId === studioTracks.focusedRouteId || d.routeId === hoveredStudioRouteId) {
-          return trackModifiers.width.highlighted;
-        }
-        return trackModifiers.width.default;
-      },
+      getWidth: (d) =>
+        d.routeId === highlightedRouteId
+          ? trackModifiers.width.highlighted
+          : trackModifiers.width.default,
       widthMinPixels: 1,
       jointRounded: true,
       capRounded: true,
       pickable: false,
       updateTriggers: {
-        getColor: [hoveredStudioRouteId],
-        getWidth: [studioTracks.focusedRouteId, hoveredStudioRouteId],
+        getColor: [highlightedRouteId, hoveredStudioRouteId],
+        getWidth: [highlightedRouteId],
       },
       transitions: {
         getWidth: 300,
         getColor: 300,
       },
+      parameters: ADDITIVE_BLEND,
     });
   }, [studioSegments, studioTracks.focusedRouteId, hoveredStudioRouteId]);
 

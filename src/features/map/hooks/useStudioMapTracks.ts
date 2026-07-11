@@ -4,6 +4,7 @@ import { unionBounds } from '@/packages/engine/gps.ts';
 import type { GPSBounds } from '@/packages/engine/types.ts';
 import { useStudioStore, type StudioRoute } from '@/store/studio.ts';
 import { routeColors } from '@/features/studio/routeColors.ts';
+import { resolveLabsTab } from '@/lib/labsTab.ts';
 
 export interface StudioMapRoute {
   id: string;
@@ -43,7 +44,7 @@ export const useStudioMapTracks = (): StudioMapTracks => {
   const detailMatch = useMatch('/studio/:id');
   const labsMatch = useMatch('/labs');
   const [searchParams] = useSearchParams();
-  const onStudioTab = labsMatch !== null && searchParams.get('tab') === 'studio';
+  const onStudioTab = labsMatch !== null && resolveLabsTab(searchParams.get('tab')) === 'studio';
   const detailRouteId = detailMatch?.params.id ?? null;
 
   return useMemo(() => {
