@@ -132,6 +132,8 @@
   "ui_studio_pick_title": "Add to route",
   "ui_studio_pick_from_start": "{km} km from start",
   "ui_studio_pick_from_split": "{km} km from last split",
+  "ui_studio_export_segment": "Export this segment",
+  "ui_studio_export_needs_split": "Add a split to export segments",
   "ui_studio_tab_overview": "Overview",
   "ui_studio_tab_tools": "Tools",
   "ui_studio_tools_splits_title": "Track modifiers",

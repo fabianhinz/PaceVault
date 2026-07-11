@@ -1,8 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { buildSessionGpx } from '@/lib/gpxExport.ts';
+import { buildSessionGpx, buildRouteSegmentGpx } from '@/lib/gpxExport.ts';
 import { buildGpxFilename } from '@/packages/gpx/buildGpx.ts';
+import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
 import { makeGPSRunningRecords, makeIndoorRecords } from '../factories/gps.ts';
 import { makeSession } from '../factories/sessions.ts';
+
+const routePoints = (count: number): RoutePoint[] =>
+  Array.from({ length: count }, (_, i) => ({
+    lat: 47 + i * 0.001,
+    lng: 11 + i * 0.001,
+    ele: 600 + i,
+    seg: 0,
+    dist: i * 1000,
+  }));
 
 describe('buildSessionGpx', () => {
   it('produces valid GPX from GPS records', () => {
@@ -55,6 +65,24 @@ describe('buildSessionGpx', () => {
     const gpx = buildSessionGpx(session, []);
 
     expect(gpx).toBeNull();
+  });
+});
+
+describe('buildRouteSegmentGpx', () => {
+  const meta = { name: 'Alpine Loop - segment 2', time: new Date(1700000000000) };
+
+  it('exports only the points within the distance slice', () => {
+    const gpx = buildRouteSegmentGpx(routePoints(10), 3000, 6000, meta);
+    expect(gpx).not.toBeNull();
+    const trkptCount = (gpx?.match(/<trkpt/g) ?? []).length;
+    // dist 3000, 4000, 5000, 6000 — inclusive on both ends.
+    expect(trkptCount).toBe(4);
+    expect(gpx).toContain('Alpine Loop - segment 2');
+    expect(gpx).toContain('<ele>');
+  });
+
+  it('returns null when the slice has fewer than two points', () => {
+    expect(buildRouteSegmentGpx(routePoints(10), 3000, 3000, meta)).toBeNull();
   });
 });
 

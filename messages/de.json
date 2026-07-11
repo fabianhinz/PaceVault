@@ -132,6 +132,8 @@
   "ui_studio_pick_title": "Zur Route hinzufügen",
   "ui_studio_pick_from_start": "{km} km ab Start",
   "ui_studio_pick_from_split": "{km} km ab letztem Teiler",
+  "ui_studio_export_segment": "Diesen Abschnitt exportieren",
+  "ui_studio_export_needs_split": "Teiler setzen, um Abschnitte zu exportieren",
   "ui_studio_tab_overview": "Übersicht",
   "ui_studio_tab_tools": "Tools",
   "ui_studio_tools_splits_title": "Streckenteiler",

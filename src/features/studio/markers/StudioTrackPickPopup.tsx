@@ -1,11 +1,13 @@
 import { useRef } from 'react';
-import { X } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { useStudioStore } from '@/store/studio.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { MapPopupShell } from '@/features/map/MapPopupShell.tsx';
 import { AddMarkerButton } from './AddMarkerButton.tsx';
+import { segmentAtDistance } from './routeSegments.ts';
+import { useStudioSegmentExport } from '@/features/studio/hooks/useStudioSegmentExport.ts';
 
 export interface StudioTrackPickInfo {
   x: number;
@@ -19,18 +21,24 @@ const toKm = (metres: number): string => (metres / 1000).toFixed(2);
 
 /**
  * Shown when the user clicks the focused route on the map: pick which kind of
- * marker to drop at that point. The add actions are the same ones the Tools-tab
- * cards use, pre-seeded with the clicked distance.
+ * marker to drop at that point, or export the segment the click falls into. The
+ * add actions are the same ones the Tools-tab cards use.
  */
 export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose: () => void }) => {
   const cardRef = useRef<HTMLDivElement>(null);
-  const markers = useStudioStore((s) => s.routes.find((r) => r.id === props.info.routeId)?.markers);
+  const route = useStudioStore((s) => s.routes.find((r) => r.id === props.info.routeId));
+  const segmentExport = useStudioSegmentExport();
+
+  const splitDistances = (route?.markers ?? [])
+    .filter((mk) => mk.type === 'track_modifier')
+    .map((mk) => mk.distanceM);
+  const hasSplits = splitDistances.length > 0;
 
   // The split point immediately before the click — how far this new marker sits
   // into the current segment.
-  const lastSplitM = (markers ?? [])
-    .filter((mk) => mk.type === 'track_modifier' && mk.distanceM <= props.info.distanceM)
-    .reduce<number | null>((furthest, mk) => Math.max(furthest ?? 0, mk.distanceM), null);
+  const lastSplitM = splitDistances
+    .filter((d) => d <= props.info.distanceM)
+    .reduce<number | null>((furthest, d) => Math.max(furthest ?? 0, d), null);
 
   const subtitleParts = [m.ui_studio_pick_from_start({ km: toKm(props.info.distanceM) })];
   if (lastSplitM !== null) {
@@ -38,6 +46,10 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
       m.ui_studio_pick_from_split({ km: toKm(props.info.distanceM - lastSplitM) }),
     );
   }
+
+  const segment = route
+    ? segmentAtDistance(splitDistances, route.distance, props.info.distanceM)
+    : null;
 
   return (
     <MapPopupShell
@@ -70,6 +82,21 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
           distanceM={props.info.distanceM}
           onDone={props.onClose}
         />
+
+        {route && segment && (
+          <Button
+            variant="secondary"
+            className="w-full"
+            disabled={!hasSplits || segmentExport.exporting}
+            onClick={() => {
+              segmentExport.exportSegment(route, segment.startM, segment.endM, segment.index);
+              props.onClose();
+            }}
+          >
+            <Download className="size-4" />
+            {hasSplits ? m.ui_studio_export_segment() : m.ui_studio_export_needs_split()}
+          </Button>
+        )}
       </div>
     </MapPopupShell>
   );
