@@ -1,68 +1,75 @@
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   ResponsiveContainer,
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceArea,
-  ReferenceLine,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
-import { chartTheme, formatChartTime } from '@/lib/chartTheme.ts';
+import { chartTheme, formatTick, type ChartXAxis } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
-import type { GradePoint } from '@/lib/chartData.ts';
 import { m } from '@/paraglide/messages.js';
 
-interface GradeChartProps {
-  data: GradePoint[];
+interface ElevationChartProps<
+  K extends string,
+  T extends { elevation: number } & Record<K, number>,
+> {
+  data: T[];
+  xAxis: ChartXAxis<K>;
   mode?: 'compact' | 'expanded';
-  onActiveTimeChange?: (time: number | null) => void;
+  onActiveXChange?: (x: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onZoomReset?: () => void;
 }
 
-export const GradeChart = (props: GradeChartProps) => {
+export const ElevationChart = <
+  K extends string,
+  T extends { elevation: number } & Record<K, number>,
+>(
+  props: ElevationChartProps<K, T>,
+) => {
   const compact = props.mode === 'compact';
   const zoom = useChartZoom({
     data: props.data,
-    xKey: 'time',
+    xKey: props.xAxis.key,
     onZoomComplete: props.onZoomComplete,
     onZoomReset: props.onZoomReset,
   });
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart
-        syncId={compact ? 'session-detail' : undefined}
+      <AreaChart
+        syncId={compact ? props.xAxis.syncId : undefined}
         data={zoom.zoomedData}
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
           zoom.onMouseMove(e);
-          if (compact && props.onActiveTimeChange && e.activeLabel != null)
-            props.onActiveTimeChange(Number(e.activeLabel));
+          if (compact && props.onActiveXChange && e.activeLabel != null)
+            props.onActiveXChange(Number(e.activeLabel));
         }}
         onMouseUp={zoom.onMouseUp}
         onMouseLeave={
-          compact && props.onActiveTimeChange ? () => props.onActiveTimeChange?.(null) : undefined
+          compact && props.onActiveXChange ? () => props.onActiveXChange?.(null) : undefined
         }
       >
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
-          dataKey="time"
+          dataKey={props.xAxis.key}
           ticks={
             compact
               ? [
-                  zoom.zoomedData[0]?.time ?? 0,
-                  zoom.zoomedData[zoom.zoomedData.length - 1]?.time ?? 0,
+                  zoom.zoomedData[0]?.[props.xAxis.key] ?? 0,
+                  zoom.zoomedData[zoom.zoomedData.length - 1]?.[props.xAxis.key] ?? 0,
                 ]
               : undefined
           }
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
-          tickFormatter={formatChartTime}
+          tickFormatter={props.xAxis.tickFormatter}
         />
         <YAxis
           yAxisId="left"
@@ -70,31 +77,25 @@ export const GradeChart = (props: GradeChartProps) => {
           tickLine={false}
           axisLine={false}
           tickCount={compact ? 3 : undefined}
-          tickFormatter={(v: number) => `${v}%`}
+          tickFormatter={(v: number) => formatTick(v, compact ? undefined : 'm')}
         />
         <RechartsTooltip
           contentStyle={chartTheme.tooltip.contentStyle}
           labelStyle={chartTheme.tooltip.labelStyle}
           isAnimationActive={chartTheme.tooltip.isAnimationActive}
           separator={chartTheme.tooltip.separator}
-          labelFormatter={(v) => formatChartTime(Number(v))}
+          labelFormatter={(v) => props.xAxis.tickFormatter(Number(v))}
         />
-        {!compact && (
-          <ReferenceLine
-            yAxisId="left"
-            y={0}
-            stroke={tokens.textQuaternary}
-            strokeDasharray="3 3"
-          />
-        )}
-        <Line
+        <Area
           yAxisId="left"
           type="monotone"
-          dataKey="grade"
-          stroke={tokens.chartGrade}
+          dataKey="elevation"
+          stroke={tokens.chartElevation}
+          fill={tokens.chartElevation}
+          fillOpacity={0.2}
           strokeWidth={1.5}
           dot={false}
-          name={m.ui_chart_series_grade()}
+          name={m.ui_chart_series_elevation()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (
           <ReferenceArea
@@ -106,7 +107,7 @@ export const GradeChart = (props: GradeChartProps) => {
             fillOpacity={0.15}
           />
         )}
-      </LineChart>
+      </AreaChart>
     </ResponsiveContainer>
   );
 };

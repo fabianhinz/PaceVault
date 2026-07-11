@@ -15,14 +15,18 @@ import { useLapOptionsStore } from './store/lapOptions.ts';
 import './index.css';
 
 const boot = async () => {
-  await useUserStore.persist.rehydrate();
-  await useSessionsStore.persist.rehydrate();
-  await useTripsStore.persist.rehydrate();
-  await useStudioStore.persist.rehydrate();
-  await useCoachPlanStore.persist.rehydrate();
-  await useLayoutStore.persist.rehydrate();
-  await useFiltersStore.persist.rehydrate();
-  await useLapOptionsStore.persist.rehydrate();
+  // The stores are independent — rehydrate them concurrently instead of
+  // serializing one IndexedDB round-trip per store at boot.
+  await Promise.all([
+    useUserStore.persist.rehydrate(),
+    useSessionsStore.persist.rehydrate(),
+    useTripsStore.persist.rehydrate(),
+    useStudioStore.persist.rehydrate(),
+    useCoachPlanStore.persist.rehydrate(),
+    useLayoutStore.persist.rehydrate(),
+    useFiltersStore.persist.rehydrate(),
+    useLapOptionsStore.persist.rehydrate(),
+  ]);
 
   const rootEl = document.getElementById('root');
   if (!rootEl) return;

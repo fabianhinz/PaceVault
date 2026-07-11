@@ -23,7 +23,7 @@ describe('buildRouteGeometry', () => {
     expect(geometry?.points[1]?.dist).toBeCloseTo(1111.9, 0);
     expect(geometry?.points[2]?.dist).toBeCloseTo(2223.9, 0);
     expect(geometry?.distance).toBeCloseTo(2223.9, 0);
-    expect(geometry?.pointCount).toBe(3);
+    expect(geometry?.points).toHaveLength(3);
   });
 
   it('computes bounds enclosing all points', () => {

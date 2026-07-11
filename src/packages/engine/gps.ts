@@ -14,6 +14,24 @@ export const isValidCoordinate = (r: { lat?: number | null; lng?: number | null 
 /** Convert an angle in degrees to radians. */
 export const toRad = (deg: number): number => (deg * Math.PI) / 180;
 
+const EARTH_RADIUS_M = 6371000;
+
+/**
+ * Compute the great-circle distance between two GPS points using the haversine formula.
+ * @see [Veness2019] — standard haversine formula.
+ * @param a - First point.
+ * @param b - Second point.
+ * @returns Distance in metres.
+ */
+export const haversineM = (a: GPSPoint, b: GPSPoint): number => {
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const h = sinLat * sinLat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinLng * sinLng;
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
+};
+
 /**
  * Compute the initial bearing (forward azimuth) of the great-circle path from `a` to `b`.
  * @see [Veness2019] — standard initial-bearing formula.
@@ -83,7 +101,7 @@ const encodeTrack = (points: GPSPoint[]): string => encode(points.map((p) => [p.
  * @param points - GPS points to compute bounds for.
  * @returns `GPSBounds` with `minLat`, `maxLat`, `minLng`, and `maxLng`.
  */
-const computeBounds = (points: GPSPoint[]): GPSBounds => {
+export const computeBounds = (points: GPSPoint[]): GPSBounds => {
   let minLat = Infinity;
   let maxLat = -Infinity;
   let minLng = Infinity;

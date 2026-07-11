@@ -39,11 +39,18 @@ export interface GAPPoint extends TimeSeriesPoint {
   gap: number;
 }
 
+export const filterSeriesByKey = <K extends string, T extends Record<K, number>>(
+  data: T[],
+  key: K,
+  from: number,
+  to: number,
+): T[] => data.filter((d) => d[key] >= from && d[key] <= to);
+
 export const filterTimeSeries = <T extends TimeSeriesPoint>(
   data: T[],
   from: number,
   to: number,
-): T[] => data.filter((d) => d.time >= from && d.time <= to);
+): T[] => filterSeriesByKey(data, 'time', from, to);
 
 export const toMinutes = (timestamp: number): number => Math.round((timestamp / 60) * 100) / 100;
 

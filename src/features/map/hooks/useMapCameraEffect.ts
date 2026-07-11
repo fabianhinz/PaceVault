@@ -10,7 +10,7 @@ export const useMapCameraEffect = (
   openedSessionId: string | null,
   mapLoaded: boolean,
   fitAll: boolean,
-  studioBounds: GPSBounds | null,
+  overrideBounds: GPSBounds | null,
 ) => {
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
@@ -21,12 +21,12 @@ export const useMapCameraEffect = (
       rightPad = window.innerWidth * 0.4;
     }
 
-    // Studio detail focuses an imported route with no session tracks on the map.
-    if (studioBounds) {
+    // Explicit bounds (e.g. a focused studio route) win over any track-derived fit.
+    if (overrideBounds) {
       mapRef.current.fitBounds(
         [
-          [studioBounds.minLng, studioBounds.minLat],
-          [studioBounds.maxLng, studioBounds.maxLat],
+          [overrideBounds.minLng, overrideBounds.minLat],
+          [overrideBounds.maxLng, overrideBounds.maxLat],
         ],
         {
           padding: { top: 80, bottom: 80, left: 80, right: 80 + rightPad },
@@ -73,5 +73,5 @@ export const useMapCameraEffect = (
         duration: 1000,
       },
     );
-  }, [tracks, openedSessionId, mapLoaded, mapRef, fitAll, studioBounds]);
+  }, [tracks, openedSessionId, mapLoaded, mapRef, fitAll, overrideBounds]);
 };

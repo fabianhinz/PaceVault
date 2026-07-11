@@ -7,15 +7,7 @@ interface RouteColorValue {
 
 export const DEFAULT_ROUTE_COLOR: StudioRouteColor = 'sky';
 
-export const routeColorOrder: StudioRouteColor[] = [
-  'sky',
-  'emerald',
-  'amber',
-  'rose',
-  'violet',
-  'cyan',
-];
-
+/** Keys double as the picker's display order. */
 export const routeColors: Record<StudioRouteColor, RouteColorValue> = {
   sky: { rgb: [56, 189, 248], hex: '#38bdf8' },
   emerald: { rgb: [52, 211, 153], hex: '#34d399' },
@@ -24,3 +16,5 @@ export const routeColors: Record<StudioRouteColor, RouteColorValue> = {
   violet: { rgb: [167, 139, 250], hex: '#a78bfa' },
   cyan: { rgb: [34, 211, 238], hex: '#22d3ee' },
 };
+
+export const routeColorOrder = Object.keys(routeColors) as StudioRouteColor[];

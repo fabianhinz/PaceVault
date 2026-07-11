@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Heart, Zap, Gauge, Mountain, Timer, TrendingUp, ArrowUpDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
@@ -17,12 +17,14 @@ import {
 } from '@/lib/chartData.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { sportIcon } from '@/lib/sportIcons.ts';
+import { sessionTimeXAxis } from '@/lib/chartTheme.ts';
+import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
 import { HrChart } from './HrChart.tsx';
 import { PowerChart } from './PowerChart.tsx';
 import { SpeedChart } from './SpeedChart.tsx';
 import { CadenceChart } from './CadenceChart.tsx';
-import { ElevationChart } from './ElevationChart.tsx';
-import { GradeChart } from './GradeChart.tsx';
+import { ElevationChart } from '@/components/charts/ElevationChart.tsx';
+import { GradeChart } from '@/components/charts/GradeChart.tsx';
 import { PaceChart } from './PaceChart.tsx';
 import { GradeAdjustedPaceChart } from './GradeAdjustedPaceChart.tsx';
 import { tokens } from '@/lib/tokens.ts';
@@ -81,15 +83,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   useEffect(() => () => useMapFocusStore.getState().clearHoveredPoint(), []);
 
   // Synced zoom state for compact mode
-  const [zoomRange, setZoomRange] = useState<{ from: number; to: number } | null>(null);
-
-  const handleZoomComplete = useCallback((from: string | number, to: string | number) => {
-    setZoomRange({ from: Number(from), to: Number(to) });
-  }, []);
-
-  const handleZoomReset = useCallback(() => {
-    setZoomRange(null);
-  }, []);
+  const zoom = useSyncedChartZoom();
+  const zoomRange = zoom.zoomRange;
 
   // Filtered data for synced compact zoom
   const filteredHrData = useMemo(
@@ -144,8 +139,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             data={mode === 'compact' ? filteredHrData : hrData}
             mode={mode}
             onActiveTimeChange={hasGps ? onActiveTimeChange : undefined}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -160,8 +155,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             data={mode === 'compact' ? filteredPowerData : powerData}
             mode={mode}
             onActiveTimeChange={hasGps ? onActiveTimeChange : undefined}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -176,8 +171,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             data={mode === 'compact' ? filteredSpeedData : speedData}
             mode={mode}
             onActiveTimeChange={hasGps ? onActiveTimeChange : undefined}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -190,10 +185,11 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         render: (mode: 'compact' | 'expanded') => (
           <ElevationChart
             data={mode === 'compact' ? filteredElevationData : elevationData}
+            xAxis={sessionTimeXAxis}
             mode={mode}
-            onActiveTimeChange={hasGps ? onActiveTimeChange : undefined}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onActiveXChange={hasGps ? onActiveTimeChange : undefined}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -208,8 +204,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             data={mode === 'compact' ? filteredCadenceData : cadenceData}
             mode={mode}
             onActiveTimeChange={hasGps ? onActiveTimeChange : undefined}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -222,10 +218,11 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         render: (mode: 'compact' | 'expanded') => (
           <GradeChart
             data={mode === 'compact' ? filteredGradeData : gradeData}
+            xAxis={sessionTimeXAxis}
             mode={mode}
-            onActiveTimeChange={hasGps ? onActiveTimeChange : undefined}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onActiveXChange={hasGps ? onActiveTimeChange : undefined}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -240,8 +237,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             data={mode === 'compact' ? filteredPaceData : paceData}
             mode={mode}
             onActiveTimeChange={hasGps ? onActiveTimeChange : undefined}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -256,8 +253,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             data={mode === 'compact' ? filteredGapData : gapData}
             mode={mode}
             onActiveTimeChange={hasGps ? onActiveTimeChange : undefined}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -282,8 +279,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       cadenceIcon,
       hasGps,
       onActiveTimeChange,
-      handleZoomComplete,
-      handleZoomReset,
+      zoom.onZoomComplete,
+      zoom.onZoomReset,
     ],
   );
 

@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Mountain, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
-import { buildRouteProfile, type RouteProfilePoint } from '@/packages/gpx/routeProfile.ts';
+import { ElevationChart } from '@/components/charts/ElevationChart.tsx';
+import { GradeChart } from '@/components/charts/GradeChart.tsx';
+import { buildRouteProfile } from '@/packages/gpx/routeProfile.ts';
 import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { filterSeriesByKey } from '@/lib/chartData.ts';
+import { routeDistanceXAxis } from '@/lib/chartTheme.ts';
+import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { m } from '@/paraglide/messages.js';
-import { RouteElevationChart } from './RouteElevationChart.tsx';
-import { RouteGradeChart } from './RouteGradeChart.tsx';
 
 interface ChartEntry {
   key: string;
@@ -18,9 +21,6 @@ interface ChartEntry {
   hasData: boolean;
   render: (mode: 'compact' | 'expanded') => React.ReactNode;
 }
-
-const filterByDist = <T extends RouteProfilePoint>(data: T[], from: number, to: number): T[] =>
-  data.filter((d) => d.dist >= from && d.dist <= to);
 
 /**
  * Route twin of SessionChartsExplorer: elevation + grade over distance,
@@ -55,22 +55,19 @@ export const RouteChartsExplorer = (props: { points: RoutePoint[] }) => {
   useEffect(() => () => useMapFocusStore.getState().clearHoveredPoint(), []);
 
   // Synced zoom state for compact mode
-  const [zoomRange, setZoomRange] = useState<{ from: number; to: number } | null>(null);
-
-  const handleZoomComplete = useCallback((from: string | number, to: string | number) => {
-    setZoomRange({ from: Number(from), to: Number(to) });
-  }, []);
-
-  const handleZoomReset = useCallback(() => {
-    setZoomRange(null);
-  }, []);
+  const zoom = useSyncedChartZoom();
+  const zoomRange = zoom.zoomRange;
 
   const filteredElevationData = useMemo(
-    () => (zoomRange ? filterByDist(elevationData, zoomRange.from, zoomRange.to) : elevationData),
+    () =>
+      zoomRange
+        ? filterSeriesByKey(elevationData, 'dist', zoomRange.from, zoomRange.to)
+        : elevationData,
     [elevationData, zoomRange],
   );
   const filteredGradeData = useMemo(
-    () => (zoomRange ? filterByDist(gradeData, zoomRange.from, zoomRange.to) : gradeData),
+    () =>
+      zoomRange ? filterSeriesByKey(gradeData, 'dist', zoomRange.from, zoomRange.to) : gradeData,
     [gradeData, zoomRange],
   );
 
@@ -83,12 +80,13 @@ export const RouteChartsExplorer = (props: { points: RoutePoint[] }) => {
         color: tokens.chartElevation,
         hasData: elevationData.length > 1,
         render: (mode: 'compact' | 'expanded') => (
-          <RouteElevationChart
+          <ElevationChart
             data={mode === 'compact' ? filteredElevationData : elevationData}
+            xAxis={routeDistanceXAxis}
             mode={mode}
-            onActiveDistChange={onActiveDistChange}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onActiveXChange={onActiveDistChange}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -99,12 +97,13 @@ export const RouteChartsExplorer = (props: { points: RoutePoint[] }) => {
         color: tokens.chartGrade,
         hasData: gradeData.length > 1,
         render: (mode: 'compact' | 'expanded') => (
-          <RouteGradeChart
+          <GradeChart
             data={mode === 'compact' ? filteredGradeData : gradeData}
+            xAxis={routeDistanceXAxis}
             mode={mode}
-            onActiveDistChange={onActiveDistChange}
-            onZoomComplete={mode === 'compact' ? handleZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? handleZoomReset : undefined}
+            onActiveXChange={onActiveDistChange}
+            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
+            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
           />
         ),
       },
@@ -115,8 +114,8 @@ export const RouteChartsExplorer = (props: { points: RoutePoint[] }) => {
       filteredElevationData,
       filteredGradeData,
       onActiveDistChange,
-      handleZoomComplete,
-      handleZoomReset,
+      zoom.onZoomComplete,
+      zoom.onZoomReset,
     ],
   );
 

@@ -34,6 +34,29 @@ export const formatChartDate = (isoDate: string): string => {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
 };
 
+/**
+ * X-axis variant for the shared detail charts: sessions plot over elapsed
+ * time, studio routes over cumulative distance.
+ */
+export interface ChartXAxis<K extends string> {
+  key: K;
+  /** Recharts syncId linking the compact charts' tooltips and zoom. */
+  syncId: string;
+  tickFormatter: (v: number) => string;
+}
+
+export const sessionTimeXAxis: ChartXAxis<'time'> = {
+  key: 'time',
+  syncId: 'session-detail',
+  tickFormatter: formatChartTime,
+};
+
+export const routeDistanceXAxis: ChartXAxis<'dist'> = {
+  key: 'dist',
+  syncId: 'studio-detail',
+  tickFormatter: (v: number) => formatTick(v, 'km'),
+};
+
 export const chartTheme = {
   tick: { fill: tokens.textTertiary, fontSize: 11 },
   axisLine: { stroke: tokens.border },

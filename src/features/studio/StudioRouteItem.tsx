@@ -2,11 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card.tsx';
 import type { StudioRoute } from '@/store/studio.ts';
 import { StudioRouteHeader } from './StudioRouteHeader.tsx';
-import { useStudioRouteHover } from './hooks/useStudioRouteHover.ts';
+import { useMapHover } from '@/lib/hooks/useMapHover.ts';
 
 export const StudioRouteItem = (props: { route: StudioRoute }) => {
   const navigate = useNavigate();
-  const routeHover = useStudioRouteHover(props.route.id);
+  const routeHover = useMapHover('studioRoute', props.route.id);
 
   return (
     <Card

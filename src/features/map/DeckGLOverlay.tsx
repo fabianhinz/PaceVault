@@ -134,25 +134,30 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     });
   }, [detailPath, zoneColorMode, openedSessionId, eventHandlers]);
 
+  // One path per GPX segment — disconnected segments must not be joined.
+  // Memoized separately from hover state so hovering a route card keeps the
+  // data identity stable and deck.gl only re-evaluates the triggered accessors.
+  const studioSegments = useMemo(
+    () =>
+      studioTracks.routes.flatMap((route) =>
+        route.encodedPolylines.map((encodedPolyline, segIndex) => ({
+          routeId: route.id,
+          segIndex,
+          encodedPolyline,
+          color: route.color,
+        })),
+      ),
+    [studioTracks.routes],
+  );
+
   const studioRouteLayer = useMemo(() => {
-    if (studioTracks.routes.length === 0) {
+    if (studioSegments.length === 0) {
       return null;
     }
 
-    // One path per GPX segment — disconnected segments must not be joined.
-    const segments = studioTracks.routes.flatMap((route) =>
-      route.encodedPolylines.map((encodedPolyline, segIndex) => ({
-        routeId: route.id,
-        segIndex,
-        encodedPolyline,
-        color: route.color,
-      })),
-    );
-    const versionKey = studioTracks.routes.map((r) => `${r.id}:${r.color.join(',')}`).join('|');
-
-    return new PathLayer<(typeof segments)[number]>({
+    return new PathLayer<(typeof studioSegments)[number]>({
       id: 'studio-routes',
-      data: segments,
+      data: studioSegments,
       getPath: (d) => decodeCached(`studio-${d.routeId}-${d.segIndex}`, d.encodedPolyline),
       getColor: (d) => {
         let alpha = trackModifiers.alpha.highlighted;
@@ -174,8 +179,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       capRounded: true,
       pickable: false,
       updateTriggers: {
-        getPath: [versionKey],
-        getColor: [versionKey, hoveredStudioRouteId],
+        getColor: [hoveredStudioRouteId],
         getWidth: [studioTracks.focusedRouteId, hoveredStudioRouteId],
       },
       transitions: {
@@ -183,7 +187,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
         getColor: 300,
       },
     });
-  }, [studioTracks.routes, studioTracks.focusedRouteId, hoveredStudioRouteId]);
+  }, [studioSegments, studioTracks.focusedRouteId, hoveredStudioRouteId]);
 
   const pickCircleLayer = useMemo(() => {
     if (!pickCircle) {

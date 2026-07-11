@@ -1,4 +1,5 @@
 import { encode } from '@googlemaps/polyline-codec';
+import { computeBounds, haversineM } from '../engine/gps.ts';
 import type { GPSBounds } from '../engine/types.ts';
 import type { ParsedGpxPoint } from './parseGpx.ts';
 import { simplifyGpxPoints } from './simplifyGpxPoints.ts';
@@ -24,40 +25,13 @@ export interface RouteGeometry {
   bounds: GPSBounds;
   /** Total route distance in metres. */
   distance: number;
-  pointCount: number;
   elevation?: RouteElevationStats;
 }
 
-const EARTH_RADIUS_M = 6371000;
 /** Elevation changes smaller than this are treated as GPS noise, not gain/loss. */
 const ELEVATION_HYSTERESIS_M = 3;
 /** Minimum horizontal distance over which a grade is considered sustained. */
-export const GRADE_WINDOW_M = 50;
-
-const toRad = (deg: number): number => (deg * Math.PI) / 180;
-
-const haversineM = (a: ParsedGpxPoint, b: ParsedGpxPoint): number => {
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const sinLat = Math.sin(dLat / 2);
-  const sinLng = Math.sin(dLng / 2);
-  const h = sinLat * sinLat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinLng * sinLng;
-  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
-};
-
-const computeBounds = (points: RoutePoint[]): GPSBounds => {
-  let minLat = Infinity;
-  let maxLat = -Infinity;
-  let minLng = Infinity;
-  let maxLng = -Infinity;
-  for (const p of points) {
-    if (p.lat < minLat) minLat = p.lat;
-    if (p.lat > maxLat) maxLat = p.lat;
-    if (p.lng < minLng) minLng = p.lng;
-    if (p.lng > maxLng) maxLng = p.lng;
-  }
-  return { minLat, maxLat, minLng, maxLng };
-};
+const GRADE_WINDOW_M = 50;
 
 const groupBySegment = <T extends { seg: number }>(points: T[]): T[][] => {
   const segments: T[][] = [];
@@ -158,7 +132,6 @@ export const buildRouteGeometry = (parsedPoints: ParsedGpxPoint[]): RouteGeometr
     encodedPolylines,
     bounds: computeBounds(points),
     distance: dist,
-    pointCount: points.length,
     elevation: computeElevationStats(points),
   };
 };

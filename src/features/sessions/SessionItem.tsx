@@ -3,7 +3,7 @@ import { SessionHeader } from './SessionHeader.tsx';
 import { Card } from '@/components/ui/Card.tsx';
 import type { TrainingSession } from '@/packages/engine/types.ts';
 import { cn } from '@/lib/utils.ts';
-import { useSessionHover } from './hooks/useSessionHover.ts';
+import { useMapHover } from '@/lib/hooks/useMapHover.ts';
 interface SessionItemProps {
   session: TrainingSession;
   className?: string;
@@ -17,7 +17,7 @@ export const SessionItem = (props: SessionItemProps) => {
     props.onNavigate?.();
   };
 
-  const sessionHover = useSessionHover(props.session.id);
+  const sessionHover = useMapHover('session', props.session.id);
 
   return (
     <Card
