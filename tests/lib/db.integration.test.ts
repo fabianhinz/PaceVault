@@ -6,15 +6,23 @@ describe('DB schema', () => {
     resetDBInstance();
   });
 
-  it('opens at version 3 with all expected stores', async () => {
+  it('opens at version 4 with all expected stores', async () => {
     const db = await getDB();
-    expect(db.version).toBe(3);
+    expect(db.version).toBe(4);
     expect(db.objectStoreNames.contains('session-records')).toBe(true);
     expect(db.objectStoreNames.contains('session-laps')).toBe(true);
     expect(db.objectStoreNames.contains('session-gps')).toBe(true);
     expect(db.objectStoreNames.contains('session-weather')).toBe(true);
     expect(db.objectStoreNames.contains('fit-files')).toBe(true);
+    expect(db.objectStoreNames.contains('studio-route-points')).toBe(true);
     expect(db.objectStoreNames.contains('kv')).toBe(true);
+  });
+
+  it('studio-route-points store uses routeId keyPath (no indexes)', async () => {
+    const db = await getDB();
+    const tx = db.transaction('studio-route-points', 'readonly');
+    expect(tx.store.keyPath).toBe('routeId');
+    expect(Array.from(tx.store.indexNames)).toHaveLength(0);
   });
 
   it('session-records store uses sessionId keyPath (no indexes)', async () => {

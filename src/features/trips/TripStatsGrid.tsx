@@ -4,10 +4,14 @@ import { Card } from '@/components/ui/Card.tsx';
 import { CardGrid } from '@/components/ui/CardGrid.tsx';
 import { StatItem } from '@/components/ui/StatItem.tsx';
 import type { MetricId } from '@/lib/explanations.ts';
-import { formatDate } from '@/lib/formatters.ts';
+import { formatDate, formatDistance, formatDuration } from '@/lib/formatters.ts';
 import type { TrainingSession } from '@/packages/engine/types.ts';
 import { computeTripTotals } from './tripStats.ts';
 
+// The complete stat inventory for a trip. The first entries repeat the trip
+// header's secondary line (sessions · distance · duration) in the same order,
+// so users never have to combine two places — expanding the grid reveals
+// everything.
 export const TripStatsGrid = (props: { sessions: TrainingSession[] }) => {
   const totals = computeTripTotals(props.sessions);
 
@@ -18,9 +22,6 @@ export const TripStatsGrid = (props: { sessions: TrainingSession[] }) => {
     dateRange = start === end ? start : `${start} – ${end}`;
   }
 
-  // Session count, distance and duration already live in the trip header — the
-  // grid only surfaces the complementary aggregates. Training load and date
-  // range stay visible; everything else collapses behind the toggle.
   const stats: Array<{
     key: string;
     label: string;
@@ -28,6 +29,17 @@ export const TripStatsGrid = (props: { sessions: TrainingSession[] }) => {
     unit?: string;
     metricId?: MetricId;
   }> = [
+    { key: 'sessions', label: m.ui_stat_sessions(), value: totals.count },
+    {
+      key: 'distance',
+      label: m.ui_stat_total_distance(),
+      value: formatDistance(totals.distance),
+    },
+    {
+      key: 'duration',
+      label: m.ui_stat_total_duration(),
+      value: formatDuration(totals.duration),
+    },
     {
       key: 'load',
       label: m.ui_trip_stat_load(),

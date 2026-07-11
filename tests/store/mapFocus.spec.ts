@@ -162,4 +162,15 @@ describe('useMapFocusStore', () => {
     useMapFocusStore.getState().setOpenedSession(null);
     expect(useMapFocusStore.getState().zoneColorMode).toBeNull();
   });
+
+  it('defaults hoveredStudioRouteId to null', () => {
+    expect(useMapFocusStore.getState().hoveredStudioRouteId).toBeNull();
+  });
+
+  it('setHoveredStudioRoute sets the id and null clears it', () => {
+    useMapFocusStore.getState().setHoveredStudioRoute('r1');
+    expect(useMapFocusStore.getState().hoveredStudioRouteId).toBe('r1');
+    useMapFocusStore.getState().setHoveredStudioRoute(null);
+    expect(useMapFocusStore.getState().hoveredStudioRouteId).toBeNull();
+  });
 });

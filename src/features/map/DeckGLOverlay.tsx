@@ -18,6 +18,7 @@ import { useLayoutStore } from '@/store/layout.ts';
 import { useDeckMetricsStore } from '@/store/deckMetrics.ts';
 import type { MapTrack } from './hooks/useMapTracks.ts';
 import { decodeCached, PICK_RADIUS, type TrackPickData } from './hooks/types.ts';
+import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
 import { useControl } from 'react-map-gl/maplibre';
 
 type PickHandler = (info: PickingInfo, event: unknown) => boolean | void;
@@ -37,6 +38,8 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const focusedSport = useMapFocusStore((s) => s.focusedSport);
   const hoveredLapIndex = useMapFocusStore((s) => s.hoveredLapIndex);
   const zoneColorMode = useMapFocusStore((s) => s.zoneColorMode);
+  const hoveredStudioRouteId = useMapFocusStore((s) => s.hoveredStudioRouteId);
+  const studioTracks = useStudioMapTracks();
   const sessions = useSessionsStore((s) => s.sessions);
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
 
@@ -45,6 +48,10 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const match = useMatch('/sessions/:id');
   const highlightedSessionId = hoveredSessionId ?? match?.params.id ?? null;
 
+  // The studio is about future routes — session tracks are hidden while the
+  // studio tab or a route detail page is open.
+  const studioActive = studioTracks.active;
+
   const eventHandlers = useMemo(
     (): { onClick?: PickHandler; onHover?: PickHandler } =>
       onboardingComplete ? { onClick: props.onClick, onHover: props.onHover } : {},
@@ -52,7 +59,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   );
 
   const trackLayers = useMemo(() => {
-    if (openedSessionId) {
+    if (openedSessionId || studioActive) {
       return null;
     }
 
@@ -98,7 +105,14 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
         ...eventHandlers,
       }),
     ];
-  }, [openedSessionId, props.tracks, highlightedSessionId, hoveredSessionId, eventHandlers]);
+  }, [
+    openedSessionId,
+    studioActive,
+    props.tracks,
+    highlightedSessionId,
+    hoveredSessionId,
+    eventHandlers,
+  ]);
 
   const detailLayer = useMemo(() => {
     if (!detailPath) {
@@ -119,6 +133,65 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       ...eventHandlers,
     });
   }, [detailPath, zoneColorMode, openedSessionId, eventHandlers]);
+
+  // One path per GPX segment — disconnected segments must not be joined.
+  // Memoized separately from hover state so hovering a route card keeps the
+  // data identity stable and deck.gl only re-evaluates the triggered accessors.
+  const studioSegments = useMemo(
+    () =>
+      studioTracks.routes.flatMap((route) =>
+        route.encodedPolylines.map((encodedPolyline, segIndex) => ({
+          routeId: route.id,
+          segIndex,
+          encodedPolyline,
+          color: route.color,
+        })),
+      ),
+    [studioTracks.routes],
+  );
+
+  const studioRouteLayer = useMemo(() => {
+    if (studioSegments.length === 0) {
+      return null;
+    }
+
+    // Same highlight pattern as the session tracks: translucent by default,
+    // full opacity + wider stroke for the hovered route or the one whose
+    // detail page is open, everything else hidden while a route is hovered.
+    const highlightedRouteId = hoveredStudioRouteId ?? studioTracks.focusedRouteId;
+
+    return new PathLayer<(typeof studioSegments)[number]>({
+      id: 'studio-routes',
+      data: studioSegments,
+      getPath: (d) => decodeCached(`studio-${d.routeId}-${d.segIndex}`, d.encodedPolyline),
+      getColor: (d) => {
+        let alpha = trackModifiers.alpha.default;
+        if (hoveredStudioRouteId && hoveredStudioRouteId !== d.routeId) {
+          alpha = 0;
+        } else if (highlightedRouteId === d.routeId) {
+          alpha = trackModifiers.alpha.highlighted;
+        }
+        return [d.color[0], d.color[1], d.color[2], alpha];
+      },
+      getWidth: (d) =>
+        d.routeId === highlightedRouteId
+          ? trackModifiers.width.highlighted
+          : trackModifiers.width.default,
+      widthMinPixels: 1,
+      jointRounded: true,
+      capRounded: true,
+      pickable: false,
+      updateTriggers: {
+        getColor: [highlightedRouteId, hoveredStudioRouteId],
+        getWidth: [highlightedRouteId],
+      },
+      transitions: {
+        getWidth: 300,
+        getColor: 300,
+      },
+      parameters: ADDITIVE_BLEND,
+    });
+  }, [studioSegments, studioTracks.focusedRouteId, hoveredStudioRouteId]);
 
   const pickCircleLayer = useMemo(() => {
     if (!pickCircle) {
@@ -213,7 +286,14 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   );
 
   overlay.setProps({
-    layers: [trackLayers, detailLayer, pickCircleLayer, hoveredPointLayer, lapMarkerLayers],
+    layers: [
+      trackLayers,
+      detailLayer,
+      studioRouteLayer,
+      pickCircleLayer,
+      hoveredPointLayer,
+      lapMarkerLayers,
+    ],
     pickingRadius: PICK_RADIUS,
     _onMetrics: useDeckMetricsStore.getState().update,
   });

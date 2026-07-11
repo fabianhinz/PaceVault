@@ -44,10 +44,12 @@ const tabs = [
   { to: '/settings', label: m.ui_nav_settings, icon: Settings },
 ];
 
-// Trips live under the sessions section, so trip pages keep the sessions tab active.
+// Trips live under the sessions section and studio routes under labs, so their
+// detail pages keep the parent tab active.
 const isTabActive = (to: string, pathname: string): boolean => {
   if (to === '/') return pathname === '/';
   if (to === '/sessions') return pathname.startsWith('/sessions') || pathname.startsWith('/trips');
+  if (to === '/labs') return pathname.startsWith('/labs') || pathname.startsWith('/studio');
   return pathname.startsWith(to);
 };
 

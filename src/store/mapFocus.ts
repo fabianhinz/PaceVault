@@ -12,6 +12,8 @@ interface MapFocusState {
   setHoveredSession: (id: string | null) => void;
   focusedTripSessionIds: string[];
   setFocusedTripSessions: (ids: string[]) => void;
+  hoveredStudioRouteId: string | null;
+  setHoveredStudioRoute: (id: string | null) => void;
   focusedLaps: SessionLap[];
   focusedSport: Sport | null;
   focusedRecords: SessionRecord[];
@@ -71,6 +73,8 @@ export const useMapFocusStore = create<MapFocusState>()(
     setHoveredSession: (id) => set({ hoveredSessionId: id }),
     focusedTripSessionIds: [],
     setFocusedTripSessions: (ids) => set({ focusedTripSessionIds: ids }),
+    hoveredStudioRouteId: null,
+    setHoveredStudioRoute: (id) => set({ hoveredStudioRouteId: id }),
     focusedLaps: [],
     focusedSport: null,
     focusedRecords: [],

@@ -1,4 +1,5 @@
 import type { SessionRecord, SessionLap, SessionGPS } from '@/packages/engine/types.ts';
+import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
 import { getDB } from './db.ts';
 
 const groupBy = <T>(items: T[], key: (item: T) => string): Map<string, T[]> => {
@@ -44,7 +45,27 @@ export const clearAllRecords = async (): Promise<void> => {
   await db.clear('session-gps');
   await db.clear('session-weather');
   await db.clear('fit-files');
+  await db.clear('studio-route-points');
   await db.clear('kv');
+};
+
+export const saveStudioRoutePoints = async (
+  routeId: string,
+  points: RoutePoint[],
+): Promise<void> => {
+  const db = await getDB();
+  await db.put('studio-route-points', { routeId, points });
+};
+
+export const getStudioRoutePoints = async (routeId: string): Promise<RoutePoint[]> => {
+  const db = await getDB();
+  const blob = await db.get('studio-route-points', routeId);
+  return blob?.points ?? [];
+};
+
+export const deleteStudioRoutePoints = async (routeId: string): Promise<void> => {
+  const db = await getDB();
+  await db.delete('studio-route-points', routeId);
 };
 
 export const saveSessionLaps = async (laps: SessionLap[]): Promise<void> => {

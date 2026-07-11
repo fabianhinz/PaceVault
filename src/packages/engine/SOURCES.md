@@ -24,6 +24,7 @@ Each engine file contains a short `// Sources: [KEY]` comment pointing into this
 | `gps.ts`              | Ramer–Douglas–Peucker simplification                      | `[Ramer1972]`, `[DouglasPeucker1973]`                             | Standard algorithm                                          |
 | `gps.ts`              | Liang–Barsky line clipping                                | `[LiangBarsky1984]`                                               | Standard algorithm                                          |
 | `gps.ts`              | Initial bearing (forward azimuth)                         | `[Veness2019]`                                                    | Standard great-circle formula                               |
+| `gps.ts`              | Haversine great-circle distance                           | `[Veness2019]`                                                    | Standard great-circle formula                               |
 | `windExposure.ts`     | Head/cross/tail classification (±45° sectors)             | `[Veness2019]`                                                    | Bearing per standard formula; ±45° sectors are convention   |
 
 ## Full Bibliography

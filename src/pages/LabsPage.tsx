@@ -10,20 +10,19 @@ import { MetricLabel } from '@/components/ui/MetricLabel.tsx';
 import { ActionPromptCard } from '@/components/ui/ActionPromptCard.tsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.tsx';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
+import { resolveLabsTab } from '@/lib/labsTab.ts';
 
 import { WeeklyPlanTimeline } from '@/features/labs/WeeklyPlanTimeline.tsx';
 import { RacePredictor } from '@/features/labs/RacePredictor.tsx';
 import { PaceCalculator } from '@/features/labs/PaceCalculator.tsx';
 import { Settings } from 'lucide-react';
 import { ZoneLegend } from '@/features/sessions/ZoneLegend.tsx';
-
-const validTabs = new Set(['tools', 'training']);
+import { StudioTab } from '@/features/studio/StudioTab.tsx';
 
 export const LabsPage = () => {
   const coach = useCoachPlan();
   const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get('tab');
-  const tab = rawTab && validTabs.has(rawTab) ? rawTab : 'tools';
+  const tab = resolveLabsTab(searchParams.get('tab'));
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
@@ -32,9 +31,14 @@ export const LabsPage = () => {
   return (
     <Tabs value={tab} onValueChange={handleTabChange}>
       <TabsList>
+        <TabsTrigger value="studio">{m.ui_labs_tab_studio()}</TabsTrigger>
         <TabsTrigger value="tools">{m.ui_labs_tab_tools()}</TabsTrigger>
         <TabsTrigger value="training">{m.ui_labs_tab_training()}</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="studio">
+        <StudioTab />
+      </TabsContent>
 
       <TabsContent value="tools">
         <PageGrid>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { haversineM } from '@/packages/engine/gps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 // ---------------------------------------------------------------------------
@@ -61,21 +62,6 @@ export const formatWindDirection = (degrees: number): string => {
   const normalized = ((degrees % 360) + 360) % 360;
   const index = Math.round(normalized / 45) % 8;
   return COMPASS_LABELS[index] ?? 'N';
-};
-
-// ---------------------------------------------------------------------------
-// GPS helpers
-// ---------------------------------------------------------------------------
-const EARTH_RADIUS_KM = 6371;
-
-const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 // ---------------------------------------------------------------------------
@@ -165,7 +151,7 @@ export const deduplicateWaypoints = (
 
     let merged = false;
     for (const cluster of clusters) {
-      if (haversineKm(wp.lat, wp.lng, cluster.lat, cluster.lng) < thresholdKm) {
+      if (haversineM(wp, cluster) < thresholdKm * 1000) {
         cluster.waypointIndices.push(i);
         merged = true;
         break;
