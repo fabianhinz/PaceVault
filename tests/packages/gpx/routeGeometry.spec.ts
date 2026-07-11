@@ -3,11 +3,11 @@ import { decode } from '@googlemaps/polyline-codec';
 import { buildRouteGeometry } from '@/packages/gpx/routeGeometry.ts';
 import type { ParsedGpxPoint } from '@/packages/gpx/parseGpx.ts';
 
-const point = (lat: number, lng: number, ele?: number): ParsedGpxPoint => ({
+const point = (lat: number, lng: number, ele?: number, seg = 0): ParsedGpxPoint => ({
   lat,
   lng,
   ele,
-  seg: 0,
+  seg,
 });
 
 describe('buildRouteGeometry', () => {
@@ -33,10 +33,41 @@ describe('buildRouteGeometry', () => {
 
   it('encodes a decodable polyline', () => {
     const geometry = buildRouteGeometry([point(47.0, 11.0), point(47.01, 11.01)]);
-    const decoded = decode(geometry?.encodedPolyline ?? '');
+    expect(geometry?.encodedPolylines).toHaveLength(1);
+    const decoded = decode(geometry?.encodedPolylines[0] ?? '');
     expect(decoded).toHaveLength(2);
     expect(decoded[0]?.[0]).toBeCloseTo(47.0, 4);
     expect(decoded[0]?.[1]).toBeCloseTo(11.0, 4);
+  });
+
+  it('encodes one polyline per segment', () => {
+    const geometry = buildRouteGeometry([
+      point(47.0, 11.0, undefined, 0),
+      point(47.01, 11.0, undefined, 0),
+      point(48.0, 12.0, undefined, 1),
+      point(48.01, 12.0, undefined, 1),
+    ]);
+    expect(geometry?.encodedPolylines).toHaveLength(2);
+    const first = decode(geometry?.encodedPolylines[0] ?? '');
+    const second = decode(geometry?.encodedPolylines[1] ?? '');
+    expect(first).toHaveLength(2);
+    expect(second).toHaveLength(2);
+    expect(first[0]?.[0]).toBeCloseTo(47.0, 4);
+    expect(second[0]?.[0]).toBeCloseTo(48.0, 4);
+  });
+
+  it('excludes the gap between segments from cumulative distance', () => {
+    // Two segments of ~1111.9 m each, separated by a ~111 km jump.
+    const geometry = buildRouteGeometry([
+      point(47.0, 11.0, undefined, 0),
+      point(47.01, 11.0, undefined, 0),
+      point(48.0, 11.0, undefined, 1),
+      point(48.01, 11.0, undefined, 1),
+    ]);
+    expect(geometry?.distance).toBeCloseTo(2223.9, 0);
+    // The second segment continues from the first segment's end distance.
+    expect(geometry?.points[2]?.dist).toBeCloseTo(1111.9, 0);
+    expect(geometry?.points[3]?.dist).toBeCloseTo(2223.9, 0);
   });
 
   it('computes elevation gain/loss with hysteresis (ignores small jitter)', () => {
@@ -48,6 +79,32 @@ describe('buildRouteGeometry', () => {
     expect(geometry?.elevation?.loss).toBe(5);
     expect(geometry?.elevation?.min).toBe(100);
     expect(geometry?.elevation?.max).toBe(110);
+  });
+
+  it('ignores elevation jumps between segments for gain/loss', () => {
+    // Segment 0 climbs 100 → 110; segment 1 starts 500 m higher and climbs 610 → 620.
+    // The 490 m cross-segment jump must not count as gain.
+    const geometry = buildRouteGeometry([
+      point(47.0, 11.0, 100, 0),
+      point(47.01, 11.0, 110, 0),
+      point(48.0, 11.0, 610, 1),
+      point(48.01, 11.0, 620, 1),
+    ]);
+    expect(geometry?.elevation?.gain).toBe(20);
+    expect(geometry?.elevation?.loss).toBe(0);
+    expect(geometry?.elevation?.min).toBe(100);
+    expect(geometry?.elevation?.max).toBe(620);
+  });
+
+  it('does not measure max grade across segment boundaries', () => {
+    // Each segment is flat; only the cross-segment jump gains elevation.
+    const geometry = buildRouteGeometry([
+      point(47.0, 11.0, 100, 0),
+      point(47.001, 11.0, 100, 0),
+      point(47.002, 11.0, 600, 1),
+      point(47.003, 11.0, 600, 1),
+    ]);
+    expect(geometry?.elevation?.maxGrade).toBe(0);
   });
 
   it('computes max grade over a sustained window', () => {

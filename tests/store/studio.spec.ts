@@ -8,7 +8,7 @@ const makeRouteInput = (
   name: 'Alpine loop',
   sourceFileName: 'alpine-loop.gpx',
   color: 'sky',
-  encodedPolyline: '_p~iF~ps|U',
+  encodedPolylines: ['_p~iF~ps|U'],
   bounds: { minLat: 47, maxLat: 47.5, minLng: 11, maxLng: 11.5 },
   distance: 42000,
   elevation: { gain: 1200, loss: 1180, min: 600, max: 1800, maxGrade: 12.5 },

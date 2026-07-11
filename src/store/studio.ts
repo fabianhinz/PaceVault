@@ -14,7 +14,8 @@ export interface StudioRoute {
   sourceFileName: string;
   importedAt: number;
   color: StudioRouteColor;
-  encodedPolyline: string;
+  /** One encoded polyline per GPX segment — disconnected segments stay disconnected. */
+  encodedPolylines: string[];
   bounds: GPSBounds;
   /** Total route distance in metres. */
   distance: number;

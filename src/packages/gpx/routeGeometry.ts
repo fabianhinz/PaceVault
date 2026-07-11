@@ -19,7 +19,8 @@ export interface RouteElevationStats {
 
 export interface RouteGeometry {
   points: RoutePoint[];
-  encodedPolyline: string;
+  /** One encoded polyline per GPX segment — disconnected segments stay disconnected. */
+  encodedPolylines: string[];
   bounds: GPSBounds;
   /** Total route distance in metres. */
   distance: number;
@@ -58,6 +59,22 @@ const computeBounds = (points: RoutePoint[]): GPSBounds => {
   return { minLat, maxLat, minLng, maxLng };
 };
 
+const groupBySegment = <T extends { seg: number }>(points: T[]): T[][] => {
+  const segments: T[][] = [];
+  let current: T[] = [];
+  let currentSeg: number | null = null;
+  for (const p of points) {
+    if (currentSeg !== null && p.seg !== currentSeg && current.length > 0) {
+      segments.push(current);
+      current = [];
+    }
+    currentSeg = p.seg;
+    current.push(p);
+  }
+  if (current.length > 0) segments.push(current);
+  return segments;
+};
+
 const computeElevationStats = (points: RoutePoint[]): RouteElevationStats | undefined => {
   const elevated = points.filter((p): p is RoutePoint & { ele: number } => p.ele != null);
   if (elevated.length < 2) return undefined;
@@ -66,40 +83,45 @@ const computeElevationStats = (points: RoutePoint[]): RouteElevationStats | unde
   let max = -Infinity;
   let gain = 0;
   let loss = 0;
-  const firstPoint = elevated[0];
-  if (!firstPoint) return undefined;
-  let ref = firstPoint.ele;
-
-  for (const p of elevated) {
-    if (p.ele < min) min = p.ele;
-    if (p.ele > max) max = p.ele;
-    const delta = p.ele - ref;
-    if (delta >= ELEVATION_HYSTERESIS_M) {
-      gain += delta;
-      ref = p.ele;
-    } else if (delta <= -ELEVATION_HYSTERESIS_M) {
-      loss += -delta;
-      ref = p.ele;
-    }
-  }
-
-  // Two-pointer sweep: for each end point use the tightest window still >= GRADE_WINDOW_M.
   let maxGrade = 0;
-  let start = 0;
-  for (let end = 1; end < elevated.length; end++) {
-    const endPoint = elevated[end];
-    if (!endPoint) continue;
-    let next = elevated[start + 1];
-    while (next && endPoint.dist - next.dist >= GRADE_WINDOW_M) {
-      start++;
-      next = elevated[start + 1];
+
+  // Gain/loss and grade never cross segment boundaries — the jump between two
+  // disconnected segments is not terrain.
+  for (const segment of groupBySegment(elevated)) {
+    const firstPoint = segment[0];
+    if (!firstPoint) continue;
+    let ref = firstPoint.ele;
+
+    for (const p of segment) {
+      if (p.ele < min) min = p.ele;
+      if (p.ele > max) max = p.ele;
+      const delta = p.ele - ref;
+      if (delta >= ELEVATION_HYSTERESIS_M) {
+        gain += delta;
+        ref = p.ele;
+      } else if (delta <= -ELEVATION_HYSTERESIS_M) {
+        loss += -delta;
+        ref = p.ele;
+      }
     }
-    const startPoint = elevated[start];
-    if (!startPoint) continue;
-    const run = endPoint.dist - startPoint.dist;
-    if (run < GRADE_WINDOW_M) continue;
-    const grade = ((endPoint.ele - startPoint.ele) / run) * 100;
-    if (grade > maxGrade) maxGrade = grade;
+
+    // Two-pointer sweep: for each end point use the tightest window still >= GRADE_WINDOW_M.
+    let start = 0;
+    for (let end = 1; end < segment.length; end++) {
+      const endPoint = segment[end];
+      if (!endPoint) continue;
+      let next = segment[start + 1];
+      while (next && endPoint.dist - next.dist >= GRADE_WINDOW_M) {
+        start++;
+        next = segment[start + 1];
+      }
+      const startPoint = segment[start];
+      if (!startPoint) continue;
+      const run = endPoint.dist - startPoint.dist;
+      if (run < GRADE_WINDOW_M) continue;
+      const grade = ((endPoint.ele - startPoint.ele) / run) * 100;
+      if (grade > maxGrade) maxGrade = grade;
+    }
   }
 
   return { gain, loss, min, max, maxGrade };
@@ -107,8 +129,9 @@ const computeElevationStats = (points: RoutePoint[]): RouteElevationStats | unde
 
 /**
  * Derive everything the studio needs from parsed GPX points: cumulative
- * distances, bounds, elevation stats and a simplified encoded polyline for
- * map rendering. Returns `null` when fewer than 2 points are provided.
+ * distances, bounds, elevation stats and one simplified encoded polyline per
+ * segment for map rendering. Disconnected segments contribute neither distance
+ * nor a connecting line. Returns `null` when fewer than 2 points are provided.
  */
 export const buildRouteGeometry = (parsedPoints: ParsedGpxPoint[]): RouteGeometry | null => {
   if (parsedPoints.length < 2) return null;
@@ -117,19 +140,22 @@ export const buildRouteGeometry = (parsedPoints: ParsedGpxPoint[]): RouteGeometr
   let dist = 0;
   let prev: ParsedGpxPoint | null = null;
   for (const p of parsedPoints) {
-    if (prev) {
+    // The gap between two segments is not ridden distance.
+    if (prev && prev.seg === p.seg) {
       dist += haversineM(prev, p);
     }
     points.push({ ...p, dist });
     prev = p;
   }
 
-  const simplified = simplifyGpxPoints(points.map((p) => ({ lat: p.lat, lon: p.lng })));
-  const encodedPolyline = encode(simplified.map((p) => [p.lat, p.lon]));
+  const encodedPolylines = groupBySegment(points).map((segment) => {
+    const simplified = simplifyGpxPoints(segment.map((p) => ({ lat: p.lat, lon: p.lng })));
+    return encode(simplified.map((p) => [p.lat, p.lon]));
+  });
 
   return {
     points,
-    encodedPolyline,
+    encodedPolylines,
     bounds: computeBounds(points),
     distance: dist,
     pointCount: points.length,

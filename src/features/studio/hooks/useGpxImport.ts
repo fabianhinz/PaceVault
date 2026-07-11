@@ -29,7 +29,7 @@ const importFile = async (file: File): Promise<boolean> => {
     name,
     sourceFileName: file.name,
     color: DEFAULT_ROUTE_COLOR,
-    encodedPolyline: geometry.encodedPolyline,
+    encodedPolylines: geometry.encodedPolylines,
     bounds: geometry.bounds,
     distance: geometry.distance,
     elevation: geometry.elevation,

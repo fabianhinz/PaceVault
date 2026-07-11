@@ -58,6 +58,21 @@ test.describe('Studio', () => {
     await expect(page.getByRole('button', { name: /import gpx route/i })).toBeVisible();
   });
 
+  test('imports a multi-track GPX with disconnected segments', async ({ page }) => {
+    await seedOnboardingComplete(page);
+
+    await page.goto('/labs?tab=studio');
+    await page
+      .locator('[data-testid="studio-gpx-input"]')
+      .setInputFiles(path.join(FIXTURES_DIR, 'EuroVelo 17 - developed.gpx'));
+
+    // 31 disconnected <trk> segments import as a single route; the name comes
+    // from the first <name> element in the file.
+    const routeCard = page.getByRole('button', { name: /Andermatt – Oberwald/ });
+    await expect(routeCard).toBeVisible();
+    await expect(routeCard).toContainText('km');
+  });
+
   test('shows the empty-state nudge and rejects an invalid file with a toast', async ({ page }) => {
     await seedOnboardingComplete(page);
 

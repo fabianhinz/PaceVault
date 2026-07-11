@@ -7,7 +7,8 @@ import { routeColors } from '@/features/studio/routeColors.ts';
 
 export interface StudioMapRoute {
   id: string;
-  encodedPolyline: string;
+  /** One encoded polyline per GPX segment — disconnected segments stay disconnected. */
+  encodedPolylines: string[];
   color: [number, number, number];
   bounds: GPSBounds;
 }
@@ -23,7 +24,7 @@ interface StudioMapTracks {
 
 const toMapRoute = (route: StudioRoute): StudioMapRoute => ({
   id: route.id,
-  encodedPolyline: route.encodedPolyline,
+  encodedPolylines: route.encodedPolylines,
   color: routeColors[route.color].rgb,
   bounds: route.bounds,
 });

@@ -18,7 +18,7 @@ import { useLayoutStore } from '@/store/layout.ts';
 import { useDeckMetricsStore } from '@/store/deckMetrics.ts';
 import type { MapTrack } from './hooks/useMapTracks.ts';
 import { decodeCached, PICK_RADIUS, type TrackPickData } from './hooks/types.ts';
-import { useStudioMapTracks, type StudioMapRoute } from './hooks/useStudioMapTracks.ts';
+import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
 import { useControl } from 'react-map-gl/maplibre';
 
 type PickHandler = (info: PickingInfo, event: unknown) => boolean | void;
@@ -139,15 +139,24 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       return null;
     }
 
+    // One path per GPX segment — disconnected segments must not be joined.
+    const segments = studioTracks.routes.flatMap((route) =>
+      route.encodedPolylines.map((encodedPolyline, segIndex) => ({
+        routeId: route.id,
+        segIndex,
+        encodedPolyline,
+        color: route.color,
+      })),
+    );
     const versionKey = studioTracks.routes.map((r) => `${r.id}:${r.color.join(',')}`).join('|');
 
-    return new PathLayer<StudioMapRoute>({
+    return new PathLayer<(typeof segments)[number]>({
       id: 'studio-routes',
-      data: studioTracks.routes,
-      getPath: (d) => decodeCached(`studio-${d.id}`, d.encodedPolyline),
+      data: segments,
+      getPath: (d) => decodeCached(`studio-${d.routeId}-${d.segIndex}`, d.encodedPolyline),
       getColor: (d) => {
         let alpha = trackModifiers.alpha.highlighted;
-        if (hoveredStudioRouteId && hoveredStudioRouteId !== d.id) {
+        if (hoveredStudioRouteId && hoveredStudioRouteId !== d.routeId) {
           alpha = 0;
         }
         return [d.color[0], d.color[1], d.color[2], alpha];
@@ -155,7 +164,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       // Detail (single focused route) and the hovered route draw wider than
       // the tab's all-routes overview.
       getWidth: (d) => {
-        if (d.id === studioTracks.focusedRouteId || d.id === hoveredStudioRouteId) {
+        if (d.routeId === studioTracks.focusedRouteId || d.routeId === hoveredStudioRouteId) {
           return trackModifiers.width.highlighted;
         }
         return trackModifiers.width.default;
