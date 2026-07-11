@@ -27,11 +27,11 @@ test.describe('Studio', () => {
     await expect(page.getByText('Distance', { exact: true })).toBeVisible();
     await expect(page.getByText('Elevation', { exact: true })).toBeVisible();
     await expect(page.getByText('Grade', { exact: true })).toBeVisible();
-    await expect(page.getByText(/route\.gpx/)).toBeVisible();
 
-    // Elevation stats sit behind the collapsed stats-grid toggle
+    // The full stat inventory (incl. import metadata) sits behind the toggle
     await page.getByRole('button', { name: /\(\d+\)/ }).click();
     await expect(page.getByText(/ascent/i)).toBeVisible();
+    await expect(page.getByText(/route\.gpx/)).toBeVisible();
 
     // Rename via the actions menu edit dialog
     await page.getByRole('button', { name: /route actions/i }).click();
