@@ -10,6 +10,7 @@ export type MetricId =
   | 'tss'
   | 'trimp'
   | 'duration'
+  | 'tripLoad'
   | 'ctl'
   | 'atl'
   | 'tsb'
@@ -31,7 +32,7 @@ export type MetricId =
 
 export interface MetricExplanation {
   id: MetricId;
-  shortLabel: string;
+  shortLabel?: string;
   friendlyName: string;
   oneLiner: string;
   range: string;
@@ -66,6 +67,14 @@ const duration: MetricExplanation = {
   friendlyName: m.exp_duration_friendlyName(),
   oneLiner: m.exp_duration_oneLiner(),
   range: m.exp_duration_range(),
+  sports: ['all'],
+};
+
+const tripLoad: MetricExplanation = {
+  id: 'tripLoad',
+  friendlyName: m.exp_tripLoad_friendlyName(),
+  oneLiner: m.exp_tripLoad_oneLiner(),
+  range: m.exp_tripLoad_range(),
   sports: ['all'],
 };
 
@@ -268,6 +277,7 @@ export const METRIC_EXPLANATIONS: Record<MetricId, MetricExplanation> = {
   tss,
   trimp,
   duration,
+  tripLoad,
   // Load metrics
   ctl,
   atl,

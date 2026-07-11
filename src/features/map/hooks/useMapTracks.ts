@@ -21,6 +21,7 @@ export const useMapTracks = (gpsData: SessionGPS[] | null) => {
   const sportFilter = useFiltersStore((s) => s.sportFilter);
   const attributeFilters = useFiltersStore((s) => s.attributeFilters);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
+  const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
 
   const [tracks, setTracks] = useState<MapTrack[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +51,21 @@ export const useMapTracks = (gpsData: SessionGPS[] | null) => {
       const gpsMap = new Map<string, SessionGPS>();
       for (const g of gpsData) {
         gpsMap.set(g.sessionId, g);
+      }
+
+      if (focusedTripSessionIds.length > 0) {
+        const tripIds = new Set(focusedTripSessionIds);
+        const result: MapTrack[] = [];
+        for (const s of sessions) {
+          if (!tripIds.has(s.id)) continue;
+          const gps = gpsMap.get(s.id);
+          if (gps) result.push({ sessionId: s.id, sport: s.sport, gps, session: s });
+        }
+        if (!cancelled) {
+          setTracks(result);
+          setLoading(false);
+        }
+        return;
       }
 
       const filtered = sessions.filter((s) => {
@@ -82,7 +98,16 @@ export const useMapTracks = (gpsData: SessionGPS[] | null) => {
     return () => {
       cancelled = true;
     };
-  }, [sessions, timeRange, customRange, sportFilter, attributeFilters, gpsData, openedSessionId]);
+  }, [
+    sessions,
+    timeRange,
+    customRange,
+    sportFilter,
+    attributeFilters,
+    gpsData,
+    openedSessionId,
+    focusedTripSessionIds,
+  ]);
 
   return { tracks, loading };
 };

@@ -24,6 +24,7 @@ export const MetricLabel = (props: MetricLabelProps) => {
   const hideShortLabel =
     size === 'sm' &&
     props.contextLabel !== undefined &&
+    explanation.shortLabel !== undefined &&
     explanation.shortLabel.localeCompare(props.contextLabel, undefined, {
       sensitivity: 'base',
     }) === 0;
@@ -33,12 +34,14 @@ export const MetricLabel = (props: MetricLabelProps) => {
     labelContent = (
       <>
         <Typography variant="subtitle2">{explanation.friendlyName}</Typography>
-        <Typography variant="caption" color="textTertiary">
-          ({explanation.shortLabel})
-        </Typography>
+        {explanation.shortLabel && (
+          <Typography variant="caption" color="textTertiary">
+            ({explanation.shortLabel})
+          </Typography>
+        )}
       </>
     );
-  } else if (!hideShortLabel) {
+  } else if (explanation.shortLabel && !hideShortLabel) {
     labelContent = <Typography variant="caption">{explanation.shortLabel}</Typography>;
   }
 
@@ -75,9 +78,11 @@ export const MetricLabel = (props: MetricLabelProps) => {
             <Typography variant="subtitle1" className="font-semibold">
               {explanation.friendlyName}
             </Typography>
-            <Typography variant="caption" className="rounded bg-white/10 px-1.5 py-0.5">
-              {explanation.shortLabel}
-            </Typography>
+            {explanation.shortLabel && (
+              <Typography variant="caption" className="rounded bg-white/10 px-1.5 py-0.5">
+                {explanation.shortLabel}
+              </Typography>
+            )}
           </div>
 
           <Typography>{explanation.oneLiner}</Typography>

@@ -1,14 +1,14 @@
 import { m } from '@/paraglide/messages.js';
-import { usePaceCalculator } from '@/features/coach/hooks/usePaceCalculator.ts';
+import { usePaceCalculator } from '@/features/labs/hooks/usePaceCalculator.ts';
 import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { Input } from '@/components/ui/Input.tsx';
 import { Label } from '@/components/ui/Label.tsx';
 import { SegmentedControl } from '@/components/ui/SegmentedControl.tsx';
 const SOLVE_OPTIONS = [
-  { value: 'pace', label: m.ui_coach_converter_pace_short() },
-  { value: 'distance', label: m.ui_coach_converter_distance_short() },
-  { value: 'time', label: m.ui_coach_converter_time_short() },
+  { value: 'pace', label: m.ui_labs_converter_pace_short() },
+  { value: 'distance', label: m.ui_labs_converter_distance_short() },
+  { value: 'time', label: m.ui_labs_converter_time_short() },
 ];
 
 export const PaceCalculator = () => {
@@ -21,11 +21,11 @@ export const PaceCalculator = () => {
 
   return (
     <Card>
-      <CardHeader title={m.ui_coach_converter_title()} subtitle={m.ui_coach_converter_subtitle()} />
+      <CardHeader title={m.ui_labs_converter_title()} subtitle={m.ui_labs_converter_subtitle()} />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <Label>{m.ui_coach_converter_solve_for()}</Label>
+          <Label>{m.ui_labs_converter_solve_for()}</Label>
           <SegmentedControl
             value={calc.solveFor}
             onValueChange={(v) => calc.setSolveFor(v as 'pace' | 'distance' | 'time')}
@@ -35,7 +35,7 @@ export const PaceCalculator = () => {
 
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <Label>{m.ui_coach_converter_pace_short()}</Label>
+            <Label>{m.ui_labs_converter_pace_short()}</Label>
             <Input
               type="text"
               placeholder="5:00"
@@ -47,7 +47,7 @@ export const PaceCalculator = () => {
           </div>
 
           <div>
-            <Label>{m.ui_coach_converter_distance_short()}</Label>
+            <Label>{m.ui_labs_converter_distance_short()}</Label>
             <Input
               type="text"
               placeholder="10"
@@ -59,7 +59,7 @@ export const PaceCalculator = () => {
           </div>
 
           <div>
-            <Label>{m.ui_coach_converter_time_short()}</Label>
+            <Label>{m.ui_labs_converter_time_short()}</Label>
             <Input
               type="text"
               placeholder="0:50:00"

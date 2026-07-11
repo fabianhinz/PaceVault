@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { densestClusterBounds } from '@/packages/engine/gps.ts';
+import { densestClusterBounds, unionBounds } from '@/packages/engine/gps.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import type { MapTrack } from './useMapTracks.ts';
 
@@ -8,6 +8,7 @@ export const useMapCameraEffect = (
   tracks: MapTrack[],
   openedSessionId: string | null,
   mapLoaded: boolean,
+  fitAll: boolean,
 ) => {
   useEffect(() => {
     if (tracks.length === 0 || !mapRef.current || !mapLoaded) return;
@@ -35,7 +36,13 @@ export const useMapCameraEffect = (
       return;
     }
 
-    const bounds = densestClusterBounds(tracks.map((t) => t.gps.bounds));
+    const allBounds = tracks.map((t) => t.gps.bounds);
+    let bounds;
+    if (fitAll) {
+      bounds = unionBounds(allBounds);
+    } else {
+      bounds = densestClusterBounds(allBounds);
+    }
     if (!bounds) return;
     mapRef.current.fitBounds(
       [
@@ -47,5 +54,5 @@ export const useMapCameraEffect = (
         duration: 1000,
       },
     );
-  }, [tracks, openedSessionId, mapLoaded, mapRef]);
+  }, [tracks, openedSessionId, mapLoaded, mapRef, fitAll]);
 };

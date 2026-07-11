@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { toast } from '@/components/ui/toastStore.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
+import { useTripsStore } from '@/store/trips.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
@@ -31,6 +32,7 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
   const handleDelete = async () => {
     setIsDeleting(true);
     useSessionsStore.getState().clearAll();
+    useTripsStore.getState().clearAll();
     useUserStore.getState().resetProfile();
     useCoachPlanStore.getState().clearPlan();
     useLayoutStore.setState({ onboardingComplete: false, demoMode: false });

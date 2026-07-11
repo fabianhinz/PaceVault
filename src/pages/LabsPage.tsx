@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { m } from '@/paraglide/messages.js';
-import { useCoachPlan } from '@/features/coach/hooks/useCoachPlan.ts';
+import { useCoachPlan } from '@/features/labs/hooks/useCoachPlan.ts';
 import { PageGrid } from '@/components/ui/PageGrid.tsx';
 import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
@@ -11,20 +11,19 @@ import { ActionPromptCard } from '@/components/ui/ActionPromptCard.tsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.tsx';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 
-import { CoachStatusCard } from '@/features/coach/CoachStatusCard.tsx';
-import { WeeklyPlanTimeline } from '@/features/coach/WeeklyPlanTimeline.tsx';
-import { RacePredictor } from '@/features/coach/RacePredictor.tsx';
-import { PaceCalculator } from '@/features/coach/PaceCalculator.tsx';
+import { WeeklyPlanTimeline } from '@/features/labs/WeeklyPlanTimeline.tsx';
+import { RacePredictor } from '@/features/labs/RacePredictor.tsx';
+import { PaceCalculator } from '@/features/labs/PaceCalculator.tsx';
 import { Settings } from 'lucide-react';
 import { ZoneLegend } from '@/features/sessions/ZoneLegend.tsx';
 
-const validTabs = new Set(['plan', 'tools']);
+const validTabs = new Set(['tools', 'training']);
 
-export const CoachPage = () => {
+export const LabsPage = () => {
   const coach = useCoachPlan();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get('tab');
-  const tab = rawTab && validTabs.has(rawTab) ? rawTab : 'plan';
+  const tab = rawTab && validTabs.has(rawTab) ? rawTab : 'tools';
 
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
@@ -33,31 +32,39 @@ export const CoachPage = () => {
   return (
     <Tabs value={tab} onValueChange={handleTabChange}>
       <TabsList>
-        <TabsTrigger value="plan">{m.ui_coach_tab_plan()}</TabsTrigger>
-        <TabsTrigger value="tools">{m.ui_coach_tab_tools()}</TabsTrigger>
+        <TabsTrigger value="tools">{m.ui_labs_tab_tools()}</TabsTrigger>
+        <TabsTrigger value="training">{m.ui_labs_tab_training()}</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="plan">
+      <TabsContent value="tools">
+        <PageGrid>
+          <div className="lg:col-span-2">
+            <RacePredictor />
+          </div>
+          <div className="lg:col-span-2">
+            <PaceCalculator />
+          </div>
+        </PageGrid>
+      </TabsContent>
+
+      <TabsContent value="training">
         {!coach.hasThresholdPace ? (
           <PageGrid>
             <ActionPromptCard
-              title={m.ui_coach_threshold_title()}
-              description={m.ui_coach_threshold_desc()}
+              title={m.ui_labs_threshold_title()}
+              description={m.ui_labs_threshold_desc()}
               className="lg:col-span-2"
             >
               <Button asChild variant="secondary">
                 <Link to="/settings">
                   <Settings size={16} />
-                  {m.ui_coach_go_settings()}
+                  {m.ui_labs_go_settings()}
                 </Link>
               </Button>
             </ActionPromptCard>
           </PageGrid>
         ) : (
           <PageGrid>
-            <div className="lg:col-span-2">
-              <CoachStatusCard />
-            </div>
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader
@@ -79,8 +86,8 @@ export const CoachPage = () => {
                 {coach.plan && (
                   <>
                     <CardHeader
-                      title={m.ui_coach_weekly_plan()}
-                      subtitle={m.ui_coach_weekly_plan_subtitle({
+                      title={m.ui_labs_weekly_plan()}
+                      subtitle={m.ui_labs_weekly_plan_subtitle({
                         weekOf: coach.plan.weekOf,
                         tss: String(coach.plan.totalEstimatedTss),
                       })}
@@ -92,17 +99,6 @@ export const CoachPage = () => {
             </div>
           </PageGrid>
         )}
-      </TabsContent>
-
-      <TabsContent value="tools">
-        <PageGrid>
-          <div className="lg:col-span-2">
-            <RacePredictor />
-          </div>
-          <div className="lg:col-span-2">
-            <PaceCalculator />
-          </div>
-        </PageGrid>
       </TabsContent>
     </Tabs>
   );

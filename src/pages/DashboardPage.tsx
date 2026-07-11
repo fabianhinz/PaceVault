@@ -2,12 +2,12 @@ import { PerformanceChart } from '@/features/dashboard/PerformanceChart';
 import { LoadChart } from '@/features/dashboard/LoadChart';
 import { TrainingSummaryCard } from '@/features/dashboard/TrainingSummaryCard.tsx';
 import { PageGrid } from '@/components/ui/PageGrid.tsx';
-import { CoachStatusCard } from '@/features/coach/CoachStatusCard.tsx';
+import { FormStatusCard } from '@/features/dashboard/FormStatusCard.tsx';
 
 export const DashboardPage = () => {
   return (
     <PageGrid>
-      <CoachStatusCard />
+      <FormStatusCard />
       <div className="lg:col-span-2">
         <LoadChart />
       </div>

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
+import { useTripsStore } from '@/store/trips.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
@@ -9,6 +10,7 @@ const subscribe = (cb: () => void): (() => void) => {
   const unsubs = [
     useUserStore.persist.onFinishHydration(cb),
     useSessionsStore.persist.onFinishHydration(cb),
+    useTripsStore.persist.onFinishHydration(cb),
     useCoachPlanStore.persist.onFinishHydration(cb),
     useLayoutStore.persist.onFinishHydration(cb),
     useFiltersStore.persist.onFinishHydration(cb),
@@ -20,6 +22,7 @@ const getSnapshot = (): boolean => {
   return (
     useUserStore.persist.hasHydrated() &&
     useSessionsStore.persist.hasHydrated() &&
+    useTripsStore.persist.hasHydrated() &&
     useCoachPlanStore.persist.hasHydrated() &&
     useLayoutStore.persist.hasHydrated() &&
     useFiltersStore.persist.hasHydrated()

@@ -9,7 +9,7 @@ import {
   X,
   Activity,
   Clock,
-  HeartPulse,
+  FlaskConical,
   FunnelPlus,
 } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
@@ -40,9 +40,16 @@ import type { Sport } from '@/packages/engine/types.ts';
 const tabs = [
   { to: '/', label: m.ui_nav_dashboard, icon: LayoutDashboard },
   { to: '/sessions', label: m.ui_nav_sessions, icon: Zap },
-  { to: '/coach', label: m.ui_nav_coach, icon: HeartPulse },
+  { to: '/labs', label: m.ui_nav_labs, icon: FlaskConical },
   { to: '/settings', label: m.ui_nav_settings, icon: Settings },
 ];
+
+// Trips live under the sessions section, so trip pages keep the sessions tab active.
+const isTabActive = (to: string, pathname: string): boolean => {
+  if (to === '/') return pathname === '/';
+  if (to === '/sessions') return pathname.startsWith('/sessions') || pathname.startsWith('/trips');
+  return pathname.startsWith(to);
+};
 
 const sportOptions: FilterOption<Sport | 'all'>[] = [
   { value: 'all', label: m.ui_dock_sport_all() },
@@ -63,9 +70,7 @@ type DockRevealLayer = 'menu' | 'sport-filter' | 'time-filter';
 
 export const Dock = () => {
   const location = useLocation();
-  const activeIndex = tabs.findIndex((tab) =>
-    tab.to === '/' ? location.pathname === '/' : location.pathname.startsWith(tab.to),
-  );
+  const activeIndex = tabs.findIndex((tab) => isTabActive(tab.to, location.pathname));
   const dockBarRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLElement | null)[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -268,15 +273,13 @@ export const Dock = () => {
                 end={tab.to === '/'}
                 onClick={handleTabClick}
                 aria-label={tab.label()}
-                className={({ isActive }) =>
-                  cn(
-                    'relative flex items-center justify-center rounded-lg transition-all duration-300 overflow-hidden',
-                    dockExpanded ? dockItemMaxiClass : 'w-12 lg:w-10 h-10',
-                    isActive
-                      ? 'text-text-primary'
-                      : 'text-text-tertiary hover:bg-white/10 hover:text-text-primary',
-                  )
-                }
+                className={cn(
+                  'relative flex items-center justify-center rounded-lg transition-all duration-300 overflow-hidden',
+                  dockExpanded ? dockItemMaxiClass : 'w-12 lg:w-10 h-10',
+                  isTabActive(tab.to, location.pathname)
+                    ? 'text-text-primary'
+                    : 'text-text-tertiary hover:bg-white/10 hover:text-text-primary',
+                )}
               >
                 <tab.icon size={20} strokeWidth={1.5} />
                 {dockExpanded && <span className="text-[10px] leading-none">{tab.label()}</span>}
