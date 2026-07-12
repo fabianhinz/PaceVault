@@ -52,7 +52,7 @@ export const StudioRouteFormDialog = (props: {
             placeholder={m.ui_studio_name_placeholder()}
             autoFocus
           />
-          <div className="flex flex-col gap-2">
+          <div>
             <Label>{m.ui_studio_color_label()}</Label>
             <StudioColorPicker value={color} onChange={setColor} />
           </div>

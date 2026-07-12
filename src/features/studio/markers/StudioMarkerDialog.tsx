@@ -149,7 +149,7 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
 
         <div className="mt-4 flex flex-col gap-4">
           {isPoi && (
-            <div className="flex flex-col gap-2">
+            <div>
               <Label>{m.ui_studio_marker_label()}</Label>
               <Input
                 value={label}
@@ -160,7 +160,7 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
             </div>
           )}
 
-          <div className="flex flex-col gap-2">
+          <div>
             <Label>{m.ui_studio_marker_km_label()}</Label>
             <Input
               type="number"
@@ -174,7 +174,7 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
           </div>
 
           {!isPoi && (
-            <div className="flex flex-col gap-2">
+            <div>
               <Label>{m.ui_studio_marker_from_split_label()}</Label>
               <Input
                 type="number"
@@ -190,7 +190,7 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
           )}
 
           {isPoi && (
-            <div className="flex flex-col gap-2">
+            <div>
               <Label>{m.ui_studio_marker_description()}</Label>
               <Textarea
                 value={description}
