@@ -235,6 +235,8 @@
   "ui_dock_hide_map": "Karte ausblenden",
   "ui_dock_attr": "Erweitert",
   "ui_dock_attr_filter": "Erweiterte Filter",
+  "ui_dock_locate": "Orten",
+  "ui_dock_locate_me": "Meinen Standort zeigen",
   "ui_attr_dialog_title": "Erweiterte Filter",
   "ui_attr_dialog_desc": "Findet Einheiten rund um deine Werte.",
   "ui_attr_dialog_duration": "Dauer (h)",

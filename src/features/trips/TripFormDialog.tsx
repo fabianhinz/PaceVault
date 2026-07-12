@@ -91,7 +91,6 @@ export const TripFormDialog = (props: {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={m.ui_trips_name_placeholder()}
-            autoFocus
           />
           <Textarea
             value={description}

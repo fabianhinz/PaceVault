@@ -7,12 +7,17 @@ import { useSessionDetailPath } from './hooks/useSessionDetailPath.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
 import {
   ADDITIVE_BLEND,
+  geoAccuracyFill,
+  geoAccuracyLine,
+  geoDotFill,
+  geoDotLine,
   sportMarkerColor,
   sportTrackColor,
   trackModifiers,
 } from './trackColors.ts';
 import type { LapMarker } from '@/lib/lapMarkers.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useGeolocationStore } from '@/store/geolocation.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useDeckMetricsStore } from '@/store/deckMetrics.ts';
@@ -39,6 +44,8 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const hoveredLapIndex = useMapFocusStore((s) => s.hoveredLapIndex);
   const zoneColorMode = useMapFocusStore((s) => s.zoneColorMode);
   const hoveredStudioRouteId = useMapFocusStore((s) => s.hoveredStudioRouteId);
+  const geoPosition = useGeolocationStore((s) => s.position);
+  const geoAccuracy = useGeolocationStore((s) => s.accuracy);
   const studioTracks = useStudioMapTracks();
   const sessions = useSessionsStore((s) => s.sessions);
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
@@ -293,6 +300,55 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     });
   }, [lapMarkers, focusedSport, hoveredLapIndex]);
 
+  const geoLayers = useMemo(() => {
+    if (!geoPosition) {
+      return null;
+    }
+
+    const layers = [];
+
+    // Accuracy disc — real-world radius in meters, so it shrinks/grows with the
+    // GPS uncertainty as the map zooms.
+    if (geoAccuracy) {
+      layers.push(
+        new ScatterplotLayer<{ center: [number, number] }>({
+          id: 'geo-accuracy',
+          data: [{ center: geoPosition }],
+          getPosition: (d) => d.center,
+          getRadius: geoAccuracy,
+          radiusUnits: 'meters',
+          filled: true,
+          getFillColor: geoAccuracyFill,
+          stroked: true,
+          getLineColor: geoAccuracyLine,
+          lineWidthUnits: 'pixels' as const,
+          getLineWidth: 1,
+          pickable: false,
+        }),
+      );
+    }
+
+    // Position dot — constant pixel size so it stays legible at any zoom.
+    layers.push(
+      new ScatterplotLayer<{ position: [number, number] }>({
+        id: 'geo-dot',
+        data: [{ position: geoPosition }],
+        getPosition: (d) => d.position,
+        getRadius: 7,
+        radiusUnits: 'pixels',
+        filled: true,
+        getFillColor: geoDotFill,
+        stroked: true,
+        getLineColor: geoDotLine,
+        lineWidthUnits: 'pixels' as const,
+        getLineWidth: 2,
+        pickable: false,
+      }),
+    );
+
+    return layers;
+  }, [geoPosition, geoAccuracy]);
+
   const overlay = useControl<MapboxOverlay>(
     () => new MapboxOverlay({ pickingRadius: PICK_RADIUS }),
   );
@@ -305,6 +361,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       pickCircleLayer,
       hoveredPointLayer,
       lapMarkerLayers,
+      geoLayers,
     ],
     pickingRadius: PICK_RADIUS,
     _onMetrics: useDeckMetricsStore.getState().update,

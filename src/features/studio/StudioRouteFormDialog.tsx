@@ -50,7 +50,6 @@ export const StudioRouteFormDialog = (props: {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={m.ui_studio_name_placeholder()}
-            autoFocus
           />
           <div>
             <Label>{m.ui_studio_color_label()}</Label>

@@ -52,7 +52,7 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
       y={props.info.y}
       onClose={props.onClose}
       isExpanded={false}
-      desktopSizeClasses="w-[300px]"
+      desktopSizeClasses="w-[380px]"
       cardRef={cardRef}
     >
       <CardHeader
