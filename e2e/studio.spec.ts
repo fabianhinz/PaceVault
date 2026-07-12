@@ -58,6 +58,70 @@ test.describe('Studio', () => {
     await expect(page.getByRole('button', { name: /import gpx route/i })).toBeVisible();
   });
 
+  test('adds, edits and deletes markers in the Tools tab', async ({ page }) => {
+    await seedOnboardingComplete(page);
+
+    await page.goto('/labs?tab=studio');
+    await page.locator('[data-testid="studio-gpx-input"]').setInputFiles(ROUTE_GPX);
+    await page.getByRole('button', { name: 'Alpine Loop' }).click();
+    await page.waitForURL(/\/studio\/.+/);
+
+    await page.getByRole('tab', { name: /tools/i }).click();
+
+    // Add a split point — the dialog defaults a km value, so Save is enough.
+    await page.getByRole('button', { name: /add split point/i }).click();
+    await page.getByRole('button', { name: /^save$/i }).click();
+    await expect(page.getByText('Split point', { exact: true })).toBeVisible();
+
+    // Add a waypoint — label is required.
+    await page.getByRole('button', { name: /add waypoint/i }).click();
+    await page.getByPlaceholder(/water stop/i).fill('Fountain');
+    await page.getByRole('button', { name: /^save$/i }).click();
+    await expect(page.getByText('Fountain', { exact: true })).toBeVisible();
+
+    // Survives a reload (persistence). Wait for the async IDB write to flush
+    // before reloading, otherwise the just-added marker can be lost.
+    await expect
+      .poll(async () =>
+        page.evaluate(async () => {
+          const req = indexedDB.open('endurance-tracker');
+          const db = await new Promise<IDBDatabase>((resolve, reject) => {
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+          const value = await new Promise<string | undefined>((resolve) => {
+            const get = db.transaction('kv').objectStore('kv').get('store-studio');
+            get.onsuccess = () => resolve(get.result as string | undefined);
+            get.onerror = () => resolve(undefined);
+          });
+          db.close();
+          return value?.includes('Fountain') ?? false;
+        }),
+      )
+      .toBe(true);
+    await page.reload();
+    await page.getByRole('tab', { name: /tools/i }).click();
+    await expect(page.getByText('Fountain', { exact: true })).toBeVisible();
+
+    // Clicking the row opens the edit dialog — change the label.
+    await page.getByRole('button', { name: /fountain/i }).click();
+    const labelInput = page.getByPlaceholder(/water stop/i);
+    await expect(labelInput).toHaveValue('Fountain');
+    await labelInput.fill('Summit');
+    await page.getByRole('button', { name: /^save$/i }).click();
+    await expect(page.getByText('Summit', { exact: true })).toBeVisible();
+    await expect(page.getByText('Fountain', { exact: true })).toHaveCount(0);
+
+    // Delete both markers via the dialog's danger action.
+    await page.getByRole('button', { name: /summit/i }).click();
+    await page.getByRole('button', { name: /^delete$/i }).click();
+    await expect(page.getByText('Summit', { exact: true })).toHaveCount(0);
+
+    await page.getByRole('button', { name: /^split point/i }).click();
+    await page.getByRole('button', { name: /^delete$/i }).click();
+    await expect(page.getByText('Split point', { exact: true })).toHaveCount(0);
+  });
+
   test('shows the empty-state nudge and rejects an invalid file with a toast', async ({ page }) => {
     await seedOnboardingComplete(page);
 

@@ -97,6 +97,9 @@ export const formatDistance = (meters: number): string => {
   return `${Math.round(meters)} m`;
 };
 
+/** Metres → kilometres string with two decimals, for the `{km}` message slot. */
+export const toKm = (meters: number): string => (meters / 1000).toFixed(2);
+
 export const formatPace = (secPerKm: number): string => {
   const min = Math.floor(secPerKm / 60);
   const sec = Math.round(secPerKm % 60);

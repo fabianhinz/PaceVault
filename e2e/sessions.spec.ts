@@ -45,6 +45,25 @@ test.describe('Session browsing', () => {
     await expect(page.getByText(/duration/i).first()).toBeVisible();
   });
 
+  test('edit route in studio → imports the track and opens it', async ({ page }) => {
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
+
+    const sessionLinks = page.locator('[data-testid="session-item"]');
+    await expect(sessionLinks.first()).toBeVisible({ timeout: 10_000 });
+    await sessionLinks.first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+    await expect(page.getByText(/training effect/i)).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole('button', { name: /session actions/i }).click();
+    await page.getByRole('menuitem', { name: /edit route in studio/i }).click();
+
+    // Lands on a fresh studio route with the Tools tab available.
+    await page.waitForURL(/\/studio\/.+/);
+    await page.getByRole('tab', { name: /tools/i }).click();
+    await expect(page.getByRole('button', { name: /add split point/i })).toBeVisible();
+  });
+
   test('navigate back from detail to session list', async ({ page }) => {
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');

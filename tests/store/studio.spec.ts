@@ -3,8 +3,8 @@ import { useStudioStore } from '@/store/studio.ts';
 import type { StudioRoute } from '@/store/studio.ts';
 
 const makeRouteInput = (
-  overrides: Partial<Omit<StudioRoute, 'id' | 'importedAt'>> = {},
-): Omit<StudioRoute, 'id' | 'importedAt'> => ({
+  overrides: Partial<Omit<StudioRoute, 'id' | 'importedAt' | 'markers'>> = {},
+): Omit<StudioRoute, 'id' | 'importedAt' | 'markers'> => ({
   name: 'Alpine loop',
   sourceFileName: 'alpine-loop.gpx',
   color: 'sky',
@@ -64,9 +64,48 @@ describe('useStudioStore', () => {
     expect(useStudioStore.getState().routes).toEqual([]);
   });
 
-  it('is persisted under the store-studio key at version 1', () => {
+  it('is persisted under the store-studio key at version 2', () => {
     const options = useStudioStore.persist.getOptions();
     expect(options.name).toBe('store-studio');
-    expect(options.version).toBe(1);
+    expect(options.version).toBe(2);
+  });
+
+  it('adds a marker with a generated id', () => {
+    const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
+    const markerId = useStudioStore
+      .getState()
+      .addStudioMarker(routeId, { type: 'track_modifier', distanceM: 5000 });
+    const markers = useStudioStore.getState().routes[0]?.markers;
+    expect(markers).toHaveLength(1);
+    expect(markers?.[0]?.id).toBe(markerId);
+    expect(markers?.[0]?.distanceM).toBe(5000);
+  });
+
+  it('updates a marker', () => {
+    const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
+    const markerId = useStudioStore
+      .getState()
+      .addStudioMarker(routeId, { type: 'point_of_interest', label: 'Peak', distanceM: 1000 });
+    useStudioStore.getState().updateStudioMarker(routeId, markerId, { distanceM: 2000 });
+    const marker = useStudioStore.getState().routes[0]?.markers[0];
+    expect(marker?.distanceM).toBe(2000);
+    expect(marker?.type === 'point_of_interest' && marker.label).toBe('Peak');
+  });
+
+  it('deletes a marker', () => {
+    const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
+    const markerId = useStudioStore
+      .getState()
+      .addStudioMarker(routeId, { type: 'track_modifier', distanceM: 3000 });
+    useStudioStore.getState().deleteStudioMarker(routeId, markerId);
+    expect(useStudioStore.getState().routes[0]?.markers).toEqual([]);
+  });
+
+  it('backfills markers on routes migrated from version 1', () => {
+    const options = useStudioStore.persist.getOptions();
+    const migrated = options.migrate?.({ routes: [{ id: 'x', name: 'Old' }] }, 1) as {
+      routes: Array<{ markers: unknown[] }>;
+    };
+    expect(migrated.routes[0]?.markers).toEqual([]);
   });
 });
