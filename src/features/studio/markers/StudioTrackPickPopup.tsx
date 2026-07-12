@@ -33,22 +33,18 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
     .map((mk) => mk.distanceM);
   const hasSplits = splitDistances.length > 0;
 
-  // The split point immediately before the click — how far this new marker sits
-  // into the current segment.
-  const lastSplitM = splitDistances
-    .filter((d) => d <= props.info.distanceM)
-    .reduce<number | null>((furthest, d) => Math.max(furthest ?? 0, d), null);
-
-  const subtitleParts = [m.ui_studio_pick_from_start({ km: toKm(props.info.distanceM) })];
-  if (lastSplitM !== null) {
-    subtitleParts.push(
-      m.ui_studio_pick_from_split({ km: toKm(props.info.distanceM - lastSplitM) }),
-    );
-  }
-
   const segment = route
     ? segmentAtDistance(splitDistances, route.distance, props.info.distanceM)
     : null;
+
+  // When the click sits past a split, also show how far into the current segment
+  // the new marker lands.
+  const subtitleParts = [m.ui_studio_pick_from_start({ km: toKm(props.info.distanceM) })];
+  if (segment && segment.startSplit !== null) {
+    subtitleParts.push(
+      m.ui_studio_pick_from_split({ km: toKm(props.info.distanceM - segment.startM) }),
+    );
+  }
 
   return (
     <MapPopupShell

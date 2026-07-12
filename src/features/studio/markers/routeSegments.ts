@@ -1,13 +1,10 @@
 export interface RouteSegment {
   /** 1-based number of the segment the distance falls into. */
   index: number;
-  /** Total number of segments (split points + 1). */
-  count: number;
   startM: number;
   endM: number;
-  /** Split ordinal (1-based) bounding the segment, or `null` for the route start/end. */
+  /** Split ordinal (1-based) preceding the segment, or `null` for the route start. */
   startSplit: number | null;
-  endSplit: number | null;
 }
 
 /**
@@ -34,8 +31,6 @@ export const segmentAtDistance = (
 
   let startSplit: number | null = splitsBefore;
   if (splitsBefore === 0) startSplit = null;
-  let endSplit: number | null = null;
-  if (splitsBefore < splits.length) endSplit = splitsBefore + 1;
 
-  return { index: splitsBefore + 1, count: splits.length + 1, startM, endM, startSplit, endSplit };
+  return { index: splitsBefore + 1, startM, endM, startSplit };
 };

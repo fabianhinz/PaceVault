@@ -33,7 +33,8 @@ export const positionAtDistance = (
       if (prev === undefined) continue;
       const stepM = haversineM({ lat: prev[1], lng: prev[0] }, { lat: point[1], lng: point[0] });
       if (stepM >= remaining) {
-        const t = stepM === 0 ? 0 : remaining / stepM;
+        let t = 0;
+        if (stepM > 0) t = remaining / stepM;
         return [prev[0] + (point[0] - prev[0]) * t, prev[1] + (point[1] - prev[1]) * t];
       }
       remaining -= stepM;

@@ -8,11 +8,9 @@ describe('segmentAtDistance', () => {
     const seg = segmentAtDistance([], TOTAL, 4000);
     expect(seg).toMatchObject({
       index: 1,
-      count: 1,
       startM: 0,
       endM: TOTAL,
       startSplit: null,
-      endSplit: null,
     });
   });
 
@@ -20,17 +18,15 @@ describe('segmentAtDistance', () => {
     const seg = segmentAtDistance([3000, 7000], TOTAL, 1000);
     expect(seg).toMatchObject({
       index: 1,
-      count: 3,
       startM: 0,
       endM: 3000,
       startSplit: null,
-      endSplit: 1,
     });
   });
 
   it('resolves a middle segment between two splits', () => {
     const seg = segmentAtDistance([3000, 7000], TOTAL, 5000);
-    expect(seg).toMatchObject({ index: 2, startM: 3000, endM: 7000, startSplit: 1, endSplit: 2 });
+    expect(seg).toMatchObject({ index: 2, startM: 3000, endM: 7000, startSplit: 1 });
   });
 
   it('resolves the segment after the last split', () => {
@@ -40,7 +36,6 @@ describe('segmentAtDistance', () => {
       startM: 7000,
       endM: TOTAL,
       startSplit: 2,
-      endSplit: null,
     });
   });
 
@@ -51,6 +46,6 @@ describe('segmentAtDistance', () => {
 
   it('ignores unsorted splits and splits at or beyond the route ends', () => {
     const seg = segmentAtDistance([7000, 0, 3000, TOTAL], TOTAL, 5000);
-    expect(seg).toMatchObject({ index: 2, count: 3, startM: 3000, endM: 7000 });
+    expect(seg).toMatchObject({ index: 2, startM: 3000, endM: 7000 });
   });
 });

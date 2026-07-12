@@ -173,7 +173,7 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
             />
           </div>
 
-          {!isPoi && (
+          {!isPoi && prevSplitM !== null && (
             <div>
               <Label>{m.ui_studio_marker_from_split_label()}</Label>
               <Input
@@ -182,9 +182,7 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
                 max={maxKm}
                 step={0.01}
                 value={kmFromSplitText}
-                disabled={prevSplitM === null}
                 onChange={(e) => handleKmFromSplitChange(e.target.value)}
-                helperText={prevSplitM === null ? m.ui_studio_marker_from_split_empty() : undefined}
               />
             </div>
           )}

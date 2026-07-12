@@ -63,6 +63,13 @@ export const MapBackground = (props: MapBackgroundProps) => {
     studioTracks.bounds,
   );
 
+  // Hoist the stable inner handlers so onMapClick's identity only changes when
+  // one of them (or the focused route) does — keeping the deck.gl layers, which
+  // depend on this callback, from rebuilding on every render.
+  const sessionsOnClick = popupState.onClick;
+  const studioOnClick = studioPopup.onClick;
+  const routesOnClick = studioRoutesPopup.onClick;
+
   // Clicks on a studio route open a studio popup; everything else routes to the
   // session/lap pick handler.
   const onMapClick = useCallback(
@@ -71,15 +78,15 @@ export const MapBackground = (props: MapBackgroundProps) => {
         // Detail page drops a marker on its route; the studio tab lists the
         // routes near the click.
         if (studioTracks.focusedRouteId) {
-          studioPopup.onClick(info);
+          studioOnClick(info);
         } else {
-          studioRoutesPopup.onClick(info);
+          routesOnClick(info);
         }
         return;
       }
-      return popupState.onClick(info);
+      return sessionsOnClick(info);
     },
-    [popupState, studioPopup, studioRoutesPopup, studioTracks.focusedRouteId],
+    [sessionsOnClick, studioOnClick, routesOnClick, studioTracks.focusedRouteId],
   );
 
   const interactive = popupState.interactive && !studioPopup.popup && !studioRoutesPopup.popup;
