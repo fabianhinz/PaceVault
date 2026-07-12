@@ -5,6 +5,7 @@ import { useStudioStore } from '@/store/studio.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { MapPopupShell } from '@/features/map/MapPopupShell.tsx';
+import { toKm } from '@/lib/formatters.ts';
 import { AddMarkerButton } from './AddMarkerButton.tsx';
 import { segmentAtDistance } from './routeSegments.ts';
 import { useStudioSegmentExport } from '@/features/studio/hooks/useStudioSegmentExport.ts';
@@ -16,8 +17,6 @@ export interface StudioTrackPickInfo {
   /** Distance from the route start to the clicked point, in metres. */
   distanceM: number;
 }
-
-const toKm = (metres: number): string => (metres / 1000).toFixed(2);
 
 /**
  * Shown when the user clicks the focused route on the map: pick which kind of

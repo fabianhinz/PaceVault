@@ -18,8 +18,17 @@ const MarkerCard = (props: {
     <CardHeader title={props.title} subtitle={props.subtitle} />
     {props.markers.length > 0 && (
       <List>
-        {props.markers.map((marker) => (
-          <MarkerRow key={marker.id} routeId={props.routeId} marker={marker} />
+        {props.markers.map((marker, i) => (
+          <MarkerRow
+            key={marker.id}
+            routeId={props.routeId}
+            marker={marker}
+            prevSplitM={
+              props.type === 'track_modifier' && i > 0
+                ? (props.markers[i - 1]?.distanceM ?? null)
+                : null
+            }
+          />
         ))}
       </List>
     )}

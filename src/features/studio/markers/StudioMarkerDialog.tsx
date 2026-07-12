@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/Dialog.tsx';
+import { toKm } from '@/lib/formatters.ts';
 
 const clampKm = (km: number, maxKm: number): number => {
   if (Number.isNaN(km) || km < 0) return 0;
@@ -36,28 +37,72 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
   const maxKm = props.route.distance / 1000;
 
   const [kmText, setKmText] = useState('');
+  const [kmFromSplitText, setKmFromSplitText] = useState('');
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
+  // The split just before this marker (fixed while the dialog is open). `null`
+  // when there is none — then the "distance from last split" input is disabled.
+  const [prevSplitM, setPrevSplitM] = useState<number | null>(null);
 
   // Seed the form each time the dialog opens.
   useEffect(() => {
     if (!active) return;
+
+    let seedM: number;
     if (existing) {
-      setKmText((existing.distanceM / 1000).toFixed(2));
-      setLabel(existing.type === 'point_of_interest' ? existing.label : '');
-      setDescription(existing.type === 'point_of_interest' ? (existing.description ?? '') : '');
+      seedM = existing.distanceM;
+      if (existing.type === 'point_of_interest') {
+        setLabel(existing.label);
+        setDescription(existing.description ?? '');
+      } else {
+        setLabel('');
+        setDescription('');
+      }
     } else {
-      const seedKm = editor.initialDistanceM != null ? editor.initialDistanceM / 1000 : maxKm / 2;
-      setKmText(seedKm.toFixed(2));
+      seedM = editor.initialDistanceM ?? props.route.distance / 2;
       setLabel('');
       setDescription('');
     }
+    setKmText(toKm(seedM));
+
+    if (isPoi) {
+      setPrevSplitM(null);
+      setKmFromSplitText('');
+    } else {
+      const prev = props.route.markers
+        .filter(
+          (mk) => mk.type === 'track_modifier' && mk.id !== editor.markerId && mk.distanceM < seedM,
+        )
+        .reduce<number | null>((max, mk) => Math.max(max ?? 0, mk.distanceM), null);
+      setPrevSplitM(prev);
+      setKmFromSplitText(prev !== null ? toKm(seedM - prev) : '');
+    }
     // Markers can't change while the dialog is open (saving closes it), so the
     // seed inputs are effectively stable — this only re-runs on open / target.
-  }, [active, editor.markerId, editor.initialDistanceM, existing, maxKm]);
+  }, [active, editor.markerId, editor.initialDistanceM, existing, isPoi, props.route]);
 
   const trimmedLabel = label.trim();
   const canSave = !isPoi || trimmedLabel.length > 0;
+
+  // "Distance from start" and "distance from last split" are two views of the
+  // same position — editing one keeps the other in sync.
+  const handleKmStartChange = (value: string) => {
+    setKmText(value);
+    if (prevSplitM !== null) {
+      const distanceM = clampKm(Number.parseFloat(value), maxKm) * 1000;
+      setKmFromSplitText(toKm(Math.max(0, distanceM - prevSplitM)));
+    }
+  };
+
+  const handleKmFromSplitChange = (value: string) => {
+    setKmFromSplitText(value);
+    if (prevSplitM !== null) {
+      const offsetKm = Number.parseFloat(value);
+      const offset = Number.isNaN(offsetKm) ? 0 : Math.max(0, offsetKm);
+      const distanceM = clampKm(prevSplitM / 1000 + offset, maxKm) * 1000;
+      setKmText(toKm(distanceM));
+    }
+  };
 
   const handleSave = () => {
     if (!canSave) return;
@@ -123,11 +168,26 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
               max={maxKm}
               step={0.01}
               value={kmText}
-              onChange={(e) => setKmText(e.target.value)}
-              helperText={m.ui_studio_marker_km_helper({ max: maxKm.toFixed(2) })}
+              onChange={(e) => handleKmStartChange(e.target.value)}
               autoFocus={!isPoi}
             />
           </div>
+
+          {!isPoi && (
+            <div className="flex flex-col gap-2">
+              <Label>{m.ui_studio_marker_from_split_label()}</Label>
+              <Input
+                type="number"
+                min={0}
+                max={maxKm}
+                step={0.01}
+                value={kmFromSplitText}
+                disabled={prevSplitM === null}
+                onChange={(e) => handleKmFromSplitChange(e.target.value)}
+                helperText={prevSplitM === null ? m.ui_studio_marker_from_split_empty() : undefined}
+              />
+            </div>
+          )}
 
           {isPoi && (
             <div className="flex flex-col gap-2">
