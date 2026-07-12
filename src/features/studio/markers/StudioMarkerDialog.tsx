@@ -28,6 +28,10 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
   const editor = useStudioMarkerEditorStore();
   const active = editor.open && editor.routeId === props.route.id;
   const existing = props.route.markers.find((mk) => mk.id === editor.markerId);
+  // Edit vs. add is driven by the editor store, not the live marker lookup:
+  // `close()` keeps `markerId`, so deleting a marker doesn't flip the closing
+  // dialog from "edit" to "add" before its exit animation finishes.
+  const isEdit = editor.markerId !== null;
   const isPoi = editor.type === 'point_of_interest';
   const maxKm = props.route.distance / 1000;
 
@@ -66,13 +70,13 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
         label: trimmedLabel,
         description: description.trim() || undefined,
       };
-      if (existing) {
-        store.updateStudioMarker(props.route.id, existing.id, poiFields);
+      if (editor.markerId) {
+        store.updateStudioMarker(props.route.id, editor.markerId, poiFields);
       } else {
         store.addStudioMarker(props.route.id, { type: 'point_of_interest', ...poiFields });
       }
-    } else if (existing) {
-      store.updateStudioMarker(props.route.id, existing.id, { distanceM });
+    } else if (editor.markerId) {
+      store.updateStudioMarker(props.route.id, editor.markerId, { distanceM });
     } else {
       store.addStudioMarker(props.route.id, { type: 'track_modifier', distanceM });
     }
@@ -81,16 +85,16 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
   };
 
   const handleDelete = () => {
-    if (existing) {
-      useStudioStore.getState().deleteStudioMarker(props.route.id, existing.id);
+    if (editor.markerId) {
+      useStudioStore.getState().deleteStudioMarker(props.route.id, editor.markerId);
     }
     useStudioMarkerEditorStore.getState().close();
   };
 
   let title = m.ui_studio_marker_add_split();
-  if (isPoi && existing) title = m.ui_studio_marker_edit_waypoint();
+  if (isPoi && isEdit) title = m.ui_studio_marker_edit_waypoint();
   else if (isPoi) title = m.ui_studio_marker_add_waypoint();
-  else if (existing) title = m.ui_studio_marker_edit_split();
+  else if (isEdit) title = m.ui_studio_marker_edit_split();
 
   return (
     <DialogRoot open={active} onOpenChange={() => useStudioMarkerEditorStore.getState().close()}>
@@ -138,7 +142,7 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2">
-          {existing ? (
+          {isEdit ? (
             <Button variant="danger" onClick={handleDelete}>
               {m.ui_btn_delete()}
             </Button>
