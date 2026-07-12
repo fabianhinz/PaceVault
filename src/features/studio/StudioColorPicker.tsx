@@ -20,10 +20,7 @@ export const StudioColorPicker = (props: {
             onClick={() => props.onChange(color)}
             className={cn(
               'h-8 w-8 cursor-pointer rounded-full transition-all',
-              selected
-                ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-surface-sunken'
-                : 'opacity-50 hover:opacity-100',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-sunken',
+              props.value !== color && 'opacity-50 hover:opacity-100',
             )}
             style={{ backgroundColor: routeColors[color].hex }}
           />
