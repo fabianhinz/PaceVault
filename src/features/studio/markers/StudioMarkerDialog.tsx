@@ -155,7 +155,6 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
                 value={label}
                 onChange={(e) => setLabel(e.target.value)}
                 placeholder={m.ui_studio_marker_label_placeholder()}
-                autoFocus
               />
             </div>
           )}
@@ -169,7 +168,6 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
               step={0.01}
               value={kmText}
               onChange={(e) => handleKmStartChange(e.target.value)}
-              autoFocus={!isPoi}
             />
           </div>
 

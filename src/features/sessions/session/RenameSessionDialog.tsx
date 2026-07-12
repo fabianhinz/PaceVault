@@ -54,7 +54,6 @@ export const RenameSessionDialog = (props: {
           }}
           disabled={useAutoNames}
           className="mt-4 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-base lg:text-sm text-text-primary outline-none focus:border-accent disabled:opacity-50 disabled:cursor-not-allowed"
-          autoFocus
         />
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
