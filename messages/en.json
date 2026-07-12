@@ -235,6 +235,8 @@
   "ui_dock_hide_map": "Hide map",
   "ui_dock_attr": "Advanced",
   "ui_dock_attr_filter": "Advanced filters",
+  "ui_dock_locate": "Locate",
+  "ui_dock_locate_me": "Show my location",
   "ui_attr_dialog_title": "Advanced filters",
   "ui_attr_dialog_desc": "Shows sessions around your values.",
   "ui_attr_dialog_duration": "Duration (h)",

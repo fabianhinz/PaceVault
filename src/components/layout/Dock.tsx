@@ -11,6 +11,9 @@ import {
   Clock,
   FlaskConical,
   FunnelPlus,
+  Locate,
+  LocateFixed,
+  LocateOff,
 } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { useFileUpload } from '@/features/sessions/hooks/useFileUpload.ts';
@@ -20,6 +23,7 @@ import { cardClass } from '@/components/ui/Card.tsx';
 import { useSlideIndicator } from '@/components/ui/SlideIndicator.tsx';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 import { useFiltersStore } from '@/store/filters.ts';
+import { useGeolocationStore } from '@/store/geolocation.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { MobileMapFab } from './MobileMapFab.tsx';
 import { DockRevealPanel } from './DockRevealPanel.tsx';
@@ -126,6 +130,18 @@ export const Dock = () => {
     setRevealStack([]);
     setAttrDialogOpen(true);
   }, []);
+
+  // Locate button — the accent dot lights up while tracking; the icon shows a
+  // crossed-out locator when the last attempt failed, otherwise reflects whether
+  // tracking is on.
+  const geoTracking = useGeolocationStore((s) => s.tracking);
+  const geoError = useGeolocationStore((s) => s.error);
+  let LocateIcon = Locate;
+  if (geoError) {
+    LocateIcon = LocateOff;
+  } else if (geoTracking) {
+    LocateIcon = LocateFixed;
+  }
 
   const SportIcon = sportFilter === 'all' ? Activity : sportIcon[sportFilter];
   const sportLabel = sportOptions.find((o) => o.value === sportFilter)?.label ?? sportFilter;
@@ -256,6 +272,21 @@ export const Dock = () => {
               </IconBadge>
               <span className="text-[10px] leading-none">{m.ui_dock_attr()}</span>
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={revealItemClass}
+              onClick={() => {
+                useGeolocationStore.getState().toggleTracking();
+                closeFrom('menu');
+              }}
+              aria-label={m.ui_dock_locate_me()}
+            >
+              <IconBadge show={geoTracking}>
+                <LocateIcon size={20} strokeWidth={1.5} />
+              </IconBadge>
+              <span className="text-[10px] leading-none">{m.ui_dock_locate()}</span>
+            </Button>
           </DockRevealPanel>
 
           {/* Main dock bar */}
@@ -338,6 +369,19 @@ export const Dock = () => {
                     <FunnelPlus size={20} strokeWidth={1.5} />
                   </IconBadge>
                   <span className="text-[10px] leading-none">{m.ui_dock_attr()}</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={dockItemMaxiClass}
+                  onClick={() => useGeolocationStore.getState().toggleTracking()}
+                  aria-label={m.ui_dock_locate_me()}
+                >
+                  <IconBadge show={geoTracking}>
+                    <LocateIcon size={20} strokeWidth={1.5} />
+                  </IconBadge>
+                  <span className="text-[10px] leading-none">{m.ui_dock_locate()}</span>
                 </Button>
 
                 {/* Separator */}

@@ -19,6 +19,8 @@ import { useStudioRoutesPopup } from '../studio/hooks/useStudioRoutesPopup.ts';
 import { SessionsPickPopup } from '../sessions/SessionsPickPopup.tsx';
 import { LapPickPopup } from '../sessions/laps/LapPickPopup.tsx';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useWatchPositionEffect } from '@/lib/hooks/useWatchPositionEffect.ts';
+import { useGeolocationCameraEffect } from './hooks/useGeolocationCameraEffect.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map-attribution.css';
@@ -48,6 +50,9 @@ export const MapBackground = (props: MapBackgroundProps) => {
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
   const studioTracks = useStudioMapTracks();
+
+  useWatchPositionEffect();
+  useGeolocationCameraEffect(mapRef);
 
   const match = useMatch('/sessions/:id');
   useEffect(() => {
