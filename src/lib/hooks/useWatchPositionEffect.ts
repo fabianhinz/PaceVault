@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { useGeolocationStore } from '@/store/geolocation.ts';
 
-const store = useGeolocationStore.getState;
-
 /**
  * Streams the device position into the geolocation store while tracking is on,
  * and clears the watch on toggle-off / unmount. Owns only the geolocation
@@ -18,19 +16,21 @@ export const useWatchPositionEffect = () => {
     }
 
     if (!('geolocation' in navigator)) {
-      store().setError('unavailable');
+      useGeolocationStore.getState().setError('unavailable');
       return;
     }
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        store().setFix([pos.coords.longitude, pos.coords.latitude], pos.coords.accuracy);
+        useGeolocationStore
+          .getState()
+          .setFix([pos.coords.longitude, pos.coords.latitude], pos.coords.accuracy);
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
-          store().setError('denied');
+          useGeolocationStore.getState().setError('denied');
         } else {
-          store().setError('unavailable');
+          useGeolocationStore.getState().setError('unavailable');
         }
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 10_000 },
