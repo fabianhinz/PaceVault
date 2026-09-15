@@ -8,6 +8,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** Must match DB_NAME / DB_VERSION in src/lib/db.ts. */
 const DB = { name: 'endurance-tracker', version: 4 };
 
+const blockBasemap = async (page: Page) => {
+  await page.route('**/*.cartocdn.com/**', (route) => route.abort());
+};
+
 /**
  * Writes Zustand persist entries into IndexedDB's kv store, creating the full
  * app schema on the way (single source of truth for the seeded DB shape).
@@ -96,6 +100,7 @@ const sessionsState = (sessions: unknown[]) =>
  * which is where Zustand persists its state.
  */
 export const seedOnboardingComplete = async (page: Page) => {
+  await blockBasemap(page);
   await page.goto('/');
   await writeKvEntries(page, {
     'store-layout': layoutState(),
@@ -124,6 +129,7 @@ interface SeedSession {
  * can start with a known set of sessions without uploading FIT files.
  */
 export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
+  await blockBasemap(page);
   await page.goto('/');
 
   const now = Date.now();
@@ -209,6 +215,7 @@ export const seedCoachWithThresholdPace = async (
   thresholdPace: number,
   sessions: SeedCoachSession[],
 ) => {
+  await blockBasemap(page);
   await page.goto('/');
 
   const now = Date.now();

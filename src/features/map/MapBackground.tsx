@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils.ts';
 import { useMatch } from 'react-router-dom';
 import MapGL from 'react-map-gl/maplibre';
 import type { PickingInfo } from '@deck.gl/core';
-import { darkMatterStyle } from './mapStyle.ts';
+import { styles } from './mapStyle.ts';
 import { useMapTracks } from './hooks/useMapTracks.ts';
 import { useGPSBackfill } from './hooks/useGpsBackfill.ts';
 import { useMapCameraEffect } from './hooks/useMapCameraEffect.ts';
@@ -108,7 +108,7 @@ export const MapBackground = (props: MapBackgroundProps) => {
       <MapGL
         ref={mapRef}
         onLoad={() => setMapLoaded(true)}
-        mapStyle={darkMatterStyle}
+        mapStyle={styles.dark}
         cursor={popupState.hoveringTrack ? 'pointer' : undefined}
         initialViewState={{
           longitude: 10,

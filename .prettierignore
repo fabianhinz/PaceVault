@@ -4,3 +4,4 @@ node_modules
 pnpm-lock.yaml
 project.inlang
 paraglide
+*.style.json
