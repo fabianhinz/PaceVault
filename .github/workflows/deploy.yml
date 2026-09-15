@@ -24,6 +24,8 @@ jobs:
 
       - run: vp run paraglide:compile
       - run: vp build
+        env:
+          VITE_CARTO_API_KEY: ${{ secrets.VITE_CARTO_API_KEY }}
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
