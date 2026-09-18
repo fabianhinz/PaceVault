@@ -7,6 +7,7 @@ interface ActionTileProps {
   title: string;
   description: string;
   selected?: boolean;
+  className?: string;
   onClick: () => void;
 }
 
@@ -16,6 +17,7 @@ export const ActionTile = (props: ActionTileProps) => (
     className={cn(
       'flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-all cursor-pointer',
       props.selected ? 'bg-white border-white/20' : 'border-white/10 bg-white/5 hover:bg-white/10',
+      props.className,
     )}
     onClick={props.onClick}
   >

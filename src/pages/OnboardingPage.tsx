@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Upload, Database, FolderUp } from 'lucide-react';
+import { Upload, Database, FolderUp, CloudDownload } from 'lucide-react';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
@@ -12,9 +12,10 @@ import { Button } from '@/components/ui/Button.tsx';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
 import { ThresholdsSection } from '@/features/settings/ThresholdsSection.tsx';
 import { ActionPromptCard } from '@/components/ui/ActionPromptCard.tsx';
+import { IntervalsOnboardingPanel } from '@/features/intervals/IntervalsOnboardingPanel.tsx';
 import { UPLOAD_EXTENSIONS } from '@/lib/archive';
 
-type OnboardingPath = 'your-data' | 'test-data' | null;
+type OnboardingPath = 'your-data' | 'test-data' | 'intervals' | null;
 
 export const OnboardingPage = () => {
   const profile = useUserStore((s) => s.profile);
@@ -42,7 +43,7 @@ export const OnboardingPage = () => {
       className="bg-[linear-gradient(color-mix(in_srgb,var(--color-surface-base)_90%,transparent),color-mix(in_srgb,var(--color-surface-base)_90%,transparent)),url('/logo.svg')] bg-surface-base bg-left-top bg-no-repeat bg-[length:12rem] p-5"
     >
       <hr className="border-white/10 w-full" />
-      <div className="grid grid-cols-2 gap-3 w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
         <ActionTile
           icon={FolderUp}
           title={m.ui_onboarding_your_data_title()}
@@ -57,15 +58,29 @@ export const OnboardingPage = () => {
           selected={path === 'test-data'}
           onClick={() => setPath('test-data')}
         />
+        <ActionTile
+          icon={CloudDownload}
+          title={m.ui_onboarding_intervals_title()}
+          description={m.ui_onboarding_intervals_desc()}
+          selected={path === 'intervals'}
+          className="col-span-2 sm:col-span-1"
+          onClick={() => setPath('intervals')}
+        />
       </div>
 
-      {path === 'your-data' && (
+      {(path === 'your-data' || path === 'intervals') && (
         <div className="w-full">
           <ThresholdsSection variant="embedded" />
         </div>
       )}
 
-      {path !== null && (
+      {path === 'intervals' && profile && (
+        <div className="w-full">
+          <IntervalsOnboardingPanel />
+        </div>
+      )}
+
+      {path !== null && path !== 'intervals' && (
         <div className="flex justify-end w-full">
           {path === 'your-data' ? (
             <>

@@ -20,6 +20,7 @@ import { ThresholdsSection } from '@/features/settings/ThresholdsSection.tsx';
 import { DataManagementSection } from '@/features/settings/DataManagementSection.tsx';
 import { AboutSection } from '@/features/settings/AboutSection.tsx';
 import { AutoSessionNamesToggle } from '@/features/sessions/AutoSessionNamesToggle.tsx';
+import { IntervalsConnectionCard } from '@/features/intervals/IntervalsConnectionCard.tsx';
 
 const localeLabels: Record<Locale, string> = {
   en: 'English',
@@ -94,6 +95,7 @@ export const SettingsPage = () => {
 
       <TabsContent value="data">
         <PageGrid>
+          <IntervalsConnectionCard />
           <DataManagementSection />
         </PageGrid>
       </TabsContent>

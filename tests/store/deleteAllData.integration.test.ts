@@ -4,6 +4,7 @@ import { useUserStore } from '@/store/user.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
+import { useIntervalsStore } from '@/store/intervals.ts';
 import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
@@ -49,6 +50,10 @@ describe('delete all data', () => {
         '2026-02-09:1:300',
       );
 
+    // Connect intervals.icu
+    useIntervalsStore.getState().connectIntervals('secret-key', 'Fabian');
+    useIntervalsStore.getState().recordIntervalsSync(1000, ['i1', 'i2']);
+
     // Set non-default filters
     useFiltersStore.setState({
       timeRange: '90d',
@@ -58,6 +63,7 @@ describe('delete all data', () => {
 
     // Verify everything is populated
     expect(useFiltersStore.getState().timeRange).toBe('90d');
+    expect(useIntervalsStore.getState().apiKey).not.toBeNull();
     expect(useCoachPlanStore.getState().cachedPlan).not.toBeNull();
     expect(useSessionsStore.getState().sessions).toHaveLength(1);
     expect(useUserStore.getState().profile).not.toBeNull();
@@ -70,6 +76,7 @@ describe('delete all data', () => {
     useSessionsStore.getState().clearAll();
     useUserStore.getState().resetProfile();
     useCoachPlanStore.getState().clearPlan();
+    useIntervalsStore.getState().disconnectIntervals();
     useLayoutStore.setState({ onboardingComplete: false });
     useFiltersStore.setState({
       timeRange: 'all',
@@ -88,6 +95,9 @@ describe('delete all data', () => {
     expect(await getSessionLaps(sessionId)).toHaveLength(0);
     expect(await idbStorage.getItem('store-user')).toBeNull();
 
+    // Verify the intervals.icu connection is gone
+    expect(useIntervalsStore.getState().apiKey).toBeNull();
+    expect(useIntervalsStore.getState().importedActivityIds).toEqual([]);
     // Verify profile is null (user returns to onboarding)
     expect(useUserStore.getState().profile).toBeNull();
     // Verify onboarding is reset

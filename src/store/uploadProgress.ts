@@ -3,19 +3,28 @@ import { immer } from 'zustand/middleware/immer';
 import { useToastStore, PROGRESS_TOAST_ID } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
 
+type UploadProgressKind = 'files' | 'intervals';
+
 interface UploadProgressState {
   uploading: boolean;
   processed: number;
   total: number;
   fileCount: number;
+  kind: UploadProgressKind;
   beginProcessing: () => void;
-  startUpload: (total: number) => void;
+  startUpload: (total: number, kind?: UploadProgressKind) => void;
   advance: () => void;
   finish: (message: string, variant: 'success' | 'error' | 'warning') => void;
   cancel: () => void;
 }
 
-const processingLabel = (count: number) => {
+const processingLabel = (count: number, kind: UploadProgressKind) => {
+  if (kind === 'intervals') {
+    if (count === 1) {
+      return m.toast_upload_processing_intervals({ count });
+    }
+    return m.toast_upload_processing_intervals_plural({ count });
+  }
   if (count === 1) {
     return m.toast_upload_processing({ count });
   }
@@ -28,8 +37,9 @@ export const useUploadProgressStore = create<UploadProgressState>()(
     processed: 0,
     total: 0,
     fileCount: 0,
+    kind: 'files',
     beginProcessing: () => {
-      set({ uploading: true, processed: 0, total: 0, fileCount: 0 });
+      set({ uploading: true, processed: 0, total: 0, fileCount: 0, kind: 'files' });
       useToastStore.getState().upsertProgress({
         label: m.toast_upload_preparing(),
         processed: 0,
@@ -37,10 +47,10 @@ export const useUploadProgressStore = create<UploadProgressState>()(
         saving: true,
       });
     },
-    startUpload: (total) => {
-      set({ uploading: true, processed: 0, total, fileCount: total });
+    startUpload: (total, kind = 'files') => {
+      set({ uploading: true, processed: 0, total, fileCount: total, kind });
       useToastStore.getState().upsertProgress({
-        label: processingLabel(total),
+        label: processingLabel(total, kind),
         processed: 0,
         total,
         saving: false,
@@ -58,7 +68,7 @@ export const useUploadProgressStore = create<UploadProgressState>()(
       if (saving) {
         label = m.toast_upload_saving();
       } else {
-        label = processingLabel(state.fileCount);
+        label = processingLabel(state.fileCount, state.kind);
       }
       useToastStore.getState().upsertProgress({
         label,
@@ -72,7 +82,7 @@ export const useUploadProgressStore = create<UploadProgressState>()(
       useToastStore.getState().replaceProgressWithMessage(message, variant);
     },
     cancel: () => {
-      set({ uploading: false, processed: 0, total: 0, fileCount: 0 });
+      set({ uploading: false, processed: 0, total: 0, fileCount: 0, kind: 'files' });
       useToastStore.getState().removeToast(PROGRESS_TOAST_ID);
     },
   })),

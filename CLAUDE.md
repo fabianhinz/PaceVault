@@ -1,7 +1,7 @@
 # PaceVault
 
 **WHY:** PaceVault is a local-first, Progressive Web App (PWA) designed for mapping, analyzing, and storing fitness/GPS activities (primarily parsing `.FIT` binaries).
-**WHAT:** A pure client-side SPA with no backend server. The browser _is_ the database. Two external dependencies exist: [Open-Meteo](https://open-meteo.com/) for historical weather data — fetched lazily on session detail view and cached in IndexedDB (`session-weather` store) — and CARTO's vector basemap tiles, whose style is vendored in `src/features/map/darkMatter.style.json` so the map still paints offline. Tiles, glyphs and sprites are cached by the service worker (`carto-tiles`, `carto-assets`).
+**WHAT:** A pure client-side SPA with no backend server. The browser _is_ the database. Three external dependencies exist: [Open-Meteo](https://open-meteo.com/) for historical weather data — fetched lazily on session detail view and cached in IndexedDB (`session-weather` store); CARTO's vector basemap tiles, whose style is vendored in `src/features/map/darkMatter.style.json` so the map still paints offline (tiles, glyphs and sprites are cached by the service worker as `carto-tiles`, `carto-assets`); and [intervals.icu](https://intervals.icu/) as an **opt-in** activity source — the user pastes their own API key, every request is user-initiated, and `src/lib/intervals/client.ts` is the only call site (`NetworkOnly` in the service worker, never cached).
 
 ## 1. Tech Stack
 
@@ -24,7 +24,7 @@
 
 ## 2. Core Architecture Rules
 
-- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never attempt to call an external API.
+- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never call an external API outside the three documented integrations above (Open-Meteo, CARTO, intervals.icu). Each is opt-in or lazily triggered, never called on boot, and the app stays fully usable offline without any of them.
 - **Pure engine**: All business logic lives in `src/packages/engine/` as pure functions — absolutely no React or state imports in this directory.
 - **Headless UI**: Import Radix primitive → wrap in `src/components/ui/` → style with Tailwind.
 - **Reuse UI components**: Before inlining layout or UI patterns in feature code, check `src/components/ui/` for existing components (`CardHeader`, `StatItem`, `ValueSkeleton`, etc.). Extract new shared components when a pattern appears in 2+ places.

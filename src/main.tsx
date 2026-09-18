@@ -12,6 +12,7 @@ import { useCoachPlanStore } from './store/coachPlan.ts';
 import { useLayoutStore } from './store/layout.ts';
 import { useFiltersStore } from './store/filters.ts';
 import { useLapOptionsStore } from './store/lapOptions.ts';
+import { useIntervalsStore } from './store/intervals.ts';
 import './index.css';
 
 const boot = async () => {
@@ -26,6 +27,7 @@ const boot = async () => {
     useLayoutStore.persist.rehydrate(),
     useFiltersStore.persist.rehydrate(),
     useLapOptionsStore.persist.rehydrate(),
+    useIntervalsStore.persist.rehydrate(),
   ]);
 
   const rootEl = document.getElementById('root');

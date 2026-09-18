@@ -35,6 +35,12 @@ export interface ParsedFitResult {
 
 export type ParsedFitResultWithMeta = ParsedFitResult & { fileName: string; rawData: ArrayBuffer };
 
+const UNSUPPORTED_SPORT_ERROR = 'sport is not supported';
+
+export const isUnsupportedSportError = (error: unknown): boolean => {
+  return error instanceof Error && error.message.endsWith(UNSUPPORTED_SPORT_ERROR);
+};
+
 const mapFitSportToAppSport = (fitSport?: string): Sport | undefined => {
   switch (fitSport) {
     case 'running':
@@ -128,6 +134,7 @@ export const parseFitFile = async (
     gender: Gender;
     ftp?: number;
   },
+  meta?: { name?: string },
 ): Promise<ParsedFitResult> => {
   const parser = new FitParser({
     force: true,
@@ -155,7 +162,7 @@ export const parseFitFile = async (
 
   const sport = mapFitSportToAppSport(fitSession?.sport);
   if (!sport) {
-    throw new Error(`Failed to parse FIT file "${fileName}": sport is not supported`);
+    throw new Error(`Failed to parse FIT file "${fileName}": ${UNSUPPORTED_SPORT_ERROR}`);
   }
 
   let sessionDate: number | undefined = undefined;
@@ -226,7 +233,7 @@ export const parseFitFile = async (
   }
 
   const avgSpeed = fitSession?.enhanced_avg_speed ?? fitSession?.avg_speed;
-  const name = extractSessionName(fileName);
+  const name = meta?.name ?? extractSessionName(fileName);
 
   const fileIdResult = fitFileIdSchema.safeParse(data.file_ids?.[0]);
   const sessionDuration = fitSession?.total_timer_time ?? fitSession?.total_elapsed_time ?? 0;

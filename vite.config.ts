@@ -103,6 +103,10 @@ export default defineConfig({
             },
           },
           {
+            urlPattern: /^https:\/\/intervals\.icu\/api\//,
+            handler: 'NetworkOnly',
+          },
+          {
             urlPattern: /^https:\/\/tiles\.basemaps\.cartocdn\.com\/(fonts|gl)\//,
             handler: 'CacheFirst',
             options: {

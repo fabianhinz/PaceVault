@@ -1,17 +1,13 @@
 import { useCallback } from 'react';
 import { useUserStore } from '@/store/user.ts';
-import { useSessionsStore } from '@/store/sessions.ts';
 import { useUploadProgressStore } from '@/store/uploadProgress.ts';
 import { parseFitFile, type ParsedFitResultWithMeta } from '@/parsers/fit.ts';
-import { bulkSaveSessionData, saveFitFile } from '@/lib/indexeddb.ts';
 import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
-import { findDuplicates } from '@/lib/fingerprint.ts';
 import { isArchiveFile, extractActivityFiles } from '@/lib/archive.ts';
-import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
-import { useFiltersStore } from '@/store/filters.ts';
-
-const CHUNK_SIZE = 10;
+import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
+import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
+import { buildImportSummary } from '@/features/sessions/importSummary.ts';
 
 export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>) => {
   const profile = useUserStore((s) => s.profile);
@@ -71,12 +67,7 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
       const parsingTasks: Promise<ParsedFitResultWithMeta | null>[] = [];
       for (const entry of fitEntries) {
         parsingTasks.push(
-          parseFitFile(entry.data, entry.name, {
-            restHr: profile.thresholds.restHr,
-            maxHr: profile.thresholds.maxHr,
-            gender: profile.gender,
-            ftp: profile.thresholds.ftp,
-          })
+          parseFitFile(entry.data, entry.name, toFitParseProfile(profile))
             .then((result) => {
               return { ...result, rawData: entry.data, fileName: entry.name };
             })
@@ -98,106 +89,19 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
         }
       }
 
-      // Dedup — filter out files already in the store or duplicated within the batch
-      const existingSessions = useSessionsStore.getState().sessions;
-      const storeDups = findDuplicates(
-        parsed.map((p) => p.fingerprint),
-        existingSessions,
-      );
-      const seenInBatch = new Set<string>();
-      let duplicated = 0;
+      const outcome = await ingestParsedFits(parsed);
+      if (outcome.saveFailed) {
+        toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
+      }
 
-      const unique = parsed.filter((p) => {
-        if (storeDups.has(p.fingerprint) || seenInBatch.has(p.fingerprint)) {
-          duplicated++;
-          return false;
-        }
-        seenInBatch.add(p.fingerprint);
-        return true;
+      const summary = buildImportSummary({
+        imported: outcome.importedCount,
+        duplicated: outcome.duplicateCount,
+        failed,
       });
 
-      if (unique.length > 0) {
-        try {
-          const sessionIds = useSessionsStore.getState().addSessions(unique.map((p) => p.session));
-
-          const idbEntries: Array<{
-            records: (SessionRecord & { sessionId: string })[];
-            laps: (SessionLap & { sessionId: string })[];
-          }> = [];
-
-          for (let i = 0; i < unique.length; i++) {
-            const entry = unique[i];
-            const sessionId = sessionIds[i];
-            if (!entry || !sessionId) continue;
-
-            if (entry.records.length > 0) {
-              const recordsWithId = entry.records.map((r) => ({
-                ...r,
-                sessionId,
-              }));
-
-              let lapsWithId: (SessionLap & { sessionId: string })[] = [];
-              if (entry.laps.length > 0) {
-                lapsWithId = entry.laps.map((l) => ({ ...l, sessionId }));
-              }
-
-              idbEntries.push({
-                records: recordsWithId,
-                laps: lapsWithId,
-              });
-            }
-          }
-
-          if (idbEntries.length > 0) {
-            await bulkSaveSessionData(idbEntries, {
-              chunkSize: CHUNK_SIZE,
-            });
-          }
-
-          for (let i = 0; i < unique.length; i++) {
-            const sid = sessionIds[i];
-            const u = unique[i];
-            if (!sid || !u) continue;
-            await saveFitFile(sid, u.fileName, u.rawData);
-          }
-        } catch (err) {
-          console.error('Save error:', err);
-          toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
-        }
-      }
-
-      const uploaded = unique.length;
-      const parts: string[] = [];
-
-      if (uploaded > 0) {
-        let uploadMsg = m.toast_upload_sessions_plural({ count: uploaded });
-        if (uploaded === 1) {
-          uploadMsg = m.toast_upload_sessions({ count: uploaded });
-        }
-        parts.push(uploadMsg);
-      }
-
-      if (duplicated > 0) {
-        let dupMsg = m.toast_upload_duplicates_plural({ count: duplicated });
-        if (duplicated === 1) {
-          dupMsg = m.toast_upload_duplicates({ count: duplicated });
-        }
-        parts.push(dupMsg);
-      }
-
-      if (failed > 0) {
-        parts.push(m.toast_upload_failed({ count: failed }));
-      }
-
-      if (parts.length > 0) {
-        let variant: 'success' | 'error' | 'warning' = 'success';
-        if (failed > 0) {
-          variant = 'error';
-        } else if (uploaded === 0) {
-          variant = 'warning';
-        }
-        useUploadProgressStore.getState().finish(parts.join(', '), variant);
-        useFiltersStore.getState().recomputePBs();
+      if (summary.message.length > 0) {
+        useUploadProgressStore.getState().finish(summary.message, summary.variant);
       }
 
       if (inputRef.current) {

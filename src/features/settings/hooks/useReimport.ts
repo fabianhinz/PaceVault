@@ -10,6 +10,7 @@ import {
   saveSessionLaps,
 } from '@/lib/indexeddb.ts';
 import { parseFitFile } from '@/parsers/fit.ts';
+import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
@@ -63,12 +64,11 @@ export const useReimport = () => {
 
     for (const fitFile of fitFiles) {
       try {
-        const result = await parseFitFile(fitFile.data, fitFile.fileName, {
-          restHr: profile.thresholds.restHr,
-          maxHr: profile.thresholds.maxHr,
-          gender: profile.gender,
-          ftp: profile.thresholds.ftp,
-        });
+        const result = await parseFitFile(
+          fitFile.data,
+          fitFile.fileName,
+          toFitParseProfile(profile),
+        );
 
         // Delete old IDB data for this session
         await deleteSessionRecords(fitFile.sessionId);
