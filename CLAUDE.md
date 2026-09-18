@@ -78,3 +78,5 @@ Specific guidelines for features, testing, and state management are located in t
    vp exec playwright test  # playwright e2e
    vp build           # production build
    ```
+
+@docs/conventions/CLAUDE.md

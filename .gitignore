@@ -27,7 +27,7 @@ data
 coverage
 src/paraglide
 
-plans
+./plans
 
 # Playwright
 /test-results/
