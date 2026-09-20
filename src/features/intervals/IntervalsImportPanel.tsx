@@ -115,7 +115,12 @@ export const IntervalsImportPanel = (props: IntervalsImportPanelProps) => {
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        {importer.uploading && (
+          <Button type="button" variant="secondary" onClick={importer.cancel}>
+            {m.ui_intervals_import_cancel()}
+          </Button>
+        )}
         <Button
           onClick={handleImportClick}
           loading={importer.uploading}

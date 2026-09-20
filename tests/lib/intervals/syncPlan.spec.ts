@@ -18,7 +18,6 @@ const activity = (over: Partial<IntervalsActivity> & { id: string }): IntervalsA
   moving_time: 3600,
   distance: 30000,
   icu_training_load: 80,
-  _note: null,
   ...over,
 });
 
@@ -70,10 +69,9 @@ describe('isStubActivity', () => {
     expect(isStubActivity(activity({ id: 'i1', source: 'STRAVA' }))).toBe(true);
   });
 
-  it('detects a Strava stub via _note alone', () => {
-    expect(
-      isStubActivity(activity({ id: 'i1', source: null, _note: 'not available via the API' })),
-    ).toBe(true);
+  it('does not treat a non-Strava activity as a stub', () => {
+    expect(isStubActivity(activity({ id: 'i1', source: 'UPLOAD' }))).toBe(false);
+    expect(isStubActivity(activity({ id: 'i1', source: null }))).toBe(false);
   });
 
   it('passes a normal activity', () => {

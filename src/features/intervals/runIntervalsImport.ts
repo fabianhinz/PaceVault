@@ -7,6 +7,7 @@ import type { IntervalsWindow } from '@/lib/intervals/intervalsDates.ts';
 import { parseFitFile, isUnsupportedSportError } from '@/parsers/fit.ts';
 import type { ParsedFitResultWithMeta } from '@/parsers/fit.ts';
 import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
+import { useFiltersStore } from '@/store/filters.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import type { UserProfile } from '@/types/index.ts';
 
@@ -18,6 +19,7 @@ interface IntervalsImportRequest {
   profile: UserProfile;
   window: IntervalsWindow;
   knownActivityIds: string[];
+  ignoreKnownIds?: boolean;
   signal?: AbortSignal;
   onProgress?: (processed: number, total: number) => void;
 }
@@ -29,6 +31,7 @@ export interface IntervalsImportResult {
   unsupported: number;
   unavailable: number;
   alreadyImported: number;
+  aborted: boolean;
   importedActivityIds: string[];
   fatal?: IntervalsErrorCode;
 }
@@ -46,6 +49,7 @@ const emptyResult = (): IntervalsImportResult => ({
   unsupported: 0,
   unavailable: 0,
   alreadyImported: 0,
+  aborted: false,
   importedActivityIds: [],
 });
 
@@ -139,10 +143,10 @@ export const runIntervalsImport = async (
     return result;
   }
 
-  const plan = buildSyncPlan({
-    listing: listing.data.activities,
-    knownActivityIds: req.knownActivityIds,
-  });
+  let knownActivityIds = req.knownActivityIds;
+  if (req.ignoreKnownIds === true) knownActivityIds = [];
+
+  const plan = buildSyncPlan({ listing: listing.data.activities, knownActivityIds });
 
   for (const entry of plan.skipped) {
     if (entry.reason === 'already-imported') result.alreadyImported++;
@@ -161,9 +165,15 @@ export const runIntervalsImport = async (
       batch,
       IMPORT_CONCURRENCY,
       async (candidate) => {
-        const outcome = await downloadAndParse(candidate, req);
-        processed++;
-        req.onProgress?.(processed, total);
+        let outcome: ActivityOutcome = { kind: 'failed', id: candidate.id };
+        try {
+          outcome = await downloadAndParse(candidate, req);
+        } catch (error) {
+          console.error('intervals.icu import failed for activity', candidate.id, error);
+        } finally {
+          processed++;
+          req.onProgress?.(processed, total);
+        }
         return outcome;
       },
       req.signal,
@@ -185,12 +195,19 @@ export const runIntervalsImport = async (
 
     if (parsed.length === 0) continue;
 
-    const ingested = await ingestParsedFits(parsed);
-    result.imported += ingested.importedCount;
+    const ingested = await ingestParsedFits(parsed, { recomputePBs: false });
     result.duplicated += ingested.duplicateCount;
-    if (ingested.saveFailed) result.failed += parsed.length;
-    else result.importedActivityIds.push(...parsedIds);
+
+    if (ingested.saveFailed) {
+      result.failed += ingested.importedCount;
+    } else {
+      result.imported += ingested.importedCount;
+      result.importedActivityIds.push(...parsedIds);
+    }
   }
+
+  if (req.signal?.aborted === true) result.aborted = true;
+  if (result.imported > 0) await useFiltersStore.getState().recomputePBs();
 
   return result;
 };

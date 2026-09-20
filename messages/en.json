@@ -615,5 +615,7 @@
   "toast_intervals_nothing_new": "Nothing new on intervals.icu",
   "toast_intervals_no_profile": "Add your thresholds before importing",
   "toast_upload_processing_intervals": "Downloading {count} activity",
-  "toast_upload_processing_intervals_plural": "Downloading {count} activities"
+  "toast_upload_processing_intervals_plural": "Downloading {count} activities",
+  "toast_intervals_cancelled": "Import cancelled after {count} activities",
+  "ui_intervals_import_cancel": "Cancel"
 }

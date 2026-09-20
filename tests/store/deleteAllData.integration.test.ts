@@ -52,7 +52,8 @@ describe('delete all data', () => {
 
     // Connect intervals.icu
     useIntervalsStore.getState().connectIntervals('secret-key', 'Fabian');
-    useIntervalsStore.getState().recordIntervalsSync(1000, ['i1', 'i2']);
+    useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
+    useIntervalsStore.getState().markIntervalsSynced(1000);
 
     // Set non-default filters
     useFiltersStore.setState({

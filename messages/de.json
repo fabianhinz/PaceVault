@@ -615,5 +615,7 @@
   "toast_intervals_nothing_new": "Nichts Neues auf intervals.icu",
   "toast_intervals_no_profile": "Trage deine Schwellenwerte ein, bevor du importierst",
   "toast_upload_processing_intervals": "{count} Aktivität wird geladen",
-  "toast_upload_processing_intervals_plural": "{count} Aktivitäten werden geladen"
+  "toast_upload_processing_intervals_plural": "{count} Aktivitäten werden geladen",
+  "toast_intervals_cancelled": "Import nach {count} Aktivitäten abgebrochen",
+  "ui_intervals_import_cancel": "Abbrechen"
 }

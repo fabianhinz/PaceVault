@@ -21,7 +21,6 @@ const intervalsActivitySchema = z.object({
   moving_time: optNum,
   distance: optNum,
   icu_training_load: optNum,
-  _note: optStr,
 });
 
 export type IntervalsActivity = z.infer<typeof intervalsActivitySchema>;

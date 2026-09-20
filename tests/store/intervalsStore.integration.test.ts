@@ -24,44 +24,44 @@ describe('intervals store', () => {
     expect(useIntervalsStore.getState().athleteFirstName).toBeNull();
   });
 
-  it('recordIntervalsSync unions ids without duplicating them', () => {
-    useIntervalsStore.getState().recordIntervalsSync(1000, ['i1', 'i2']);
-    useIntervalsStore.getState().recordIntervalsSync(2000, ['i2', 'i3']);
+  it('recordIntervalsImported unions ids without duplicating them', () => {
+    useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
+    useIntervalsStore.getState().recordIntervalsImported(['i2', 'i3']);
 
-    const state = useIntervalsStore.getState();
-    expect(state.importedActivityIds).toEqual(['i1', 'i2', 'i3']);
-    expect(state.lastSyncedAt).toBe(2000);
+    expect(useIntervalsStore.getState().importedActivityIds).toEqual(['i1', 'i2', 'i3']);
   });
 
-  it('recordIntervalsSync dedupes ids repeated within one call', () => {
-    useIntervalsStore.getState().recordIntervalsSync(1000, ['i1', 'i1', 'i1']);
+  it('recordIntervalsImported does not touch the sync watermark', () => {
+    useIntervalsStore.getState().recordIntervalsImported(['i1']);
+    expect(useIntervalsStore.getState().lastSyncedAt).toBeNull();
+  });
+
+  it('markIntervalsSynced stamps the watermark independently of the ids', () => {
+    useIntervalsStore.getState().markIntervalsSynced(2000);
+
+    const state = useIntervalsStore.getState();
+    expect(state.lastSyncedAt).toBe(2000);
+    expect(state.importedActivityIds).toEqual([]);
+  });
+
+  it('recordIntervalsImported dedupes ids repeated within one call', () => {
+    useIntervalsStore.getState().recordIntervalsImported(['i1', 'i1', 'i1']);
     expect(useIntervalsStore.getState().importedActivityIds).toEqual(['i1']);
   });
 
-  it('recordIntervalsSync caps the tracked id list', () => {
+  it('recordIntervalsImported caps the tracked id list', () => {
     const many = Array.from({ length: 20050 }, (_, i) => `i${i}`);
-    useIntervalsStore.getState().recordIntervalsSync(1000, many);
+    useIntervalsStore.getState().recordIntervalsImported(many);
 
     const ids = useIntervalsStore.getState().importedActivityIds;
     expect(ids).toHaveLength(20000);
     expect(ids.at(-1)).toBe('i20049');
   });
 
-  it('resetIntervalsHistory forgets the import history but keeps the connection', () => {
-    useIntervalsStore.getState().connectIntervals('secret-key', 'Fabian');
-    useIntervalsStore.getState().recordIntervalsSync(1000, ['i1']);
-
-    useIntervalsStore.getState().resetIntervalsHistory();
-
-    const state = useIntervalsStore.getState();
-    expect(state.apiKey).toBe('secret-key');
-    expect(state.importedActivityIds).toEqual([]);
-    expect(state.lastSyncedAt).toBeNull();
-  });
-
   it('disconnectIntervals clears the key and the id set, so a new athlete starts clean', () => {
     useIntervalsStore.getState().connectIntervals('secret-key', 'Fabian');
-    useIntervalsStore.getState().recordIntervalsSync(1000, ['i1', 'i2']);
+    useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
+    useIntervalsStore.getState().markIntervalsSynced(1000);
 
     useIntervalsStore.getState().disconnectIntervals();
 
@@ -75,7 +75,8 @@ describe('intervals store', () => {
 
   it('round-trips through the kv store in IndexedDB', async () => {
     useIntervalsStore.getState().connectIntervals('secret-key', 'Fabian');
-    useIntervalsStore.getState().recordIntervalsSync(1700000000000, ['i1', 'i2']);
+    useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
+    useIntervalsStore.getState().markIntervalsSynced(1700000000000);
 
     await useIntervalsStore.persist.rehydrate();
 

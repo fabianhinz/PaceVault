@@ -31,9 +31,7 @@ const IMPORTABLE_TYPE_SUFFIXES = ['ride', 'run'];
 const IMPORTABLE_TYPE_EXTRAS = new Set(['cyclocross', 'handcycle', 'velomobile', 'treadmill']);
 
 export const isStubActivity = (activity: IntervalsActivity): boolean => {
-  if (activity.source === 'STRAVA') return true;
-  if (activity._note != null) return true;
-  return false;
+  return activity.source === 'STRAVA';
 };
 
 export const isImportableType = (type: string | null | undefined): boolean => {

@@ -12,8 +12,8 @@ interface IntervalsState {
   importedActivityIds: string[];
   connectIntervals: (apiKey: string, athleteFirstName: string | null) => void;
   disconnectIntervals: () => void;
-  recordIntervalsSync: (syncedAt: number, importedIds: string[]) => void;
-  resetIntervalsHistory: () => void;
+  recordIntervalsImported: (importedIds: string[]) => void;
+  markIntervalsSynced: (syncedAt: number) => void;
 }
 
 export const useIntervalsStore = create<IntervalsState>()(
@@ -39,10 +39,8 @@ export const useIntervalsStore = create<IntervalsState>()(
             importedActivityIds: [],
           }),
 
-        recordIntervalsSync: (syncedAt, importedIds) =>
+        recordIntervalsImported: (importedIds) =>
           set((draft) => {
-            draft.lastSyncedAt = syncedAt;
-
             const merged = new Set(draft.importedActivityIds);
             for (const id of importedIds) {
               merged.add(id);
@@ -56,10 +54,9 @@ export const useIntervalsStore = create<IntervalsState>()(
             }
           }),
 
-        resetIntervalsHistory: () =>
+        markIntervalsSynced: (syncedAt) =>
           set((draft) => {
-            draft.lastSyncedAt = null;
-            draft.importedActivityIds = [];
+            draft.lastSyncedAt = syncedAt;
           }),
       }),
       {

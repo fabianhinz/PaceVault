@@ -150,3 +150,42 @@ describe('intervalsFetchBytes', () => {
     });
   });
 });
+
+describe('client hardening', () => {
+  it('never throws on a key that btoa cannot encode, and reads as a rejected key', async () => {
+    const spy = stubFetch(async () => jsonResponse({ ok: true }));
+
+    const result = await intervalsFetchJson('key-with-nbsp —', '/athlete/0');
+
+    expect(result).toEqual({ ok: false, code: 'unauthorized' });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('does not retry a deterministic 400', async () => {
+    const spy = stubFetch(async () => jsonResponse({ error: 'bad request' }, 400));
+
+    const result = await intervalsFetchJson(KEY, '/athlete/0');
+
+    expect(result).toEqual({ ok: false, code: 'client' });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('still retries a 500', async () => {
+    const spy = stubFetch(async () => jsonResponse({}, 500));
+    await intervalsFetchJson(KEY, '/athlete/0');
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
+
+  it('abandons the backoff wait as soon as the signal aborts', async () => {
+    const controller = new AbortController();
+    stubFetch(async () => jsonResponse({}, 503));
+
+    const started = Date.now();
+    const pending = intervalsFetchJson(KEY, '/athlete/0', undefined, controller.signal);
+    setTimeout(() => controller.abort(), 20);
+    const result = await pending;
+
+    expect(Date.now() - started).toBeLessThan(400);
+    expect(result.ok).toBe(false);
+  });
+});

@@ -3,6 +3,7 @@ export type IntervalsErrorCode =
   | 'not-found'
   | 'unavailable'
   | 'rate-limited'
+  | 'client'
   | 'server'
   | 'network'
   | 'offline'
@@ -32,6 +33,7 @@ const classifyStatus = (status: number): IntervalsErrorCode => {
   if (status === 404) return 'not-found';
   if (status === 422) return 'unavailable';
   if (status === 429) return 'rate-limited';
+  if (status >= 400 && status < 500) return 'client';
   return 'server';
 };
 
@@ -39,15 +41,37 @@ const isRetryable = (code: IntervalsErrorCode): boolean => {
   return code === 'rate-limited' || code === 'server';
 };
 
+// DOMException fails `instanceof` across realms (jsdom, iframes), so match on name.
+const errorName = (error: unknown): string | undefined => {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const name = (error as { name?: unknown }).name;
+  if (typeof name === 'string') return name;
+  return undefined;
+};
+
 const classifyThrown = (error: unknown, signal?: AbortSignal): IntervalsErrorCode => {
+  const name = errorName(error);
+  if (name === 'InvalidCharacterError') return 'unauthorized';
   if (signal?.aborted === true) return 'aborted';
-  if (error instanceof DOMException && error.name === 'AbortError') return 'aborted';
+  if (name === 'AbortError') return 'aborted';
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
   return 'network';
 };
 
-const sleep = (ms: number): Promise<void> => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number, signal?: AbortSignal): Promise<void> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 };
 
 const backoffDelay = (attempt: number): number => {
@@ -60,10 +84,10 @@ const requestOnce = async (
   accept: string | undefined,
   signal?: AbortSignal,
 ): Promise<IntervalsResult<Response>> => {
-  const headers: Record<string, string> = { Authorization: buildIntervalsAuthHeader(apiKey) };
-  if (accept !== undefined) headers.Accept = accept;
-
   try {
+    const headers: Record<string, string> = { Authorization: buildIntervalsAuthHeader(apiKey) };
+    if (accept !== undefined) headers.Accept = accept;
+
     const response = await fetch(url, { method: 'GET', credentials: 'omit', headers, signal });
     if (!response.ok) return { ok: false, code: classifyStatus(response.status) };
     return { ok: true, data: response };
@@ -85,7 +109,7 @@ const request = async (
     if (last.ok) return last;
     if (!isRetryable(last.code)) return last;
     if (signal?.aborted === true) return { ok: false, code: 'aborted' };
-    if (attempt < MAX_ATTEMPTS - 1) await sleep(backoffDelay(attempt));
+    if (attempt < MAX_ATTEMPTS - 1) await sleep(backoffDelay(attempt), signal);
   }
 
   return last;

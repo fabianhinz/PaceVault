@@ -15,13 +15,20 @@ import { runIntervalsImport, type IntervalsImportResult } from '../runIntervalsI
 import { intervalsErrorMessage } from '../intervalsErrorMessage.ts';
 import { intervalsKeys } from '../intervalsKeys.ts';
 
+interface RunOptions {
+  ignoreKnownIds?: boolean;
+}
+
 export const useIntervalsImport = () => {
   const uploading = useUploadProgressStore((s) => s.uploading);
   const controllerRef = useRef<AbortController | null>(null);
   const queryClient = useQueryClient();
 
   const run = useCallback(
-    async (mode: ImportRange | 'sync'): Promise<IntervalsImportResult | undefined> => {
+    async (
+      mode: ImportRange | 'sync',
+      options?: RunOptions,
+    ): Promise<IntervalsImportResult | undefined> => {
       const apiKey = useIntervalsStore.getState().apiKey;
       const profile = useUserStore.getState().profile;
 
@@ -42,31 +49,50 @@ export const useIntervalsImport = () => {
       controllerRef.current = controller;
       useUploadProgressStore.getState().beginProcessing();
 
+      let result: IntervalsImportResult | undefined = undefined;
       let started = false;
-      const result = await runIntervalsImport({
-        apiKey,
-        profile,
-        window,
-        knownActivityIds: useIntervalsStore.getState().importedActivityIds,
-        signal: controller.signal,
-        onProgress: (_processed, total) => {
-          if (!started) {
-            started = true;
-            useUploadProgressStore.getState().startUpload(total, 'intervals');
-            return;
-          }
-          useUploadProgressStore.getState().advance();
-        },
-      });
 
-      controllerRef.current = null;
+      try {
+        result = await runIntervalsImport({
+          apiKey,
+          profile,
+          window,
+          knownActivityIds: useIntervalsStore.getState().importedActivityIds,
+          ignoreKnownIds: options?.ignoreKnownIds,
+          signal: controller.signal,
+          onProgress: (_processed, total) => {
+            if (!started) {
+              started = true;
+              useUploadProgressStore.getState().startUpload(total, 'intervals');
+              return;
+            }
+            useUploadProgressStore.getState().advance();
+          },
+        });
+      } catch (error) {
+        console.error('intervals.icu import crashed', error);
+      } finally {
+        controllerRef.current = null;
+      }
+
+      if (result === undefined) {
+        useUploadProgressStore.getState().finish(m.ui_intervals_error_generic(), 'error');
+        return undefined;
+      }
 
       if (result.fatal !== undefined) {
         useUploadProgressStore.getState().finish(intervalsErrorMessage(result.fatal), 'error');
         return result;
       }
 
-      useIntervalsStore.getState().recordIntervalsSync(Date.now(), result.importedActivityIds);
+      useIntervalsStore.getState().recordIntervalsImported(result.importedActivityIds);
+
+      // Only advance the watermark when nothing was left behind — otherwise the
+      // next sync's 7-day window would silently skip whatever failed.
+      if (result.failed === 0 && !result.aborted) {
+        useIntervalsStore.getState().markIntervalsSynced(Date.now());
+      }
+
       await queryClient.invalidateQueries({ queryKey: intervalsKeys.all });
 
       const summary = buildImportSummary({
@@ -76,7 +102,11 @@ export const useIntervalsImport = () => {
         unsupported: result.unsupported + result.unavailable,
       });
 
-      if (summary.message.length > 0) {
+      if (result.aborted) {
+        useUploadProgressStore
+          .getState()
+          .finish(m.toast_intervals_cancelled({ count: result.imported }), 'warning');
+      } else if (summary.message.length > 0) {
         useUploadProgressStore.getState().finish(summary.message, summary.variant);
       } else {
         useUploadProgressStore.getState().finish(m.toast_intervals_nothing_new(), 'success');

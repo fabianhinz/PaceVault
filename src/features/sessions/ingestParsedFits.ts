@@ -16,6 +16,7 @@ interface IngestOutcome {
 
 export const ingestParsedFits = async (
   parsed: ParsedFitResultWithMeta[],
+  options?: { recomputePBs?: boolean },
 ): Promise<IngestOutcome> => {
   const existingSessions = useSessionsStore.getState().sessions;
   const storeDups = findDuplicates(
@@ -82,8 +83,8 @@ export const ingestParsedFits = async (
   }
 
   const importedCount = unique.length;
-  if (importedCount > 0) {
-    useFiltersStore.getState().recomputePBs();
+  if (importedCount > 0 && options?.recomputePBs !== false) {
+    await useFiltersStore.getState().recomputePBs();
   }
 
   return { sessionIds, importedCount, duplicateCount, saveFailed };

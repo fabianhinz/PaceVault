@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { runIntervalsImport } from '@/features/intervals/runIntervalsImport.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
+import { useFiltersStore } from '@/store/filters.ts';
+import * as ingest from '@/features/sessions/ingestParsedFits.ts';
 import { getSessionRecords, getFitFile } from '@/lib/indexeddb.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
 import type { UserProfile } from '@/types/index.ts';
@@ -37,7 +39,6 @@ const LISTING = [
     type: null,
     source: 'STRAVA',
     file_type: null,
-    _note: 'STRAVA activities are not available via the API',
   },
   {
     id: 'i400',
@@ -239,5 +240,98 @@ describe('runIntervalsImport', () => {
     expect(result.fatal).toBe('unauthorized');
     expect(result.imported).toBe(0);
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
+  });
+});
+
+describe('runIntervalsImport failure accounting', () => {
+  const base = () => ({
+    apiKey: 'secret-key',
+    profile: profile(),
+    window: WINDOW,
+    knownActivityIds: [] as string[],
+  });
+
+  it('counts a failed save once, as failed, and never also as imported', async () => {
+    stubApi();
+    const spy = vi.spyOn(ingest, 'ingestParsedFits').mockResolvedValue({
+      sessionIds: [],
+      importedCount: 2,
+      duplicateCount: 1,
+      saveFailed: true,
+    });
+
+    const result = await runIntervalsImport(base());
+
+    expect(result.imported).toBe(0);
+    expect(result.failed).toBe(2);
+    expect(result.duplicated).toBe(1);
+    expect(result.importedActivityIds).toEqual([]);
+    spy.mockRestore();
+  });
+
+  it('counts an activity whose download throws as failed, and still advances progress', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string) => {
+        if (input.includes('/activities')) {
+          return new Response(JSON.stringify(LISTING), { status: 200 });
+        }
+        throw new Error('boom');
+      }),
+    );
+
+    const seen: number[] = [];
+    const result = await runIntervalsImport({
+      ...base(),
+      onProgress: (processed) => seen.push(processed),
+    });
+
+    expect(result.failed).toBe(2);
+    expect(result.imported).toBe(0);
+    expect(seen.at(-1)).toBe(2);
+  });
+
+  it('reports an aborted run and keeps what already landed', async () => {
+    stubApi();
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await runIntervalsImport({ ...base(), signal: controller.signal });
+
+    expect(result.aborted).toBe(true);
+    expect(result.imported).toBe(0);
+  });
+
+  it('ignoreKnownIds re-plans everything, so a deleted session can come back', async () => {
+    stubApi();
+    const first = await runIntervalsImport(base());
+    expect(first.imported).toBe(2);
+
+    stubApi();
+    const skipped = await runIntervalsImport({
+      ...base(),
+      knownActivityIds: first.importedActivityIds,
+    });
+    expect(skipped.alreadyImported).toBe(2);
+
+    const log = stubApi();
+    const forced = await runIntervalsImport({
+      ...base(),
+      knownActivityIds: first.importedActivityIds,
+      ignoreKnownIds: true,
+    });
+    expect(forced.alreadyImported).toBe(0);
+    expect(log.files).toHaveLength(2);
+    expect(forced.duplicated).toBe(2);
+  });
+
+  it('recomputes personal bests once per run, not once per batch', async () => {
+    stubApi();
+    const spy = vi.spyOn(useFiltersStore.getState(), 'recomputePBs');
+
+    await runIntervalsImport(base());
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    spy.mockRestore();
   });
 });

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { RefreshCw, RotateCcw, Plug, Unplug } from 'lucide-react';
+import { RefreshCw, RotateCcw, Plug, Unplug, X } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
@@ -43,8 +43,7 @@ export const IntervalsConnectionCard = () => {
   };
 
   const handleReimportAll = async () => {
-    useIntervalsStore.getState().resetIntervalsHistory();
-    await importer.run('all');
+    await importer.run('all', { ignoreKnownIds: true });
   };
 
   if (!connected) {
@@ -74,6 +73,13 @@ export const IntervalsConnectionCard = () => {
           <ListItem primary={m.ui_intervals_card_last_synced()}>
             <Typography variant="body1">{lastSyncedLabel}</Typography>
           </ListItem>
+          {importer.uploading && (
+            <ListItem
+              primary={m.ui_intervals_import_cancel()}
+              icon={<X size={16} />}
+              onClick={importer.cancel}
+            />
+          )}
           <ListItem
             primary={m.ui_intervals_card_sync()}
             secondary={m.ui_intervals_card_sync_desc()}

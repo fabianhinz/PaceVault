@@ -74,6 +74,6 @@ describe('parseActivityList', () => {
     ]);
 
     expect(result.dropped).toBe(0);
-    expect(result.activities[0]?._note).toBe('not available');
+    expect(result.activities[0]?.source).toBe('STRAVA');
   });
 });
