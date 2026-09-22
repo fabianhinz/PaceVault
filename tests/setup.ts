@@ -26,7 +26,6 @@ beforeEach(() => {
   useIntervalsStore.setState({
     apiKey: null,
     athleteFirstName: null,
-    lastSyncedAt: null,
     importedActivityIds: [],
   });
 });

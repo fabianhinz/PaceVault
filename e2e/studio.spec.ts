@@ -134,7 +134,7 @@ test.describe('Studio', () => {
       mimeType: 'application/gpx+xml',
       buffer: Buffer.from('not a gpx file'),
     });
-    await expect(page.getByText(/failed to import/i)).toBeVisible();
+    await expect(page.getByTestId('gpx-import-failed')).toBeVisible();
     await expect(page.getByText(/plan your next adventure/i)).toBeVisible();
   });
 });

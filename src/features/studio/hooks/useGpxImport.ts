@@ -44,9 +44,19 @@ export const useGpxImport = () => {
       toast(m.toast_gpx_import_success_plural({ count: String(imported) }), undefined, 'success');
     }
     if (failed === 1) {
-      toast(m.toast_gpx_import_failed({ count: String(failed) }), undefined, 'error');
+      toast(
+        m.toast_gpx_import_failed({ count: String(failed) }),
+        undefined,
+        'error',
+        'gpx-import-failed',
+      );
     } else if (failed > 1) {
-      toast(m.toast_gpx_import_failed_plural({ count: String(failed) }), undefined, 'error');
+      toast(
+        m.toast_gpx_import_failed_plural({ count: String(failed) }),
+        undefined,
+        'error',
+        'gpx-import-failed',
+      );
     }
   };
 

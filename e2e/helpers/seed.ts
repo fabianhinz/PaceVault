@@ -111,12 +111,11 @@ export const seedOnboardingComplete = async (page: Page) => {
   await page.reload();
 };
 
-const intervalsState = (lastSyncedAt: number | null, importedActivityIds: string[] = []) =>
+const intervalsState = (importedActivityIds: string[] = []) =>
   JSON.stringify({
     state: {
       apiKey: 'e2e-test-key',
       athleteFirstName: 'Fabian',
-      lastSyncedAt,
       importedActivityIds,
     },
     version: 1,
@@ -127,7 +126,7 @@ const intervalsState = (lastSyncedAt: number | null, importedActivityIds: string
  */
 export const seedIntervalsConnected = async (
   page: Page,
-  options?: { lastSyncedAt?: number | null; importedActivityIds?: string[] },
+  options?: { importedActivityIds?: string[] },
 ) => {
   await blockBasemap(page);
   await page.goto('/');
@@ -135,10 +134,7 @@ export const seedIntervalsConnected = async (
     'store-layout': layoutState(),
     'store-user': userState(v4(), { restHr: 50, maxHr: 185 }),
     'store-sessions': sessionsState([]),
-    'store-intervals': intervalsState(
-      options?.lastSyncedAt ?? null,
-      options?.importedActivityIds ?? [],
-    ),
+    'store-intervals': intervalsState(options?.importedActivityIds ?? []),
   });
   await page.reload();
 };

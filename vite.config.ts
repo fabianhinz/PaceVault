@@ -79,7 +79,7 @@ export default defineConfig({
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/paraglide',
-      strategy: ['localStorage', 'baseLocale'],
+      strategy: ['localStorage', 'preferredLanguage', 'baseLocale'],
     }),
     react(),
     tailwindcss(),

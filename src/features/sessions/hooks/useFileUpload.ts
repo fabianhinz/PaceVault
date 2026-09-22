@@ -7,7 +7,6 @@ import { m } from '@/paraglide/messages.js';
 import { isArchiveFile, extractActivityFiles } from '@/lib/archive.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
-import { buildImportSummary } from '@/features/sessions/importSummary.ts';
 
 export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>) => {
   const profile = useUserStore((s) => s.profile);
@@ -94,14 +93,38 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
         toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
       }
 
-      const summary = buildImportSummary({
-        imported: outcome.importedCount,
-        duplicated: outcome.duplicateCount,
-        failed,
-      });
+      const uploaded = outcome.importedCount;
+      const duplicated = outcome.duplicateCount;
+      const parts: string[] = [];
 
-      if (summary.message.length > 0) {
-        useUploadProgressStore.getState().finish(summary.message, summary.variant);
+      if (uploaded > 0) {
+        let uploadMsg = m.toast_upload_sessions_plural({ count: uploaded });
+        if (uploaded === 1) {
+          uploadMsg = m.toast_upload_sessions({ count: uploaded });
+        }
+        parts.push(uploadMsg);
+      }
+
+      if (duplicated > 0) {
+        let dupMsg = m.toast_upload_duplicates_plural({ count: duplicated });
+        if (duplicated === 1) {
+          dupMsg = m.toast_upload_duplicates({ count: duplicated });
+        }
+        parts.push(dupMsg);
+      }
+
+      if (failed > 0) {
+        parts.push(m.toast_upload_failed({ count: failed }));
+      }
+
+      if (parts.length > 0) {
+        let variant: 'success' | 'error' | 'warning' = 'success';
+        if (failed > 0) {
+          variant = 'error';
+        } else if (uploaded === 0) {
+          variant = 'warning';
+        }
+        useUploadProgressStore.getState().finish(parts.join(', '), variant);
       }
 
       if (inputRef.current) {

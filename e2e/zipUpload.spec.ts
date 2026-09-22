@@ -13,8 +13,8 @@ test.describe('ZIP archive upload', () => {
     test('upload a ZIP containing a single FIT file → session appears', async ({ page }) => {
       await page.goto('/');
 
-      // Select "Your Data" path and fill thresholds
-      await page.getByText(/your data/i).click();
+      // Select the "Files & archives" path and fill thresholds
+      await page.getByText(/FIT files & archives/i).click();
       await page.fill('#thresh-restHr', '50');
       await page.fill('#thresh-maxHr', '185');
 
@@ -32,7 +32,7 @@ test.describe('ZIP archive upload', () => {
     test('upload a ZIP containing multiple FIT files → all sessions appear', async ({ page }) => {
       await page.goto('/');
 
-      await page.getByText(/your data/i).click();
+      await page.getByText(/FIT files & archives/i).click();
       await page.fill('#thresh-restHr', '50');
       await page.fill('#thresh-maxHr', '185');
 

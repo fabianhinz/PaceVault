@@ -12,10 +12,10 @@ import { Button } from '@/components/ui/Button.tsx';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
 import { ThresholdsSection } from '@/features/settings/ThresholdsSection.tsx';
 import { ActionPromptCard } from '@/components/ui/ActionPromptCard.tsx';
-import { IntervalsOnboardingPanel } from '@/features/intervals/IntervalsOnboardingPanel.tsx';
+import { IntervalsConnectionForm } from '@/features/intervals/IntervalsConnectionForm.tsx';
 import { UPLOAD_EXTENSIONS } from '@/lib/archive';
 
-type OnboardingPath = 'your-data' | 'test-data' | 'intervals' | null;
+type OnboardingPath = 'intervals' | 'your-data' | 'test-data' | null;
 
 export const OnboardingPage = () => {
   const profile = useUserStore((s) => s.profile);
@@ -45,6 +45,13 @@ export const OnboardingPage = () => {
       <hr className="border-white/10 w-full" />
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
         <ActionTile
+          icon={CloudDownload}
+          title={m.ui_onboarding_intervals_title()}
+          description={m.ui_onboarding_intervals_desc()}
+          selected={path === 'intervals'}
+          onClick={() => setPath('intervals')}
+        />
+        <ActionTile
           icon={FolderUp}
           title={m.ui_onboarding_your_data_title()}
           description={m.ui_onboarding_your_data_desc()}
@@ -56,27 +63,26 @@ export const OnboardingPage = () => {
           title={m.ui_onboarding_testdata_title()}
           description={m.ui_onboarding_testdata_desc()}
           selected={path === 'test-data'}
-          onClick={() => setPath('test-data')}
-        />
-        <ActionTile
-          icon={CloudDownload}
-          title={m.ui_onboarding_intervals_title()}
-          description={m.ui_onboarding_intervals_desc()}
-          selected={path === 'intervals'}
           className="col-span-2 sm:col-span-1"
-          onClick={() => setPath('intervals')}
+          onClick={() => setPath('test-data')}
         />
       </div>
 
-      {(path === 'your-data' || path === 'intervals') && (
+      {path === 'your-data' && (
         <div className="w-full">
           <ThresholdsSection variant="embedded" />
         </div>
       )}
 
-      {path === 'intervals' && profile && (
+      {path === 'intervals' && (
         <div className="w-full">
-          <IntervalsOnboardingPanel />
+          <IntervalsConnectionForm
+            onImported={(imported) => {
+              if (imported > 0) useLayoutStore.getState().completeOnboarding();
+            }}
+          >
+            <ThresholdsSection variant="embedded" />
+          </IntervalsConnectionForm>
         </div>
       )}
 

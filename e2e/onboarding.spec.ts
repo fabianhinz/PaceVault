@@ -6,8 +6,8 @@ test.describe('Onboarding flow', () => {
   test('set thresholds → upload FIT → complete onboarding', async ({ page }) => {
     await page.goto('/');
 
-    // Select the "Your Data" path to reveal thresholds
-    await page.getByText(/your data/i).click();
+    // Select the "Files & archives" path to reveal thresholds
+    await page.getByText(/FIT files & archives/i).click();
 
     // Onboarding page should be shown (thresholds card visible)
     const thresholdsCard = page.locator('#thresh-restHr');
@@ -57,8 +57,8 @@ test.describe('Onboarding flow', () => {
   test('upload button is disabled until thresholds are set', async ({ page }) => {
     await page.goto('/');
 
-    // Select the "Your Data" path to reveal thresholds and upload
-    await page.getByText(/your data/i).click();
+    // Select the "Files & archives" path to reveal thresholds and upload
+    await page.getByText(/FIT files & archives/i).click();
 
     // Upload button should be disabled before thresholds
     const uploadButton = page.getByRole('button', { name: /upload/i }).first();

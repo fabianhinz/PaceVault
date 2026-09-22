@@ -3,17 +3,13 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { idbStorage } from '@/lib/idbStorage.ts';
 
-const MAX_TRACKED_ACTIVITY_IDS = 20000;
-
 interface IntervalsState {
   apiKey: string | null;
   athleteFirstName: string | null;
-  lastSyncedAt: number | null;
   importedActivityIds: string[];
   connectIntervals: (apiKey: string, athleteFirstName: string | null) => void;
   disconnectIntervals: () => void;
   recordIntervalsImported: (importedIds: string[]) => void;
-  markIntervalsSynced: (syncedAt: number) => void;
 }
 
 export const useIntervalsStore = create<IntervalsState>()(
@@ -22,7 +18,6 @@ export const useIntervalsStore = create<IntervalsState>()(
       (set) => ({
         apiKey: null,
         athleteFirstName: null,
-        lastSyncedAt: null,
         importedActivityIds: [],
 
         connectIntervals: (apiKey, athleteFirstName) =>
@@ -32,12 +27,7 @@ export const useIntervalsStore = create<IntervalsState>()(
           }),
 
         disconnectIntervals: () =>
-          set({
-            apiKey: null,
-            athleteFirstName: null,
-            lastSyncedAt: null,
-            importedActivityIds: [],
-          }),
+          set({ apiKey: null, athleteFirstName: null, importedActivityIds: [] }),
 
         recordIntervalsImported: (importedIds) =>
           set((draft) => {
@@ -45,18 +35,7 @@ export const useIntervalsStore = create<IntervalsState>()(
             for (const id of importedIds) {
               merged.add(id);
             }
-
-            const all = [...merged];
-            if (all.length > MAX_TRACKED_ACTIVITY_IDS) {
-              draft.importedActivityIds = all.slice(all.length - MAX_TRACKED_ACTIVITY_IDS);
-            } else {
-              draft.importedActivityIds = all;
-            }
-          }),
-
-        markIntervalsSynced: (syncedAt) =>
-          set((draft) => {
-            draft.lastSyncedAt = syncedAt;
+            draft.importedActivityIds = [...merged];
           }),
       }),
       {

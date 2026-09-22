@@ -1,8 +1,12 @@
 import * as LabelPrimitive from '@radix-ui/react-label';
 import { cn } from '@/lib/utils.ts';
 
-export const Label = (props: LabelPrimitive.LabelProps) => {
-  const { className, ...rest } = props;
+interface LabelProps extends LabelPrimitive.LabelProps {
+  required?: boolean;
+}
+
+export const Label = (props: LabelProps) => {
+  const { className, required, children, ...rest } = props;
   return (
     <LabelPrimitive.Root
       className={cn(
@@ -10,6 +14,13 @@ export const Label = (props: LabelPrimitive.LabelProps) => {
         className,
       )}
       {...rest}
-    />
+    >
+      {children}
+      {required && (
+        <span aria-hidden className="ml-0.5">
+          *
+        </span>
+      )}
+    </LabelPrimitive.Root>
   );
 };
