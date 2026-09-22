@@ -77,8 +77,8 @@ export const OnboardingPage = () => {
       {path === 'intervals' && (
         <div className="w-full">
           <IntervalsConnectionForm
-            onImported={(imported) => {
-              if (imported > 0) useLayoutStore.getState().completeOnboarding();
+            onSynced={() => {
+              useLayoutStore.getState().completeOnboarding();
             }}
           >
             <ThresholdsSection variant="embedded" />

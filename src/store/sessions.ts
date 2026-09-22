@@ -7,13 +7,17 @@ import { idbStorage } from '@/lib/idbStorage.ts';
 
 interface SessionsState {
   sessions: TrainingSession[];
-  addSession: (session: Omit<TrainingSession, 'id' | 'createdAt'>) => string;
-  addSessions: (sessions: Omit<TrainingSession, 'id' | 'createdAt'>[]) => string[];
+  addSession: (session: Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'>) => string;
+  addSessions: (
+    sessions: Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'>[],
+    options?: { markNew?: boolean },
+  ) => string[];
   deleteSession: (id: string) => void;
   renameSession: (id: string, name: string) => void;
   replaceSessions: (
-    updates: Array<{ id: string; session: Omit<TrainingSession, 'id' | 'createdAt'> }>,
+    updates: Array<{ id: string; session: Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'> }>,
   ) => void;
+  markSessionSeen: (id: string) => void;
   clearAll: () => void;
 }
 
@@ -28,17 +32,19 @@ export const useSessionsStore = create<SessionsState>()(
             ...sessionData,
             id,
             createdAt: Date.now(),
+            isNew: true,
           };
           set((draft) => {
             draft.sessions.push(session);
           });
           return id;
         },
-        addSessions: (sessionsData) => {
+        addSessions: (sessionsData, options) => {
           const newSessions = sessionsData.map((s) => ({
             ...s,
             id: v4(),
             createdAt: Date.now(),
+            isNew: options?.markNew !== false,
           }));
           set((draft) => {
             draft.sessions.push(...newSessions);
@@ -62,8 +68,15 @@ export const useSessionsStore = create<SessionsState>()(
             for (const s of draft.sessions) {
               const updated = updateMap.get(s.id);
               if (updated) {
-                Object.assign(s, updated, { id: s.id, createdAt: s.createdAt });
+                Object.assign(s, updated, { id: s.id, createdAt: s.createdAt, isNew: s.isNew });
               }
+            }
+          }),
+        markSessionSeen: (id) =>
+          set((draft) => {
+            const session = draft.sessions.find((s) => s.id === id);
+            if (session) {
+              session.isNew = false;
             }
           }),
         clearAll: () => set({ sessions: [] }),

@@ -20,6 +20,7 @@ export const runIntervalsImport = async (
   profile: UserProfile,
   activities: IntervalsActivity[],
   onProgress: (processed: number) => void,
+  options?: { markNew?: boolean },
 ): Promise<IntervalsImportResult> => {
   const parsed: ParsedFitResultWithMeta[] = [];
   const parsedIds: string[] = [];
@@ -55,7 +56,7 @@ export const runIntervalsImport = async (
     return { imported: 0, duplicated: 0, importedActivityIds: [], fatal };
   }
 
-  const ingested = await ingestParsedFits(parsed);
+  const ingested = await ingestParsedFits(parsed, { markNew: options?.markNew });
   return {
     imported: ingested.importedCount,
     duplicated: ingested.duplicateCount,

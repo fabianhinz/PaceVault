@@ -16,7 +16,7 @@ interface IngestOutcome {
 
 export const ingestParsedFits = async (
   parsed: ParsedFitResultWithMeta[],
-  options?: { recomputePBs?: boolean },
+  options?: { recomputePBs?: boolean; markNew?: boolean },
 ): Promise<IngestOutcome> => {
   const existingSessions = useSessionsStore.getState().sessions;
   const storeDups = findDuplicates(
@@ -44,7 +44,10 @@ export const ingestParsedFits = async (
   let saveFailed = false;
 
   try {
-    sessionIds = useSessionsStore.getState().addSessions(unique.map((p) => p.session));
+    sessionIds = useSessionsStore.getState().addSessions(
+      unique.map((p) => p.session),
+      { markNew: options?.markNew },
+    );
 
     const idbEntries: Array<{
       records: (SessionRecord & { sessionId: string })[];

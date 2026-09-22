@@ -1,28 +1,21 @@
 import { useState, type ReactNode } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/Button.tsx';
 import { Input } from '@/components/ui/Input.tsx';
 import { Label } from '@/components/ui/Label.tsx';
-import { Typography } from '@/components/ui/Typography.tsx';
+import { toast } from '@/components/ui/toastStore.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useUserStore } from '@/store/user.ts';
-import {
-  listIntervalsActivities,
-  verifyIntervalsKey,
-  MAX_ACTIVITIES_PER_IMPORT,
-  type IntervalsActivity,
-  type IntervalsErrorCode,
-} from '@/lib/intervals.ts';
-import { runIntervalsImport } from './runIntervalsImport.ts';
+import { useSessionsStore } from '@/store/sessions.ts';
+import { verifyIntervalsKey, type IntervalsErrorCode } from '@/lib/intervals.ts';
+import { runIntervalsSync } from './runIntervalsSync.ts';
+import { useIntervalsProgressStore } from './syncProgress.ts';
+import { INTERVALS_SYNC_KEY } from './hooks/useIntervalsSync.ts';
 import { IntervalsImportOverlay } from './IntervalsImportOverlay.tsx';
 
 const SETTINGS_URL = 'https://intervals.icu/settings';
-
-const ACTIVITIES_QUERY_KEY = ['intervals-activities'];
-
-const STALE_MS = 5 * 60 * 1000;
 
 const errorMessage = (code: IntervalsErrorCode): string => {
   if (code === 'unauthorized') return m.ui_intervals_error_key();
@@ -31,93 +24,64 @@ const errorMessage = (code: IntervalsErrorCode): string => {
   return m.ui_intervals_error_generic();
 };
 
-const fetchActivities = async (): Promise<IntervalsActivity[]> => {
-  const key = useIntervalsStore.getState().apiKey ?? '';
-  const listed = await listIntervalsActivities(key);
-  if (!listed.ok) throw new Error(listed.code);
-  return listed.data;
-};
-
 interface IntervalsConnectionFormProps {
-  onImported?: (imported: number) => void;
+  onSynced?: () => void;
   children?: ReactNode;
 }
 
 export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => {
   const storedKey = useIntervalsStore((s) => s.apiKey);
-  const importedIds = useIntervalsStore((s) => s.importedActivityIds);
+  const keyInvalid = useIntervalsStore((s) => s.keyInvalid);
   const hasProfile = useUserStore((s) => s.profile !== null);
+  const processed = useIntervalsProgressStore((s) => s.processed);
+  const total = useIntervalsProgressStore((s) => s.total);
 
   const [keyInput, setKeyInput] = useState(storedKey ?? '');
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [processed, setProcessed] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [manual, setManual] = useState(false);
   const queryClient = useQueryClient();
-
-  const activities = useQuery({
-    queryKey: ACTIVITIES_QUERY_KEY,
-    queryFn: fetchActivities,
-    enabled: storedKey !== null,
-    staleTime: STALE_MS,
-    retry: false,
-  });
-
-  const known = new Set(importedIds);
-  const pending = (activities.data ?? []).filter((a) => !known.has(a.id));
-  const overCap = pending.length > MAX_ACTIVITIES_PER_IMPORT;
 
   const handleImport = async () => {
     const trimmed = keyInput.trim();
-    const profile = useUserStore.getState().profile;
-    if (trimmed.length === 0 || !profile) return;
+    if (trimmed.length === 0) return;
 
-    setBusy(true);
+    setManual(true);
     setError(null);
 
     const verified = await verifyIntervalsKey(trimmed);
     if (!verified.ok) {
       setError(errorMessage(verified.code));
-      setBusy(false);
+      setManual(false);
       return;
     }
 
+    useIntervalsProgressStore.getState().setIntervalsSyncForeground(true);
     useIntervalsStore.getState().connectIntervals(trimmed, verified.data.firstname ?? null);
 
     try {
-      const listed = await queryClient.fetchQuery({
-        queryKey: ACTIVITIES_QUERY_KEY,
-        queryFn: fetchActivities,
+      const summary = await queryClient.fetchQuery({
+        queryKey: INTERVALS_SYNC_KEY,
+        queryFn: runIntervalsSync,
         staleTime: 0,
       });
+      if (summary.available === 0) {
+        toast(m.toast_intervals_no_activities(), undefined, 'warning');
+      } else if (summary.pending === 0) {
+        toast(m.toast_intervals_up_to_date(), undefined, 'default');
+      }
 
-      const alreadyImported = new Set(useIntervalsStore.getState().importedActivityIds);
-      const batch = listed
-        .filter((a) => !alreadyImported.has(a.id))
-        .slice(0, MAX_ACTIVITIES_PER_IMPORT);
-
-      setTotal(batch.length);
-      setProcessed(0);
-
-      const result = await runIntervalsImport(trimmed, profile, batch, setProcessed);
-      useIntervalsStore.getState().recordIntervalsImported(result.importedActivityIds);
-      if (result.fatal !== undefined) setError(errorMessage(result.fatal));
-
-      await queryClient.invalidateQueries({ queryKey: ACTIVITIES_QUERY_KEY });
-      props.onImported?.(result.imported);
+      if (useSessionsStore.getState().sessions.length > 0) props.onSynced?.();
     } catch (err) {
       if (err instanceof Error) setError(errorMessage(err.message as IntervalsErrorCode));
+    } finally {
+      useIntervalsProgressStore.getState().setIntervalsSyncForeground(false);
     }
 
-    setBusy(false);
+    setManual(false);
   };
 
-  let listError: string | null = null;
-  if (activities.error instanceof Error) {
-    listError = errorMessage(activities.error.message as IntervalsErrorCode);
-  }
-
-  const shownError = error ?? listError;
+  let shownError = error;
+  if (shownError === null && keyInvalid) shownError = m.ui_intervals_error_key();
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -130,7 +94,7 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
           spellCheck={false}
           value={keyInput}
           error={shownError !== null}
-          disabled={busy}
+          disabled={manual}
           onChange={(e) => setKeyInput(e.target.value)}
           helperText={
             shownError ?? (
@@ -152,28 +116,17 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
 
       {props.children}
 
-      <div className="flex flex-col justify-end gap-2">
-        {!busy && overCap && (
-          <Typography variant="body1" color="warning">
-            {m.ui_intervals_over_cap({
-              count: pending.length,
-              cap: MAX_ACTIVITIES_PER_IMPORT,
-            })}
-          </Typography>
-        )}
-
-        <div className="flex justify-end">
-          <Button
-            onClick={handleImport}
-            loading={busy}
-            disabled={busy || keyInput.trim() === '' || !hasProfile}
-          >
-            {busy ? m.ui_intervals_importing_short() : m.ui_intervals_import_activities()}
-          </Button>
-        </div>
+      <div className="flex justify-end">
+        <Button
+          onClick={handleImport}
+          loading={manual}
+          disabled={manual || keyInput.trim() === '' || !hasProfile}
+        >
+          {manual ? m.ui_intervals_importing_short() : m.ui_intervals_import_activities()}
+        </Button>
       </div>
 
-      {busy && <IntervalsImportOverlay processed={processed} total={total} />}
+      {manual && total > 0 && <IntervalsImportOverlay processed={processed} total={total} />}
     </div>
   );
 };

@@ -57,14 +57,41 @@ test('intervals.icu onboarding: thresholds + key, then import', async ({ page })
   await expect(page.locator('#thresh-restHr')).not.toBeVisible();
 });
 
-test('a connected account lists its activities on load, without reconnecting', async ({ page }) => {
+test('a connected account syncs new activities on load, without a click', async ({ page }) => {
   await mockApi(page);
   await seedIntervalsConnected(page, { importedActivityIds: ['i100'] });
 
-  await page.goto('/settings?tab=data');
+  await page.goto('/sessions');
 
-  await expect(page.locator('input[type="password"]')).toHaveValue('e2e-test-key');
-  await expect(page.getByRole('button', { name: /import activities/i })).toBeEnabled({
-    timeout: 10000,
-  });
+  const items = page.locator('[data-testid="session-item"]');
+  await expect(items).toHaveCount(1, { timeout: 30000 });
+  await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
+});
+
+test('opening a synced session clears its badge', async ({ page }) => {
+  await mockApi(page);
+  await seedIntervalsConnected(page, { importedActivityIds: ['i100'] });
+
+  await page.goto('/sessions');
+
+  const items = page.locator('[data-testid="session-item"]');
+  await expect(items).toHaveCount(1, { timeout: 30000 });
+  await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
+  await items.first().click();
+
+  await expect(page).toHaveURL(/\/sessions\/[\w-]+/);
+  await page.goBack();
+
+  await expect(items).toHaveCount(1);
+  await expect(items.first().locator('[data-testid="icon-badge"]')).toHaveCount(0);
+});
+
+test('a connected account with nothing pending imports nothing', async ({ page }) => {
+  await mockApi(page);
+  await seedIntervalsConnected(page, { importedActivityIds: ['i100', 'i200'] });
+
+  await page.goto('/sessions');
+
+  await expect(page.locator('[data-layout="dock"]')).toBeVisible();
+  await expect(page.locator('[data-testid="session-item"]')).toHaveCount(0);
 });

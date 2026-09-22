@@ -28,7 +28,11 @@ export const SessionItem = (props: SessionItemProps) => {
       onPointerEnter={sessionHover.onPointerEnter}
       onPointerLeave={sessionHover.onPointerLeave}
     >
-      <SessionHeader session={props.session} titleVariant="subtitle1" />
+      <SessionHeader
+        session={props.session}
+        titleVariant="subtitle1"
+        showNewBadge={props.session.isNew === true}
+      />
     </Card>
   );
 };

@@ -30,6 +30,12 @@ export const SessionDetailPage = () => {
   const [laps, setLaps] = useState<SessionLap[]>([]);
 
   useEffect(() => {
+    if (params.id) {
+      useSessionsStore.getState().markSessionSeen(params.id);
+    }
+  }, [params.id]);
+
+  useEffect(() => {
     if (params.id && session?.hasDetailedRecords) {
       getSessionRecords(params.id).then(setRecords);
       getSessionLaps(params.id).then(setLaps);

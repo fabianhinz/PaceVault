@@ -91,6 +91,47 @@ describe('sessions store', () => {
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
   });
 
+  it('stamps isNew on add and clears it via markSessionSeen', () => {
+    const { id: _id, createdAt: _ca, ...data } = makeSession();
+    const id = useSessionsStore.getState().addSession(data);
+
+    expect(useSessionsStore.getState().sessions[0].isNew).toBe(true);
+
+    useSessionsStore.getState().markSessionSeen(id);
+    expect(useSessionsStore.getState().sessions[0].isNew).toBe(false);
+  });
+
+  it('stamps isNew on every session added as a batch', () => {
+    const inputs = [makeSession(), makeSession({ sport: 'running' })].map(
+      ({ id: _id, createdAt: _ca, ...data }) => data,
+    );
+
+    useSessionsStore.getState().addSessions(inputs);
+
+    expect(useSessionsStore.getState().sessions.map((s) => s.isNew)).toEqual([true, true]);
+  });
+
+  it('markSessionSeen ignores an unknown id', () => {
+    const { id: _id, createdAt: _ca, ...data } = makeSession();
+    useSessionsStore.getState().addSession(data);
+
+    useSessionsStore.getState().markSessionSeen('does-not-exist');
+    expect(useSessionsStore.getState().sessions[0].isNew).toBe(true);
+  });
+
+  it('replaceSessions preserves a cleared isNew so reimport does not re-badge', () => {
+    const { id: _id, createdAt: _ca, ...data } = makeSession();
+    const id = useSessionsStore.getState().addSession(data);
+    useSessionsStore.getState().markSessionSeen(id);
+
+    const { id: _id2, createdAt: _ca2, ...updated } = makeSession({ sport: 'running' });
+    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
+
+    const session = useSessionsStore.getState().sessions[0];
+    expect(session.sport).toBe('running');
+    expect(session.isNew).toBe(false);
+  });
+
   it('persistence to IndexedDB', async () => {
     const { id: _id, createdAt: _ca, ...data } = makeSession();
     useSessionsStore.getState().addSession(data);

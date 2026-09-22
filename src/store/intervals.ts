@@ -7,9 +7,11 @@ interface IntervalsState {
   apiKey: string | null;
   athleteFirstName: string | null;
   importedActivityIds: string[];
+  keyInvalid: boolean;
   connectIntervals: (apiKey: string, athleteFirstName: string | null) => void;
   disconnectIntervals: () => void;
   recordIntervalsImported: (importedIds: string[]) => void;
+  markIntervalsKeyInvalid: () => void;
 }
 
 export const useIntervalsStore = create<IntervalsState>()(
@@ -19,15 +21,22 @@ export const useIntervalsStore = create<IntervalsState>()(
         apiKey: null,
         athleteFirstName: null,
         importedActivityIds: [],
+        keyInvalid: false,
 
         connectIntervals: (apiKey, athleteFirstName) =>
           set((draft) => {
             draft.apiKey = apiKey;
             draft.athleteFirstName = athleteFirstName;
+            draft.keyInvalid = false;
           }),
 
         disconnectIntervals: () =>
-          set({ apiKey: null, athleteFirstName: null, importedActivityIds: [] }),
+          set({
+            apiKey: null,
+            athleteFirstName: null,
+            importedActivityIds: [],
+            keyInvalid: false,
+          }),
 
         recordIntervalsImported: (importedIds) =>
           set((draft) => {
@@ -36,6 +45,11 @@ export const useIntervalsStore = create<IntervalsState>()(
               merged.add(id);
             }
             draft.importedActivityIds = [...merged];
+          }),
+
+        markIntervalsKeyInvalid: () =>
+          set((draft) => {
+            draft.keyInvalid = true;
           }),
       }),
       {

@@ -62,6 +62,7 @@ export interface TrainingSession {
   hasDetailedRecords: boolean;
   fingerprint?: string;
   createdAt: number;
+  isNew?: boolean;
 }
 
 export interface SessionRecord {

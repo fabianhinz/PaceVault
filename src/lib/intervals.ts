@@ -89,8 +89,8 @@ export const listIntervalsActivities = async (
     const parsed = activitySchema.safeParse(entry);
     if (parsed.success && isImportableActivity(parsed.data)) activities.push(parsed.data);
   }
-  // TODO for the dev, not an agent ---> remove the slice once the feature is done
-  return { ok: true, data: activities.slice(0, 5) };
+
+  return { ok: true, data: activities };
 };
 
 export const downloadActivityFit = async (
