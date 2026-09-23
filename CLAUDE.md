@@ -79,3 +79,15 @@ Specific guidelines for features, testing, and state management are located in t
    vp exec playwright test  # playwright e2e
    vp build           # production build
    ```
+
+## 6. Colour Palette
+
+Anything drawn on the map — sport tracks, studio routes, markers — has to hold up against the dark basemap. Check a new or changed colour against these rules before adding it.
+
+- **No blue, cyan, teal or grey on the map.** The basemap's roads, rivers and water are slate blue; a track in that family reads as a street or a river. Blue stays reserved for the app accent, the live-position dot and UI surfaces off the map.
+- **Judge a colour by how it renders, not by its swatch.** Tracks blend additively at low alpha, so a single pass is dim and overlaps build brightness. A good track colour has one strong dominant channel: a single pass stays visible, and repeated passes build a heat ramp instead of washing straight to white. Warm hues build the most fire-like ramp.
+- **Sport colours must stay apart at every overlap stage**, from one pass to a saturated hot spot, not only as full-strength swatches. Current pair: running green `#4ade80`, cycling fire orange `#f97316`. A new sport takes a hue that is neither of these nor blue.
+- **Colour-blind safety is not a criterion** for the map palette; punch and visibility are.
+- **Studio routes are never shown alongside session tracks**, so they only need to differ from the basemap and from each other. Studio colour keys are persisted, so renaming or removing one needs a store migration.
+- **Zone colours** (blue → green → yellow → orange → red) replace the sport colour on the session detail map rather than appearing next to it, so sharing a hue with a sport colour is acceptable there.
+- A sport colour lives in three places that must change together: the map (`src/features/map/trackColors.ts`), the CSS theme (`src/index.css`) and its JS mirror (`src/lib/tokens.ts`).

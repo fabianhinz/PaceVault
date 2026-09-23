@@ -6,7 +6,9 @@ import type { GPSBounds } from '@/packages/engine/types.ts';
 import type { RouteElevationStats } from '@/packages/gpx/routeGeometry.ts';
 import { idbStorage } from '@/lib/idbStorage.ts';
 
-export type StudioRouteColor = 'emerald' | 'sky' | 'amber' | 'rose' | 'violet' | 'cyan';
+export type StudioRouteColor = 'amber' | 'orange' | 'rose' | 'fuchsia' | 'violet' | 'emerald';
+
+const REPLACED_ROUTE_COLORS: Record<string, StudioRouteColor> = { sky: 'fuchsia', cyan: 'violet' };
 
 export type StudioMarkerType = 'track_modifier' | 'point_of_interest';
 
@@ -129,12 +131,17 @@ export const useStudioStore = create<StudioState>()(
         name: 'store-studio',
         storage: createJSONStorage(() => idbStorage),
         skipHydration: true,
-        version: 2,
+        version: 3,
         migrate: (persisted, version) => {
           const state = persisted as { routes?: StudioRoute[] };
           if (version < 2) {
             for (const route of state.routes ?? []) {
               route.markers = route.markers ?? [];
+            }
+          }
+          if (version < 3) {
+            for (const route of state.routes ?? []) {
+              route.color = REPLACED_ROUTE_COLORS[route.color] ?? route.color;
             }
           }
           return state as unknown as StudioState;
