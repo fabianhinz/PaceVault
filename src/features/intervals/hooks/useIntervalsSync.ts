@@ -14,7 +14,7 @@ export const useIntervalsSync = () => {
 
   return useQuery({
     queryKey: INTERVALS_SYNC_KEY,
-    queryFn: runIntervalsSync,
+    queryFn: () => runIntervalsSync(),
     enabled: apiKey !== null && !keyInvalid && hasProfile,
     staleTime: STALE_MS,
     refetchOnWindowFocus: true,

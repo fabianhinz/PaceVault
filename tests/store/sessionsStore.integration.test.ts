@@ -132,6 +132,98 @@ describe('sessions store', () => {
     expect(session.isNew).toBe(false);
   });
 
+  it('replaceSessions keeps a name the re-parsed file cannot recreate', () => {
+    const { id: _id, createdAt: _ca, ...data } = makeSession({ name: 'Evening Radfahren' });
+    const id = useSessionsStore.getState().addSession(data);
+
+    const { id: _id2, createdAt: _ca2, ...updated } = makeSession({ name: undefined });
+    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
+
+    expect(useSessionsStore.getState().sessions[0].name).toBe('Evening Radfahren');
+  });
+
+  it('replaceSessions takes the re-parsed name when the session had none', () => {
+    const { id: _id, createdAt: _ca, ...data } = makeSession({ name: undefined });
+    const id = useSessionsStore.getState().addSession(data);
+
+    const { id: _id2, createdAt: _ca2, ...updated } = makeSession({ name: 'Lauf am Morgen' });
+    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
+
+    expect(useSessionsStore.getState().sessions[0].name).toBe('Lauf am Morgen');
+  });
+
+  it('replaceSessions drops fields the re-parsed file no longer produces', () => {
+    const { id: _id, createdAt: _ca, ...data } = makeSession({ avgPower: 210, deviceTss: 80 });
+    const id = useSessionsStore.getState().addSession(data);
+
+    const {
+      id: _id2,
+      createdAt: _ca2,
+      ...updated
+    } = makeSession({
+      avgPower: undefined,
+      deviceTss: undefined,
+    });
+    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
+
+    const session = useSessionsStore.getState().sessions[0];
+    expect(session.avgPower).toBeUndefined();
+    expect(session.deviceTss).toBeUndefined();
+    expect(session.id).toBe(id);
+  });
+
+  it('replaceSessions keeps the source the re-parsed file cannot know', () => {
+    const {
+      id: _id,
+      createdAt: _ca,
+      ...data
+    } = makeSession({
+      source: { kind: 'intervals', activityId: 'i42' },
+    });
+    const id = useSessionsStore.getState().addSession(data);
+
+    const {
+      id: _id2,
+      createdAt: _ca2,
+      source: _source,
+      ...updated
+    } = makeSession({ sport: 'running' });
+    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
+
+    expect(useSessionsStore.getState().sessions[0].source).toEqual({
+      kind: 'intervals',
+      activityId: 'i42',
+    });
+  });
+
+  it('migrates version 1 sessions to file imports', () => {
+    const migrate = useSessionsStore.persist.getOptions().migrate;
+    const migrated = migrate?.({ sessions: [{ id: 'a' }, { id: 'b' }] }, 1) as {
+      sessions: Array<{ id: string; source: unknown }>;
+    };
+    expect(migrated.sessions).toEqual([
+      { id: 'a', source: { kind: 'file' } },
+      { id: 'b', source: { kind: 'file' } },
+    ]);
+  });
+
+  it('keeps a session whose shape the migration does not recognise', () => {
+    const migrate = useSessionsStore.persist.getOptions().migrate;
+    const migrated = migrate?.({ sessions: [{ id: 'a' }, 'garbage'] }, 1) as {
+      sessions: unknown[];
+    };
+    expect(migrated.sessions).toEqual([{ id: 'a', source: { kind: 'file' } }, 'garbage']);
+  });
+
+  it('leaves an existing source alone during migration', () => {
+    const migrate = useSessionsStore.persist.getOptions().migrate;
+    const source = { kind: 'demo' };
+    const migrated = migrate?.({ sessions: [{ id: 'a', source }] }, 1) as {
+      sessions: Array<{ source: unknown }>;
+    };
+    expect(migrated.sessions[0]?.source).toEqual(source);
+  });
+
   it('persistence to IndexedDB', async () => {
     const { id: _id, createdAt: _ca, ...data } = makeSession();
     useSessionsStore.getState().addSession(data);

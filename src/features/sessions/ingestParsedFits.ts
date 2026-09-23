@@ -45,7 +45,7 @@ export const ingestParsedFits = async (
 
   try {
     sessionIds = useSessionsStore.getState().addSessions(
-      unique.map((p) => p.session),
+      unique.map((p) => ({ ...p.session, source: p.source })),
       { markNew: options?.markNew },
     );
 

@@ -6,6 +6,8 @@ import { useIntervalsStore } from '@/store/intervals.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
+import { makeSession } from '@tests/factories/sessions.ts';
+import { MAX_ACTIVITIES_PER_IMPORT } from '@/lib/intervals.ts';
 import { useIntervalsProgressStore } from '@/features/intervals/syncProgress.ts';
 
 const LISTING = [
@@ -27,7 +29,11 @@ const connect = () => {
   useIntervalsStore.getState().connectIntervals('key', 'Fabian');
 };
 
-const stubApi = (options?: { listStatus?: number; activityStatus?: number }): string[] => {
+const stubApi = (options?: {
+  listStatus?: number;
+  activityStatus?: number;
+  listing?: unknown[];
+}): string[] => {
   const urls: string[] = [];
   vi.stubGlobal(
     'fetch',
@@ -38,7 +44,7 @@ const stubApi = (options?: { listStatus?: number; activityStatus?: number }): st
         if (options?.listStatus !== undefined) {
           return new Response('{}', { status: options.listStatus });
         }
-        return new Response(JSON.stringify(LISTING));
+        return new Response(JSON.stringify(options?.listing ?? LISTING));
       }
 
       if (options?.activityStatus !== undefined) {
@@ -52,6 +58,24 @@ const stubApi = (options?: { listStatus?: number; activityStatus?: number }): st
     }),
   );
   return urls;
+};
+
+const listedOldest = (urls: string[]): string | null => {
+  const listing = urls.find((u) => u.includes('/activities'));
+  if (listing === undefined) return null;
+  return new URL(listing).searchParams.get('oldest');
+};
+
+const seedIntervalsSession = (date: number) => {
+  const {
+    id: _id,
+    createdAt: _ca,
+    ...data
+  } = makeSession({
+    date,
+    source: { kind: 'intervals', activityId: 'i1' },
+  });
+  useSessionsStore.getState().addSession(data);
 };
 
 afterEach(() => {
@@ -135,6 +159,23 @@ describe('runIntervalsSync', () => {
     expect(urls.some((u) => u.includes('/activity/i200/'))).toBe(true);
   });
 
+  it('downloads pending activities newest first, with undated ones last', async () => {
+    connect();
+    const urls = stubApi({
+      listing: [
+        { ...LISTING[0], id: 'i1', start_date_local: '2024-01-05T07:00:00' },
+        { ...LISTING[0], id: 'i2', start_date_local: null },
+        { ...LISTING[0], id: 'i3', start_date_local: '2025-06-01T18:30:00' },
+        { ...LISTING[0], id: 'i4', start_date_local: '2024-11-20T06:15:00' },
+      ],
+    });
+
+    await runIntervalsSync();
+
+    const order = [...new Set(urls.flatMap((u) => /\/activity\/(\w+)\//.exec(u)?.[1] ?? []))];
+    expect(order).toEqual(['i3', 'i4', 'i1', 'i2']);
+  });
+
   it('flags the key invalid and throws when the listing returns 401', async () => {
     connect();
     stubApi({ listStatus: 401 });
@@ -187,6 +228,96 @@ describe('runIntervalsSync', () => {
     expect(summary.available).toBe(0);
     expect(summary.pending).toBe(0);
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
+  });
+
+  it('tags imported sessions with their intervals.icu activity', async () => {
+    connect();
+    stubApi();
+
+    await runIntervalsSync();
+
+    const sources = useSessionsStore.getState().sessions.map((s) => s.source);
+    expect(sources).toEqual(
+      expect.arrayContaining([
+        { kind: 'intervals', activityId: 'i100' },
+        { kind: 'intervals', activityId: 'i200' },
+      ]),
+    );
+  });
+
+  it('lists the full history while no intervals.icu session exists', async () => {
+    connect();
+    const urls = stubApi();
+
+    await runIntervalsSync();
+
+    expect(listedOldest(urls)).toBe('1990-01-01');
+  });
+
+  it('lists from 14 days before the newest intervals.icu session', async () => {
+    connect();
+    seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
+    const {
+      id: _id,
+      createdAt: _ca,
+      ...file
+    } = makeSession({
+      date: new Date(2026, 9, 30, 10).getTime(),
+      source: { kind: 'file' },
+    });
+    useSessionsStore.getState().addSession(file);
+    const urls = stubApi();
+
+    await runIntervalsSync();
+
+    expect(listedOldest(urls)).toBe('2026-09-06');
+  });
+
+  it('lists the full history when asked to, despite a window', async () => {
+    connect();
+    seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
+    const urls = stubApi();
+
+    await runIntervalsSync({ full: true });
+
+    expect(listedOldest(urls)).toBe('1990-01-01');
+  });
+
+  it('flags a backlog when the batch hits the cap, and lists in full next time', async () => {
+    connect();
+    const listing = Array.from({ length: MAX_ACTIVITIES_PER_IMPORT + 1 }, (_, i) => ({
+      ...LISTING[0],
+      id: `x${i}`,
+    }));
+    stubApi({ listing });
+
+    await runIntervalsSync();
+    expect(useIntervalsStore.getState().backlogPending).toBe(true);
+
+    seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
+    const urls = stubApi();
+    await runIntervalsSync();
+
+    expect(listedOldest(urls)).toBe('1990-01-01');
+  });
+
+  it('flags a backlog when a download is cut off', async () => {
+    connect();
+    stubApi({ activityStatus: 429 });
+
+    await runIntervalsSync();
+
+    expect(useIntervalsStore.getState().backlogPending).toBe(true);
+  });
+
+  it('clears the backlog after a complete full listing', async () => {
+    connect();
+    useIntervalsStore.getState().setIntervalsBacklogPending(true);
+    stubApi();
+
+    await runIntervalsSync();
+
+    expect(useIntervalsStore.getState().backlogPending).toBe(false);
   });
 
   it('resets progress once a sync finishes', async () => {

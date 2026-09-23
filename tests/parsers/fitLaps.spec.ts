@@ -77,6 +77,44 @@ describe('mapFitLaps', () => {
     expect(laps[0].endTime).toBeGreaterThan(laps[0].startTime);
   });
 
+  it('derives endTime from elapsed time when the timestamp is not after the start', () => {
+    const laps = mapFitLaps(
+      [
+        makeFitLap({
+          start_time: '2026-09-11T16:22:29.000Z',
+          timestamp: '2026-09-11T16:11:14.000Z',
+          total_elapsed_time: 607.184,
+        }),
+        makeFitLap({
+          start_time: '2026-09-11T16:11:14.000Z',
+          timestamp: '2026-09-11T16:11:14.000Z',
+          total_elapsed_time: 674.653,
+        }),
+      ],
+      'session-1',
+    );
+    expect(laps[0].endTime).toBe(new Date('2026-09-11T16:22:29.000Z').getTime() + 607184);
+    expect(laps[1].endTime).toBe(new Date('2026-09-11T16:11:14.000Z').getTime() + 674653);
+  });
+
+  it('derives endTime from elapsed time when the timestamp is missing', () => {
+    const laps = mapFitLaps([makeFitLap({ timestamp: undefined })], 'session-1');
+    expect(laps[0].endTime).toBe(new Date('2025-08-16T16:14:27.000Z').getTime() + 737000);
+  });
+
+  it('keeps a valid timestamp even when it disagrees with elapsed time', () => {
+    const laps = mapFitLaps([makeFitLap({ total_elapsed_time: 100 })], 'session-1');
+    expect(laps[0].endTime).toBe(new Date('2025-08-16T16:26:44.000Z').getTime());
+  });
+
+  it('leaves endTime at 0 when neither timestamp nor elapsed time is usable', () => {
+    const laps = mapFitLaps(
+      [makeFitLap({ timestamp: undefined, total_elapsed_time: undefined })],
+      'session-1',
+    );
+    expect(laps[0].endTime).toBe(0);
+  });
+
   it('totalMovingTime is undefined when missing from FIT data', () => {
     const laps = mapFitLaps([makeFitLap({ total_moving_time: undefined })], 'session-1');
     expect(laps[0].totalMovingTime).toBeUndefined();

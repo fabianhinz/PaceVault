@@ -126,14 +126,28 @@ const intervalsState = (importedActivityIds: string[] = []) =>
  */
 export const seedIntervalsConnected = async (
   page: Page,
-  options?: { importedActivityIds?: string[] },
+  options?: { importedActivityIds?: string[]; intervalsSessionDates?: number[] },
 ) => {
   await blockBasemap(page);
   await page.goto('/');
+  const sessions = (options?.intervalsSessionDates ?? []).map((date, i) => ({
+    id: v4(),
+    sport: 'running',
+    date,
+    duration: 3600,
+    distance: 10000,
+    tss: 80,
+    stressMethod: 'trimp',
+    sensorWarnings: [],
+    isPlanned: false,
+    hasDetailedRecords: false,
+    createdAt: Date.now(),
+    source: { kind: 'intervals', activityId: `seed${i}` },
+  }));
   await writeKvEntries(page, {
     'store-layout': layoutState(),
     'store-user': userState(v4(), { restHr: 50, maxHr: 185 }),
-    'store-sessions': sessionsState([]),
+    'store-sessions': sessionsState(sessions),
     'store-intervals': intervalsState(options?.importedActivityIds ?? []),
   });
   await page.reload();

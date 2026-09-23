@@ -59,9 +59,14 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
     useIntervalsStore.getState().connectIntervals(trimmed, verified.data.firstname ?? null);
 
     try {
+      if (queryClient.getQueryState(INTERVALS_SYNC_KEY)?.fetchStatus === 'fetching') {
+        await queryClient
+          .fetchQuery({ queryKey: INTERVALS_SYNC_KEY, queryFn: () => runIntervalsSync() })
+          .catch(() => undefined);
+      }
       const summary = await queryClient.fetchQuery({
         queryKey: INTERVALS_SYNC_KEY,
-        queryFn: runIntervalsSync,
+        queryFn: () => runIntervalsSync({ full: true }),
         staleTime: 0,
       });
       if (summary.available === 0) {

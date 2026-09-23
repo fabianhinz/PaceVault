@@ -223,7 +223,7 @@ export const ThresholdsSection = (props: { variant?: 'standalone' | 'embedded' }
   const handleGenderChange = (v: Gender) => {
     setGender(v);
     if (profile) {
-      startTransition(() => useUserStore.getState().updateProfile({ gender: v }));
+      startTransition(() => useUserStore.getState().setProfileGender(v));
     } else {
       tryCreateProfile(restHr, maxHr, v, ftp, thresholdPace);
     }

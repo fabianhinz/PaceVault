@@ -41,7 +41,12 @@ export const runIntervalsImport = async (
         const result = await parseFitFile(download.data, fileName, toFitParseProfile(profile), {
           name: activity.name ?? undefined,
         });
-        parsed.push({ ...result, rawData: download.data, fileName });
+        parsed.push({
+          ...result,
+          rawData: download.data,
+          fileName,
+          source: { kind: 'intervals', activityId: activity.id },
+        });
         parsedIds.push(activity.id);
       } catch {
         /* empty */

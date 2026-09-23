@@ -29,6 +29,7 @@ beforeEach(() => {
     athleteFirstName: null,
     importedActivityIds: [],
     keyInvalid: false,
+    backlogPending: false,
   });
   useIntervalsProgressStore.setState({ processed: 0, total: 0, foreground: false });
 });

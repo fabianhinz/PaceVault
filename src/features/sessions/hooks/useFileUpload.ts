@@ -67,8 +67,13 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
       for (const entry of fitEntries) {
         parsingTasks.push(
           parseFitFile(entry.data, entry.name, toFitParseProfile(profile))
-            .then((result) => {
-              return { ...result, rawData: entry.data, fileName: entry.name };
+            .then((result): ParsedFitResultWithMeta => {
+              return {
+                ...result,
+                rawData: entry.data,
+                fileName: entry.name,
+                source: { kind: 'file' },
+              };
             })
             .catch((error) => {
               console.error('Parse error: ', error);

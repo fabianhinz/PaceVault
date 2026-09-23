@@ -17,6 +17,7 @@ const activitySchema = z.object({
   type: optStr,
   source: optStr,
   file_type: optStr,
+  start_date_local: optStr,
 });
 
 export type IntervalsActivity = z.infer<typeof activitySchema>;
@@ -72,11 +73,14 @@ export const verifyIntervalsKey = async (
   return { ok: true, data: { firstname: parsed.data.firstname ?? undefined } };
 };
 
+export const FULL_HISTORY_OLDEST = '1990-01-01';
+
 export const listIntervalsActivities = async (
   apiKey: string,
+  oldest: string = FULL_HISTORY_OLDEST,
 ): Promise<IntervalsResult<IntervalsActivity[]>> => {
   const result = await intervalsRequest(apiKey, '/athlete/0/activities', {
-    oldest: '1990-01-01',
+    oldest,
     fields: ACTIVITY_FIELDS,
   });
   if (!result.ok) return result;

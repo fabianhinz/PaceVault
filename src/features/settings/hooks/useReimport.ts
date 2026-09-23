@@ -14,7 +14,7 @@ import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
-import type { SessionRecord, Sport, TrainingSession } from '@/packages/engine/types.ts';
+import type { SessionFields, SessionRecord, Sport } from '@/packages/engine/types.ts';
 import { useFiltersStore } from '@/store/filters';
 
 interface ReimportState {
@@ -50,7 +50,7 @@ export const useReimport = () => {
 
     const updates: Array<{
       id: string;
-      session: Omit<TrainingSession, 'id' | 'createdAt'>;
+      session: SessionFields;
     }> = [];
     const pbSessions: Array<{
       sessionId: string;

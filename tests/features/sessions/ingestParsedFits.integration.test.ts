@@ -11,7 +11,12 @@ const makeParsed = (
   fingerprint: string,
   overrides?: Partial<ParsedFitResultWithMeta>,
 ): ParsedFitResultWithMeta => {
-  const { id: _id, createdAt: _ca, ...session } = makeSession({ name: `Ride ${fingerprint}` });
+  const {
+    id: _id,
+    createdAt: _ca,
+    source: _source,
+    ...session
+  } = makeSession({ name: `Ride ${fingerprint}` });
   return {
     session,
     records: makeCyclingRecords('tmp', 30, { basePower: 200 }),
@@ -19,6 +24,7 @@ const makeParsed = (
     fingerprint,
     fileName: `${fingerprint}.fit`,
     rawData: new Uint8Array([1, 2, 3, 4]).buffer,
+    source: { kind: 'file' },
     ...overrides,
   };
 };
@@ -56,6 +62,31 @@ describe('ingestParsedFits', () => {
     expect(outcome.importedCount).toBe(1);
     expect(outcome.duplicateCount).toBe(1);
     expect(useSessionsStore.getState().sessions).toHaveLength(2);
+  });
+
+  it('gives every session the source of its own entry', async () => {
+    await ingestParsedFits([
+      makeParsed('fp-1', { source: { kind: 'intervals', activityId: 'i1' } }),
+      makeParsed('fp-2', { source: { kind: 'file' } }),
+      makeParsed('fp-3', { source: { kind: 'intervals', activityId: 'i3' } }),
+    ]);
+
+    const byName = new Map(useSessionsStore.getState().sessions.map((s) => [s.name, s.source]));
+    expect(byName.get('Ride fp-1')).toEqual({ kind: 'intervals', activityId: 'i1' });
+    expect(byName.get('Ride fp-2')).toEqual({ kind: 'file' });
+    expect(byName.get('Ride fp-3')).toEqual({ kind: 'intervals', activityId: 'i3' });
+  });
+
+  it('keeps the first source when a later copy is a duplicate', async () => {
+    const { id: _id, createdAt: _ca, ...session } = makeSession({ fingerprint: 'fp-1' });
+    useSessionsStore.getState().addSession(session);
+
+    await ingestParsedFits([
+      makeParsed('fp-1', { source: { kind: 'intervals', activityId: 'i1' } }),
+    ]);
+
+    expect(useSessionsStore.getState().sessions).toHaveLength(1);
+    expect(useSessionsStore.getState().sessions[0]?.source).toEqual({ kind: 'file' });
   });
 
   it('rejects a fingerprint repeated within the same batch', async () => {

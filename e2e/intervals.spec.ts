@@ -86,6 +86,23 @@ test('opening a synced session clears its badge', async ({ page }) => {
   await expect(items.first().locator('[data-testid="icon-badge"]')).toHaveCount(0);
 });
 
+test('a background sync only lists the window after the newest intervals.icu session', async ({
+  page,
+}) => {
+  await mockApi(page);
+  const listings: string[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/athlete/0/activities')) listings.push(request.url());
+  });
+  await seedIntervalsConnected(page, {
+    importedActivityIds: ['i100', 'i200'],
+    intervalsSessionDates: [new Date(2026, 8, 20, 10).getTime()],
+  });
+
+  await expect.poll(() => listings.length, { timeout: 30000 }).toBeGreaterThan(0);
+  expect(new URL(listings.at(-1) ?? '').searchParams.get('oldest')).toBe('2026-09-06');
+});
+
 test('a connected account with nothing pending imports nothing', async ({ page }) => {
   await mockApi(page);
   await seedIntervalsConnected(page, { importedActivityIds: ['i100', 'i200'] });

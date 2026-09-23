@@ -1,7 +1,8 @@
 import { v4 } from 'uuid';
 import FitParser from 'fit-file-parser';
 import type {
-  TrainingSession,
+  SessionFields,
+  SessionSource,
   SessionRecord,
   SessionLap,
   Sport,
@@ -26,14 +27,18 @@ export interface FitUserProfile {
 }
 
 export interface ParsedFitResult {
-  session: Omit<TrainingSession, 'id' | 'createdAt'>;
+  session: SessionFields;
   records: SessionRecord[];
   laps: SessionLap[];
   fitUserProfile?: FitUserProfile;
   fingerprint: string;
 }
 
-export type ParsedFitResultWithMeta = ParsedFitResult & { fileName: string; rawData: ArrayBuffer };
+export type ParsedFitResultWithMeta = ParsedFitResult & {
+  fileName: string;
+  rawData: ArrayBuffer;
+  source: SessionSource;
+};
 
 const UNSUPPORTED_SPORT_ERROR = 'sport is not supported';
 
@@ -96,6 +101,9 @@ export const mapFitLaps = (fitLaps: FitLapInput[], sessionId: string): SessionLa
     let endTime = 0;
     if (lap.timestamp) {
       endTime = new Date(lap.timestamp).getTime();
+    }
+    if (endTime <= startTime && startTime > 0 && lap.total_elapsed_time !== undefined) {
+      endTime = startTime + lap.total_elapsed_time * 1000;
     }
 
     return {
@@ -255,7 +263,7 @@ export const parseFitFile = async (
     avgPace = 1000 / avgSpeed;
   }
 
-  const session: Omit<TrainingSession, 'id' | 'createdAt'> = {
+  const session: SessionFields = {
     ...(name !== undefined && { name }),
     sport,
     date: sessionDate,

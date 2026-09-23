@@ -131,8 +131,17 @@ describe('listIntervalsActivities', () => {
     await listIntervalsActivities(KEY);
 
     const url = new URL(spy.mock.calls[0]?.[0] ?? '');
-    expect(url.searchParams.get('fields')).toBe('id,name,type,source,file_type');
+    expect(url.searchParams.get('fields')).toBe('id,name,type,source,file_type,start_date_local');
     expect(url.searchParams.get('oldest')).toBe('1990-01-01');
+  });
+
+  it('passes a narrower oldest date through', async () => {
+    const spy = stubFetch(async () => Response.json([]));
+
+    await listIntervalsActivities(KEY, '2026-09-06');
+
+    const url = new URL(spy.mock.calls[0]?.[0] ?? '');
+    expect(url.searchParams.get('oldest')).toBe('2026-09-06');
   });
 
   it('drops malformed rows without voiding the listing', async () => {

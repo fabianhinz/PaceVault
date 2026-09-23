@@ -1,5 +1,11 @@
 import { decode } from '@googlemaps/polyline-codec';
-import type { Sport, SessionRecord, SessionLap, TrainingSession } from '@/packages/engine/types.ts';
+import type {
+  Sport,
+  SessionFields,
+  SessionRecord,
+  SessionLap,
+  TrainingSession,
+} from '@/packages/engine/types.ts';
 import { buildSessionGPS } from '@/packages/engine/gps.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
@@ -259,7 +265,7 @@ export const generateDevData = async (): Promise<number> => {
   const schedule = generateAllSessions(daySpan);
 
   // Build session data
-  const sessionsToAdd: Array<Omit<TrainingSession, 'id' | 'createdAt'>> = [];
+  const sessionsToAdd: Array<Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'>> = [];
   const sessionMeta: Array<{ sport: Sport; durationSec: number; intent: SessionIntent }> = [];
 
   for (const entry of schedule) {
@@ -278,6 +284,7 @@ export const generateDevData = async (): Promise<number> => {
       sensorWarnings: [],
       isPlanned: false,
       hasDetailedRecords: true,
+      source: { kind: 'demo' },
     });
   }
 
@@ -287,7 +294,7 @@ export const generateDevData = async (): Promise<number> => {
 
   const updates: Array<{
     id: string;
-    session: Omit<TrainingSession, 'id' | 'createdAt'>;
+    session: SessionFields;
   }> = [];
 
   const bulkEntries: Array<{

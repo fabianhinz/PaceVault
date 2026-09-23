@@ -8,10 +8,12 @@ interface IntervalsState {
   athleteFirstName: string | null;
   importedActivityIds: string[];
   keyInvalid: boolean;
+  backlogPending: boolean;
   connectIntervals: (apiKey: string, athleteFirstName: string | null) => void;
   disconnectIntervals: () => void;
   recordIntervalsImported: (importedIds: string[]) => void;
   markIntervalsKeyInvalid: () => void;
+  setIntervalsBacklogPending: (pending: boolean) => void;
 }
 
 export const useIntervalsStore = create<IntervalsState>()(
@@ -22,6 +24,7 @@ export const useIntervalsStore = create<IntervalsState>()(
         athleteFirstName: null,
         importedActivityIds: [],
         keyInvalid: false,
+        backlogPending: false,
 
         connectIntervals: (apiKey, athleteFirstName) =>
           set((draft) => {
@@ -36,6 +39,7 @@ export const useIntervalsStore = create<IntervalsState>()(
             athleteFirstName: null,
             importedActivityIds: [],
             keyInvalid: false,
+            backlogPending: false,
           }),
 
         recordIntervalsImported: (importedIds) =>
@@ -50,6 +54,11 @@ export const useIntervalsStore = create<IntervalsState>()(
         markIntervalsKeyInvalid: () =>
           set((draft) => {
             draft.keyInvalid = true;
+          }),
+
+        setIntervalsBacklogPending: (pending) =>
+          set((draft) => {
+            draft.backlogPending = pending;
           }),
       }),
       {
