@@ -1,6 +1,7 @@
 import type { SessionRecord, SessionLap, SessionGPS } from '@/packages/engine/types.ts';
 import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
-import { getDB } from './db.ts';
+import type { StoreNames } from 'idb';
+import { getDB, type EnduranceTrackerDB } from './db.ts';
 
 const groupBy = <T>(items: T[], key: (item: T) => string): Map<string, T[]> => {
   const map = new Map<string, T[]>();
@@ -198,7 +199,41 @@ export const getAllFitFiles = async (): Promise<
   return db.getAll('fit-files');
 };
 
-export const getAllFitFileSessionIds = async (): Promise<string[]> => {
+export type IdbStoreName = StoreNames<EnduranceTrackerDB>;
+
+const binaryBytes = (value: unknown): number | undefined => {
+  if (typeof value !== 'object' || value === null || !('byteLength' in value)) return undefined;
+  if (typeof value.byteLength !== 'number') return undefined;
+  return value.byteLength;
+};
+
+const valueBytes = (value: unknown): number => {
+  if (typeof value === 'string') return value.length;
+  const binary = binaryBytes(value);
+  if (binary !== undefined) return binary;
+  if (typeof value === 'object' && value !== null && 'data' in value) {
+    const data = binaryBytes(value.data);
+    if (data !== undefined) return data;
+  }
+  return JSON.stringify(value)?.length ?? 0;
+};
+
+const measureStore = async (store: IdbStoreName): Promise<number> => {
   const db = await getDB();
-  return db.getAllKeys('fit-files');
+  let total = 0;
+  let cursor = await db.transaction(store).store.openCursor();
+  while (cursor) {
+    total += valueBytes(cursor.value);
+    cursor = await cursor.continue();
+  }
+  return total;
+};
+
+export const measureStoreBytes = async (): Promise<Partial<Record<IdbStoreName, number>>> => {
+  const db = await getDB();
+  const sizes: Partial<Record<IdbStoreName, number>> = {};
+  for (const store of Array.from(db.objectStoreNames)) {
+    sizes[store] = await measureStore(store);
+  }
+  return sizes;
 };

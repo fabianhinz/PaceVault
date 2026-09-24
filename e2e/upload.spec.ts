@@ -7,14 +7,27 @@ test.describe('File upload', () => {
     await seedOnboardingComplete(page);
   });
 
-  test('upload a FIT file → session appears', async ({ page }) => {
-    // Navigate to sessions page
-    await page.getByRole('link', { name: /sessions/i }).click();
-    await page.waitForURL('/sessions');
+  test('the dock no longer offers an upload button', async ({ page }) => {
+    await expect(page.locator('[data-layout="dock"]')).toBeVisible();
+    await expect(
+      page.locator('[data-layout="dock"]').getByRole('button', { name: /upload/i }),
+    ).toHaveCount(0);
+  });
 
-    // Upload a cycling FIT file via the dock
+  test('the settings FIT files card uploads through its own button', async ({ page }) => {
+    await page.goto('/settings?tab=data');
+    await expect(page.getByRole('button', { name: /upload fit files/i })).toBeEnabled();
+
     const doneBanner = await uploadFitFiles(page, [CYCLING_FIT]);
     await expect(doneBanner).toContainText('1 session');
+  });
+
+  test('upload a FIT file → session appears', async ({ page }) => {
+    const doneBanner = await uploadFitFiles(page, [CYCLING_FIT]);
+    await expect(doneBanner).toContainText('1 session');
+
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
 
     // Wait for the done banner to dismiss and verify session appears in the list
     // Session items are links to /sessions/:id

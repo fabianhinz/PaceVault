@@ -24,7 +24,7 @@
 
 ## 2. Core Architecture Rules
 
-- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never call an external API outside the three documented integrations above (Open-Meteo, CARTO, intervals.icu). Each is opt-in or lazily triggered — intervals.icu only after the user connects a key — and the app stays fully usable offline without any of them.
+- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never call an external API outside the three documented integrations above (Open-Meteo, CARTO, intervals.icu). Each is opt-in or lazily triggered — intervals.icu only once the user enters a key — and the app stays fully usable offline without any of them.
 - **Pure engine**: All business logic lives in `src/packages/engine/` as pure functions — absolutely no React or state imports in this directory.
 - **Headless UI**: Import Radix primitive → wrap in `src/components/ui/` → style with Tailwind.
 - **Reuse UI components**: Before inlining layout or UI patterns in feature code, check `src/components/ui/` for existing components (`CardHeader`, `StatItem`, `ValueSkeleton`, etc.). Extract new shared components when a pattern appears in 2+ places.

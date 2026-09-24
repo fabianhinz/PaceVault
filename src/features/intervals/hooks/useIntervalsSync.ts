@@ -5,7 +5,7 @@ import { runIntervalsSync } from '../runIntervalsSync.ts';
 
 export const INTERVALS_SYNC_KEY = ['intervals-sync'];
 
-const STALE_MS = 60_000;
+const POLL_MS = 15 * 60_000;
 
 export const useIntervalsSync = () => {
   const apiKey = useIntervalsStore((s) => s.apiKey);
@@ -16,10 +16,7 @@ export const useIntervalsSync = () => {
     queryKey: INTERVALS_SYNC_KEY,
     queryFn: () => runIntervalsSync(),
     enabled: apiKey !== null && !keyInvalid && hasProfile,
-    staleTime: STALE_MS,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    refetchInterval: POLL_MS,
     retry: false,
-    networkMode: 'online',
   });
 };

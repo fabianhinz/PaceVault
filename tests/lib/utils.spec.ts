@@ -8,6 +8,7 @@ import {
   formatLapTime,
   formatSubSport,
   toDateString,
+  formatBytes,
 } from '@/lib/formatters.ts';
 
 describe('formatPace', () => {
@@ -164,5 +165,15 @@ describe('toDateString', () => {
   it('does not shift to next day for late-night local timestamps', () => {
     const d = new Date(2024, 11, 31, 23, 59); // Dec 31, 11:59 PM local
     expect(toDateString(d.getTime())).toBe('2024-12-31');
+  });
+});
+
+describe('formatBytes', () => {
+  it('shows kilobytes below one megabyte', () => {
+    expect(formatBytes(512 * 1024)).toBe('512 KB');
+  });
+
+  it('shows megabytes with one decimal from one megabyte', () => {
+    expect(formatBytes(24.9 * 1024 * 1024)).toBe('24.9 MB');
   });
 });
