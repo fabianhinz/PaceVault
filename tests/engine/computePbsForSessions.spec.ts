@@ -7,8 +7,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 describe('computePBsForSessions', () => {
   it('returns best values from the stronger cycling session', () => {
     const now = Date.now();
-    const weakRecords = makeCyclingRecords('weak', 3600, { basePower: 200 });
-    const strongRecords = makeCyclingRecords('strong', 3600, {
+    const weakRecords = makeCyclingRecords(3600, { basePower: 200 });
+    const strongRecords = makeCyclingRecords(3600, {
       basePower: 280,
     });
 
@@ -52,8 +52,8 @@ describe('computePBsForSessions', () => {
 
   it("keeps each sport's peaks separate in mixed-sport batch", () => {
     const now = Date.now();
-    const cyclingRecords = makeCyclingRecords('c1', 3600, { basePower: 250 });
-    const runningRecords = makeRunningRecords('r1', 3600, { baseSpeed: 3.5 });
+    const cyclingRecords = makeCyclingRecords(3600, { basePower: 250 });
+    const runningRecords = makeRunningRecords(3600, { baseSpeed: 3.5 });
 
     const result = computePBsForSessions([
       {
@@ -81,10 +81,10 @@ describe('computePBsForSessions', () => {
 
   it('lower power does NOT overwrite higher power (higher is better for cycling)', () => {
     const now = Date.now();
-    const strongRecords = makeCyclingRecords('strong', 3600, {
+    const strongRecords = makeCyclingRecords(3600, {
       basePower: 300,
     });
-    const weakRecords = makeCyclingRecords('weak', 3600, { basePower: 180 });
+    const weakRecords = makeCyclingRecords(3600, { basePower: 180 });
 
     const result = computePBsForSessions([
       {
@@ -107,8 +107,8 @@ describe('computePBsForSessions', () => {
 
   it('slower run does NOT overwrite faster run (lower time is better)', () => {
     const now = Date.now();
-    const fastRecords = makeRunningRecords('fast', 3600, { baseSpeed: 4.5 });
-    const slowRecords = makeRunningRecords('slow', 3600, { baseSpeed: 2.5 });
+    const fastRecords = makeRunningRecords(3600, { baseSpeed: 4.5 });
+    const slowRecords = makeRunningRecords(3600, { baseSpeed: 2.5 });
 
     const result = computePBsForSessions([
       {
@@ -131,7 +131,7 @@ describe('computePBsForSessions', () => {
 
   it('tracks longest distance per sport', () => {
     const now = Date.now();
-    const records = makeCyclingRecords('c1', 100, { basePower: 200 });
+    const records = makeCyclingRecords(100, { basePower: 200 });
 
     const result = computePBsForSessions([
       {
@@ -161,14 +161,14 @@ describe('computePBsForSessions', () => {
         sessionId: 'short',
         date: now - DAY_MS,
         sport: 'running',
-        records: makeRunningRecords('short', 100),
+        records: makeRunningRecords(100),
         distance: 5000,
       },
       {
         sessionId: 'long',
         date: now,
         sport: 'running',
-        records: makeRunningRecords('long', 100),
+        records: makeRunningRecords(100),
         distance: 21000,
       },
     ]);

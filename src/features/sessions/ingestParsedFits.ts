@@ -2,6 +2,7 @@ import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { findDuplicates } from '@/lib/fingerprint.ts';
 import { bulkSaveSessionData, saveFitFile } from '@/lib/indexeddb.ts';
+import { requestPersistentStorage } from '@/lib/persistentStorage.ts';
 import type { ParsedFitResultWithMeta } from '@/parsers/fit.ts';
 import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
 
@@ -49,10 +50,8 @@ export const ingestParsedFits = async (
       { markNew: options?.markNew },
     );
 
-    const idbEntries: Array<{
-      records: (SessionRecord & { sessionId: string })[];
-      laps: (SessionLap & { sessionId: string })[];
-    }> = [];
+    const idbEntries: Array<{ sessionId: string; records: SessionRecord[]; laps: SessionLap[] }> =
+      [];
 
     for (let i = 0; i < unique.length; i++) {
       const entry = unique[i];
@@ -60,14 +59,7 @@ export const ingestParsedFits = async (
       if (!entry || !sessionId) continue;
       if (entry.records.length === 0) continue;
 
-      const recordsWithId = entry.records.map((r) => ({ ...r, sessionId }));
-
-      let lapsWithId: (SessionLap & { sessionId: string })[] = [];
-      if (entry.laps.length > 0) {
-        lapsWithId = entry.laps.map((l) => ({ ...l, sessionId }));
-      }
-
-      idbEntries.push({ records: recordsWithId, laps: lapsWithId });
+      idbEntries.push({ sessionId, records: entry.records, laps: entry.laps });
     }
 
     if (idbEntries.length > 0) {
@@ -86,6 +78,7 @@ export const ingestParsedFits = async (
   }
 
   const importedCount = unique.length;
+  if (importedCount > 0) requestPersistentStorage().catch(() => undefined);
   if (importedCount > 0 && options?.recomputePBs !== false) {
     await useFiltersStore.getState().recomputePBs();
   }

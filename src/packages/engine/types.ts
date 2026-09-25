@@ -74,7 +74,6 @@ export interface TrainingSession {
 export type SessionFields = Omit<TrainingSession, 'id' | 'createdAt' | 'isNew' | 'source'>;
 
 export interface SessionRecord {
-  sessionId: string;
   timestamp: number;
   hr?: number;
   power?: number;
@@ -89,7 +88,6 @@ export interface SessionRecord {
 }
 
 export interface SessionLap {
-  sessionId: string;
   lapIndex: number;
   startTime: number;
   endTime: number;

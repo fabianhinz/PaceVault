@@ -119,7 +119,6 @@ const decodeAndFitGPS = (
 
 const generateRecordsWithGPS = (
   routeData: RouteData,
-  sessionId: string,
   sport: Sport,
   durationSec: number,
   intent: SessionIntent,
@@ -134,10 +133,10 @@ const generateRecordsWithGPS = (
   if (sport === 'running') {
     const baseSpeed =
       (1000 / PERSONA.thresholdPace) * randomBetween(config.speedRange[0], config.speedRange[1]);
-    records = makeRunningRecords(sessionId, durationSec, { baseSpeed, baseHr });
+    records = makeRunningRecords(durationSec, { baseSpeed, baseHr });
   } else {
     const basePower = PERSONA.ftp * randomBetween(config.speedRange[0], config.speedRange[1]);
-    records = makeCyclingRecords(sessionId, durationSec, { basePower, baseHr });
+    records = makeCyclingRecords(durationSec, { basePower, baseHr });
   }
 
   if (intent !== 'indoor') {
@@ -298,6 +297,7 @@ export const generateDevData = async (): Promise<number> => {
   }> = [];
 
   const bulkEntries: Array<{
+    sessionId: string;
     records: SessionRecord[];
     laps: SessionLap[];
   }> = [];
@@ -312,7 +312,7 @@ export const generateDevData = async (): Promise<number> => {
     const durationSec = meta.durationSec;
     const intent = meta.intent;
 
-    const records = generateRecordsWithGPS(routeData, sessionId, sport, durationSec, intent);
+    const records = generateRecordsWithGPS(routeData, sport, durationSec, intent);
 
     const lastRecord = records[records.length - 1];
     const distance = lastRecord?.distance ?? 0;
@@ -384,10 +384,10 @@ export const generateDevData = async (): Promise<number> => {
       },
     });
 
-    const laps = makeLapsFromRecords(sessionId, records, 300);
+    const laps = makeLapsFromRecords(records, 300);
     const gps = buildSessionGPS(sessionId, records);
 
-    bulkEntries.push({ records, laps });
+    bulkEntries.push({ sessionId, records, laps });
     if (gps) {
       gpsPromises.push(saveSessionGPS(gps));
     }

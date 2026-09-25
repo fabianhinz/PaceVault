@@ -10,7 +10,7 @@ import {
 
 describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP', () => {
   it('full cycling pipeline: 3600 records → TSS ~100 for IF ~1.0', () => {
-    const records = makeCyclingRecords('s1', 3600, { basePower: 250 });
+    const records = makeCyclingRecords(3600, { basePower: 250 });
 
     // Validate — should be clean
     const warnings = validateRecords(records, 'cycling');
@@ -34,7 +34,7 @@ describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP'
   });
 
   it('falls back to TRIMP when no power data', () => {
-    const records = makeCyclingRecords('s2', 3600).map((r) => ({
+    const records = makeCyclingRecords(3600).map((r) => ({
       ...r,
       power: undefined,
     }));
@@ -46,7 +46,7 @@ describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP'
   });
 
   it('running pipeline uses TRIMP (no FTP)', () => {
-    const records = makeRunningRecords('s3', 3600);
+    const records = makeRunningRecords(3600);
 
     const result = calculateSessionStress(records, 3600, 155, 50, 190, 'male');
     expect(result.stressMethod).toBe('trimp');
@@ -54,8 +54,8 @@ describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP'
   });
 
   it('validation filters bad data before stress calculation', () => {
-    const goodRecords = makeCyclingRecords('s4', 3600, { basePower: 200 });
-    const badRecords = makeInvalidRecords('s4', 'highPower');
+    const goodRecords = makeCyclingRecords(3600, { basePower: 200 });
+    const badRecords = makeInvalidRecords('highPower');
     const combined = [...goodRecords, ...badRecords];
 
     // Validate detects issues
@@ -73,7 +73,7 @@ describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP'
   });
 
   it('short session (< 30 records) → no NP, graceful fallback', () => {
-    const records = makeCyclingRecords('s5', 20);
+    const records = makeCyclingRecords(20);
 
     const np = calculateNormalizedPower(records);
     expect(np).toBeUndefined();
@@ -84,7 +84,7 @@ describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP'
   });
 
   it('duration fallback labeled as "duration", not "trimp"', () => {
-    const records = makeCyclingRecords('s6', 3600).map((r) => ({
+    const records = makeCyclingRecords(3600).map((r) => ({
       ...r,
       power: undefined,
     }));
@@ -100,7 +100,7 @@ describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP'
     // avgHr at 88% HRR: 50 + 0.88 * 140 = 173.2
     const avgHr = restHr + 0.88 * (maxHr - restHr);
     // No power → falls back to TRIMP
-    const records = makeCyclingRecords('s1', 3600).map((r) => ({ ...r, power: undefined }));
+    const records = makeCyclingRecords(3600).map((r) => ({ ...r, power: undefined }));
     const result = calculateSessionStress(records, 3600, avgHr, restHr, maxHr, 'male');
     expect(result.stressMethod).toBe('trimp');
     expect(result.tss).toBeGreaterThan(85);

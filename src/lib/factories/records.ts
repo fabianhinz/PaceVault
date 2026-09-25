@@ -192,7 +192,6 @@ const buildPowerArray = (
 
 // Assemble per-index arrays into SessionRecord objects
 const assembleRecords = (
-  sessionId: string,
   speeds: number[],
   hrs: number[],
   channels?: {
@@ -209,7 +208,6 @@ const assembleRecords = (
     const speed = speeds[i] ?? 0;
     cumulativeDistance += speed;
     const record: SessionRecord = {
-      sessionId,
       timestamp: i,
       timerTime: i,
       speed,
@@ -227,7 +225,6 @@ const assembleRecords = (
 };
 
 export const makeCyclingRecords = (
-  sessionId: string,
   count: number,
   options?: { basePower?: number; baseHr?: number },
 ): SessionRecord[] => {
@@ -242,11 +239,10 @@ export const makeCyclingRecords = (
   const grades = buildGradeArray(elevations, speeds);
   const powers = buildPowerArray(count, basePower, speeds, grades, baseSpeed);
 
-  return assembleRecords(sessionId, speeds, hrs, { elevations, cadences, grades, powers });
+  return assembleRecords(speeds, hrs, { elevations, cadences, grades, powers });
 };
 
 export const makeRunningRecords = (
-  sessionId: string,
   count: number,
   options?: { baseSpeed?: number; baseHr?: number },
 ): SessionRecord[] => {
@@ -259,10 +255,10 @@ export const makeRunningRecords = (
   const cadences = buildCadenceArray(count, 78, 74, 82);
   const grades = buildGradeArray(elevations, speeds);
 
-  return assembleRecords(sessionId, speeds, hrs, { elevations, cadences, grades });
+  return assembleRecords(speeds, hrs, { elevations, cadences, grades });
 };
 
-export const makeLaps = (sessionId: string, count: number): SessionLap[] => {
+export const makeLaps = (count: number): SessionLap[] => {
   const laps: SessionLap[] = [];
   const lapDuration = 300;
 
@@ -273,7 +269,6 @@ export const makeLaps = (sessionId: string, count: number): SessionLap[] => {
       intensity = 'rest';
     }
     laps.push({
-      sessionId,
       lapIndex: i,
       startTime: startMs,
       endTime: startMs + lapDuration * 1000,
@@ -297,7 +292,6 @@ export const makeLaps = (sessionId: string, count: number): SessionLap[] => {
 };
 
 export const makeLapsFromRecords = (
-  sessionId: string,
   records: SessionRecord[],
   lapDurationSec: number = 300,
 ): SessionLap[] => {
@@ -368,7 +362,6 @@ export const makeLapsFromRecords = (
     }
 
     laps.push({
-      sessionId,
       lapIndex,
       startTime: first.timestamp * 1000,
       endTime: last.timestamp * 1000,

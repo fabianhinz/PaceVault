@@ -70,23 +70,12 @@ export const useReimport = () => {
           toFitParseProfile(profile),
         );
 
-        // Delete old IDB data for this session
         await deleteSessionRecords(fitFile.sessionId);
         await deleteSessionLaps(fitFile.sessionId);
         await deleteSessionGPS(fitFile.sessionId);
 
-        // Save new records and laps with the original sessionId
-        const recordsWithId = result.records.map((r) => ({
-          ...r,
-          sessionId: fitFile.sessionId,
-        }));
-        const lapsWithId = result.laps.map((l) => ({
-          ...l,
-          sessionId: fitFile.sessionId,
-        }));
-
-        await saveSessionRecords(recordsWithId);
-        await saveSessionLaps(lapsWithId);
+        await saveSessionRecords(fitFile.sessionId, result.records);
+        await saveSessionLaps(fitFile.sessionId, result.laps);
 
         updates.push({ id: fitFile.sessionId, session: result.session });
 

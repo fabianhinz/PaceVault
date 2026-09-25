@@ -64,7 +64,7 @@ describe('useStudioStore', () => {
     expect(useStudioStore.getState().routes).toEqual([]);
   });
 
-  it('is persisted under the store-studio key at version 2', () => {
+  it('is persisted under the store-studio key at version 3', () => {
     const options = useStudioStore.persist.getOptions();
     expect(options.name).toBe('store-studio');
     expect(options.version).toBe(3);

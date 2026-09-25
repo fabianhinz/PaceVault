@@ -32,12 +32,12 @@ describe('delete all data', () => {
     useLayoutStore.getState().completeOnboarding();
 
     // Populate IDB session-records
-    const records = makeCyclingRecords(sessionId, 60, { basePower: 200 });
-    await saveSessionRecords(records);
+    const records = makeCyclingRecords(60, { basePower: 200 });
+    await saveSessionRecords(sessionId, records);
 
     // Populate IDB session-laps
-    const laps = makeLaps(sessionId, 2);
-    await saveSessionLaps(laps);
+    const laps = makeLaps(2);
+    await saveSessionLaps(sessionId, laps);
 
     // Populate IDB kv store (simulates Zustand persist)
     await idbStorage.setItem('store-user', '{"state":{"profile":{}}}');

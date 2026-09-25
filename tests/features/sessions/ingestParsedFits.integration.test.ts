@@ -19,8 +19,8 @@ const makeParsed = (
   } = makeSession({ name: `Ride ${fingerprint}` });
   return {
     session,
-    records: makeCyclingRecords('tmp', 30, { basePower: 200 }),
-    laps: makeLaps('tmp', 2),
+    records: makeCyclingRecords(30, { basePower: 200 }),
+    laps: makeLaps(2),
     fingerprint,
     fileName: `${fingerprint}.fit`,
     rawData: new Uint8Array([1, 2, 3, 4]).buffer,
@@ -30,6 +30,24 @@ const makeParsed = (
 };
 
 describe('ingestParsedFits', () => {
+  it('asks for persistent storage once sessions were imported, not for duplicates only', async () => {
+    const persist = vi.fn(async () => true);
+    Object.defineProperty(navigator, 'storage', {
+      value: { persisted: async () => false, persist },
+      configurable: true,
+    });
+    const { id: _id, createdAt: _ca, ...existing } = makeSession({ fingerprint: 'fp-1' });
+    useSessionsStore.getState().addSession(existing);
+
+    await ingestParsedFits([makeParsed('fp-1')]);
+    expect(persist).not.toHaveBeenCalled();
+
+    await ingestParsedFits([makeParsed('fp-2')]);
+    await vi.waitFor(() => expect(persist).toHaveBeenCalledOnce());
+
+    Object.defineProperty(navigator, 'storage', { value: undefined, configurable: true });
+  });
+
   it('adds sessions, writes records, laps and the raw FIT, and recomputes PBs', async () => {
     const spy = vi.spyOn(useFiltersStore.getState(), 'recomputePBs');
 

@@ -5,7 +5,7 @@ import { makeLaps, makeCyclingRecords, makeRunningRecords } from '@tests/factori
 
 describe('prepareLapSplitsData', () => {
   it('converts laps to split points with pace, speed, and max values', () => {
-    const laps = makeLaps('s1', 5).map((l) => ({ ...l, intensity: 'active' as const }));
+    const laps = makeLaps(5).map((l) => ({ ...l, intensity: 'active' as const }));
     const analysis = analyzeLaps(laps);
     const result = prepareLapSplitsData(analysis);
     expect(result).toHaveLength(5);
@@ -20,14 +20,14 @@ describe('prepareLapSplitsData', () => {
   });
 
   it('labels laps sequentially', () => {
-    const laps = makeLaps('s1', 3).map((l) => ({ ...l, intensity: 'active' as const }));
+    const laps = makeLaps(3).map((l) => ({ ...l, intensity: 'active' as const }));
     const analysis = analyzeLaps(laps);
     const result = prepareLapSplitsData(analysis);
     expect(result.map((r) => r.lap)).toEqual(['Lap 1', 'Lap 2', 'Lap 3']);
   });
 
   it('filters out laps with zero distance', () => {
-    const laps = makeLaps('s1', 3).map((l) => ({ ...l, intensity: 'active' as const }));
+    const laps = makeLaps(3).map((l) => ({ ...l, intensity: 'active' as const }));
     laps[1].distance = 0;
     const analysis = analyzeLaps(laps);
     const result = prepareLapSplitsData(analysis);
@@ -35,7 +35,7 @@ describe('prepareLapSplitsData', () => {
   });
 
   it('derives speed from paceSecPerKm consistently with pace', () => {
-    const laps = makeLaps('s1', 1).map((l) => ({ ...l, intensity: 'active' as const }));
+    const laps = makeLaps(1).map((l) => ({ ...l, intensity: 'active' as const }));
     const analysis = analyzeLaps(laps);
     const result = prepareLapSplitsData(analysis);
     // pace is sec/km, speed is km/h = 3600 / pace
@@ -43,7 +43,7 @@ describe('prepareLapSplitsData', () => {
   });
 
   it('derives maxSpeed and maxPace from LapAnalysis.maxSpeed', () => {
-    const laps = makeLaps('s1', 1).map((l) => ({ ...l, intensity: 'active' as const }));
+    const laps = makeLaps(1).map((l) => ({ ...l, intensity: 'active' as const }));
     // makeLaps sets maxSpeed to 4.0 m/s for the first lap
     const analysis = analyzeLaps(laps);
     const result = prepareLapSplitsData(analysis);
@@ -54,7 +54,7 @@ describe('prepareLapSplitsData', () => {
   });
 
   it('falls back to avg values when maxSpeed is undefined', () => {
-    const laps = makeLaps('s1', 1).map((l) => ({ ...l, intensity: 'active' as const }));
+    const laps = makeLaps(1).map((l) => ({ ...l, intensity: 'active' as const }));
     laps[0].maxSpeed = undefined;
     const analysis = analyzeLaps(laps);
     const result = prepareLapSplitsData(analysis);
@@ -67,7 +67,7 @@ describe('prepareLapSplitsData', () => {
   });
 
   it('excludes rest laps from splits data', () => {
-    const laps = makeLaps('s1', 5);
+    const laps = makeLaps(5);
     // makeLaps sets intensity 'rest' at indices 0, 3 — so 3 active laps
     const analysis = analyzeLaps(laps);
     const result = prepareLapSplitsData(analysis);
@@ -76,8 +76,8 @@ describe('prepareLapSplitsData', () => {
   });
 
   it('populates minSpeed/minPace and range fields from enrichments', () => {
-    const laps = makeLaps('s1', 5).map((l) => ({ ...l, intensity: 'active' as const }));
-    const records = makeRunningRecords('s1', 1500);
+    const laps = makeLaps(5).map((l) => ({ ...l, intensity: 'active' as const }));
+    const records = makeRunningRecords(1500);
     const analysis = analyzeLaps(laps);
     const enrichments = enrichAllLaps(laps, records);
     const result = prepareLapSplitsData(analysis, enrichments);
@@ -99,7 +99,7 @@ describe('prepareLapSplitsData', () => {
   });
 
   it('leaves minSpeed/minPace undefined without enrichments', () => {
-    const laps = makeLaps('s1', 3).map((l) => ({ ...l, intensity: 'active' as const }));
+    const laps = makeLaps(3).map((l) => ({ ...l, intensity: 'active' as const }));
     const analysis = analyzeLaps(laps);
     const result = prepareLapSplitsData(analysis);
     result.forEach((r) => {
@@ -111,7 +111,7 @@ describe('prepareLapSplitsData', () => {
 
 describe('prepareLapHrData', () => {
   it('groups avg/min/max HR per lap with hrRange', () => {
-    const analysis = analyzeLaps(makeLaps('s1', 4));
+    const analysis = analyzeLaps(makeLaps(4));
     const result = prepareLapHrData(analysis);
     expect(result).toHaveLength(4);
     expect(result[0]).toHaveProperty('avgHr');
@@ -121,7 +121,7 @@ describe('prepareLapHrData', () => {
   });
 
   it('uses avgHr as fallback for missing min/max', () => {
-    const laps = makeLaps('s1', 1);
+    const laps = makeLaps(1);
     laps[0].minHr = undefined;
     laps[0].maxHr = undefined;
     laps[0].avgHr = 150;
@@ -133,7 +133,7 @@ describe('prepareLapHrData', () => {
   });
 
   it('filters out laps without HR data', () => {
-    const laps = makeLaps('s1', 3);
+    const laps = makeLaps(3);
     laps[1].avgHr = undefined;
     const analysis = analyzeLaps(laps);
     const result = prepareLapHrData(analysis);
@@ -145,7 +145,7 @@ describe('prepareLapHrData', () => {
   });
 
   it('prefers enrichment minHr over FIT summary minHr', () => {
-    const laps = makeLaps('s1', 1);
+    const laps = makeLaps(1);
     laps[0].avgHr = 150;
     laps[0].minHr = 80; // unrealistic FIT summary value
     laps[0].maxHr = 170;
@@ -167,7 +167,7 @@ describe('prepareLapHrData', () => {
   });
 
   it('falls back to FIT summary minHr when enrichment has no minHr', () => {
-    const laps = makeLaps('s1', 1);
+    const laps = makeLaps(1);
     laps[0].avgHr = 150;
     laps[0].minHr = 130;
     laps[0].maxHr = 170;
@@ -190,8 +190,8 @@ describe('prepareLapHrData', () => {
 
 describe('prepareLapPowerData', () => {
   it('produces power points from cycling enrichments with powerRange', () => {
-    const laps = makeLaps('s1', 5);
-    const records = makeCyclingRecords('s1', 1500);
+    const laps = makeLaps(5);
+    const records = makeCyclingRecords(1500);
     const enrichments = enrichAllLaps(laps, records);
     const result = prepareLapPowerData(enrichments);
     expect(result.length).toBeGreaterThan(0);

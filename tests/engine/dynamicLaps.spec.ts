@@ -11,18 +11,14 @@ describe('computeDynamicLaps', () => {
   });
 
   it('returns empty for single record', () => {
-    const records: SessionRecord[] = [{ sessionId: 'test', timestamp: 0, distance: 0 }];
+    const records: SessionRecord[] = [{ timestamp: 0, distance: 0 }];
     const result = computeDynamicLaps(records, 1000);
     expect(result.analysis).toEqual([]);
     expect(result.enrichments).toEqual([]);
   });
 
   it('returns empty for records without distance', () => {
-    const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0 },
-      { sessionId: 'test', timestamp: 1 },
-      { sessionId: 'test', timestamp: 2 },
-    ];
+    const records: SessionRecord[] = [{ timestamp: 0 }, { timestamp: 1 }, { timestamp: 2 }];
     const result = computeDynamicLaps(records, 1000);
     expect(result.analysis).toEqual([]);
     expect(result.enrichments).toEqual([]);
@@ -30,7 +26,7 @@ describe('computeDynamicLaps', () => {
 
   it('produces correct split count for running records with 1km splits', () => {
     // ~3.5 m/s for 1000s → ~3500m → 3 full km splits + partial
-    const records = makeRunningRecords('test', 1000);
+    const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
     // Total distance ~3500m, so we expect 3 full splits + 1 partial
     expect(result.analysis.length).toBeGreaterThanOrEqual(3);
@@ -41,7 +37,7 @@ describe('computeDynamicLaps', () => {
 
   it('produces correct split count for cycling records with 5km splits', () => {
     // ~8-9 m/s for 2000s → ~16-18km → 3 full 5km splits + partial
-    const records = makeCyclingRecords('test', 2000);
+    const records = makeCyclingRecords(2000);
     const result = computeDynamicLaps(records, 5000);
     expect(result.analysis.length).toBeGreaterThanOrEqual(3);
     result.analysis.forEach((lap, i) => {
@@ -51,7 +47,7 @@ describe('computeDynamicLaps', () => {
 
   it('handles partial final lap', () => {
     // Create records covering ~2500m with 1000m splits → 2 full + 1 partial
-    const records = makeRunningRecords('test', 715); // ~715 * 3.5 ≈ 2502m
+    const records = makeRunningRecords(715); // ~715 * 3.5 ≈ 2502m
     const result = computeDynamicLaps(records, 1000);
     expect(result.analysis.length).toBe(3);
     // Last lap should be smaller distance
@@ -62,14 +58,14 @@ describe('computeDynamicLaps', () => {
 
   it('returns 1 partial lap when split distance exceeds total distance', () => {
     // ~3.5 m/s for 100s → ~350m, split at 1000m → just 1 partial lap
-    const records = makeRunningRecords('test', 100);
+    const records = makeRunningRecords(100);
     const result = computeDynamicLaps(records, 1000);
     expect(result.analysis).toHaveLength(1);
     expect(result.analysis[0].distance).toBeLessThan(1000);
   });
 
   it('computes pace correctly for running', () => {
-    const records = makeRunningRecords('test', 1000);
+    const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
     // For running at ~3.5 m/s base, pace ≈ 286 sec/km.
     // Random-walk speed with terrain can produce slower laps on uphills.
@@ -81,7 +77,7 @@ describe('computeDynamicLaps', () => {
   });
 
   it('aggregates HR data', () => {
-    const records = makeRunningRecords('test', 1000);
+    const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
     result.analysis.forEach((lap) => {
       expect(lap.avgHr).toBeDefined();
@@ -92,7 +88,7 @@ describe('computeDynamicLaps', () => {
   });
 
   it('computes elevation gain (positive deltas only)', () => {
-    const records = makeRunningRecords('test', 1000);
+    const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
     result.analysis.forEach((lap) => {
       expect(lap.elevationGain).toBeGreaterThanOrEqual(0);
@@ -100,7 +96,7 @@ describe('computeDynamicLaps', () => {
   });
 
   it('produces enrichments with correct lapIndex', () => {
-    const records = makeRunningRecords('test', 1000);
+    const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
     expect(result.enrichments).toHaveLength(result.analysis.length);
     result.enrichments.forEach((e, i) => {
@@ -109,7 +105,7 @@ describe('computeDynamicLaps', () => {
   });
 
   it('all laps have intensity active and isInterval false', () => {
-    const records = makeRunningRecords('test', 1000);
+    const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
     result.analysis.forEach((lap) => {
       expect(lap.intensity).toBe('active');
@@ -118,7 +114,7 @@ describe('computeDynamicLaps', () => {
   });
 
   it('enrichments include minHr from records', () => {
-    const records = makeRunningRecords('test', 1000);
+    const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
     result.enrichments.forEach((e) => {
       expect(e.minHr).toBeDefined();
@@ -127,7 +123,7 @@ describe('computeDynamicLaps', () => {
   });
 
   it('computes maxSpeed from records', () => {
-    const records = makeRunningRecords('test', 1000);
+    const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
     result.analysis.forEach((lap) => {
       expect(lap.maxSpeed).toBeDefined();
@@ -136,7 +132,7 @@ describe('computeDynamicLaps', () => {
   });
 
   it('computes avgCadence when cadence data is present', () => {
-    const records = makeCyclingRecords('test', 2000);
+    const records = makeCyclingRecords(2000);
     const result = computeDynamicLaps(records, 5000);
     result.analysis.forEach((lap) => {
       expect(lap.avgCadence).toBeDefined();
