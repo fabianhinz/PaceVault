@@ -196,71 +196,6 @@ const extractSessionPeaks = (
 };
 
 /**
- * Compare a single session's peaks against existing personal bests and return any that set a new all-time record.
- * @param sessionId - Unique identifier of the session being evaluated.
- * @param sessionDate - Unix timestamp (milliseconds) of the session.
- * @param sport - Sport type of the session.
- * @param records - Time-series session records used to derive peaks.
- * @param existingBests - Current personal bests to compare against.
- * @param sessionMeta - Optional session-level metadata providing total distance and elevation gain.
- * @returns Array of `PersonalBest` entries that beat the corresponding existing best; empty when no improvement is found.
- */
-export const detectNewPBs = (
-  sessionId: string,
-  sessionDate: number,
-  sport: Sport,
-  records: SessionRecord[],
-  existingBests: PersonalBest[],
-  sessionMeta?: { distance: number; elevationGain?: number },
-): PersonalBest[] => {
-  const peaks = extractSessionPeaks(sport, records, sessionMeta);
-  const newPBs: PersonalBest[] = [];
-
-  for (const peak of peaks) {
-    const existing = existingBests.find(
-      (pb) => pb.sport === sport && pb.category === peak.category && pb.window === peak.window,
-    );
-    let isBetter = !existing || peak.value < existing.value;
-    if (peak.higherIsBetter) {
-      isBetter = !existing || peak.value > existing.value;
-    }
-    if (isBetter) {
-      newPBs.push({
-        sport,
-        category: peak.category,
-        window: peak.window,
-        value: peak.value,
-        sessionId,
-        date: sessionDate,
-      });
-    }
-  }
-
-  return newPBs;
-};
-
-/**
- * Merge incoming personal bests into an existing array, replacing entries with the same sport+category+window key.
- * @param existing - Current array of personal bests to merge into.
- * @param incoming - New personal bests to apply; each replaces a matching entry or is appended if none exists.
- * @returns New array containing the merged personal bests.
- */
-export const mergePBs = (existing: PersonalBest[], incoming: PersonalBest[]): PersonalBest[] => {
-  const merged = [...existing];
-  for (const nb of incoming) {
-    const idx = merged.findIndex(
-      (pb) => pb.sport === nb.sport && pb.category === nb.category && pb.window === nb.window,
-    );
-    if (idx >= 0) {
-      merged[idx] = nb;
-    } else {
-      merged.push(nb);
-    }
-  }
-  return merged;
-};
-
-/**
  * Group personal bests by sport for per-sport display in dashboard cards.
  * @param pbs - Flat array of personal bests spanning any number of sports.
  * @returns Partial record mapping each sport to its corresponding array of personal bests.
@@ -278,22 +213,29 @@ export const groupPBsBySport = (pbs: PersonalBest[]): Partial<Record<Sport, Pers
   return grouped;
 };
 
+export interface PBSessionInput {
+  sessionId: string;
+  date: number;
+  sport: Sport;
+  records: SessionRecord[];
+  distance?: number;
+  elevationGain?: number;
+}
+
+const pbKey = (pb: { sport: Sport; category: PBCategory; window: number }): string =>
+  `${pb.sport}:${pb.category}:${pb.window}`;
+
 /**
  * Compute the all-time personal bests across an arbitrary collection of sessions for all sports.
  * @param sessions - Array of session descriptors, each carrying its id, date, sport, time-series records, and optional distance/elevation metadata.
+ * @param existing - Personal bests to start from; a session only replaces one it beats.
  * @returns Flat array of personal bests — one entry per unique sport+category+window combination — reflecting the best value seen across all sessions.
  */
 export const computePBsForSessions = (
-  sessions: Array<{
-    sessionId: string;
-    date: number;
-    sport: Sport;
-    records: SessionRecord[];
-    distance?: number;
-    elevationGain?: number;
-  }>,
+  sessions: PBSessionInput[],
+  existing: PersonalBest[] = [],
 ): PersonalBest[] => {
-  const bestByKey = new Map<string, PersonalBest>();
+  const bestByKey = new Map<string, PersonalBest>(existing.map((pb) => [pbKey(pb), pb]));
 
   for (const session of sessions) {
     let sessionMeta: { distance: number; elevationGain?: number } | undefined = undefined;
@@ -303,7 +245,6 @@ export const computePBsForSessions = (
     const peaks = extractSessionPeaks(session.sport, session.records, sessionMeta);
 
     for (const peak of peaks) {
-      const key = `${session.sport}:${peak.category}:${peak.window}`;
       const pb: PersonalBest = {
         sport: session.sport,
         category: peak.category,
@@ -312,10 +253,11 @@ export const computePBsForSessions = (
         sessionId: session.sessionId,
         date: session.date,
       };
-      const existing = bestByKey.get(key);
-      let isBetter = !existing || pb.value < existing.value;
+      const key = pbKey(pb);
+      const current = bestByKey.get(key);
+      let isBetter = !current || pb.value < current.value;
       if (peak.higherIsBetter) {
-        isBetter = !existing || pb.value > existing.value;
+        isBetter = !current || pb.value > current.value;
       }
       if (isBetter) {
         bestByKey.set(key, pb);

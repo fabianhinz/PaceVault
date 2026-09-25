@@ -15,7 +15,7 @@ import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import type { SessionFields, SessionRecord, Sport } from '@/packages/engine/types.ts';
-import { useFiltersStore } from '@/store/filters';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 
 interface ReimportState {
   reimporting: boolean;
@@ -100,7 +100,7 @@ export const useReimport = () => {
     if (updates.length > 0) {
       useSessionsStore.getState().replaceSessions(updates);
       useCoachPlanStore.getState().clearPlan();
-      useFiltersStore.getState().recomputePBs();
+      usePersonalBestsStore.getState().recomputeAllPBs();
     }
 
     setState({ reimporting: false, processed: 0, total: 0 });

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { useFiltersStore } from '@/store/filters.ts';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 import { getSessionRecords, getSessionLaps, getFitFile } from '@/lib/indexeddb.ts';
 import { makeCyclingRecords, makeLaps } from '@tests/factories/records.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
@@ -48,9 +48,7 @@ describe('ingestParsedFits', () => {
     Object.defineProperty(navigator, 'storage', { value: undefined, configurable: true });
   });
 
-  it('adds sessions, writes records, laps and the raw FIT, and recomputes PBs', async () => {
-    const spy = vi.spyOn(useFiltersStore.getState(), 'recomputePBs');
-
+  it('adds sessions, writes records, laps and the raw FIT, and merges their PBs', async () => {
     const outcome = await ingestParsedFits([makeParsed('fp-1'), makeParsed('fp-2')]);
 
     expect(outcome.importedCount).toBe(2);
@@ -58,7 +56,10 @@ describe('ingestParsedFits', () => {
     expect(outcome.saveFailed).toBe(false);
     expect(outcome.sessionIds).toHaveLength(2);
     expect(useSessionsStore.getState().sessions).toHaveLength(2);
-    expect(spy).toHaveBeenCalled();
+    expect(usePersonalBestsStore.getState().pbs.length).toBeGreaterThan(0);
+    expect(
+      usePersonalBestsStore.getState().pbs.every((pb) => outcome.sessionIds.includes(pb.sessionId)),
+    ).toBe(true);
 
     const first = outcome.sessionIds[0] ?? '';
     expect(await getSessionRecords(first)).toHaveLength(30);
@@ -67,8 +68,6 @@ describe('ingestParsedFits', () => {
     const fit = await getFitFile(first);
     expect(fit?.fileName).toBe('fp-1.fit');
     expect(new Uint8Array(fit?.data ?? new ArrayBuffer(0))).toEqual(new Uint8Array([1, 2, 3, 4]));
-
-    spy.mockRestore();
   });
 
   it('rejects a fingerprint that already exists in the store', async () => {
@@ -80,6 +79,15 @@ describe('ingestParsedFits', () => {
     expect(outcome.importedCount).toBe(1);
     expect(outcome.duplicateCount).toBe(1);
     expect(useSessionsStore.getState().sessions).toHaveLength(2);
+  });
+
+  it('leaves the PBs untouched for a duplicate-only batch', async () => {
+    const { id: _id, createdAt: _ca, ...session } = makeSession({ fingerprint: 'fp-1' });
+    useSessionsStore.getState().addSession(session);
+
+    await ingestParsedFits([makeParsed('fp-1')]);
+
+    expect(usePersonalBestsStore.getState().pbs).toEqual([]);
   });
 
   it('gives every session the source of its own entry', async () => {

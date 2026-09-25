@@ -1,5 +1,5 @@
 import { useSessionsStore } from '@/store/sessions.ts';
-import { useFiltersStore } from '@/store/filters.ts';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 import { findDuplicates } from '@/lib/fingerprint.ts';
 import { bulkSaveSessionData, saveFitFile } from '@/lib/indexeddb.ts';
 import { requestPersistentStorage } from '@/lib/persistentStorage.ts';
@@ -17,7 +17,7 @@ interface IngestOutcome {
 
 export const ingestParsedFits = async (
   parsed: ParsedFitResultWithMeta[],
-  options?: { recomputePBs?: boolean; markNew?: boolean },
+  options?: { markNew?: boolean },
 ): Promise<IngestOutcome> => {
   const existingSessions = useSessionsStore.getState().sessions;
   const storeDups = findDuplicates(
@@ -66,6 +66,23 @@ export const ingestParsedFits = async (
       await bulkSaveSessionData(idbEntries, { chunkSize: CHUNK_SIZE });
     }
 
+    usePersonalBestsStore.getState().addSessionPBs(
+      unique.flatMap((u, i) => {
+        const sessionId = sessionIds[i];
+        if (!sessionId || u.records.length === 0) return [];
+        return [
+          {
+            sessionId,
+            date: u.session.date,
+            sport: u.session.sport,
+            records: u.records,
+            distance: u.session.distance,
+            elevationGain: u.session.elevationGain,
+          },
+        ];
+      }),
+    );
+
     for (let i = 0; i < unique.length; i++) {
       const sid = sessionIds[i];
       const u = unique[i];
@@ -79,9 +96,6 @@ export const ingestParsedFits = async (
 
   const importedCount = unique.length;
   if (importedCount > 0) requestPersistentStorage().catch(() => undefined);
-  if (importedCount > 0 && options?.recomputePBs !== false) {
-    await useFiltersStore.getState().recomputePBs();
-  }
 
   return { sessionIds, importedCount, duplicateCount, saveFailed };
 };

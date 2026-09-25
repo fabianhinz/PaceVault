@@ -129,25 +129,6 @@ export const bulkSaveSessionData = async (
   }
 };
 
-export const getRecordsForSessions = async (
-  sessionIds: string[],
-): Promise<Map<string, SessionRecord[]>> => {
-  const db = await getDB();
-  const tx = db.transaction('session-records', 'readonly');
-  const queries = sessionIds.map((id) => tx.store.get(id));
-  const results = await Promise.all(queries);
-  await tx.done;
-
-  const decoded = await Promise.all(results.map((result) => decodeRecords(result)));
-  const map = new Map<string, SessionRecord[]>();
-  for (let i = 0; i < sessionIds.length; i++) {
-    const id = sessionIds[i];
-    if (!id) continue;
-    map.set(id, decoded[i] ?? []);
-  }
-  return map;
-};
-
 export const saveFitFile = async (
   sessionId: string,
   fileName: string,

@@ -12,7 +12,6 @@ import {
   getAllSessionGPS,
   deleteSessionGPS,
   bulkSaveSessionData,
-  getRecordsForSessions,
 } from '@/lib/indexeddb.ts';
 import { makeCyclingRecords, makeRunningRecords, makeLaps } from '@tests/factories/records.ts';
 import { getDB } from '@/lib/db.ts';
@@ -304,37 +303,5 @@ describe('bulkSaveSessionData', () => {
       const records = await getSessionRecords(`session-${i}`);
       expect(records).toHaveLength(2);
     }
-  });
-});
-
-describe('getRecordsForSessions', () => {
-  beforeEach(async () => {
-    await clearAllRecords();
-  });
-
-  it('retrieves records for multiple sessions in a single call', async () => {
-    await saveSessionRecords('session-a', makeCyclingRecords(20));
-    await saveSessionRecords('session-b', makeRunningRecords(30));
-    await saveSessionRecords('session-c', makeCyclingRecords(10));
-
-    const map = await getRecordsForSessions(['session-a', 'session-b', 'session-c']);
-
-    expect(map.get('session-a')).toHaveLength(20);
-    expect(map.get('session-b')).toHaveLength(30);
-    expect(map.get('session-c')).toHaveLength(10);
-  });
-
-  it('returns empty arrays for sessions with no records', async () => {
-    await saveSessionRecords('session-a', makeCyclingRecords(5));
-
-    const map = await getRecordsForSessions(['session-a', 'nonexistent']);
-
-    expect(map.get('session-a')).toHaveLength(5);
-    expect(map.get('nonexistent')).toHaveLength(0);
-  });
-
-  it('handles empty sessionIds array', async () => {
-    const map = await getRecordsForSessions([]);
-    expect(map.size).toBe(0);
   });
 });

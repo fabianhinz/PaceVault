@@ -7,6 +7,7 @@ import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 
 const subscribe = (cb: () => void): (() => void) => {
   const unsubs = [
@@ -18,6 +19,7 @@ const subscribe = (cb: () => void): (() => void) => {
     useLayoutStore.persist.onFinishHydration(cb),
     useFiltersStore.persist.onFinishHydration(cb),
     useIntervalsStore.persist.onFinishHydration(cb),
+    usePersonalBestsStore.persist.onFinishHydration(cb),
   ];
   return () => unsubs.forEach((u) => u());
 };
@@ -31,7 +33,8 @@ const getSnapshot = (): boolean => {
     useCoachPlanStore.persist.hasHydrated() &&
     useLayoutStore.persist.hasHydrated() &&
     useFiltersStore.persist.hasHydrated() &&
-    useIntervalsStore.persist.hasHydrated()
+    useIntervalsStore.persist.hasHydrated() &&
+    usePersonalBestsStore.persist.hasHydrated()
   );
 };
 

@@ -510,8 +510,6 @@
   "toast_upload_sessions_plural": "{count} sessions uploaded",
   "toast_upload_duplicates": "{count} duplicate",
   "toast_upload_duplicates_plural": "{count} duplicates",
-  "toast_upload_pbs": "{count} new PB",
-  "toast_upload_pbs_plural": "{count} new PBs",
   "toast_upload_failed": "{count} failed",
   "toast_gpx_import_success": "{count} route imported",
   "toast_gpx_import_success_plural": "{count} routes imported",

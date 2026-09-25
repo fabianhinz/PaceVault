@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { m } from '@/paraglide/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useTripsStore } from '@/store/trips.ts';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 import {
   deleteSessionRecords,
   deleteSessionLaps,
@@ -50,6 +51,7 @@ export const DeleteSessionDialog = (props: {
             onClick={async () => {
               useSessionsStore.getState().deleteSession(props.session.id);
               useTripsStore.getState().removeSessionFromAllTrips(props.session.id);
+              usePersonalBestsStore.getState().removeSessionPBs(props.session.id);
               props.onOpenChange(false);
               navigate('/sessions');
               await Promise.all([

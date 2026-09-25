@@ -510,8 +510,6 @@
   "toast_upload_sessions_plural": "{count} Einheiten hochgeladen",
   "toast_upload_duplicates": "{count} Duplikat",
   "toast_upload_duplicates_plural": "{count} Duplikate",
-  "toast_upload_pbs": "{count} neue Bestleistung",
-  "toast_upload_pbs_plural": "{count} neue Bestleistungen",
   "toast_upload_failed": "{count} fehlgeschlagen",
   "toast_gpx_import_success": "{count} Route importiert",
   "toast_gpx_import_success_plural": "{count} Routen importiert",

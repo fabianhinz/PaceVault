@@ -18,6 +18,7 @@ import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
 import { clearAllRecords } from '@/lib/indexeddb.ts';
 interface DeleteAllDataDialogProps {
@@ -38,6 +39,7 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
     useStudioStore.getState().clearAll();
     useUserStore.getState().resetProfile();
     useCoachPlanStore.getState().clearPlan();
+    usePersonalBestsStore.getState().clearPBs();
     useIntervalsStore.getState().disconnectIntervals();
     useLayoutStore.setState({ onboardingComplete: false, demoMode: false });
     useFiltersStore.setState({
