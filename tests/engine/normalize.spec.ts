@@ -8,12 +8,12 @@ import { makeCyclingRecords } from '@tests/factories/records.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 function makeRecord(overrides: Partial<SessionRecord>): SessionRecord {
-  return { sessionId: 'test', timestamp: 0, ...overrides };
+  return { timestamp: 0, ...overrides };
 }
 
 describe('calculateNormalizedPower', () => {
   it('returns undefined for fewer than 30 records', () => {
-    const records = makeCyclingRecords('s1', 29);
+    const records = makeCyclingRecords(29);
     expect(calculateNormalizedPower(records)).toBeUndefined();
   });
 
@@ -59,7 +59,7 @@ describe('calculateNormalizedPower', () => {
   });
 
   it('returns a rounded integer', () => {
-    const records = makeCyclingRecords('s1', 120);
+    const records = makeCyclingRecords(120);
     const np = calculateNormalizedPower(records);
     expect(np).toBeDefined();
     expect(Number.isInteger(np)).toBe(true);

@@ -1,7 +1,7 @@
 # PaceVault
 
 **WHY:** PaceVault is a local-first, Progressive Web App (PWA) designed for mapping, analyzing, and storing fitness/GPS activities (primarily parsing `.FIT` binaries).
-**WHAT:** A pure client-side SPA with no backend server. The browser _is_ the database. Two external dependencies exist: [Open-Meteo](https://open-meteo.com/) for historical weather data — fetched lazily on session detail view and cached in IndexedDB (`session-weather` store) — and CARTO's vector basemap tiles, whose style is vendored in `src/features/map/darkMatter.style.json` so the map still paints offline. Tiles, glyphs and sprites are cached by the service worker (`carto-tiles`, `carto-assets`).
+**WHAT:** A pure client-side SPA with no backend server. The browser _is_ the database. Three external dependencies exist: [Open-Meteo](https://open-meteo.com/) for historical weather data — fetched lazily on session detail view and cached in IndexedDB (`session-weather` store); CARTO's vector basemap tiles, whose style is vendored in `src/features/map/darkMatter.style.json` so the map still paints offline (tiles, glyphs and sprites are cached by the service worker as `carto-tiles`, `carto-assets`); and [intervals.icu](https://intervals.icu/) as an **opt-in** activity source — the user pastes their own API key, and once connected new activities arrive automatically. `src/lib/intervals.ts` is the only call site, and responses are never cached.
 
 ## 1. Tech Stack
 
@@ -24,7 +24,7 @@
 
 ## 2. Core Architecture Rules
 
-- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never attempt to call an external API.
+- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never call an external API outside the three documented integrations above (Open-Meteo, CARTO, intervals.icu). Each is opt-in or lazily triggered — intervals.icu only once the user enters a key — and the app stays fully usable offline without any of them.
 - **Pure engine**: All business logic lives in `src/packages/engine/` as pure functions — absolutely no React or state imports in this directory.
 - **Headless UI**: Import Radix primitive → wrap in `src/components/ui/` → style with Tailwind.
 - **Reuse UI components**: Before inlining layout or UI patterns in feature code, check `src/components/ui/` for existing components (`CardHeader`, `StatItem`, `ValueSkeleton`, etc.). Extract new shared components when a pattern appears in 2+ places.
@@ -35,6 +35,7 @@
 - **No `as any` for external data**: Use Zod schemas with `safeParse` + `z.infer` to validate and type data from untyped sources (file parsers, IndexedDB, etc.). Schemas live next to the parser/consumer (e.g. `fitSchemas.ts`). On failure: return a safe fallback (`undefined`, `[]`), never throw.
 - **Store actions via getState()**: Call Zustand actions with `useStore.getState().action()` at the call site. Do not extract actions via selectors (`const action = useStore(s => s.action)`). Keep selectors only for state values that trigger re-renders.
 - **No ternary operators in `.ts` files** (convention, not linter-enforced): Prefer `if/else` over `condition ? a : b` in `.ts` files (engine, lib, stores, hooks). Single-level ternaries are allowed in `.tsx` (JSX). Nested ternaries are banned everywhere.
+- **No `Object.assign`**: Change state by assigning fields on the immer draft or by replacing the object outright. Store updates go through intent-named actions, never a generic partial patch.
 - **Syntax & Formatting**: Defer to Oxlint and Oxfmt (via Vite+). Do not waste time manually formatting code or enforcing linting rules; focus on logic.
 
 ## 3. File Naming Conventions
@@ -78,3 +79,15 @@ Specific guidelines for features, testing, and state management are located in t
    vp exec playwright test  # playwright e2e
    vp build           # production build
    ```
+
+## 6. Colour Palette
+
+Anything drawn on the map — sport tracks, studio routes, markers — has to hold up against the dark basemap. Check a new or changed colour against these rules before adding it.
+
+- **No blue, cyan, teal or grey on the map.** The basemap's roads, rivers and water are slate blue; a track in that family reads as a street or a river. Blue stays reserved for the app accent, the live-position dot and UI surfaces off the map.
+- **Judge a colour by how it renders, not by its swatch.** Tracks blend additively at low alpha, so a single pass is dim and overlaps build brightness. A good track colour has one strong dominant channel: a single pass stays visible, and repeated passes build a heat ramp instead of washing straight to white. Warm hues build the most fire-like ramp.
+- **Sport colours must stay apart at every overlap stage**, from one pass to a saturated hot spot, not only as full-strength swatches. Current pair: running green `#4ade80`, cycling fire orange `#f97316`. A new sport takes a hue that is neither of these nor blue.
+- **Colour-blind safety is not a criterion** for the map palette; punch and visibility are.
+- **Studio routes are never shown alongside session tracks**, so they only need to differ from the basemap and from each other. Studio colour keys are persisted, so renaming or removing one needs a store migration.
+- **Zone colours** (blue → green → yellow → orange → red) replace the sport colour on the session detail map rather than appearing next to it, so sharing a hue with a sport colour is acceptable there.
+- A sport colour lives in three places that must change together: the map (`src/features/map/trackColors.ts`), the CSS theme (`src/index.css`) and its JS mirror (`src/lib/tokens.ts`).

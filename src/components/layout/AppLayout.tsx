@@ -6,11 +6,14 @@ import { DemoBanner } from './DemoBanner.tsx';
 import { OnboardingPage } from '@/pages/OnboardingPage.tsx';
 import { Outlet } from 'react-router-dom';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
+import { useIntervalsSync } from '@/features/intervals/hooks/useIntervalsSync.ts';
 
 export const AppLayout = () => {
   const mobileMapActive = useLayoutStore((s) => s.mobileMapActive);
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
   const isDesktop = useIsDesktop();
+
+  useIntervalsSync();
 
   return (
     <div className="min-h-screen overflow-hidden">

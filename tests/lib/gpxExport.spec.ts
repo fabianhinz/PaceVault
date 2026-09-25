@@ -17,7 +17,7 @@ const routePoints = (count: number): RoutePoint[] =>
 describe('buildSessionGpx', () => {
   it('produces valid GPX from GPS records', () => {
     const session = makeSession({ id: 'test-1', name: 'Morning Run', date: 1700000000000 });
-    const records = makeGPSRunningRecords('test-1', 10);
+    const records = makeGPSRunningRecords(10);
     const gpx = buildSessionGpx(session, records);
 
     expect(gpx).not.toBeNull();
@@ -31,7 +31,7 @@ describe('buildSessionGpx', () => {
 
   it('returns null for indoor records with no GPS', () => {
     const session = makeSession({ id: 'test-2' });
-    const records = makeIndoorRecords('test-2', 50);
+    const records = makeIndoorRecords(50);
     const gpx = buildSessionGpx(session, records);
 
     expect(gpx).toBeNull();
@@ -39,7 +39,7 @@ describe('buildSessionGpx', () => {
 
   it('returns null when fewer than 2 valid GPS points', () => {
     const session = makeSession({ id: 'test-3' });
-    const records = makeGPSRunningRecords('test-3', 1);
+    const records = makeGPSRunningRecords(1);
     const gpx = buildSessionGpx(session, records);
 
     expect(gpx).toBeNull();
@@ -47,7 +47,7 @@ describe('buildSessionGpx', () => {
 
   it('filters out records with invalid coordinates', () => {
     const session = makeSession({ id: 'test-4', date: 1700000000000 });
-    const validRecords = makeGPSRunningRecords('test-4', 5);
+    const validRecords = makeGPSRunningRecords(5);
     const invalidRecords = [
       { sessionId: 'test-4', timestamp: 100, lat: undefined, lng: undefined },
       { sessionId: 'test-4', timestamp: 101, lat: 999, lng: 999 },

@@ -12,9 +12,9 @@ import {
   getAllSessionGPS,
   deleteSessionGPS,
   bulkSaveSessionData,
-  getRecordsForSessions,
 } from '@/lib/indexeddb.ts';
 import { makeCyclingRecords, makeRunningRecords, makeLaps } from '@tests/factories/records.ts';
+import { getDB } from '@/lib/db.ts';
 import type { SessionGPS } from '@/packages/engine/types.ts';
 
 describe('IndexedDB session records', () => {
@@ -25,35 +25,41 @@ describe('IndexedDB session records', () => {
   });
 
   it('saves 100 records and retrieves all by sessionId', async () => {
-    const records = makeCyclingRecords('session-a', 100);
-    await saveSessionRecords(records);
+    const records = makeCyclingRecords(100);
+    await saveSessionRecords('session-a', records);
 
     const retrieved = await getSessionRecords('session-a');
     expect(retrieved).toHaveLength(100);
-    expect(retrieved[0].sessionId).toBe('session-a');
     expect(retrieved[0].power).toBeDefined();
   });
 
+  it('stores records compressed, keyed by the session', async () => {
+    await saveSessionRecords('session-a', makeCyclingRecords(100));
+
+    const db = await getDB();
+    const stored = await db.get('session-records', 'session-a');
+    expect(stored?.sessionId).toBe('session-a');
+    expect(stored?.format).toBe('gzip-json');
+  });
+
   it('retrieves only records for specific session (multi-session isolation)', async () => {
-    const recordsA = makeCyclingRecords('session-a', 50);
-    const recordsB = makeRunningRecords('session-b', 30);
-    await saveSessionRecords(recordsA);
-    await saveSessionRecords(recordsB);
+    const recordsA = makeCyclingRecords(50);
+    const recordsB = makeRunningRecords(30);
+    await saveSessionRecords('session-a', recordsA);
+    await saveSessionRecords('session-b', recordsB);
 
     const retrievedA = await getSessionRecords('session-a');
     const retrievedB = await getSessionRecords('session-b');
 
     expect(retrievedA).toHaveLength(50);
     expect(retrievedB).toHaveLength(30);
-    expect(retrievedA.every((r) => r.sessionId === 'session-a')).toBe(true);
-    expect(retrievedB.every((r) => r.sessionId === 'session-b')).toBe(true);
   });
 
   it('deletes records for one session, others remain', async () => {
-    const recordsA = makeCyclingRecords('session-a', 40);
-    const recordsB = makeCyclingRecords('session-b', 60);
-    await saveSessionRecords(recordsA);
-    await saveSessionRecords(recordsB);
+    const recordsA = makeCyclingRecords(40);
+    const recordsB = makeCyclingRecords(60);
+    await saveSessionRecords('session-a', recordsA);
+    await saveSessionRecords('session-b', recordsB);
 
     await deleteSessionRecords('session-a');
 
@@ -65,8 +71,8 @@ describe('IndexedDB session records', () => {
   });
 
   it('clearAllRecords wipes everything', async () => {
-    await saveSessionRecords(makeCyclingRecords('session-a', 20));
-    await saveSessionRecords(makeCyclingRecords('session-b', 30));
+    await saveSessionRecords('session-a', makeCyclingRecords(20));
+    await saveSessionRecords('session-b', makeCyclingRecords(30));
 
     await clearAllRecords();
 
@@ -83,12 +89,11 @@ describe('IndexedDB session laps', () => {
   });
 
   it('saves laps and retrieves all by sessionId', async () => {
-    const laps = makeLaps('session-a', 5);
-    await saveSessionLaps(laps);
+    const laps = makeLaps(5);
+    await saveSessionLaps('session-a', laps);
 
     const retrieved = await getSessionLaps('session-a');
     expect(retrieved).toHaveLength(5);
-    expect(retrieved[0].sessionId).toBe('session-a');
     expect(retrieved[0].lapIndex).toBe(0);
   });
 
@@ -98,21 +103,19 @@ describe('IndexedDB session laps', () => {
   });
 
   it('retrieves only laps for specific session (multi-session isolation)', async () => {
-    await saveSessionLaps(makeLaps('session-a', 3));
-    await saveSessionLaps(makeLaps('session-b', 5));
+    await saveSessionLaps('session-a', makeLaps(3));
+    await saveSessionLaps('session-b', makeLaps(5));
 
     const retrievedA = await getSessionLaps('session-a');
     const retrievedB = await getSessionLaps('session-b');
 
     expect(retrievedA).toHaveLength(3);
     expect(retrievedB).toHaveLength(5);
-    expect(retrievedA.every((l) => l.sessionId === 'session-a')).toBe(true);
-    expect(retrievedB.every((l) => l.sessionId === 'session-b')).toBe(true);
   });
 
   it('deletes laps for one session, others remain', async () => {
-    await saveSessionLaps(makeLaps('session-a', 4));
-    await saveSessionLaps(makeLaps('session-b', 6));
+    await saveSessionLaps('session-a', makeLaps(4));
+    await saveSessionLaps('session-b', makeLaps(6));
 
     await deleteSessionLaps('session-a');
 
@@ -124,8 +127,8 @@ describe('IndexedDB session laps', () => {
   });
 
   it('clearAllRecords also clears laps', async () => {
-    await saveSessionLaps(makeLaps('session-a', 3));
-    await saveSessionRecords(makeCyclingRecords('session-a', 10));
+    await saveSessionLaps('session-a', makeLaps(3));
+    await saveSessionRecords('session-a', makeCyclingRecords(10));
 
     await clearAllRecords();
 
@@ -189,7 +192,7 @@ describe('IndexedDB session GPS', () => {
 
   it('clearAllRecords also clears GPS data', async () => {
     await saveSessionGPS(makeTestGPS('session-a'));
-    await saveSessionRecords(makeCyclingRecords('session-a', 5));
+    await saveSessionRecords('session-a', makeCyclingRecords(5));
 
     await clearAllRecords();
 
@@ -208,12 +211,14 @@ describe('bulkSaveSessionData', () => {
   it('saves records and laps for multiple sessions in chunked transactions', async () => {
     const entries = [
       {
-        records: makeCyclingRecords('session-a', 10),
-        laps: makeLaps('session-a', 2),
+        sessionId: 'session-a',
+        records: makeCyclingRecords(10),
+        laps: makeLaps(2),
       },
       {
-        records: makeRunningRecords('session-b', 15),
-        laps: makeLaps('session-b', 3),
+        sessionId: 'session-b',
+        records: makeRunningRecords(15),
+        laps: makeLaps(3),
       },
     ];
 
@@ -233,7 +238,8 @@ describe('bulkSaveSessionData', () => {
   it('handles entries with no laps', async () => {
     const entries = [
       {
-        records: makeCyclingRecords('session-a', 5),
+        sessionId: 'session-a',
+        records: makeCyclingRecords(5),
         laps: [] as ReturnType<typeof makeLaps>,
       },
     ];
@@ -255,8 +261,9 @@ describe('bulkSaveSessionData', () => {
 
   it('calls onChunkDone for each chunk', async () => {
     const entries = Array.from({ length: 5 }, (_, i) => ({
-      records: makeCyclingRecords(`session-${i}`, 3),
-      laps: makeLaps(`session-${i}`, 1),
+      sessionId: `session-${i}`,
+      records: makeCyclingRecords(3),
+      laps: makeLaps(1),
     }));
 
     const chunkIndices: number[] = [];
@@ -276,7 +283,8 @@ describe('bulkSaveSessionData', () => {
 
   it('respects custom chunkSize', async () => {
     const entries = Array.from({ length: 10 }, (_, i) => ({
-      records: makeCyclingRecords(`session-${i}`, 2),
+      sessionId: `session-${i}`,
+      records: makeCyclingRecords(2),
       laps: [] as ReturnType<typeof makeLaps>,
       gps: null,
     }));
@@ -295,37 +303,5 @@ describe('bulkSaveSessionData', () => {
       const records = await getSessionRecords(`session-${i}`);
       expect(records).toHaveLength(2);
     }
-  });
-});
-
-describe('getRecordsForSessions', () => {
-  beforeEach(async () => {
-    await clearAllRecords();
-  });
-
-  it('retrieves records for multiple sessions in a single call', async () => {
-    await saveSessionRecords(makeCyclingRecords('session-a', 20));
-    await saveSessionRecords(makeRunningRecords('session-b', 30));
-    await saveSessionRecords(makeCyclingRecords('session-c', 10));
-
-    const map = await getRecordsForSessions(['session-a', 'session-b', 'session-c']);
-
-    expect(map.get('session-a')).toHaveLength(20);
-    expect(map.get('session-b')).toHaveLength(30);
-    expect(map.get('session-c')).toHaveLength(10);
-  });
-
-  it('returns empty arrays for sessions with no records', async () => {
-    await saveSessionRecords(makeCyclingRecords('session-a', 5));
-
-    const map = await getRecordsForSessions(['session-a', 'nonexistent']);
-
-    expect(map.get('session-a')).toHaveLength(5);
-    expect(map.get('nonexistent')).toHaveLength(0);
-  });
-
-  it('handles empty sessionIds array', async () => {
-    const map = await getRecordsForSessions([]);
-    expect(map.size).toBe(0);
   });
 });

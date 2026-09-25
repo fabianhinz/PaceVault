@@ -22,6 +22,10 @@ describe('extractSessionName', () => {
     expect(extractSessionName('activity.fit')).toBeUndefined();
   });
 
+  it('returns undefined for an intervals.icu activity id, so a re-import keeps the API name', () => {
+    expect(extractSessionName('i178993058.fit')).toBeUndefined();
+  });
+
   it('returns undefined for empty name after prefix', () => {
     expect(extractSessionName('12345_.fit')).toBeUndefined();
   });

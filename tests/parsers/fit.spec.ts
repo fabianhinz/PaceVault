@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   deriveDistanceFromRecords,
   deriveAvgFromRecords,
   deriveMaxFromRecords,
+  parseFitFile,
 } from '@/parsers/fit.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 function makeRecord(overrides: Partial<SessionRecord> = {}): SessionRecord {
-  return { sessionId: 'test', timestamp: 0, ...overrides };
+  return { timestamp: 0, ...overrides };
 }
 
 describe('deriveDistanceFromRecords', () => {
@@ -109,5 +112,73 @@ describe('deriveMaxFromRecords', () => {
   it('skips zero values', () => {
     const records = [makeRecord({ power: 0 }), makeRecord({ power: 250 })];
     expect(deriveMaxFromRecords(records, 'power')).toBe(250);
+  });
+});
+
+describe('parseFitFile session name', () => {
+  const fixture = (): ArrayBuffer => {
+    const buf = readFileSync(resolve('e2e/fixtures/running.fit'));
+    const bytes = new Uint8Array(buf.byteLength);
+    bytes.set(buf);
+    return bytes.buffer;
+  };
+
+  const profile = { restHr: 48, maxHr: 188, gender: 'male' as const, ftp: 265 };
+
+  it('derives the name from the filename when no meta is given', async () => {
+    const result = await parseFitFile(fixture(), '15487122967_Lauf_am_Morgen.fit', profile);
+    expect(result.session.name).toBe('Lauf am Morgen');
+  });
+
+  it('leaves the name unset when the filename carries none', async () => {
+    const result = await parseFitFile(fixture(), 'i178993058.fit', profile);
+    expect(result.session).not.toHaveProperty('name');
+  });
+
+  it('lets an intervals.icu name win over the filename', async () => {
+    const result = await parseFitFile(fixture(), '15487122967_Lauf_am_Morgen.fit', profile, {
+      name: 'Karlsruhe Laufen',
+    });
+    expect(result.session.name).toBe('Karlsruhe Laufen');
+  });
+
+  it('falls back to the filename when meta carries no name', async () => {
+    const result = await parseFitFile(fixture(), '15487122967_Lauf_am_Morgen.fit', profile, {});
+    expect(result.session.name).toBe('Lauf am Morgen');
+  });
+});
+
+describe('parseFitFile records', () => {
+  const fixture = (): ArrayBuffer => {
+    const buf = readFileSync(resolve('e2e/fixtures/running.fit'));
+    const bytes = new Uint8Array(buf.byteLength);
+    bytes.set(buf);
+    return bytes.buffer;
+  };
+
+  const profile = { restHr: 48, maxHr: 188, gender: 'male' as const, ftp: 265 };
+
+  const decimals = (value: number): number => (String(value).split('.')[1] ?? '').length;
+
+  it('stores only fields the device recorded, without a session id', async () => {
+    const result = await parseFitFile(fixture(), 'run.fit', profile);
+
+    expect(result.records.length).toBeGreaterThan(0);
+    for (const record of result.records) {
+      expect(record).not.toHaveProperty('sessionId');
+      expect(Object.values(record).every((value) => value !== undefined)).toBe(true);
+    }
+  });
+
+  it('rounds values to the resolution FIT records them in', async () => {
+    const result = await parseFitFile(fixture(), 'run.fit', profile);
+
+    for (const record of result.records) {
+      if (record.lat !== undefined) expect(decimals(record.lat)).toBeLessThanOrEqual(7);
+      if (record.lng !== undefined) expect(decimals(record.lng)).toBeLessThanOrEqual(7);
+      if (record.elevation !== undefined) expect(decimals(record.elevation)).toBeLessThanOrEqual(1);
+      if (record.distance !== undefined) expect(decimals(record.distance)).toBeLessThanOrEqual(2);
+      if (record.speed !== undefined) expect(decimals(record.speed)).toBeLessThanOrEqual(3);
+    }
   });
 });

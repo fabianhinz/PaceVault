@@ -4,7 +4,6 @@ import type { LapMarkerMode } from '@/lib/lapMarkers.ts';
 import type { SessionLap, SessionRecord } from '@/packages/engine/types.ts';
 
 const makeRecord = (overrides: Partial<SessionRecord> = {}, index = 0): SessionRecord => ({
-  sessionId: 's1',
   timestamp: index,
   lat: 48.0 + index * 0.001,
   lng: 11.0 + index * 0.001,
@@ -16,7 +15,6 @@ const makeGPSRecords = (count: number): SessionRecord[] =>
   Array.from({ length: count }, (_, i) => makeRecord({}, i));
 
 const makeLap = (overrides: Partial<SessionLap> = {}): SessionLap => ({
-  sessionId: 's1',
   lapIndex: 0,
   startTime: 1000,
   endTime: 4000,

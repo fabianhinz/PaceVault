@@ -87,7 +87,7 @@ export const ToastViewport = () => {
               if (!open) useToastStore.getState().removeToast(t.id);
             }}
             duration={t.persistent ? Infinity : 4000}
-            {...(t.testId ? { 'data-testid': t.testId } : {})}
+            data-testid={t.id}
           >
             <ToastPrimitive.Title className="text-sm font-semibold text-text-primary">
               {t.title}

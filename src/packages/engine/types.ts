@@ -27,6 +27,11 @@ export type PBCategory = 'peak-power' | 'fastest-distance' | 'longest' | 'most-e
 // Interfaces
 // ---------------------------------------------------------------------------
 
+export type SessionSource =
+  | { kind: 'file' }
+  | { kind: 'intervals'; activityId: string }
+  | { kind: 'demo' };
+
 export interface TrainingSession {
   id: string;
   name?: string;
@@ -62,10 +67,13 @@ export interface TrainingSession {
   hasDetailedRecords: boolean;
   fingerprint?: string;
   createdAt: number;
+  isNew?: boolean;
+  source: SessionSource;
 }
 
+export type SessionFields = Omit<TrainingSession, 'id' | 'createdAt' | 'isNew' | 'source'>;
+
 export interface SessionRecord {
-  sessionId: string;
   timestamp: number;
   hr?: number;
   power?: number;
@@ -80,7 +88,6 @@ export interface SessionRecord {
 }
 
 export interface SessionLap {
-  sessionId: string;
   lapIndex: number;
   startTime: number;
   endTime: number;

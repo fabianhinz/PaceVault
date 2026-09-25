@@ -3,7 +3,7 @@ import { calculateGAP } from '@/packages/engine/normalize.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 function makeRecord(overrides: Partial<SessionRecord>): SessionRecord {
-  return { sessionId: 'test', timestamp: 0, ...overrides };
+  return { timestamp: 0, ...overrides };
 }
 
 describe('calculateGAP with native grade', () => {

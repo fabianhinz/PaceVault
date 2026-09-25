@@ -5,7 +5,6 @@ import type { SessionRecord } from '@/packages/engine/types.ts';
  * Starts from Munich (48.137, 11.575) by default and moves northeast.
  */
 export const makeGPSRunningRecords = (
-  sessionId: string,
   count: number,
   options?: { startLat?: number; startLng?: number; baseHr?: number },
 ): SessionRecord[] => {
@@ -19,7 +18,6 @@ export const makeGPSRunningRecords = (
     const speed = 3.5 + 0.5 * Math.sin(i * 0.04);
     cumulativeDistance += speed;
     records.push({
-      sessionId,
       timestamp: i,
       lat: startLat + i * 0.0001,
       lng: startLng + i * 0.00015,
@@ -36,11 +34,10 @@ export const makeGPSRunningRecords = (
 /**
  * Generate indoor records with no GPS data (lat/lng undefined).
  */
-export const makeIndoorRecords = (sessionId: string, count: number): SessionRecord[] => {
+export const makeIndoorRecords = (count: number): SessionRecord[] => {
   const records: SessionRecord[] = [];
   for (let i = 0; i < count; i++) {
     records.push({
-      sessionId,
       timestamp: i,
       hr: 140 + (i / count) * 20,
       speed: 3.0,

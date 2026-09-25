@@ -12,7 +12,7 @@ import { SessionRecordsCard } from '@/features/sessions/session/SessionRecordsCa
 import { SessionChartsExplorer } from '@/features/sessions/charts/SessionChartsExplorer.tsx';
 import { SessionStatsGrid } from '@/features/sessions/session/SessionStatsGrid.tsx';
 import type { TrainingSession, SessionRecord, SessionLap } from '@/packages/engine/types.ts';
-import { useFiltersStore } from '@/store/filters.ts';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 
 interface OverviewTabProps {
   session: TrainingSession;
@@ -21,10 +21,8 @@ interface OverviewTabProps {
 }
 
 export const OverviewTab = (props: OverviewTabProps) => {
-  const groupedPBs = useFiltersStore((store) => store.groupedPBs);
-  const sessionPBs = groupedPBs.data[props.session.sport]?.filter(
-    (pb) => pb.sessionId === props.session.id,
-  );
+  const pbs = usePersonalBestsStore((store) => store.pbs);
+  const sessionPBs = pbs.filter((pb) => pb.sessionId === props.session.id);
   const isRunning = props.session.sport === 'running';
   const zoneData = useZoneData(props.records, isRunning);
 
@@ -55,7 +53,7 @@ export const OverviewTab = (props: OverviewTabProps) => {
         )}
       </ChartPreviewCard>
 
-      {Array.isArray(sessionPBs) && sessionPBs.length > 0 && (
+      {sessionPBs.length > 0 && (
         <div className="lg:col-span-2">
           <SessionRecordsCard sessionPBs={sessionPBs} />
         </div>

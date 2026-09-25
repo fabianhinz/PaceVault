@@ -1,17 +1,12 @@
 import { useCallback } from 'react';
 import { useUserStore } from '@/store/user.ts';
-import { useSessionsStore } from '@/store/sessions.ts';
 import { useUploadProgressStore } from '@/store/uploadProgress.ts';
 import { parseFitFile, type ParsedFitResultWithMeta } from '@/parsers/fit.ts';
-import { bulkSaveSessionData, saveFitFile } from '@/lib/indexeddb.ts';
 import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
-import { findDuplicates } from '@/lib/fingerprint.ts';
 import { isArchiveFile, extractActivityFiles } from '@/lib/archive.ts';
-import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
-import { useFiltersStore } from '@/store/filters.ts';
-
-const CHUNK_SIZE = 10;
+import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
+import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
 
 export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>) => {
   const profile = useUserStore((s) => s.profile);
@@ -71,14 +66,14 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
       const parsingTasks: Promise<ParsedFitResultWithMeta | null>[] = [];
       for (const entry of fitEntries) {
         parsingTasks.push(
-          parseFitFile(entry.data, entry.name, {
-            restHr: profile.thresholds.restHr,
-            maxHr: profile.thresholds.maxHr,
-            gender: profile.gender,
-            ftp: profile.thresholds.ftp,
-          })
-            .then((result) => {
-              return { ...result, rawData: entry.data, fileName: entry.name };
+          parseFitFile(entry.data, entry.name, toFitParseProfile(profile))
+            .then((result): ParsedFitResultWithMeta => {
+              return {
+                ...result,
+                rawData: entry.data,
+                fileName: entry.name,
+                source: { kind: 'file' },
+              };
             })
             .catch((error) => {
               console.error('Parse error: ', error);
@@ -98,75 +93,13 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
         }
       }
 
-      // Dedup — filter out files already in the store or duplicated within the batch
-      const existingSessions = useSessionsStore.getState().sessions;
-      const storeDups = findDuplicates(
-        parsed.map((p) => p.fingerprint),
-        existingSessions,
-      );
-      const seenInBatch = new Set<string>();
-      let duplicated = 0;
-
-      const unique = parsed.filter((p) => {
-        if (storeDups.has(p.fingerprint) || seenInBatch.has(p.fingerprint)) {
-          duplicated++;
-          return false;
-        }
-        seenInBatch.add(p.fingerprint);
-        return true;
-      });
-
-      if (unique.length > 0) {
-        try {
-          const sessionIds = useSessionsStore.getState().addSessions(unique.map((p) => p.session));
-
-          const idbEntries: Array<{
-            records: (SessionRecord & { sessionId: string })[];
-            laps: (SessionLap & { sessionId: string })[];
-          }> = [];
-
-          for (let i = 0; i < unique.length; i++) {
-            const entry = unique[i];
-            const sessionId = sessionIds[i];
-            if (!entry || !sessionId) continue;
-
-            if (entry.records.length > 0) {
-              const recordsWithId = entry.records.map((r) => ({
-                ...r,
-                sessionId,
-              }));
-
-              let lapsWithId: (SessionLap & { sessionId: string })[] = [];
-              if (entry.laps.length > 0) {
-                lapsWithId = entry.laps.map((l) => ({ ...l, sessionId }));
-              }
-
-              idbEntries.push({
-                records: recordsWithId,
-                laps: lapsWithId,
-              });
-            }
-          }
-
-          if (idbEntries.length > 0) {
-            await bulkSaveSessionData(idbEntries, {
-              chunkSize: CHUNK_SIZE,
-            });
-          }
-
-          for (let i = 0; i < unique.length; i++) {
-            const sid = sessionIds[i];
-            const u = unique[i];
-            if (!sid || !u) continue;
-            await saveFitFile(sid, u.fileName, u.rawData);
-          }
-        } catch (err) {
-          console.error('Save error:', err);
-          toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
-        }
+      const outcome = await ingestParsedFits(parsed);
+      if (outcome.saveFailed) {
+        toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
       }
 
-      const uploaded = unique.length;
+      const uploaded = outcome.importedCount;
+      const duplicated = outcome.duplicateCount;
       const parts: string[] = [];
 
       if (uploaded > 0) {
@@ -197,7 +130,6 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
           variant = 'warning';
         }
         useUploadProgressStore.getState().finish(parts.join(', '), variant);
-        useFiltersStore.getState().recomputePBs();
       }
 
       if (inputRef.current) {

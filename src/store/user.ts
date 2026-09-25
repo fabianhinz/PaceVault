@@ -2,13 +2,13 @@ import { v4 } from 'uuid';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import type { UserProfile } from '@/types/index.ts';
+import type { Gender, UserProfile } from '@/types/index.ts';
 import { idbStorage } from '@/lib/idbStorage.ts';
 
 interface UserState {
   profile: UserProfile | null;
   setProfile: (profile: Omit<UserProfile, 'id' | 'createdAt'>) => void;
-  updateProfile: (updates: Partial<UserProfile>) => void;
+  setProfileGender: (gender: Gender) => void;
   updateThresholds: (thresholds: UserProfile['thresholds']) => void;
   toggleMetricHelp: () => void;
   toggleAutoSessionNames: () => void;
@@ -30,10 +30,10 @@ export const useUserStore = create<UserState>()(
             },
           }),
 
-        updateProfile: (updates) =>
+        setProfileGender: (gender) =>
           set((draft) => {
             if (draft.profile) {
-              Object.assign(draft.profile, updates);
+              draft.profile.gender = gender;
             }
           }),
 

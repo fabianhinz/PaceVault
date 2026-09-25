@@ -10,11 +10,12 @@ import {
   saveSessionLaps,
 } from '@/lib/indexeddb.ts';
 import { parseFitFile } from '@/parsers/fit.ts';
+import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
-import type { SessionRecord, Sport, TrainingSession } from '@/packages/engine/types.ts';
-import { useFiltersStore } from '@/store/filters';
+import type { SessionFields, SessionRecord, Sport } from '@/packages/engine/types.ts';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 
 interface ReimportState {
   reimporting: boolean;
@@ -49,7 +50,7 @@ export const useReimport = () => {
 
     const updates: Array<{
       id: string;
-      session: Omit<TrainingSession, 'id' | 'createdAt'>;
+      session: SessionFields;
     }> = [];
     const pbSessions: Array<{
       sessionId: string;
@@ -63,30 +64,18 @@ export const useReimport = () => {
 
     for (const fitFile of fitFiles) {
       try {
-        const result = await parseFitFile(fitFile.data, fitFile.fileName, {
-          restHr: profile.thresholds.restHr,
-          maxHr: profile.thresholds.maxHr,
-          gender: profile.gender,
-          ftp: profile.thresholds.ftp,
-        });
+        const result = await parseFitFile(
+          fitFile.data,
+          fitFile.fileName,
+          toFitParseProfile(profile),
+        );
 
-        // Delete old IDB data for this session
         await deleteSessionRecords(fitFile.sessionId);
         await deleteSessionLaps(fitFile.sessionId);
         await deleteSessionGPS(fitFile.sessionId);
 
-        // Save new records and laps with the original sessionId
-        const recordsWithId = result.records.map((r) => ({
-          ...r,
-          sessionId: fitFile.sessionId,
-        }));
-        const lapsWithId = result.laps.map((l) => ({
-          ...l,
-          sessionId: fitFile.sessionId,
-        }));
-
-        await saveSessionRecords(recordsWithId);
-        await saveSessionLaps(lapsWithId);
+        await saveSessionRecords(fitFile.sessionId, result.records);
+        await saveSessionLaps(fitFile.sessionId, result.laps);
 
         updates.push({ id: fitFile.sessionId, session: result.session });
 
@@ -111,7 +100,7 @@ export const useReimport = () => {
     if (updates.length > 0) {
       useSessionsStore.getState().replaceSessions(updates);
       useCoachPlanStore.getState().clearPlan();
-      useFiltersStore.getState().recomputePBs();
+      usePersonalBestsStore.getState().recomputeAllPBs();
     }
 
     setState({ reimporting: false, processed: 0, total: 0 });

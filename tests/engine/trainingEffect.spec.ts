@@ -10,13 +10,13 @@ import { makeRunningRecords, makeCyclingRecords } from '@tests/factories/records
 
 describe('calculateTrainingEffect', () => {
   it('returns undefined when maxHr <= restHr', () => {
-    const records = makeRunningRecords('s1', 3600);
+    const records = makeRunningRecords(3600);
     expect(calculateTrainingEffect(records, 50, 50, 'male', 0)).toBeUndefined();
     expect(calculateTrainingEffect(records, 40, 50, 'male', 0)).toBeUndefined();
   });
 
   it('returns undefined when no records have HR data', () => {
-    const records = makeRunningRecords('s1', 100).map((r) => ({
+    const records = makeRunningRecords(100).map((r) => ({
       ...r,
       hr: undefined,
     }));
@@ -51,7 +51,7 @@ describe('calculateTrainingEffect', () => {
   });
 
   it('computes aerobic TE > 0 for a 1-hour running session with HR data', () => {
-    const records = makeRunningRecords('s1', 3600, { baseHr: 155 });
+    const records = makeRunningRecords(3600, { baseHr: 155 });
     const result = calculateTrainingEffect(records, 190, 50, 'male', 0);
 
     expect(result).toBeDefined();
@@ -61,7 +61,7 @@ describe('calculateTrainingEffect', () => {
 
   it('aerobic TE is clamped to [0, 5]', () => {
     // Very long, very hard session should still cap at 5
-    const records = makeRunningRecords('s1', 7200, { baseHr: 185 });
+    const records = makeRunningRecords(7200, { baseHr: 185 });
     const result = calculateTrainingEffect(records, 190, 50, 'male', 0);
 
     expect(result).toBeDefined();
@@ -71,7 +71,7 @@ describe('calculateTrainingEffect', () => {
 
   it('anaerobic TE is 0 when HR stays well below 90% HRR', () => {
     // baseHr=100 with maxHr=190, restHr=50 → HRR ≈ 0.36, well below 0.9
-    const records = makeRunningRecords('s1', 3600, { baseHr: 100 });
+    const records = makeRunningRecords(3600, { baseHr: 100 });
     const result = calculateTrainingEffect(records, 190, 50, 'male', 0);
 
     expect(result).toBeDefined();
@@ -80,7 +80,7 @@ describe('calculateTrainingEffect', () => {
 
   it('anaerobic TE > 0 when HR is above 90% HRR threshold', () => {
     // baseHr=180 with maxHr=190, restHr=50 → HRR ≈ 0.93, above 0.9
-    const records = makeRunningRecords('s1', 600, { baseHr: 180 });
+    const records = makeRunningRecords(600, { baseHr: 180 });
     const result = calculateTrainingEffect(records, 190, 50, 'male', 0);
 
     expect(result).toBeDefined();
@@ -88,7 +88,7 @@ describe('calculateTrainingEffect', () => {
   });
 
   it('higher CTL reduces TE for the same effort', () => {
-    const records = makeRunningRecords('s1', 3600, { baseHr: 155 });
+    const records = makeRunningRecords(3600, { baseHr: 155 });
 
     const lowFitness = calculateTrainingEffect(records, 190, 50, 'male', 0);
     const highFitness = calculateTrainingEffect(records, 190, 50, 'male', 100);
@@ -119,7 +119,7 @@ describe('calculateTrainingEffect', () => {
   });
 
   it('works with cycling records that have HR data', () => {
-    const records = makeCyclingRecords('s1', 3600, { baseHr: 150 });
+    const records = makeCyclingRecords(3600, { baseHr: 150 });
     const result = calculateTrainingEffect(records, 190, 50, 'male', 50);
 
     expect(result).toBeDefined();
@@ -127,8 +127,8 @@ describe('calculateTrainingEffect', () => {
   });
 
   it('short session produces lower TE than long session at same intensity', () => {
-    const short = makeRunningRecords('s1', 600, { baseHr: 155 });
-    const long = makeRunningRecords('s2', 3600, { baseHr: 155 });
+    const short = makeRunningRecords(600, { baseHr: 155 });
+    const long = makeRunningRecords(3600, { baseHr: 155 });
 
     const shortTE = calculateTrainingEffect(short, 190, 50, 'male', 0);
     const longTE = calculateTrainingEffect(long, 190, 50, 'male', 0);
@@ -140,7 +140,7 @@ describe('calculateTrainingEffect', () => {
   });
 
   it('results are rounded to 1 decimal place', () => {
-    const records = makeRunningRecords('s1', 3600, { baseHr: 155 });
+    const records = makeRunningRecords(3600, { baseHr: 155 });
     const result = calculateTrainingEffect(records, 190, 50, 'male', 0);
 
     expect(result).toBeDefined();
@@ -154,7 +154,7 @@ describe('calculateTrainingEffect', () => {
     const restHr = 50;
 
     it('30-min easy run (baseHr≈100) at CTL=50 → TE 1.5–2.5', () => {
-      const records = makeRunningRecords('s1', 1800, { baseHr: 100 });
+      const records = makeRunningRecords(1800, { baseHr: 100 });
       const result = calculateTrainingEffect(records, maxHr, restHr, 'male', 50);
       expect(result).toBeDefined();
       expect(result?.aerobic).toBeGreaterThanOrEqual(1.5);
@@ -162,7 +162,7 @@ describe('calculateTrainingEffect', () => {
     });
 
     it('1-hr easy run (baseHr≈145) at CTL=0 → TE 2.0–3.5', () => {
-      const records = makeRunningRecords('s1', 3600, { baseHr: 145 });
+      const records = makeRunningRecords(3600, { baseHr: 145 });
       const result = calculateTrainingEffect(records, maxHr, restHr, 'male', 0);
       expect(result).toBeDefined();
       expect(result?.aerobic).toBeGreaterThanOrEqual(2.0);
@@ -170,7 +170,7 @@ describe('calculateTrainingEffect', () => {
     });
 
     it('1-hr moderate run (baseHr≈155) at CTL=50 → TE 2.5–3.5', () => {
-      const records = makeRunningRecords('s1', 3600, { baseHr: 155 });
+      const records = makeRunningRecords(3600, { baseHr: 155 });
       const result = calculateTrainingEffect(records, maxHr, restHr, 'male', 50);
       expect(result).toBeDefined();
       expect(result?.aerobic).toBeGreaterThanOrEqual(2.5);
@@ -178,7 +178,7 @@ describe('calculateTrainingEffect', () => {
     });
 
     it('1-hr tempo run (baseHr≈170) at CTL=0 → TE 3.0–4.5', () => {
-      const records = makeRunningRecords('s1', 3600, { baseHr: 170 });
+      const records = makeRunningRecords(3600, { baseHr: 170 });
       const result = calculateTrainingEffect(records, maxHr, restHr, 'male', 0);
       expect(result).toBeDefined();
       expect(result?.aerobic).toBeGreaterThanOrEqual(3.0);
@@ -186,7 +186,7 @@ describe('calculateTrainingEffect', () => {
     });
 
     it('higher CTL reduces TE but not drastically (power-law softens scaling)', () => {
-      const records = makeRunningRecords('s1', 3600, { baseHr: 155 });
+      const records = makeRunningRecords(3600, { baseHr: 155 });
       const ctl0 = calculateTrainingEffect(records, maxHr, restHr, 'male', 0);
       const ctl100 = calculateTrainingEffect(records, maxHr, restHr, 'male', 100);
       expect(ctl0).toBeDefined();

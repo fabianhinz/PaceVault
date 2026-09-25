@@ -1,9 +1,16 @@
 import { decode } from '@googlemaps/polyline-codec';
-import type { Sport, SessionRecord, SessionLap, TrainingSession } from '@/packages/engine/types.ts';
+import type {
+  Sport,
+  SessionFields,
+  SessionRecord,
+  SessionLap,
+  TrainingSession,
+} from '@/packages/engine/types.ts';
 import { buildSessionGPS } from '@/packages/engine/gps.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
+import { usePersonalBestsStore } from '@/store/personalBests.ts';
 import { bulkSaveSessionData, saveSessionGPS } from '@/lib/indexeddb.ts';
 import { useUploadProgressStore } from '@/store/uploadProgress.ts';
 import { m } from '@/paraglide/messages.js';
@@ -113,7 +120,6 @@ const decodeAndFitGPS = (
 
 const generateRecordsWithGPS = (
   routeData: RouteData,
-  sessionId: string,
   sport: Sport,
   durationSec: number,
   intent: SessionIntent,
@@ -128,10 +134,10 @@ const generateRecordsWithGPS = (
   if (sport === 'running') {
     const baseSpeed =
       (1000 / PERSONA.thresholdPace) * randomBetween(config.speedRange[0], config.speedRange[1]);
-    records = makeRunningRecords(sessionId, durationSec, { baseSpeed, baseHr });
+    records = makeRunningRecords(durationSec, { baseSpeed, baseHr });
   } else {
     const basePower = PERSONA.ftp * randomBetween(config.speedRange[0], config.speedRange[1]);
-    records = makeCyclingRecords(sessionId, durationSec, { basePower, baseHr });
+    records = makeCyclingRecords(durationSec, { basePower, baseHr });
   }
 
   if (intent !== 'indoor') {
@@ -259,7 +265,7 @@ export const generateDevData = async (): Promise<number> => {
   const schedule = generateAllSessions(daySpan);
 
   // Build session data
-  const sessionsToAdd: Array<Omit<TrainingSession, 'id' | 'createdAt'>> = [];
+  const sessionsToAdd: Array<Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'>> = [];
   const sessionMeta: Array<{ sport: Sport; durationSec: number; intent: SessionIntent }> = [];
 
   for (const entry of schedule) {
@@ -278,6 +284,7 @@ export const generateDevData = async (): Promise<number> => {
       sensorWarnings: [],
       isPlanned: false,
       hasDetailedRecords: true,
+      source: { kind: 'demo' },
     });
   }
 
@@ -287,10 +294,11 @@ export const generateDevData = async (): Promise<number> => {
 
   const updates: Array<{
     id: string;
-    session: Omit<TrainingSession, 'id' | 'createdAt'>;
+    session: SessionFields;
   }> = [];
 
   const bulkEntries: Array<{
+    sessionId: string;
     records: SessionRecord[];
     laps: SessionLap[];
   }> = [];
@@ -305,7 +313,7 @@ export const generateDevData = async (): Promise<number> => {
     const durationSec = meta.durationSec;
     const intent = meta.intent;
 
-    const records = generateRecordsWithGPS(routeData, sessionId, sport, durationSec, intent);
+    const records = generateRecordsWithGPS(routeData, sport, durationSec, intent);
 
     const lastRecord = records[records.length - 1];
     const distance = lastRecord?.distance ?? 0;
@@ -377,10 +385,10 @@ export const generateDevData = async (): Promise<number> => {
       },
     });
 
-    const laps = makeLapsFromRecords(sessionId, records, 300);
+    const laps = makeLapsFromRecords(records, 300);
     const gps = buildSessionGPS(sessionId, records);
 
-    bulkEntries.push({ records, laps });
+    bulkEntries.push({ sessionId, records, laps });
     if (gps) {
       gpsPromises.push(saveSessionGPS(gps));
     }
@@ -390,6 +398,22 @@ export const generateDevData = async (): Promise<number> => {
   await Promise.all([bulkSaveSessionData(bulkEntries), ...gpsPromises]);
 
   useSessionsStore.getState().replaceSessions(updates);
+  usePersonalBestsStore.getState().addSessionPBs(
+    bulkEntries.flatMap((entry, i) => {
+      const session = updates[i]?.session;
+      if (!session) return [];
+      return [
+        {
+          sessionId: entry.sessionId,
+          date: session.date,
+          sport: session.sport,
+          records: entry.records,
+          distance: session.distance,
+          elevationGain: session.elevationGain,
+        },
+      ];
+    }),
+  );
   useUploadProgressStore
     .getState()
     .finish(m.toast_devdata_generated({ count: String(sessionIds.length) }), 'success');

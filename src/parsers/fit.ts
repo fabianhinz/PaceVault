@@ -1,7 +1,7 @@
-import { v4 } from 'uuid';
 import FitParser from 'fit-file-parser';
 import type {
-  TrainingSession,
+  SessionFields,
+  SessionSource,
   SessionRecord,
   SessionLap,
   Sport,
@@ -17,6 +17,7 @@ import {
   fitRecordsSchema,
   fitLapsSchema,
   type FitLapInput,
+  type FitRecordInput,
 } from './fitSchemas.ts';
 
 export interface FitUserProfile {
@@ -26,14 +27,24 @@ export interface FitUserProfile {
 }
 
 export interface ParsedFitResult {
-  session: Omit<TrainingSession, 'id' | 'createdAt'>;
+  session: SessionFields;
   records: SessionRecord[];
   laps: SessionLap[];
   fitUserProfile?: FitUserProfile;
   fingerprint: string;
 }
 
-export type ParsedFitResultWithMeta = ParsedFitResult & { fileName: string; rawData: ArrayBuffer };
+export type ParsedFitResultWithMeta = ParsedFitResult & {
+  fileName: string;
+  rawData: ArrayBuffer;
+  source: SessionSource;
+};
+
+const UNSUPPORTED_SPORT_ERROR = 'sport is not supported';
+
+export const isUnsupportedSportError = (error: unknown): boolean => {
+  return error instanceof Error && error.message.endsWith(UNSUPPORTED_SPORT_ERROR);
+};
 
 const mapFitSportToAppSport = (fitSport?: string): Sport | undefined => {
   switch (fitSport) {
@@ -80,7 +91,36 @@ export const deriveMaxFromRecords = (
   return Math.max(...values);
 };
 
-export const mapFitLaps = (fitLaps: FitLapInput[], sessionId: string): SessionLap[] => {
+const roundTo = (value: number | undefined, decimals: number): number | undefined => {
+  if (value === undefined) return undefined;
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+};
+
+const setIfDefined = <K extends keyof SessionRecord>(
+  record: SessionRecord,
+  key: K,
+  value: SessionRecord[K] | undefined,
+) => {
+  if (value !== undefined) record[key] = value;
+};
+
+export const mapFitRecord = (r: FitRecordInput): SessionRecord => {
+  const record: SessionRecord = { timestamp: r.elapsed_time ?? 0 };
+  setIfDefined(record, 'hr', r.heart_rate);
+  setIfDefined(record, 'power', r.power);
+  setIfDefined(record, 'cadence', r.cadence);
+  setIfDefined(record, 'speed', roundTo(r.enhanced_speed ?? r.speed, 3));
+  setIfDefined(record, 'lat', roundTo(r.position_lat, 7));
+  setIfDefined(record, 'lng', roundTo(r.position_long, 7));
+  setIfDefined(record, 'elevation', roundTo(r.enhanced_altitude ?? r.altitude, 1));
+  setIfDefined(record, 'distance', roundTo(r.distance, 2));
+  setIfDefined(record, 'grade', roundTo(r.grade, 2));
+  setIfDefined(record, 'timerTime', r.timer_time);
+  return record;
+};
+
+export const mapFitLaps = (fitLaps: FitLapInput[]): SessionLap[] => {
   return fitLaps.map((lap, index) => {
     let startTime = 0;
     if (lap.start_time) {
@@ -91,9 +131,11 @@ export const mapFitLaps = (fitLaps: FitLapInput[], sessionId: string): SessionLa
     if (lap.timestamp) {
       endTime = new Date(lap.timestamp).getTime();
     }
+    if (endTime <= startTime && startTime > 0 && lap.total_elapsed_time !== undefined) {
+      endTime = startTime + lap.total_elapsed_time * 1000;
+    }
 
     return {
-      sessionId,
       lapIndex: lap.message_index?.value ?? index,
       startTime,
       endTime,
@@ -128,6 +170,7 @@ export const parseFitFile = async (
     gender: Gender;
     ftp?: number;
   },
+  meta?: { name?: string },
 ): Promise<ParsedFitResult> => {
   const parser = new FitParser({
     force: true,
@@ -151,11 +194,10 @@ export const parseFitFile = async (
 
   const fitSession = data.sessions?.[0];
   const fitRecords = data.records ?? [];
-  const sessionId = v4();
 
   const sport = mapFitSportToAppSport(fitSession?.sport);
   if (!sport) {
-    throw new Error(`Failed to parse FIT file "${fileName}": sport is not supported`);
+    throw new Error(`Failed to parse FIT file "${fileName}": ${UNSUPPORTED_SPORT_ERROR}`);
   }
 
   let sessionDate: number | undefined = undefined;
@@ -170,20 +212,7 @@ export const parseFitFile = async (
   const recordsResult = fitRecordsSchema.safeParse(fitRecords);
   let records: SessionRecord[] = [];
   if (recordsResult.success) {
-    records = recordsResult.data.map((r) => ({
-      sessionId,
-      timestamp: r.elapsed_time ?? 0,
-      hr: r.heart_rate,
-      power: r.power,
-      cadence: r.cadence,
-      speed: r.enhanced_speed ?? r.speed,
-      lat: r.position_lat,
-      lng: r.position_long,
-      elevation: r.enhanced_altitude ?? r.altitude,
-      distance: r.distance,
-      grade: r.grade,
-      timerTime: r.timer_time,
-    }));
+    records = recordsResult.data.map(mapFitRecord);
   }
 
   // Extract laps
@@ -192,7 +221,7 @@ export const parseFitFile = async (
   if (lapsResult.success) {
     lapsInput = lapsResult.data;
   }
-  const laps = mapFitLaps(lapsInput, sessionId);
+  const laps = mapFitLaps(lapsInput);
 
   // Derive moving time from laps; fall back to timer time per lap when moving time is unavailable
   let movingTime: number | undefined = undefined;
@@ -226,7 +255,7 @@ export const parseFitFile = async (
   }
 
   const avgSpeed = fitSession?.enhanced_avg_speed ?? fitSession?.avg_speed;
-  const name = extractSessionName(fileName);
+  const name = meta?.name ?? extractSessionName(fileName);
 
   const fileIdResult = fitFileIdSchema.safeParse(data.file_ids?.[0]);
   const sessionDuration = fitSession?.total_timer_time ?? fitSession?.total_elapsed_time ?? 0;
@@ -248,7 +277,7 @@ export const parseFitFile = async (
     avgPace = 1000 / avgSpeed;
   }
 
-  const session: Omit<TrainingSession, 'id' | 'createdAt'> = {
+  const session: SessionFields = {
     ...(name !== undefined && { name }),
     sport,
     date: sessionDate,

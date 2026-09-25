@@ -2,7 +2,7 @@ import { parseGpx } from '@/packages/gpx/parseGpx.ts';
 import { buildRouteGeometry } from '@/packages/gpx/routeGeometry.ts';
 import { saveStudioRoutePoints, deleteStudioRoutePoints } from '@/lib/indexeddb.ts';
 import { useStudioStore } from '@/store/studio.ts';
-import { DEFAULT_ROUTE_COLOR } from './routeColors.ts';
+import { nextRouteColor } from './routeColors.ts';
 
 /**
  * Turn GPX text into a persisted studio route (store entry + point blob) and
@@ -20,10 +20,11 @@ export const createStudioRouteFromGpx = async (
   const geometry = buildRouteGeometry(parsed.points);
   if (!geometry) return null;
 
+  const usedColors = useStudioStore.getState().routes.map((r) => r.color);
   const id = useStudioStore.getState().importStudioRoute({
     name: parsed.name ?? meta.fallbackName,
     sourceFileName: meta.sourceFileName,
-    color: DEFAULT_ROUTE_COLOR,
+    color: nextRouteColor(usedColors),
     encodedPolylines: geometry.encodedPolylines,
     bounds: geometry.bounds,
     distance: geometry.distance,

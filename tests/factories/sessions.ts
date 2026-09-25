@@ -26,6 +26,7 @@ export function makeSession(overrides?: Partial<TrainingSession>): TrainingSessi
     isPlanned: false,
     hasDetailedRecords: true,
     createdAt: Date.now(),
+    source: { kind: 'file' },
     ...overrides,
   };
 }

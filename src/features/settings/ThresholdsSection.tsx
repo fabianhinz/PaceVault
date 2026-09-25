@@ -223,7 +223,7 @@ export const ThresholdsSection = (props: { variant?: 'standalone' | 'embedded' }
   const handleGenderChange = (v: Gender) => {
     setGender(v);
     if (profile) {
-      startTransition(() => useUserStore.getState().updateProfile({ gender: v }));
+      startTransition(() => useUserStore.getState().setProfileGender(v));
     } else {
       tryCreateProfile(restHr, maxHr, v, ftp, thresholdPace);
     }
@@ -270,7 +270,9 @@ export const ThresholdsSection = (props: { variant?: 'standalone' | 'embedded' }
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <Label htmlFor="thresh-restHr">{m.ui_thresholds_resting_hr()}</Label>
+            <Label htmlFor="thresh-restHr" required>
+              {m.ui_thresholds_resting_hr()}
+            </Label>
             <Input
               id="thresh-restHr"
               type="number"
@@ -281,7 +283,9 @@ export const ThresholdsSection = (props: { variant?: 'standalone' | 'embedded' }
             />
           </div>
           <div>
-            <Label htmlFor="thresh-maxHr">{m.ui_thresholds_max_hr()}</Label>
+            <Label htmlFor="thresh-maxHr" required>
+              {m.ui_thresholds_max_hr()}
+            </Label>
             <Input
               id="thresh-maxHr"
               type="number"

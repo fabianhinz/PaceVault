@@ -14,7 +14,6 @@ import { makeLaps, makeCyclingRecords, makeRunningRecords } from '@tests/factori
 
 function makeLap(overrides: Partial<SessionLap> = {}): SessionLap {
   return {
-    sessionId: 'test',
     lapIndex: 0,
     startTime: 0,
     endTime: 300_000,
@@ -246,11 +245,11 @@ describe('filterRecordsByLap', () => {
   it('returns records within lap bounds', () => {
     const lap = makeLap({ startTime: 0, endTime: 300_000 });
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0 },
-      { sessionId: 'test', timestamp: 150 },
-      { sessionId: 'test', timestamp: 299 },
-      { sessionId: 'test', timestamp: 300 }, // excluded (endTime boundary)
-      { sessionId: 'test', timestamp: 500 },
+      { timestamp: 0 },
+      { timestamp: 150 },
+      { timestamp: 299 },
+      { timestamp: 300 }, // excluded (endTime boundary)
+      { timestamp: 500 },
     ];
     const result = filterRecordsByLap(records, lap, 0);
     expect(result).toHaveLength(3);
@@ -264,11 +263,11 @@ describe('filterRecordsByLap', () => {
       endTime: sessionStartMs + 600_000,
     });
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 200 },
-      { sessionId: 'test', timestamp: 300 }, // lap start
-      { sessionId: 'test', timestamp: 450 },
-      { sessionId: 'test', timestamp: 599 },
-      { sessionId: 'test', timestamp: 600 }, // excluded
+      { timestamp: 200 },
+      { timestamp: 300 }, // lap start
+      { timestamp: 450 },
+      { timestamp: 599 },
+      { timestamp: 600 }, // excluded
     ];
     const result = filterRecordsByLap(records, lap, sessionStartMs);
     expect(result).toHaveLength(3);
@@ -282,17 +281,14 @@ describe('filterRecordsByLap', () => {
 
   it('returns empty when no records fall within the lap', () => {
     const lap = makeLap({ startTime: 0, endTime: 300_000 });
-    const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 400 },
-      { sessionId: 'test', timestamp: 500 },
-    ];
+    const records: SessionRecord[] = [{ timestamp: 400 }, { timestamp: 500 }];
     expect(filterRecordsByLap(records, lap, 0)).toHaveLength(0);
   });
 });
 
 describe('enrichLapFromRecords', () => {
   it('computes power metrics from cycling records', () => {
-    const records = makeCyclingRecords('test', 100);
+    const records = makeCyclingRecords(100);
     const result = enrichLapFromRecords(0, records);
     expect(result.lapIndex).toBe(0);
     expect(result.avgPower).toBeDefined();
@@ -303,7 +299,7 @@ describe('enrichLapFromRecords', () => {
   });
 
   it('computes minSpeed from running records', () => {
-    const records = makeRunningRecords('test', 100);
+    const records = makeRunningRecords(100);
     const result = enrichLapFromRecords(0, records);
     expect(result.minSpeed).toBeDefined();
     expect(result.minSpeed ?? 0).toBeGreaterThan(0);
@@ -312,10 +308,7 @@ describe('enrichLapFromRecords', () => {
   });
 
   it('returns undefined fields when data is absent', () => {
-    const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0 },
-      { sessionId: 'test', timestamp: 1 },
-    ];
+    const records: SessionRecord[] = [{ timestamp: 0 }, { timestamp: 1 }];
     const result = enrichLapFromRecords(0, records);
     expect(result.minSpeed).toBeUndefined();
     expect(result.avgPower).toBeUndefined();
@@ -327,9 +320,9 @@ describe('enrichLapFromRecords', () => {
 
   it('excludes zero-speed records from minSpeed', () => {
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0, speed: 0 },
-      { sessionId: 'test', timestamp: 1, speed: 3.5 },
-      { sessionId: 'test', timestamp: 2, speed: 4.0 },
+      { timestamp: 0, speed: 0 },
+      { timestamp: 1, speed: 3.5 },
+      { timestamp: 2, speed: 4.0 },
     ];
     const result = enrichLapFromRecords(0, records);
     expect(result.minSpeed).toBe(3.5);
@@ -337,10 +330,10 @@ describe('enrichLapFromRecords', () => {
 
   it('excludes near-zero speeds below MIN_SPEED_MS threshold', () => {
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0, speed: 0.01 },
-      { sessionId: 'test', timestamp: 1, speed: 0.3 },
-      { sessionId: 'test', timestamp: 2, speed: 2.5 },
-      { sessionId: 'test', timestamp: 3, speed: 3.0 },
+      { timestamp: 0, speed: 0.01 },
+      { timestamp: 1, speed: 0.3 },
+      { timestamp: 2, speed: 2.5 },
+      { timestamp: 3, speed: 3.0 },
     ];
     const result = enrichLapFromRecords(0, records);
     // speeds 0.01 and 0.3 are below 0.5 m/s threshold
@@ -349,9 +342,9 @@ describe('enrichLapFromRecords', () => {
 
   it('returns undefined minSpeed when all speeds are below threshold', () => {
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0, speed: 0.1 },
-      { sessionId: 'test', timestamp: 1, speed: 0.2 },
-      { sessionId: 'test', timestamp: 2, speed: 0.4 },
+      { timestamp: 0, speed: 0.1 },
+      { timestamp: 1, speed: 0.2 },
+      { timestamp: 2, speed: 0.4 },
     ];
     const result = enrichLapFromRecords(0, records);
     expect(result.minSpeed).toBeUndefined();
@@ -370,7 +363,7 @@ describe('enrichLapFromRecords', () => {
 
   it('returns true minimum for power (zero excluded by pre-filter)', () => {
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0, power: 0 },
+      { timestamp: 0, power: 0 },
       ...Array.from({ length: 19 }, (_, i) => ({
         sessionId: 'test',
         timestamp: i + 1,
@@ -384,7 +377,7 @@ describe('enrichLapFromRecords', () => {
 
   it('returns true minimum HR including outliers', () => {
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0, hr: 50 }, // sensor glitch — now included as true min
+      { timestamp: 0, hr: 50 }, // sensor glitch — now included as true min
       ...Array.from({ length: 20 }, (_, i) => ({
         sessionId: 'test',
         timestamp: i + 1,
@@ -398,11 +391,11 @@ describe('enrichLapFromRecords', () => {
 
   it('excludes zero-power coasting from minPower', () => {
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0, power: 0 },
-      { sessionId: 'test', timestamp: 1, power: 0 },
-      { sessionId: 'test', timestamp: 2, power: 150 },
-      { sessionId: 'test', timestamp: 3, power: 200 },
-      { sessionId: 'test', timestamp: 4, power: 180 },
+      { timestamp: 0, power: 0 },
+      { timestamp: 1, power: 0 },
+      { timestamp: 2, power: 150 },
+      { timestamp: 3, power: 200 },
+      { timestamp: 4, power: 180 },
     ];
     const result = enrichLapFromRecords(0, records);
     // Zero-power records filtered out; remaining: [150, 180, 200]
@@ -411,10 +404,10 @@ describe('enrichLapFromRecords', () => {
 
   it('excludes zero-cadence from minCadence', () => {
     const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 0, cadence: 0 },
-      { sessionId: 'test', timestamp: 1, cadence: 70 },
-      { sessionId: 'test', timestamp: 2, cadence: 80 },
-      { sessionId: 'test', timestamp: 3, cadence: 85 },
+      { timestamp: 0, cadence: 0 },
+      { timestamp: 1, cadence: 70 },
+      { timestamp: 2, cadence: 80 },
+      { timestamp: 3, cadence: 85 },
     ];
     const result = enrichLapFromRecords(0, records);
     expect(result.minCadence).toBe(70);
@@ -423,9 +416,9 @@ describe('enrichLapFromRecords', () => {
 
 describe('enrichAllLaps', () => {
   it('enriches each lap with correct record slice (cycling)', () => {
-    const laps = makeLaps('test', 5);
+    const laps = makeLaps(5);
     // makeLaps: 300s per lap → total 1500s. Generate matching records.
-    const records = makeCyclingRecords('test', 1500);
+    const records = makeCyclingRecords(1500);
     const result = enrichAllLaps(laps, records);
     expect(result).toHaveLength(5);
     result.forEach((e, i) => {
@@ -435,8 +428,8 @@ describe('enrichAllLaps', () => {
   });
 
   it('enriches each lap with correct record slice (running)', () => {
-    const laps = makeLaps('test', 5);
-    const records = makeRunningRecords('test', 1500);
+    const laps = makeLaps(5);
+    const records = makeRunningRecords(1500);
     const result = enrichAllLaps(laps, records);
     expect(result).toHaveLength(5);
     result.forEach((e, i) => {
@@ -447,12 +440,12 @@ describe('enrichAllLaps', () => {
   });
 
   it('returns empty for empty laps', () => {
-    const records = makeCyclingRecords('test', 100);
+    const records = makeCyclingRecords(100);
     expect(enrichAllLaps([], records)).toHaveLength(0);
   });
 
   it('returns empty for empty records', () => {
-    const laps = makeLaps('test', 3);
+    const laps = makeLaps(3);
     expect(enrichAllLaps(laps, [])).toHaveLength(0);
   });
 });
@@ -465,7 +458,6 @@ describe('findLapIndexAtCoordinate', () => {
   ];
 
   const makeGpsRecord = (timestamp: number, lat: number, lng: number): SessionRecord => ({
-    sessionId: 'test',
     timestamp,
     lat,
     lng,
@@ -481,10 +473,7 @@ describe('findLapIndexAtCoordinate', () => {
   });
 
   it('returns undefined when records have no GPS data', () => {
-    const records: SessionRecord[] = [
-      { sessionId: 'test', timestamp: 10 },
-      { sessionId: 'test', timestamp: 100 },
-    ];
+    const records: SessionRecord[] = [{ timestamp: 10 }, { timestamp: 100 }];
     expect(findLapIndexAtCoordinate([11.0, 48.0], records, baseLaps)).toBeUndefined();
   });
 
@@ -520,7 +509,6 @@ describe('findDynamicLapIndexAtCoordinate', () => {
     lng: number,
     distance: number,
   ): SessionRecord => ({
-    sessionId: 'test',
     timestamp,
     lat,
     lng,
@@ -537,7 +525,7 @@ describe('findDynamicLapIndexAtCoordinate', () => {
   });
 
   it('returns undefined when closest record has no distance', () => {
-    const records: SessionRecord[] = [{ sessionId: 'test', timestamp: 10, lat: 48.0, lng: 11.0 }];
+    const records: SessionRecord[] = [{ timestamp: 10, lat: 48.0, lng: 11.0 }];
     expect(findDynamicLapIndexAtCoordinate([11.0, 48.0], records, 1000, 3)).toBeUndefined();
   });
 

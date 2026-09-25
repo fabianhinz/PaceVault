@@ -81,7 +81,7 @@ describe('toastStore', () => {
     if (toasts[0].kind === 'message') {
       expect(toasts[0].title).toBe('Done!');
       expect(toasts[0].variant).toBe('success');
-      expect(toasts[0].testId).toBe('upload-done');
+      expect(toasts[0].id).toBe('upload-done');
     }
   });
 

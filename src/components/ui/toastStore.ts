@@ -9,7 +9,6 @@ interface MessageToastItem {
   description?: string;
   variant?: 'default' | 'success' | 'error' | 'warning';
   persistent?: boolean;
-  testId?: string;
 }
 
 interface ProgressToastItem {
@@ -61,11 +60,10 @@ export const useToastStore = create<ToastState>()(
     replaceProgressWithMessage: (title, variant) =>
       set((draft) => {
         const messageToast: MessageToastItem = {
-          id: v4(),
+          id: 'upload-done',
           kind: 'message',
           title,
           variant,
-          testId: 'upload-done',
         };
         draft.toasts = draft.toasts.filter((t) => t.id !== PROGRESS_TOAST_ID);
         draft.toasts.push(messageToast);

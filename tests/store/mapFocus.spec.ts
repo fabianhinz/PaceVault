@@ -3,7 +3,6 @@ import { useMapFocusStore } from '@/store/mapFocus.ts';
 import type { SessionLap } from '@/packages/engine/types.ts';
 
 const makeLap = (overrides: Partial<SessionLap> = {}): SessionLap => ({
-  sessionId: 's1',
   lapIndex: 0,
   startTime: 0,
   endTime: 300,
