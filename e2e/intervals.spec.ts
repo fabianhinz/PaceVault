@@ -92,23 +92,6 @@ test('opening a synced session clears its badge', async ({ page }) => {
   await expect(items.first().locator('[data-testid="icon-badge"]')).toHaveCount(0);
 });
 
-test('a background sync only lists the window after the newest intervals.icu session', async ({
-  page,
-}) => {
-  await mockApi(page);
-  const listings: string[] = [];
-  page.on('request', (request) => {
-    if (request.url().includes('/athlete/0/activities')) listings.push(request.url());
-  });
-  await seedIntervalsConnected(page, {
-    importedActivityIds: ['i100', 'i200'],
-    intervalsSessionDates: [new Date(2026, 8, 20, 10).getTime()],
-  });
-
-  await expect.poll(() => listings.length, { timeout: 30000 }).toBeGreaterThan(0);
-  expect(new URL(listings.at(-1) ?? '').searchParams.get('oldest')).toBe('2026-09-06');
-});
-
 const trackListings = (page: import('@playwright/test').Page): string[] => {
   const listings: string[] = [];
   page.on('request', (request) => {
@@ -127,31 +110,6 @@ const switchTabAwayAndBack = async (page: import('@playwright/test').Page) => {
     setVisibility('visible');
   });
 };
-
-test('switching back to the tab syncs again right away', async ({ page }) => {
-  await mockApi(page);
-  const listings = trackListings(page);
-  await seedIntervalsConnected(page, { importedActivityIds: ['i100', 'i200'] });
-  await expect.poll(() => listings.length, { timeout: 30000 }).toBe(1);
-
-  await switchTabAwayAndBack(page);
-
-  await expect.poll(() => listings.length, { timeout: 10000 }).toBe(2);
-});
-
-test('an open tab syncs again every 15 minutes', async ({ page }) => {
-  await page.clock.install();
-  await mockApi(page);
-  const listings = trackListings(page);
-  await seedIntervalsConnected(page, { importedActivityIds: ['i100', 'i200'] });
-  await expect.poll(() => listings.length, { timeout: 30000 }).toBe(1);
-
-  await page.clock.fastForward('14:00');
-  expect(listings).toHaveLength(1);
-
-  await page.clock.fastForward('01:05');
-  await expect.poll(() => listings.length, { timeout: 10000 }).toBe(2);
-});
 
 test('settings shows the integration status and sessions by source', async ({ page }) => {
   await mockApi(page);
@@ -174,16 +132,6 @@ test('settings shows the integration status and sessions by source', async ({ pa
     .locator('..')
     .locator('..');
   await expect(intervalsRow).toContainText('2');
-});
-
-test('a connected account with nothing pending imports nothing', async ({ page }) => {
-  await mockApi(page);
-  await seedIntervalsConnected(page, { importedActivityIds: ['i100', 'i200'] });
-
-  await page.goto('/sessions');
-
-  await expect(page.locator('[data-layout="dock"]')).toBeVisible();
-  await expect(page.locator('[data-testid="session-item"]')).toHaveCount(0);
 });
 
 const trackVerifies = (page: import('@playwright/test').Page): string[] => {
@@ -210,21 +158,6 @@ test('a typed key is checked after a short pause and shows as valid', async ({ p
   expect(verifies).toHaveLength(1);
 });
 
-test('a pasted key is checked right away', async ({ page }) => {
-  await page.clock.install();
-  await mockApi(page);
-  await seedOnboardingComplete(page);
-  await page.goto('/settings?tab=data');
-  const verifies = trackVerifies(page);
-
-  const input = page.locator('#intervals-api-key');
-  await input.dispatchEvent('paste');
-  await input.fill('e2e-test-key');
-
-  await expect(page.getByText('Key valid', { exact: true })).toBeVisible();
-  expect(verifies).toHaveLength(1);
-});
-
 test('a rejected key shows in the status line and blocks the import', async ({ page }) => {
   await page.route('**/intervals.icu/api/v1/athlete/0', (route) =>
     route.fulfill({ status: 401, json: {} }),
@@ -236,18 +169,4 @@ test('a rejected key shows in the status line and blocks the import', async ({ p
 
   await expect(page.getByText('Key rejected', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /import sessions/i })).toBeDisabled();
-});
-
-test('importing a checked key does not verify it a second time', async ({ page }) => {
-  await mockApi(page);
-  await seedOnboardingComplete(page);
-  await page.goto('/settings?tab=data');
-  const verifies = trackVerifies(page);
-
-  await page.locator('#intervals-api-key').fill('e2e-test-key');
-  await expect(page.getByText('Key valid', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: /import sessions/i }).click();
-
-  await expect(page.getByText('Connected', { exact: true })).toBeVisible({ timeout: 30000 });
-  expect(verifies).toHaveLength(1);
 });

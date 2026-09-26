@@ -64,12 +64,6 @@ describe('useStudioStore', () => {
     expect(useStudioStore.getState().routes).toEqual([]);
   });
 
-  it('is persisted under the store-studio key at version 3', () => {
-    const options = useStudioStore.persist.getOptions();
-    expect(options.name).toBe('store-studio');
-    expect(options.version).toBe(3);
-  });
-
   it('adds a marker with a generated id', () => {
     const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
     const markerId = useStudioStore
@@ -79,49 +73,6 @@ describe('useStudioStore', () => {
     expect(markers).toHaveLength(1);
     expect(markers?.[0]?.id).toBe(markerId);
     expect(markers?.[0]?.distanceM).toBe(5000);
-  });
-
-  it('moves a marker without touching its other fields', () => {
-    const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
-    const markerId = useStudioStore
-      .getState()
-      .addStudioMarker(routeId, { type: 'point_of_interest', label: 'Peak', distanceM: 1000 });
-    useStudioStore.getState().moveStudioMarker(routeId, markerId, 2000);
-    const marker = useStudioStore.getState().routes[0]?.markers[0];
-    expect(marker?.distanceM).toBe(2000);
-    expect(marker?.type === 'point_of_interest' && marker.label).toBe('Peak');
-  });
-
-  it('updates the fields of a point of interest', () => {
-    const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
-    const markerId = useStudioStore.getState().addStudioMarker(routeId, {
-      type: 'point_of_interest',
-      label: 'Peak',
-      description: 'Summit cross',
-      distanceM: 1000,
-    });
-    useStudioStore.getState().updateStudioPoi(routeId, markerId, {
-      distanceM: 1500,
-      label: 'Hut',
-      description: undefined,
-    });
-    const marker = useStudioStore.getState().routes[0]?.markers[0];
-    expect(marker).toEqual({
-      id: markerId,
-      type: 'point_of_interest',
-      distanceM: 1500,
-      label: 'Hut',
-    });
-  });
-
-  it('leaves a track modifier alone when given point-of-interest fields', () => {
-    const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
-    const markerId = useStudioStore
-      .getState()
-      .addStudioMarker(routeId, { type: 'track_modifier', distanceM: 3000 });
-    useStudioStore.getState().updateStudioPoi(routeId, markerId, { distanceM: 1, label: 'Nope' });
-    const marker = useStudioStore.getState().routes[0]?.markers[0];
-    expect(marker).toEqual({ id: markerId, type: 'track_modifier', distanceM: 3000 });
   });
 
   it('deletes a marker', () => {

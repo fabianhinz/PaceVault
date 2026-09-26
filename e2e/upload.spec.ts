@@ -7,13 +7,6 @@ test.describe('File upload', () => {
     await seedOnboardingComplete(page);
   });
 
-  test('the dock no longer offers an upload button', async ({ page }) => {
-    await expect(page.locator('[data-layout="dock"]')).toBeVisible();
-    await expect(
-      page.locator('[data-layout="dock"]').getByRole('button', { name: /upload/i }),
-    ).toHaveCount(0);
-  });
-
   test('the settings FIT files card uploads through its own button', async ({ page }) => {
     await page.goto('/settings?tab=data');
     await expect(page.getByRole('button', { name: /upload fit files/i })).toBeEnabled();

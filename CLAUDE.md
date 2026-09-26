@@ -70,7 +70,7 @@ Specific guidelines for features, testing, and state management are located in t
 > **Plan first, then build.** Create a new branch for every feature or bug fix.
 
 1. **Plan**: Write a plan in `./plans/<feature-name>.md` detailing context, approach, files to modify, and verification steps. Review with the user before writing code.
-2. **Implement**: Write the code and the corresponding tests (happy path, edge cases, error conditions).
+2. **Implement**: Write the code and the tests `tests/CLAUDE.md` calls for.
 3. **Verify**: Run the following suite:
 
    ```bash

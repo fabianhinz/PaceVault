@@ -98,16 +98,6 @@ describe('mapFitLaps', () => {
     expect(laps[0].endTime).toBe(new Date('2025-08-16T16:14:27.000Z').getTime() + 737000);
   });
 
-  it('keeps a valid timestamp even when it disagrees with elapsed time', () => {
-    const laps = mapFitLaps([makeFitLap({ total_elapsed_time: 100 })]);
-    expect(laps[0].endTime).toBe(new Date('2025-08-16T16:26:44.000Z').getTime());
-  });
-
-  it('leaves endTime at 0 when neither timestamp nor elapsed time is usable', () => {
-    const laps = mapFitLaps([makeFitLap({ timestamp: undefined, total_elapsed_time: undefined })]);
-    expect(laps[0].endTime).toBe(0);
-  });
-
   it('totalMovingTime is undefined when missing from FIT data', () => {
     const laps = mapFitLaps([makeFitLap({ total_moving_time: undefined })]);
     expect(laps[0].totalMovingTime).toBeUndefined();

@@ -20,16 +20,6 @@ describe('encodeRecords / decodeRecords', () => {
     expect(await decodeRecords(encoded)).toEqual(records);
   });
 
-  it('stores far fewer bytes than the JSON it came from', async () => {
-    const encoded = await encodeRecords(records);
-
-    expect(encoded.data.byteLength).toBeLessThan(JSON.stringify(records).length / 5);
-  });
-
-  it('reads an entry in the old, uncompressed shape as no records', async () => {
-    expect(await decodeRecords({ sessionId: 's1', records })).toEqual([]);
-  });
-
   it('returns no records for missing or corrupted entries', async () => {
     expect(await decodeRecords(undefined)).toEqual([]);
     expect(

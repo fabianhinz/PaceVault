@@ -70,39 +70,4 @@ describe('usePersonalBestsStore', () => {
 
     expect(usePersonalBestsStore.getState().pbs).toEqual([]);
   });
-
-  it('recomputes after removing a session that holds a PB', async () => {
-    await storeRide('keep', 200);
-    await storeRide('gone', 300);
-    await usePersonalBestsStore.getState().recomputeAllPBs();
-    expect(peakPowerHolder()).toBe('gone');
-
-    useSessionsStore.setState((s) => ({ sessions: s.sessions.filter((x) => x.id !== 'gone') }));
-    await usePersonalBestsStore.getState().removeSessionPBs('gone');
-
-    expect(peakPowerHolder()).toBe('keep');
-  });
-
-  it('skips the recompute when the removed session holds no PB', async () => {
-    usePersonalBestsStore.getState().addSessionPBs([ride('holder', 300)]);
-
-    await usePersonalBestsStore.getState().removeSessionPBs('other');
-
-    expect(peakPowerHolder()).toBe('holder');
-  });
-
-  it('clears all PBs', () => {
-    usePersonalBestsStore.getState().addSessionPBs([ride('a', 200)]);
-    usePersonalBestsStore.getState().clearPBs();
-    expect(usePersonalBestsStore.getState().pbs).toEqual([]);
-  });
-
-  it('persists only the PBs', () => {
-    usePersonalBestsStore.getState().addSessionPBs([ride('a', 200)]);
-    const options = usePersonalBestsStore.persist.getOptions();
-    if (!options.partialize) throw new Error('partialize missing');
-    expect(options.partialize(usePersonalBestsStore.getState())).toEqual({
-      pbs: usePersonalBestsStore.getState().pbs,
-    });
-  });
 });

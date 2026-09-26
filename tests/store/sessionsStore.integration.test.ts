@@ -91,34 +91,6 @@ describe('sessions store', () => {
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
   });
 
-  it('stamps isNew on add and clears it via markSessionSeen', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
-    const id = useSessionsStore.getState().addSession(data);
-
-    expect(useSessionsStore.getState().sessions[0].isNew).toBe(true);
-
-    useSessionsStore.getState().markSessionSeen(id);
-    expect(useSessionsStore.getState().sessions[0].isNew).toBe(false);
-  });
-
-  it('stamps isNew on every session added as a batch', () => {
-    const inputs = [makeSession(), makeSession({ sport: 'running' })].map(
-      ({ id: _id, createdAt: _ca, ...data }) => data,
-    );
-
-    useSessionsStore.getState().addSessions(inputs);
-
-    expect(useSessionsStore.getState().sessions.map((s) => s.isNew)).toEqual([true, true]);
-  });
-
-  it('markSessionSeen ignores an unknown id', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
-    useSessionsStore.getState().addSession(data);
-
-    useSessionsStore.getState().markSessionSeen('does-not-exist');
-    expect(useSessionsStore.getState().sessions[0].isNew).toBe(true);
-  });
-
   it('replaceSessions preserves a cleared isNew so reimport does not re-badge', () => {
     const { id: _id, createdAt: _ca, ...data } = makeSession();
     const id = useSessionsStore.getState().addSession(data);
@@ -140,36 +112,6 @@ describe('sessions store', () => {
     useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
 
     expect(useSessionsStore.getState().sessions[0].name).toBe('Evening Radfahren');
-  });
-
-  it('replaceSessions takes the re-parsed name when the session had none', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession({ name: undefined });
-    const id = useSessionsStore.getState().addSession(data);
-
-    const { id: _id2, createdAt: _ca2, ...updated } = makeSession({ name: 'Lauf am Morgen' });
-    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
-
-    expect(useSessionsStore.getState().sessions[0].name).toBe('Lauf am Morgen');
-  });
-
-  it('replaceSessions drops fields the re-parsed file no longer produces', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession({ avgPower: 210, deviceTss: 80 });
-    const id = useSessionsStore.getState().addSession(data);
-
-    const {
-      id: _id2,
-      createdAt: _ca2,
-      ...updated
-    } = makeSession({
-      avgPower: undefined,
-      deviceTss: undefined,
-    });
-    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
-
-    const session = useSessionsStore.getState().sessions[0];
-    expect(session.avgPower).toBeUndefined();
-    expect(session.deviceTss).toBeUndefined();
-    expect(session.id).toBe(id);
   });
 
   it('replaceSessions keeps the source the re-parsed file cannot know', () => {

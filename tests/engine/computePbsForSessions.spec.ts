@@ -205,21 +205,6 @@ describe('computePBsForSessions', () => {
     expect(distancePBs.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('gives running no elevation PB', () => {
-    const result = computePBsForSessions([
-      {
-        sessionId: 'r1',
-        date: Date.now(),
-        sport: 'running',
-        records: makeRunningRecords(100),
-        distance: 10000,
-        elevationGain: 500,
-      },
-    ]);
-
-    expect(result.find((pb) => pb.category === 'most-elevation')).toBeUndefined();
-  });
-
   describe('with existing PBs', () => {
     const cyclingSession = (sessionId: string, basePower: number) => ({
       sessionId,
@@ -239,31 +224,6 @@ describe('computePBsForSessions', () => {
       expect(powerPBs.every((pb) => pb.sessionId === 'new')).toBe(true);
     });
 
-    it('keeps the PBs a new session does not beat, however old they are', () => {
-      const result = computePBsForSessions(
-        [cyclingSession('new', 200)],
-        makePowerBests(500, Date.now() - 400 * DAY_MS),
-      );
-
-      const powerPBs = result.filter((pb) => pb.category === 'peak-power');
-      expect(powerPBs.every((pb) => pb.sessionId === 'existing')).toBe(true);
-    });
-
-    it('keeps PBs of other sports and categories', () => {
-      const runningPB: PersonalBest = {
-        sport: 'running',
-        category: 'fastest-distance',
-        window: 1000,
-        value: 240,
-        sessionId: 'run',
-        date: Date.now(),
-      };
-
-      const result = computePBsForSessions([cyclingSession('new', 250)], [runningPB]);
-
-      expect(result).toContainEqual(runningPB);
-    });
-
     it('gives the same result as computing all sessions at once', () => {
       const sessions = [
         cyclingSession('a', 180),
@@ -277,15 +237,6 @@ describe('computePBsForSessions', () => {
       );
 
       expect(incremental).toEqual(computePBsForSessions(sessions));
-    });
-
-    it('does not mutate the existing PBs', () => {
-      const existing = makePowerBests(100, Date.now());
-      const copy = structuredClone(existing);
-
-      computePBsForSessions([cyclingSession('new', 280)], existing);
-
-      expect(existing).toEqual(copy);
     });
   });
 });

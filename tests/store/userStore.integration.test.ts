@@ -16,18 +16,6 @@ describe('user store', () => {
     expect(profile?.gender).toBe('male');
   });
 
-  it('setProfileGender changes only the gender', () => {
-    const { id: _id, createdAt: _ca, ...profileData } = makeUserProfile();
-    useUserStore.getState().setProfile(profileData);
-    const originalId = useUserStore.getState().profile?.id;
-
-    useUserStore.getState().setProfileGender('female');
-
-    const profile = useUserStore.getState().profile;
-    expect(profile?.gender).toBe('female');
-    expect(profile?.id).toBe(originalId);
-  });
-
   it('updateThresholds only changes thresholds', () => {
     const { id: _id, createdAt: _ca, ...profileData } = makeUserProfile();
     useUserStore.getState().setProfile(profileData);

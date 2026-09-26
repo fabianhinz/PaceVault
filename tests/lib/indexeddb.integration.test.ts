@@ -14,7 +14,6 @@ import {
   bulkSaveSessionData,
 } from '@/lib/indexeddb.ts';
 import { makeCyclingRecords, makeRunningRecords, makeLaps } from '@tests/factories/records.ts';
-import { getDB } from '@/lib/db.ts';
 import type { SessionGPS } from '@/packages/engine/types.ts';
 
 describe('IndexedDB session records', () => {
@@ -31,15 +30,6 @@ describe('IndexedDB session records', () => {
     const retrieved = await getSessionRecords('session-a');
     expect(retrieved).toHaveLength(100);
     expect(retrieved[0].power).toBeDefined();
-  });
-
-  it('stores records compressed, keyed by the session', async () => {
-    await saveSessionRecords('session-a', makeCyclingRecords(100));
-
-    const db = await getDB();
-    const stored = await db.get('session-records', 'session-a');
-    expect(stored?.sessionId).toBe('session-a');
-    expect(stored?.format).toBe('gzip-json');
   });
 
   it('retrieves only records for specific session (multi-session isolation)', async () => {

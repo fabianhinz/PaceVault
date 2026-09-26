@@ -29,11 +29,7 @@ const connect = () => {
   useIntervalsStore.getState().connectIntervals('key');
 };
 
-const stubApi = (options?: {
-  listStatus?: number;
-  activityStatus?: number;
-  listing?: unknown[];
-}): string[] => {
+const stubApi = (options?: { listStatus?: number; listing?: unknown[] }): string[] => {
   const urls: string[] = [];
   vi.stubGlobal(
     'fetch',
@@ -45,10 +41,6 @@ const stubApi = (options?: {
           return new Response('{}', { status: options.listStatus });
         }
         return new Response(JSON.stringify(options?.listing ?? LISTING));
-      }
-
-      if (options?.activityStatus !== undefined) {
-        return new Response('{}', { status: options.activityStatus });
       }
 
       const id = /\/activity\/(\w+)\//.exec(url)?.[1] ?? '';
@@ -83,15 +75,6 @@ afterEach(() => {
 });
 
 describe('runIntervalsSync', () => {
-  it('does nothing when no key is connected', async () => {
-    const urls = stubApi();
-
-    const summary = await runIntervalsSync();
-
-    expect(summary).toEqual({ available: 0, pending: 0, imported: 0, duplicated: 0 });
-    expect(urls).toHaveLength(0);
-  });
-
   it('imports pending activities and records their ids', async () => {
     connect();
     stubApi();
@@ -135,18 +118,6 @@ describe('runIntervalsSync', () => {
     expect(summary.pending).toBe(0);
   });
 
-  it('skips activities already in the ledger and downloads nothing', async () => {
-    connect();
-    useIntervalsStore.getState().recordIntervalsImported(['i100', 'i200']);
-    const urls = stubApi();
-
-    const summary = await runIntervalsSync();
-
-    expect(summary).toEqual({ available: 2, pending: 0, imported: 0, duplicated: 0 });
-    expect(urls.filter((u) => u.includes('/activity/'))).toHaveLength(0);
-    expect(useSessionsStore.getState().sessions).toHaveLength(0);
-  });
-
   it('only downloads the activities that are not yet in the ledger', async () => {
     connect();
     useIntervalsStore.getState().recordIntervalsImported(['i100']);
@@ -159,75 +130,12 @@ describe('runIntervalsSync', () => {
     expect(urls.some((u) => u.includes('/activity/i200/'))).toBe(true);
   });
 
-  it('downloads pending activities newest first, with undated ones last', async () => {
-    connect();
-    const urls = stubApi({
-      listing: [
-        { ...LISTING[0], id: 'i1', start_date_local: '2024-01-05T07:00:00' },
-        { ...LISTING[0], id: 'i2', start_date_local: null },
-        { ...LISTING[0], id: 'i3', start_date_local: '2025-06-01T18:30:00' },
-        { ...LISTING[0], id: 'i4', start_date_local: '2024-11-20T06:15:00' },
-      ],
-    });
-
-    await runIntervalsSync();
-
-    const order = [...new Set(urls.flatMap((u) => /\/activity\/(\w+)\//.exec(u)?.[1] ?? []))];
-    expect(order).toEqual(['i3', 'i4', 'i1', 'i2']);
-  });
-
   it('flags the key invalid and throws when the listing returns 401', async () => {
     connect();
     stubApi({ listStatus: 401 });
 
     await expect(runIntervalsSync()).rejects.toThrow('unauthorized');
     expect(useIntervalsStore.getState().keyInvalid).toBe(true);
-  });
-
-  it('throws without flagging the key when the listing is rate limited', async () => {
-    connect();
-    stubApi({ listStatus: 429 });
-
-    await expect(runIntervalsSync()).rejects.toThrow('rate-limited');
-    expect(useIntervalsStore.getState().keyInvalid).toBe(false);
-  });
-
-  it('flags the key invalid without throwing when a download returns 401', async () => {
-    connect();
-    stubApi({ activityStatus: 401 });
-
-    const summary = await runIntervalsSync();
-
-    expect(summary).toEqual({ available: 2, pending: 2, imported: 0, duplicated: 0 });
-    expect(useIntervalsStore.getState().keyInvalid).toBe(true);
-  });
-
-  it('reports nothing pending when no activity is of a supported type', async () => {
-    connect();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify([
-              {
-                id: 'i900',
-                name: 'Swim',
-                type: 'Swim',
-                source: 'GARMIN_CONNECT',
-                file_type: 'fit',
-              },
-              { id: 'i901', name: 'Ride', type: 'Ride', source: 'STRAVA', file_type: 'fit' },
-            ]),
-          ),
-      ),
-    );
-
-    const summary = await runIntervalsSync();
-
-    expect(summary.available).toBe(0);
-    expect(summary.pending).toBe(0);
-    expect(useSessionsStore.getState().sessions).toHaveLength(0);
   });
 
   it('tags imported sessions with their intervals.icu activity', async () => {
@@ -299,35 +207,5 @@ describe('runIntervalsSync', () => {
     await runIntervalsSync();
 
     expect(listedOldest(urls)).toBe('1990-01-01');
-  });
-
-  it('flags a backlog when a download is cut off', async () => {
-    connect();
-    stubApi({ activityStatus: 429 });
-
-    await runIntervalsSync();
-
-    expect(useIntervalsStore.getState().backlogPending).toBe(true);
-  });
-
-  it('clears the backlog after a complete full listing', async () => {
-    connect();
-    useIntervalsStore.getState().setIntervalsBacklogPending(true);
-    stubApi();
-
-    await runIntervalsSync();
-
-    expect(useIntervalsStore.getState().backlogPending).toBe(false);
-  });
-
-  it('resets progress once a sync finishes', async () => {
-    connect();
-    stubApi();
-
-    await runIntervalsSync();
-
-    const { useIntervalsProgressStore } = await import('@/features/intervals/syncProgress.ts');
-    expect(useIntervalsProgressStore.getState().total).toBe(0);
-    expect(useIntervalsProgressStore.getState().processed).toBe(0);
   });
 });

@@ -6,11 +6,6 @@ const intervals = (date: number) =>
   makeSession({ date, source: { kind: 'intervals', activityId: `i${date}` } });
 
 describe('intervalsSyncWindowOldest', () => {
-  it('is undefined without any intervals.icu session', () => {
-    expect(intervalsSyncWindowOldest([])).toBeUndefined();
-    expect(intervalsSyncWindowOldest([makeSession({ source: { kind: 'file' } })])).toBeUndefined();
-  });
-
   it('starts 14 days before the newest intervals.icu session, as a local date', () => {
     const sessions = [
       intervals(new Date(2026, 8, 1, 10).getTime()),

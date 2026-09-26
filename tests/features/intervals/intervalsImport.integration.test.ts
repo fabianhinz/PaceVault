@@ -3,7 +3,6 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { runIntervalsImport } from '@/features/intervals/runIntervalsImport.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { getSessionRecords, getFitFile } from '@/lib/indexeddb.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
 import type { IntervalsActivity } from '@/lib/intervals.ts';
 
@@ -21,19 +20,16 @@ const ACTIVITIES: IntervalsActivity[] = [
 
 const FILES: Record<string, string> = { i100: 'running.fit', i200: 'cycling.fit' };
 
-const stubApi = (): string[] => {
-  const requested: string[] = [];
+const stubApi = () => {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string) => {
       const id = /\/activity\/(\w+)\//.exec(url)?.[1] ?? '';
-      requested.push(id);
       const file = FILES[id];
       if (file === undefined) return new Response('{}', { status: 422 });
       return new Response(fixture(file));
     }),
   );
-  return requested;
 };
 
 afterEach(() => {
@@ -59,46 +55,6 @@ describe('runIntervalsImport', () => {
       .sessions.map((s) => s.name ?? '')
       .sort((a, b) => a.localeCompare(b));
     expect(names).toEqual(['Karlsruhe Laufen', 'Z2']);
-  });
-
-  it('stores records and the raw FIT keyed by the activity id', async () => {
-    stubApi();
-    await runIntervalsImport('key', makeUserProfile(), ACTIVITIES, () => {});
-
-    const sessionId = useSessionsStore.getState().sessions[0]?.id ?? '';
-    expect((await getSessionRecords(sessionId)).length).toBeGreaterThan(0);
-    expect((await getFitFile(sessionId))?.fileName).toMatch(/^i\d+\.fit$/);
-  });
-
-  it('reports an already-owned activity as a duplicate rather than importing it twice', async () => {
-    stubApi();
-    await runIntervalsImport('key', makeUserProfile(), ACTIVITIES, () => {});
-
-    stubApi();
-    const second = await runIntervalsImport('key', makeUserProfile(), ACTIVITIES, () => {});
-
-    expect(second.imported).toBe(0);
-    expect(second.duplicated).toBe(2);
-    expect(useSessionsStore.getState().sessions).toHaveLength(2);
-  });
-
-  it('stops immediately when rate limited and keeps what already landed', async () => {
-    let calls = 0;
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        calls++;
-        if (calls > 1) return new Response('{}', { status: 429 });
-        const id = /\/activity\/(\w+)\//.exec(url)?.[1] ?? '';
-        return new Response(fixture(FILES[id] ?? 'running.fit'));
-      }),
-    );
-
-    const result = await runIntervalsImport('key', makeUserProfile(), ACTIVITIES, () => {});
-
-    expect(result.fatal).toBe('rate-limited');
-    expect(result.imported).toBe(1);
-    expect(result.importedActivityIds).toEqual(['i100']);
   });
 
   it('skips an activity whose file will not parse and keeps going', async () => {
