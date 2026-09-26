@@ -10,11 +10,14 @@ interface FitUploadButtonProps {
 
 export const FitUploadButton = (props: FitUploadButtonProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const upload = useFileUpload(fileInputRef);
+  const upload = useFileUpload();
 
   return (
     <>
-      <Button disabled={!upload.profile || upload.uploading} onClick={upload.triggerUpload}>
+      <Button
+        disabled={!upload.profile || upload.uploading}
+        onClick={() => fileInputRef.current?.click()}
+      >
         {m.ui_fit_files_upload()}
       </Button>
       <input
@@ -24,8 +27,10 @@ export const FitUploadButton = (props: FitUploadButtonProps) => {
         multiple
         className="hidden"
         onChange={async (e) => {
-          if (!e.target.files) return;
-          await upload.handleFiles(e.target.files);
+          const input = e.currentTarget;
+          if (!input.files) return;
+          await upload.handleFiles(input.files);
+          input.value = '';
           props.onUploaded?.();
         }}
         disabled={upload.uploading}

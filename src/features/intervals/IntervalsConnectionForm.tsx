@@ -75,15 +75,13 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
     setManual(true);
     setError(null);
 
-    let firstname: string | undefined = undefined;
     try {
-      const verified = await queryClient.fetchQuery({
+      await queryClient.fetchQuery({
         queryKey: intervalsVerifyQueryKey(trimmed),
         queryFn: () => verifyIntervalsKeyOrThrow(trimmed),
         staleTime: Infinity,
         retry: false,
       });
-      firstname = verified.firstname;
     } catch (err) {
       if (err instanceof Error) setError(errorMessage(err.message as IntervalsErrorCode));
       setManual(false);
@@ -91,9 +89,10 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
     }
 
     useIntervalsProgressStore.getState().setIntervalsSyncForeground(true);
-    useIntervalsStore.getState().connectIntervals(trimmed, firstname ?? null);
+    useIntervalsStore.getState().connectIntervals(trimmed);
 
     try {
+      // fetchQuery would join a running background sync instead of starting the full one — wait it out first.
       if (queryClient.getQueryState(INTERVALS_SYNC_KEY)?.fetchStatus === 'fetching') {
         await queryClient
           .fetchQuery({ queryKey: INTERVALS_SYNC_KEY, queryFn: () => runIntervalsSync() })
@@ -105,7 +104,7 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
         staleTime: 0,
       });
       if (summary.available === 0) {
-        toast(m.toast_intervals_no_activities(), undefined, 'warning');
+        toast(m.toast_intervals_no_activities(), m.toast_intervals_no_activities_desc(), 'warning');
       } else if (summary.pending === 0) {
         toast(m.toast_intervals_up_to_date(), undefined, 'default');
       }

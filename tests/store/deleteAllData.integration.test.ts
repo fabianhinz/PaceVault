@@ -56,7 +56,7 @@ describe('delete all data', () => {
       .addSessionPBs([{ sessionId, date: Date.now(), sport: 'cycling', records }]);
 
     // Connect intervals.icu
-    useIntervalsStore.getState().connectIntervals('secret-key', 'Fabian');
+    useIntervalsStore.getState().connectIntervals('secret-key');
     useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
 
     // Set non-default filters

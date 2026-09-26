@@ -9,8 +9,6 @@ export type IntervalsResult<T> = { ok: true; data: T } | { ok: false; code: Inte
 
 const optStr = z.string().nullish();
 
-const athleteSchema = z.object({ firstname: optStr });
-
 const activitySchema = z.object({
   id: z.string(),
   name: optStr,
@@ -62,15 +60,10 @@ const isImportableActivity = (activity: IntervalsActivity): boolean => {
   return type.endsWith('ride') || type.endsWith('run');
 };
 
-export const verifyIntervalsKey = async (
-  apiKey: string,
-): Promise<IntervalsResult<{ firstname?: string }>> => {
+export const verifyIntervalsKey = async (apiKey: string): Promise<IntervalsResult<true>> => {
   const result = await intervalsRequest(apiKey, '/athlete/0');
   if (!result.ok) return result;
-
-  const parsed = athleteSchema.safeParse(await result.data.json());
-  if (!parsed.success) return { ok: false, code: 'failed' };
-  return { ok: true, data: { firstname: parsed.data.firstname ?? undefined } };
+  return { ok: true, data: true };
 };
 
 export const FULL_HISTORY_OLDEST = '1990-01-01';

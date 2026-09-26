@@ -8,13 +8,9 @@ import { isArchiveFile, extractActivityFiles } from '@/lib/archive.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
 
-export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>) => {
+export const useFileUpload = () => {
   const profile = useUserStore((s) => s.profile);
   const uploading = useUploadProgressStore((s) => s.uploading);
-
-  const triggerUpload = useCallback(() => {
-    inputRef.current?.click();
-  }, [inputRef]);
 
   const handleFiles = useCallback(
     async (files: FileList) => {
@@ -131,13 +127,9 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
         }
         useUploadProgressStore.getState().finish(parts.join(', '), variant);
       }
-
-      if (inputRef.current) {
-        inputRef.current.value = '';
-      }
     },
-    [profile, inputRef],
+    [profile],
   );
 
-  return { uploading, profile, triggerUpload, handleFiles };
+  return { uploading, profile, handleFiles };
 };

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { decodeRecords, encodeRecords } from '@/lib/recordCodec.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
@@ -12,10 +12,6 @@ const records: SessionRecord[] = Array.from({ length: 500 }, (_, i) => ({
   distance: i * 3.12,
 }));
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
 describe('encodeRecords / decodeRecords', () => {
   it('round-trips records through gzip', async () => {
     const encoded = await encodeRecords(records);
@@ -26,18 +22,8 @@ describe('encodeRecords / decodeRecords', () => {
 
   it('stores far fewer bytes than the JSON it came from', async () => {
     const encoded = await encodeRecords(records);
-    if (encoded.format !== 'gzip-json') throw new Error('expected gzip');
 
     expect(encoded.data.byteLength).toBeLessThan(JSON.stringify(records).length / 5);
-  });
-
-  it('falls back to plain records when the browser cannot compress', async () => {
-    vi.stubGlobal('CompressionStream', undefined);
-
-    const encoded = await encodeRecords(records);
-
-    expect(encoded).toEqual({ format: 'json', records });
-    expect(await decodeRecords(encoded)).toEqual(records);
   });
 
   it('reads an entry in the old, uncompressed shape as no records', async () => {
@@ -49,6 +35,5 @@ describe('encodeRecords / decodeRecords', () => {
     expect(
       await decodeRecords({ format: 'gzip-json', data: new Uint8Array([1, 2, 3]).buffer }),
     ).toEqual([]);
-    expect(await decodeRecords({ format: 'json', records: [{ timestamp: 'x' }] })).toEqual([]);
   });
 });

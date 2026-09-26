@@ -82,7 +82,7 @@ describe('verifyIntervalsKey', () => {
 
     const result = await verifyIntervalsKey(KEY);
 
-    expect(result).toEqual({ ok: true, data: { firstname: 'Fabian' } });
+    expect(result).toEqual({ ok: true, data: true });
 
     const url = spy.mock.calls[0]?.[0] ?? '';
     const init = spy.mock.calls[0]?.[1] ?? {};
@@ -92,18 +92,6 @@ describe('verifyIntervalsKey', () => {
     expect((init.headers as Record<string, string>).Authorization).toBe(
       `Basic ${btoa(`API_KEY:${KEY}`)}`,
     );
-  });
-
-  it('keeps nothing but the first name, so the key and e-mail in the payload are dropped', async () => {
-    stubFetch(async () =>
-      Response.json({ firstname: 'Fabian', icu_api_key: KEY, email: 'a@b.com', weight: 76 }),
-    );
-
-    const result = await verifyIntervalsKey(KEY);
-
-    expect(result).toEqual({ ok: true, data: { firstname: 'Fabian' } });
-    expect(JSON.stringify(result)).not.toContain(KEY);
-    expect(JSON.stringify(result)).not.toContain('a@b.com');
   });
 
   it.each([

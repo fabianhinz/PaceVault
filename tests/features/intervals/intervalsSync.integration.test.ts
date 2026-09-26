@@ -26,7 +26,7 @@ const fixture = (name: string): ArrayBuffer => {
 
 const connect = () => {
   useUserStore.setState({ profile: makeUserProfile() });
-  useIntervalsStore.getState().connectIntervals('key', 'Fabian');
+  useIntervalsStore.getState().connectIntervals('key');
 };
 
 const stubApi = (options?: {

@@ -115,7 +115,6 @@ const intervalsState = (importedActivityIds: string[] = []) =>
   JSON.stringify({
     state: {
       apiKey: 'e2e-test-key',
-      athleteFirstName: 'Fabian',
       importedActivityIds,
     },
     version: 1,

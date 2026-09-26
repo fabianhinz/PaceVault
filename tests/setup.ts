@@ -28,7 +28,6 @@ beforeEach(() => {
   usePersonalBestsStore.getState().clearPBs();
   useIntervalsStore.setState({
     apiKey: null,
-    athleteFirstName: null,
     importedActivityIds: [],
     keyInvalid: false,
     backlogPending: false,

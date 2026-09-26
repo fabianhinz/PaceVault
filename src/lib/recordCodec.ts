@@ -1,9 +1,7 @@
 import { z } from 'zod';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
-export type EncodedRecords =
-  | { format: 'gzip-json'; data: ArrayBuffer }
-  | { format: 'json'; records: SessionRecord[] };
+export type EncodedRecords = { format: 'gzip-json'; data: ArrayBuffer };
 
 const optNum = z.number().optional();
 
@@ -23,22 +21,13 @@ const sessionRecordsSchema = z.array(
   }),
 );
 
-const encodedSchema = z.discriminatedUnion('format', [
-  z.object({
-    format: z.literal('gzip-json'),
-    data: z.custom<ArrayBuffer>(
-      (v) =>
-        typeof v === 'object' &&
-        v !== null &&
-        'byteLength' in v &&
-        typeof v.byteLength === 'number',
-    ),
-  }),
-  z.object({ format: z.literal('json'), records: z.unknown() }),
-]);
-
-const canCompress = (): boolean =>
-  typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
+const encodedSchema = z.object({
+  format: z.literal('gzip-json'),
+  data: z.custom<ArrayBuffer>(
+    (v) =>
+      typeof v === 'object' && v !== null && 'byteLength' in v && typeof v.byteLength === 'number',
+  ),
+});
 
 const pipe = async (
   bytes: Uint8Array<ArrayBuffer>,
@@ -54,7 +43,6 @@ const pipe = async (
 };
 
 export const encodeRecords = async (records: SessionRecord[]): Promise<EncodedRecords> => {
-  if (!canCompress()) return { format: 'json', records };
   const json = new TextEncoder().encode(JSON.stringify(records));
   return { format: 'gzip-json', data: await pipe(json, new CompressionStream('gzip')) };
 };
@@ -69,8 +57,6 @@ export const decodeRecords = async (value: unknown): Promise<SessionRecord[]> =>
   const encoded = encodedSchema.safeParse(value);
 
   if (!encoded.success) return [];
-  if (encoded.data.format === 'json') return toRecords(encoded.data.records);
-  if (!canCompress()) return [];
 
   try {
     const bytes = await pipe(new Uint8Array(encoded.data.data), new DecompressionStream('gzip'));

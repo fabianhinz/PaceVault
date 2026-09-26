@@ -1,7 +1,9 @@
+import { useIsFetching } from '@tanstack/react-query';
 import { CircleCheck, CircleDashed, CircleX, LoaderCircle } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { useIntervalsStore } from '@/store/intervals.ts';
+import { INTERVALS_SYNC_KEY } from './hooks/useIntervalsSync.ts';
 
 export type IntervalsKeyCheck =
   | { kind: 'checking' }
@@ -21,19 +23,22 @@ const ErrorLine = (props: { message: string }) => (
   </Typography>
 );
 
+const LoadingLine = (props: { message: string }) => (
+  <Typography variant="caption" color="textTertiary" className="flex items-center gap-1.5">
+    <LoaderCircle size={14} className="shrink-0 animate-spin" />
+    {props.message}
+  </Typography>
+);
+
 export const IntervalsStatusLine = (props: IntervalsStatusLineProps) => {
   const connected = useIntervalsStore((s) => s.apiKey !== null);
   const keyInvalid = useIntervalsStore((s) => s.keyInvalid);
+  const syncing = useIsFetching({ queryKey: INTERVALS_SYNC_KEY }) > 0;
 
   if (props.error !== null) return <ErrorLine message={props.error} />;
 
   if (props.check?.kind === 'checking') {
-    return (
-      <Typography variant="caption" color="textTertiary" className="flex items-center gap-1.5">
-        <LoaderCircle size={14} className="shrink-0 animate-spin" />
-        {m.ui_integration_status_checking()}
-      </Typography>
-    );
+    return <LoadingLine message={m.ui_integration_status_checking()} />;
   }
   if (props.check?.kind === 'valid') {
     return (
@@ -47,6 +52,8 @@ export const IntervalsStatusLine = (props: IntervalsStatusLineProps) => {
     return <ErrorLine message={m.ui_integration_status_key_rejected()} />;
   }
   if (props.check?.kind === 'failed') return <ErrorLine message={props.check.message} />;
+
+  if (syncing) return <LoadingLine message={m.ui_integration_status_syncing()} />;
 
   if (keyInvalid) return <ErrorLine message={m.ui_integration_status_key_invalid()} />;
 

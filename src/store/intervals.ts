@@ -5,11 +5,10 @@ import { idbStorage } from '@/lib/idbStorage.ts';
 
 interface IntervalsState {
   apiKey: string | null;
-  athleteFirstName: string | null;
   importedActivityIds: string[];
   keyInvalid: boolean;
   backlogPending: boolean;
-  connectIntervals: (apiKey: string, athleteFirstName: string | null) => void;
+  connectIntervals: (apiKey: string) => void;
   disconnectIntervals: () => void;
   recordIntervalsImported: (importedIds: string[]) => void;
   markIntervalsKeyInvalid: () => void;
@@ -21,22 +20,19 @@ export const useIntervalsStore = create<IntervalsState>()(
     persist(
       (set) => ({
         apiKey: null,
-        athleteFirstName: null,
         importedActivityIds: [],
         keyInvalid: false,
         backlogPending: false,
 
-        connectIntervals: (apiKey, athleteFirstName) =>
+        connectIntervals: (apiKey) =>
           set((draft) => {
             draft.apiKey = apiKey;
-            draft.athleteFirstName = athleteFirstName;
             draft.keyInvalid = false;
           }),
 
         disconnectIntervals: () =>
           set({
             apiKey: null,
-            athleteFirstName: null,
             importedActivityIds: [],
             keyInvalid: false,
             backlogPending: false,

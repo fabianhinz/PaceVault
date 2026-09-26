@@ -77,10 +77,9 @@ export const Dock = () => {
   const activeIndex = tabs.findIndex((tab) => isTabActive(tab.to, location.pathname));
   const dockBarRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLElement | null)[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const dockExpanded = useIsDesktop();
   const indicatorElement = useSlideIndicator(dockBarRef, tabRefs, activeIndex, dockExpanded);
-  const upload = useFileUpload(fileInputRef);
+  const upload = useFileUpload();
   useFileDropEffect(upload.handleFiles, !upload.uploading);
 
   const [revealStack, setRevealStack] = useState<DockRevealLayer[]>([]);
