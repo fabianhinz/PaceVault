@@ -4,15 +4,14 @@ import {
   type IntervalsActivity,
   type IntervalsErrorCode,
 } from '@/lib/intervals.ts';
-import { parseFitFile, type ParsedFitResultWithMeta } from '@/parsers/fit.ts';
-import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
+import { parseFitFile } from '@/parsers/fit.ts';
+import { createIngestBatcher } from '@/features/sessions/createIngestBatcher.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import type { UserProfile } from '@/types/index.ts';
 
 export interface IntervalsImportResult {
   imported: number;
   duplicated: number;
-  importedActivityIds: string[];
   fatal?: IntervalsErrorCode;
 }
 
@@ -21,12 +20,26 @@ export const runIntervalsImport = async (
   profile: UserProfile,
   activities: IntervalsActivity[],
   onProgress: (processed: number) => void,
-  options: { queryClient: QueryClient; markNew?: boolean },
+  options: {
+    queryClient: QueryClient;
+    markNew?: boolean;
+    onChunkIngested: (activityIds: string[]) => void;
+  },
 ): Promise<IntervalsImportResult> => {
-  const parsed: ParsedFitResultWithMeta[] = [];
-  const parsedIds: string[] = [];
   let processed = 0;
   let fatal: IntervalsErrorCode | undefined = undefined;
+
+  const batcher = createIngestBatcher({
+    queryClient: options.queryClient,
+    markNew: options.markNew,
+    onFlushed: (batch) => {
+      const ids: string[] = [];
+      for (const entry of batch) {
+        if (entry.source.kind === 'intervals') ids.push(entry.source.activityId);
+      }
+      options.onChunkIngested(ids);
+    },
+  });
 
   for (const activity of activities) {
     const download = await downloadActivityFit(apiKey, activity);
@@ -42,13 +55,12 @@ export const runIntervalsImport = async (
         const result = await parseFitFile(download.data, fileName, toFitParseProfile(profile), {
           name: activity.name ?? undefined,
         });
-        parsed.push({
+        await batcher.add({
           ...result,
           rawData: download.data,
           fileName,
           source: { kind: 'intervals', activityId: activity.id },
         });
-        parsedIds.push(activity.id);
       } catch {
         /* empty */
       }
@@ -58,18 +70,6 @@ export const runIntervalsImport = async (
     onProgress(processed);
   }
 
-  if (parsed.length === 0) {
-    return { imported: 0, duplicated: 0, importedActivityIds: [], fatal };
-  }
-
-  const ingested = await ingestParsedFits(parsed, {
-    queryClient: options.queryClient,
-    markNew: options.markNew,
-  });
-  return {
-    imported: ingested.importedCount,
-    duplicated: ingested.duplicateCount,
-    importedActivityIds: parsedIds,
-    fatal,
-  };
+  const outcome = await batcher.finish();
+  return { imported: outcome.importedCount, duplicated: outcome.duplicateCount, fatal };
 };

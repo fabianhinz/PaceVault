@@ -10,6 +10,7 @@ import { makeUserProfile } from '@tests/factories/profiles.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { MAX_ACTIVITIES_PER_IMPORT } from '@/lib/intervals.ts';
 import { useIntervalsProgressStore } from '@/features/intervals/syncProgress.ts';
+import { INGEST_BATCH_SIZE } from '@/features/sessions/createIngestBatcher.ts';
 
 const LISTING = [
   { id: 'i100', name: 'Karlsruhe Laufen', type: 'Run', source: 'GARMIN_CONNECT', file_type: 'fit' },
@@ -86,6 +87,33 @@ describe('runIntervalsSync', () => {
     expect(summary.imported).toBe(2);
     expect([...useIntervalsStore.getState().importedActivityIds].sort()).toEqual(['i100', 'i200']);
     expect(useSessionsStore.getState().sessions).toHaveLength(2);
+  });
+
+  it('records the ids of finished chunks before the import completes', async () => {
+    connect();
+    const listing = Array.from({ length: INGEST_BATCH_SIZE + 1 }, (_, i) => ({
+      id: `i${i}`,
+      type: 'Run',
+      source: 'GARMIN_CONNECT',
+      file_type: 'fit',
+    }));
+    const last = listing.at(-1)?.id;
+    let recordedBeforeLast = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/activities')) return new Response(JSON.stringify(listing));
+        if (url.includes(`/activity/${last}/`)) {
+          recordedBeforeLast = useIntervalsStore.getState().importedActivityIds.length;
+        }
+        return new Response(fixture('running.fit'));
+      }),
+    );
+
+    await runIntervalsSync({ queryClient: new QueryClient() });
+
+    expect(recordedBeforeLast).toBe(INGEST_BATCH_SIZE);
+    expect(useIntervalsStore.getState().importedActivityIds).toHaveLength(INGEST_BATCH_SIZE + 1);
   });
 
   it('marks sessions imported by a background sync as new', async () => {

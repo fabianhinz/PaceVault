@@ -41,18 +41,19 @@ describe('runIntervalsImport', () => {
   it('imports activities and names them from the listing, not the filename', async () => {
     stubApi();
     const seen: number[] = [];
+    const ingestedIds: string[] = [];
 
     const result = await runIntervalsImport(
       'key',
       makeUserProfile(),
       ACTIVITIES,
       (p) => seen.push(p),
-      { queryClient: new QueryClient() },
+      { queryClient: new QueryClient(), onChunkIngested: (ids) => ingestedIds.push(...ids) },
     );
 
     expect(result.imported).toBe(2);
     expect(result.fatal).toBeUndefined();
-    expect(result.importedActivityIds).toEqual(['i100', 'i200']);
+    expect(ingestedIds).toEqual(['i100', 'i200']);
     expect(seen).toEqual([1, 2]);
 
     const names = useSessionsStore
@@ -72,11 +73,13 @@ describe('runIntervalsImport', () => {
       }),
     );
 
+    const ingestedIds: string[] = [];
     const result = await runIntervalsImport('key', makeUserProfile(), ACTIVITIES, () => {}, {
       queryClient: new QueryClient(),
+      onChunkIngested: (ids) => ingestedIds.push(...ids),
     });
 
     expect(result.imported).toBe(1);
-    expect(result.importedActivityIds).toEqual(['i200']);
+    expect(ingestedIds).toEqual(['i200']);
   });
 });

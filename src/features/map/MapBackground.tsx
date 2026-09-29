@@ -10,7 +10,6 @@ import { useMapCameraEffect } from './hooks/useMapCameraEffect.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
 import { useMapPopupState } from './hooks/useMapPopupState.ts';
 import { DeckGLOverlay } from './DeckGLOverlay.tsx';
-import { DeckMetricsOverlay } from './DeckMetricsOverlay.tsx';
 import { StudioMarkerPins } from '../studio/markers/StudioMarkerPins.tsx';
 import { StudioTrackPickPopup } from '../studio/markers/StudioTrackPickPopup.tsx';
 import { StudioRoutesPickPopup } from '../studio/markers/StudioRoutesPickPopup.tsx';
@@ -133,7 +132,6 @@ export const MapBackground = (props: MapBackgroundProps) => {
         />
         {studioTracks.focusedRouteId && <StudioMarkerPins routeId={studioTracks.focusedRouteId} />}
       </MapGL>
-      <DeckMetricsOverlay />
       {studioPopup.popup && (
         <StudioTrackPickPopup info={studioPopup.popup} onClose={studioPopup.close} />
       )}

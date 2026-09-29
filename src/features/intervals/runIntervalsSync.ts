@@ -64,10 +64,13 @@ export const runIntervalsSync = async (options: {
       profile,
       batch,
       (processed) => useIntervalsProgressStore.getState().setIntervalsSyncProcessed(processed),
-      { queryClient: options.queryClient, markNew: !foreground },
+      {
+        queryClient: options.queryClient,
+        markNew: !foreground,
+        onChunkIngested: (ids) => useIntervalsStore.getState().recordIntervalsImported(ids),
+      },
     );
 
-    useIntervalsStore.getState().recordIntervalsImported(result.importedActivityIds);
     if (result.fatal === 'unauthorized') useIntervalsStore.getState().markIntervalsKeyInvalid();
 
     const incomplete = backlog.length > batch.length || result.fatal !== undefined;
