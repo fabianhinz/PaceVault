@@ -22,7 +22,7 @@ describe('delete all data', () => {
   it('clears sessions, profile, session-records, session-laps, and resets onboarding', async () => {
     // Populate sessions store
     const { id: _id, createdAt: _ca, ...sessionData } = makeSession();
-    const sessionId = useSessionsStore.getState().addSession(sessionData);
+    const sessionId = useSessionsStore.getState().addSessions([sessionData])[0] ?? '';
 
     // Populate user store
     const { id: _pid, createdAt: _pca, ...profileData } = makeUserProfile();

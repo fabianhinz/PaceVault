@@ -26,7 +26,6 @@ const migrateSessionsState = (persisted: unknown, version: number): unknown => {
 
 interface SessionsState {
   sessions: TrainingSession[];
-  addSession: (session: Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'>) => string;
   addSessions: (
     sessions: Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'>[],
     options?: { markNew?: boolean },
@@ -43,25 +42,12 @@ export const useSessionsStore = create<SessionsState>()(
     persist(
       (set) => ({
         sessions: [],
-        addSession: (sessionData) => {
-          const id = v4();
-          const session: TrainingSession = {
-            ...sessionData,
-            id,
-            createdAt: Date.now(),
-            isNew: true,
-          };
-          set((draft) => {
-            draft.sessions.push(session);
-          });
-          return id;
-        },
         addSessions: (sessionsData, options) => {
           const newSessions = sessionsData.map((s) => ({
             ...s,
             id: v4(),
             createdAt: Date.now(),
-            isNew: options?.markNew !== false,
+            isNew: options?.markNew === true,
           }));
           set((draft) => {
             draft.sessions.push(...newSessions);

@@ -26,7 +26,7 @@ describe('store + engine integration (no React)', () => {
         date: now - (30 - i) * DAY_MS,
         tss: 80 + 20 * Math.sin(i * 0.5),
       });
-      useSessionsStore.getState().addSession(sessionData);
+      useSessionsStore.getState().addSessions([sessionData]);
     }
 
     expect(useSessionsStore.getState().sessions).toHaveLength(30);
@@ -55,7 +55,7 @@ describe('store + engine integration (no React)', () => {
     useUserStore.getState().setProfile(profileData);
 
     const { id: _sid, createdAt: _sca, ...sessionData } = makeSession();
-    useSessionsStore.getState().addSession(sessionData);
+    useSessionsStore.getState().addSessions([sessionData]);
 
     // Verify populated
     expect(useUserStore.getState().profile).not.toBeNull();

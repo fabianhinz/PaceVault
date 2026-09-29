@@ -60,7 +60,7 @@ describe('createIngestBatcher', () => {
 
   it('rejects a fingerprint that already exists in the store', async () => {
     const { id: _id, createdAt: _ca, ...session } = makeSession({ fingerprint: 'fp-1' });
-    useSessionsStore.getState().addSession(session);
+    useSessionsStore.getState().addSessions([session]);
 
     const outcome = await ingestAll([makeParsed('fp-1'), makeParsed('fp-2')]);
 

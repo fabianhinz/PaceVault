@@ -69,7 +69,7 @@ const seedIntervalsSession = (date: number) => {
     date,
     source: { kind: 'intervals', activityId: 'i1' },
   });
-  useSessionsStore.getState().addSession(data);
+  useSessionsStore.getState().addSessions([data]);
 };
 
 afterEach(() => {
@@ -204,7 +204,7 @@ describe('runIntervalsSync', () => {
       date: new Date(2026, 9, 30, 10).getTime(),
       source: { kind: 'file' },
     });
-    useSessionsStore.getState().addSession(file);
+    useSessionsStore.getState().addSessions([file]);
     const urls = stubApi();
 
     await runIntervalsSync({ queryClient: new QueryClient() });
