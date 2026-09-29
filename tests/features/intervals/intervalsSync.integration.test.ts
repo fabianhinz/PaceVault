@@ -9,7 +9,6 @@ import { useUserStore } from '@/store/user.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { MAX_ACTIVITIES_PER_IMPORT } from '@/lib/intervals.ts';
-import { useIntervalsProgressStore } from '@/features/intervals/syncProgress.ts';
 import { INGEST_BATCH_SIZE } from '@/features/sessions/createIngestBatcher.ts';
 
 const LISTING = [
@@ -128,12 +127,21 @@ describe('runIntervalsSync', () => {
   it('marks sessions imported in the foreground as already seen', async () => {
     connect();
     stubApi();
-    useIntervalsProgressStore.getState().setIntervalsSyncForeground(true);
 
-    await runIntervalsSync({ queryClient: new QueryClient() });
+    await runIntervalsSync({ queryClient: new QueryClient(), foreground: true });
 
     expect(useSessionsStore.getState().sessions).toHaveLength(2);
     expect(useSessionsStore.getState().sessions.every((s) => s.isNew === false)).toBe(true);
+  });
+
+  it('counts an activity whose download fails as failed', async () => {
+    connect();
+    stubApi({ listing: [...LISTING, { ...LISTING[0], id: 'i300' }] });
+
+    const summary = await runIntervalsSync({ queryClient: new QueryClient() });
+
+    expect(summary.imported).toBe(2);
+    expect(summary.failed).toBe(1);
   });
 
   it('separates an empty account from one that is merely up to date', async () => {

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { RUNNING_FIT } from './helpers/seed';
-import { uploadFitFiles } from './helpers/upload';
+import { closeImportSummary, uploadFitFiles } from './helpers/upload';
 
 test.describe('Onboarding flow', () => {
   test('set thresholds → upload FIT → complete onboarding', async ({ page }) => {
@@ -46,6 +46,7 @@ test.describe('Onboarding flow', () => {
     await expect(generateButton).toBeVisible();
     await generateButton.click();
 
+    await closeImportSummary(page);
     await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30000 });
     await expect(generateButton).not.toBeVisible();
 

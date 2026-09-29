@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Database, FolderUp, CloudDownload } from 'lucide-react';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
-import { useUploadProgressStore } from '@/store/uploadProgress.ts';
+import { useImportProgressStore } from '@/store/importProgress.ts';
 import { FitUploadButton } from '@/features/sessions/FitUploadButton.tsx';
 
 import { generateDevData } from '@/features/dashboard/generateDevData.ts';
@@ -17,7 +17,7 @@ import { IntervalsConnectionForm } from '@/features/intervals/IntervalsConnectio
 type OnboardingPath = 'intervals' | 'your-data' | 'test-data' | null;
 
 export const OnboardingPage = () => {
-  const uploading = useUploadProgressStore((s) => s.uploading);
+  const uploading = useImportProgressStore((s) => s.foreground !== null);
   const queryClient = useQueryClient();
 
   const [path, setPath] = useState<OnboardingPath>(null);
@@ -28,7 +28,9 @@ export const OnboardingPage = () => {
       useLayoutStore.getState().completeOnboarding();
       useLayoutStore.getState().setDemoMode(true);
     } catch {
-      useUploadProgressStore.getState().finish(m.ui_onboarding_testdata_failed(), 'error');
+      useImportProgressStore
+        .getState()
+        .finishImport({ kind: 'failed', message: m.ui_import_failed_generic() });
     }
   };
 

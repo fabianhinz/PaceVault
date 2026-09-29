@@ -5,16 +5,14 @@ import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/Button.tsx';
 import { Input } from '@/components/ui/Input.tsx';
 import { Label } from '@/components/ui/Label.tsx';
-import { toast } from '@/components/ui/toastStore.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { type IntervalsErrorCode } from '@/lib/intervals.ts';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
 import { runIntervalsSync } from './runIntervalsSync.ts';
-import { useIntervalsProgressStore } from './syncProgress.ts';
+import { useImportProgressStore } from '@/store/importProgress.ts';
 import { INTERVALS_SYNC_KEY } from './hooks/useIntervalsSync.ts';
-import { IntervalsImportOverlay } from './IntervalsImportOverlay.tsx';
 import { IntervalsStatusLine, type IntervalsKeyCheck } from './IntervalsStatusLine.tsx';
 import {
   intervalsVerifyQueryKey,
@@ -41,8 +39,6 @@ interface IntervalsConnectionFormProps {
 export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => {
   const storedKey = useIntervalsStore((s) => s.apiKey);
   const hasProfile = useUserStore((s) => s.profile !== null);
-  const processed = useIntervalsProgressStore((s) => s.processed);
-  const total = useIntervalsProgressStore((s) => s.total);
 
   const [keyInput, setKeyInput] = useState(storedKey ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -88,11 +84,10 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
       return;
     }
 
-    useIntervalsProgressStore.getState().setIntervalsSyncForeground(true);
+    useImportProgressStore.getState().beginImport({ foreground: true });
     useIntervalsStore.getState().connectIntervals(trimmed);
 
     try {
-      // fetchQuery would join a running background sync instead of starting the full one — wait it out first.
       if (queryClient.getQueryState(INTERVALS_SYNC_KEY)?.fetchStatus === 'fetching') {
         await queryClient
           .fetchQuery({
@@ -103,20 +98,27 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
       }
       const summary = await queryClient.fetchQuery({
         queryKey: INTERVALS_SYNC_KEY,
-        queryFn: () => runIntervalsSync({ queryClient, full: true }),
+        queryFn: () => runIntervalsSync({ queryClient, full: true, foreground: true }),
         staleTime: 0,
       });
       if (summary.available === 0) {
-        toast(m.toast_intervals_no_activities(), m.toast_intervals_no_activities_desc(), 'warning');
+        useImportProgressStore.getState().finishImport({ kind: 'no-activities' });
       } else if (summary.pending === 0) {
-        toast(m.toast_intervals_up_to_date(), undefined, 'default');
+        useImportProgressStore.getState().finishImport({ kind: 'nothing-new' });
+      } else {
+        useImportProgressStore.getState().finishImport({
+          kind: 'imported',
+          imported: summary.imported,
+          duplicated: summary.duplicated,
+          failed: summary.failed,
+        });
       }
 
       if (useSessionsStore.getState().sessions.length > 0) props.onSynced?.();
     } catch (err) {
-      if (err instanceof Error) setError(errorMessage(err.message as IntervalsErrorCode));
-    } finally {
-      useIntervalsProgressStore.getState().setIntervalsSyncForeground(false);
+      let message: string = m.ui_intervals_error_generic();
+      if (err instanceof Error) message = errorMessage(err.message as IntervalsErrorCode);
+      useImportProgressStore.getState().finishImport({ kind: 'failed', message });
     }
 
     setManual(false);
@@ -180,8 +182,6 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
           {manual ? m.ui_intervals_importing_short() : m.ui_intervals_import_activities()}
         </Button>
       </div>
-
-      {manual && total > 0 && <IntervalsImportOverlay processed={processed} total={total} />}
     </div>
   );
 };

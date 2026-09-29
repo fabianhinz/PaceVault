@@ -9,7 +9,7 @@ import { intervalsSyncWindowOldest } from '@/lib/intervalsSyncWindow.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
-import { useIntervalsProgressStore } from './syncProgress.ts';
+import { useImportProgressStore } from '@/store/importProgress.ts';
 import { runIntervalsImport } from './runIntervalsImport.ts';
 
 export interface IntervalsSyncSummary {
@@ -17,9 +17,16 @@ export interface IntervalsSyncSummary {
   pending: number;
   imported: number;
   duplicated: number;
+  failed: number;
 }
 
-const NOTHING: IntervalsSyncSummary = { available: 0, pending: 0, imported: 0, duplicated: 0 };
+const NOTHING: IntervalsSyncSummary = {
+  available: 0,
+  pending: 0,
+  imported: 0,
+  duplicated: 0,
+  failed: 0,
+};
 
 const byNewestFirst = (a: IntervalsActivity, b: IntervalsActivity): number => {
   return (b.start_date_local ?? '').localeCompare(a.start_date_local ?? '');
@@ -33,6 +40,7 @@ const resolveOldest = (full: boolean): string => {
 export const runIntervalsSync = async (options: {
   queryClient: QueryClient;
   full?: boolean;
+  foreground?: boolean;
 }): Promise<IntervalsSyncSummary> => {
   const apiKey = useIntervalsStore.getState().apiKey;
   const profile = useUserStore.getState().profile;
@@ -55,18 +63,24 @@ export const runIntervalsSync = async (options: {
     return { ...NOTHING, available: listed.data.length };
   }
 
-  const foreground = useIntervalsProgressStore.getState().foreground;
-  useIntervalsProgressStore.getState().startIntervalsSync(batch.length);
+  const foreground = options.foreground === true;
+  if (foreground) useImportProgressStore.getState().setImportTotal(batch.length);
+  else useImportProgressStore.getState().beginImport({ foreground: false });
 
   try {
     const result = await runIntervalsImport(
       apiKey,
       profile,
       batch,
-      (processed) => useIntervalsProgressStore.getState().setIntervalsSyncProcessed(processed),
+      () => {
+        if (foreground) useImportProgressStore.getState().advanceImport();
+      },
       {
         queryClient: options.queryClient,
         markNew: !foreground,
+        onSaving: () => {
+          if (foreground) useImportProgressStore.getState().markImportSaving();
+        },
         onChunkIngested: (ids) => useIntervalsStore.getState().recordIntervalsImported(ids),
       },
     );
@@ -82,8 +96,9 @@ export const runIntervalsSync = async (options: {
       pending: batch.length,
       imported: result.imported,
       duplicated: result.duplicated,
+      failed: result.failed,
     };
   } finally {
-    useIntervalsProgressStore.getState().finishIntervalsSync();
+    if (!foreground) useImportProgressStore.getState().finishImport(null);
   }
 };

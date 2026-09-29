@@ -12,6 +12,7 @@ import type { UserProfile } from '@/types/index.ts';
 export interface IntervalsImportResult {
   imported: number;
   duplicated: number;
+  failed: number;
   fatal?: IntervalsErrorCode;
 }
 
@@ -23,10 +24,12 @@ export const runIntervalsImport = async (
   options: {
     queryClient: QueryClient;
     markNew?: boolean;
+    onSaving?: () => void;
     onChunkIngested: (activityIds: string[]) => void;
   },
 ): Promise<IntervalsImportResult> => {
   let processed = 0;
+  let failed = 0;
   let fatal: IntervalsErrorCode | undefined = undefined;
 
   const batcher = createIngestBatcher({
@@ -49,6 +52,7 @@ export const runIntervalsImport = async (
         fatal = download.code;
         break;
       }
+      failed++;
     } else {
       try {
         const fileName = `${activity.id}.fit`;
@@ -62,7 +66,7 @@ export const runIntervalsImport = async (
           source: { kind: 'intervals', activityId: activity.id },
         });
       } catch {
-        /* empty */
+        failed++;
       }
     }
 
@@ -70,6 +74,12 @@ export const runIntervalsImport = async (
     onProgress(processed);
   }
 
+  options.onSaving?.();
   const outcome = await batcher.finish();
-  return { imported: outcome.importedCount, duplicated: outcome.duplicateCount, fatal };
+  return {
+    imported: outcome.importedCount,
+    duplicated: outcome.duplicateCount,
+    failed,
+    fatal,
+  };
 };

@@ -13,8 +13,7 @@ import { useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
 import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
 import { bulkSaveSessionData, saveSessionGPS } from '@/lib/indexeddb.ts';
-import { useUploadProgressStore } from '@/store/uploadProgress.ts';
-import { m } from '@/paraglide/messages.js';
+import { useImportProgressStore } from '@/store/importProgress.ts';
 import {
   makeRunningRecords,
   makeCyclingRecords,
@@ -245,6 +244,7 @@ const generateSessionDuration = (sport: Sport, intent: SessionIntent): number =>
 };
 
 export const generateDevData = async (queryClient: QueryClient): Promise<number> => {
+  useImportProgressStore.getState().beginImport({ foreground: true });
   const routeData = await fetchRouteData();
 
   // Set user profile
@@ -289,7 +289,7 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
     });
   }
 
-  useUploadProgressStore.getState().startUpload(schedule.length);
+  useImportProgressStore.getState().setImportTotal(schedule.length);
 
   const sessionIds = useSessionsStore.getState().addSessions(sessionsToAdd);
 
@@ -393,16 +393,20 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
     if (gps) {
       gpsPromises.push(saveSessionGPS(gps));
     }
-    useUploadProgressStore.getState().advance();
+    useImportProgressStore.getState().advanceImport();
   }
 
+  useImportProgressStore.getState().markImportSaving();
   await Promise.all([bulkSaveSessionData(bulkEntries), ...gpsPromises]);
 
   useSessionsStore.getState().replaceSessions(updates);
   invalidatePersonalBests(queryClient);
-  useUploadProgressStore
-    .getState()
-    .finish(m.toast_devdata_generated({ count: String(sessionIds.length) }), 'success');
+  useImportProgressStore.getState().finishImport({
+    kind: 'imported',
+    imported: sessionIds.length,
+    duplicated: 0,
+    failed: 0,
+  });
 
   return sessionIds.length;
 };

@@ -7,6 +7,7 @@ import { OnboardingPage } from '@/pages/OnboardingPage.tsx';
 import { Outlet } from 'react-router-dom';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 import { useIntervalsSync } from '@/features/intervals/hooks/useIntervalsSync.ts';
+import { ImportProgressOverlay } from '@/components/ui/ImportProgressOverlay.tsx';
 
 export const AppLayout = () => {
   const mobileMapActive = useLayoutStore((s) => s.mobileMapActive);
@@ -50,6 +51,7 @@ export const AppLayout = () => {
           <OnboardingPage />
         </main>
       )}
+      <ImportProgressOverlay />
     </div>
   );
 };

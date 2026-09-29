@@ -6,6 +6,7 @@ import {
   seedIntervalsConnected,
   seedOnboardingComplete,
 } from './helpers/seed';
+import { closeImportSummary } from './helpers/upload';
 
 const LISTING = [
   { id: 'i100', name: 'Karlsruhe Laufen', type: 'Run', source: 'GARMIN_CONNECT', file_type: 'fit' },
@@ -58,6 +59,7 @@ test('intervals.icu onboarding: thresholds + key, then import', async ({ page })
   await keyInput.fill('e2e-test-key');
   await page.getByRole('button', { name: /import sessions/i }).click();
 
+  expect(await closeImportSummary(page)).toContain('2 new sessions');
   await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30000 });
   await expect(page.locator('#thresh-restHr')).not.toBeVisible();
 });
