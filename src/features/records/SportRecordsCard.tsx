@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
+import { ValueSkeleton } from '@/components/ui/ValueSkeleton.tsx';
 import { SportBadge } from '@/features/sessions/SportBadge.tsx';
 import { pbLabel, formatPBValue, formatDate } from '@/lib/formatters.ts';
 import { PB_SLOTS } from '@/lib/records.ts';
@@ -18,7 +19,11 @@ const sportSubtitle: Record<Sport, () => string> = {
   cycling: m.ui_records_cycling_subtitle,
 };
 
-export const SportRecordsCard = (props: { sport: Sport; pbs: PersonalBest[] | undefined }) => {
+export const SportRecordsCard = (props: {
+  sport: Sport;
+  pbs: PersonalBest[] | undefined;
+  loading: boolean;
+}) => {
   const slots = PB_SLOTS[props.sport];
 
   return (
@@ -52,14 +57,20 @@ export const SportRecordsCard = (props: { sport: Sport; pbs: PersonalBest[] | un
                   {label}
                 </Typography>
               </div>
-              <div className="text-right">
-                <Typography variant="subtitle1" color={pb ? 'textPrimary' : 'textTertiary'}>
-                  {pb ? formatPBValue(pb) : '--'}
-                </Typography>
-                <Typography variant="caption" as="p" className={pb ? '' : 'invisible'}>
-                  {pb ? formatDate(pb.date) : '\u00a0'}
-                </Typography>
-              </div>
+              {props.loading ? (
+                <div className="text-right">
+                  <ValueSkeleton />
+                </div>
+              ) : (
+                <div className="text-right">
+                  <Typography variant="subtitle1" color={pb ? 'textPrimary' : 'textTertiary'}>
+                    {pb ? formatPBValue(pb) : '--'}
+                  </Typography>
+                  <Typography variant="caption" as="p" className={pb ? '' : 'invisible'}>
+                    {pb ? formatDate(pb.date) : '\u00a0'}
+                  </Typography>
+                </div>
+              )}
             </div>
           );
 

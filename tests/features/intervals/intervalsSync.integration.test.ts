@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { QueryClient } from '@tanstack/react-query';
 import { runIntervalsSync } from '@/features/intervals/runIntervalsSync.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
@@ -79,7 +80,7 @@ describe('runIntervalsSync', () => {
     connect();
     stubApi();
 
-    const summary = await runIntervalsSync();
+    const summary = await runIntervalsSync({ queryClient: new QueryClient() });
 
     expect(summary.pending).toBe(2);
     expect(summary.imported).toBe(2);
@@ -91,7 +92,7 @@ describe('runIntervalsSync', () => {
     connect();
     stubApi();
 
-    await runIntervalsSync();
+    await runIntervalsSync({ queryClient: new QueryClient() });
 
     expect(useSessionsStore.getState().sessions.every((s) => s.isNew === true)).toBe(true);
   });
@@ -101,7 +102,7 @@ describe('runIntervalsSync', () => {
     stubApi();
     useIntervalsProgressStore.getState().setIntervalsSyncForeground(true);
 
-    await runIntervalsSync();
+    await runIntervalsSync({ queryClient: new QueryClient() });
 
     expect(useSessionsStore.getState().sessions).toHaveLength(2);
     expect(useSessionsStore.getState().sessions.every((s) => s.isNew === false)).toBe(true);
@@ -112,7 +113,7 @@ describe('runIntervalsSync', () => {
     useIntervalsStore.getState().recordIntervalsImported(['i100', 'i200']);
     stubApi();
 
-    const summary = await runIntervalsSync();
+    const summary = await runIntervalsSync({ queryClient: new QueryClient() });
 
     expect(summary.available).toBe(2);
     expect(summary.pending).toBe(0);
@@ -123,7 +124,7 @@ describe('runIntervalsSync', () => {
     useIntervalsStore.getState().recordIntervalsImported(['i100']);
     const urls = stubApi();
 
-    const summary = await runIntervalsSync();
+    const summary = await runIntervalsSync({ queryClient: new QueryClient() });
 
     expect(summary.imported).toBe(1);
     expect(urls.some((u) => u.includes('/activity/i100/'))).toBe(false);
@@ -134,7 +135,9 @@ describe('runIntervalsSync', () => {
     connect();
     stubApi({ listStatus: 401 });
 
-    await expect(runIntervalsSync()).rejects.toThrow('unauthorized');
+    await expect(runIntervalsSync({ queryClient: new QueryClient() })).rejects.toThrow(
+      'unauthorized',
+    );
     expect(useIntervalsStore.getState().keyInvalid).toBe(true);
   });
 
@@ -142,7 +145,7 @@ describe('runIntervalsSync', () => {
     connect();
     stubApi();
 
-    await runIntervalsSync();
+    await runIntervalsSync({ queryClient: new QueryClient() });
 
     const sources = useSessionsStore.getState().sessions.map((s) => s.source);
     expect(sources).toEqual(
@@ -157,7 +160,7 @@ describe('runIntervalsSync', () => {
     connect();
     const urls = stubApi();
 
-    await runIntervalsSync();
+    await runIntervalsSync({ queryClient: new QueryClient() });
 
     expect(listedOldest(urls)).toBe('1990-01-01');
   });
@@ -176,7 +179,7 @@ describe('runIntervalsSync', () => {
     useSessionsStore.getState().addSession(file);
     const urls = stubApi();
 
-    await runIntervalsSync();
+    await runIntervalsSync({ queryClient: new QueryClient() });
 
     expect(listedOldest(urls)).toBe('2026-09-06');
   });
@@ -186,7 +189,7 @@ describe('runIntervalsSync', () => {
     seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
     const urls = stubApi();
 
-    await runIntervalsSync({ full: true });
+    await runIntervalsSync({ queryClient: new QueryClient(), full: true });
 
     expect(listedOldest(urls)).toBe('1990-01-01');
   });
@@ -199,12 +202,12 @@ describe('runIntervalsSync', () => {
     }));
     stubApi({ listing });
 
-    await runIntervalsSync();
+    await runIntervalsSync({ queryClient: new QueryClient() });
     expect(useIntervalsStore.getState().backlogPending).toBe(true);
 
     seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
     const urls = stubApi();
-    await runIntervalsSync();
+    await runIntervalsSync({ queryClient: new QueryClient() });
 
     expect(listedOldest(urls)).toBe('1990-01-01');
   });

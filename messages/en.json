@@ -460,7 +460,6 @@
   "ui_splits_device_subtitle": "Using device-recorded laps",
   "ui_pb_title": "Personal Bests",
   "ui_pb_subtitle": "New records achieved in this session",
-  "ui_records_title": "Records",
   "ui_map_popup_sessions_subtitle": "Sessions recorded near this location",
   "ui_map_popup_routes_title": "{count} Routes",
   "ui_map_popup_routes_subtitle": "Routes near this location",

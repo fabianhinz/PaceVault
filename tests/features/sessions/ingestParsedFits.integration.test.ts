@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { QueryClient } from '@tanstack/react-query';
 import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { usePersonalBestsStore } from '@/store/personalBests.ts';
+import { PERSONAL_BESTS_KEY } from '@/features/records/hooks/usePersonalBests.ts';
 import { getSessionRecords, getSessionLaps, getFitFile } from '@/lib/indexeddb.ts';
 import { makeCyclingRecords, makeLaps } from '@tests/factories/records.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
@@ -30,18 +31,19 @@ const makeParsed = (
 };
 
 describe('ingestParsedFits', () => {
-  it('adds sessions, writes records, laps and the raw FIT, and merges their PBs', async () => {
-    const outcome = await ingestParsedFits([makeParsed('fp-1'), makeParsed('fp-2')]);
+  it('adds sessions, writes records, laps and the raw FIT, and invalidates personal bests', async () => {
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
+    const outcome = await ingestParsedFits([makeParsed('fp-1'), makeParsed('fp-2')], {
+      queryClient,
+    });
 
     expect(outcome.importedCount).toBe(2);
     expect(outcome.duplicateCount).toBe(0);
     expect(outcome.saveFailed).toBe(false);
     expect(outcome.sessionIds).toHaveLength(2);
     expect(useSessionsStore.getState().sessions).toHaveLength(2);
-    expect(usePersonalBestsStore.getState().pbs.length).toBeGreaterThan(0);
-    expect(
-      usePersonalBestsStore.getState().pbs.every((pb) => outcome.sessionIds.includes(pb.sessionId)),
-    ).toBe(true);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: PERSONAL_BESTS_KEY, refetchType: 'all' });
 
     const first = outcome.sessionIds[0] ?? '';
     expect(await getSessionRecords(first)).toHaveLength(30);
@@ -56,7 +58,9 @@ describe('ingestParsedFits', () => {
     const { id: _id, createdAt: _ca, ...session } = makeSession({ fingerprint: 'fp-1' });
     useSessionsStore.getState().addSession(session);
 
-    const outcome = await ingestParsedFits([makeParsed('fp-1'), makeParsed('fp-2')]);
+    const outcome = await ingestParsedFits([makeParsed('fp-1'), makeParsed('fp-2')], {
+      queryClient: new QueryClient(),
+    });
 
     expect(outcome.importedCount).toBe(1);
     expect(outcome.duplicateCount).toBe(1);
@@ -64,11 +68,10 @@ describe('ingestParsedFits', () => {
   });
 
   it('rejects a fingerprint repeated within the same batch', async () => {
-    const outcome = await ingestParsedFits([
-      makeParsed('fp-1'),
-      makeParsed('fp-1'),
-      makeParsed('fp-2'),
-    ]);
+    const outcome = await ingestParsedFits(
+      [makeParsed('fp-1'), makeParsed('fp-1'), makeParsed('fp-2')],
+      { queryClient: new QueryClient() },
+    );
 
     expect(outcome.importedCount).toBe(2);
     expect(outcome.duplicateCount).toBe(1);

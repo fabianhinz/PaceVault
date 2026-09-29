@@ -1,5 +1,6 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { usePersonalBestsStore } from '@/store/personalBests.ts';
+import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
 import { findDuplicates } from '@/lib/fingerprint.ts';
 import { bulkSaveSessionData, saveFitFile } from '@/lib/indexeddb.ts';
 import { requestPersistentStorage } from '@/lib/persistentStorage.ts';
@@ -17,7 +18,7 @@ interface IngestOutcome {
 
 export const ingestParsedFits = async (
   parsed: ParsedFitResultWithMeta[],
-  options?: { markNew?: boolean },
+  options: { queryClient: QueryClient; markNew?: boolean },
 ): Promise<IngestOutcome> => {
   const existingSessions = useSessionsStore.getState().sessions;
   const storeDups = findDuplicates(
@@ -47,7 +48,7 @@ export const ingestParsedFits = async (
   try {
     sessionIds = useSessionsStore.getState().addSessions(
       unique.map((p) => ({ ...p.session, source: p.source })),
-      { markNew: options?.markNew },
+      { markNew: options.markNew },
     );
 
     const idbEntries: Array<{ sessionId: string; records: SessionRecord[]; laps: SessionLap[] }> =
@@ -64,24 +65,8 @@ export const ingestParsedFits = async (
 
     if (idbEntries.length > 0) {
       await bulkSaveSessionData(idbEntries, { chunkSize: CHUNK_SIZE });
+      invalidatePersonalBests(options.queryClient);
     }
-
-    usePersonalBestsStore.getState().addSessionPBs(
-      unique.flatMap((u, i) => {
-        const sessionId = sessionIds[i];
-        if (!sessionId || u.records.length === 0) return [];
-        return [
-          {
-            sessionId,
-            date: u.session.date,
-            sport: u.session.sport,
-            records: u.records,
-            distance: u.session.distance,
-            elevationGain: u.session.elevationGain,
-          },
-        ];
-      }),
-    );
 
     for (let i = 0; i < unique.length; i++) {
       const sid = sessionIds[i];

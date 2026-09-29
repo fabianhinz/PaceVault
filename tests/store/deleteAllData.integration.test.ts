@@ -5,7 +5,6 @@ import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
-import { usePersonalBestsStore } from '@/store/personalBests.ts';
 import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
@@ -20,7 +19,7 @@ import {
 import { idbStorage } from '@/lib/idbStorage.ts';
 
 describe('delete all data', () => {
-  it('clears sessions, personal bests, profile, session-records, session-laps, and resets onboarding', async () => {
+  it('clears sessions, profile, session-records, session-laps, and resets onboarding', async () => {
     // Populate sessions store
     const { id: _id, createdAt: _ca, ...sessionData } = makeSession();
     const sessionId = useSessionsStore.getState().addSession(sessionData);
@@ -51,10 +50,6 @@ describe('delete all data', () => {
         '2026-02-09:1:300',
       );
 
-    usePersonalBestsStore
-      .getState()
-      .addSessionPBs([{ sessionId, date: Date.now(), sport: 'cycling', records }]);
-
     // Connect intervals.icu
     useIntervalsStore.getState().connectIntervals('secret-key');
     useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
@@ -70,7 +65,6 @@ describe('delete all data', () => {
     expect(useFiltersStore.getState().timeRange).toBe('90d');
     expect(useIntervalsStore.getState().apiKey).not.toBeNull();
     expect(useCoachPlanStore.getState().cachedPlan).not.toBeNull();
-    expect(usePersonalBestsStore.getState().pbs).not.toHaveLength(0);
     expect(useSessionsStore.getState().sessions).toHaveLength(1);
     expect(useUserStore.getState().profile).not.toBeNull();
     expect(useLayoutStore.getState().onboardingComplete).toBe(true);
@@ -82,7 +76,6 @@ describe('delete all data', () => {
     useSessionsStore.getState().clearAll();
     useUserStore.getState().resetProfile();
     useCoachPlanStore.getState().clearPlan();
-    usePersonalBestsStore.getState().clearPBs();
     useIntervalsStore.getState().disconnectIntervals();
     useLayoutStore.setState({ onboardingComplete: false });
     useFiltersStore.setState({
@@ -98,7 +91,6 @@ describe('delete all data', () => {
     expect(useCoachPlanStore.getState().cachedPlan).toBeNull();
     expect(useCoachPlanStore.getState().cacheKey).toBeNull();
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
-    expect(usePersonalBestsStore.getState().pbs).toEqual([]);
     expect(await getSessionRecords(sessionId)).toHaveLength(0);
     expect(await getSessionLaps(sessionId)).toHaveLength(0);
     expect(await idbStorage.getItem('store-user')).toBeNull();

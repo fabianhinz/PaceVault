@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SPORTS, type Sport } from '@/packages/engine/types.ts';
 
 const BASE_URL = 'https://intervals.icu/api/v1';
 export const MAX_ACTIVITIES_PER_IMPORT = 2000;
@@ -49,15 +50,30 @@ const intervalsRequest = async (
   }
 };
 
-const IMPORTABLE_EXTRAS = new Set(['cyclocross', 'handcycle', 'velomobile', 'treadmill']);
+// Activity.type is an untyped string in the OpenAPI spec; the values come from the shared sport enum:
+// curl -s https://intervals.icu/api/v1/docs | jq '.components.schemas.SportInfo.properties.type.enum'
+const INTERVALS_TYPES_BY_SPORT: Record<Sport, readonly string[]> = {
+  running: ['Run', 'TrailRun', 'VirtualRun'],
+  cycling: [
+    'Ride',
+    'VirtualRide',
+    'GravelRide',
+    'MountainBikeRide',
+    'EBikeRide',
+    'EMountainBikeRide',
+    'TrackRide',
+    'Cyclocross',
+    'Handcycle',
+    'Velomobile',
+  ],
+};
+
+const IMPORTABLE_TYPES = new Set(SPORTS.flatMap((sport) => INTERVALS_TYPES_BY_SPORT[sport]));
 
 const isImportableActivity = (activity: IntervalsActivity): boolean => {
   if (activity.source === 'STRAVA') return false;
   if (activity.type == null) return true;
-
-  const type = activity.type.trim().toLowerCase();
-  if (IMPORTABLE_EXTRAS.has(type)) return true;
-  return type.endsWith('ride') || type.endsWith('run');
+  return IMPORTABLE_TYPES.has(activity.type);
 };
 
 export const verifyIntervalsKey = async (apiKey: string): Promise<IntervalsResult<true>> => {

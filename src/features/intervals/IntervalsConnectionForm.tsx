@@ -95,12 +95,15 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
       // fetchQuery would join a running background sync instead of starting the full one — wait it out first.
       if (queryClient.getQueryState(INTERVALS_SYNC_KEY)?.fetchStatus === 'fetching') {
         await queryClient
-          .fetchQuery({ queryKey: INTERVALS_SYNC_KEY, queryFn: () => runIntervalsSync() })
+          .fetchQuery({
+            queryKey: INTERVALS_SYNC_KEY,
+            queryFn: () => runIntervalsSync({ queryClient }),
+          })
           .catch(() => undefined);
       }
       const summary = await queryClient.fetchQuery({
         queryKey: INTERVALS_SYNC_KEY,
-        queryFn: () => runIntervalsSync({ full: true }),
+        queryFn: () => runIntervalsSync({ queryClient, full: true }),
         staleTime: 0,
       });
       if (summary.available === 0) {

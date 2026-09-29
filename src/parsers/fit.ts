@@ -1,11 +1,12 @@
 import FitParser from 'fit-file-parser';
-import type {
-  SessionFields,
-  SessionSource,
-  SessionRecord,
-  SessionLap,
-  Sport,
-  Gender,
+import {
+  SPORTS,
+  type SessionFields,
+  type SessionSource,
+  type SessionRecord,
+  type SessionLap,
+  type Sport,
+  type Gender,
 } from '@/packages/engine/types.ts';
 import { validateRecords } from '@/lib/validation.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
@@ -40,21 +41,23 @@ export type ParsedFitResultWithMeta = ParsedFitResult & {
   source: SessionSource;
 };
 
-const UNSUPPORTED_SPORT_ERROR = 'sport is not supported';
+export class UnsupportedSportError extends Error {
+  readonly fitSport: string | undefined;
 
-export const isUnsupportedSportError = (error: unknown): boolean => {
-  return error instanceof Error && error.message.endsWith(UNSUPPORTED_SPORT_ERROR);
+  constructor(fileName: string, fitSport: string | undefined) {
+    super(`Failed to parse FIT file "${fileName}": sport is not supported`);
+    this.name = 'UnsupportedSportError';
+    this.fitSport = fitSport;
+  }
+}
+
+const FIT_SPORT_BY_SPORT: Record<Sport, string> = {
+  running: 'running',
+  cycling: 'cycling',
 };
 
 const mapFitSportToAppSport = (fitSport?: string): Sport | undefined => {
-  switch (fitSport) {
-    case 'running':
-      return 'running';
-    case 'cycling':
-      return 'cycling';
-    default:
-      return;
-  }
+  return SPORTS.find((sport) => FIT_SPORT_BY_SPORT[sport] === fitSport);
 };
 
 // Metric derivation priority:
@@ -197,7 +200,7 @@ export const parseFitFile = async (
 
   const sport = mapFitSportToAppSport(fitSession?.sport);
   if (!sport) {
-    throw new Error(`Failed to parse FIT file "${fileName}": ${UNSUPPORTED_SPORT_ERROR}`);
+    throw new UnsupportedSportError(fileName, fitSession?.sport);
   }
 
   let sessionDate: number | undefined = undefined;

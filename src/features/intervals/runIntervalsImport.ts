@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import {
   downloadActivityFit,
   type IntervalsActivity,
@@ -20,7 +21,7 @@ export const runIntervalsImport = async (
   profile: UserProfile,
   activities: IntervalsActivity[],
   onProgress: (processed: number) => void,
-  options?: { markNew?: boolean },
+  options: { queryClient: QueryClient; markNew?: boolean },
 ): Promise<IntervalsImportResult> => {
   const parsed: ParsedFitResultWithMeta[] = [];
   const parsedIds: string[] = [];
@@ -61,7 +62,10 @@ export const runIntervalsImport = async (
     return { imported: 0, duplicated: 0, importedActivityIds: [], fatal };
   }
 
-  const ingested = await ingestParsedFits(parsed, { markNew: options?.markNew });
+  const ingested = await ingestParsedFits(parsed, {
+    queryClient: options.queryClient,
+    markNew: options.markNew,
+  });
   return {
     imported: ingested.importedCount,
     duplicated: ingested.duplicateCount,

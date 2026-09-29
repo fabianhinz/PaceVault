@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Database, FolderUp, CloudDownload } from 'lucide-react';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
@@ -17,12 +18,13 @@ type OnboardingPath = 'intervals' | 'your-data' | 'test-data' | null;
 
 export const OnboardingPage = () => {
   const uploading = useUploadProgressStore((s) => s.uploading);
+  const queryClient = useQueryClient();
 
   const [path, setPath] = useState<OnboardingPath>(null);
 
   const handleGenerate = async () => {
     try {
-      await generateDevData();
+      await generateDevData(queryClient);
       useLayoutStore.getState().completeOnboarding();
       useLayoutStore.getState().setDemoMode(true);
     } catch {

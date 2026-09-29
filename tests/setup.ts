@@ -4,7 +4,6 @@ import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
-import { usePersonalBestsStore } from '@/store/personalBests.ts';
 import { useIntervalsProgressStore } from '@/features/intervals/syncProgress.ts';
 import { resetDBInstance } from '@/lib/db.ts';
 import { enableMapSet } from 'immer';
@@ -25,7 +24,6 @@ beforeEach(() => {
   useUserStore.setState({ profile: null });
   useSessionsStore.setState({ sessions: [] });
   useCoachPlanStore.setState({ cachedPlan: null, cacheKey: null });
-  usePersonalBestsStore.getState().clearPBs();
   useIntervalsStore.setState({
     apiKey: null,
     importedActivityIds: [],

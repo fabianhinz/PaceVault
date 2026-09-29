@@ -40,18 +40,26 @@ describe('listIntervalsActivities filtering', () => {
       'VirtualRide',
       'GravelRide',
       'MountainBikeRide',
+      'EBikeRide',
       'EMountainBikeRide',
       'TrackRide',
+      'Cyclocross',
+      'Handcycle',
+      'Velomobile',
       'Run',
       'TrailRun',
       'VirtualRun',
-      'Cyclocross',
     ];
     const ids = await listWith(types.map((type, i) => ({ id: `i${i}`, type })));
     expect(ids).toHaveLength(types.length);
   });
 
-  it('drops sports PaceVault cannot parse, so they are never downloaded', async () => {
+  it('keeps activities without a type, so the FIT parser decides', async () => {
+    const ids = await listWith([{ id: 'untyped', type: null }]);
+    expect(ids).toEqual(['untyped']);
+  });
+
+  it('drops every other type, so it is never downloaded', async () => {
     const ids = await listWith([
       { id: 'keep', type: 'Run' },
       { id: 'swim', type: 'Swim' },

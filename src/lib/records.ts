@@ -213,7 +213,7 @@ export const groupPBsBySport = (pbs: PersonalBest[]): Partial<Record<Sport, Pers
   return grouped;
 };
 
-export interface PBSessionInput {
+interface PBSessionInput {
   sessionId: string;
   date: number;
   sport: Sport;
@@ -222,8 +222,8 @@ export interface PBSessionInput {
   elevationGain?: number;
 }
 
-const pbKey = (pb: { sport: Sport; category: PBCategory; window: number }): string =>
-  `${pb.sport}:${pb.category}:${pb.window}`;
+const isSameSlot = (a: PersonalBest, b: PersonalBest): boolean =>
+  a.sport === b.sport && a.category === b.category && a.window === b.window;
 
 /**
  * Compute the all-time personal bests across an arbitrary collection of sessions for all sports.
@@ -235,7 +235,7 @@ export const computePBsForSessions = (
   sessions: PBSessionInput[],
   existing: PersonalBest[] = [],
 ): PersonalBest[] => {
-  const bestByKey = new Map<string, PersonalBest>(existing.map((pb) => [pbKey(pb), pb]));
+  const bests = [...existing];
 
   for (const session of sessions) {
     let sessionMeta: { distance: number; elevationGain?: number } | undefined = undefined;
@@ -253,17 +253,20 @@ export const computePBsForSessions = (
         sessionId: session.sessionId,
         date: session.date,
       };
-      const key = pbKey(pb);
-      const current = bestByKey.get(key);
+      const index = bests.findIndex((best) => isSameSlot(best, pb));
+      const current = bests[index];
       let isBetter = !current || pb.value < current.value;
       if (peak.higherIsBetter) {
         isBetter = !current || pb.value > current.value;
       }
-      if (isBetter) {
-        bestByKey.set(key, pb);
+      if (!isBetter) continue;
+      if (current) {
+        bests[index] = pb;
+      } else {
+        bests.push(pb);
       }
     }
   }
 
-  return [...bestByKey.values()];
+  return bests;
 };

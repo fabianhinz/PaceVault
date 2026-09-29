@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { QueryClient } from '@tanstack/react-query';
 import { runIntervalsImport } from '@/features/intervals/runIntervalsImport.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
@@ -41,8 +42,12 @@ describe('runIntervalsImport', () => {
     stubApi();
     const seen: number[] = [];
 
-    const result = await runIntervalsImport('key', makeUserProfile(), ACTIVITIES, (p) =>
-      seen.push(p),
+    const result = await runIntervalsImport(
+      'key',
+      makeUserProfile(),
+      ACTIVITIES,
+      (p) => seen.push(p),
+      { queryClient: new QueryClient() },
     );
 
     expect(result.imported).toBe(2);
@@ -67,7 +72,9 @@ describe('runIntervalsImport', () => {
       }),
     );
 
-    const result = await runIntervalsImport('key', makeUserProfile(), ACTIVITIES, () => {});
+    const result = await runIntervalsImport('key', makeUserProfile(), ACTIVITIES, () => {}, {
+      queryClient: new QueryClient(),
+    });
 
     expect(result.imported).toBe(1);
     expect(result.importedActivityIds).toEqual(['i200']);

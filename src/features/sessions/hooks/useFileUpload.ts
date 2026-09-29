@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '@/store/user.ts';
 import { useUploadProgressStore } from '@/store/uploadProgress.ts';
 import { parseFitFile, type ParsedFitResultWithMeta } from '@/parsers/fit.ts';
@@ -11,6 +12,7 @@ import { ingestParsedFits } from '@/features/sessions/ingestParsedFits.ts';
 export const useFileUpload = () => {
   const profile = useUserStore((s) => s.profile);
   const uploading = useUploadProgressStore((s) => s.uploading);
+  const queryClient = useQueryClient();
 
   const handleFiles = useCallback(
     async (files: FileList) => {
@@ -89,7 +91,7 @@ export const useFileUpload = () => {
         }
       }
 
-      const outcome = await ingestParsedFits(parsed);
+      const outcome = await ingestParsedFits(parsed, { queryClient });
       if (outcome.saveFailed) {
         toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
       }
@@ -128,7 +130,7 @@ export const useFileUpload = () => {
         useUploadProgressStore.getState().finish(parts.join(', '), variant);
       }
     },
-    [profile],
+    [profile, queryClient],
   );
 
   return { uploading, profile, handleFiles };

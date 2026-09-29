@@ -2,7 +2,8 @@
 // Engine-owned types — all pure data definitions used by engine functions
 // ---------------------------------------------------------------------------
 
-export type Sport = 'running' | 'cycling';
+export const SPORTS = ['running', 'cycling'] as const;
+export type Sport = (typeof SPORTS)[number];
 export type Gender = 'male' | 'female' | 'other';
 
 export type FormStatus = 'detraining' | 'fresh' | 'neutral' | 'optimal' | 'overload';

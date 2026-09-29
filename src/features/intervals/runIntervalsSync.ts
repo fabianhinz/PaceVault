@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import {
   FULL_HISTORY_OLDEST,
   listIntervalsActivities,
@@ -29,14 +30,15 @@ const resolveOldest = (full: boolean): string => {
   return intervalsSyncWindowOldest(useSessionsStore.getState().sessions) ?? FULL_HISTORY_OLDEST;
 };
 
-export const runIntervalsSync = async (options?: {
+export const runIntervalsSync = async (options: {
+  queryClient: QueryClient;
   full?: boolean;
 }): Promise<IntervalsSyncSummary> => {
   const apiKey = useIntervalsStore.getState().apiKey;
   const profile = useUserStore.getState().profile;
   if (apiKey === null || profile === null) return NOTHING;
 
-  const oldest = resolveOldest(options?.full === true);
+  const oldest = resolveOldest(options.full === true);
   const isFullListing = oldest === FULL_HISTORY_OLDEST;
 
   const listed = await listIntervalsActivities(apiKey, oldest);
@@ -62,7 +64,7 @@ export const runIntervalsSync = async (options?: {
       profile,
       batch,
       (processed) => useIntervalsProgressStore.getState().setIntervalsSyncProcessed(processed),
-      { markNew: !foreground },
+      { queryClient: options.queryClient, markNew: !foreground },
     );
 
     useIntervalsStore.getState().recordIntervalsImported(result.importedActivityIds);

@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ToastViewport } from './components/ui/Toast.tsx';
 import { App } from './App.tsx';
 import { useUserStore } from './store/user.ts';
@@ -13,7 +14,6 @@ import { useLayoutStore } from './store/layout.ts';
 import { useFiltersStore } from './store/filters.ts';
 import { useLapOptionsStore } from './store/lapOptions.ts';
 import { useIntervalsStore } from './store/intervals.ts';
-import { usePersonalBestsStore } from './store/personalBests.ts';
 import './index.css';
 
 const boot = async () => {
@@ -29,7 +29,6 @@ const boot = async () => {
     useFiltersStore.persist.rehydrate(),
     useLapOptionsStore.persist.rehydrate(),
     useIntervalsStore.persist.rehydrate(),
-    usePersonalBestsStore.persist.rehydrate(),
   ]);
 
   const rootEl = document.getElementById('root');
@@ -43,6 +42,7 @@ const boot = async () => {
           <App />
           <ToastViewport />
         </BrowserRouter>
+        <ReactQueryDevtools />
       </QueryClientProvider>
     </StrictMode>,
   );

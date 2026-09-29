@@ -8,11 +8,9 @@ import { ZoneColorListItem } from '@/features/sessions/charts/ZoneColorListItem.
 import { ZoneDistributionChart } from '@/features/sessions/charts/ZoneDistributionChart.tsx';
 import { useZoneData } from '@/features/sessions/charts/hooks/useZoneData.ts';
 import { TrainingEffectCard } from '@/features/sessions/session/TrainingEffectCard.tsx';
-import { SessionRecordsCard } from '@/features/sessions/session/SessionRecordsCard.tsx';
 import { SessionChartsExplorer } from '@/features/sessions/charts/SessionChartsExplorer.tsx';
 import { SessionStatsGrid } from '@/features/sessions/session/SessionStatsGrid.tsx';
 import type { TrainingSession, SessionRecord, SessionLap } from '@/packages/engine/types.ts';
-import { usePersonalBestsStore } from '@/store/personalBests.ts';
 
 interface OverviewTabProps {
   session: TrainingSession;
@@ -21,8 +19,6 @@ interface OverviewTabProps {
 }
 
 export const OverviewTab = (props: OverviewTabProps) => {
-  const pbs = usePersonalBestsStore((store) => store.pbs);
-  const sessionPBs = pbs.filter((pb) => pb.sessionId === props.session.id);
   const isRunning = props.session.sport === 'running';
   const zoneData = useZoneData(props.records, isRunning);
 
@@ -52,12 +48,6 @@ export const OverviewTab = (props: OverviewTabProps) => {
           />
         )}
       </ChartPreviewCard>
-
-      {sessionPBs.length > 0 && (
-        <div className="lg:col-span-2">
-          <SessionRecordsCard sessionPBs={sessionPBs} />
-        </div>
-      )}
 
       <div className="lg:col-span-2">
         <SessionChartsExplorer records={props.records} session={props.session} />

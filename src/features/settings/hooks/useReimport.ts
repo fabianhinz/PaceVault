@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import {
@@ -14,8 +15,8 @@ import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
-import type { SessionFields, SessionRecord, Sport } from '@/packages/engine/types.ts';
-import { usePersonalBestsStore } from '@/store/personalBests.ts';
+import type { SessionFields } from '@/packages/engine/types.ts';
+import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
 
 interface ReimportState {
   reimporting: boolean;
@@ -24,6 +25,7 @@ interface ReimportState {
 }
 
 export const useReimport = () => {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<ReimportState>({
     reimporting: false,
     processed: 0,
@@ -52,14 +54,6 @@ export const useReimport = () => {
       id: string;
       session: SessionFields;
     }> = [];
-    const pbSessions: Array<{
-      sessionId: string;
-      date: number;
-      sport: Sport;
-      records: SessionRecord[];
-      distance?: number;
-      elevationGain?: number;
-    }> = [];
     let failed = 0;
 
     for (const fitFile of fitFiles) {
@@ -78,17 +72,6 @@ export const useReimport = () => {
         await saveSessionLaps(fitFile.sessionId, result.laps);
 
         updates.push({ id: fitFile.sessionId, session: result.session });
-
-        if (result.records.length > 0) {
-          pbSessions.push({
-            sessionId: fitFile.sessionId,
-            date: result.session.date,
-            sport: result.session.sport,
-            records: result.records,
-            distance: result.session.distance,
-            elevationGain: result.session.elevationGain,
-          });
-        }
       } catch (err) {
         console.error(`Reimport failed for ${fitFile.fileName}:`, err);
         failed++;
@@ -100,7 +83,7 @@ export const useReimport = () => {
     if (updates.length > 0) {
       useSessionsStore.getState().replaceSessions(updates);
       useCoachPlanStore.getState().clearPlan();
-      usePersonalBestsStore.getState().recomputeAllPBs();
+      invalidatePersonalBests(queryClient);
     }
 
     setState({ reimporting: false, processed: 0, total: 0 });
@@ -121,7 +104,7 @@ export const useReimport = () => {
       reimportVariant = 'error';
     }
     toast(m.toast_reimport_complete_title(), parts.join(', '), reimportVariant);
-  }, []);
+  }, [queryClient]);
 
   return {
     reimporting: state.reimporting,

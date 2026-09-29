@@ -1,4 +1,5 @@
 import { decode } from '@googlemaps/polyline-codec';
+import type { QueryClient } from '@tanstack/react-query';
 import type {
   Sport,
   SessionFields,
@@ -10,7 +11,7 @@ import { buildSessionGPS } from '@/packages/engine/gps.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
-import { usePersonalBestsStore } from '@/store/personalBests.ts';
+import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
 import { bulkSaveSessionData, saveSessionGPS } from '@/lib/indexeddb.ts';
 import { useUploadProgressStore } from '@/store/uploadProgress.ts';
 import { m } from '@/paraglide/messages.js';
@@ -243,7 +244,7 @@ const generateSessionDuration = (sport: Sport, intent: SessionIntent): number =>
   return Math.round(randomBetween(config.durationRange[0], config.durationRange[1]));
 };
 
-export const generateDevData = async (): Promise<number> => {
+export const generateDevData = async (queryClient: QueryClient): Promise<number> => {
   const routeData = await fetchRouteData();
 
   // Set user profile
@@ -398,22 +399,7 @@ export const generateDevData = async (): Promise<number> => {
   await Promise.all([bulkSaveSessionData(bulkEntries), ...gpsPromises]);
 
   useSessionsStore.getState().replaceSessions(updates);
-  usePersonalBestsStore.getState().addSessionPBs(
-    bulkEntries.flatMap((entry, i) => {
-      const session = updates[i]?.session;
-      if (!session) return [];
-      return [
-        {
-          sessionId: entry.sessionId,
-          date: session.date,
-          sport: session.sport,
-          records: entry.records,
-          distance: session.distance,
-          elevationGain: session.elevationGain,
-        },
-      ];
-    }),
-  );
+  invalidatePersonalBests(queryClient);
   useUploadProgressStore
     .getState()
     .finish(m.toast_devdata_generated({ count: String(sessionIds.length) }), 'success');
