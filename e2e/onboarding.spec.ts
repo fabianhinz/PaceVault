@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { RUNNING_FIT } from './helpers/seed';
 import { closeImportSummary, uploadFitFiles } from './helpers/upload';
 

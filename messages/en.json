@@ -584,5 +584,12 @@
   "ui_import_summary_duplicates_plural": "{count} duplicates",
   "ui_import_summary_failed": "{count} failed",
   "ui_import_close": "Close",
-  "ui_import_failed_generic": "Something went wrong while importing. Try again."
+  "ui_import_failed_generic": "Something went wrong while importing. Try again.",
+  "ui_error_route_title": "This page tripped up",
+  "ui_error_route_desc": "Something broke while showing this page. Your data is safe — try again or report the bug so it gets fixed.",
+  "ui_error_root_title": "PaceVault hit a snag",
+  "ui_error_root_desc": "Something broke while starting the app. Your data is still on this device — reload, or report the bug so it gets fixed.",
+  "ui_error_try_again": "Try again",
+  "ui_error_reload": "Reload",
+  "ui_error_report_bug": "Report bug"
 }

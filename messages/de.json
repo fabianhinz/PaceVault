@@ -584,5 +584,12 @@
   "ui_import_summary_duplicates_plural": "{count} Duplikate",
   "ui_import_summary_failed": "{count} fehlgeschlagen",
   "ui_import_close": "Schließen",
-  "ui_import_failed_generic": "Beim Importieren ist etwas schiefgelaufen. Versuch es noch einmal."
+  "ui_import_failed_generic": "Beim Importieren ist etwas schiefgelaufen. Versuch es noch einmal.",
+  "ui_error_route_title": "Diese Seite ist gestolpert",
+  "ui_error_route_desc": "Beim Anzeigen dieser Seite ist etwas kaputtgegangen. Deine Daten sind sicher — versuch es noch einmal oder melde den Fehler, damit er behoben wird.",
+  "ui_error_root_title": "PaceVault ist ins Stocken geraten",
+  "ui_error_root_desc": "Beim Starten der App ist etwas kaputtgegangen. Deine Daten liegen weiter auf diesem Gerät — lade neu oder melde den Fehler, damit er behoben wird.",
+  "ui_error_try_again": "Nochmal versuchen",
+  "ui_error_reload": "Neu laden",
+  "ui_error_report_bug": "Fehler melden"
 }

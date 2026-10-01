@@ -1,5 +1,5 @@
 import path from 'path';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { seedOnboardingComplete, FIXTURES_DIR } from './helpers/seed';
 
 const ROUTE_GPX = path.join(FIXTURES_DIR, 'route.gpx');

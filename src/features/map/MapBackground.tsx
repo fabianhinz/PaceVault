@@ -24,11 +24,6 @@ import type { MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map-attribution.css';
 
-const PROGRESS_SIZE = 20;
-const PROGRESS_STROKE = 2.5;
-const PROGRESS_RADIUS = (PROGRESS_SIZE - PROGRESS_STROKE) / 2;
-const PROGRESS_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RADIUS;
-
 interface MapBackgroundProps {
   className?: string;
 }
@@ -95,10 +90,6 @@ export const MapBackground = (props: MapBackgroundProps) => {
 
   const interactive = popupState.interactive && !studioPopup.popup && !studioRoutesPopup.popup;
 
-  const backfillPct =
-    backfill.total > 0 ? Math.min(backfill.processed, backfill.total) / backfill.total : 0;
-  const backfillOffset = PROGRESS_CIRCUMFERENCE * (1 - backfillPct);
-
   return (
     <div
       className={cn('fixed inset-0 z-0', props.className)}
@@ -149,35 +140,6 @@ export const MapBackground = (props: MapBackgroundProps) => {
           sport={focusedSport}
           onClose={popupState.closePopup}
         />
-      )}
-      {backfill.backfilling && (
-        <svg
-          width={PROGRESS_SIZE}
-          height={PROGRESS_SIZE}
-          className="absolute top-4 left-4 -rotate-90"
-        >
-          <circle
-            cx={PROGRESS_SIZE / 2}
-            cy={PROGRESS_SIZE / 2}
-            r={PROGRESS_RADIUS}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={PROGRESS_STROKE}
-            className="text-white/10"
-          />
-          <circle
-            cx={PROGRESS_SIZE / 2}
-            cy={PROGRESS_SIZE / 2}
-            r={PROGRESS_RADIUS}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={PROGRESS_STROKE}
-            strokeDasharray={PROGRESS_CIRCUMFERENCE}
-            strokeDashoffset={backfillOffset}
-            strokeLinecap="round"
-            className="text-accent transition-[stroke-dashoffset] duration-500"
-          />
-        </svg>
       )}
     </div>
   );

@@ -38,7 +38,8 @@ export const OnboardingPage = () => {
     <ActionPromptCard
       title={m.ui_onboarding_welcome_title()}
       description={m.ui_onboarding_welcome_desc()}
-      className="bg-[linear-gradient(color-mix(in_srgb,var(--color-surface-base)_90%,transparent),color-mix(in_srgb,var(--color-surface-base)_90%,transparent)),url('/logo.svg')] bg-surface-base bg-left-top bg-no-repeat bg-[length:12rem] p-5"
+      branded
+      className="p-5"
     >
       <hr className="border-white/10 w-full" />
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">

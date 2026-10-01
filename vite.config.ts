@@ -70,6 +70,9 @@ export default defineConfig({
       typeCheck: true,
     },
   },
+  build: {
+    sourcemap: true,
+  },
   resolve: {
     alias: {
       '@': resolve(import.meta.dirname, 'src'),

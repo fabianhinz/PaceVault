@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page } from './helpers/test';
 import { seedOnboardingComplete, CYCLING_FIT } from './helpers/seed';
 import { uploadFitFiles } from './helpers/upload';
 

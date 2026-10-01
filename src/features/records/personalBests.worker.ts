@@ -16,12 +16,10 @@ export type WorkerMessageOut = { type: 'done'; pbs: PersonalBest[] };
 
 self.onmessage = async (e: MessageEvent<WorkerMessageIn>) => {
   let pbs: PersonalBest[] = [];
-  console.time();
   for (const session of e.data.sessions) {
     const records = await getSessionRecords(session.sessionId).catch(() => []);
     pbs = computePBsForSessions([{ ...session, records }], pbs);
   }
-  console.timeEnd();
 
   self.postMessage({ type: 'done', pbs } satisfies WorkerMessageOut);
 };

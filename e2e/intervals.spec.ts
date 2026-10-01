@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { readFileSync } from 'node:fs';
 import {
   RUNNING_FIT,
