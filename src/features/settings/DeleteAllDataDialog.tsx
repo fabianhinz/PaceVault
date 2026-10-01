@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { m } from '@/paraglide/messages.js';
 import {
   DialogRoot,
@@ -17,6 +18,8 @@ import { useUserStore } from '@/store/user.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
+import { useIntervalsStore } from '@/store/intervals.ts';
+import { resetPersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
 import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
 import { clearAllRecords } from '@/lib/indexeddb.ts';
 interface DeleteAllDataDialogProps {
@@ -29,6 +32,7 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
   const sessionCount = useSessionsStore((s) => s.sessions.length);
   const hasProfile = useUserStore((s) => s.profile !== null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -37,6 +41,8 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
     useStudioStore.getState().clearAll();
     useUserStore.getState().resetProfile();
     useCoachPlanStore.getState().clearPlan();
+    resetPersonalBests(queryClient);
+    useIntervalsStore.getState().disconnectIntervals();
     useLayoutStore.setState({ onboardingComplete: false, demoMode: false });
     useFiltersStore.setState({
       timeRange: 'all',

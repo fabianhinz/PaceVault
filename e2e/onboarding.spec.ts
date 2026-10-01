@@ -1,13 +1,12 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { RUNNING_FIT } from './helpers/seed';
-import { uploadFitFiles } from './helpers/upload';
+import { closeImportSummary, uploadFitFiles } from './helpers/upload';
 
 test.describe('Onboarding flow', () => {
   test('set thresholds → upload FIT → complete onboarding', async ({ page }) => {
     await page.goto('/');
 
-    // Select the "Your Data" path to reveal thresholds
-    await page.getByText(/your data/i).click();
+    await page.getByText('FIT files', { exact: true }).click();
 
     // Onboarding page should be shown (thresholds card visible)
     const thresholdsCard = page.locator('#thresh-restHr');
@@ -22,7 +21,7 @@ test.describe('Onboarding flow', () => {
 
     // Wait for profile creation (500ms debounce + processing)
     // The upload button should become enabled once profile is created
-    const uploadButton = page.getByRole('button', { name: /upload/i }).first();
+    const uploadButton = page.getByRole('button', { name: /upload fit files/i });
     await expect(uploadButton).toBeEnabled({ timeout: 3000 });
 
     // Upload a FIT file via the hidden input
@@ -47,6 +46,7 @@ test.describe('Onboarding flow', () => {
     await expect(generateButton).toBeVisible();
     await generateButton.click();
 
+    await closeImportSummary(page);
     await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30000 });
     await expect(generateButton).not.toBeVisible();
 
@@ -57,11 +57,10 @@ test.describe('Onboarding flow', () => {
   test('upload button is disabled until thresholds are set', async ({ page }) => {
     await page.goto('/');
 
-    // Select the "Your Data" path to reveal thresholds and upload
-    await page.getByText(/your data/i).click();
+    await page.getByText('FIT files', { exact: true }).click();
 
     // Upload button should be disabled before thresholds
-    const uploadButton = page.getByRole('button', { name: /upload/i }).first();
+    const uploadButton = page.getByRole('button', { name: /upload fit files/i });
     await expect(uploadButton).toBeDisabled();
 
     // Fill only restHr — button should still be disabled (need both)

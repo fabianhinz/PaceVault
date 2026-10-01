@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import {
   seedOnboardingComplete,
   CYCLING_FIT,
@@ -13,17 +13,16 @@ test.describe('ZIP archive upload', () => {
     test('upload a ZIP containing a single FIT file → session appears', async ({ page }) => {
       await page.goto('/');
 
-      // Select "Your Data" path and fill thresholds
-      await page.getByText(/your data/i).click();
+      await page.getByText('FIT files', { exact: true }).click();
       await page.fill('#thresh-restHr', '50');
       await page.fill('#thresh-maxHr', '185');
 
-      const uploadButton = page.getByRole('button', { name: /upload/i }).first();
+      const uploadButton = page.getByRole('button', { name: /upload fit files/i });
       await expect(uploadButton).toBeEnabled({ timeout: 3000 });
 
       // Upload a ZIP via the file picker
-      const doneBanner = await uploadFiles(page, [CYCLING_ONLY_ZIP]);
-      await expect(doneBanner).toContainText('1 session');
+      const summary = await uploadFiles(page, [CYCLING_ONLY_ZIP]);
+      expect(summary).toContain('1 new session');
 
       // Onboarding should auto-complete — dock should be visible
       await expect(page.locator('[data-layout="dock"]')).toBeVisible();
@@ -32,15 +31,15 @@ test.describe('ZIP archive upload', () => {
     test('upload a ZIP containing multiple FIT files → all sessions appear', async ({ page }) => {
       await page.goto('/');
 
-      await page.getByText(/your data/i).click();
+      await page.getByText('FIT files', { exact: true }).click();
       await page.fill('#thresh-restHr', '50');
       await page.fill('#thresh-maxHr', '185');
 
-      const uploadButton = page.getByRole('button', { name: /upload/i }).first();
+      const uploadButton = page.getByRole('button', { name: /upload fit files/i });
       await expect(uploadButton).toBeEnabled({ timeout: 3000 });
 
-      const doneBanner = await uploadFiles(page, [ACTIVITIES_ZIP]);
-      await expect(doneBanner).toContainText('2 sessions');
+      const summary = await uploadFiles(page, [ACTIVITIES_ZIP]);
+      expect(summary).toContain('2 new sessions');
 
       await expect(page.locator('[data-layout="dock"]')).toBeVisible();
     });
@@ -52,8 +51,8 @@ test.describe('ZIP archive upload', () => {
     });
 
     test('drop a ZIP file → sessions extracted and uploaded', async ({ page }) => {
-      const doneBanner = await dropFiles(page, [ACTIVITIES_ZIP]);
-      await expect(doneBanner).toContainText('2 sessions');
+      const summary = await dropFiles(page, [ACTIVITIES_ZIP]);
+      expect(summary).toContain('2 new sessions');
 
       // Navigate to sessions page and verify sessions are listed
       await page.getByRole('link', { name: /sessions/i }).click();
@@ -64,13 +63,13 @@ test.describe('ZIP archive upload', () => {
     });
 
     test('drop a FIT file directly → session uploaded', async ({ page }) => {
-      const doneBanner = await dropFiles(page, [CYCLING_FIT]);
-      await expect(doneBanner).toContainText('1 session');
+      const summary = await dropFiles(page, [CYCLING_FIT]);
+      expect(summary).toContain('1 new session');
     });
 
     test('drop a mix of FIT and ZIP files → all sessions uploaded', async ({ page }) => {
-      const doneBanner = await dropFiles(page, [RUNNING_FIT, CYCLING_ONLY_ZIP]);
-      await expect(doneBanner).toContainText('2 sessions');
+      const summary = await dropFiles(page, [RUNNING_FIT, CYCLING_ONLY_ZIP]);
+      expect(summary).toContain('2 new sessions');
     });
 
     test('drag hint toast appears while dragging files', async ({ page }) => {

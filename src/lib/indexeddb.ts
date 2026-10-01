@@ -1,36 +1,23 @@
 import type { SessionRecord, SessionLap, SessionGPS } from '@/packages/engine/types.ts';
 import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
-import { getDB } from './db.ts';
+import type { StoreNames } from 'idb';
+import { getDB, type EnduranceTrackerDB } from './db.ts';
+import { decodeRecords, encodeRecords } from './recordCodec.ts';
 
-const groupBy = <T>(items: T[], key: (item: T) => string): Map<string, T[]> => {
-  const map = new Map<string, T[]>();
-  for (const item of items) {
-    const k = key(item);
-    const group = map.get(k);
-    if (group) {
-      group.push(item);
-    } else {
-      map.set(k, [item]);
-    }
-  }
-  return map;
-};
-
-export const saveSessionRecords = async (records: SessionRecord[]): Promise<void> => {
+export const saveSessionRecords = async (
+  sessionId: string,
+  records: SessionRecord[],
+): Promise<void> => {
   if (records.length === 0) return;
+  const encoded = await encodeRecords(records);
   const db = await getDB();
-  const grouped = groupBy(records, (r) => r.sessionId);
-  const tx = db.transaction('session-records', 'readwrite');
-  for (const [sessionId, sessionRecords] of grouped) {
-    tx.store.put({ sessionId, records: sessionRecords });
-  }
-  await tx.done;
+  await db.put('session-records', { sessionId, ...encoded });
 };
 
 export const getSessionRecords = async (sessionId: string): Promise<SessionRecord[]> => {
   const db = await getDB();
-  const blob = await db.get('session-records', sessionId);
-  return blob?.records ?? [];
+  const records = decodeRecords(await db.get('session-records', sessionId));
+  return records;
 };
 
 export const deleteSessionRecords = async (sessionId: string): Promise<void> => {
@@ -68,15 +55,10 @@ export const deleteStudioRoutePoints = async (routeId: string): Promise<void> =>
   await db.delete('studio-route-points', routeId);
 };
 
-export const saveSessionLaps = async (laps: SessionLap[]): Promise<void> => {
+export const saveSessionLaps = async (sessionId: string, laps: SessionLap[]): Promise<void> => {
   if (laps.length === 0) return;
   const db = await getDB();
-  const grouped = groupBy(laps, (l) => l.sessionId);
-  const tx = db.transaction('session-laps', 'readwrite');
-  for (const [sessionId, sessionLaps] of grouped) {
-    tx.store.put({ sessionId, laps: sessionLaps });
-  }
-  await tx.done;
+  await db.put('session-laps', { sessionId, laps });
 };
 
 export const getSessionLaps = async (sessionId: string): Promise<SessionLap[]> => {
@@ -117,10 +99,7 @@ export const deleteSessionGPS = async (sessionId: string): Promise<void> => {
 };
 
 export const bulkSaveSessionData = async (
-  entries: Array<{
-    records: (SessionRecord & { sessionId: string })[];
-    laps: (SessionLap & { sessionId: string })[];
-  }>,
+  entries: Array<{ sessionId: string; records: SessionRecord[]; laps: SessionLap[] }>,
   options?: { chunkSize?: number; onChunkDone?: (chunkIndex: number) => void },
 ): Promise<void> => {
   const size = options?.chunkSize ?? 10;
@@ -128,46 +107,26 @@ export const bulkSaveSessionData = async (
 
   for (let ci = 0; ci < entries.length; ci += size) {
     const chunk = entries.slice(ci, ci + size);
+    const encoded = await Promise.all(
+      chunk.map(async (entry) => {
+        if (entry.records.length === 0) return null;
+        return encodeRecords(entry.records);
+      }),
+    );
+
     const tx = db.transaction(['session-records', 'session-laps'], 'readwrite');
     const recordStore = tx.objectStore('session-records');
     const lapStore = tx.objectStore('session-laps');
 
-    for (const entry of chunk) {
-      if (entry.records.length > 0) {
-        const grouped = groupBy(entry.records, (r) => r.sessionId);
-        for (const [sessionId, records] of grouped) {
-          recordStore.put({ sessionId, records });
-        }
-      }
-      if (entry.laps.length > 0) {
-        const grouped = groupBy(entry.laps, (l) => l.sessionId);
-        for (const [sessionId, laps] of grouped) {
-          lapStore.put({ sessionId, laps });
-        }
-      }
-    }
+    chunk.forEach((entry, i) => {
+      const records = encoded[i];
+      if (records) recordStore.put({ sessionId: entry.sessionId, ...records });
+      if (entry.laps.length > 0) lapStore.put({ sessionId: entry.sessionId, laps: entry.laps });
+    });
 
     await tx.done;
     options?.onChunkDone?.(ci / size);
   }
-};
-
-export const getRecordsForSessions = async (
-  sessionIds: string[],
-): Promise<Map<string, SessionRecord[]>> => {
-  const db = await getDB();
-  const tx = db.transaction('session-records', 'readonly');
-  const queries = sessionIds.map((id) => tx.store.get(id));
-  const results = await Promise.all(queries);
-  await tx.done;
-
-  const map = new Map<string, SessionRecord[]>();
-  for (let i = 0; i < sessionIds.length; i++) {
-    const id = sessionIds[i];
-    if (!id) continue;
-    map.set(id, results[i]?.records ?? []);
-  }
-  return map;
 };
 
 export const saveFitFile = async (
@@ -198,7 +157,41 @@ export const getAllFitFiles = async (): Promise<
   return db.getAll('fit-files');
 };
 
-export const getAllFitFileSessionIds = async (): Promise<string[]> => {
+export type IdbStoreName = StoreNames<EnduranceTrackerDB>;
+
+const binaryBytes = (value: unknown): number | undefined => {
+  if (typeof value !== 'object' || value === null || !('byteLength' in value)) return undefined;
+  if (typeof value.byteLength !== 'number') return undefined;
+  return value.byteLength;
+};
+
+const valueBytes = (value: unknown): number => {
+  if (typeof value === 'string') return value.length;
+  const binary = binaryBytes(value);
+  if (binary !== undefined) return binary;
+  if (typeof value === 'object' && value !== null && 'data' in value) {
+    const data = binaryBytes(value.data);
+    if (data !== undefined) return data;
+  }
+  return JSON.stringify(value)?.length ?? 0;
+};
+
+const measureStore = async (store: IdbStoreName): Promise<number> => {
   const db = await getDB();
-  return db.getAllKeys('fit-files');
+  let total = 0;
+  let cursor = await db.transaction(store).store.openCursor();
+  while (cursor) {
+    total += valueBytes(cursor.value);
+    cursor = await cursor.continue();
+  }
+  return total;
+};
+
+export const measureStoreBytes = async (): Promise<Partial<Record<IdbStoreName, number>>> => {
+  const db = await getDB();
+  const sizes: Partial<Record<IdbStoreName, number>> = {};
+  for (const store of Array.from(db.objectStoreNames)) {
+    sizes[store] = await measureStore(store);
+  }
+  return sizes;
 };

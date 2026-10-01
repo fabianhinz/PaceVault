@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   deriveDistanceFromRecords,
   deriveAvgFromRecords,
   deriveMaxFromRecords,
+  parseFitFile,
 } from '@/parsers/fit.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 function makeRecord(overrides: Partial<SessionRecord> = {}): SessionRecord {
-  return { sessionId: 'test', timestamp: 0, ...overrides };
+  return { timestamp: 0, ...overrides };
 }
 
 describe('deriveDistanceFromRecords', () => {
@@ -109,5 +112,23 @@ describe('deriveMaxFromRecords', () => {
   it('skips zero values', () => {
     const records = [makeRecord({ power: 0 }), makeRecord({ power: 250 })];
     expect(deriveMaxFromRecords(records, 'power')).toBe(250);
+  });
+});
+
+describe('parseFitFile session name', () => {
+  const fixture = (): ArrayBuffer => {
+    const buf = readFileSync(resolve('e2e/fixtures/running.fit'));
+    const bytes = new Uint8Array(buf.byteLength);
+    bytes.set(buf);
+    return bytes.buffer;
+  };
+
+  const profile = { restHr: 48, maxHr: 188, gender: 'male' as const, ftp: 265 };
+
+  it('lets an intervals.icu name win over the filename', async () => {
+    const result = await parseFitFile(fixture(), '15487122967_Lauf_am_Morgen.fit', profile, {
+      name: 'Karlsruhe Laufen',
+    });
+    expect(result.session.name).toBe('Karlsruhe Laufen');
   });
 });

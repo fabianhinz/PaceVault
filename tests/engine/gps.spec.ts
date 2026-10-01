@@ -40,7 +40,7 @@ describe('bearingDeg', () => {
 
 describe('extractPathFromRecords', () => {
   it('extracts [lng, lat] pairs from records with valid GPS', () => {
-    const records = makeGPSRunningRecords('s1', 10);
+    const records = makeGPSRunningRecords(10);
     const path = extractPathFromRecords(records);
     expect(path).toHaveLength(10);
     // Output is [lng, lat] — same convention as decodeTrackForRendering
@@ -49,7 +49,7 @@ describe('extractPathFromRecords', () => {
   });
 
   it('returns empty array for indoor sessions', () => {
-    const records = makeIndoorRecords('s1', 50);
+    const records = makeIndoorRecords(50);
     const path = extractPathFromRecords(records);
     expect(path).toHaveLength(0);
   });
@@ -70,7 +70,7 @@ describe('extractPathFromRecords', () => {
   });
 
   it('preserves all points without simplification', () => {
-    const records = makeGPSRunningRecords('s1', 500);
+    const records = makeGPSRunningRecords(500);
     const path = extractPathFromRecords(records);
     expect(path).toHaveLength(500);
   });
@@ -91,12 +91,12 @@ describe('buildSessionGPS', () => {
   });
 
   it('returns null for indoor activities (no GPS)', () => {
-    const records = makeIndoorRecords('s1', 100);
+    const records = makeIndoorRecords(100);
     expect(buildSessionGPS('s1', records)).toBeNull();
   });
 
   it('builds valid SessionGPS for outdoor activity', () => {
-    const records = makeGPSRunningRecords('s1', 200);
+    const records = makeGPSRunningRecords(200);
     const result = buildSessionGPS('s1', records);
     expect(result).not.toBeNull();
     if (!result) return;

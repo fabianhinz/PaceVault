@@ -82,10 +82,10 @@ describe('computeWindExposure', () => {
   it('skips long pauses without corrupting the split', () => {
     // Two eastbound moving points, a > 30 s gap, then two more eastbound points; wind from the east.
     const records: SessionRecord[] = [
-      { sessionId: 's1', timestamp: 0, lat: 48, lng: 11.0 },
-      { sessionId: 's1', timestamp: 1, lat: 48, lng: 11.001 },
-      { sessionId: 's1', timestamp: 1001, lat: 48, lng: 12.0 }, // 1000 s gap → skipped
-      { sessionId: 's1', timestamp: 1002, lat: 48, lng: 12.001 },
+      { timestamp: 0, lat: 48, lng: 11.0 },
+      { timestamp: 1, lat: 48, lng: 11.001 },
+      { timestamp: 1001, lat: 48, lng: 12.0 }, // 1000 s gap → skipped
+      { timestamp: 1002, lat: 48, lng: 12.001 },
     ];
     const result = computeWindExposure(records, windFrom(90), 0);
     expect(result).not.toBeNull();
@@ -100,7 +100,7 @@ describe('computeWindExposure', () => {
   });
 
   it('returns null when there is no GPS data', () => {
-    expect(computeWindExposure(makeIndoorRecords('s1', 50), windFrom(90), 0)).toBeNull();
+    expect(computeWindExposure(makeIndoorRecords(50), windFrom(90), 0)).toBeNull();
   });
 
   it('returns null when there are no wind samples', () => {

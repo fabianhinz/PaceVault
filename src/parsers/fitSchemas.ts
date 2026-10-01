@@ -35,6 +35,8 @@ export const fitRecordSchema = z.object({
 
 export const fitRecordsSchema = z.array(fitRecordSchema);
 
+export type FitRecordInput = z.infer<typeof fitRecordSchema>;
+
 export const fitLapSchema = z.object({
   start_time: optDateTime,
   timestamp: optDateTime,

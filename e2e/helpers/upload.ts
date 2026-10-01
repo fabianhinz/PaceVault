@@ -1,18 +1,25 @@
 import { type Page, expect } from '@playwright/test';
 import { UPLOAD_EXTENSIONS } from '../../src/lib/archive';
 
+export const closeImportSummary = async (page: Page): Promise<string> => {
+  const summary = page.getByTestId('import-summary');
+  await expect(summary).toBeVisible({ timeout: 30_000 });
+  const text = (await summary.textContent()) ?? '';
+  await summary.getByRole('button', { name: /close/i }).click();
+  await expect(summary).toBeHidden();
+  return text;
+};
+
 /**
- * Uploads files via the hidden file input and waits for the upload
- * done message to appear as a Radix toast.
+ * Uploads files via the hidden file input — the onboarding one when it is on screen,
+ * otherwise the FIT files card in settings — then closes the import summary and returns its text.
  */
 export const uploadFiles = async (page: Page, filePaths: string[]) => {
   const fileInput = page.locator(`input[type="file"][accept="${UPLOAD_EXTENSIONS.join(',')}"]`);
+  if ((await fileInput.count()) === 0) await page.goto('/settings?tab=data');
   await fileInput.setInputFiles(filePaths);
 
-  const doneBanner = page.locator('[data-testid="upload-done"]');
-  await expect(doneBanner).toBeVisible({ timeout: 30_000 });
-
-  return doneBanner;
+  return closeImportSummary(page);
 };
 
 /**
@@ -47,8 +54,5 @@ export const dropFiles = async (page: Page, filePaths: string[]) => {
     document.dispatchEvent(new DragEvent('drop', opts));
   }, fileBuffers);
 
-  const doneBanner = page.locator('[data-testid="upload-done"]');
-  await expect(doneBanner).toBeVisible({ timeout: 30_000 });
-
-  return doneBanner;
+  return closeImportSummary(page);
 };

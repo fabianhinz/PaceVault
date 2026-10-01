@@ -16,12 +16,12 @@ export const trackModifiers = {
 
 export const sportTrackColor: Record<Sport, [number, number, number, number]> = {
   running: [74, 222, 128, trackModifiers.alpha.default],
-  cycling: [96, 165, 250, trackModifiers.alpha.default],
+  cycling: [249, 115, 22, trackModifiers.alpha.default],
 };
 
 export const sportMarkerColor: Record<Sport, [number, number, number, number]> = {
   running: [74, 222, 128, 255],
-  cycling: [96, 165, 250, 255],
+  cycling: [249, 115, 22, 255],
 };
 
 // Live "you are here" position. The accuracy disc mirrors the glass surface

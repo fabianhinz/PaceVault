@@ -5,7 +5,6 @@ import {
   Zap,
   Settings,
   EllipsisVertical,
-  Upload,
   X,
   Activity,
   Clock,
@@ -38,7 +37,6 @@ import {
   rangeLabelMap,
   formatCustomRangeDuration,
 } from '@/lib/timeRange.ts';
-import { UPLOAD_EXTENSIONS } from '@/lib/archive.ts';
 import type { Sport } from '@/packages/engine/types.ts';
 
 const tabs = [
@@ -79,10 +77,9 @@ export const Dock = () => {
   const activeIndex = tabs.findIndex((tab) => isTabActive(tab.to, location.pathname));
   const dockBarRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLElement | null)[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const dockExpanded = useIsDesktop();
   const indicatorElement = useSlideIndicator(dockBarRef, tabRefs, activeIndex, dockExpanded);
-  const upload = useFileUpload(fileInputRef);
+  const upload = useFileUpload();
   useFileDropEffect(upload.handleFiles, !upload.uploading);
 
   const [revealStack, setRevealStack] = useState<DockRevealLayer[]>([]);
@@ -220,20 +217,6 @@ export const Dock = () => {
 
           {/* Mini dock menu panel (Level B) — between dock bar and filters on desktop */}
           <DockRevealPanel open={isOpen('menu') && !dockExpanded} className="lg:order-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={revealItemClass}
-              disabled={upload.uploading || !upload.profile}
-              onClick={() => {
-                upload.triggerUpload();
-                closeFrom('menu');
-              }}
-              aria-label={m.ui_dock_upload_fit()}
-            >
-              <Upload size={20} strokeWidth={1.5} />
-              <span className="text-[10px] leading-none">{m.ui_btn_upload()}</span>
-            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -383,26 +366,6 @@ export const Dock = () => {
                   </IconBadge>
                   <span className="text-[10px] leading-none">{m.ui_dock_locate()}</span>
                 </Button>
-
-                {/* Separator */}
-                <div
-                  className={cn(
-                    'bg-white/10 shrink-0 transition-all duration-300',
-                    'w-px h-6 mx-1 lg:w-6 lg:h-px lg:my-1 lg:mx-0',
-                  )}
-                />
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={dockItemMaxiClass}
-                  disabled={upload.uploading || !upload.profile}
-                  onClick={upload.triggerUpload}
-                  aria-label={m.ui_dock_upload_fit()}
-                >
-                  <Upload size={20} strokeWidth={1.5} />
-                  <span className="text-[10px] leading-none">{m.ui_btn_upload()}</span>
-                </Button>
               </>
             ) : (
               <Button
@@ -420,16 +383,6 @@ export const Dock = () => {
               </Button>
             )}
           </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={UPLOAD_EXTENSIONS.join(',')}
-            multiple
-            className="hidden"
-            onChange={(e) => e.target.files && upload.handleFiles(e.target.files)}
-            disabled={upload.uploading}
-          />
         </nav>
       </div>
 

@@ -42,6 +42,12 @@ export const formatDate = (timestamp: number, options?: FormatDateOptions): stri
   return dateFmt.format(timestamp);
 };
 
+export const formatBytes = (bytes: number): string => {
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+};
+
 export const toDateString = (timestamp: number): string => {
   const parts = localDateFmt.formatToParts(timestamp);
   const y = parts.find((p) => p.type === 'year')?.value ?? '0000';

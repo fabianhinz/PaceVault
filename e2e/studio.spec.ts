@@ -1,5 +1,5 @@
 import path from 'path';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { seedOnboardingComplete, FIXTURES_DIR } from './helpers/seed';
 
 const ROUTE_GPX = path.join(FIXTURES_DIR, 'route.gpx');
@@ -134,7 +134,7 @@ test.describe('Studio', () => {
       mimeType: 'application/gpx+xml',
       buffer: Buffer.from('not a gpx file'),
     });
-    await expect(page.getByText(/failed to import/i)).toBeVisible();
+    await expect(page.getByTestId('gpx-import-failed')).toBeVisible();
     await expect(page.getByText(/plan your next adventure/i)).toBeVisible();
   });
 });

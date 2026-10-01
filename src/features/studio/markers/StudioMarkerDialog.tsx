@@ -116,12 +116,12 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
         description: description.trim() || undefined,
       };
       if (editor.markerId) {
-        store.updateStudioMarker(props.route.id, editor.markerId, poiFields);
+        store.updateStudioPoi(props.route.id, editor.markerId, poiFields);
       } else {
         store.addStudioMarker(props.route.id, { type: 'point_of_interest', ...poiFields });
       }
     } else if (editor.markerId) {
-      store.updateStudioMarker(props.route.id, editor.markerId, { distanceM });
+      store.moveStudioMarker(props.route.id, editor.markerId, distanceM);
     } else {
       store.addStudioMarker(props.route.id, { type: 'track_modifier', distanceM });
     }

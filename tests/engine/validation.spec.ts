@@ -8,24 +8,24 @@ import {
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 function makeRecord(overrides: Partial<SessionRecord>): SessionRecord {
-  return { sessionId: 'test', timestamp: 0, ...overrides };
+  return { timestamp: 0, ...overrides };
 }
 
 describe('validateRecords', () => {
   it('produces no warnings for clean cycling records', () => {
-    const records = makeCyclingRecords('s1', 60);
+    const records = makeCyclingRecords(60);
     const warnings = validateRecords(records, 'cycling');
     expect(warnings).toEqual([]);
   });
 
   it('produces no warnings for clean running records', () => {
-    const records = makeRunningRecords('s1', 60);
+    const records = makeRunningRecords(60);
     const warnings = validateRecords(records, 'running');
     expect(warnings).toEqual([]);
   });
 
   it('warns when HR exceeds 230 in more than 10 records', () => {
-    const records = makeInvalidRecords('s1', 'highHr');
+    const records = makeInvalidRecords('highHr');
     const warnings = validateRecords(records, 'cycling');
     expect(warnings).toHaveLength(1);
     expect(warnings[0].field).toBe('hr');
@@ -48,13 +48,13 @@ describe('validateRecords', () => {
   });
 
   it('warns when all HR values are zero', () => {
-    const records = makeInvalidRecords('s1', 'zeroHr');
+    const records = makeInvalidRecords('zeroHr');
     const warnings = validateRecords(records, 'cycling');
     expect(warnings.some((w) => w.message.includes('sensor not connected'))).toBe(true);
   });
 
   it('warns when power exceeds 2500W in more than 10 records', () => {
-    const records = makeInvalidRecords('s1', 'highPower');
+    const records = makeInvalidRecords('highPower');
     const warnings = validateRecords(records, 'cycling');
     expect(warnings.some((w) => w.field === 'power')).toBe(true);
     expect(warnings.find((w) => w.field === 'power')?.message).toContain('2500W');

@@ -1,10 +1,10 @@
-import { useRef, useState } from 'react';
-import { Upload, Database, FolderUp } from 'lucide-react';
-import { useUserStore } from '@/store/user.ts';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Database, FolderUp, CloudDownload } from 'lucide-react';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
-import { useUploadProgressStore } from '@/store/uploadProgress.ts';
-import { useFileUpload } from '@/features/sessions/hooks/useFileUpload.ts';
+import { useImportProgressStore } from '@/store/importProgress.ts';
+import { FitUploadButton } from '@/features/sessions/FitUploadButton.tsx';
 
 import { generateDevData } from '@/features/dashboard/generateDevData.ts';
 import { m } from '@/paraglide/messages.js';
@@ -12,26 +12,25 @@ import { Button } from '@/components/ui/Button.tsx';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
 import { ThresholdsSection } from '@/features/settings/ThresholdsSection.tsx';
 import { ActionPromptCard } from '@/components/ui/ActionPromptCard.tsx';
-import { UPLOAD_EXTENSIONS } from '@/lib/archive';
+import { IntervalsConnectionForm } from '@/features/intervals/IntervalsConnectionForm.tsx';
 
-type OnboardingPath = 'your-data' | 'test-data' | null;
+type OnboardingPath = 'intervals' | 'your-data' | 'test-data' | null;
 
 export const OnboardingPage = () => {
-  const profile = useUserStore((s) => s.profile);
-  const uploading = useUploadProgressStore((s) => s.uploading);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const upload = useFileUpload(fileInputRef);
+  const uploading = useImportProgressStore((s) => s.foreground !== null);
+  const queryClient = useQueryClient();
 
   const [path, setPath] = useState<OnboardingPath>(null);
 
   const handleGenerate = async () => {
     try {
-      await generateDevData();
+      await generateDevData(queryClient);
       useLayoutStore.getState().completeOnboarding();
       useLayoutStore.getState().setDemoMode(true);
     } catch {
-      useUploadProgressStore.getState().finish(m.ui_onboarding_testdata_failed(), 'error');
+      useImportProgressStore
+        .getState()
+        .finishImport({ kind: 'failed', message: m.ui_import_failed_generic() });
     }
   };
 
@@ -39,14 +38,22 @@ export const OnboardingPage = () => {
     <ActionPromptCard
       title={m.ui_onboarding_welcome_title()}
       description={m.ui_onboarding_welcome_desc()}
-      className="bg-[linear-gradient(color-mix(in_srgb,var(--color-surface-base)_90%,transparent),color-mix(in_srgb,var(--color-surface-base)_90%,transparent)),url('/logo.svg')] bg-surface-base bg-left-top bg-no-repeat bg-[length:12rem] p-5"
+      branded
+      className="p-5"
     >
       <hr className="border-white/10 w-full" />
-      <div className="grid grid-cols-2 gap-3 w-full">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
+        <ActionTile
+          icon={CloudDownload}
+          title={m.ui_onboarding_intervals_title()}
+          description={m.ui_onboarding_intervals_desc()}
+          selected={path === 'intervals'}
+          onClick={() => setPath('intervals')}
+        />
         <ActionTile
           icon={FolderUp}
-          title={m.ui_onboarding_your_data_title()}
-          description={m.ui_onboarding_your_data_desc()}
+          title={m.ui_fit_files_title()}
+          description={m.ui_fit_files_desc()}
           selected={path === 'your-data'}
           onClick={() => setPath('your-data')}
         />
@@ -55,6 +62,7 @@ export const OnboardingPage = () => {
           title={m.ui_onboarding_testdata_title()}
           description={m.ui_onboarding_testdata_desc()}
           selected={path === 'test-data'}
+          className="col-span-2 sm:col-span-1"
           onClick={() => setPath('test-data')}
         />
       </div>
@@ -65,31 +73,28 @@ export const OnboardingPage = () => {
         </div>
       )}
 
-      {path !== null && (
+      {path === 'intervals' && (
+        <div className="w-full">
+          <IntervalsConnectionForm
+            onSynced={() => {
+              useLayoutStore.getState().completeOnboarding();
+            }}
+          >
+            <ThresholdsSection variant="embedded" />
+          </IntervalsConnectionForm>
+        </div>
+      )}
+
+      {path !== null && path !== 'intervals' && (
         <div className="flex justify-end w-full">
           {path === 'your-data' ? (
-            <>
-              <Button disabled={!profile || uploading} onClick={upload.triggerUpload}>
-                <Upload size={16} />
-                {m.ui_onboarding_upload_fit()}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={UPLOAD_EXTENSIONS.join(',')}
-                multiple
-                className="hidden"
-                onChange={async (e) => {
-                  if (e.target.files) {
-                    await upload.handleFiles(e.target.files);
-                    if (useSessionsStore.getState().sessions.length > 0) {
-                      useLayoutStore.getState().completeOnboarding();
-                    }
-                  }
-                }}
-                disabled={uploading}
-              />
-            </>
+            <FitUploadButton
+              onUploaded={() => {
+                if (useSessionsStore.getState().sessions.length > 0) {
+                  useLayoutStore.getState().completeOnboarding();
+                }
+              }}
+            />
           ) : (
             <Button onClick={handleGenerate} loading={uploading}>
               {uploading

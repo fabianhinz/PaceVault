@@ -1,12 +1,13 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { SessionRecord, SessionLap, SessionGPS } from '@/packages/engine/types.ts';
+import type { SessionLap, SessionGPS } from '@/packages/engine/types.ts';
 import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
 import type { SessionWeather } from './weather.ts';
+import type { EncodedRecords } from './recordCodec.ts';
 
 export interface EnduranceTrackerDB extends DBSchema {
   'session-records': {
     key: string;
-    value: { sessionId: string; records: SessionRecord[] };
+    value: { sessionId: string } & EncodedRecords;
   };
   'session-laps': {
     key: string;

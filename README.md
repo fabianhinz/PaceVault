@@ -26,3 +26,12 @@ PaceVault is installable as a Progressive Web App. It works fully offline — on
    ```
 
 6. Open a PR against `main`
+
+## Debugging a crash report
+
+"Report bug" issues contain the minified stack and the build commit. Source maps ship with every build, so a local rebuild resolves the stack:
+
+1. `git checkout <commit>` from the report
+2. Put the real `VITE_CARTO_API_KEY` in `.env.local`, then `vp build`
+3. Compare chunk names in the stack (e.g. `index-D4f.js`) with `dist/assets/` — matching names mean the build is byte-identical
+4. Resolve the frames with the `.map` files in `dist/assets/`, by hand or by loading the build in DevTools

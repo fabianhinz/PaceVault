@@ -6,26 +6,21 @@ import type { GPSBounds } from '@/packages/engine/types.ts';
 import type { RouteElevationStats } from '@/packages/gpx/routeGeometry.ts';
 import { idbStorage } from '@/lib/idbStorage.ts';
 
-export type StudioRouteColor = 'emerald' | 'sky' | 'amber' | 'rose' | 'violet' | 'cyan';
+export type StudioRouteColor = 'amber' | 'orange' | 'rose' | 'fuchsia' | 'violet' | 'emerald';
+
+const REPLACED_ROUTE_COLORS: Record<string, StudioRouteColor> = { sky: 'fuchsia', cyan: 'violet' };
 
 export type StudioMarkerType = 'track_modifier' | 'point_of_interest';
 
 interface StudioMarkerBase {
   id: string;
-  /**
-   * Position as distance from the route start in metres. lat/lng is derived by
-   * interpolating the route polyline at this distance — every marker snaps to
-   * the track for now.
-   */
   distanceM: number;
 }
 
-/** A split point — later exports the route on either side as separate GPX tracks. */
 export interface TrackModifierMarker extends StudioMarkerBase {
   type: 'track_modifier';
 }
 
-/** A named point of interest along the route. */
 export interface PointOfInterestMarker extends StudioMarkerBase {
   type: 'point_of_interest';
   label: string;
@@ -34,11 +29,10 @@ export interface PointOfInterestMarker extends StudioMarkerBase {
 
 export type StudioMarker = TrackModifierMarker | PointOfInterestMarker;
 
-/** Omit that distributes over a union so per-member fields (e.g. `label`) survive. */
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
 
 export type StudioMarkerInput = DistributiveOmit<StudioMarker, 'id'>;
-export type StudioMarkerPatch = Partial<DistributiveOmit<StudioMarker, 'id' | 'type'>>;
+export type StudioPoiFields = Pick<PointOfInterestMarker, 'distanceM' | 'label' | 'description'>;
 
 export interface StudioRoute {
   id: string;
@@ -46,10 +40,8 @@ export interface StudioRoute {
   sourceFileName: string;
   importedAt: number;
   color: StudioRouteColor;
-  /** One encoded polyline per GPX segment — disconnected segments stay disconnected. */
   encodedPolylines: string[];
   bounds: GPSBounds;
-  /** Total route distance in metres. */
   distance: number;
   elevation?: RouteElevationStats;
   markers: StudioMarker[];
@@ -62,7 +54,8 @@ interface StudioState {
   setStudioRouteColor: (id: string, color: StudioRouteColor) => void;
   deleteStudioRoute: (id: string) => void;
   addStudioMarker: (routeId: string, marker: StudioMarkerInput) => string;
-  updateStudioMarker: (routeId: string, markerId: string, patch: StudioMarkerPatch) => void;
+  moveStudioMarker: (routeId: string, markerId: string, distanceM: number) => void;
+  updateStudioPoi: (routeId: string, markerId: string, fields: StudioPoiFields) => void;
   deleteStudioMarker: (routeId: string, markerId: string) => void;
   clearAll: () => void;
 }
@@ -102,19 +95,27 @@ export const useStudioStore = create<StudioState>()(
           set((draft) => {
             const route = draft.routes.find((r) => r.id === routeId);
             if (route) {
-              // Spreading a discriminated union loses the type→field correlation;
-              // the input is already well-typed, so re-assert the union.
-              route.markers.push({ ...marker, id } as StudioMarker);
+              route.markers.push({ ...marker, id });
             }
           });
           return id;
         },
-        updateStudioMarker: (routeId, markerId, patch) =>
+        moveStudioMarker: (routeId, markerId, distanceM) =>
           set((draft) => {
             const route = draft.routes.find((r) => r.id === routeId);
             const marker = route?.markers.find((mk) => mk.id === markerId);
             if (marker) {
-              Object.assign(marker, patch);
+              marker.distanceM = distanceM;
+            }
+          }),
+        updateStudioPoi: (routeId, markerId, fields) =>
+          set((draft) => {
+            const route = draft.routes.find((r) => r.id === routeId);
+            const marker = route?.markers.find((mk) => mk.id === markerId);
+            if (marker?.type === 'point_of_interest') {
+              marker.distanceM = fields.distanceM;
+              marker.label = fields.label;
+              marker.description = fields.description;
             }
           }),
         deleteStudioMarker: (routeId, markerId) =>
@@ -130,12 +131,17 @@ export const useStudioStore = create<StudioState>()(
         name: 'store-studio',
         storage: createJSONStorage(() => idbStorage),
         skipHydration: true,
-        version: 2,
+        version: 3,
         migrate: (persisted, version) => {
           const state = persisted as { routes?: StudioRoute[] };
           if (version < 2) {
             for (const route of state.routes ?? []) {
               route.markers = route.markers ?? [];
+            }
+          }
+          if (version < 3) {
+            for (const route of state.routes ?? []) {
+              route.color = REPLACED_ROUTE_COLORS[route.color] ?? route.color;
             }
           }
           return state as unknown as StudioState;

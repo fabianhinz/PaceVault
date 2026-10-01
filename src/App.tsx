@@ -9,19 +9,11 @@ import { StudioDetailPage } from './pages/StudioDetailPage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { LabsPage } from './pages/LabsPage.tsx';
 import { enableMapSet } from 'immer';
-import { useEffect } from 'react';
-import { useFiltersStore } from './store/filters.ts';
 
 enableMapSet();
 
 export const App = () => {
   const hydrated = useStoresHydrated();
-
-  useEffect(() => {
-    if (hydrated) {
-      useFiltersStore.getState().recomputePBs();
-    }
-  }, [hydrated]);
 
   if (!hydrated) return null;
 

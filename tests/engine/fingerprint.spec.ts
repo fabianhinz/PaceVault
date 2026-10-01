@@ -67,6 +67,7 @@ const makeSession = (overrides: Partial<TrainingSession> = {}): TrainingSession 
   isPlanned: false,
   hasDetailedRecords: true,
   createdAt: Date.now(),
+  source: { kind: 'file' },
   ...overrides,
 });
 

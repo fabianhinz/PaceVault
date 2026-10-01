@@ -16,18 +16,6 @@ describe('user store', () => {
     expect(profile?.gender).toBe('male');
   });
 
-  it('updateProfile partial merge', () => {
-    const { id: _id, createdAt: _ca, ...profileData } = makeUserProfile();
-    useUserStore.getState().setProfile(profileData);
-    const originalId = useUserStore.getState().profile?.id;
-
-    useUserStore.getState().updateProfile({ gender: 'female' });
-
-    const profile = useUserStore.getState().profile;
-    expect(profile?.gender).toBe('female');
-    expect(profile?.id).toBe(originalId);
-  });
-
   it('updateThresholds only changes thresholds', () => {
     const { id: _id, createdAt: _ca, ...profileData } = makeUserProfile();
     useUserStore.getState().setProfile(profileData);
@@ -72,7 +60,7 @@ describe('user store', () => {
     expect(useUserStore.getState().profile).toBeNull();
 
     // These should not throw
-    useUserStore.getState().updateProfile({ gender: 'female' });
+    useUserStore.getState().setProfileGender('female');
     useUserStore.getState().updateThresholds({ maxHr: 200, restHr: 55 });
 
     expect(useUserStore.getState().profile).toBeNull();

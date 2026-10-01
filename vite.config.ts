@@ -70,6 +70,9 @@ export default defineConfig({
       typeCheck: true,
     },
   },
+  build: {
+    sourcemap: true,
+  },
   resolve: {
     alias: {
       '@': resolve(import.meta.dirname, 'src'),
@@ -79,7 +82,7 @@ export default defineConfig({
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/paraglide',
-      strategy: ['localStorage', 'baseLocale'],
+      strategy: ['localStorage', 'preferredLanguage', 'baseLocale'],
     }),
     react(),
     tailwindcss(),

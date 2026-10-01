@@ -22,7 +22,7 @@ const sportSubtitle: Record<Sport, () => string> = {
 export const SportRecordsCard = (props: {
   sport: Sport;
   pbs: PersonalBest[] | undefined;
-  loading?: boolean;
+  loading: boolean;
 }) => {
   const slots = PB_SLOTS[props.sport];
 
@@ -50,31 +50,31 @@ export const SportRecordsCard = (props: {
 
           const row = (
             <div
-              className={`flex items-center gap-3 rounded-lg px-3 py-2${pb && !props.loading ? ' transition-colors hover:bg-white/10' : ''}`}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2${pb ? ' transition-colors hover:bg-white/10' : ''}`}
             >
               <div className="flex-1 min-w-0">
                 <Typography variant="body1" color={pb ? 'textPrimary' : 'textSecondary'}>
                   {label}
                 </Typography>
               </div>
-              <div className="text-right">
-                {props.loading ? (
+              {props.loading ? (
+                <div className="text-right">
                   <ValueSkeleton />
-                ) : (
-                  <>
-                    <Typography variant="subtitle1" color={pb ? 'textPrimary' : 'textTertiary'}>
-                      {pb ? formatPBValue(pb) : '--'}
-                    </Typography>
-                    <Typography variant="caption" as="p" className={pb ? '' : 'invisible'}>
-                      {pb ? formatDate(pb.date) : '\u00a0'}
-                    </Typography>
-                  </>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="text-right">
+                  <Typography variant="subtitle1" color={pb ? 'textPrimary' : 'textTertiary'}>
+                    {pb ? formatPBValue(pb) : '--'}
+                  </Typography>
+                  <Typography variant="caption" as="p" className={pb ? '' : 'invisible'}>
+                    {pb ? formatDate(pb.date) : '\u00a0'}
+                  </Typography>
+                </div>
+              )}
             </div>
           );
 
-          if (pb && !props.loading) {
+          if (pb) {
             return (
               <Link
                 key={`${slot.category}-${slot.window}`}

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { seedOnboardingComplete, CYCLING_FIT, RUNNING_FIT } from './helpers/seed';
 import { uploadFitFiles } from './helpers/upload';
 
@@ -7,16 +7,22 @@ test.describe('File upload', () => {
     await seedOnboardingComplete(page);
   });
 
+  test('the settings FIT files card uploads through its own button', async ({ page }) => {
+    await page.goto('/settings?tab=data');
+    await expect(page.getByRole('button', { name: /upload fit files/i })).toBeEnabled();
+
+    const summary = await uploadFitFiles(page, [CYCLING_FIT]);
+    expect(summary).toContain('1 new session');
+  });
+
   test('upload a FIT file → session appears', async ({ page }) => {
-    // Navigate to sessions page
+    const summary = await uploadFitFiles(page, [CYCLING_FIT]);
+    expect(summary).toContain('1 new session');
+
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');
 
-    // Upload a cycling FIT file via the dock
-    const doneBanner = await uploadFitFiles(page, [CYCLING_FIT]);
-    await expect(doneBanner).toContainText('1 session');
-
-    // Wait for the done banner to dismiss and verify session appears in the list
+    // Verify session appears in the list
     // Session items are links to /sessions/:id
     const sessionLinks = page.locator('[data-testid="session-item"]');
     await expect(sessionLinks.first()).toBeVisible({ timeout: 10_000 });
@@ -26,17 +32,14 @@ test.describe('File upload', () => {
     // First upload
     await uploadFitFiles(page, [CYCLING_FIT]);
 
-    // Wait for the done banner to disappear (4s auto-dismiss)
-    await page.waitForTimeout(5000);
-
     // Upload the same file again
-    const doneBanner = await uploadFitFiles(page, [CYCLING_FIT]);
-    await expect(doneBanner).toContainText('duplicate');
+    const summary = await uploadFitFiles(page, [CYCLING_FIT]);
+    expect(summary).toContain('duplicate');
   });
 
   test('upload multiple files at once → all sessions appear', async ({ page }) => {
-    const doneBanner = await uploadFitFiles(page, [CYCLING_FIT, RUNNING_FIT]);
-    await expect(doneBanner).toContainText('2 sessions');
+    const summary = await uploadFitFiles(page, [CYCLING_FIT, RUNNING_FIT]);
+    expect(summary).toContain('2 new sessions');
 
     // Navigate to sessions page and verify both sessions are listed
     await page.getByRole('link', { name: /sessions/i }).click();

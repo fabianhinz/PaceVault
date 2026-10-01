@@ -20,7 +20,6 @@ import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useGeolocationStore } from '@/store/geolocation.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
-import { useDeckMetricsStore } from '@/store/deckMetrics.ts';
 import type { MapTrack } from './hooks/useMapTracks.ts';
 import { decodeCached, PICK_RADIUS, type TrackPickData } from './hooks/types.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
@@ -364,7 +363,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       geoLayers,
     ],
     pickingRadius: PICK_RADIUS,
-    _onMetrics: useDeckMetricsStore.getState().update,
   });
 
   return null;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { useUploadProgressStore } from '@/store/uploadProgress.ts';
+import { useImportProgressStore } from '@/store/importProgress.ts';
 import { getAllSessionGPS } from '@/lib/indexeddb.ts';
 import type { SessionGPS } from '@/packages/engine/types.ts';
 import type { WorkerMessageOut } from '@/features/map/gpsBuild.worker.ts';
@@ -12,10 +12,10 @@ export const useGPSBackfill = () => {
   const [gpsData, setGpsData] = useState<SessionGPS[] | null>(null);
 
   const sessions = useSessionsStore((s) => s.sessions);
-  const uploading = useUploadProgressStore((s) => s.uploading);
+  const importing = useImportProgressStore((s) => s.runningImports > 0);
 
   useEffect(() => {
-    if (uploading) return;
+    if (importing) return;
 
     let worker: Worker | null = null;
 
@@ -62,7 +62,7 @@ export const useGPSBackfill = () => {
       worker?.terminate();
       worker = null;
     };
-  }, [sessions, uploading]);
+  }, [sessions, importing]);
 
   return { gpsData, backfilling, processed, total };
 };

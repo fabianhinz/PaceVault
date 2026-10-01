@@ -7,15 +7,12 @@ export {
   makeLapsFromRecords,
 } from '@/lib/factories/records.ts';
 
-export const makeInvalidRecords = (
-  sessionId: string,
-  type: 'highHr' | 'highPower' | 'zeroHr',
-): SessionRecord[] => {
+export const makeInvalidRecords = (type: 'highHr' | 'highPower' | 'zeroHr'): SessionRecord[] => {
   const count = 20;
   const records: SessionRecord[] = [];
 
   for (let i = 0; i < count; i++) {
-    const base: SessionRecord = { sessionId, timestamp: i };
+    const base: SessionRecord = { timestamp: i };
 
     switch (type) {
       case 'highHr':

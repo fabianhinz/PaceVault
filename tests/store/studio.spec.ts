@@ -7,7 +7,7 @@ const makeRouteInput = (
 ): Omit<StudioRoute, 'id' | 'importedAt' | 'markers'> => ({
   name: 'Alpine loop',
   sourceFileName: 'alpine-loop.gpx',
-  color: 'sky',
+  color: 'amber',
   encodedPolylines: ['_p~iF~ps|U'],
   bounds: { minLat: 47, maxLat: 47.5, minLng: 11, maxLng: 11.5 },
   distance: 42000,
@@ -26,7 +26,7 @@ describe('useStudioStore', () => {
     expect(routes).toHaveLength(1);
     expect(routes[0]?.id).toBe(id);
     expect(routes[0]?.name).toBe('Alpine loop');
-    expect(routes[0]?.color).toBe('sky');
+    expect(routes[0]?.color).toBe('amber');
     expect(typeof routes[0]?.importedAt).toBe('number');
   });
 
@@ -64,12 +64,6 @@ describe('useStudioStore', () => {
     expect(useStudioStore.getState().routes).toEqual([]);
   });
 
-  it('is persisted under the store-studio key at version 2', () => {
-    const options = useStudioStore.persist.getOptions();
-    expect(options.name).toBe('store-studio');
-    expect(options.version).toBe(2);
-  });
-
   it('adds a marker with a generated id', () => {
     const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
     const markerId = useStudioStore
@@ -81,17 +75,6 @@ describe('useStudioStore', () => {
     expect(markers?.[0]?.distanceM).toBe(5000);
   });
 
-  it('updates a marker', () => {
-    const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
-    const markerId = useStudioStore
-      .getState()
-      .addStudioMarker(routeId, { type: 'point_of_interest', label: 'Peak', distanceM: 1000 });
-    useStudioStore.getState().updateStudioMarker(routeId, markerId, { distanceM: 2000 });
-    const marker = useStudioStore.getState().routes[0]?.markers[0];
-    expect(marker?.distanceM).toBe(2000);
-    expect(marker?.type === 'point_of_interest' && marker.label).toBe('Peak');
-  });
-
   it('deletes a marker', () => {
     const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
     const markerId = useStudioStore
@@ -99,6 +82,21 @@ describe('useStudioStore', () => {
       .addStudioMarker(routeId, { type: 'track_modifier', distanceM: 3000 });
     useStudioStore.getState().deleteStudioMarker(routeId, markerId);
     expect(useStudioStore.getState().routes[0]?.markers).toEqual([]);
+  });
+
+  it('moves routes off the retired sky and cyan colours, the old default onto the new one', () => {
+    const options = useStudioStore.persist.getOptions();
+    const migrated = options.migrate?.(
+      {
+        routes: [
+          { id: 'a', color: 'sky', markers: [] },
+          { id: 'b', color: 'cyan', markers: [] },
+          { id: 'c', color: 'rose', markers: [] },
+        ],
+      },
+      2,
+    ) as { routes: Array<{ color: string }> };
+    expect(migrated.routes.map((r) => r.color)).toEqual(['fuchsia', 'violet', 'rose']);
   });
 
   it('backfills markers on routes migrated from version 1', () => {

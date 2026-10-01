@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../helpers/test';
 import { seedOnboardingComplete } from '../helpers/seed';
 
 const mapToggle = (page: import('@playwright/test').Page) =>

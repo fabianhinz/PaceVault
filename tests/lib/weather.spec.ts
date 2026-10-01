@@ -107,7 +107,6 @@ describe('formatWindDirection', () => {
 // ---------------------------------------------------------------------------
 
 const makeRecord = (timerTime: number, lat: number, lng: number): SessionRecord => ({
-  sessionId: 'test',
   timestamp: timerTime,
   timerTime,
   lat,
@@ -116,7 +115,7 @@ const makeRecord = (timerTime: number, lat: number, lng: number): SessionRecord 
 
 describe('computeHourlyWaypoints', () => {
   it('returns empty array for records without GPS', () => {
-    const records: SessionRecord[] = [{ sessionId: 'test', timestamp: 0, timerTime: 0, hr: 140 }];
+    const records: SessionRecord[] = [{ timestamp: 0, timerTime: 0, hr: 140 }];
     const result = computeHourlyWaypoints(Date.now(), 3600, records);
     expect(result).toEqual([]);
   });

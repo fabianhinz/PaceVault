@@ -10,7 +10,6 @@ import {
 const FALLBACK_COLOR: [number, number, number, number] = [160, 160, 160, 80];
 
 const rec = (lat: number, lng: number, extras?: Partial<SessionRecord>): SessionRecord => ({
-  sessionId: 's1',
   timestamp: 0,
   lat,
   lng,

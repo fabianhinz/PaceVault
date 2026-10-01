@@ -1,4 +1,4 @@
-import { unzip } from 'fflate';
+import { unzipSync } from 'fflate';
 
 const ARCHIVE_EXTENSIONS = ['.zip'] as const;
 const IGNORED_PREFIXES = ['__MACOSX/', '.'];
@@ -9,34 +9,41 @@ export const UPLOAD_EXTENSIONS = [...ACTIVITY_EXTENSIONS, '.zip'] as const;
 
 type ActivityExtension = (typeof ACTIVITY_EXTENSIONS)[number];
 
+export interface ArchiveEntry {
+  path: string;
+  fileName: string;
+  extension: ActivityExtension;
+}
+
 export const isArchiveFile = (fileName: string): boolean => {
   const lower = fileName.toLowerCase();
   return ARCHIVE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 };
 
-export const extractActivityFiles = (
-  buffer: ArrayBuffer,
-): Promise<Array<{ fileName: string; data: ArrayBuffer; extension: ActivityExtension }>> => {
-  return new Promise((resolve, reject) => {
-    unzip(new Uint8Array(buffer), (err, entries) => {
-      if (err) {
-        reject(err);
-        return;
-      }
+const toActivityEntry = (path: string): ArchiveEntry | undefined => {
+  if (IGNORED_PREFIXES.some((p) => path.startsWith(p))) return undefined;
+  const fileName = path.split('/').pop() ?? path;
+  const lower = fileName.toLowerCase();
+  const extension = ACTIVITY_EXTENSIONS.find((e) => lower.endsWith(e));
+  if (!extension) return undefined;
+  return { path, fileName, extension };
+};
 
-      const files: Array<{ fileName: string; data: ArrayBuffer; extension: ActivityExtension }> =
-        [];
-
-      for (const [path, data] of Object.entries(entries)) {
-        const name = path.split('/').pop() ?? path;
-        if (IGNORED_PREFIXES.some((p) => path.startsWith(p))) continue;
-        const lower = name.toLowerCase();
-        const ext = ACTIVITY_EXTENSIONS.find((e) => lower.endsWith(e));
-        if (!ext) continue;
-        files.push({ fileName: name, data: data.buffer as ArrayBuffer, extension: ext });
-      }
-
-      resolve(files);
-    });
+export const listActivityEntries = (archive: ArrayBuffer): ArchiveEntry[] => {
+  const entries: ArchiveEntry[] = [];
+  unzipSync(new Uint8Array(archive), {
+    filter: (file) => {
+      const entry = toActivityEntry(file.name);
+      if (entry) entries.push(entry);
+      return false;
+    },
   });
+  return entries;
+};
+
+export const extractArchiveEntry = (archive: ArrayBuffer, path: string): ArrayBuffer => {
+  const files = unzipSync(new Uint8Array(archive), { filter: (file) => file.name === path });
+  const data = files[path];
+  if (!data) throw new Error(`Archive entry "${path}" not found`);
+  return data.buffer as ArrayBuffer;
 };

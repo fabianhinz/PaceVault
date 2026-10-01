@@ -1,21 +1,22 @@
 import { PageGrid } from '@/components/ui/PageGrid.tsx';
-import { useFiltersStore } from '@/store/filters.ts';
-import type { Sport } from '@/packages/engine/types.ts';
+import { useMemo } from 'react';
+import { groupPBsBySport } from '@/lib/records.ts';
+import { SPORTS } from '@/packages/engine/types.ts';
 import { SportRecordsCard } from './SportRecordsCard.tsx';
-
-const sports: Sport[] = ['running', 'cycling'];
+import { usePersonalBests } from './hooks/usePersonalBests.ts';
 
 export const SportsRecords: React.FC = () => {
-  const groupedPBs = useFiltersStore((s) => s.groupedPBs);
+  const query = usePersonalBests();
+  const groupedPBs = useMemo(() => groupPBsBySport(query.data ?? []), [query.data]);
 
   return (
     <PageGrid>
-      {sports.map((sport) => (
+      {SPORTS.map((sport) => (
         <SportRecordsCard
           key={sport}
           sport={sport}
-          pbs={groupedPBs.data[sport]}
-          loading={groupedPBs.loading}
+          pbs={groupedPBs[sport]}
+          loading={query.isPending}
         />
       ))}
     </PageGrid>

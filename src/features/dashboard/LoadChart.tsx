@@ -29,11 +29,9 @@ import type { LucideIcon } from 'lucide-react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { TabsTrigger } from '@/components/ui/Tabs.tsx';
 import { m } from '@/paraglide/messages.js';
-import type { Sport } from '@/packages/engine/types.ts';
+import { SPORTS, type Sport } from '@/packages/engine/types.ts';
 
 type GroupBy = 'day' | 'week' | 'month';
-
-const SPORTS: Sport[] = ['running', 'cycling'];
 
 const sportColors: Record<Sport, string> = {
   running: tokens.sportRunning,

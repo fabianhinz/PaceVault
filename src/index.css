@@ -20,6 +20,8 @@
 
   --color-pink-500: #ec4899;
 
+  --color-orange-500: #f97316;
+
   --color-green-500: #22c55e;
   --color-green-400: #4ade80;
 
@@ -70,8 +72,8 @@
   /* ── Semantic: Sport ── */
   --color-sport-running: var(--color-green-400);
   --color-sport-running-muted: #22c55e33;
-  --color-sport-cycling: var(--color-blue-400);
-  --color-sport-cycling-muted: #3b82f633;
+  --color-sport-cycling: var(--color-orange-500);
+  --color-sport-cycling-muted: #f9731633;
 
   /* ── Semantic: Chart data series ── */
   --color-chart-fitness: var(--color-blue-500);

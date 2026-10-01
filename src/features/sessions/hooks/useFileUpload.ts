@@ -1,25 +1,103 @@
 import { useCallback } from 'react';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useUserStore } from '@/store/user.ts';
-import { useSessionsStore } from '@/store/sessions.ts';
-import { useUploadProgressStore } from '@/store/uploadProgress.ts';
-import { parseFitFile, type ParsedFitResultWithMeta } from '@/parsers/fit.ts';
-import { bulkSaveSessionData, saveFitFile } from '@/lib/indexeddb.ts';
+import { useImportProgressStore, type ImportSummary } from '@/store/importProgress.ts';
+import { parseFitFile } from '@/parsers/fit.ts';
 import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
-import { findDuplicates } from '@/lib/fingerprint.ts';
-import { isArchiveFile, extractActivityFiles } from '@/lib/archive.ts';
-import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
-import { useFiltersStore } from '@/store/filters.ts';
+import {
+  extractArchiveEntry,
+  isArchiveFile,
+  listActivityEntries,
+  type ArchiveEntry,
+} from '@/lib/archive.ts';
+import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
+import { createIngestBatcher } from '@/features/sessions/createIngestBatcher.ts';
+import type { UserProfile } from '@/types/index.ts';
 
-const CHUNK_SIZE = 10;
+const importFiles = async (
+  fileArray: File[],
+  profile: UserProfile,
+  queryClient: QueryClient,
+): Promise<ImportSummary> => {
+  const sources: Array<{ file: File; archiveEntries?: ArchiveEntry[] }> = [];
+  let fitCount = 0;
+  let failed = 0;
 
-export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>) => {
+  for (const file of fileArray) {
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith('.fit')) {
+      sources.push({ file });
+      fitCount++;
+    } else if (isArchiveFile(file.name)) {
+      try {
+        const archiveEntries = listActivityEntries(await file.arrayBuffer()).filter(
+          (e) => e.extension === '.fit',
+        );
+        // TODO: handle .tcx files once a TCX parser is added
+        if (archiveEntries.length === 0) {
+          failed++;
+        } else {
+          sources.push({ file, archiveEntries });
+          fitCount += archiveEntries.length;
+        }
+      } catch {
+        failed++;
+      }
+    } else {
+      failed++;
+    }
+  }
+
+  if (fitCount === 0) {
+    return { kind: 'imported', imported: 0, duplicated: 0, failed };
+  }
+
+  useImportProgressStore.getState().setImportTotal(fitCount);
+
+  const batcher = createIngestBatcher({ queryClient });
+
+  const ingestFit = async (fileName: string, read: () => Promise<ArrayBuffer>) => {
+    try {
+      const data = await read();
+      const result = await parseFitFile(data, fileName, toFitParseProfile(profile));
+      await batcher.add({ ...result, rawData: data, fileName, source: { kind: 'file' } });
+    } catch (error) {
+      console.error('Parse error: ', error);
+      failed++;
+    }
+    useImportProgressStore.getState().advanceImport();
+  };
+
+  for (const source of sources) {
+    if (source.archiveEntries === undefined) {
+      await ingestFit(source.file.name, () => source.file.arrayBuffer());
+      continue;
+    }
+    const archive = await source.file.arrayBuffer();
+    for (const entry of source.archiveEntries) {
+      await ingestFit(entry.fileName, async () => extractArchiveEntry(archive, entry.path));
+    }
+  }
+
+  useImportProgressStore.getState().markImportSaving();
+  const outcome = await batcher.finish();
+  if (outcome.saveFailed) {
+    toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
+  }
+
+  return {
+    kind: 'imported',
+    imported: outcome.importedCount,
+    duplicated: outcome.duplicateCount,
+    failed,
+  };
+};
+
+export const useFileUpload = () => {
   const profile = useUserStore((s) => s.profile);
-  const uploading = useUploadProgressStore((s) => s.uploading);
-
-  const triggerUpload = useCallback(() => {
-    inputRef.current?.click();
-  }, [inputRef]);
+  const uploading = useImportProgressStore((s) => s.foreground !== null);
+  const queryClient = useQueryClient();
 
   const handleFiles = useCallback(
     async (files: FileList) => {
@@ -28,184 +106,20 @@ export const useFileUpload = (inputRef: React.RefObject<HTMLInputElement | null>
       const fileArray = Array.from(files);
       if (fileArray.length === 0) return;
 
-      useUploadProgressStore.getState().beginProcessing();
+      useImportProgressStore.getState().beginImport({ foreground: true });
 
-      const fitEntries: Array<{ name: string; data: ArrayBuffer }> = [];
-      let failed = 0;
-
-      for (const file of fileArray) {
-        const lower = file.name.toLowerCase();
-        if (lower.endsWith('.fit')) {
-          fitEntries.push({ name: file.name, data: await file.arrayBuffer() });
-        } else if (isArchiveFile(file.name)) {
-          try {
-            const raw = await file.arrayBuffer();
-            const extracted = await extractActivityFiles(raw);
-            const fitOnly = extracted.filter((e) => e.extension === '.fit');
-            // TODO: handle .tcx files once a TCX parser is added
-            if (fitOnly.length === 0) {
-              failed++;
-            } else {
-              for (const entry of fitOnly) {
-                fitEntries.push({ name: entry.fileName, data: entry.data });
-              }
-            }
-          } catch {
-            failed++;
-          }
-        } else {
-          failed++;
-        }
-      }
-
-      if (fitEntries.length === 0) {
-        useUploadProgressStore.getState().cancel();
-        if (failed > 0) {
-          toast(m.toast_files_failed_title({ count: failed }), undefined, 'error');
-        }
-        return;
-      }
-
-      useUploadProgressStore.getState().startUpload(fitEntries.length);
-
-      const parsingTasks: Promise<ParsedFitResultWithMeta | null>[] = [];
-      for (const entry of fitEntries) {
-        parsingTasks.push(
-          parseFitFile(entry.data, entry.name, {
-            restHr: profile.thresholds.restHr,
-            maxHr: profile.thresholds.maxHr,
-            gender: profile.gender,
-            ftp: profile.thresholds.ftp,
-          })
-            .then((result) => {
-              return { ...result, rawData: entry.data, fileName: entry.name };
-            })
-            .catch((error) => {
-              console.error('Parse error: ', error);
-              failed++;
-              return null;
-            })
-            .finally(() => {
-              useUploadProgressStore.getState().advance();
-            }),
-        );
-      }
-
-      const parsed: ParsedFitResultWithMeta[] = [];
-      for (const task of await Promise.allSettled(parsingTasks)) {
-        if (task.status === 'fulfilled' && task.value) {
-          parsed.push(task.value);
-        }
-      }
-
-      // Dedup — filter out files already in the store or duplicated within the batch
-      const existingSessions = useSessionsStore.getState().sessions;
-      const storeDups = findDuplicates(
-        parsed.map((p) => p.fingerprint),
-        existingSessions,
-      );
-      const seenInBatch = new Set<string>();
-      let duplicated = 0;
-
-      const unique = parsed.filter((p) => {
-        if (storeDups.has(p.fingerprint) || seenInBatch.has(p.fingerprint)) {
-          duplicated++;
-          return false;
-        }
-        seenInBatch.add(p.fingerprint);
-        return true;
-      });
-
-      if (unique.length > 0) {
-        try {
-          const sessionIds = useSessionsStore.getState().addSessions(unique.map((p) => p.session));
-
-          const idbEntries: Array<{
-            records: (SessionRecord & { sessionId: string })[];
-            laps: (SessionLap & { sessionId: string })[];
-          }> = [];
-
-          for (let i = 0; i < unique.length; i++) {
-            const entry = unique[i];
-            const sessionId = sessionIds[i];
-            if (!entry || !sessionId) continue;
-
-            if (entry.records.length > 0) {
-              const recordsWithId = entry.records.map((r) => ({
-                ...r,
-                sessionId,
-              }));
-
-              let lapsWithId: (SessionLap & { sessionId: string })[] = [];
-              if (entry.laps.length > 0) {
-                lapsWithId = entry.laps.map((l) => ({ ...l, sessionId }));
-              }
-
-              idbEntries.push({
-                records: recordsWithId,
-                laps: lapsWithId,
-              });
-            }
-          }
-
-          if (idbEntries.length > 0) {
-            await bulkSaveSessionData(idbEntries, {
-              chunkSize: CHUNK_SIZE,
-            });
-          }
-
-          for (let i = 0; i < unique.length; i++) {
-            const sid = sessionIds[i];
-            const u = unique[i];
-            if (!sid || !u) continue;
-            await saveFitFile(sid, u.fileName, u.rawData);
-          }
-        } catch (err) {
-          console.error('Save error:', err);
-          toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
-        }
-      }
-
-      const uploaded = unique.length;
-      const parts: string[] = [];
-
-      if (uploaded > 0) {
-        let uploadMsg = m.toast_upload_sessions_plural({ count: uploaded });
-        if (uploaded === 1) {
-          uploadMsg = m.toast_upload_sessions({ count: uploaded });
-        }
-        parts.push(uploadMsg);
-      }
-
-      if (duplicated > 0) {
-        let dupMsg = m.toast_upload_duplicates_plural({ count: duplicated });
-        if (duplicated === 1) {
-          dupMsg = m.toast_upload_duplicates({ count: duplicated });
-        }
-        parts.push(dupMsg);
-      }
-
-      if (failed > 0) {
-        parts.push(m.toast_upload_failed({ count: failed }));
-      }
-
-      if (parts.length > 0) {
-        let variant: 'success' | 'error' | 'warning' = 'success';
-        if (failed > 0) {
-          variant = 'error';
-        } else if (uploaded === 0) {
-          variant = 'warning';
-        }
-        useUploadProgressStore.getState().finish(parts.join(', '), variant);
-        useFiltersStore.getState().recomputePBs();
-      }
-
-      if (inputRef.current) {
-        inputRef.current.value = '';
+      try {
+        const summary = await importFiles(fileArray, profile, queryClient);
+        useImportProgressStore.getState().finishImport(summary);
+      } catch (error) {
+        console.error('Import error: ', error);
+        useImportProgressStore
+          .getState()
+          .finishImport({ kind: 'failed', message: m.ui_import_failed_generic() });
       }
     },
-    [profile, inputRef],
+    [profile, queryClient],
   );
 
-  return { uploading, profile, triggerUpload, handleFiles };
+  return { uploading, profile, handleFiles };
 };
