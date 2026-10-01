@@ -105,7 +105,7 @@ describe('runIntervalsSync', () => {
         if (url.includes(`/activity/${last}/`)) {
           recordedBeforeLast = useIntervalsStore.getState().importedActivityIds.length;
         }
-        return new Response(fixture('running.fit'));
+        return new Response(fixture('minimal.fit'));
       }),
     );
 

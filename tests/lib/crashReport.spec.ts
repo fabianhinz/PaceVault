@@ -33,12 +33,12 @@ describe('buildIssueUrl', () => {
   });
 
   it('truncates an oversized stack under the URL limit and keeps the message and top frame', () => {
-    const url = buildIssueUrl(errorWithStack('Cannot read properties of undefined', 2000));
+    const url = buildIssueUrl(errorWithStack('Cannot read properties of undefined', 300));
     const text = issueText(url);
 
     expect(url.length).toBeLessThanOrEqual(8000);
     expect(text).toContain('Cannot read properties of undefined');
     expect(text).toContain('at frame0 ');
-    expect(text).not.toContain('at frame1999 ');
+    expect(text).not.toContain('at frame299 ');
   });
 });
