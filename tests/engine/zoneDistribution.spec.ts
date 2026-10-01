@@ -175,3 +175,33 @@ describe('computePaceZoneDistribution', () => {
     }
   });
 });
+
+describe('zone distributions with recorded zeros', () => {
+  it('counts hr 0 in the lowest HR zone', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, hr: 0 },
+      { timestamp: 1, hr: 150 },
+    ];
+    const total = computeHrZoneDistribution(records, 190, 50).reduce((s, b) => s + b.seconds, 0);
+    expect(total).toBe(2);
+  });
+
+  it('counts power 0 in the lowest power zone', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, power: 0 },
+      { timestamp: 1, power: 200 },
+    ];
+    const result = computePowerZoneDistribution(records, 250);
+    expect(result[0]?.seconds).toBe(1);
+    expect(result.reduce((s, b) => s + b.seconds, 0)).toBe(2);
+  });
+
+  it('skips speed 0 in pace zones (no pace at standstill)', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, speed: 0 },
+      { timestamp: 1, speed: 3.5 },
+    ];
+    const total = computePaceZoneDistribution(records, 300).reduce((s, b) => s + b.seconds, 0);
+    expect(total).toBe(1);
+  });
+});

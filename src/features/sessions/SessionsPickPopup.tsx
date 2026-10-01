@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { SessionItem } from '@/features/sessions/SessionItem.tsx';
 import { MapPickPopup } from '@/features/map/MapPickPopup.tsx';
-import { useLayoutStore } from '@/store/layout.ts';
 import type { TrainingSession } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
 
@@ -31,16 +30,7 @@ export const SessionsPickPopup = (props: SessionsPickPopupProps) => {
       onClose={props.onClose}
     >
       {sorted.map((session) => (
-        <SessionItem
-          key={session.id}
-          session={session}
-          onNavigate={() => {
-            props.onClose();
-            if (useLayoutStore.getState().mobileMapActive) {
-              useLayoutStore.getState().toggleMobileMap();
-            }
-          }}
-        />
+        <SessionItem key={session.id} session={session} onNavigate={props.onClose} />
       ))}
     </MapPickPopup>
   );

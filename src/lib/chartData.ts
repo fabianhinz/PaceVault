@@ -1,42 +1,41 @@
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { gradeAdjustedPaceFactor } from '@/packages/engine/normalize.ts';
-import { filterValidPower } from '@/lib/validation.ts';
 
 export interface TimeSeriesPoint {
   time: number;
 }
 
 export interface CadencePoint extends TimeSeriesPoint {
-  cadence: number;
+  cadence: number | null;
 }
 
 export interface ElevationPoint extends TimeSeriesPoint {
-  elevation: number;
+  elevation: number | null;
 }
 
 export interface GradePoint extends TimeSeriesPoint {
-  grade: number;
+  grade: number | null;
 }
 
 export interface HrPoint extends TimeSeriesPoint {
-  hr: number;
+  hr: number | null;
 }
 
 export interface PowerPoint extends TimeSeriesPoint {
-  power: number;
+  power: number | null;
 }
 
 export interface SpeedPoint extends TimeSeriesPoint {
-  speed: number;
+  speed: number | null;
 }
 
 export interface PacePoint extends TimeSeriesPoint {
-  pace: number;
+  pace: number | null;
 }
 
 export interface GAPPoint extends TimeSeriesPoint {
-  pace: number;
-  gap: number;
+  pace: number | null;
+  gap: number | null;
 }
 
 export const filterSeriesByKey = <K extends string, T extends Record<K, number>>(
@@ -64,128 +63,74 @@ export const buildTimeToGpsLookup = (records: SessionRecord[]): Map<number, [num
   return map;
 };
 
-export const prepareHrData = (records: SessionRecord[]): HrPoint[] => {
-  const result: HrPoint[] = [];
-  for (const r of records) {
-    if (r.hr !== undefined && r.hr > 0) {
-      result.push({ time: toMinutes(r.timestamp), hr: Math.round(r.hr) });
+const roundTo = (value: number | undefined, factor: number): number | null => {
+  if (value === undefined) return null;
+  return Math.round(value * factor) / factor;
+};
+
+export const prepareHrData = (records: SessionRecord[]): HrPoint[] =>
+  records.map((r) => ({ time: toMinutes(r.timestamp), hr: roundTo(r.hr, 1) }));
+
+export const preparePowerData = (records: SessionRecord[]): PowerPoint[] =>
+  records.map((r) => ({ time: toMinutes(r.timestamp), power: roundTo(r.power, 1) }));
+
+export const prepareSpeedData = (records: SessionRecord[]): SpeedPoint[] =>
+  records.map((r) => {
+    let speed: number | null = null;
+    if (r.speed !== undefined) {
+      speed = Math.round(r.speed * 3.6 * 10) / 10;
     }
+    return { time: toMinutes(r.timestamp), speed };
+  });
+
+export const prepareCadenceData = (records: SessionRecord[]): CadencePoint[] =>
+  records.map((r) => ({ time: toMinutes(r.timestamp), cadence: roundTo(r.cadence, 1) }));
+
+export const prepareElevationData = (records: SessionRecord[]): ElevationPoint[] =>
+  records.map((r) => ({ time: toMinutes(r.timestamp), elevation: roundTo(r.elevation, 10) }));
+
+export const prepareGradeData = (records: SessionRecord[]): GradePoint[] =>
+  records.map((r) => ({ time: toMinutes(r.timestamp), grade: roundTo(r.grade, 10) }));
+
+const speedToPace = (speed: number | undefined): number | undefined => {
+  if (speed === undefined || speed <= 0) return undefined;
+  return 1000 / speed / 60;
+};
+
+export const preparePaceData = (records: SessionRecord[]): PacePoint[] =>
+  records.map((r) => ({ time: toMinutes(r.timestamp), pace: roundTo(speedToPace(r.speed), 100) }));
+
+const gradientAt = (records: SessionRecord[], i: number): number | undefined => {
+  const r = records[i];
+  if (!r) return undefined;
+  if (r.grade !== undefined) return r.grade / 100;
+  const prev = records[i - 1];
+  if (
+    !prev ||
+    r.elevation === undefined ||
+    prev.elevation === undefined ||
+    r.distance === undefined ||
+    prev.distance === undefined
+  ) {
+    return undefined;
   }
-  return result;
+  const dx = r.distance - prev.distance;
+  if (dx <= 0) return undefined;
+  return (r.elevation - prev.elevation) / dx;
 };
 
-export const preparePowerData = (records: SessionRecord[]): PowerPoint[] => {
-  const result: PowerPoint[] = [];
-  for (const r of filterValidPower(records)) {
-    if (r.power !== undefined) {
-      result.push({ time: toMinutes(r.timestamp), power: Math.round(r.power) });
-    }
-  }
-  return result;
-};
-
-export const prepareSpeedData = (records: SessionRecord[]): SpeedPoint[] => {
-  const result: SpeedPoint[] = [];
-  for (const r of records) {
-    if (r.speed !== undefined && r.speed > 0) {
-      result.push({ time: toMinutes(r.timestamp), speed: Math.round(r.speed * 3.6 * 10) / 10 });
-    }
-  }
-  return result;
-};
-
-export const prepareCadenceData = (records: SessionRecord[]): CadencePoint[] => {
-  const result: CadencePoint[] = [];
-  for (const r of records) {
-    if (r.cadence !== undefined && r.cadence > 0) {
-      result.push({ time: toMinutes(r.timestamp), cadence: Math.round(r.cadence) });
-    }
-  }
-  return result;
-};
-
-export const prepareElevationData = (records: SessionRecord[]): ElevationPoint[] => {
-  const result: ElevationPoint[] = [];
-  for (const r of records) {
-    if (r.elevation !== undefined) {
-      result.push({ time: toMinutes(r.timestamp), elevation: Math.round(r.elevation * 10) / 10 });
-    }
-  }
-  return result;
-};
-
-export const prepareGradeData = (records: SessionRecord[]): GradePoint[] => {
-  const result: GradePoint[] = [];
-  for (const r of records) {
-    if (r.grade !== undefined) {
-      result.push({ time: toMinutes(r.timestamp), grade: Math.round(r.grade * 10) / 10 });
-    }
-  }
-  return result;
-};
-
-/**
- * Convert speed (m/s) to pace (min/km).
- * Returns undefined for zero/negative speed.
- */
-const speedToPace = (speed: number): number | undefined => {
-  if (speed <= 0) return undefined;
-  return 1000 / speed / 60; // min/km
-};
-
-export const preparePaceData = (records: SessionRecord[]): PacePoint[] => {
-  const result: PacePoint[] = [];
-  for (const r of records) {
-    if (r.speed === undefined || r.speed <= 0.5) continue; // filter walking/standing
+export const prepareGAPData = (records: SessionRecord[]): GAPPoint[] =>
+  records.map((r, i) => {
     const pace = speedToPace(r.speed);
-    if (pace === undefined) continue;
-    result.push({ time: toMinutes(r.timestamp), pace: Math.round(pace * 100) / 100 });
-  }
-  return result;
-};
-
-export const prepareGAPData = (records: SessionRecord[]): GAPPoint[] => {
-  const valid = records.filter(
-    (r) =>
-      r.speed !== undefined &&
-      r.speed > 0.5 &&
-      (r.grade !== undefined || r.elevation !== undefined),
-  );
-
-  if (valid.length < 2) return [];
-
-  const result: GAPPoint[] = [];
-  for (let i = 0; i < valid.length; i++) {
-    const r = valid[i];
-    if (!r) continue;
-    if (r.speed === undefined || r.speed <= 0.5) continue;
-    const pace = speedToPace(r.speed);
-    if (pace === undefined) continue;
-
-    // grade from FIT is percentage (5 = 5%), factor expects fraction (0.05)
-    let gradient: number;
-    if (r.grade !== undefined) {
-      gradient = r.grade / 100;
-    } else if (i > 0 && r.elevation !== undefined) {
-      const prev = valid[i - 1];
-      const prevElevation = prev?.elevation;
-      const dx = (r.distance ?? 0) - (prev?.distance ?? 0);
-      gradient = 0;
-      if (dx > 0 && prevElevation !== undefined) {
-        gradient = (r.elevation - prevElevation) / dx;
-      }
-    } else {
-      gradient = 0;
+    const gradient = gradientAt(records, i);
+    let gap: number | undefined = undefined;
+    if (pace !== undefined && gradient !== undefined) {
+      gap = pace / gradeAdjustedPaceFactor(gradient);
     }
+    return { time: toMinutes(r.timestamp), pace: roundTo(pace, 100), gap: roundTo(gap, 100) };
+  });
 
-    const factor = gradeAdjustedPaceFactor(gradient);
-    const gap = pace / factor;
-
-    result.push({
-      time: toMinutes(r.timestamp),
-      pace: Math.round(pace * 100) / 100,
-      gap: Math.round(gap * 100) / 100,
-    });
-  }
-  return result;
-};
+export const hasSeriesValues = <K extends string>(
+  points: ReadonlyArray<Record<K, number | null>>,
+  key: K,
+): boolean => points.some((p) => p[key] !== null);

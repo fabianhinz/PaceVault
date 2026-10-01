@@ -6,6 +6,7 @@ import { Typography } from './Typography.tsx';
 import { Button } from './Button.tsx';
 import { cn } from '@/lib/utils.ts';
 import { useExpandCard } from '@/lib/hooks/useExpandCard.ts';
+import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 
 interface ChartPreviewCardProps {
   title: string;
@@ -23,6 +24,7 @@ export const ChartPreviewCard = (props: ChartPreviewCardProps) => {
   const Icon = props.icon;
   const cardRef = useRef<HTMLDivElement>(null);
   const expandCard = useExpandCard(cardRef);
+  const isDesktop = useIsDesktop();
   const isFullyExpanded = expandCard.isExpanded && !expandCard.isAnimating;
 
   return (
@@ -35,14 +37,16 @@ export const ChartPreviewCard = (props: ChartPreviewCardProps) => {
           </Typography>
         )}
         {!props.titleSlot && !Icon && <div className="flex-1" />}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={expandCard.toggle}
-          aria-label={expandCard.isExpanded ? 'Collapse chart' : 'Expand chart'}
-        >
-          {expandCard.isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-        </Button>
+        {isDesktop && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={expandCard.toggle}
+            aria-label={expandCard.isExpanded ? 'Collapse chart' : 'Expand chart'}
+          >
+            {expandCard.isExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </Button>
+        )}
       </div>
 
       {props.subtitle && (

@@ -24,7 +24,7 @@ interface AttributeConfig {
   /** Canonical unit → display unit. */
   toDisplay: (canonical: number) => number;
   /** Reads the attribute from a session; defaulting of missing optional fields lives here. */
-  read: (session: AttributeSession) => number;
+  read: (session: AttributeSession) => number | undefined;
   /** Input row label. */
   label: () => string;
   /** Input row placeholder, in display units. */
@@ -62,7 +62,7 @@ export const ATTRIBUTE_CONFIG = {
     minWindow: 150,
     toCanonical: (n) => n,
     toDisplay: (n) => n,
-    read: (session) => session.elevationGain ?? 0,
+    read: (session) => session.elevationGain,
     label: m.ui_attr_dialog_elevation,
     placeholder: '500',
   },
@@ -109,7 +109,7 @@ export const fuzzyBounds = (
 };
 
 export const matchesFuzzy = (
-  value: number,
+  value: number | undefined,
   key: AttributeFilterKey,
   target: number | null,
 ): boolean => {
@@ -117,6 +117,9 @@ export const matchesFuzzy = (
   // key was added lacks that key entirely, so target can be undefined at runtime
   if (typeof target !== 'number') {
     return true;
+  }
+  if (value === undefined) {
+    return false;
   }
   const bounds = fuzzyBounds(key, target);
   return value >= bounds.min && value <= bounds.max;

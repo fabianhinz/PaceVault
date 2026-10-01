@@ -1,16 +1,17 @@
 import type { TrainingSession } from '@/packages/engine/types.ts';
+import { m } from '@/paraglide/messages.js';
+import { formatDistance, formatDuration } from '@/lib/formatters.ts';
 
 export interface TripTotals {
   count: number;
-  distance: number; // metres
-  duration: number; // seconds
-  elevationGain: number; // metres
+  distance: number;
+  duration: number;
+  elevationGain: number;
   tss: number;
-  startDate: number | null; // unix ms, earliest session
-  endDate: number | null; // unix ms, latest session
+  startDate: number | null;
+  endDate: number | null;
 }
 
-/** Aggregate a trip's sessions into display totals + date range. */
 export const computeTripTotals = (sessions: TrainingSession[]): TripTotals => {
   const totals: TripTotals = {
     count: sessions.length,
@@ -23,7 +24,7 @@ export const computeTripTotals = (sessions: TrainingSession[]): TripTotals => {
   };
 
   for (const session of sessions) {
-    totals.distance += session.distance;
+    totals.distance += session.distance ?? 0;
     totals.duration += session.duration;
     totals.elevationGain += session.elevationGain ?? 0;
     totals.tss += session.tss;
@@ -36,4 +37,17 @@ export const computeTripTotals = (sessions: TrainingSession[]): TripTotals => {
   }
 
   return totals;
+};
+
+export const formatTripStatsLine = (totals: TripTotals): string => {
+  let count = m.ui_count_sessions_other({ count: String(totals.count) });
+  if (totals.count === 1) {
+    count = m.ui_count_sessions_one();
+  }
+  const stats: string[] = [count];
+  if (totals.count > 0) {
+    stats.push(formatDistance(totals.distance));
+    stats.push(formatDuration(totals.duration));
+  }
+  return stats.join(' · ');
 };

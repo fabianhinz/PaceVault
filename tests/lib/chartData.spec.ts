@@ -9,8 +9,8 @@ import {
   preparePaceData,
   prepareGAPData,
   filterTimeSeries,
+  hasSeriesValues,
 } from '@/lib/chartData.ts';
-import { makeCyclingRecords, makeRunningRecords } from '@tests/factories/records.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 describe('filterTimeSeries', () => {
@@ -45,223 +45,133 @@ describe('filterTimeSeries', () => {
   });
 });
 
+const mixed: SessionRecord[] = [
+  { timestamp: 60, hr: 140, power: 200, speed: 3, cadence: 85, elevation: 100.04, grade: 2 },
+  { timestamp: 120 },
+  { timestamp: 180, hr: 0, power: 0, speed: 0, cadence: 0, elevation: 0, grade: 0 },
+];
+
+describe('prepare*Data', () => {
+  it('returns exactly one point per record for every series', () => {
+    for (const prepare of [
+      prepareHrData,
+      preparePowerData,
+      prepareSpeedData,
+      prepareCadenceData,
+      prepareElevationData,
+      prepareGradeData,
+      preparePaceData,
+      prepareGAPData,
+    ]) {
+      expect(prepare(mixed).map((p) => p.time)).toEqual([1, 2, 3]);
+    }
+  });
+
+  it('returns no points for no records', () => {
+    expect(prepareHrData([])).toEqual([]);
+  });
+});
+
 describe('prepareHrData', () => {
-  it('converts records with hr to time-series points', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 60, hr: 140 },
-      { timestamp: 120, hr: 155 },
-    ];
-    const result = prepareHrData(records);
-    expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ time: 1, hr: 140 });
-    expect(result[1]).toEqual({ time: 2, hr: 155 });
-  });
-
-  it('filters out records without hr or with hr=0', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 60, hr: 140 },
-      { timestamp: 120 },
-      { timestamp: 180, hr: 0 },
-    ];
-    const result = prepareHrData(records);
-    expect(result).toHaveLength(1);
-    expect(result[0].hr).toBe(140);
-  });
-
-  it('returns empty array for records without hr data', () => {
-    const records: SessionRecord[] = [{ timestamp: 0 }];
-    expect(prepareHrData(records)).toHaveLength(0);
+  it('keeps 0 and maps missing hr to null', () => {
+    expect(prepareHrData(mixed).map((p) => p.hr)).toEqual([140, null, 0]);
   });
 });
 
 describe('preparePowerData', () => {
-  it('converts records with power to time-series points', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 60, power: 200 },
-      { timestamp: 120, power: 250 },
-    ];
-    const result = preparePowerData(records);
-    expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ time: 1, power: 200 });
-    expect(result[1]).toEqual({ time: 2, power: 250 });
+  it('keeps 0 and maps missing power to null', () => {
+    expect(preparePowerData(mixed).map((p) => p.power)).toEqual([200, null, 0]);
   });
 
-  it('filters out records without power or with power=0', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 60, power: 200 },
-      { timestamp: 120 },
-      { timestamp: 180, power: 0 },
-    ];
-    const result = preparePowerData(records);
-    expect(result).toHaveLength(1);
-    expect(result[0].power).toBe(200);
-  });
-
-  it('returns empty array for records without power data', () => {
-    const records: SessionRecord[] = [{ timestamp: 0 }];
-    expect(preparePowerData(records)).toHaveLength(0);
+  it('keeps power above the sensor-warning threshold as recorded', () => {
+    expect(preparePowerData([{ timestamp: 0, power: 3000 }])[0]?.power).toBe(3000);
   });
 });
 
 describe('prepareSpeedData', () => {
-  it('converts speed from m/s to km/h', () => {
-    // 10 m/s = 36 km/h
-    const records: SessionRecord[] = [{ timestamp: 60, speed: 10 }];
-    const result = prepareSpeedData(records);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({ time: 1, speed: 36 });
-  });
-
-  it('filters out records without speed or with speed=0', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 60, speed: 5 },
-      { timestamp: 120 },
-      { timestamp: 180, speed: 0 },
-    ];
-    const result = prepareSpeedData(records);
-    expect(result).toHaveLength(1);
-  });
-
-  it('returns empty array for records without speed data', () => {
-    const records: SessionRecord[] = [{ timestamp: 0 }];
-    expect(prepareSpeedData(records)).toHaveLength(0);
+  it('converts m/s to km/h, keeps 0 and maps missing speed to null', () => {
+    expect(prepareSpeedData(mixed).map((p) => p.speed)).toEqual([10.8, null, 0]);
   });
 });
 
 describe('prepareCadenceData', () => {
-  it('converts records with cadence to time-series points', () => {
-    const records = makeCyclingRecords(100);
-    const result = prepareCadenceData(records);
-    expect(result.length).toBeGreaterThan(0);
-    expect(result[0]).toHaveProperty('time');
-    expect(result[0]).toHaveProperty('cadence');
-  });
-
-  it('filters out records without cadence', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 60, cadence: 90 },
-      { timestamp: 120 },
-      { timestamp: 180, cadence: 0 },
-    ];
-    const result = prepareCadenceData(records);
-    expect(result).toHaveLength(1);
-    expect(result[0].time).toBe(1); // 60s = 1 min
-    expect(result[0].cadence).toBe(90);
-  });
-
-  it('returns empty array for records without cadence data', () => {
-    const records: SessionRecord[] = [{ timestamp: 0 }, { timestamp: 60 }];
-    expect(prepareCadenceData(records)).toHaveLength(0);
+  it('keeps 0 and maps missing cadence to null', () => {
+    expect(prepareCadenceData(mixed).map((p) => p.cadence)).toEqual([85, null, 0]);
   });
 });
 
 describe('prepareElevationData', () => {
-  it('includes records with elevation', () => {
-    const records = makeCyclingRecords(50);
-    const result = prepareElevationData(records);
-    expect(result.length).toBeGreaterThan(0);
-    expect(result[0]).toHaveProperty('elevation');
-  });
-
-  it('converts timestamp to minutes', () => {
-    const records: SessionRecord[] = [{ timestamp: 120, elevation: 500 }];
-    const result = prepareElevationData(records);
-    expect(result[0].time).toBe(2); // 120s = 2 min
-  });
-
-  it('returns empty for no elevation data', () => {
-    const records: SessionRecord[] = [{ timestamp: 0 }];
-    expect(prepareElevationData(records)).toHaveLength(0);
+  it('rounds to one decimal, keeps 0 and maps missing elevation to null', () => {
+    expect(prepareElevationData(mixed).map((p) => p.elevation)).toEqual([100, null, 0]);
   });
 });
 
 describe('prepareGradeData', () => {
-  it('includes records with grade', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 0, grade: 5 },
-      { timestamp: 60, grade: -3 },
-      { timestamp: 120 },
-    ];
-    const result = prepareGradeData(records);
-    expect(result).toHaveLength(2);
-    expect(result[0].grade).toBe(5);
-    expect(result[1].grade).toBe(-3);
-  });
-
-  it('returns empty for no grade data', () => {
-    expect(prepareGradeData([])).toHaveLength(0);
+  it('keeps 0 and maps missing grade to null', () => {
+    expect(prepareGradeData(mixed).map((p) => p.grade)).toEqual([2, null, 0]);
   });
 });
 
 describe('preparePaceData', () => {
   it('converts speed (m/s) to pace (min/km)', () => {
-    // 3.33 m/s = 300 sec/km = 5.0 min/km
-    const records: SessionRecord[] = [{ timestamp: 60, speed: 1000 / 300 }];
-    const result = preparePaceData(records);
-    expect(result).toHaveLength(1);
-    expect(result[0].pace).toBe(5);
+    expect(preparePaceData([{ timestamp: 60, speed: 1000 / 300 }])[0]?.pace).toBe(5);
   });
 
-  it('filters out slow/standing records (speed <= 0.5 m/s)', () => {
+  it('is null only when speed is missing or 0', () => {
     const records: SessionRecord[] = [
       { timestamp: 0, speed: 0.3 },
       { timestamp: 60, speed: 0 },
-      { timestamp: 120, speed: 3.5 },
+      { timestamp: 120 },
     ];
-    const result = preparePaceData(records);
-    expect(result).toHaveLength(1);
-  });
-
-  it('returns empty when no speed data', () => {
-    const records: SessionRecord[] = [{ timestamp: 0 }];
-    expect(preparePaceData(records)).toHaveLength(0);
+    expect(preparePaceData(records).map((p) => p.pace)).toEqual([55.56, null, null]);
   });
 });
 
 describe('prepareGAPData', () => {
-  it('produces both pace and gap values', () => {
-    const records = makeRunningRecords(100);
-    // Add grade data
-    const withGrade = records.map((r, i) => ({ ...r, grade: 5 * Math.sin(i * 0.1) }));
-    const result = prepareGAPData(withGrade);
-    expect(result.length).toBeGreaterThan(0);
-    expect(result[0]).toHaveProperty('pace');
-    expect(result[0]).toHaveProperty('gap');
+  it('gap is lower (faster) than pace uphill', () => {
+    const point = prepareGAPData([{ timestamp: 0, speed: 3.5, grade: 10 }])[0];
+    expect(point?.gap).toBeLessThan(point?.pace ?? 0);
   });
 
-  it('gap differs from pace when grade is non-zero', () => {
+  it('gap is higher (slower) than pace downhill', () => {
+    const point = prepareGAPData([{ timestamp: 0, speed: 3.5, grade: -10 }])[0];
+    expect(point?.gap).toBeGreaterThan(point?.pace ?? 0);
+  });
+
+  it('falls back to the elevation delta to the previous record', () => {
     const records: SessionRecord[] = [
-      { timestamp: 0, speed: 3.5, grade: 10, distance: 0 },
-      { timestamp: 60, speed: 3.5, grade: 10, distance: 210 },
+      { timestamp: 0, speed: 3.5, elevation: 100, distance: 0 },
+      { timestamp: 60, speed: 3.5, elevation: 110, distance: 100 },
     ];
-    const result = prepareGAPData(records);
-    expect(result.length).toBeGreaterThan(0);
-    // 10% uphill grade → factor > 1 → gap should be lower (faster) than pace
-    const point = result[result.length - 1];
-    expect(point.gap).toBeLessThan(point.pace);
+    const point = prepareGAPData(records)[1];
+    expect(point?.gap).toBeLessThan(point?.pace ?? 0);
   });
 
-  it('returns empty for fewer than 2 valid records', () => {
-    const records: SessionRecord[] = [{ timestamp: 0, speed: 3.5, grade: 5 }];
-    expect(prepareGAPData(records)).toHaveLength(0);
-  });
-
-  it('returns empty when no grade or elevation data', () => {
+  it('gap is null without a gradient, pace stays', () => {
     const records: SessionRecord[] = [
       { timestamp: 0, speed: 3.5 },
-      { timestamp: 60, speed: 3.5 },
-    ];
-    expect(prepareGAPData(records)).toHaveLength(0);
-  });
-
-  it('downhill grade produces gap higher (slower) than pace', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 0, speed: 3.5, grade: -10, distance: 0 },
-      { timestamp: 60, speed: 3.5, grade: -10, distance: 210 },
+      { timestamp: 60, speed: 3.5, elevation: 110, distance: 100 },
     ];
     const result = prepareGAPData(records);
-    expect(result.length).toBeGreaterThan(0);
-    const point = result[result.length - 1];
-    expect(point.gap).toBeGreaterThan(point.pace);
+    expect(result.map((p) => p.gap)).toEqual([null, null]);
+    expect(result.every((p) => p.pace !== null)).toBe(true);
+  });
+
+  it('pace and gap are null at speed 0', () => {
+    expect(prepareGAPData([{ timestamp: 0, speed: 0, grade: 5 }])[0]).toEqual({
+      time: 0,
+      pace: null,
+      gap: null,
+    });
+  });
+});
+
+describe('hasSeriesValues', () => {
+  it('is true when at least one value is not null, including 0', () => {
+    expect(hasSeriesValues([{ hr: null }, { hr: 0 }], 'hr')).toBe(true);
+  });
+
+  it('is false when every value is null', () => {
+    expect(hasSeriesValues([{ hr: null }], 'hr')).toBe(false);
   });
 });

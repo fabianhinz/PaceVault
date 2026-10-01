@@ -3,10 +3,12 @@ import { LoadChart } from '@/features/dashboard/LoadChart';
 import { TrainingSummaryCard } from '@/features/dashboard/TrainingSummaryCard.tsx';
 import { PageGrid } from '@/components/ui/PageGrid.tsx';
 import { FormStatusCard } from '@/features/dashboard/FormStatusCard.tsx';
+import { DashboardPeek } from '@/features/dashboard/DashboardPeek.tsx';
 
 export const DashboardPage = () => {
   return (
     <PageGrid>
+      <DashboardPeek />
       <FormStatusCard />
       <div className="lg:col-span-2">
         <LoadChart />

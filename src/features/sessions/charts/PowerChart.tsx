@@ -85,6 +85,7 @@ export const PowerChart = (props: PowerChartProps) => {
           stroke={tokens.chartPower}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_power()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

@@ -79,13 +79,3 @@ export const validateRecords = (records: SessionRecord[], sport: Sport): SensorW
 
   return warnings;
 };
-
-/**
- * Filters session records to those with a valid, positive power reading at or below `MAX_VALID_POWER`.
- *
- * @param records - Array of time-series records to filter.
- * @returns A new array containing only records where `power` is defined, greater than zero, and within the valid range.
- */
-export const filterValidPower = (records: SessionRecord[]): SessionRecord[] => {
-  return records.filter((r) => r.power !== undefined && r.power > 0 && r.power <= MAX_VALID_POWER);
-};

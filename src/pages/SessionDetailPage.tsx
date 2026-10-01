@@ -14,6 +14,7 @@ import { NoGpsBanner } from '@/features/sessions/session/NoGpsBanner.tsx';
 import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
 import { OverviewTab } from '@/features/sessions/session/OverviewTab.tsx';
 import { LapsTab } from '@/features/sessions/laps/LapsTab.tsx';
+import { SessionPeek } from '@/features/sessions/SessionPeek.tsx';
 import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
 
 const validTabs = new Set(['overview', 'laps']);
@@ -66,13 +67,13 @@ export const SessionDetailPage = () => {
     setSearchParams({ tab: value });
   };
 
-  // no layout shift
   if (records.length === 0) {
     return;
   }
 
   return (
     <div className="space-y-4">
+      <SessionPeek session={session} />
       <NoGpsBanner records={records} />
 
       <SessionHeader session={session} titleVariant="h2" titleAs="h1">

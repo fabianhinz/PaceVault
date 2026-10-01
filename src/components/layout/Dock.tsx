@@ -24,7 +24,7 @@ import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useGeolocationStore } from '@/store/geolocation.ts';
 import { Button } from '@/components/ui/Button.tsx';
-import { MobileMapFab } from './MobileMapFab.tsx';
+import { useSheetScrollElement } from '@/lib/hooks/useSheetScrollElement.ts';
 import { DockRevealPanel } from './DockRevealPanel.tsx';
 import { DockFilterOptions, type FilterOption } from './DockFilterOptions.tsx';
 import { AttributeFilterDialog } from './AttributeFilterDialog.tsx';
@@ -46,8 +46,6 @@ const tabs = [
   { to: '/settings', label: m.ui_nav_settings, icon: Settings },
 ];
 
-// Trips live under the sessions section and studio routes under labs, so their
-// detail pages keep the parent tab active.
 const isTabActive = (to: string, pathname: string): boolean => {
   if (to === '/') return pathname === '/';
   if (to === '/sessions') return pathname.startsWith('/sessions') || pathname.startsWith('/trips');
@@ -79,6 +77,7 @@ export const Dock = () => {
   const tabRefs = useRef<(HTMLElement | null)[]>([]);
   const dockExpanded = useIsDesktop();
   const indicatorElement = useSlideIndicator(dockBarRef, tabRefs, activeIndex, dockExpanded);
+  const sheetScroller = useSheetScrollElement();
   const upload = useFileUpload();
   useFileDropEffect(upload.handleFiles, !upload.uploading);
 
@@ -93,8 +92,12 @@ export const Dock = () => {
 
   const handleTabClick = useCallback(() => {
     closeAll();
-    window.scrollTo({ top: 0 });
-  }, [closeAll]);
+    if (sheetScroller) {
+      sheetScroller.scrollTo({ top: 0 });
+    } else {
+      window.scrollTo({ top: 0 });
+    }
+  }, [closeAll, sheetScroller]);
 
   const closeFrom = useCallback(
     (layer: DockRevealLayer) =>
@@ -115,7 +118,6 @@ export const Dock = () => {
     );
   }, []);
 
-  // Filter state
   const sportFilter = useFiltersStore((s) => s.sportFilter);
   const timeRange = useFiltersStore((s) => s.timeRange);
   const customRange = useFiltersStore((s) => s.customRange);
@@ -128,9 +130,6 @@ export const Dock = () => {
     setAttrDialogOpen(true);
   }, []);
 
-  // Locate button — the accent dot lights up while tracking; the icon shows a
-  // crossed-out locator when the last attempt failed, otherwise reflects whether
-  // tracking is on.
   const geoTracking = useGeolocationStore((s) => s.tracking);
   const geoError = useGeolocationStore((s) => s.error);
   let LocateIcon = Locate;
@@ -160,7 +159,6 @@ export const Dock = () => {
         ]
       : timeRangeOptions;
 
-  // Escape key handler — pop top layer
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && revealStack.length > 0) {
@@ -182,7 +180,6 @@ export const Dock = () => {
           'transition-all duration-300',
         )}
       >
-        <MobileMapFab />
         <nav
           className={cn(
             cardClass,
@@ -192,7 +189,6 @@ export const Dock = () => {
             'lg:border lg:rounded-2xl',
           )}
         >
-          {/* Filter options panels (Level C) — top on mobile, rightmost on desktop */}
           <DockRevealPanel open={isOpen('sport-filter')} className="lg:order-3">
             <DockFilterOptions
               options={sportOptions}
@@ -215,7 +211,6 @@ export const Dock = () => {
             />
           </DockRevealPanel>
 
-          {/* Mini dock menu panel (Level B) — between dock bar and filters on desktop */}
           <DockRevealPanel open={isOpen('menu') && !dockExpanded} className="lg:order-2">
             <Button
               variant="ghost"
@@ -272,7 +267,6 @@ export const Dock = () => {
             </Button>
           </DockRevealPanel>
 
-          {/* Main dock bar */}
           <div
             ref={dockBarRef}
             className="relative flex flex-row lg:flex-col items-center justify-center p-2 lg:order-1"
@@ -302,7 +296,6 @@ export const Dock = () => {
               </NavLink>
             ))}
 
-            {/* Separator */}
             <div
               className={cn(
                 'bg-white/10 shrink-0 transition-all duration-300',
@@ -312,7 +305,6 @@ export const Dock = () => {
 
             {dockExpanded ? (
               <>
-                {/* Filter buttons in maxi dock */}
                 <Button
                   variant="ghost"
                   size="icon"

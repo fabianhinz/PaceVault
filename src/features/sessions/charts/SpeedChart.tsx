@@ -85,6 +85,7 @@ export const SpeedChart = (props: SpeedChartProps) => {
           stroke={tokens.chartSpeed}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_speed()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

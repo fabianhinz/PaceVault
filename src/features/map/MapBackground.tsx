@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { cn } from '@/lib/utils.ts';
 import { useMatch } from 'react-router-dom';
 import MapGL from 'react-map-gl/maplibre';
 import type { PickingInfo } from '@deck.gl/core';
@@ -24,11 +23,7 @@ import type { MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map-attribution.css';
 
-interface MapBackgroundProps {
-  className?: string;
-}
-
-export const MapBackground = (props: MapBackgroundProps) => {
+export const MapBackground = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
 
   const mapRef = useRef<MapRef>(null);
@@ -62,20 +57,13 @@ export const MapBackground = (props: MapBackgroundProps) => {
     studioTracks.bounds,
   );
 
-  // Hoist the stable inner handlers so onMapClick's identity only changes when
-  // one of them (or the focused route) does — keeping the deck.gl layers, which
-  // depend on this callback, from rebuilding on every render.
   const sessionsOnClick = popupState.onClick;
   const studioOnClick = studioPopup.onClick;
   const routesOnClick = studioRoutesPopup.onClick;
 
-  // Clicks on a studio route open a studio popup; everything else routes to the
-  // session/lap pick handler.
   const onMapClick = useCallback(
     (info: PickingInfo) => {
       if (info.layer?.id === 'studio-routes') {
-        // Detail page drops a marker on its route; the studio tab lists the
-        // routes near the click.
         if (studioTracks.focusedRouteId) {
           studioOnClick(info);
         } else {
@@ -91,10 +79,7 @@ export const MapBackground = (props: MapBackgroundProps) => {
   const interactive = popupState.interactive && !studioPopup.popup && !studioRoutesPopup.popup;
 
   return (
-    <div
-      className={cn('fixed inset-0 z-0', props.className)}
-      onPointerLeave={popupState.onPointerLeave}
-    >
+    <div className="fixed inset-0 z-0" onPointerLeave={popupState.onPointerLeave}>
       <MapGL
         ref={mapRef}
         onLoad={() => setMapLoaded(true)}

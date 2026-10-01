@@ -14,8 +14,8 @@ function makeRecord(overrides: Partial<SessionRecord> = {}): SessionRecord {
 }
 
 describe('deriveDistanceFromRecords', () => {
-  it('returns 0 for empty array', () => {
-    expect(deriveDistanceFromRecords([])).toBe(0);
+  it('returns undefined for empty array', () => {
+    expect(deriveDistanceFromRecords([])).toBeUndefined();
   });
 
   it('returns last record distance (cumulative)', () => {
@@ -32,14 +32,14 @@ describe('deriveDistanceFromRecords', () => {
     expect(deriveDistanceFromRecords(records)).toBe(800);
   });
 
-  it('returns 0 when no records have distance', () => {
+  it('returns undefined when no records have distance', () => {
     const records = [makeRecord({}), makeRecord({})];
-    expect(deriveDistanceFromRecords(records)).toBe(0);
+    expect(deriveDistanceFromRecords(records)).toBeUndefined();
   });
 
-  it('skips records with distance 0', () => {
+  it('keeps a recorded distance of 0', () => {
     const records = [makeRecord({ distance: 500 }), makeRecord({ distance: 0 })];
-    expect(deriveDistanceFromRecords(records)).toBe(500);
+    expect(deriveDistanceFromRecords(records)).toBe(0);
   });
 });
 
@@ -62,13 +62,13 @@ describe('deriveAvgFromRecords', () => {
     expect(deriveAvgFromRecords(records, 'power')).toBe(250);
   });
 
-  it('skips zero values', () => {
+  it('counts zero values', () => {
     const records = [
       makeRecord({ power: 0 }),
       makeRecord({ power: 200 }),
       makeRecord({ power: 300 }),
     ];
-    expect(deriveAvgFromRecords(records, 'power')).toBe(250);
+    expect(deriveAvgFromRecords(records, 'power')).toBe(167);
   });
 
   it('returns rounded mean of valid cadence values', () => {

@@ -318,36 +318,21 @@ describe('enrichLapFromRecords', () => {
     expect(result.minHr).toBeUndefined();
   });
 
-  it('excludes zero-speed records from minSpeed', () => {
+  it('counts a recorded speed of 0 in minSpeed', () => {
     const records: SessionRecord[] = [
       { timestamp: 0, speed: 0 },
       { timestamp: 1, speed: 3.5 },
       { timestamp: 2, speed: 4.0 },
     ];
-    const result = enrichLapFromRecords(0, records);
-    expect(result.minSpeed).toBe(3.5);
+    expect(enrichLapFromRecords(0, records).minSpeed).toBe(0);
   });
 
-  it('excludes near-zero speeds below MIN_SPEED_MS threshold', () => {
+  it('keeps very slow speeds in minSpeed', () => {
     const records: SessionRecord[] = [
       { timestamp: 0, speed: 0.01 },
-      { timestamp: 1, speed: 0.3 },
-      { timestamp: 2, speed: 2.5 },
-      { timestamp: 3, speed: 3.0 },
+      { timestamp: 1, speed: 2.5 },
     ];
-    const result = enrichLapFromRecords(0, records);
-    // speeds 0.01 and 0.3 are below 0.5 m/s threshold
-    expect(result.minSpeed).toBe(2.5);
-  });
-
-  it('returns undefined minSpeed when all speeds are below threshold', () => {
-    const records: SessionRecord[] = [
-      { timestamp: 0, speed: 0.1 },
-      { timestamp: 1, speed: 0.2 },
-      { timestamp: 2, speed: 0.4 },
-    ];
-    const result = enrichLapFromRecords(0, records);
-    expect(result.minSpeed).toBeUndefined();
+    expect(enrichLapFromRecords(0, records).minSpeed).toBe(0.01);
   });
 
   it('computes minHr from per-second records', () => {
@@ -361,18 +346,12 @@ describe('enrichLapFromRecords', () => {
     expect(result.minHr).toBe(130);
   });
 
-  it('returns true minimum for power (zero excluded by pre-filter)', () => {
+  it('counts a recorded power of 0 in minPower', () => {
     const records: SessionRecord[] = [
       { timestamp: 0, power: 0 },
-      ...Array.from({ length: 19 }, (_, i) => ({
-        sessionId: 'test',
-        timestamp: i + 1,
-        power: 180 + i * 2,
-      })),
+      { timestamp: 1, power: 180 },
     ];
-    const result = enrichLapFromRecords(0, records);
-    // The 0W record is excluded by the > 0 filter; true min is 180
-    expect(result.minPower).toBe(180);
+    expect(enrichLapFromRecords(0, records).minPower).toBe(0);
   });
 
   it('returns true minimum HR including outliers', () => {
@@ -389,7 +368,7 @@ describe('enrichLapFromRecords', () => {
     expect(result.minHr).toBe(50);
   });
 
-  it('excludes zero-power coasting from minPower', () => {
+  it('counts zero-power coasting in avgPower', () => {
     const records: SessionRecord[] = [
       { timestamp: 0, power: 0 },
       { timestamp: 1, power: 0 },
@@ -398,19 +377,16 @@ describe('enrichLapFromRecords', () => {
       { timestamp: 4, power: 180 },
     ];
     const result = enrichLapFromRecords(0, records);
-    // Zero-power records filtered out; remaining: [150, 180, 200]
-    expect(result.minPower).toBe(150);
+    expect(result.minPower).toBe(0);
+    expect(result.avgPower).toBe(106);
   });
 
-  it('excludes zero-cadence from minCadence', () => {
+  it('counts a recorded cadence of 0 in minCadence', () => {
     const records: SessionRecord[] = [
       { timestamp: 0, cadence: 0 },
       { timestamp: 1, cadence: 70 },
-      { timestamp: 2, cadence: 80 },
-      { timestamp: 3, cadence: 85 },
     ];
-    const result = enrichLapFromRecords(0, records);
-    expect(result.minCadence).toBe(70);
+    expect(enrichLapFromRecords(0, records).minCadence).toBe(0);
   });
 });
 

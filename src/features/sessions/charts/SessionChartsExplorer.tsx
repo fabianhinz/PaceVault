@@ -14,6 +14,7 @@ import {
   prepareGAPData,
   buildTimeToGpsLookup,
   filterTimeSeries,
+  hasSeriesValues,
 } from '@/lib/chartData.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { sportIcon } from '@/lib/sportIcons.ts';
@@ -60,8 +61,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const gradeData = useMemo(() => prepareGradeData(sampled), [sampled]);
   const paceData = useMemo(() => (isRunning ? preparePaceData(sampled) : []), [sampled, isRunning]);
   const gapData = useMemo(
-    () => (isRunning && gradeData.length > 0 ? prepareGAPData(sampled) : []),
-    [sampled, isRunning, gradeData.length],
+    () => (isRunning && hasSeriesValues(gradeData, 'grade') ? prepareGAPData(sampled) : []),
+    [sampled, isRunning, gradeData],
   );
 
   const gpsLookup = useMemo(() => buildTimeToGpsLookup(sampled), [sampled]);
@@ -133,7 +134,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         title: m.ui_chart_title_hr(),
         icon: Heart,
         color: tokens.chartHr,
-        hasData: hrData.length > 0,
+        hasData: hasSeriesValues(hrData, 'hr'),
         render: (mode: 'compact' | 'expanded') => (
           <HrChart
             data={mode === 'compact' ? filteredHrData : hrData}
@@ -149,7 +150,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         title: m.ui_zones_tab_power(),
         icon: Zap,
         color: tokens.chartPower,
-        hasData: powerData.length > 0,
+        hasData: hasSeriesValues(powerData, 'power'),
         render: (mode: 'compact' | 'expanded') => (
           <PowerChart
             data={mode === 'compact' ? filteredPowerData : powerData}
@@ -165,7 +166,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         title: m.ui_laps_col_speed(),
         icon: Gauge,
         color: tokens.chartSpeed,
-        hasData: speedData.length > 0,
+        hasData: hasSeriesValues(speedData, 'speed'),
         render: (mode: 'compact' | 'expanded') => (
           <SpeedChart
             data={mode === 'compact' ? filteredSpeedData : speedData}
@@ -181,7 +182,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         title: m.ui_stat_elevation(),
         icon: Mountain,
         color: tokens.chartElevation,
-        hasData: elevationData.length > 0,
+        hasData: hasSeriesValues(elevationData, 'elevation'),
         render: (mode: 'compact' | 'expanded') => (
           <ElevationChart
             data={mode === 'compact' ? filteredElevationData : elevationData}
@@ -198,7 +199,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         title: m.ui_stat_cadence(),
         icon: cadenceIcon,
         color: tokens.chartCadence,
-        hasData: cadenceData.length > 0,
+        hasData: hasSeriesValues(cadenceData, 'cadence'),
         render: (mode: 'compact' | 'expanded') => (
           <CadenceChart
             data={mode === 'compact' ? filteredCadenceData : cadenceData}
@@ -214,7 +215,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         title: m.ui_chart_title_grade(),
         icon: TrendingUp,
         color: tokens.chartGrade,
-        hasData: gradeData.length > 0,
+        hasData: hasSeriesValues(gradeData, 'grade'),
         render: (mode: 'compact' | 'expanded') => (
           <GradeChart
             data={mode === 'compact' ? filteredGradeData : gradeData}
@@ -231,7 +232,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         title: m.ui_zones_tab_pace(),
         icon: Timer,
         color: tokens.chartPace,
-        hasData: paceData.length > 0,
+        hasData: hasSeriesValues(paceData, 'pace'),
         render: (mode: 'compact' | 'expanded') => (
           <PaceChart
             data={mode === 'compact' ? filteredPaceData : paceData}
@@ -247,7 +248,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         title: m.exp_gradeAdjustedPace_friendlyName(),
         icon: ArrowUpDown,
         color: tokens.chartGap,
-        hasData: gapData.length > 0,
+        hasData: hasSeriesValues(gapData, 'gap'),
         render: (mode: 'compact' | 'expanded') => (
           <GradeAdjustedPaceChart
             data={mode === 'compact' ? filteredGapData : gapData}

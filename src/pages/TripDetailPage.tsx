@@ -11,6 +11,7 @@ import { SessionItem } from '@/features/sessions/SessionItem.tsx';
 import { TripHeader } from '@/features/trips/TripHeader.tsx';
 import { TripActionsMenu } from '@/features/trips/TripActionsMenu.tsx';
 import { TripStatsGrid } from '@/features/trips/TripStatsGrid.tsx';
+import { TripPeek } from '@/features/trips/TripPeek.tsx';
 import { useTripSessions } from '@/features/trips/hooks/useTripSessions.ts';
 
 export const TripDetailPage = () => {
@@ -41,6 +42,7 @@ const TripDetail = (props: { trip: Trip }) => {
 
   return (
     <div className="space-y-4">
+      <TripPeek trip={props.trip} />
       <TripHeader trip={props.trip} titleVariant="h2" titleAs="h1">
         <TripActionsMenu trip={props.trip} />
       </TripHeader>

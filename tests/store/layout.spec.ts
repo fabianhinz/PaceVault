@@ -1,12 +1,20 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useLayoutStore } from '@/store/layout.ts';
 
+const migrate = (persisted: Record<string, unknown>, version: number) => {
+  const options = useLayoutStore.persist.getOptions();
+  if (!options.migrate) {
+    throw new Error('migrate missing');
+  }
+  return options.migrate(persisted, version) as Record<string, unknown>;
+};
+
 describe('useLayoutStore', () => {
   beforeEach(() => {
     useLayoutStore.setState({
       onboardingComplete: false,
       demoMode: false,
-      mobileMapActive: false,
+      mobileSheetPosition: 0.5,
     });
   });
 
@@ -40,14 +48,43 @@ describe('useLayoutStore', () => {
     expect(useLayoutStore.getState().demoMode).toBe(false);
   });
 
-  it('toggleMobileMap flips to true', () => {
-    useLayoutStore.getState().toggleMobileMap();
-    expect(useLayoutStore.getState().mobileMapActive).toBe(true);
+  it('setMobileSheetPosition stores a dragged position', () => {
+    useLayoutStore.getState().setMobileSheetPosition(0.72);
+    expect(useLayoutStore.getState().mobileSheetPosition).toBe(0.72);
   });
 
-  it('double toggleMobileMap returns to false', () => {
-    useLayoutStore.getState().toggleMobileMap();
-    useLayoutStore.getState().toggleMobileMap();
-    expect(useLayoutStore.getState().mobileMapActive).toBe(false);
+  describe('migrate', () => {
+    it('maps an active v3 map view to peek and drops mobileMapActive', () => {
+      const state = migrate({ onboardingComplete: true, demoMode: true, mobileMapActive: true }, 3);
+      expect(state).toEqual({ onboardingComplete: true, demoMode: true, mobileSheetPosition: 0 });
+    });
+
+    it('maps an inactive v3 map view to the middle', () => {
+      const state = migrate({ onboardingComplete: true, mobileMapActive: false }, 3);
+      expect(state.mobileSheetPosition).toBe(0.5);
+      expect(state).not.toHaveProperty('mobileMapActive');
+    });
+
+    it('defaults v1 and v2 state to the middle', () => {
+      expect(migrate({ onboardingComplete: true }, 1)).toEqual({
+        onboardingComplete: true,
+        demoMode: false,
+        mobileSheetPosition: 0.5,
+      });
+      expect(migrate({ onboardingComplete: true, demoMode: true }, 2).mobileSheetPosition).toBe(
+        0.5,
+      );
+    });
+
+    it('maps v4 snaps to positions and drops mobileSheetSnap', () => {
+      expect(migrate({ mobileSheetSnap: 'peek' }, 4)).toEqual({ mobileSheetPosition: 0 });
+      expect(migrate({ mobileSheetSnap: 'half' }, 4).mobileSheetPosition).toBe(0.5);
+      expect(migrate({ mobileSheetSnap: 'full' }, 4).mobileSheetPosition).toBe(1);
+    });
+
+    it('falls back to the middle for an unrecognised value', () => {
+      expect(migrate({ mobileSheetSnap: 'sideways' }, 4).mobileSheetPosition).toBe(0.5);
+      expect(migrate({ mobileSheetPosition: 3 }, 5).mobileSheetPosition).toBe(0.5);
+    });
   });
 });

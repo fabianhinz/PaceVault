@@ -8,13 +8,11 @@ const NP_ROLLING_WINDOW_SEC = 30;
 
 /**
  * Calculate Normalized Power (NP) from time-series power data using the standard 30 s rolling-average → 4th-power → mean → 4th-root algorithm.
- * @param records - Full time-series session records; only records with `power > 0` are used, assumed to be sampled at ~1 Hz.
+ * @param records - Full time-series session records; records without `power` are skipped, assumed to be sampled at ~1 Hz.
  * @returns NP rounded to the nearest watt, or `undefined` when fewer than `NP_ROLLING_WINDOW_SEC` valid power samples are available.
  */
 export const calculateNormalizedPower = (records: SessionRecord[]): number | undefined => {
-  const powerData = records
-    .map((r) => r.power)
-    .filter((v): v is number => v !== undefined && v > 0);
+  const powerData = records.map((r) => r.power).filter((v): v is number => v !== undefined);
 
   if (powerData.length < NP_ROLLING_WINDOW_SEC) return undefined;
 
@@ -82,17 +80,18 @@ export const calculateGAP = (records: SessionRecord[]): number | undefined => {
     const prev = validRecords[i - 1];
     const curr = validRecords[i];
     if (!prev || !curr) continue;
-    const dx = (curr.distance ?? 0) - (prev.distance ?? 0);
+    if (curr.distance === undefined || prev.distance === undefined) continue;
+    const dx = curr.distance - prev.distance;
 
     if (dx <= 0) continue;
 
-    // Prefer native FIT grade field; fall back to elevation delta
-    // FIT grade is percentage (e.g. 5 = 5%); gradeAdjustedPaceFactor expects fraction (0.05)
-    let gradient = 0;
+    let gradient: number;
     if (curr.grade !== undefined) {
       gradient = curr.grade / 100;
-    } else if (dx > 0) {
-      gradient = ((curr.elevation ?? 0) - (prev.elevation ?? 0)) / dx;
+    } else if (curr.elevation !== undefined && prev.elevation !== undefined) {
+      gradient = (curr.elevation - prev.elevation) / dx;
+    } else {
+      continue;
     }
 
     const factor = gradeAdjustedPaceFactor(gradient);

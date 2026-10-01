@@ -15,7 +15,7 @@ import { m } from '@/paraglide/messages.js';
 
 interface ElevationChartProps<
   K extends string,
-  T extends { elevation: number } & Record<K, number>,
+  T extends { elevation: number | null } & Record<K, number>,
 > {
   data: T[];
   xAxis: ChartXAxis<K>;
@@ -27,7 +27,7 @@ interface ElevationChartProps<
 
 export const ElevationChart = <
   K extends string,
-  T extends { elevation: number } & Record<K, number>,
+  T extends { elevation: number | null } & Record<K, number>,
 >(
   props: ElevationChartProps<K, T>,
 ) => {
@@ -95,6 +95,7 @@ export const ElevationChart = <
           fillOpacity={0.2}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_elevation()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

@@ -39,7 +39,7 @@ export const HR_ZONE_DEFS = [
 /**
  * Computes a 5-zone heart-rate distribution using the Karvonen (HR-reserve) method.
  *
- * @param records - Time-series session records; only those with a positive `hr` value are used.
+ * @param records - Time-series session records; records without `hr` are skipped.
  * @param maxHr - Athlete's maximum heart rate in bpm.
  * @param restHr - Athlete's resting heart rate in bpm.
  * @returns One `ZoneBucket` per HR zone (Z1–Z5), or an empty array when inputs are insufficient.
@@ -52,7 +52,7 @@ export const computeHrZoneDistribution = (
   const hrReserve = maxHr - restHr;
   if (hrReserve <= 0) return [];
 
-  const hrRecords = records.map((r) => r.hr).filter((v): v is number => v !== undefined && v > 0);
+  const hrRecords = records.map((r) => r.hr).filter((v): v is number => v !== undefined);
   if (hrRecords.length === 0) return [];
 
   const counts = HR_ZONE_DEFS.map(() => 0);
@@ -128,7 +128,7 @@ export const POWER_ZONE_DEFS = [
 /**
  * Computes a 7-zone power distribution using the Coggan FTP model.
  *
- * @param records - Time-series session records; only those with a positive `power` value are used.
+ * @param records - Time-series session records; records without `power` are skipped.
  * @param ftp - Athlete's Functional Threshold Power in watts.
  * @returns One `ZoneBucket` per power zone (Z1–Z7), or an empty array when inputs are insufficient.
  */
@@ -138,9 +138,7 @@ export const computePowerZoneDistribution = (
 ): ZoneBucket[] => {
   if (ftp <= 0) return [];
 
-  const powerValues = records
-    .map((r) => r.power)
-    .filter((v): v is number => v !== undefined && v > 0);
+  const powerValues = records.map((r) => r.power).filter((v): v is number => v !== undefined);
   if (powerValues.length === 0) return [];
 
   const counts = POWER_ZONE_DEFS.map(() => 0);
@@ -178,7 +176,7 @@ export const computePowerZoneDistribution = (
 /**
  * Computes a pace-zone distribution derived from the athlete's running threshold pace.
  *
- * @param records - Time-series session records; only those with a `speed` above 0.5 m/s are used.
+ * @param records - Time-series session records; records without `speed` or at speed 0 are skipped.
  * @param thresholdPace - Athlete's threshold pace in seconds per kilometre.
  * @returns One `ZoneBucket` per pace zone as defined by `computeRunningZones`, or an empty array when inputs are insufficient.
  */
@@ -192,7 +190,7 @@ export const computePaceZoneDistribution = (
   const zones = computeRunningZones(thresholdPace);
   const speedValues = records
     .map((r) => r.speed)
-    .filter((v): v is number => v !== undefined && v > 0.5);
+    .filter((v): v is number => v !== undefined && v > 0);
   if (speedValues.length === 0) return [];
 
   const counts = zones.map(() => 0);

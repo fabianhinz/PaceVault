@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateRecords, filterValidPower } from '@/lib/validation.ts';
+import { validateRecords } from '@/lib/validation.ts';
 import { calculateNormalizedPower } from '@/packages/engine/normalize.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import {
@@ -8,7 +8,7 @@ import {
   makeInvalidRecords,
 } from '@tests/factories/records.ts';
 
-describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP', () => {
+describe('stress pipeline: records → validate → NP → TSS/TRIMP', () => {
   it('full cycling pipeline: 3600 records → TSS ~100 for IF ~1.0', () => {
     const records = makeCyclingRecords(3600, { basePower: 250 });
 
@@ -16,17 +16,13 @@ describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP'
     const warnings = validateRecords(records, 'cycling');
     expect(warnings).toHaveLength(0);
 
-    // Filter
-    const validPower = filterValidPower(records);
-    expect(validPower.length).toBe(3600);
-
     // NP — random-walk power around 250W, NP ≈ average (low variability keeps NP close)
-    const np = calculateNormalizedPower(validPower);
+    const np = calculateNormalizedPower(records);
     expect(np).toBeDefined();
     expect(np ?? 0).toBeGreaterThan(230);
 
     // Full stress pipeline with FTP=250 and IF close to 1.0
-    const result = calculateSessionStress(validPower, 3600, 150, 50, 190, 'male', 250);
+    const result = calculateSessionStress(records, 3600, 150, 50, 190, 'male', 250);
     expect(result.stressMethod).toBe('tss');
     expect(result.normalizedPower).toBe(np);
     expect(result.tss).toBeGreaterThanOrEqual(80);
@@ -53,23 +49,16 @@ describe('stress pipeline: records → validate → filter → NP → TSS/TRIMP'
     expect(result.tss).toBeGreaterThan(0);
   });
 
-  it('validation filters bad data before stress calculation', () => {
+  it('validation warns about power spikes but keeps them as recorded', () => {
     const goodRecords = makeCyclingRecords(3600, { basePower: 200 });
     const badRecords = makeInvalidRecords('highPower');
     const combined = [...goodRecords, ...badRecords];
 
-    // Validate detects issues
     const warnings = validateRecords(combined, 'cycling');
     expect(warnings.some((w) => w.field === 'power')).toBe(true);
 
-    // After filtering, bad records removed
-    const filtered = filterValidPower(combined);
-    expect(filtered.length).toBe(goodRecords.length);
-    expect(filtered.every((r) => (r.power ?? 0) <= 2500)).toBe(true);
-
-    // NP still works on filtered data
-    const np = calculateNormalizedPower(filtered);
-    expect(np).toBeDefined();
+    const npWithSpikes = calculateNormalizedPower(combined) ?? 0;
+    expect(npWithSpikes).toBeGreaterThan(calculateNormalizedPower(goodRecords) ?? 0);
   });
 
   it('short session (< 30 records) → no NP, graceful fallback', () => {

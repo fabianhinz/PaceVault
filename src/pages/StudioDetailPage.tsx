@@ -10,12 +10,11 @@ import { RouteStatsGrid } from '@/features/studio/RouteStatsGrid.tsx';
 import { RouteChartsExplorer } from '@/features/studio/charts/RouteChartsExplorer.tsx';
 import { StudioToolsTab } from '@/features/studio/StudioToolsTab.tsx';
 import { StudioMarkerDialog } from '@/features/studio/markers/StudioMarkerDialog.tsx';
+import { StudioRoutePeek } from '@/features/studio/StudioRoutePeek.tsx';
 import { useStudioRoutePoints } from '@/features/studio/hooks/useStudioRoutePoints.ts';
 
 const validTabs = new Set(['overview', 'tools']);
 
-// The map picks up this page itself: useStudioMapTracks derives the focused
-// route synchronously from the /studio/:id URL, so no effect is needed here.
 export const StudioDetailPage = () => {
   const params = useParams<{ id: string }>();
   const route = useStudioStore((s) => s.routes.find((r) => r.id === params.id));
@@ -43,6 +42,7 @@ const StudioDetail = (props: { route: StudioRoute }) => {
 
   return (
     <div className="space-y-4">
+      <StudioRoutePeek route={props.route} />
       <StudioRouteHeader route={props.route} titleVariant="h2" titleAs="h1">
         <StudioActionsMenu route={props.route} />
       </StudioRouteHeader>

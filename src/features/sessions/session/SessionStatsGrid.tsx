@@ -90,13 +90,19 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
 
   // Row 3: Sport-aware pace/speed (single card)
   if (props.session.sport === 'cycling') {
-    if (props.session.avgSpeed ?? (props.session.distance > 0 && props.session.duration > 0)) {
+    let avgSpeed = props.session.avgSpeed;
+    if (
+      avgSpeed === undefined &&
+      props.session.distance !== undefined &&
+      props.session.duration > 0
+    ) {
+      avgSpeed = props.session.distance / props.session.duration;
+    }
+    if (avgSpeed !== undefined) {
       stats.push({
         key: 'avgSpeed',
         label: m.ui_stat_avg_speed(),
-        value: formatSpeed(
-          props.session.avgSpeed ?? props.session.distance / props.session.duration,
-        ),
+        value: formatSpeed(avgSpeed),
         metricId: 'avgSpeed',
       });
     }
@@ -110,7 +116,7 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
   }
 
   // Row 4: Merged power card (NP primary when both exist)
-  if (props.session.normalizedPower && props.session.avgPower) {
+  if (props.session.normalizedPower !== undefined && props.session.avgPower !== undefined) {
     stats.push({
       key: 'power',
       label: m.ui_stat_norm_power(),
@@ -123,7 +129,7 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
         </Typography>
       ),
     });
-  } else if (props.session.avgPower) {
+  } else if (props.session.avgPower !== undefined) {
     stats.push({
       key: 'power',
       label: m.ui_stat_avg_power(),
@@ -144,9 +150,9 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
   }
 
   // Row 5: Elevation (absorbs altitude range) & Cadence
-  if (props.session.elevationGain !== undefined && props.session.elevationGain > 0) {
+  if (props.session.elevationGain !== undefined) {
     const elevationSubParts: string[] = [];
-    if (props.session.elevationLoss !== undefined && props.session.elevationLoss > 0) {
+    if (props.session.elevationLoss !== undefined) {
       elevationSubParts.push(`-${props.session.elevationLoss}m`);
     }
     if (props.session.minAltitude !== undefined) {
@@ -169,7 +175,7 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
     });
   }
 
-  if (props.session.avgCadence) {
+  if (props.session.avgCadence !== undefined) {
     stats.push({
       key: 'cadence',
       label: m.ui_stat_cadence(),

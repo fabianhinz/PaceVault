@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/Button.tsx';
 import { DataTable } from '@/components/ui/DataTable.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { cn } from '@/lib/utils.ts';
-import { formatDistance, formatLapTime, formatPaceOrSpeed } from '@/lib/formatters.ts';
+import {
+  formatDistance,
+  formatElevation,
+  formatLapTime,
+  formatPaceOrSpeed,
+} from '@/lib/formatters.ts';
 import type { LapAnalysis, LapRecordEnrichment } from '@/lib/laps.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { m } from '@/paraglide/messages.js';
@@ -25,7 +30,7 @@ export const LapDetailTable = (props: LapDetailTableProps) => {
   const visibleLaps = needsToggle && !expanded ? props.laps.slice(0, COLLAPSED_COUNT) : props.laps;
 
   const hasCadence = props.laps.some((l) => l.avgCadence !== undefined);
-  const hasElevation = props.laps.some((l) => l.elevationGain > 0);
+  const hasElevation = props.laps.some((l) => l.elevationGain !== undefined);
   const hasPower = props.enrichments
     ? [...props.enrichments.values()].some((e) => e.avgPower !== undefined)
     : false;
@@ -93,7 +98,7 @@ export const LapDetailTable = (props: LapDetailTableProps) => {
           },
           {
             label: m.ui_laps_col_elev(),
-            value: (lap) => (lap.elevationGain > 0 ? `${Math.round(lap.elevationGain)} m` : '--'),
+            value: (lap) => formatElevation(lap.elevationGain),
             visible: hasElevation,
             priority: 'secondary',
           },
