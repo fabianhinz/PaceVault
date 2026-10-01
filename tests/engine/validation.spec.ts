@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateRecords, filterValidPower } from '@/lib/validation.ts';
+import { validateRecords } from '@/lib/validation.ts';
 import {
   makeCyclingRecords,
   makeRunningRecords,
@@ -98,57 +98,5 @@ describe('validateRecords', () => {
     const fields = warnings.map((w) => w.field);
     expect(fields).toContain('hr');
     expect(fields).toContain('power');
-  });
-});
-
-describe('filterValidPower', () => {
-  it('keeps records with valid power between 1 and 2500', () => {
-    const records = [
-      makeRecord({ timestamp: 0, power: 200 }),
-      makeRecord({ timestamp: 1, power: 1 }),
-      makeRecord({ timestamp: 2, power: 2500 }),
-    ];
-    expect(filterValidPower(records)).toHaveLength(3);
-  });
-
-  it('removes records with undefined power', () => {
-    const records = [
-      makeRecord({ timestamp: 0, power: 200 }),
-      makeRecord({ timestamp: 1, hr: 150 }),
-    ];
-    expect(filterValidPower(records)).toHaveLength(1);
-  });
-
-  it('removes records with zero power', () => {
-    const records = [
-      makeRecord({ timestamp: 0, power: 0 }),
-      makeRecord({ timestamp: 1, power: 200 }),
-    ];
-    const result = filterValidPower(records);
-    expect(result).toHaveLength(1);
-    expect(result[0].power).toBe(200);
-  });
-
-  it('removes records with power exceeding 2500', () => {
-    const records = [
-      makeRecord({ timestamp: 0, power: 2501 }),
-      makeRecord({ timestamp: 1, power: 200 }),
-    ];
-    const result = filterValidPower(records);
-    expect(result).toHaveLength(1);
-    expect(result[0].power).toBe(200);
-  });
-
-  it('returns empty array for empty input', () => {
-    expect(filterValidPower([])).toEqual([]);
-  });
-
-  it('returns empty array when all records have invalid power', () => {
-    const records = [
-      makeRecord({ timestamp: 0, power: 0 }),
-      makeRecord({ timestamp: 1, power: 3000 }),
-      makeRecord({ timestamp: 2 }),
-    ];
-    expect(filterValidPower(records)).toHaveLength(0);
   });
 });

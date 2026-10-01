@@ -91,6 +91,7 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
           stroke={tokens.chartPace}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_pace()}
         />
         <Line
@@ -100,6 +101,7 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
           stroke={tokens.chartGap}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_gap()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

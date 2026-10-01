@@ -13,7 +13,7 @@ export interface FallbackFields {
   sport: Sport;
   date: number;
   duration: number;
-  distance: number;
+  distance?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,7 +34,10 @@ export const generateFingerprint = (
 
   // Fallback: round duration to nearest second, distance to nearest metre
   const roundedDuration = Math.round(fallback.duration);
-  const roundedDistance = Math.round(fallback.distance);
+  let roundedDistance = '';
+  if (fallback.distance !== undefined) {
+    roundedDistance = `${Math.round(fallback.distance)}`;
+  }
   return `${fallback.sport}:${fallback.date}:${roundedDuration}:${roundedDistance}`;
 };
 

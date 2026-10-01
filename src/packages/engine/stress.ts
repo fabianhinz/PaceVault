@@ -115,7 +115,7 @@ export const calculateSessionStress = (
   }
 
   // Fall back to TRIMP (requires HR data)
-  if (avgHr && avgHr > 0) {
+  if (avgHr !== undefined) {
     const trimp = calculateTRIMP(avgHr, durationSec, restHr, maxHr, gender);
     return {
       tss: trimp,

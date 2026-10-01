@@ -91,6 +91,7 @@ export const PaceChart = (props: PaceChartProps) => {
           stroke={tokens.chartPace}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_pace()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

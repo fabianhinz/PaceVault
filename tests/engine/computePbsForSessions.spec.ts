@@ -240,3 +240,15 @@ describe('computePBsForSessions', () => {
     });
   });
 });
+
+describe('computePBsForSessions with recorded zeros', () => {
+  it('keeps zero-power seconds in the peak windows', () => {
+    const records = Array.from({ length: 120 }, (_, i) => ({
+      timestamp: i,
+      power: i % 2 === 0 ? 0 : 400,
+    }));
+    const result = computePBsForSessions([{ sessionId: 's', date: 0, sport: 'cycling', records }]);
+    const peak60 = result.find((pb) => pb.category === 'peak-power' && pb.window === 60);
+    expect(peak60?.value).toBe(200);
+  });
+});

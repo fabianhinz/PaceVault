@@ -24,7 +24,7 @@ export const computeTripTotals = (sessions: TrainingSession[]): TripTotals => {
   };
 
   for (const session of sessions) {
-    totals.distance += session.distance;
+    totals.distance += session.distance ?? 0;
     totals.duration += session.duration;
     totals.elevationGain += session.elevationGain ?? 0;
     totals.tss += session.tss;

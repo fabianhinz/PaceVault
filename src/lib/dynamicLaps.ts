@@ -46,7 +46,7 @@ export const computeDynamicLaps = (
       paceSecPerKm = (duration / distance) * 1000;
     }
 
-    const hrs = slice.map((r) => r.hr).filter((h): h is number => h !== undefined && h > 0);
+    const hrs = slice.map((r) => r.hr).filter((h): h is number => h !== undefined);
     let avgHr: number | undefined = undefined;
     if (hrs.length > 0) {
       avgHr = Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length);
@@ -56,9 +56,7 @@ export const computeDynamicLaps = (
       maxHr = Math.max(...hrs);
     }
 
-    const cadences = slice
-      .map((r) => r.cadence)
-      .filter((c): c is number => c !== undefined && c > 0);
+    const cadences = slice.map((r) => r.cadence).filter((c): c is number => c !== undefined);
     let avgCadence: number | undefined = undefined;
     if (cadences.length > 0) {
       avgCadence = Math.round(cadences.reduce((a, b) => a + b, 0) / cadences.length);

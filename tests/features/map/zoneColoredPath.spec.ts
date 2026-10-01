@@ -55,11 +55,11 @@ describe('buildZoneColoredPath — structural', () => {
     expect(colors[0]).toEqual(FALLBACK_COLOR);
   });
 
-  it('returns FALLBACK_COLOR when hr is 0', () => {
+  it('colours a recorded hr of 0 by its zone', () => {
     const records = [rec(1, 2, { hr: 0 }), rec(3, 4, { hr: 0 })];
     const result = buildZoneColoredPath(records, 'hr', hrThresholds);
     const colors = result?.color as [number, number, number, number][];
-    expect(colors[0]).toEqual(FALLBACK_COLOR);
+    expect(colors[0]).not.toEqual(FALLBACK_COLOR);
   });
 
   it('returns FALLBACK_COLOR when hr is undefined', () => {

@@ -41,9 +41,15 @@ export const TrainingSummaryCard = () => {
       );
     }
 
-    const totalDistance = filtered.reduce((sum, s) => sum + s.distance, 0);
+    const totalDistance = filtered.reduce((sum, s) => sum + (s.distance ?? 0), 0);
     const totalDuration = filtered.reduce((sum, s) => sum + s.duration, 0);
-    const totalElevation = filtered.reduce((sum, s) => sum + (s.elevationGain ?? 0), 0);
+    const elevations = filtered.flatMap((s) =>
+      s.elevationGain === undefined ? [] : [s.elevationGain],
+    );
+    let totalElevation: number | undefined = undefined;
+    if (elevations.length > 0) {
+      totalElevation = elevations.reduce((sum, e) => sum + e, 0);
+    }
 
     return {
       count: filtered.length,
@@ -59,7 +65,7 @@ export const TrainingSummaryCard = () => {
         <StatItem label={m.ui_stat_sessions()} value={stats.count} />
         <StatItem label={m.ui_stat_total_distance()} value={formatDistance(stats.distance)} />
         <StatItem label={m.ui_stat_total_duration()} value={formatDuration(stats.duration)} />
-        {stats.elevation > 0 && (
+        {stats.elevation !== undefined && (
           <StatItem label={m.ui_stat_total_elevation()} value={`+${stats.elevation}`} unit="m" />
         )}
       </CardGrid>

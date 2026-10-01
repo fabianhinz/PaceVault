@@ -39,7 +39,7 @@ export interface TrainingSession {
   sport: Sport;
   date: number;
   duration: number;
-  distance: number;
+  distance?: number;
   avgHr?: number;
   maxHr?: number;
   avgPower?: number;
@@ -95,8 +95,8 @@ export interface SessionLap {
   totalElapsedTime: number;
   totalTimerTime: number;
   totalMovingTime?: number;
-  distance: number;
-  avgSpeed: number;
+  distance?: number;
+  avgSpeed?: number;
   maxSpeed?: number;
   totalAscent?: number;
   minAltitude?: number;

@@ -7,6 +7,13 @@ import {
   fitLapsSchema,
 } from '@/parsers/fitSchemas.ts';
 
+const requiredLap = {
+  start_time: '2025-08-16T16:14:27.000Z',
+  timestamp: '2025-08-16T16:26:44.000Z',
+  total_elapsed_time: 737,
+  total_timer_time: 737,
+};
+
 describe('fitRecordSchema', () => {
   it('accepts a full record', () => {
     const result = fitRecordSchema.safeParse({
@@ -40,13 +47,20 @@ describe('fitRecordSchema', () => {
     expect(result.data?.altitude).toBeUndefined();
   });
 
-  it('accepts empty object (all fields optional)', () => {
-    const result = fitRecordSchema.safeParse({});
-    expect(result.success).toBe(true);
+  it('accepts a record with only elapsed_time', () => {
+    expect(fitRecordSchema.safeParse({ elapsed_time: 0 }).success).toBe(true);
+  });
+
+  it('rejects a record without elapsed_time', () => {
+    expect(fitRecordSchema.safeParse({ heart_rate: 140 }).success).toBe(false);
+  });
+
+  it('rejects a NaN elapsed_time (record without timestamp)', () => {
+    expect(fitRecordSchema.safeParse({ elapsed_time: Number.NaN }).success).toBe(false);
   });
 
   it('rejects wrong types', () => {
-    expect(fitRecordSchema.safeParse({ heart_rate: 'fast' }).success).toBe(false);
+    expect(fitRecordSchema.safeParse({ elapsed_time: 1, heart_rate: 'fast' }).success).toBe(false);
   });
 });
 
@@ -72,7 +86,10 @@ describe('fitRecordsSchema', () => {
   });
 
   it('rejects array with invalid element', () => {
-    const result = fitRecordsSchema.safeParse([{ elapsed_time: 1 }, { heart_rate: 'invalid' }]);
+    const result = fitRecordsSchema.safeParse([
+      { elapsed_time: 1 },
+      { elapsed_time: 2, heart_rate: 'invalid' },
+    ]);
     expect(result.success).toBe(false);
   });
 });
@@ -106,6 +123,7 @@ describe('fitLapSchema', () => {
 
   it('accepts Date objects for time fields', () => {
     const result = fitLapSchema.safeParse({
+      ...requiredLap,
       start_time: new Date('2025-08-16T16:14:27.000Z'),
       timestamp: new Date('2025-08-16T16:26:44.000Z'),
     });
@@ -114,6 +132,7 @@ describe('fitLapSchema', () => {
 
   it('accepts enhanced fields (native Garmin)', () => {
     const result = fitLapSchema.safeParse({
+      ...requiredLap,
       enhanced_avg_speed: 3.26,
       enhanced_max_speed: 4.1,
       enhanced_min_altitude: 98.2,
@@ -133,21 +152,31 @@ describe('fitLapSchema', () => {
     expect(result.data?.avg_altitude).toBeUndefined();
   });
 
-  it('accepts empty object (all fields optional)', () => {
-    const result = fitLapSchema.safeParse({});
-    expect(result.success).toBe(true);
+  it('accepts a lap with only the required fields', () => {
+    expect(fitLapSchema.safeParse(requiredLap).success).toBe(true);
   });
 
+  it.each(['start_time', 'timestamp', 'total_elapsed_time', 'total_timer_time'])(
+    'rejects a lap without %s',
+    (field) => {
+      const lap: Record<string, unknown> = { ...requiredLap };
+      delete lap[field];
+      expect(fitLapSchema.safeParse(lap).success).toBe(false);
+    },
+  );
+
   it('rejects wrong types', () => {
-    expect(fitLapSchema.safeParse({ total_elapsed_time: 'slow' }).success).toBe(false);
+    expect(fitLapSchema.safeParse({ ...requiredLap, total_elapsed_time: 'slow' }).success).toBe(
+      false,
+    );
   });
 });
 
 describe('fitLapsSchema', () => {
   it('accepts an array of laps', () => {
     const result = fitLapsSchema.safeParse([
-      { total_elapsed_time: 300, avg_speed: 5.0 },
-      { total_elapsed_time: 400, avg_speed: 6.0 },
+      { ...requiredLap, avg_speed: 5.0 },
+      { ...requiredLap, avg_speed: 6.0 },
     ]);
     expect(result.success).toBe(true);
     expect(result.data).toHaveLength(2);
@@ -164,7 +193,7 @@ describe('fitLapsSchema', () => {
   });
 
   it('rejects array with invalid element', () => {
-    const result = fitLapsSchema.safeParse([{ total_elapsed_time: 300 }, { avg_speed: 'fast' }]);
+    const result = fitLapsSchema.safeParse([requiredLap, { ...requiredLap, avg_speed: 'fast' }]);
     expect(result.success).toBe(false);
   });
 });
@@ -196,13 +225,13 @@ describe('enumStr', () => {
 
 describe('fitLapSchema enumStr fields', () => {
   it('coerces numeric intensity to undefined', () => {
-    const result = fitLapSchema.safeParse({ intensity: 255 });
+    const result = fitLapSchema.safeParse({ ...requiredLap, intensity: 255 });
     expect(result.success).toBe(true);
     expect(result.data?.intensity).toBeUndefined();
   });
 
   it('keeps string intensity', () => {
-    const result = fitLapSchema.safeParse({ intensity: 'rest' });
+    const result = fitLapSchema.safeParse({ ...requiredLap, intensity: 'rest' });
     expect(result.success).toBe(true);
     expect(result.data?.intensity).toBe('rest');
   });

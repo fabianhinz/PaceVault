@@ -93,19 +93,14 @@ describe('mapFitLaps', () => {
     expect(laps[1].endTime).toBe(new Date('2026-09-11T16:11:14.000Z').getTime() + 674653);
   });
 
-  it('derives endTime from elapsed time when the timestamp is missing', () => {
-    const laps = mapFitLaps([makeFitLap({ timestamp: undefined })]);
-    expect(laps[0].endTime).toBe(new Date('2025-08-16T16:14:27.000Z').getTime() + 737000);
-  });
-
   it('totalMovingTime is undefined when missing from FIT data', () => {
     const laps = mapFitLaps([makeFitLap({ total_moving_time: undefined })]);
     expect(laps[0].totalMovingTime).toBeUndefined();
   });
 
-  it('handles missing total_distance gracefully', () => {
+  it('leaves distance undefined when total_distance is missing', () => {
     const laps = mapFitLaps([makeFitLap({ total_distance: undefined })]);
-    expect(laps[0].distance).toBe(0);
+    expect(laps[0].distance).toBeUndefined();
   });
 
   it('prefers enhanced fields over legacy when both are present', () => {

@@ -14,7 +14,10 @@ import { chartTheme, type ChartXAxis } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { m } from '@/paraglide/messages.js';
 
-interface GradeChartProps<K extends string, T extends { grade: number } & Record<K, number>> {
+interface GradeChartProps<
+  K extends string,
+  T extends { grade: number | null } & Record<K, number>,
+> {
   data: T[];
   xAxis: ChartXAxis<K>;
   mode?: 'compact' | 'expanded';
@@ -23,7 +26,10 @@ interface GradeChartProps<K extends string, T extends { grade: number } & Record
   onZoomReset?: () => void;
 }
 
-export const GradeChart = <K extends string, T extends { grade: number } & Record<K, number>>(
+export const GradeChart = <
+  K extends string,
+  T extends { grade: number | null } & Record<K, number>,
+>(
   props: GradeChartProps<K, T>,
 ) => {
   const compact = props.mode === 'compact';
@@ -96,6 +102,7 @@ export const GradeChart = <K extends string, T extends { grade: number } & Recor
           stroke={tokens.chartGrade}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_grade()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

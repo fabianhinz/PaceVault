@@ -85,6 +85,7 @@ export const CadenceChart = (props: CadenceChartProps) => {
           stroke={tokens.chartCadence}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_cadence()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

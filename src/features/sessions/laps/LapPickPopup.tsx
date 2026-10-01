@@ -26,6 +26,7 @@ import {
 import {
   formatLapTime,
   formatDistance,
+  formatElevation,
   formatPaceTick,
   formatPaceOrSpeed,
 } from '@/lib/formatters.ts';
@@ -50,10 +51,10 @@ interface LapPickPopupProps {
 
 interface LapChartPoint {
   time: number;
-  hr?: number;
-  pace?: number;
-  speed?: number;
-  power?: number;
+  hr?: number | null;
+  pace?: number | null;
+  speed?: number | null;
+  power?: number | null;
 }
 
 const buildLapChartData = (lapRecords: SessionRecord[], isRunning: boolean): LapChartPoint[] => {
@@ -144,12 +145,12 @@ export const LapPickPopup = (props: LapPickPopupProps) => {
   const lapNumber = clickedLapIndex + 1;
   const totalLaps = activeLapAnalysis.length;
   const hasChartData = chartData.length > 0;
-  const hasHrData = chartData.some((p) => p.hr !== undefined);
-  const hasPaceOrSpeed = chartData.some((p) => p.pace !== undefined || p.speed !== undefined);
-  const hasPowerData = chartData.some((p) => p.power !== undefined);
+  const hasHrData = chartData.some((p) => p.hr != null);
+  const hasPaceOrSpeed = chartData.some((p) => p.pace != null || p.speed != null);
+  const hasPowerData = chartData.some((p) => p.power != null);
   const hasPower = enrichment?.avgPower !== undefined;
   const hasCadence = analysis.avgCadence !== undefined;
-  const hasElevation = analysis.elevationGain > 0;
+  const hasElevation = analysis.elevationGain !== undefined;
 
   return (
     <MapPopupShell
@@ -311,7 +312,7 @@ export const LapPickPopup = (props: LapPickPopupProps) => {
           },
           {
             label: m.ui_laps_col_elev(),
-            value: (a) => `${Math.round(a.elevationGain)} m`,
+            value: (a) => formatElevation(a.elevationGain),
             visible: hasElevation,
             priority: 'secondary',
           },

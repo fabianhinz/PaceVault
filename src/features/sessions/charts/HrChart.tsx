@@ -85,6 +85,7 @@ export const HrChart = (props: HrChartProps) => {
           stroke={tokens.chartHr}
           strokeWidth={1.5}
           dot={false}
+          connectNulls
           name={m.ui_chart_series_hr()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

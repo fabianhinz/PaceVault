@@ -75,9 +75,7 @@ const findPeakAverage = (values: number[], windowSize: number): number => {
  * @returns Map keyed by window duration in seconds, valued by peak average power in watts; windows with no data are omitted.
  */
 const extractPeakPower = (records: SessionRecord[]): Map<number, number> => {
-  const powerData = records
-    .map((r) => r.power)
-    .filter((p): p is number => p !== undefined && p > 0);
+  const powerData = records.map((r) => r.power).filter((p): p is number => p !== undefined);
 
   const peaks = new Map<number, number>();
   for (const w of POWER_WINDOWS) {
@@ -103,7 +101,7 @@ const extractFastestDistances = (
   const results = new Map<number, number>();
 
   // Need cumulative distance data
-  const withDistance = records.filter((r) => r.distance !== undefined && r.distance > 0);
+  const withDistance = records.filter((r) => r.distance !== undefined);
   if (withDistance.length < 2) return results;
 
   for (const target of targets) {
@@ -150,7 +148,7 @@ interface SessionPeak {
 const extractSessionPeaks = (
   sport: Sport,
   records: SessionRecord[],
-  sessionMeta?: { distance: number; elevationGain?: number },
+  sessionMeta?: { distance?: number; elevationGain?: number },
 ): SessionPeak[] => {
   const peaks: SessionPeak[] = [];
 
@@ -174,7 +172,7 @@ const extractSessionPeaks = (
   }
 
   if (sessionMeta) {
-    if (sessionMeta.distance > 0) {
+    if (sessionMeta.distance !== undefined && sessionMeta.distance > 0) {
       peaks.push({
         category: 'longest',
         window: 0,
@@ -238,11 +236,10 @@ export const computePBsForSessions = (
   const bests = [...existing];
 
   for (const session of sessions) {
-    let sessionMeta: { distance: number; elevationGain?: number } | undefined = undefined;
-    if (session.distance !== undefined || session.elevationGain !== undefined) {
-      sessionMeta = { distance: session.distance ?? 0, elevationGain: session.elevationGain };
-    }
-    const peaks = extractSessionPeaks(session.sport, session.records, sessionMeta);
+    const peaks = extractSessionPeaks(session.sport, session.records, {
+      distance: session.distance,
+      elevationGain: session.elevationGain,
+    });
 
     for (const peak of peaks) {
       const pb: PersonalBest = {

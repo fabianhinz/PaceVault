@@ -140,3 +140,17 @@ describe('computeDynamicLaps', () => {
     });
   });
 });
+
+describe('computeDynamicLaps with recorded zeros', () => {
+  it('counts hr and cadence 0 in the lap averages', () => {
+    const records: SessionRecord[] = Array.from({ length: 4 }, (_, i) => ({
+      timestamp: i,
+      distance: i * 10,
+      hr: i % 2 === 0 ? 0 : 160,
+      cadence: i % 2 === 0 ? 0 : 90,
+    }));
+    const lap = computeDynamicLaps(records, 1000).analysis[0];
+    expect(lap?.avgHr).toBe(80);
+    expect(lap?.avgCadence).toBe(45);
+  });
+});

@@ -1,4 +1,5 @@
 import FitParser from 'fit-file-parser';
+import type { z } from 'zod';
 import {
   SPORTS,
   type SessionFields,
@@ -56,6 +57,12 @@ const FIT_SPORT_BY_SPORT: Record<Sport, string> = {
   cycling: 'cycling',
 };
 
+const describeIssue = (error: z.ZodError): string => {
+  const issue = error.issues[0];
+  if (!issue) return '';
+  return `${issue.path.join('.')} (${issue.message})`;
+};
+
 const mapFitSportToAppSport = (fitSport?: string): Sport | undefined => {
   return SPORTS.find((sport) => FIT_SPORT_BY_SPORT[sport] === fitSport);
 };
@@ -65,22 +72,22 @@ const mapFitSportToAppSport = (fitSport?: string): Sport | undefined => {
 // 2. Fall back to session-level FIT value
 // 3. Leave undefined (never fabricate)
 
-export const deriveDistanceFromRecords = (records: SessionRecord[]): number => {
+export const deriveDistanceFromRecords = (records: SessionRecord[]): number | undefined => {
   for (let i = records.length - 1; i >= 0; i--) {
     const r = records[i];
     if (!r) continue;
-    if (r.distance !== undefined && r.distance > 0) {
+    if (r.distance !== undefined) {
       return r.distance;
     }
   }
-  return 0;
+  return undefined;
 };
 
 export const deriveAvgFromRecords = (
   records: SessionRecord[],
   field: 'power' | 'cadence',
 ): number | undefined => {
-  const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined && v > 0);
+  const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined);
   if (values.length === 0) return undefined;
   return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
 };
@@ -89,7 +96,7 @@ export const deriveMaxFromRecords = (
   records: SessionRecord[],
   field: 'power' | 'speed',
 ): number | undefined => {
-  const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined && v > 0);
+  const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined);
   if (values.length === 0) return undefined;
   return Math.max(...values);
 };
@@ -109,7 +116,7 @@ const setIfDefined = <K extends keyof SessionRecord>(
 };
 
 export const mapFitRecord = (r: FitRecordInput): SessionRecord => {
-  const record: SessionRecord = { timestamp: r.elapsed_time ?? 0 };
+  const record: SessionRecord = { timestamp: r.elapsed_time };
   setIfDefined(record, 'hr', r.heart_rate);
   setIfDefined(record, 'power', r.power);
   setIfDefined(record, 'cadence', r.cadence);
@@ -125,16 +132,9 @@ export const mapFitRecord = (r: FitRecordInput): SessionRecord => {
 
 export const mapFitLaps = (fitLaps: FitLapInput[]): SessionLap[] => {
   return fitLaps.map((lap, index) => {
-    let startTime = 0;
-    if (lap.start_time) {
-      startTime = new Date(lap.start_time).getTime();
-    }
-
-    let endTime = 0;
-    if (lap.timestamp) {
-      endTime = new Date(lap.timestamp).getTime();
-    }
-    if (endTime <= startTime && startTime > 0 && lap.total_elapsed_time !== undefined) {
+    const startTime = new Date(lap.start_time).getTime();
+    let endTime = new Date(lap.timestamp).getTime();
+    if (endTime <= startTime) {
       endTime = startTime + lap.total_elapsed_time * 1000;
     }
 
@@ -142,11 +142,11 @@ export const mapFitLaps = (fitLaps: FitLapInput[]): SessionLap[] => {
       lapIndex: lap.message_index?.value ?? index,
       startTime,
       endTime,
-      totalElapsedTime: lap.total_elapsed_time ?? 0,
-      totalTimerTime: lap.total_timer_time ?? 0,
+      totalElapsedTime: lap.total_elapsed_time,
+      totalTimerTime: lap.total_timer_time,
       totalMovingTime: lap.total_moving_time,
-      distance: lap.total_distance ?? 0,
-      avgSpeed: lap.enhanced_avg_speed ?? lap.avg_speed ?? 0,
+      distance: lap.total_distance,
+      avgSpeed: lap.enhanced_avg_speed ?? lap.avg_speed,
       maxSpeed: lap.enhanced_max_speed ?? lap.max_speed,
       totalAscent: lap.total_ascent,
       minAltitude: lap.enhanced_min_altitude ?? lap.min_altitude,
@@ -196,35 +196,40 @@ export const parseFitFile = async (
   }
 
   const fitSession = data.sessions?.[0];
-  const fitRecords = data.records ?? [];
+  if (!fitSession) {
+    throw new Error(`Failed to parse FIT file "${fileName}": session is missing`);
+  }
 
-  const sport = mapFitSportToAppSport(fitSession?.sport);
+  const sport = mapFitSportToAppSport(fitSession.sport);
   if (!sport) {
-    throw new UnsupportedSportError(fileName, fitSession?.sport);
+    throw new UnsupportedSportError(fileName, fitSession.sport);
   }
 
-  let sessionDate: number | undefined = undefined;
-  if (fitSession?.start_time) {
-    sessionDate = new Date(fitSession.start_time).getTime();
-  }
-  if (sessionDate === undefined) {
+  if (!fitSession.start_time) {
     throw new Error(`Failed to parse FIT file "${fileName}": start_time is missing`);
   }
+  const sessionDate = new Date(fitSession.start_time).getTime();
 
-  // Transform FIT records to app records
-  const recordsResult = fitRecordsSchema.safeParse(fitRecords);
-  let records: SessionRecord[] = [];
-  if (recordsResult.success) {
-    records = recordsResult.data.map(mapFitRecord);
+  const sessionDuration = fitSession.total_timer_time;
+  if (sessionDuration === undefined) {
+    throw new Error(`Failed to parse FIT file "${fileName}": total_timer_time is missing`);
   }
 
-  // Extract laps
+  const recordsResult = fitRecordsSchema.safeParse(data.records ?? []);
+  if (!recordsResult.success) {
+    throw new Error(
+      `Failed to parse FIT file "${fileName}": invalid record ${describeIssue(recordsResult.error)}`,
+    );
+  }
+  const records = recordsResult.data.map(mapFitRecord);
+
   const lapsResult = fitLapsSchema.safeParse(data.laps ?? []);
-  let lapsInput: FitLapInput[] = [];
-  if (lapsResult.success) {
-    lapsInput = lapsResult.data;
+  if (!lapsResult.success) {
+    throw new Error(
+      `Failed to parse FIT file "${fileName}": invalid lap ${describeIssue(lapsResult.error)}`,
+    );
   }
-  const laps = mapFitLaps(lapsInput);
+  const laps = mapFitLaps(lapsResult.data);
 
   // Derive moving time from laps; fall back to timer time per lap when moving time is unavailable
   let movingTime: number | undefined = undefined;
@@ -236,15 +241,15 @@ export const parseFitFile = async (
   const sensorWarnings = validateRecords(records, sport).map((w) => w.message);
 
   // Calculate stress — use FTP for all sports with power data, not just cycling
-  const hasPowerRecords = records.some((r) => r.power !== undefined && r.power > 0);
+  const hasPowerRecords = records.some((r) => r.power !== undefined);
   let stressFtp: number | undefined = undefined;
   if (hasPowerRecords) {
     stressFtp = userProfile.ftp;
   }
   const stressResult = calculateSessionStress(
     records,
-    fitSession?.total_timer_time ?? fitSession?.total_elapsed_time ?? 0,
-    fitSession?.avg_heart_rate,
+    sessionDuration,
+    fitSession.avg_heart_rate,
     userProfile.restHr,
     userProfile.maxHr,
     userProfile.gender,
@@ -257,12 +262,11 @@ export const parseFitFile = async (
     gap = calculateGAP(records);
   }
 
-  const avgSpeed = fitSession?.enhanced_avg_speed ?? fitSession?.avg_speed;
+  const avgSpeed = fitSession.enhanced_avg_speed ?? fitSession.avg_speed;
   const name = meta?.name ?? extractSessionName(fileName);
 
   const fileIdResult = fitFileIdSchema.safeParse(data.file_ids?.[0]);
-  const sessionDuration = fitSession?.total_timer_time ?? fitSession?.total_elapsed_time ?? 0;
-  const sessionDistance = deriveDistanceFromRecords(records);
+  const sessionDistance = deriveDistanceFromRecords(records) ?? fitSession.total_distance;
 
   let fileIdData: Parameters<typeof generateFingerprint>[0] = undefined;
   if (fileIdResult.success) {
@@ -286,29 +290,29 @@ export const parseFitFile = async (
     date: sessionDate,
     duration: sessionDuration,
     distance: sessionDistance,
-    avgHr: fitSession?.avg_heart_rate,
-    maxHr: fitSession?.max_heart_rate,
-    avgPower: deriveAvgFromRecords(records, 'power') ?? fitSession?.avg_power,
-    maxPower: deriveMaxFromRecords(records, 'power') ?? fitSession?.max_power,
-    normalizedPower: stressResult.normalizedPower ?? fitSession?.normalized_power,
-    avgCadence: deriveAvgFromRecords(records, 'cadence') ?? fitSession?.avg_cadence,
+    avgHr: fitSession.avg_heart_rate,
+    maxHr: fitSession.max_heart_rate,
+    avgPower: deriveAvgFromRecords(records, 'power') ?? fitSession.avg_power,
+    maxPower: deriveMaxFromRecords(records, 'power') ?? fitSession.max_power,
+    normalizedPower: stressResult.normalizedPower ?? fitSession.normalized_power,
+    avgCadence: deriveAvgFromRecords(records, 'cadence') ?? fitSession.avg_cadence,
     avgSpeed,
     avgPace,
-    calories: fitSession?.total_calories,
-    elevationGain: fitSession?.total_ascent,
-    elevationLoss: fitSession?.total_descent,
+    calories: fitSession.total_calories,
+    elevationGain: fitSession.total_ascent,
+    elevationLoss: fitSession.total_descent,
     movingTime,
-    subSport: fitSession?.sub_sport,
-    deviceTss: fitSession?.training_stress_score,
-    deviceIf: fitSession?.intensity_factor,
-    deviceFtp: fitSession?.threshold_power,
+    subSport: fitSession.sub_sport,
+    deviceTss: fitSession.training_stress_score,
+    deviceIf: fitSession.intensity_factor,
+    deviceFtp: fitSession.threshold_power,
     maxSpeed:
-      fitSession?.enhanced_max_speed ??
-      fitSession?.max_speed ??
+      fitSession.enhanced_max_speed ??
+      fitSession.max_speed ??
       deriveMaxFromRecords(records, 'speed'),
-    minAltitude: fitSession?.enhanced_min_altitude ?? fitSession?.min_altitude,
-    maxAltitude: fitSession?.enhanced_max_altitude ?? fitSession?.max_altitude,
-    avgAltitude: fitSession?.enhanced_avg_altitude ?? fitSession?.avg_altitude,
+    minAltitude: fitSession.enhanced_min_altitude ?? fitSession.min_altitude,
+    maxAltitude: fitSession.enhanced_max_altitude ?? fitSession.max_altitude,
+    avgAltitude: fitSession.enhanced_avg_altitude ?? fitSession.avg_altitude,
     ...(gap !== undefined && { gap }),
     tss: stressResult.tss,
     stressMethod: stressResult.stressMethod,

@@ -25,12 +25,12 @@ describe('calculateNormalizedPower', () => {
     expect(calculateNormalizedPower(records)).toBeUndefined();
   });
 
-  it('returns undefined for records with all zero power', () => {
+  it('returns 0 for records with all zero power', () => {
     const records: SessionRecord[] = [];
     for (let i = 0; i < 60; i++) {
       records.push(makeRecord({ timestamp: i, power: 0 }));
     }
-    expect(calculateNormalizedPower(records)).toBeUndefined();
+    expect(calculateNormalizedPower(records)).toBe(0);
   });
 
   it('returns NP close to average for constant power', () => {
@@ -151,5 +151,22 @@ describe('calculateGAP', () => {
     const actualPace = (1 / 3.0) * 1000; // sec/km
     expect(gap).toBeDefined();
     expect(Math.abs((gap ?? 0) - actualPace)).toBeLessThan(1);
+  });
+});
+
+describe('calculateNormalizedPower with recorded zeros', () => {
+  it('counts zeros in the rolling window, so coasting lowers NP', () => {
+    const riding = Array.from({ length: 60 }, (_, i) => makeRecord({ timestamp: i, power: 200 }));
+    const coasting = Array.from({ length: 60 }, (_, i) =>
+      makeRecord({ timestamp: 60 + i, power: 0 }),
+    );
+    expect(calculateNormalizedPower([...riding, ...coasting]) ?? 0).toBeLessThan(200);
+  });
+
+  it('skips records without power', () => {
+    const records = Array.from({ length: 60 }, (_, i) =>
+      makeRecord({ timestamp: i, power: i % 2 === 0 ? 200 : undefined }),
+    );
+    expect(calculateNormalizedPower(records)).toBe(200);
   });
 });

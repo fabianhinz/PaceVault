@@ -16,14 +16,14 @@ export interface LapAnalysis {
   maxHr: number | undefined;
   /** Average cadence in rpm/spm, or `undefined` when not recorded. */
   avgCadence: number | undefined;
-  /** Total lap distance in metres. */
-  distance: number;
+  /** Total lap distance in metres, or `undefined` when not recorded. */
+  distance: number | undefined;
   /** Elapsed (timer) duration of the lap in seconds. */
   duration: number;
   /** Moving time of the lap in seconds (excludes stopped periods when available). */
   movingTime: number;
-  /** Total elevation gain for the lap in metres. */
-  elevationGain: number;
+  /** Total elevation gain for the lap in metres, or `undefined` when not recorded. */
+  elevationGain: number | undefined;
   /** Intensity label as reported by the device (e.g. `'active'`, `'rest'`). */
   intensity: string;
   /** Maximum speed in m/s during the lap, or `undefined` when not recorded. */
@@ -76,7 +76,7 @@ export const analyzeLaps = (laps: SessionLap[]): LapAnalysis[] => {
   return laps.map((lap) => {
     const duration = lap.totalMovingTime ?? lap.totalTimerTime;
     let paceSecPerKm: number | undefined = undefined;
-    if (lap.distance > 0 && duration > 0) {
+    if (lap.distance !== undefined && lap.distance > 0 && duration > 0) {
       paceSecPerKm = (duration / lap.distance) * 1000;
     }
 
@@ -90,7 +90,7 @@ export const analyzeLaps = (laps: SessionLap[]): LapAnalysis[] => {
       distance: lap.distance,
       duration: lap.totalTimerTime,
       movingTime: duration,
-      elevationGain: lap.totalAscent ?? 0,
+      elevationGain: lap.totalAscent,
       maxSpeed: lap.maxSpeed,
       intensity: lap.intensity ?? 'active',
       isInterval: hasRestLaps && lap.intensity === 'active',
@@ -350,31 +350,14 @@ export const filterRecordsByLap = (
   return records.filter((r) => r.timestamp >= lapStartSec && r.timestamp < lapEndSec);
 };
 
-/**
- * Computes per-record enrichment metrics for a single lap's worth of records.
- *
- * Min values are the true minimum from pre-filtered arrays (zeros and
- * below-threshold values already excluded). Outlier handling is deferred
- * to the presentation layer (chart Y-axis domain clamping).
- *
- * - `minSpeed`: minimum non-zero speed in m/s above {@link MIN_SPEED_MS}.
- * - `avgPower` / `minPower` / `maxPower`: power statistics in watts.
- * - `minCadence`: minimum non-zero cadence value.
- * - `minHr`: minimum non-zero heart rate from per-second records.
- */
 export const enrichLapFromRecords = (
   lapIndex: number,
   records: SessionRecord[],
 ): LapRecordEnrichment => {
-  const MIN_SPEED_MS = 0.5; // ~33:20/km, below any reasonable running/cycling pace
-  const speeds = records
-    .map((r) => r.speed)
-    .filter((s): s is number => s !== undefined && s > MIN_SPEED_MS);
-  const powers = records.map((r) => r.power).filter((p): p is number => p !== undefined && p > 0);
-  const cadences = records
-    .map((r) => r.cadence)
-    .filter((c): c is number => c !== undefined && c > 0);
-  const hrs = records.map((r) => r.hr).filter((h): h is number => h !== undefined && h > 0);
+  const speeds = records.map((r) => r.speed).filter((s): s is number => s !== undefined);
+  const powers = records.map((r) => r.power).filter((p): p is number => p !== undefined);
+  const cadences = records.map((r) => r.cadence).filter((c): c is number => c !== undefined);
+  const hrs = records.map((r) => r.hr).filter((h): h is number => h !== undefined);
 
   speeds.sort((a, b) => a - b);
   powers.sort((a, b) => a - b);

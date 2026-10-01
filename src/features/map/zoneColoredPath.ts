@@ -84,13 +84,13 @@ export const buildZoneColoredPath = (
 
   const colorForRecord = (r: SessionRecord): Color => {
     if (!scale) return FALLBACK_COLOR;
-    if (mode === 'hr' && r.hr != null && r.hr > 0) {
+    if (mode === 'hr' && r.hr != null) {
       return getHrColor(r.hr, thresholds, scale) ?? FALLBACK_COLOR;
     }
-    if (mode === 'power' && r.power != null && r.power > 0 && thresholds.ftp) {
+    if (mode === 'power' && r.power != null && thresholds.ftp) {
       return getPowerColor(r.power, thresholds.ftp, scale);
     }
-    if (mode === 'pace' && r.speed != null && r.speed > 0.5) {
+    if (mode === 'pace' && r.speed != null && r.speed > 0) {
       return getPaceColor(r.speed, scale);
     }
     return FALLBACK_COLOR;

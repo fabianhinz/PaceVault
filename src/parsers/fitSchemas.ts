@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const optNum = z.number().optional();
-const optDateTime = z.union([z.string(), z.date()]).optional();
+const dateTime = z.union([z.string(), z.date()]);
 // fit-file-parser returns raw integers for unknown/invalid FIT enum values.
 // This helper accepts both string and number, keeping strings and dropping numbers to undefined.
 export const enumStr = z
@@ -18,7 +18,7 @@ export const fitFileIdSchema = z.object({
 });
 
 export const fitRecordSchema = z.object({
-  elapsed_time: optNum,
+  elapsed_time: z.number(),
   heart_rate: optNum,
   power: optNum,
   cadence: optNum,
@@ -38,11 +38,11 @@ export const fitRecordsSchema = z.array(fitRecordSchema);
 export type FitRecordInput = z.infer<typeof fitRecordSchema>;
 
 export const fitLapSchema = z.object({
-  start_time: optDateTime,
-  timestamp: optDateTime,
+  start_time: dateTime,
+  timestamp: dateTime,
   message_index: z.object({ value: z.number() }).optional(),
-  total_elapsed_time: optNum,
-  total_timer_time: optNum,
+  total_elapsed_time: z.number(),
+  total_timer_time: z.number(),
   total_moving_time: optNum,
   total_distance: optNum,
   avg_speed: optNum,

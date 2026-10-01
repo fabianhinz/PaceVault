@@ -197,11 +197,10 @@ describe('matchesAttributeFilters', () => {
     ).toBe(false);
   });
 
-  it('treats missing elevation gain as zero', () => {
-    // sessions without elevation data only match targets whose band reaches 0
+  it('never matches an active filter when the value is missing', () => {
     const lowTarget = filtersWith({ elevationGain: 100 }); // band 0–250
     const highTarget = filtersWith({ elevationGain: 500 }); // band 350–650
-    expect(matchesAttributeFilters({ duration: 3600, distance: 10000 }, lowTarget)).toBe(true);
+    expect(matchesAttributeFilters({ duration: 3600, distance: 10000 }, lowTarget)).toBe(false);
     expect(matchesAttributeFilters({ duration: 3600, distance: 10000 }, highTarget)).toBe(false);
   });
 
