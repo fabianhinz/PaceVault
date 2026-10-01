@@ -3,6 +3,7 @@ import { densestClusterBounds, unionBounds } from '@/packages/engine/gps.ts';
 import type { GPSBounds } from '@/packages/engine/types.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import type { MapTrack } from './useMapTracks.ts';
+import { mapSidePadding } from '../mapSidePadding.ts';
 
 export const useMapCameraEffect = (
   mapRef: React.RefObject<MapRef | null>,
@@ -15,13 +16,8 @@ export const useMapCameraEffect = (
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
 
-    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-    let rightPad = 0;
-    if (isDesktop) {
-      rightPad = window.innerWidth * 0.4;
-    }
+    const side = mapSidePadding();
 
-    // Explicit bounds (e.g. a focused studio route) win over any track-derived fit.
     if (overrideBounds) {
       mapRef.current.fitBounds(
         [
@@ -29,7 +25,7 @@ export const useMapCameraEffect = (
           [overrideBounds.maxLng, overrideBounds.maxLat],
         ],
         {
-          padding: { top: 80, bottom: 80, left: 80, right: 80 + rightPad },
+          padding: { top: 80, bottom: 80 + side.bottom, left: 80, right: 80 + side.right },
           duration: 1200,
         },
       );
@@ -48,7 +44,7 @@ export const useMapCameraEffect = (
           [b.maxLng, b.maxLat],
         ],
         {
-          padding: { top: 80, bottom: 80, left: 80, right: 80 + rightPad },
+          padding: { top: 80, bottom: 80 + side.bottom, left: 80, right: 80 + side.right },
           duration: 1200,
         },
       );
@@ -69,7 +65,7 @@ export const useMapCameraEffect = (
         [bounds.maxLng, bounds.maxLat],
       ],
       {
-        padding: { top: 50, bottom: 50, left: 50, right: 50 + rightPad },
+        padding: { top: 50, bottom: 50 + side.bottom, left: 50, right: 50 + side.right },
         duration: 1000,
       },
     );

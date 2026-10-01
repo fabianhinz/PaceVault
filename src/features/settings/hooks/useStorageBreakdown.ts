@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react';
 import { measureStoreBytes, type IdbStoreName } from '@/lib/indexeddb.ts';
 import { breakdownStorage, type StorageCategory } from '@/lib/storageBreakdown.ts';
 
-interface StorageBreakdown {
-  total: number | null;
-  categories: Record<StorageCategory, number> | null;
-}
-
-const estimateTotal = async (): Promise<number | null> => {
+const estimateStorageUsage = async (): Promise<number | null> => {
   if (!navigator.storage?.estimate) return null;
   const estimate = await navigator.storage.estimate();
   return estimate.usage ?? null;
 };
+
+interface StorageBreakdown {
+  total: number | null;
+  categories: Record<StorageCategory, number> | null;
+}
 
 export const useStorageBreakdown = (refreshKey: unknown): StorageBreakdown => {
   const [estimated, setEstimated] = useState<number | null | undefined>(undefined);
@@ -19,7 +19,7 @@ export const useStorageBreakdown = (refreshKey: unknown): StorageBreakdown => {
 
   useEffect(() => {
     let cancelled = false;
-    estimateTotal().then((total) => {
+    estimateStorageUsage().then((total) => {
       if (!cancelled) setEstimated(total);
     });
     measureStoreBytes().then((sizes) => {

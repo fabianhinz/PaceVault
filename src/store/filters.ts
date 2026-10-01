@@ -40,7 +40,7 @@ export const useFiltersStore = create<FiltersState>()(
         sportFilter: 'all',
         attributeFilters: createEmptyAttributeFilters(),
         loadChartShowSportColors: true,
-        loadChartGroupBy: 'week',
+        loadChartGroupBy: 'month',
         setTimeRange: (r) => {
           set({ timeRange: r, customRange: null, prevDashboardRange: null });
         },

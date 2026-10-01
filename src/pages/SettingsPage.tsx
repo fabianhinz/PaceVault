@@ -22,6 +22,7 @@ import { AboutSection } from '@/features/settings/AboutSection.tsx';
 import { AutoSessionNamesToggle } from '@/features/sessions/AutoSessionNamesToggle.tsx';
 import { IntegrationsCard } from '@/features/settings/IntegrationsCard.tsx';
 import { FitFilesCard } from '@/features/settings/FitFilesCard.tsx';
+import { SettingsPeek } from '@/features/settings/SettingsPeek.tsx';
 
 const localeLabels: Record<Locale, string> = {
   en: 'English',
@@ -44,6 +45,7 @@ export const SettingsPage = () => {
 
   return (
     <Tabs value={tab} onValueChange={handleTabChange}>
+      <SettingsPeek />
       <TabsList>
         <TabsTrigger value="general">{m.ui_settings_tab_general()}</TabsTrigger>
         <TabsTrigger value="data">{m.ui_settings_tab_data()}</TabsTrigger>

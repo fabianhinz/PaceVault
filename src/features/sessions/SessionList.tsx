@@ -1,12 +1,12 @@
 import { Fragment, useCallback, useMemo, useState } from 'react';
-import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import { useVirtualizer, useWindowVirtualizer } from '@tanstack/react-virtual';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { SessionItem } from './SessionItem.tsx';
+import { useSheetScrollElement } from '@/lib/hooks/useSheetScrollElement.ts';
 import { type TimeRange, rangeToCutoff, customRangeToCutoffs } from '@/lib/timeRange.ts';
 import { isAttributeFilterActive, matchesAttributeFilters } from '@/lib/attributeFilters.ts';
 
-// SessionItem collapsed: p-4 (16px × 2) + ~42px two-line text content + 8px gap
 const ESTIMATED_ROW_SIZE = 82;
 
 export const SessionList = () => {
@@ -15,13 +15,22 @@ export const SessionList = () => {
   const customRange = useFiltersStore((s) => s.customRange);
   const sportFilter = useFiltersStore((s) => s.sportFilter);
   const attributeFilters = useFiltersStore((s) => s.attributeFilters);
+  const sheetScroller = useSheetScrollElement();
   const [scrollMargin, setScrollMargin] = useState(0);
-  const listRef = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      const top = node.offsetTop;
+  const listRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (!node) return;
+      let top = node.offsetTop;
+      if (sheetScroller) {
+        top =
+          node.getBoundingClientRect().top -
+          sheetScroller.getBoundingClientRect().top +
+          sheetScroller.scrollTop;
+      }
       setScrollMargin((prev) => (prev === top ? prev : top));
-    }
-  }, []);
+    },
+    [sheetScroller],
+  );
 
   const filtered = useMemo(() => {
     let list: typeof sessions;
@@ -43,12 +52,22 @@ export const SessionList = () => {
     return list.sort((a, b) => b.date - a.date);
   }, [sessions, sportFilter, timeRange, customRange, attributeFilters]);
 
-  const virtualizer = useWindowVirtualizer({
+  const windowVirtualizer = useWindowVirtualizer({
     count: filtered.length,
     estimateSize: () => ESTIMATED_ROW_SIZE,
     overscan: 5,
     scrollMargin,
+    enabled: !sheetScroller,
   });
+  const sheetVirtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => sheetScroller,
+    estimateSize: () => ESTIMATED_ROW_SIZE,
+    overscan: 5,
+    scrollMargin,
+    enabled: !!sheetScroller,
+  });
+  const virtualizer = sheetScroller ? sheetVirtualizer : windowVirtualizer;
 
   return (
     <div ref={listRef} style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>

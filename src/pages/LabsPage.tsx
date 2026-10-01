@@ -16,6 +16,7 @@ import { WeeklyPlanTimeline } from '@/features/labs/WeeklyPlanTimeline.tsx';
 import { RacePredictor } from '@/features/labs/RacePredictor.tsx';
 import { PaceCalculator } from '@/features/labs/PaceCalculator.tsx';
 import { Settings } from 'lucide-react';
+import { LabsPeek } from '@/features/labs/LabsPeek.tsx';
 import { ZoneLegend } from '@/features/sessions/ZoneLegend.tsx';
 import { StudioTab } from '@/features/studio/StudioTab.tsx';
 
@@ -30,6 +31,7 @@ export const LabsPage = () => {
 
   return (
     <Tabs value={tab} onValueChange={handleTabChange}>
+      <LabsPeek />
       <TabsList>
         <TabsTrigger value="studio">{m.ui_labs_tab_studio()}</TabsTrigger>
         <TabsTrigger value="tools">{m.ui_labs_tab_tools()}</TabsTrigger>

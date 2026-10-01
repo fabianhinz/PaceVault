@@ -4,6 +4,7 @@ import { SessionList } from '@/features/sessions/SessionList.tsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.tsx';
 import { SportsRecords } from '@/features/records/SportsRecords';
 import { TripsTab } from '@/features/trips/TripsTab.tsx';
+import { SessionsPeek } from '@/features/sessions/SessionsPeek.tsx';
 
 const validTabs = new Set(['log', 'trips', 'records']);
 
@@ -18,6 +19,7 @@ export const SessionsPage = () => {
 
   return (
     <Tabs value={tab} onValueChange={handleTabChange}>
+      <SessionsPeek />
       <TabsList>
         <TabsTrigger value="log">{m.ui_sessions_tab_log()}</TabsTrigger>
         <TabsTrigger value="trips">{m.ui_sessions_tab_trips()}</TabsTrigger>
