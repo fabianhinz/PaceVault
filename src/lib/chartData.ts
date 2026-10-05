@@ -132,4 +132,5 @@ export const buildRouteChartRows = (profile: RouteProfile, range?: { from: numbe
     },
     range,
     targetRows: TARGET_ROWS,
+    emptyBuckets: 'skip',
   });

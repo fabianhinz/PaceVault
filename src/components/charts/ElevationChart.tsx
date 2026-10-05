@@ -57,6 +57,8 @@ export const ElevationChart = <
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey={props.xAxis.key}
+          type={props.xAxis.type}
+          domain={props.xAxis.type === 'number' ? ['dataMin', 'dataMax'] : undefined}
           ticks={
             compact
               ? [

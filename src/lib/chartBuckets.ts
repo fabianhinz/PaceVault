@@ -8,6 +8,7 @@ interface BucketSeriesOptions<Row, K extends string, C extends string> {
   channels: Record<C, Accessor<Row>>;
   range?: { from: number; to: number };
   targetRows: number;
+  emptyBuckets?: 'gap' | 'skip';
 }
 
 export type BucketRow<Row, K extends string, C extends string> = Record<K, number> &
@@ -125,6 +126,7 @@ export const bucketSeries = <Row, K extends string, C extends string>(
 
   const result: BucketRow<Row, K, C>[] = [];
   for (let b = 0; b < count; b++) {
+    if (options.emptyBuckets === 'skip' && sources[b] === undefined) continue;
     const start = first + b * width;
     const firstRow: Record<string, unknown> = { [options.xKey]: start, source: sources[b] };
     const secondRow: Record<string, unknown> = {

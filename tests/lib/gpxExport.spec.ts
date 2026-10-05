@@ -29,6 +29,13 @@ describe('buildSessionGpx', () => {
     expect(gpx).toContain('Morning Run');
   });
 
+  it('exports every recorded GPS point instead of a simplified track', () => {
+    const session = makeSession({ id: 'test-full', date: 1700000000000 });
+    const records = makeGPSRunningRecords(200);
+    const gpx = buildSessionGpx(session, records);
+    expect((gpx?.match(/<trkpt/g) ?? []).length).toBe(200);
+  });
+
   it('returns null for indoor records with no GPS', () => {
     const session = makeSession({ id: 'test-2' });
     const records = makeIndoorRecords(50);
@@ -57,7 +64,7 @@ describe('buildSessionGpx', () => {
 
     expect(gpx).not.toBeNull();
     const trkptCount = (gpx?.match(/<trkpt/g) ?? []).length;
-    expect(trkptCount).toBe(2);
+    expect(trkptCount).toBe(5);
   });
 
   it('returns null for empty records', () => {

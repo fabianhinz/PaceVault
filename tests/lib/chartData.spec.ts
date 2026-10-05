@@ -97,3 +97,26 @@ describe('route chart rows', () => {
     expect(Math.max(...rows.map((r) => r.grade ?? -Infinity))).toBeCloseTo(14, 0);
   });
 });
+
+describe('route chart rows for sparse GPX', () => {
+  it('never draws a gap on a long straight stretch with few points', () => {
+    const points = [
+      ...Array.from({ length: 500 }, (_, i) => ({
+        lat: 48,
+        lng: 11,
+        ele: 100,
+        dist: i * 10,
+        seg: 0,
+      })),
+      ...Array.from({ length: 500 }, (_, i) => ({
+        lat: 48,
+        lng: 11,
+        ele: 100,
+        dist: 5600 + i * 10,
+        seg: 0,
+      })),
+    ];
+    const rows = buildRouteChartRows(buildRouteProfile(points));
+    expect(rows.some((r) => r.elevation === null || r.grade === null)).toBe(false);
+  });
+});

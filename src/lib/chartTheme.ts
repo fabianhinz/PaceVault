@@ -42,18 +42,21 @@ export interface ChartXAxis<K extends string> {
   key: K;
   /** Recharts syncId linking the compact charts' tooltips and zoom. */
   syncId: string;
+  type: 'number' | 'category';
   tickFormatter: (v: number) => string;
 }
 
 export const sessionTimeXAxis: ChartXAxis<'time'> = {
   key: 'time',
   syncId: 'session-detail',
+  type: 'category',
   tickFormatter: formatChartTime,
 };
 
 export const routeDistanceXAxis: ChartXAxis<'dist'> = {
   key: 'dist',
   syncId: 'studio-detail',
+  type: 'number',
   tickFormatter: (v: number) => formatTick(v, 'km'),
 };
 
