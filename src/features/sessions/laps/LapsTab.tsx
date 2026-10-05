@@ -8,6 +8,11 @@ import { computeLapMarkers } from '@/lib/lapMarkers.ts';
 import type { LapMarkerMode } from '@/lib/lapMarkers.ts';
 import { useLapOptionsStore } from '@/store/lapOptions.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
+import { indexByX } from '@/lib/chartHover.ts';
+import { summarizeValues } from '@/lib/seriesSummary.ts';
+import { railFixed1, railInt, railPaceFromSecPerKm } from '@/lib/railFormat.ts';
+import { SeriesRail } from '@/components/charts/ChartRail.tsx';
 import { prepareLapSplitsData, prepareLapHrData, prepareLapPowerData } from '@/lib/lapChartData.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { LapSplitsChart } from './LapSplitsChart.tsx';
@@ -25,6 +30,8 @@ interface LapsTabProps {
 }
 
 const SYNC_ID = 'laps-detail';
+
+const formatLapX = (x: ChartHoverX) => m.ui_lap_label({ number: String(Number(x) + 1) });
 const EMPTY_ANALYSIS: LapAnalysis[] = [];
 const EMPTY_ENRICHMENTS: LapRecordEnrichment[] = [];
 
@@ -75,10 +82,34 @@ export const LapsTab = (props: LapsTabProps) => {
   const handleActiveLapChange = useCallback((lapIndex: number | null) => {
     if (lapIndex != null) {
       useMapFocusStore.getState().setHoveredLapIndex(lapIndex);
+      useChartHoverStore.getState().setChartHover(SYNC_ID, lapIndex);
     } else {
       useMapFocusStore.getState().clearHoveredLapIndex();
+      useChartHoverStore.getState().clearChartHover(SYNC_ID);
     }
   }, []);
+
+  useEffect(() => () => useChartHoverStore.getState().clearChartHover(SYNC_ID), []);
+
+  const hrByLap = useMemo(() => indexByX(hrData, 'lapIndex'), [hrData]);
+  const powerByLap = useMemo(() => indexByX(powerData, 'lapIndex'), [powerData]);
+  const splitsByLap = useMemo(() => indexByX(splitsData, 'lapIndex'), [splitsData]);
+  const hrSummary = useMemo(() => summarizeValues(hrData.map((d) => d.avgHr)), [hrData]);
+  const powerSummary = useMemo(
+    () => summarizeValues(powerData.map((d) => d.avgPower)),
+    [powerData],
+  );
+  const splitsSummary = useMemo(
+    () => summarizeValues(splitsData.map((d) => (isRunning ? d.pace : d.speed))),
+    [splitsData, isRunning],
+  );
+
+  let splitsBest = splitsSummary.max;
+  let formatSplit = (v: number | undefined) => railFixed1(v);
+  if (isRunning) {
+    splitsBest = splitsSummary.min;
+    formatSplit = (v: number | undefined) => railPaceFromSecPerKm(v);
+  }
 
   const markerMode = useMemo((): LapMarkerMode | undefined => {
     if (isDevice) {
@@ -123,7 +154,29 @@ export const LapsTab = (props: LapsTabProps) => {
       />
 
       {hrData.length > 0 && (
-        <ChartPreviewCard title={m.ui_laps_hr_chart_title()} icon={Heart} color={tokens.chartHr}>
+        <ChartPreviewCard
+          title={m.ui_laps_hr_chart_title()}
+          icon={Heart}
+          color={tokens.chartHr}
+          metricId="avgHr"
+          rail={
+            <SeriesRail
+              group={SYNC_ID}
+              unit="bpm"
+              formatX={formatLapX}
+              rest={{
+                header: m.ui_rail_avg(),
+                value: railInt(hrSummary.avg),
+                secondary: `${m.ui_rail_max()} ${railInt(hrSummary.max)}`,
+              }}
+              readingAt={(x) => {
+                const point = hrByLap.get(x);
+                if (!point) return undefined;
+                return { value: railInt(point.avgHr), secondary: `${point.minHr}–${point.maxHr}` };
+              }}
+            />
+          }
+        >
           {(mode) => (
             <LapHrChart
               data={hrData}
@@ -140,6 +193,27 @@ export const LapsTab = (props: LapsTabProps) => {
           title={m.ui_laps_power_chart_title()}
           icon={Zap}
           color={tokens.chartPower}
+          metricId="avgPower"
+          rail={
+            <SeriesRail
+              group={SYNC_ID}
+              unit="W"
+              formatX={formatLapX}
+              rest={{
+                header: m.ui_rail_avg(),
+                value: railInt(powerSummary.avg),
+                secondary: `${m.ui_rail_max()} ${railInt(powerSummary.max)}`,
+              }}
+              readingAt={(x) => {
+                const point = powerByLap.get(x);
+                if (!point) return undefined;
+                return {
+                  value: railInt(point.avgPower),
+                  secondary: `${point.minPower}–${point.maxPower}`,
+                };
+              }}
+            />
+          }
         >
           {(mode) => (
             <LapPowerChart
@@ -157,6 +231,39 @@ export const LapsTab = (props: LapsTabProps) => {
           title={isRunning ? m.ui_laps_pace_chart_title() : m.ui_laps_speed_chart_title()}
           icon={Timer}
           color={isRunning ? tokens.chartPace : tokens.chartSpeed}
+          metricId={isRunning ? 'avgPace' : 'avgSpeed'}
+          rail={
+            <SeriesRail
+              group={SYNC_ID}
+              unit={isRunning ? '/km' : 'km/h'}
+              formatX={formatLapX}
+              rest={{
+                header: m.ui_rail_avg(),
+                value: formatSplit(splitsSummary.avg),
+                secondary: `${m.ui_rail_best()} ${formatSplit(splitsBest)}`,
+              }}
+              readingAt={(x) => {
+                const point = splitsByLap.get(x);
+                if (!point) return undefined;
+                if (isRunning) {
+                  return {
+                    value: formatSplit(point.pace),
+                    secondary:
+                      point.minPace !== undefined
+                        ? `${formatSplit(point.maxPace)}–${formatSplit(point.minPace)}`
+                        : undefined,
+                  };
+                }
+                return {
+                  value: formatSplit(point.speed),
+                  secondary:
+                    point.minSpeed !== undefined
+                      ? `${formatSplit(point.minSpeed)}–${formatSplit(point.maxSpeed)}`
+                      : undefined,
+                };
+              }}
+            />
+          }
         >
           {(mode) => (
             <LapSplitsChart

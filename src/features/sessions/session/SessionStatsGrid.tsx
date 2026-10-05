@@ -5,7 +5,7 @@ import { CardGrid } from '@/components/ui/CardGrid.tsx';
 import { StatItem } from '@/components/ui/StatItem.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { cn } from '@/lib/utils.ts';
-import { formatDuration, formatDistance, formatPace, formatSpeed } from '@/lib/formatters.ts';
+import { formatDuration, formatDistance } from '@/lib/formatters.ts';
 import { METRIC_EXPLANATIONS, type MetricId } from '@/lib/explanations.ts';
 import { detectIntervals, detectProgressiveOverload } from '@/lib/laps.ts';
 import type { TrainingSession, SessionLap } from '@/packages/engine/types.ts';
@@ -59,7 +59,6 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
     subDetail?: React.ReactNode;
   }> = [];
 
-  // Row 1: Duration & Distance (always present)
   stats.push({
     key: 'duration',
     label: m.ui_stat_duration(),
@@ -72,7 +71,6 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
     value: formatDistance(props.session.distance),
   });
 
-  // Row 2: Stress Score & Avg HR
   stats.push({
     key: 'tss',
     label: METRIC_EXPLANATIONS[props.session.stressMethod].friendlyName,
@@ -80,112 +78,6 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
     metricId: props.session.stressMethod,
   });
 
-  stats.push({
-    key: 'avgHr',
-    label: m.ui_stat_avg_hr(),
-    value: props.session.avgHr ?? '--',
-    unit: props.session.avgHr ? 'bpm' : undefined,
-    metricId: 'avgHr',
-  });
-
-  // Row 3: Sport-aware pace/speed (single card)
-  if (props.session.sport === 'cycling') {
-    let avgSpeed = props.session.avgSpeed;
-    if (
-      avgSpeed === undefined &&
-      props.session.distance !== undefined &&
-      props.session.duration > 0
-    ) {
-      avgSpeed = props.session.distance / props.session.duration;
-    }
-    if (avgSpeed !== undefined) {
-      stats.push({
-        key: 'avgSpeed',
-        label: m.ui_stat_avg_speed(),
-        value: formatSpeed(avgSpeed),
-        metricId: 'avgSpeed',
-      });
-    }
-  } else if (props.session.avgPace) {
-    stats.push({
-      key: 'avgPace',
-      label: m.ui_stat_avg_pace(),
-      value: formatPace(props.session.avgPace),
-      metricId: 'avgPace',
-    });
-  }
-
-  // Row 4: Merged power card (NP primary when both exist)
-  if (props.session.normalizedPower !== undefined && props.session.avgPower !== undefined) {
-    stats.push({
-      key: 'power',
-      label: m.ui_stat_norm_power(),
-      value: props.session.normalizedPower,
-      unit: 'W',
-      metricId: 'normalizedPower',
-      subDetail: (
-        <Typography variant="caption" as="p">
-          {m.ui_stat_avg_power_short({ value: props.session.avgPower })}
-        </Typography>
-      ),
-    });
-  } else if (props.session.avgPower !== undefined) {
-    stats.push({
-      key: 'power',
-      label: m.ui_stat_avg_power(),
-      value: props.session.avgPower,
-      unit: 'W',
-      metricId: 'avgPower',
-    });
-  }
-
-  // Row 4b: GAP
-  if (props.session.gap && props.session.sport === 'running') {
-    stats.push({
-      key: 'gap',
-      label: m.ui_stat_grade_adj_pace(),
-      value: formatPace(props.session.gap),
-      metricId: 'gradeAdjustedPace',
-    });
-  }
-
-  // Row 5: Elevation (absorbs altitude range) & Cadence
-  if (props.session.elevationGain !== undefined) {
-    const elevationSubParts: string[] = [];
-    if (props.session.elevationLoss !== undefined) {
-      elevationSubParts.push(`-${props.session.elevationLoss}m`);
-    }
-    if (props.session.minAltitude !== undefined) {
-      elevationSubParts.push(
-        `${Math.round(props.session.minAltitude)} — ${Math.round(props.session.maxAltitude ?? 0)}m`,
-      );
-    }
-    stats.push({
-      key: 'elevation',
-      label: m.ui_stat_elevation(),
-      value: `+${props.session.elevationGain}`,
-      unit: 'm',
-      metricId: 'elevation',
-      subDetail:
-        elevationSubParts.length > 0 ? (
-          <Typography variant="caption" as="p">
-            {elevationSubParts.join(' · ')}
-          </Typography>
-        ) : undefined,
-    });
-  }
-
-  if (props.session.avgCadence !== undefined) {
-    stats.push({
-      key: 'cadence',
-      label: m.ui_stat_cadence(),
-      value: props.session.avgCadence,
-      unit: 'rpm',
-      metricId: 'cadence',
-    });
-  }
-
-  // Row 6: Pacing Trend
   if (overload.lapCount >= 3) {
     const trend = TREND_META[overload.trend];
     stats.push({
@@ -206,7 +98,6 @@ export const SessionStatsGrid = (props: SessionStatsGridProps) => {
     });
   }
 
-  // Row 7: Recovery
   if (intervalPairsWithHr.length > 0) {
     stats.push({
       key: 'recovery',

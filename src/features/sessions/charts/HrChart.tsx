@@ -9,6 +9,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import type { HrPoint } from '@/lib/chartData.ts';
@@ -39,13 +40,11 @@ export const HrChart = (props: HrChartProps) => {
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
           zoom.onMouseMove(e);
-          if (compact && props.onActiveTimeChange && e.activeLabel != null)
+          if (props.onActiveTimeChange && e.activeLabel != null)
             props.onActiveTimeChange(Number(e.activeLabel));
         }}
         onMouseUp={zoom.onMouseUp}
-        onMouseLeave={
-          compact && props.onActiveTimeChange ? () => props.onActiveTimeChange?.(null) : undefined
-        }
+        {...chartHoverHandlers(props.onActiveTimeChange)}
       >
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
@@ -65,19 +64,14 @@ export const HrChart = (props: HrChartProps) => {
         />
         <YAxis
           yAxisId="left"
+          width={compact ? chartTheme.compactYAxisWidth : undefined}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
           tickCount={compact ? 3 : undefined}
           tickFormatter={(v: number) => formatTick(v, compact ? undefined : 'bpm')}
         />
-        <RechartsTooltip
-          contentStyle={chartTheme.tooltip.contentStyle}
-          labelStyle={chartTheme.tooltip.labelStyle}
-          isAnimationActive={chartTheme.tooltip.isAnimationActive}
-          separator={chartTheme.tooltip.separator}
-          labelFormatter={(v) => formatChartTime(Number(v))}
-        />
+        <RechartsTooltip {...hoverOnlyTooltip} />
         <Line
           yAxisId="left"
           type="monotone"
@@ -85,7 +79,6 @@ export const HrChart = (props: HrChartProps) => {
           stroke={tokens.chartHr}
           strokeWidth={1.5}
           dot={false}
-          connectNulls
           name={m.ui_chart_series_hr()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

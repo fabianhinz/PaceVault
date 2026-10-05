@@ -6,9 +6,6 @@ import { StatItem } from '@/components/ui/StatItem.tsx';
 import { formatDate, formatDistance } from '@/lib/formatters.ts';
 import type { StudioRoute } from '@/store/studio.ts';
 
-// The complete stat inventory for a route. The first entries repeat the
-// header's secondary line in the same order, so users never have to combine
-// two places — expanding the grid reveals everything.
 export const RouteStatsGrid = (props: { route: StudioRoute }) => {
   const stats: Array<{ key: string; label: string; value: ReactNode; unit?: string }> = [
     {
@@ -17,41 +14,6 @@ export const RouteStatsGrid = (props: { route: StudioRoute }) => {
       value: formatDistance(props.route.distance),
     },
   ];
-
-  if (props.route.elevation) {
-    stats.push(
-      {
-        key: 'gain',
-        label: m.ui_studio_stat_elev_gain(),
-        value: `+${Math.round(props.route.elevation.gain)}`,
-        unit: 'm',
-      },
-      {
-        key: 'loss',
-        label: m.ui_studio_stat_elev_loss(),
-        value: `-${Math.round(props.route.elevation.loss)}`,
-        unit: 'm',
-      },
-      {
-        key: 'min',
-        label: m.ui_studio_stat_min_elevation(),
-        value: Math.round(props.route.elevation.min),
-        unit: 'm',
-      },
-      {
-        key: 'max',
-        label: m.ui_studio_stat_max_elevation(),
-        value: Math.round(props.route.elevation.max),
-        unit: 'm',
-      },
-      {
-        key: 'grade',
-        label: m.ui_studio_stat_max_grade(),
-        value: props.route.elevation.maxGrade.toFixed(1),
-        unit: '%',
-      },
-    );
-  }
 
   stats.push(
     {

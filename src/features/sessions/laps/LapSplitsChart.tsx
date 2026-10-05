@@ -10,8 +10,9 @@ import {
 } from 'recharts';
 import { avgDomain, chartTheme, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
+import { hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { formatPace, formatPaceInput } from '@/lib/formatters.ts';
-import type { LapSplitPoint } from '@/lib/lapChartData.ts';
+import { type LapSplitPoint, lapIndexAt } from '@/lib/lapChartData.ts';
 import { m } from '@/paraglide/messages.js';
 
 interface LapSplitsChartProps {
@@ -36,10 +37,15 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
       <ComposedChart
         data={props.data}
         syncId={compact ? props.syncId : undefined}
+        syncMethod="value"
         onMouseMove={(state) => {
-          props.onActiveLapChange?.(Number(state.activeTooltipIndex ?? 0));
+          props.onActiveLapChange?.(lapIndexAt(props.data, state.activeTooltipIndex));
         }}
         onMouseLeave={() => props.onActiveLapChange?.(null)}
+        onTouchMove={(state) => {
+          props.onActiveLapChange?.(lapIndexAt(props.data, state.activeTooltipIndex));
+        }}
+        onTouchEnd={() => props.onActiveLapChange?.(null)}
       >
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
@@ -57,6 +63,7 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
         />
         <YAxis
           domain={yDomain}
+          width={compact ? chartTheme.compactYAxisWidth : undefined}
           allowDataOverflow
           tick={chartTheme.tick}
           tickLine={false}
@@ -70,40 +77,7 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
             return formatTick(v, compact ? undefined : 'km/h');
           }}
         />
-        <RechartsTooltip
-          contentStyle={chartTheme.tooltip.contentStyle}
-          labelStyle={chartTheme.tooltip.labelStyle}
-          isAnimationActive={chartTheme.tooltip.isAnimationActive}
-          separator={chartTheme.tooltip.separator}
-          cursor={{ fill: `${tokens.accent}14` }}
-          formatter={(
-            _value: number | undefined,
-            _name: string | undefined,
-            entry: { payload?: LapSplitPoint },
-          ) => {
-            const p = entry.payload;
-            if (!p)
-              return [
-                props.isRunning ? '-- /km' : '-- km/h',
-                props.isRunning ? m.ui_chart_series_pace() : m.ui_chart_series_speed(),
-              ];
-            if (props.isRunning) {
-              const avg = formatPace(p.pace);
-              if (p.minPace !== undefined) {
-                return [
-                  `${avg} (${formatPaceInput(p.minPace)}–${formatPaceInput(p.maxPace)})`,
-                  m.ui_chart_series_pace(),
-                ];
-              }
-              return [avg, m.ui_chart_series_pace()];
-            }
-            const avg = `${p.speed} km/h`;
-            if (p.minSpeed !== undefined) {
-              return [`${avg} (${p.minSpeed}–${p.maxSpeed})`, m.ui_chart_series_speed()];
-            }
-            return [avg, m.ui_chart_series_speed()];
-          }}
-        />
+        <RechartsTooltip {...hoverOnlyTooltip} cursor={{ fill: `${tokens.accent}14` }} />
         {hasRangeData && (
           <Area
             dataKey={props.isRunning ? 'paceRange' : 'speedRange'}

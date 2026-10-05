@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ComposedChart,
   Line,
@@ -28,13 +28,21 @@ import {
   formatDistance,
   formatElevation,
   formatPaceTick,
-  formatPaceOrSpeed,
 } from '@/lib/formatters.ts';
 import { chartTheme, formatChartTime } from '@/lib/chartTheme.ts';
+import { chartHoverHandlers, hoverOnlyTooltip, indexByX } from '@/lib/chartHover.ts';
+import { railFixed1, railInt, railPace, railPaceFromSecPerKm } from '@/lib/railFormat.ts';
+import { cn } from '@/lib/utils.ts';
+import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
+import { MultiSeriesRail, type MultiSeriesRailRow } from '@/components/charts/ChartRail.tsx';
 import { tokens } from '@/lib/tokens.ts';
 import type { SessionLap, SessionRecord, Sport } from '@/packages/engine/types.ts';
 import type { LapAnalysis, LapRecordEnrichment } from '@/lib/laps.ts';
 import { m } from '@/paraglide/messages.js';
+
+const HOVER_GROUP = 'lap-popup';
+
+const formatHoverTime = (x: ChartHoverX) => formatChartTime(Number(x));
 
 export interface LapPopupInfo {
   x: number;
@@ -138,8 +146,26 @@ export const LapPickPopup = (props: LapPickPopupProps) => {
     return buildLapChartData(lapRecords, isRunning);
   }, [clickedLapIndex, props.records, props.laps, activeSplitDistance, isRunning]);
 
+  const chartByTime = useMemo(() => indexByX(chartData, 'time'), [chartData]);
+
+  const onHover = useCallback((time: number | null) => {
+    if (time == null) {
+      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
+      return;
+    }
+    useChartHoverStore.getState().setChartHover(HOVER_GROUP, time);
+  }, []);
+
+  useEffect(() => () => useChartHoverStore.getState().clearChartHover(HOVER_GROUP), []);
+
   if (clickedLapIndex == null || !analysis) {
     return null;
+  }
+
+  const lapAvgPace = analysis.paceSecPerKm;
+  let lapAvgSpeedKmh: number | undefined = undefined;
+  if (lapAvgPace !== undefined && lapAvgPace > 0) {
+    lapAvgSpeedKmh = 3600 / lapAvgPace;
   }
 
   const lapNumber = clickedLapIndex + 1;
@@ -148,9 +174,82 @@ export const LapPickPopup = (props: LapPickPopupProps) => {
   const hasHrData = chartData.some((p) => p.hr != null);
   const hasPaceOrSpeed = chartData.some((p) => p.pace != null || p.speed != null);
   const hasPowerData = chartData.some((p) => p.power != null);
-  const hasPower = enrichment?.avgPower !== undefined;
   const hasCadence = analysis.avgCadence !== undefined;
   const hasElevation = analysis.elevationGain !== undefined;
+
+  const railRows: MultiSeriesRailRow[] = [];
+  if (hasHrData) {
+    railRows.push({
+      key: 'hr',
+      name: m.ui_rail_hr(),
+      color: tokens.chartHr,
+      metricId: 'avgHr',
+      unit: 'bpm',
+      rest: { value: railInt(analysis.avgHr) },
+      readingAt: (x) => {
+        const point = chartByTime.get(x);
+        if (!point) return undefined;
+        return {
+          value: railInt(point.hr),
+          secondary: `${m.ui_rail_avg()} ${railInt(analysis.avgHr)}`,
+        };
+      },
+    });
+  }
+  if (hasPowerData) {
+    railRows.push({
+      key: 'power',
+      name: m.ui_rail_power(),
+      color: tokens.chartPower,
+      metricId: 'avgPower',
+      unit: 'W',
+      rest: { value: railInt(enrichment?.avgPower) },
+      readingAt: (x) => {
+        const point = chartByTime.get(x);
+        if (!point) return undefined;
+        return {
+          value: railInt(point.power),
+          secondary: `${m.ui_rail_avg()} ${railInt(enrichment?.avgPower)}`,
+        };
+      },
+    });
+  }
+  if (hasPaceOrSpeed && isRunning) {
+    railRows.push({
+      key: 'pace',
+      name: m.ui_rail_pace(),
+      color: tokens.chartPace,
+      metricId: 'avgPace',
+      unit: '/km',
+      rest: { value: railPaceFromSecPerKm(lapAvgPace) },
+      readingAt: (x) => {
+        const point = chartByTime.get(x);
+        if (!point) return undefined;
+        return {
+          value: railPace(point.pace),
+          secondary: `${m.ui_rail_avg()} ${railPaceFromSecPerKm(lapAvgPace)}`,
+        };
+      },
+    });
+  }
+  if (hasPaceOrSpeed && !isRunning) {
+    railRows.push({
+      key: 'speed',
+      name: m.ui_rail_speed(),
+      color: tokens.chartSpeed,
+      metricId: 'avgSpeed',
+      unit: 'km/h',
+      rest: { value: railFixed1(lapAvgSpeedKmh) },
+      readingAt: (x) => {
+        const point = chartByTime.get(x);
+        if (!point) return undefined;
+        return {
+          value: railFixed1(point.speed),
+          secondary: `${m.ui_rail_avg()} ${railFixed1(lapAvgSpeedKmh)}`,
+        };
+      },
+    });
+  }
 
   return (
     <MapPopupShell
@@ -191,94 +290,108 @@ export const LapPickPopup = (props: LapPickPopupProps) => {
       />
 
       {hasChartData && (hasHrData || hasPaceOrSpeed || hasPowerData) && (
-        <div className={expandCard.isExpanded ? 'flex-1 min-h-0 px-4 pb-2' : 'h-[200px] px-2'}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />
-              <XAxis
-                dataKey="time"
-                tick={chartTheme.tick}
-                ticks={[chartData[0]?.time ?? 0, chartData[chartData.length - 1]?.time ?? 0]}
-                tickLine={false}
-                axisLine={chartTheme.axisLine}
-                tickFormatter={formatChartTime}
-              />
-              {(hasHrData || hasPowerData) && (
-                <YAxis
-                  yAxisId="left"
+        <div
+          className={cn(
+            'grid grid-cols-[84px_minmax(0,1fr)] gap-3',
+            expandCard.isExpanded ? 'flex-1 min-h-0 px-4 pb-2' : 'h-[230px] px-4',
+          )}
+        >
+          <MultiSeriesRail
+            group={HOVER_GROUP}
+            restHeader={m.ui_rail_lap_avg()}
+            formatX={formatHoverTime}
+            isKnownX={(x) => chartByTime.has(x)}
+            rows={railRows}
+          />
+          <div className="h-full min-h-0 min-w-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={chartData}
+                onMouseMove={(e) => {
+                  if (e.activeLabel != null) onHover(Number(e.activeLabel));
+                }}
+                {...chartHoverHandlers(onHover)}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />
+                <XAxis
+                  dataKey="time"
                   tick={chartTheme.tick}
+                  ticks={[chartData[0]?.time ?? 0, chartData[chartData.length - 1]?.time ?? 0]}
                   tickLine={false}
-                  axisLine={false}
-                  width={35}
-                  tickCount={3}
+                  axisLine={chartTheme.axisLine}
+                  tickFormatter={formatChartTime}
                 />
-              )}
-              {hasPaceOrSpeed && (
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tick={chartTheme.tick}
-                  tickLine={false}
-                  axisLine={false}
-                  width={35}
-                  tickCount={3}
-                  reversed={isRunning}
-                  tickFormatter={isRunning ? formatPaceTick : (v: number) => `${v}`}
-                />
-              )}
-              <RechartsTooltip
-                contentStyle={chartTheme.tooltip.contentStyle}
-                labelStyle={chartTheme.tooltip.labelStyle}
-                isAnimationActive={chartTheme.tooltip.isAnimationActive}
-                separator={chartTheme.tooltip.separator}
-                labelFormatter={(v) => formatChartTime(Number(v))}
-              />
-              {hasHrData && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="hr"
-                  stroke={tokens.chartHr}
-                  dot={false}
-                  strokeWidth={1.5}
-                  name={m.ui_chart_series_hr()}
-                />
-              )}
-              {hasPowerData && (
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="power"
-                  stroke={tokens.chartPower}
-                  dot={false}
-                  strokeWidth={1.5}
-                  name={m.ui_chart_series_power()}
-                />
-              )}
-              {isRunning && hasPaceOrSpeed && (
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="pace"
-                  stroke={tokens.chartPace}
-                  dot={false}
-                  strokeWidth={1.5}
-                  name={m.ui_chart_series_pace()}
-                />
-              )}
-              {!isRunning && hasPaceOrSpeed && (
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="speed"
-                  stroke={tokens.chartSpeed}
-                  dot={false}
-                  strokeWidth={1.5}
-                  name={m.ui_chart_series_speed()}
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
+                {(hasHrData || hasPowerData) && (
+                  <YAxis
+                    yAxisId="left"
+                    tick={chartTheme.tick}
+                    tickLine={false}
+                    axisLine={false}
+                    width={35}
+                    tickCount={3}
+                  />
+                )}
+                {hasPaceOrSpeed && (
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={chartTheme.tick}
+                    tickLine={false}
+                    axisLine={false}
+                    width={35}
+                    tickCount={3}
+                    reversed={isRunning}
+                    tickFormatter={isRunning ? formatPaceTick : (v: number) => `${v}`}
+                  />
+                )}
+                <RechartsTooltip {...hoverOnlyTooltip} />
+                {hasHrData && (
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="hr"
+                    stroke={tokens.chartHr}
+                    dot={false}
+                    strokeWidth={1.5}
+                    name={m.ui_chart_series_hr()}
+                  />
+                )}
+                {hasPowerData && (
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="power"
+                    stroke={tokens.chartPower}
+                    dot={false}
+                    strokeWidth={1.5}
+                    name={m.ui_chart_series_power()}
+                  />
+                )}
+                {isRunning && hasPaceOrSpeed && (
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="pace"
+                    stroke={tokens.chartPace}
+                    dot={false}
+                    strokeWidth={1.5}
+                    name={m.ui_chart_series_pace()}
+                  />
+                )}
+                {!isRunning && hasPaceOrSpeed && (
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="speed"
+                    stroke={tokens.chartSpeed}
+                    dot={false}
+                    strokeWidth={1.5}
+                    name={m.ui_chart_series_speed()}
+                  />
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
@@ -288,22 +401,6 @@ export const LapPickPopup = (props: LapPickPopupProps) => {
         fields={[
           { label: m.ui_laps_col_distance(), value: (a) => formatDistance(a.distance) },
           { label: m.ui_laps_col_time(), value: (a) => formatLapTime(a.duration) },
-          {
-            label: isRunning ? m.ui_laps_col_pace() : m.ui_laps_col_speed(),
-            value: (a) => formatPaceOrSpeed(a, isRunning),
-          },
-          {
-            label: m.ui_laps_col_avg_hr(),
-            value: (a) => `${a.avgHr}`,
-            visible: analysis.avgHr !== undefined,
-            priority: 'secondary',
-          },
-          {
-            label: m.ui_laps_col_power(),
-            value: () => (enrichment?.avgPower !== undefined ? `${enrichment.avgPower} W` : '--'),
-            visible: hasPower,
-            priority: 'secondary',
-          },
           {
             label: m.ui_laps_col_cadence(),
             value: (a) => `${a.avgCadence}`,

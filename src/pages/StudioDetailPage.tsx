@@ -56,7 +56,9 @@ const StudioDetail = (props: { route: StudioRoute }) => {
         <TabsContent value="overview">
           <div className="space-y-4">
             <RouteStatsGrid route={props.route} />
-            {routePoints.points && <RouteChartsExplorer points={routePoints.points} />}
+            {routePoints.points && (
+              <RouteChartsExplorer points={routePoints.points} elevation={props.route.elevation} />
+            )}
           </div>
         </TabsContent>
 

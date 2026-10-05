@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   ComposedChart,
   Area,
@@ -16,7 +16,13 @@ import { MetricLabel } from '@/components/ui/MetricLabel.tsx';
 import { ListItem } from '@/components/ui/List.tsx';
 import { Switch } from '@/components/ui/Switch.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
-import { chartTheme, formatChartDate } from '@/lib/chartTheme.ts';
+import { chartTheme } from '@/lib/chartTheme.ts';
+import { hoverOnlyTooltip, indexByX } from '@/lib/chartHover.ts';
+import { summarizeValues } from '@/lib/seriesSummary.ts';
+import { railInt } from '@/lib/railFormat.ts';
+import { useChartHoverStore } from '@/store/chartHover.ts';
+import { MultiSeriesRail, SeriesRail } from '@/components/charts/ChartRail.tsx';
+import { formatDashboardDate } from './dashboardDate.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { rangeMap } from '@/lib/timeRange.ts';
@@ -32,6 +38,14 @@ import { m } from '@/paraglide/messages.js';
 import { SPORTS, type Sport } from '@/packages/engine/types.ts';
 
 type GroupBy = 'day' | 'week' | 'month';
+
+const HOVER_GROUP = 'dashboard-load';
+
+const avgPerBucketLabels: Record<GroupBy, () => string> = {
+  day: m.ui_rail_avg_per_day,
+  week: m.ui_rail_avg_per_week,
+  month: m.ui_rail_avg_per_month,
+};
 
 const sportColors: Record<Sport, string> = {
   running: tokens.sportRunning,
@@ -130,6 +144,68 @@ export const LoadChart = () => {
     }));
   }, [chartData, groupBy]);
 
+  const groupedByDate = useMemo(() => indexByX(groupedData, 'date'), [groupedData]);
+  const tssSummary = useMemo(() => summarizeValues(chartData.map((d) => d.tss)), [chartData]);
+  const sportTotals = useMemo(() => {
+    const totals: Record<Sport, number> = { running: 0, cycling: 0 };
+    for (const d of chartData) {
+      totals.running += d.running;
+      totals.cycling += d.cycling;
+    }
+    return totals;
+  }, [chartData]);
+
+  let avgPerBucket: number | undefined = undefined;
+  if (groupedData.length > 0) {
+    avgPerBucket = tssSummary.total / groupedData.length;
+  }
+  const avgLabel = avgPerBucketLabels[groupBy]();
+
+  const onHover = useCallback((date: string | null) => {
+    if (date == null) {
+      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
+      return;
+    }
+    useChartHoverStore.getState().setChartHover(HOVER_GROUP, date);
+  }, []);
+
+  useEffect(() => () => useChartHoverStore.getState().clearChartHover(HOVER_GROUP), []);
+
+  const rail = showSportColors ? (
+    <MultiSeriesRail
+      group={HOVER_GROUP}
+      restHeader={m.ui_rail_total()}
+      formatX={formatDashboardDate}
+      isKnownX={(x) => groupedByDate.has(x)}
+      rows={SPORTS.map((sport) => ({
+        key: sport,
+        name: sportNames[sport](),
+        color: sportColors[sport],
+        rest: { value: railInt(sportTotals[sport]) },
+        readingAt: (x) => {
+          const point = groupedByDate.get(x);
+          if (!point) return undefined;
+          return { value: railInt(point[sport]) };
+        },
+      }))}
+    />
+  ) : (
+    <SeriesRail
+      group={HOVER_GROUP}
+      formatX={formatDashboardDate}
+      rest={{
+        header: m.ui_rail_total(),
+        value: railInt(tssSummary.total),
+        secondary: `${avgLabel} ${railInt(avgPerBucket)}`,
+      }}
+      readingAt={(x) => {
+        const point = groupedByDate.get(x);
+        if (!point) return undefined;
+        return { value: railInt(point.tss) };
+      }}
+    />
+  );
+
   const zoom = useChartZoom({
     data: groupedData,
     xKey: 'date',
@@ -138,16 +214,12 @@ export const LoadChart = () => {
   });
 
   const tickFormatter = (v: string) => {
-    if (groupBy === 'month') {
-      const d = new Date(v + '-01T00:00:00');
-      return d.toLocaleString(undefined, { month: 'short' });
-    }
-    const d = new Date(v + 'T00:00:00');
-    if (dashboardZoom.range === '7d') {
+    if (groupBy !== 'month' && dashboardZoom.range === '7d') {
+      const d = new Date(v + 'T00:00:00');
       const label = dayLabels[(d.getDay() + 6) % 7];
       if (label) return label();
     }
-    return `${d.getMonth() + 1}/${d.getDate()}`;
+    return formatDashboardDate(v);
   };
 
   return (
@@ -163,6 +235,7 @@ export const LoadChart = () => {
       }
       subtitle={METRIC_EXPLANATIONS.tss.oneLiner}
       compactHeight="h-64"
+      rail={groupedData.length > 0 ? rail : undefined}
       footer={
         <ListItem primary={m.ui_sport_color_title()} secondary={m.ui_sport_color_desc()}>
           <Switch
@@ -204,8 +277,16 @@ export const LoadChart = () => {
                 <ComposedChart
                   data={zoom.zoomedData}
                   onMouseDown={zoom.onMouseDown}
-                  onMouseMove={zoom.onMouseMove}
+                  onMouseMove={(e) => {
+                    zoom.onMouseMove(e);
+                    if (e.activeLabel != null) onHover(String(e.activeLabel));
+                  }}
                   onMouseUp={zoom.onMouseUp}
+                  onMouseLeave={() => onHover(null)}
+                  onTouchMove={(e) => {
+                    if (e.activeLabel != null) onHover(String(e.activeLabel));
+                  }}
+                  onTouchEnd={() => onHover(null)}
                 >
                   {!compact && (
                     <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />
@@ -233,13 +314,7 @@ export const LoadChart = () => {
                     tickCount={compact ? 3 : undefined}
                     tickFormatter={(v: number) => String(Math.round(v))}
                   />
-                  <RechartsTooltip
-                    contentStyle={chartTheme.tooltip.contentStyle}
-                    labelStyle={chartTheme.tooltip.labelStyle}
-                    isAnimationActive={chartTheme.tooltip.isAnimationActive}
-                    separator={chartTheme.tooltip.separator}
-                    labelFormatter={(v) => formatChartDate(String(v))}
-                  />
+                  <RechartsTooltip {...hoverOnlyTooltip} />
                   {showSportColors ? (
                     SPORTS.map((sport) => (
                       <Area

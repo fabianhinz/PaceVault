@@ -43,6 +43,10 @@ test.describe('Session browsing', () => {
 
     // Stats grid should be present
     await expect(page.getByText(/duration/i).first()).toBeVisible();
+
+    const rails = page.getByTestId('stat-rail');
+    await expect(rails.first()).toBeVisible();
+    await expect(rails.first()).toContainText(/\d/);
   });
 
   test('edit route in studio → imports the track and opens it', async ({ page }) => {

@@ -10,6 +10,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, type ChartXAxis } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { m } from '@/paraglide/messages.js';
@@ -48,13 +49,11 @@ export const GradeChart = <
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
           zoom.onMouseMove(e);
-          if (compact && props.onActiveXChange && e.activeLabel != null)
+          if (props.onActiveXChange && e.activeLabel != null)
             props.onActiveXChange(Number(e.activeLabel));
         }}
         onMouseUp={zoom.onMouseUp}
-        onMouseLeave={
-          compact && props.onActiveXChange ? () => props.onActiveXChange?.(null) : undefined
-        }
+        {...chartHoverHandlers(props.onActiveXChange)}
       >
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
@@ -74,19 +73,14 @@ export const GradeChart = <
         />
         <YAxis
           yAxisId="left"
+          width={compact ? chartTheme.compactYAxisWidth : undefined}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
           tickCount={compact ? 3 : undefined}
           tickFormatter={(v: number) => `${v}%`}
         />
-        <RechartsTooltip
-          contentStyle={chartTheme.tooltip.contentStyle}
-          labelStyle={chartTheme.tooltip.labelStyle}
-          isAnimationActive={chartTheme.tooltip.isAnimationActive}
-          separator={chartTheme.tooltip.separator}
-          labelFormatter={(v) => props.xAxis.tickFormatter(Number(v))}
-        />
+        <RechartsTooltip {...hoverOnlyTooltip} />
         {!compact && (
           <ReferenceLine
             yAxisId="left"
@@ -102,7 +96,6 @@ export const GradeChart = <
           stroke={tokens.chartGrade}
           strokeWidth={1.5}
           dot={false}
-          connectNulls
           name={m.ui_chart_series_grade()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

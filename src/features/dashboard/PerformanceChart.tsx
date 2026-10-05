@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   ComposedChart,
   Line,
@@ -12,14 +12,27 @@ import {
 } from 'recharts';
 import { useFilteredMetrics } from './hooks/useFilteredMetrics.ts';
 import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
-import { MetricLabel } from '@/components/ui/MetricLabel.tsx';
+import { MultiSeriesRail } from '@/components/charts/ChartRail.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
-import { chartTheme, formatChartDate } from '@/lib/chartTheme.ts';
+import { chartTheme } from '@/lib/chartTheme.ts';
+import { hoverOnlyTooltip, indexByX } from '@/lib/chartHover.ts';
+import { railInt } from '@/lib/railFormat.ts';
+import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
+import { useChartHoverStore } from '@/store/chartHover.ts';
+import { formatDashboardDate } from './dashboardDate.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { rangeMap } from '@/lib/timeRange.ts';
 import type { TimeRange } from '@/lib/timeRange.ts';
 import { useDashboardChartZoom } from './hooks/useDashboardChartZoom.ts';
 import { m } from '@/paraglide/messages.js';
+
+const HOVER_GROUP = 'dashboard-performance';
+
+const SERIES = [
+  { key: 'ctl', color: tokens.chartFitness },
+  { key: 'atl', color: tokens.chartFatigue },
+  { key: 'tsb', color: tokens.chartForm },
+] as const;
 
 export const PerformanceChart = () => {
   const metrics = useFilteredMetrics();
@@ -35,6 +48,19 @@ export const PerformanceChart = () => {
     return metrics.history.slice(-days);
   }, [metrics.history, dashboardZoom.range, dashboardZoom.customRange]);
 
+  const latest = filtered[filtered.length - 1];
+  const byDate = useMemo(() => indexByX(filtered, 'date'), [filtered]);
+
+  const onHover = useCallback((date: string | null) => {
+    if (date == null) {
+      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
+      return;
+    }
+    useChartHoverStore.getState().setChartHover(HOVER_GROUP, date);
+  }, []);
+
+  useEffect(() => () => useChartHoverStore.getState().clearChartHover(HOVER_GROUP), []);
+
   const zoom = useChartZoom({
     data: filtered,
     xKey: 'date',
@@ -47,21 +73,25 @@ export const PerformanceChart = () => {
       title={m.ui_metrics_chart_title()}
       subtitle={m.ui_metrics_chart_subtitle()}
       compactHeight="h-64"
-      footer={
-        <div className="flex items-center justify-center gap-6">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-4 rounded-sm bg-chart-fitness" />
-            <MetricLabel metricId="ctl" size="sm" />
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-4 rounded-sm bg-chart-fatigue" />
-            <MetricLabel metricId="atl" size="sm" />
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-4 rounded-sm bg-chart-form" />
-            <MetricLabel metricId="tsb" size="sm" />
-          </span>
-        </div>
+      rail={
+        <MultiSeriesRail
+          group={HOVER_GROUP}
+          restHeader={m.ui_rail_latest()}
+          formatX={formatDashboardDate}
+          isKnownX={(x) => byDate.has(x)}
+          rows={SERIES.map((series) => ({
+            key: series.key,
+            name: METRIC_EXPLANATIONS[series.key].shortLabel ?? series.key.toUpperCase(),
+            color: series.color,
+            metricId: series.key,
+            rest: { value: railInt(latest?.[series.key]) },
+            readingAt: (x) => {
+              const point = byDate.get(x);
+              if (!point) return undefined;
+              return { value: railInt(point[series.key]) };
+            },
+          }))}
+        />
       }
     >
       {(mode) => {
@@ -71,8 +101,16 @@ export const PerformanceChart = () => {
             <ComposedChart
               data={zoom.zoomedData}
               onMouseDown={zoom.onMouseDown}
-              onMouseMove={zoom.onMouseMove}
+              onMouseMove={(e) => {
+                zoom.onMouseMove(e);
+                if (e.activeLabel != null) onHover(String(e.activeLabel));
+              }}
               onMouseUp={zoom.onMouseUp}
+              onMouseLeave={() => onHover(null)}
+              onTouchMove={(e) => {
+                if (e.activeLabel != null) onHover(String(e.activeLabel));
+              }}
+              onTouchEnd={() => onHover(null)}
             >
               {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
               <XAxis
@@ -88,10 +126,7 @@ export const PerformanceChart = () => {
                 tick={chartTheme.tick}
                 tickLine={false}
                 axisLine={chartTheme.axisLine}
-                tickFormatter={(v: string) => {
-                  const d = new Date(v);
-                  return `${d.getMonth() + 1}/${d.getDate()}`;
-                }}
+                tickFormatter={formatDashboardDate}
               />
               <YAxis
                 tick={chartTheme.tick}
@@ -100,13 +135,7 @@ export const PerformanceChart = () => {
                 width={40}
                 tickCount={compact ? 3 : undefined}
               />
-              <RechartsTooltip
-                contentStyle={chartTheme.tooltip.contentStyle}
-                labelStyle={chartTheme.tooltip.labelStyle}
-                isAnimationActive={chartTheme.tooltip.isAnimationActive}
-                separator={chartTheme.tooltip.separator}
-                labelFormatter={(v) => formatChartDate(String(v))}
-              />
+              <RechartsTooltip {...hoverOnlyTooltip} />
               <Area
                 type="monotone"
                 dataKey="tsb"

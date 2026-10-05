@@ -112,11 +112,14 @@ export const formatDistance = (meters: number | undefined): string => {
 /** Metres → kilometres string with two decimals, for the `{km}` message slot. */
 export const toKm = (meters: number): string => (meters / 1000).toFixed(2);
 
-export const formatPace = (secPerKm: number): string => {
-  const min = Math.floor(secPerKm / 60);
-  const sec = Math.round(secPerKm % 60);
-  return `${min}:${sec.toString().padStart(2, '0')} /km`;
+const formatMinSec = (totalSeconds: number): string => {
+  const rounded = Math.round(totalSeconds);
+  const min = Math.floor(rounded / 60);
+  const sec = rounded % 60;
+  return `${min}:${sec.toString().padStart(2, '0')}`;
 };
+
+export const formatPace = (secPerKm: number): string => `${formatMinSec(secPerKm)} /km`;
 
 export const formatSpeed = (metersPerSec: number): string => {
   return `${(metersPerSec * 3.6).toFixed(1)} km/h`;
@@ -130,17 +133,9 @@ export const formatPaceOrSpeed = (lap: LapAnalysis, isRunning: boolean): string 
 };
 
 /** Format decimal min/km to mm:ss (for time-series pace chart axes/tooltips). */
-export const formatPaceTick = (minPerKm: number): string => {
-  const mins = Math.floor(minPerKm);
-  const secs = Math.round((minPerKm - mins) * 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
+export const formatPaceTick = (minPerKm: number): string => formatMinSec(minPerKm * 60);
 
-export const formatPaceInput = (seconds: number): string => {
-  const min = Math.floor(seconds / 60);
-  const sec = Math.round(seconds % 60);
-  return `${min}:${sec.toString().padStart(2, '0')}`;
-};
+export const formatPaceInput = (seconds: number): string => formatMinSec(seconds);
 
 // ---------------------------------------------------------------------------
 // Parsers

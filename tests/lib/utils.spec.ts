@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatPace,
+  formatPaceTick,
+  formatPaceInput,
   formatDate,
   formatDuration,
   formatDistance,
@@ -9,6 +11,14 @@ import {
   formatSubSport,
   toDateString,
 } from '@/lib/formatters.ts';
+
+describe('pace formatters print "x:60" when seconds round up to a full minute', () => {
+  it('carries the rounded minute instead of printing 60 seconds', () => {
+    expect(formatPace(299.7)).toBe('5:00 /km');
+    expect(formatPaceTick(4.999)).toBe('5:00');
+    expect(formatPaceInput(359.6)).toBe('6:00');
+  });
+});
 
 describe('formatPace', () => {
   it('300 sec/km => "5:00 /km"', () => {

@@ -3,6 +3,7 @@ import { m } from '@/paraglide/messages.js';
 
 export interface LapSplitPoint {
   lap: string;
+  lapIndex: number;
   pace: number; // sec/km
   speed: number; // km/h
   maxPace: number; // sec/km (from max speed)
@@ -15,6 +16,7 @@ export interface LapSplitPoint {
 
 export interface LapHrPoint {
   lap: string;
+  lapIndex: number;
   avgHr: number;
   minHr: number;
   maxHr: number;
@@ -23,6 +25,7 @@ export interface LapHrPoint {
 
 export interface LapPowerPoint {
   lap: string;
+  lapIndex: number;
   avgPower: number;
   minPower: number;
   maxPower: number;
@@ -77,6 +80,7 @@ export const prepareLapSplitsData = (
 
     result.push({
       lap: m.ui_lap_label({ number: String(l.lapIndex + 1) }),
+      lapIndex: l.lapIndex,
       pace,
       speed,
       maxPace,
@@ -96,6 +100,7 @@ export const prepareLapPowerData = (enrichments: LapRecordEnrichment[]): LapPowe
     if (e.avgPower === undefined || e.minPower === undefined || e.maxPower === undefined) continue;
     result.push({
       lap: m.ui_lap_label({ number: String(e.lapIndex + 1) }),
+      lapIndex: e.lapIndex,
       avgPower: e.avgPower,
       minPower: e.minPower,
       maxPower: e.maxPower,
@@ -120,6 +125,7 @@ export const prepareLapHrData = (
     const maxHr = l.maxHr ?? avgHr;
     result.push({
       lap: m.ui_lap_label({ number: String(l.lapIndex + 1) }),
+      lapIndex: l.lapIndex,
       avgHr,
       minHr,
       maxHr,
@@ -127,4 +133,14 @@ export const prepareLapHrData = (
     });
   }
   return result;
+};
+
+export const lapIndexAt = (
+  points: ReadonlyArray<{ lapIndex: number }>,
+  activeIndex: number | string | null | undefined,
+): number | null => {
+  if (activeIndex === undefined || activeIndex === null) return null;
+  const point = points[Number(activeIndex)];
+  if (!point) return null;
+  return point.lapIndex;
 };

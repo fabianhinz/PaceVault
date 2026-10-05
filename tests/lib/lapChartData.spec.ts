@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { prepareLapSplitsData, prepareLapHrData, prepareLapPowerData } from '@/lib/lapChartData.ts';
+import {
+  prepareLapSplitsData,
+  prepareLapHrData,
+  prepareLapPowerData,
+  lapIndexAt,
+} from '@/lib/lapChartData.ts';
 import { analyzeLaps, enrichAllLaps, type LapRecordEnrichment } from '@/lib/laps.ts';
 import { makeLaps, makeCyclingRecords, makeRunningRecords } from '@tests/factories/records.ts';
 
@@ -231,5 +236,23 @@ describe('prepareLapPowerData', () => {
 
   it('returns empty for empty input', () => {
     expect(prepareLapPowerData([])).toHaveLength(0);
+  });
+});
+
+describe('lap hover highlights wrong lap when laps are skipped', () => {
+  it('maps the hovered chart position to the real lap, not the array position', () => {
+    const laps = makeLaps(4);
+    laps[1].avgHr = undefined;
+    const points = prepareLapHrData(analyzeLaps(laps));
+    expect(points.map((p) => p.lapIndex)).toEqual([0, 2, 3]);
+    expect(lapIndexAt(points, 1)).toBe(2);
+    expect(lapIndexAt(points, 2)).toBe(3);
+  });
+
+  it('returns null when nothing is hovered instead of falling back to lap 1', () => {
+    const points = prepareLapHrData(analyzeLaps(makeLaps(3)));
+    expect(lapIndexAt(points, undefined)).toBeNull();
+    expect(lapIndexAt(points, null)).toBeNull();
+    expect(lapIndexAt(points, 9)).toBeNull();
   });
 });

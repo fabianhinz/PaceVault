@@ -9,6 +9,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { formatPaceTick } from '@/lib/formatters.ts';
@@ -40,13 +41,11 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
           zoom.onMouseMove(e);
-          if (compact && props.onActiveTimeChange && e.activeLabel != null)
+          if (props.onActiveTimeChange && e.activeLabel != null)
             props.onActiveTimeChange(Number(e.activeLabel));
         }}
         onMouseUp={zoom.onMouseUp}
-        onMouseLeave={
-          compact && props.onActiveTimeChange ? () => props.onActiveTimeChange?.(null) : undefined
-        }
+        {...chartHoverHandlers(props.onActiveTimeChange)}
       >
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
@@ -66,6 +65,7 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
         />
         <YAxis
           yAxisId="left"
+          width={compact ? chartTheme.compactYAxisWidth : undefined}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
@@ -73,17 +73,7 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
           tickCount={compact ? 3 : undefined}
           tickFormatter={formatPaceTick}
         />
-        <RechartsTooltip
-          contentStyle={chartTheme.tooltip.contentStyle}
-          labelStyle={chartTheme.tooltip.labelStyle}
-          isAnimationActive={chartTheme.tooltip.isAnimationActive}
-          separator={chartTheme.tooltip.separator}
-          labelFormatter={(v) => formatChartTime(Number(v))}
-          formatter={(v: number | undefined, name: string | undefined) => [
-            v !== undefined ? formatPaceTick(v) : '',
-            name ?? '',
-          ]}
-        />
+        <RechartsTooltip {...hoverOnlyTooltip} />
         <Line
           yAxisId="left"
           type="monotone"
@@ -91,7 +81,6 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
           stroke={tokens.chartPace}
           strokeWidth={1.5}
           dot={false}
-          connectNulls
           name={m.ui_chart_series_pace()}
         />
         <Line
@@ -101,7 +90,6 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
           stroke={tokens.chartGap}
           strokeWidth={1.5}
           dot={false}
-          connectNulls
           name={m.ui_chart_series_gap()}
         />
         {zoom.refAreaLeft && zoom.refAreaRight && (

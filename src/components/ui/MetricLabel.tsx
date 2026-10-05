@@ -14,6 +14,7 @@ interface MetricLabelProps {
   showValue?: ReactNode;
   className?: string;
   contextLabel?: string;
+  iconOnly?: boolean;
 }
 
 export const MetricLabel = (props: MetricLabelProps) => {
@@ -30,7 +31,9 @@ export const MetricLabel = (props: MetricLabelProps) => {
     }) === 0;
 
   let labelContent: ReactNode = null;
-  if (size === 'default') {
+  if (props.iconOnly) {
+    labelContent = null;
+  } else if (size === 'default') {
     labelContent = (
       <>
         <Typography variant="subtitle2">{explanation.friendlyName}</Typography>

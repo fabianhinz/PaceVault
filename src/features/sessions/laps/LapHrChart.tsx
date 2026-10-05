@@ -10,7 +10,8 @@ import {
 } from 'recharts';
 import { avgDomain, chartTheme, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
-import type { LapHrPoint } from '@/lib/lapChartData.ts';
+import { hoverOnlyTooltip } from '@/lib/chartHover.ts';
+import { type LapHrPoint, lapIndexAt } from '@/lib/lapChartData.ts';
 import { m } from '@/paraglide/messages.js';
 
 interface LapHrChartProps {
@@ -28,10 +29,15 @@ export const LapHrChart = (props: LapHrChartProps) => {
       <ComposedChart
         data={props.data}
         syncId={compact ? props.syncId : undefined}
+        syncMethod="value"
         onMouseMove={(state) => {
-          props.onActiveLapChange?.(Number(state.activeTooltipIndex ?? 0));
+          props.onActiveLapChange?.(lapIndexAt(props.data, state.activeTooltipIndex));
         }}
         onMouseLeave={() => props.onActiveLapChange?.(null)}
+        onTouchMove={(state) => {
+          props.onActiveLapChange?.(lapIndexAt(props.data, state.activeTooltipIndex));
+        }}
+        onTouchEnd={() => props.onActiveLapChange?.(null)}
       >
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
@@ -49,6 +55,7 @@ export const LapHrChart = (props: LapHrChartProps) => {
         />
         <YAxis
           domain={yDomain}
+          width={compact ? chartTheme.compactYAxisWidth : undefined}
           allowDataOverflow
           tick={chartTheme.tick}
           tickLine={false}
@@ -56,22 +63,7 @@ export const LapHrChart = (props: LapHrChartProps) => {
           tickCount={compact ? 3 : undefined}
           tickFormatter={(v: number) => formatTick(v, compact ? undefined : 'bpm')}
         />
-        <RechartsTooltip
-          contentStyle={chartTheme.tooltip.contentStyle}
-          labelStyle={chartTheme.tooltip.labelStyle}
-          isAnimationActive={chartTheme.tooltip.isAnimationActive}
-          separator={chartTheme.tooltip.separator}
-          cursor={{ fill: `${tokens.accent}14` }}
-          formatter={(
-            _value: number | undefined,
-            _name: string | undefined,
-            entry: { payload?: LapHrPoint },
-          ) => {
-            const p = entry.payload;
-            if (!p) return [`-- bpm`, m.ui_chart_series_avg_hr()];
-            return [`${p.avgHr} bpm (${p.minHr}–${p.maxHr})`, m.ui_chart_series_avg_hr()];
-          }}
-        />
+        <RechartsTooltip {...hoverOnlyTooltip} cursor={{ fill: `${tokens.accent}14` }} />
         <Area
           dataKey="hrRange"
           type="monotone"

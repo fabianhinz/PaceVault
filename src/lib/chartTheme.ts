@@ -59,6 +59,7 @@ export const routeDistanceXAxis: ChartXAxis<'dist'> = {
 
 export const chartTheme = {
   tick: { fill: tokens.textTertiary, fontSize: 11 },
+  compactYAxisWidth: 36,
   axisLine: { stroke: tokens.border },
   grid: { stroke: tokens.border },
   tooltip: {
