@@ -20,8 +20,6 @@ export interface RouteProfile {
   grade: RouteGradePoint[];
 }
 
-/** Cap the series length so huge GPX files stay smooth to render. */
-const MAX_PROFILE_POINTS = 1000;
 /**
  * Grade at a point is the slope across a ~30 m window centered on it —
  * tight enough to keep short steep ramps visible, wide enough to absorb
@@ -73,55 +71,16 @@ const computeGrades = (elevated: ElevatedPoint[]): number[] => {
   return grades;
 };
 
-/**
- * Peak-preserving decimation: bucket the full-resolution points and keep each
- * bucket's steepest point (by |grade|), so a short 14% kicker survives to the
- * display instead of being averaged away by uniform every-nth sampling.
- * First and last points are always kept.
- */
-const selectDisplayIndices = (count: number, grades: number[]): number[] => {
-  if (count <= MAX_PROFILE_POINTS) {
-    return Array.from({ length: count }, (_, i) => i);
-  }
-
-  const bucketSize = count / MAX_PROFILE_POINTS;
-  const indices: number[] = [];
-  for (let b = 0; b < MAX_PROFILE_POINTS; b++) {
-    const from = Math.floor(b * bucketSize);
-    const to = Math.min(Math.floor((b + 1) * bucketSize), count);
-    let best = from;
-    for (let i = from + 1; i < to; i++) {
-      if (Math.abs(grades[i] ?? 0) > Math.abs(grades[best] ?? 0)) {
-        best = i;
-      }
-    }
-    indices.push(best);
-  }
-
-  indices[0] = 0;
-  indices[indices.length - 1] = count - 1;
-  return indices;
-};
-
-/**
- * Elevation and grade series for the route detail charts. Both series come
- * from the same selected points with identical `dist` keys, so the charts
- * stay index-aligned for Recharts tooltip syncing.
- */
 export const buildRouteProfile = (points: RoutePoint[]): RouteProfile => {
   const elevated = points.filter((p): p is ElevatedPoint => p.ele != null);
   const grades = computeGrades(elevated);
-  const indices = selectDisplayIndices(elevated.length, grades);
-
   const elevation: RouteElevationPoint[] = [];
   const grade: RouteGradePoint[] = [];
-  for (const i of indices) {
-    const point = elevated[i];
-    if (!point) continue;
+  elevated.forEach((point, i) => {
     const dist = roundKm(point.dist);
     elevation.push({ dist, elevation: round1(point.ele), lng: point.lng, lat: point.lat });
     grade.push({ dist, grade: round1(grades[i] ?? 0), lng: point.lng, lat: point.lat });
-  }
+  });
 
   return { elevation, grade };
 };

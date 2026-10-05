@@ -2,20 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { Heart, Zap, Gauge, Mountain, Timer, TrendingUp, ArrowUpDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
-import { downsample } from '@/lib/downsample.ts';
-import {
-  prepareHrData,
-  preparePowerData,
-  prepareSpeedData,
-  prepareCadenceData,
-  prepareElevationData,
-  prepareGradeData,
-  preparePaceData,
-  prepareGAPData,
-  buildTimeToGpsLookup,
-  filterTimeSeries,
-  hasSeriesValues,
-} from '@/lib/chartData.ts';
+import { buildSessionChartRows, gpsByX, hasSeriesValues } from '@/lib/chartData.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
 import { indexByX } from '@/lib/chartHover.ts';
@@ -70,23 +57,29 @@ const formatHoverTime = (x: ChartHoverX) => formatChartTime(Number(x));
 export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const isRunning = props.session.sport === 'running';
 
-  const sampled = useMemo(() => downsample(props.records), [props.records]);
-
-  // Time-series data
-  const hrData = useMemo(() => prepareHrData(sampled), [sampled]);
-  const powerData = useMemo(() => preparePowerData(sampled), [sampled]);
-  const speedData = useMemo(() => prepareSpeedData(sampled), [sampled]);
-  const cadenceData = useMemo(() => prepareCadenceData(sampled), [sampled]);
-  const elevationData = useMemo(() => prepareElevationData(sampled), [sampled]);
-  const gradeData = useMemo(() => prepareGradeData(sampled), [sampled]);
-  const paceData = useMemo(() => (isRunning ? preparePaceData(sampled) : []), [sampled, isRunning]);
-  const gapData = useMemo(
-    () => (isRunning && hasSeriesValues(gradeData, 'grade') ? prepareGAPData(sampled) : []),
-    [sampled, isRunning, gradeData],
-  );
-
-  const gpsLookup = useMemo(() => buildTimeToGpsLookup(sampled), [sampled]);
   const extremes = useMemo(() => computeRecordExtremes(props.records), [props.records]);
+
+  // Synced zoom state for compact mode
+  const zoom = useSyncedChartZoom();
+  const zoomRange = zoom.zoomRange;
+
+  const rows = useMemo(
+    () => buildSessionChartRows(props.records, { isRunning }),
+    [props.records, isRunning],
+  );
+  const compactRows = useMemo(
+    () =>
+      zoomRange ? buildSessionChartRows(props.records, { isRunning, range: zoomRange }) : rows,
+    [props.records, isRunning, zoomRange, rows],
+  );
+  const byTime = useMemo(
+    () => new Map([...indexByX(rows, 'time'), ...indexByX(compactRows, 'time')]),
+    [rows, compactRows],
+  );
+  const gpsLookup = useMemo(
+    () => new Map([...gpsByX(rows, 'time'), ...gpsByX(compactRows, 'time')]),
+    [rows, compactRows],
+  );
 
   const onCompactHover = useCallback(
     (time: number | null) => {
@@ -120,54 +113,6 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     [],
   );
 
-  // Synced zoom state for compact mode
-  const zoom = useSyncedChartZoom();
-  const zoomRange = zoom.zoomRange;
-
-  // Filtered data for synced compact zoom
-  const filteredHrData = useMemo(
-    () => (zoomRange ? filterTimeSeries(hrData, zoomRange.from, zoomRange.to) : hrData),
-    [hrData, zoomRange],
-  );
-  const filteredPowerData = useMemo(
-    () => (zoomRange ? filterTimeSeries(powerData, zoomRange.from, zoomRange.to) : powerData),
-    [powerData, zoomRange],
-  );
-  const filteredSpeedData = useMemo(
-    () => (zoomRange ? filterTimeSeries(speedData, zoomRange.from, zoomRange.to) : speedData),
-    [speedData, zoomRange],
-  );
-  const filteredCadenceData = useMemo(
-    () => (zoomRange ? filterTimeSeries(cadenceData, zoomRange.from, zoomRange.to) : cadenceData),
-    [cadenceData, zoomRange],
-  );
-  const filteredElevationData = useMemo(
-    () =>
-      zoomRange ? filterTimeSeries(elevationData, zoomRange.from, zoomRange.to) : elevationData,
-    [elevationData, zoomRange],
-  );
-  const filteredGradeData = useMemo(
-    () => (zoomRange ? filterTimeSeries(gradeData, zoomRange.from, zoomRange.to) : gradeData),
-    [gradeData, zoomRange],
-  );
-  const filteredPaceData = useMemo(
-    () => (zoomRange ? filterTimeSeries(paceData, zoomRange.from, zoomRange.to) : paceData),
-    [paceData, zoomRange],
-  );
-  const filteredGapData = useMemo(
-    () => (zoomRange ? filterTimeSeries(gapData, zoomRange.from, zoomRange.to) : gapData),
-    [gapData, zoomRange],
-  );
-
-  const hrByTime = useMemo(() => indexByX(hrData, 'time'), [hrData]);
-  const powerByTime = useMemo(() => indexByX(powerData, 'time'), [powerData]);
-  const speedByTime = useMemo(() => indexByX(speedData, 'time'), [speedData]);
-  const cadenceByTime = useMemo(() => indexByX(cadenceData, 'time'), [cadenceData]);
-  const elevationByTime = useMemo(() => indexByX(elevationData, 'time'), [elevationData]);
-  const gradeByTime = useMemo(() => indexByX(gradeData, 'time'), [gradeData]);
-  const paceByTime = useMemo(() => indexByX(paceData, 'time'), [paceData]);
-  const gapByTime = useMemo(() => indexByX(gapData, 'time'), [gapData]);
-
   const session = props.session;
   const cadenceIcon = sportIcon[session.sport] ?? sportIcon.running;
   const hoverHandler = (mode: 'compact' | 'expanded') =>
@@ -196,7 +141,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       icon: Heart,
       color: tokens.chartHr,
       metricId: 'avgHr',
-      hasData: hasSeriesValues(hrData, 'hr'),
+      hasData: hasSeriesValues(rows, 'hr'),
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -208,7 +153,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             secondary: `${m.ui_rail_max()} ${railInt(session.maxHr)}`,
           }}
           readingAt={(x) => {
-            const point = hrByTime.get(x);
+            const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.hr),
@@ -219,7 +164,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       ),
       render: (mode) => (
         <HrChart
-          data={mode === 'compact' ? filteredHrData : hrData}
+          data={mode === 'compact' ? compactRows : rows}
           mode={mode}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
@@ -233,7 +178,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       icon: Zap,
       color: tokens.chartPower,
       metricId: 'normalizedPower',
-      hasData: hasSeriesValues(powerData, 'power'),
+      hasData: hasSeriesValues(rows, 'power'),
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -241,7 +186,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           formatX={formatHoverTime}
           rest={powerRest}
           readingAt={(x) => {
-            const point = powerByTime.get(x);
+            const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.power),
@@ -252,7 +197,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       ),
       render: (mode) => (
         <PowerChart
-          data={mode === 'compact' ? filteredPowerData : powerData}
+          data={mode === 'compact' ? compactRows : rows}
           mode={mode}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
@@ -266,7 +211,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       icon: Gauge,
       color: tokens.chartSpeed,
       metricId: 'avgSpeed',
-      hasData: hasSeriesValues(speedData, 'speed'),
+      hasData: hasSeriesValues(rows, 'speed'),
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -278,7 +223,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             secondary: `${m.ui_rail_max()} ${railFixed1(maxSpeedKmh)}`,
           }}
           readingAt={(x) => {
-            const point = speedByTime.get(x);
+            const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railFixed1(point.speed),
@@ -289,7 +234,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       ),
       render: (mode) => (
         <SpeedChart
-          data={mode === 'compact' ? filteredSpeedData : speedData}
+          data={mode === 'compact' ? compactRows : rows}
           mode={mode}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
@@ -303,7 +248,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       icon: Mountain,
       color: tokens.chartElevation,
       metricId: 'elevation',
-      hasData: hasSeriesValues(elevationData, 'elevation'),
+      hasData: hasSeriesValues(rows, 'elevation'),
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -315,7 +260,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             secondary: `${railLoss(session.elevationLoss)} m`,
           }}
           readingAt={(x) => {
-            const point = elevationByTime.get(x);
+            const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.elevation),
@@ -326,7 +271,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       ),
       render: (mode) => (
         <ElevationChart
-          data={mode === 'compact' ? filteredElevationData : elevationData}
+          data={mode === 'compact' ? compactRows : rows}
           xAxis={sessionTimeXAxis}
           mode={mode}
           onActiveXChange={hoverHandler(mode)}
@@ -341,7 +286,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       icon: cadenceIcon,
       color: tokens.chartCadence,
       metricId: 'cadence',
-      hasData: hasSeriesValues(cadenceData, 'cadence'),
+      hasData: hasSeriesValues(rows, 'cadence'),
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -353,7 +298,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             secondary: `${m.ui_rail_max()} ${railInt(extremes.maxCadence)}`,
           }}
           readingAt={(x) => {
-            const point = cadenceByTime.get(x);
+            const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.cadence),
@@ -364,7 +309,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       ),
       render: (mode) => (
         <CadenceChart
-          data={mode === 'compact' ? filteredCadenceData : cadenceData}
+          data={mode === 'compact' ? compactRows : rows}
           mode={mode}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
@@ -377,7 +322,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       title: m.ui_chart_title_grade(),
       icon: TrendingUp,
       color: tokens.chartGrade,
-      hasData: hasSeriesValues(gradeData, 'grade'),
+      hasData: hasSeriesValues(rows, 'grade'),
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -389,7 +334,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             secondary: `${m.ui_rail_min()} ${railSigned1(extremes.minGrade)}`,
           }}
           readingAt={(x) => {
-            const point = gradeByTime.get(x);
+            const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railSigned1(point.grade),
@@ -400,7 +345,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       ),
       render: (mode) => (
         <GradeChart
-          data={mode === 'compact' ? filteredGradeData : gradeData}
+          data={mode === 'compact' ? compactRows : rows}
           xAxis={sessionTimeXAxis}
           mode={mode}
           onActiveXChange={hoverHandler(mode)}
@@ -415,7 +360,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       icon: Timer,
       color: tokens.chartPace,
       metricId: 'avgPace',
-      hasData: hasSeriesValues(paceData, 'pace'),
+      hasData: hasSeriesValues(rows, 'pace'),
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -427,7 +372,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             secondary: `${m.ui_rail_best()} ${railPaceFromSecPerKm(extremes.bestPaceSecPerKm)}`,
           }}
           readingAt={(x) => {
-            const point = paceByTime.get(x);
+            const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railPace(point.pace),
@@ -438,7 +383,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       ),
       render: (mode) => (
         <PaceChart
-          data={mode === 'compact' ? filteredPaceData : paceData}
+          data={mode === 'compact' ? compactRows : rows}
           mode={mode}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
@@ -452,7 +397,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       icon: ArrowUpDown,
       color: tokens.chartGap,
       metricId: 'gradeAdjustedPace',
-      hasData: hasSeriesValues(gapData, 'gap'),
+      hasData: hasSeriesValues(rows, 'gap'),
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -460,7 +405,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           formatX={formatHoverTime}
           rest={{ header: m.ui_rail_avg(), value: railPaceFromSecPerKm(session.gap) }}
           readingAt={(x) => {
-            const point = gapByTime.get(x);
+            const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railPace(point.gap),
@@ -471,7 +416,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       ),
       render: (mode) => (
         <GradeAdjustedPaceChart
-          data={mode === 'compact' ? filteredGapData : gapData}
+          data={mode === 'compact' ? compactRows : rows}
           mode={mode}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}

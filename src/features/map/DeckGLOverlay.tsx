@@ -349,7 +349,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   }, [geoPosition, geoAccuracy]);
 
   const overlay = useControl<MapboxOverlay>(
-    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS }),
+    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS, interleaved: true }),
   );
 
   overlay.setProps({

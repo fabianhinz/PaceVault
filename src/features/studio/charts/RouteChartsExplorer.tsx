@@ -13,7 +13,7 @@ import { summarizeValues } from '@/lib/seriesSummary.ts';
 import { railGain, railInt, railLoss, railSigned1 } from '@/lib/railFormat.ts';
 import type { MetricId } from '@/lib/explanations.ts';
 import { SeriesRail } from '@/components/charts/ChartRail.tsx';
-import { filterSeriesByKey } from '@/lib/chartData.ts';
+import { buildRouteChartRows, gpsByX } from '@/lib/chartData.ts';
 import { routeDistanceXAxis } from '@/lib/chartTheme.ts';
 import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
 import { tokens } from '@/lib/tokens.ts';
@@ -46,13 +46,23 @@ const formatHoverDist = (x: ChartHoverX) => routeDistanceXAxis.tickFormatter(Num
 
 export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
   const profile = useMemo(() => buildRouteProfile(props.points), [props.points]);
-  const elevationData = profile.elevation;
-  const gradeData = profile.grade;
 
-  // The series' dist values double as lookup keys back to the GPS coordinate.
-  const gpsByDist = useMemo(
-    () => new Map(elevationData.map((p) => [p.dist, [p.lng, p.lat] as [number, number]])),
-    [elevationData],
+  // Synced zoom state for compact mode
+  const zoom = useSyncedChartZoom();
+  const zoomRange = zoom.zoomRange;
+
+  const rows = useMemo(() => buildRouteChartRows(profile), [profile]);
+  const compactRows = useMemo(
+    () => (zoomRange ? buildRouteChartRows(profile, zoomRange) : rows),
+    [profile, zoomRange, rows],
+  );
+  const byDist = useMemo(
+    () => new Map([...indexByX(rows, 'dist'), ...indexByX(compactRows, 'dist')]),
+    [rows, compactRows],
+  );
+  const gpsLookup = useMemo(
+    () => new Map([...gpsByX(rows, 'dist'), ...gpsByX(compactRows, 'dist')]),
+    [rows, compactRows],
   );
 
   const onCompactHover = useCallback(
@@ -63,12 +73,12 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
         return;
       }
       useChartHoverStore.getState().setChartHover(HOVER_GROUP, dist);
-      const point = gpsByDist.get(dist);
+      const point = gpsLookup.get(dist);
       if (point) {
         useMapFocusStore.getState().setHoveredPoint(point);
       }
     },
-    [gpsByDist],
+    [gpsLookup],
   );
 
   const onExpandedHover = useCallback((dist: number | null) => {
@@ -87,26 +97,10 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
     [],
   );
 
-  // Synced zoom state for compact mode
-  const zoom = useSyncedChartZoom();
-  const zoomRange = zoom.zoomRange;
-
-  const filteredElevationData = useMemo(
-    () =>
-      zoomRange
-        ? filterSeriesByKey(elevationData, 'dist', zoomRange.from, zoomRange.to)
-        : elevationData,
-    [elevationData, zoomRange],
+  const gradeSummary = useMemo(
+    () => summarizeValues(profile.grade.map((p) => p.grade)),
+    [profile.grade],
   );
-  const filteredGradeData = useMemo(
-    () =>
-      zoomRange ? filterSeriesByKey(gradeData, 'dist', zoomRange.from, zoomRange.to) : gradeData,
-    [gradeData, zoomRange],
-  );
-
-  const elevationByDist = useMemo(() => indexByX(elevationData, 'dist'), [elevationData]);
-  const gradeByDist = useMemo(() => indexByX(gradeData, 'dist'), [gradeData]);
-  const gradeSummary = useMemo(() => summarizeValues(gradeData.map((p) => p.grade)), [gradeData]);
   const hoverHandler = (mode: 'compact' | 'expanded') =>
     mode === 'compact' ? onCompactHover : onExpandedHover;
   const elevation = props.elevation;
@@ -118,7 +112,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       icon: Mountain,
       color: tokens.chartElevation,
       metricId: 'elevation',
-      hasData: elevationData.length > 1,
+      hasData: profile.elevation.length > 1,
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -130,7 +124,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
             secondary: `${railLoss(elevation?.loss)} m`,
           }}
           readingAt={(x) => {
-            const point = elevationByDist.get(x);
+            const point = byDist.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.elevation),
@@ -141,7 +135,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       ),
       render: (mode) => (
         <ElevationChart
-          data={mode === 'compact' ? filteredElevationData : elevationData}
+          data={mode === 'compact' ? compactRows : rows}
           xAxis={routeDistanceXAxis}
           mode={mode}
           onActiveXChange={hoverHandler(mode)}
@@ -155,7 +149,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       title: m.ui_chart_title_grade(),
       icon: TrendingUp,
       color: tokens.chartGrade,
-      hasData: gradeData.length > 1,
+      hasData: profile.grade.length > 1,
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -167,7 +161,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
             secondary: `${m.ui_rail_min()} ${railSigned1(gradeSummary.min)}`,
           }}
           readingAt={(x) => {
-            const point = gradeByDist.get(x);
+            const point = byDist.get(x);
             if (!point) return undefined;
             return {
               value: railSigned1(point.grade),
@@ -178,7 +172,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       ),
       render: (mode) => (
         <GradeChart
-          data={mode === 'compact' ? filteredGradeData : gradeData}
+          data={mode === 'compact' ? compactRows : rows}
           xAxis={routeDistanceXAxis}
           mode={mode}
           onActiveXChange={hoverHandler(mode)}

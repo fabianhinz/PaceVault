@@ -1,15 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { downsample } from '@/lib/downsample.ts';
-import {
-  prepareHrData,
-  preparePowerData,
-  prepareSpeedData,
-  prepareCadenceData,
-  prepareElevationData,
-  prepareGradeData,
-  preparePaceData,
-  prepareGAPData,
-} from '@/lib/chartData.ts';
+import { buildSessionChartRows } from '@/lib/chartData.ts';
+import { TARGET_ROWS } from '@/lib/chartBuckets.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { makeCyclingRecords } from '@tests/factories/records.ts';
 
@@ -29,29 +20,18 @@ const makeLongRideWithStops = (): SessionRecord[] =>
     return r;
   });
 
-const PREPARERS = [
-  prepareHrData,
-  preparePowerData,
-  prepareSpeedData,
-  prepareCadenceData,
-  prepareElevationData,
-  prepareGradeData,
-  preparePaceData,
-  prepareGAPData,
-];
-
-describe('chart series of a long session with many recorded zeros', () => {
-  it('every series has one point per record, so synced charts stay index-aligned', () => {
-    const records = makeLongRideWithStops();
-    for (const input of [records, downsample(records)]) {
-      const lengths = PREPARERS.map((prepare) => prepare(input).length);
-      expect(new Set(lengths)).toEqual(new Set([input.length]));
-    }
+describe('chart rows of a long session with many recorded zeros', () => {
+  it('stays within the row budget on one shared grid', () => {
+    const rows = buildSessionChartRows(makeLongRideWithStops(), { isRunning: false });
+    expect(rows.length).toBeLessThanOrEqual(TARGET_ROWS + 2);
+    expect(rows.every((r) => 'hr' in r && 'power' in r && 'speed' in r)).toBe(true);
   });
 
-  it('keeps recorded zeros and maps only missing values to null', () => {
-    const power = preparePowerData(makeLongRideWithStops());
-    expect(power.filter((p) => p.power === null)).toHaveLength(MISSING_POWER);
-    expect(power.filter((p) => p.power === 0)).toHaveLength(6 * 20 * 60);
+  it('keeps the recorded zeros of the stops and the true power peak', () => {
+    const records = makeLongRideWithStops();
+    const rows = buildSessionChartRows(records, { isRunning: false });
+    const recordedMax = Math.max(...records.map((r) => r.power ?? -Infinity));
+    expect(rows.some((r) => r.power === 0)).toBe(true);
+    expect(Math.max(...rows.map((r) => r.power ?? -Infinity))).toBe(recordedMax);
   });
 });

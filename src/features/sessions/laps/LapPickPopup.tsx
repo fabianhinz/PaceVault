@@ -17,12 +17,7 @@ import { useExpandCard } from '@/lib/hooks/useExpandCard.ts';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { filterRecordsByLap } from '@/lib/laps.ts';
-import {
-  prepareHrData,
-  preparePowerData,
-  prepareSpeedData,
-  preparePaceData,
-} from '@/lib/chartData.ts';
+import { buildLapChartRows } from '@/lib/chartData.ts';
 import {
   formatLapTime,
   formatDistance,
@@ -56,37 +51,6 @@ interface LapPickPopupProps {
   sport: Sport;
   onClose: () => void;
 }
-
-interface LapChartPoint {
-  time: number;
-  hr?: number | null;
-  pace?: number | null;
-  speed?: number | null;
-  power?: number | null;
-}
-
-const buildLapChartData = (lapRecords: SessionRecord[], isRunning: boolean): LapChartPoint[] => {
-  if (lapRecords.length === 0) return [];
-
-  const byTime = new Map<number, LapChartPoint>();
-  const ensure = (t: number): LapChartPoint => {
-    const existing = byTime.get(t);
-    if (existing) return existing;
-    const point: LapChartPoint = { time: t };
-    byTime.set(t, point);
-    return point;
-  };
-
-  for (const p of prepareHrData(lapRecords)) ensure(p.time).hr = p.hr;
-  for (const p of preparePowerData(lapRecords)) ensure(p.time).power = p.power;
-  if (isRunning) {
-    for (const p of preparePaceData(lapRecords)) ensure(p.time).pace = p.pace;
-  } else {
-    for (const p of prepareSpeedData(lapRecords)) ensure(p.time).speed = p.speed;
-  }
-
-  return [...byTime.values()].sort((a, b) => a.time - b.time);
-};
 
 /**
  * Gets lap records for the chart. For device laps uses time-based filtering,
@@ -143,7 +107,7 @@ export const LapPickPopup = (props: LapPickPopupProps) => {
       props.laps,
       activeSplitDistance,
     );
-    return buildLapChartData(lapRecords, isRunning);
+    return buildLapChartRows(lapRecords, isRunning);
   }, [clickedLapIndex, props.records, props.laps, activeSplitDistance, isRunning]);
 
   const chartByTime = useMemo(() => indexByX(chartData, 'time'), [chartData]);
