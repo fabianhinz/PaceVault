@@ -432,7 +432,6 @@
   "ui_laps_power_chart_title": "Power per Lap",
   "ui_laps_pace_chart_title": "Pace per Lap",
   "ui_laps_speed_chart_title": "Speed per Lap",
-  "ui_lap_popup_title": "Lap {current} of {total}",
   "ui_laps_table_title": "Lap Details",
   "ui_laps_col_distance": "Distance",
   "ui_laps_col_time": "Time",

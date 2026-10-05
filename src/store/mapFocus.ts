@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { SessionLap, SessionRecord, Sport } from '@/packages/engine/types.ts';
-import type { LapAnalysis, LapRecordEnrichment } from '@/lib/laps.ts';
+import type { Sport } from '@/packages/engine/types.ts';
 import type { LapMarker } from '@/lib/lapMarkers.ts';
 import type { ZoneColorMode } from '@/features/map/zoneColoredPath.ts';
 
@@ -14,22 +13,9 @@ interface MapFocusState {
   setFocusedTripSessions: (ids: string[]) => void;
   hoveredStudioRouteId: string | null;
   setHoveredStudioRoute: (id: string | null) => void;
-  focusedLaps: SessionLap[];
   focusedSport: Sport | null;
-  focusedRecords: SessionRecord[];
-  setFocusedLaps: (laps: SessionLap[], sport: Sport, records: SessionRecord[]) => void;
-  clearFocusedLaps: () => void;
-  activeLapAnalysis: LapAnalysis[];
-  activeLapEnrichments: LapRecordEnrichment[];
-  activeSplitDistance: number | null;
-  setActiveLapData: (
-    analysis: LapAnalysis[],
-    enrichments: LapRecordEnrichment[],
-    splitDistance: number | null,
-  ) => void;
-  clickedLapIndex: number | null;
-  setClickedLapIndex: (index: number) => void;
-  clearClickedLapIndex: () => void;
+  setFocusedSport: (sport: Sport) => void;
+  clearFocusedSport: () => void;
   hoveredPoint: [number, number] | null;
   setHoveredPoint: (point: [number, number]) => void;
   clearHoveredPoint: () => void;
@@ -53,16 +39,10 @@ export const useMapFocusStore = create<MapFocusState>()(
       if (id === null) {
         set({
           openedSessionId: null,
-          focusedLaps: [],
           focusedSport: null,
-          focusedRecords: [],
           hoveredPoint: null,
           lapMarkers: [],
           hoveredLapIndex: null,
-          activeLapAnalysis: [],
-          activeLapEnrichments: [],
-          activeSplitDistance: null,
-          clickedLapIndex: null,
           zoneColorMode: null,
         });
       } else {
@@ -75,33 +55,9 @@ export const useMapFocusStore = create<MapFocusState>()(
     setFocusedTripSessions: (ids) => set({ focusedTripSessionIds: ids }),
     hoveredStudioRouteId: null,
     setHoveredStudioRoute: (id) => set({ hoveredStudioRouteId: id }),
-    focusedLaps: [],
     focusedSport: null,
-    focusedRecords: [],
-    setFocusedLaps: (laps, sport, records) =>
-      set({ focusedLaps: laps, focusedSport: sport, focusedRecords: records }),
-    clearFocusedLaps: () =>
-      set({
-        focusedLaps: [],
-        focusedSport: null,
-        focusedRecords: [],
-        activeLapAnalysis: [],
-        activeLapEnrichments: [],
-        activeSplitDistance: null,
-        clickedLapIndex: null,
-      }),
-    activeLapAnalysis: [],
-    activeLapEnrichments: [],
-    activeSplitDistance: null,
-    setActiveLapData: (analysis, enrichments, splitDistance) =>
-      set({
-        activeLapAnalysis: analysis,
-        activeLapEnrichments: enrichments,
-        activeSplitDistance: splitDistance,
-      }),
-    clickedLapIndex: null,
-    setClickedLapIndex: (index) => set({ clickedLapIndex: index }),
-    clearClickedLapIndex: () => set({ clickedLapIndex: null }),
+    setFocusedSport: (sport) => set({ focusedSport: sport }),
+    clearFocusedSport: () => set({ focusedSport: null }),
     hoveredPoint: null,
     setHoveredPoint: (point) => set({ hoveredPoint: point }),
     clearHoveredPoint: () => set({ hoveredPoint: null }),

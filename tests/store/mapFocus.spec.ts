@@ -1,24 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import type { SessionLap } from '@/packages/engine/types.ts';
-
-const makeLap = (overrides: Partial<SessionLap> = {}): SessionLap => ({
-  lapIndex: 0,
-  startTime: 0,
-  endTime: 300,
-  totalElapsedTime: 300,
-  totalTimerTime: 300,
-  distance: 1000,
-  avgSpeed: 3.33,
-  ...overrides,
-});
 
 describe('useMapFocusStore', () => {
   beforeEach(() => {
     useMapFocusStore.setState({
       openedSessionId: null,
       hoveredSessionId: null,
-      focusedLaps: [],
       focusedSport: null,
       hoveredPoint: null,
       pickCircle: null,
@@ -56,42 +43,20 @@ describe('useMapFocusStore', () => {
     expect(useMapFocusStore.getState().hoveredSessionId).toBeNull();
   });
 
-  it('defaults focusedLaps to empty array', () => {
-    expect(useMapFocusStore.getState().focusedLaps).toEqual([]);
-  });
-
   it('defaults focusedSport to null', () => {
     expect(useMapFocusStore.getState().focusedSport).toBeNull();
   });
 
-  it('setFocusedLaps stores laps and sport', () => {
-    const laps = [makeLap({ lapIndex: 0 }), makeLap({ lapIndex: 1 })];
-    useMapFocusStore.getState().setFocusedLaps(laps, 'running', []);
-    expect(useMapFocusStore.getState().focusedLaps).toEqual(laps);
-    expect(useMapFocusStore.getState().focusedSport).toBe('running');
-  });
-
-  it('clearFocusedLaps resets laps and sport', () => {
-    useMapFocusStore.getState().setFocusedLaps([makeLap()], 'cycling', []);
-    useMapFocusStore.getState().clearFocusedLaps();
-    expect(useMapFocusStore.getState().focusedLaps).toEqual([]);
-    expect(useMapFocusStore.getState().focusedSport).toBeNull();
-  });
-
-  it('setOpenedSession(null) also clears laps and sport', () => {
+  it('setOpenedSession(null) also clears the focused sport', () => {
     useMapFocusStore.getState().setOpenedSession('abc-123');
-    useMapFocusStore.getState().setFocusedLaps([makeLap()], 'running', []);
+    useMapFocusStore.getState().setFocusedSport('running');
     useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapFocusStore.getState().openedSessionId).toBeNull();
-    expect(useMapFocusStore.getState().focusedLaps).toEqual([]);
     expect(useMapFocusStore.getState().focusedSport).toBeNull();
   });
 
-  it('setOpenedSession(id) preserves existing laps', () => {
-    const laps = [makeLap()];
-    useMapFocusStore.getState().setFocusedLaps(laps, 'cycling', []);
+  it('setOpenedSession(id) keeps the focused sport', () => {
+    useMapFocusStore.getState().setFocusedSport('cycling');
     useMapFocusStore.getState().setOpenedSession('new-id');
-    expect(useMapFocusStore.getState().focusedLaps).toEqual(laps);
     expect(useMapFocusStore.getState().focusedSport).toBe('cycling');
   });
 

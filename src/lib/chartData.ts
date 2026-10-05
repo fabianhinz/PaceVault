@@ -122,25 +122,6 @@ export const gpsByX = <K extends string>(
   return map;
 };
 
-export const buildLapChartRows = (records: SessionRecord[], isRunning: boolean) =>
-  bucketSeries(records, {
-    xKey: 'time',
-    x: (r) => r.timestamp / 60,
-    channels: {
-      hr: (r) => r.hr,
-      power: (r) => r.power,
-      pace: (r) => {
-        if (!isRunning) return undefined;
-        return speedToPace(r.speed);
-      },
-      speed: (r) => {
-        if (isRunning || r.speed === undefined) return undefined;
-        return r.speed * 3.6;
-      },
-    },
-    targetRows: TARGET_ROWS,
-  });
-
 export const buildRouteChartRows = (profile: RouteProfile, range?: { from: number; to: number }) =>
   bucketSeries(profile.elevation, {
     xKey: 'dist',

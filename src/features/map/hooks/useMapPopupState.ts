@@ -4,54 +4,26 @@ import { pickBoundsFromCorners, filterTracksByPickBounds } from '@/features/map/
 import type { MapRef } from 'react-map-gl/maplibre';
 import type { MapTrack } from './useMapTracks.ts';
 import type { PopupInfo } from '@/features/sessions/SessionsPickPopup.tsx';
-import type { LapPopupInfo } from '@/features/sessions/laps/LapPickPopup.tsx';
 import { decodeCached, PICK_RADIUS } from './types.ts';
-import { findLapIndexAtCoordinate, findDynamicLapIndexAtCoordinate } from '@/lib/laps.ts';
 import type { PickingInfo } from '@deck.gl/core';
 
 export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks: MapTrack[]) => {
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const focusedLaps = useMapFocusStore((s) => s.focusedLaps);
 
   const [popup, setPopup] = useState<PopupInfo | null>(null);
-  const [lapPopup, setLapPopup] = useState<LapPopupInfo | null>(null);
   const [hoveringTrack, setHoveringTrack] = useState(false);
 
-  const interactive = !popup && !lapPopup;
+  const interactive = !popup;
 
   const onClick = useCallback(
     (info: PickingInfo) => {
       const stopPropagation = false;
 
-      if (!info.object || !mapRef.current) {
+      if (!info.object || !mapRef.current || openedSessionId) {
         return stopPropagation;
       }
 
       const center = mapRef.current.unproject([info.x, info.y]);
-
-      if (openedSessionId && focusedLaps.length > 0) {
-        useMapFocusStore.getState().setPickCircle([center.lng, center.lat]);
-        if (info.coordinate && info.coordinate[0] != null && info.coordinate[1] != null) {
-          const state = useMapFocusStore.getState();
-          const coord: [number, number] = [info.coordinate[0], info.coordinate[1]];
-          let lapIndex: number | undefined;
-          if (state.activeSplitDistance != null) {
-            lapIndex = findDynamicLapIndexAtCoordinate(
-              coord,
-              state.focusedRecords,
-              state.activeSplitDistance,
-              state.activeLapAnalysis.length,
-            );
-          } else {
-            lapIndex = findLapIndexAtCoordinate(coord, state.focusedRecords, focusedLaps);
-          }
-          if (lapIndex != null) {
-            state.setClickedLapIndex(lapIndex);
-          }
-        }
-        setLapPopup({ x: info.x, y: info.y });
-        return stopPropagation;
-      }
 
       const topLeft = mapRef.current.unproject([info.x - PICK_RADIUS, info.y - PICK_RADIUS]);
       const bottomRight = mapRef.current.unproject([info.x + PICK_RADIUS, info.y + PICK_RADIUS]);
@@ -76,23 +48,21 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
 
       return stopPropagation;
     },
-    [tracks, openedSessionId, focusedLaps, mapRef],
+    [tracks, openedSessionId, mapRef],
   );
 
   const closePopup = useCallback(() => {
     setPopup(null);
-    setLapPopup(null);
-    const state = useMapFocusStore.getState();
-    state.clearPickCircle();
-    state.clearClickedLapIndex();
+    useMapFocusStore.getState().clearPickCircle();
   }, []);
 
   const onHover = useCallback(
     (info: PickingInfo) => {
       const stopPropagation = false;
-      setHoveringTrack(!!info.object);
-      if (!popup && !lapPopup) {
+      setHoveringTrack(!!info.object && !openedSessionId);
+      if (!popup) {
         if (
+          !openedSessionId &&
           info.object &&
           info.coordinate &&
           info.coordinate[0] != null &&
@@ -106,17 +76,16 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
 
       return stopPropagation;
     },
-    [popup, lapPopup],
+    [popup, openedSessionId],
   );
 
   const onPointerLeave = useCallback(() => {
     setHoveringTrack(false);
-    if (!popup && !lapPopup) useMapFocusStore.getState().clearPickCircle();
-  }, [popup, lapPopup]);
+    if (!popup) useMapFocusStore.getState().clearPickCircle();
+  }, [popup]);
 
   return {
     popup,
-    lapPopup,
     hoveringTrack,
     interactive,
     onClick,

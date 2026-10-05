@@ -73,12 +73,6 @@ export const LapsTab = (props: LapsTabProps) => {
   const hrData = useMemo(() => prepareLapHrData(analysis, enrichments), [analysis, enrichments]);
   const powerData = useMemo(() => prepareLapPowerData(enrichments), [enrichments]);
 
-  useEffect(() => {
-    useMapFocusStore
-      .getState()
-      .setActiveLapData(analysis, enrichments, isDevice ? null : splitDistance);
-  }, [analysis, enrichments, isDevice, splitDistance]);
-
   const handleActiveLapChange = useCallback((lapIndex: number | null) => {
     if (lapIndex != null) {
       useMapFocusStore.getState().setHoveredLapIndex(lapIndex);

@@ -432,7 +432,6 @@
   "ui_laps_power_chart_title": "Leistung pro Runde",
   "ui_laps_pace_chart_title": "Tempo pro Runde",
   "ui_laps_speed_chart_title": "Geschwindigkeit pro Runde",
-  "ui_lap_popup_title": "Runde {current} von {total}",
   "ui_laps_table_title": "Rundendetails",
   "ui_laps_col_distance": "Distanz",
   "ui_laps_col_time": "Zeit",

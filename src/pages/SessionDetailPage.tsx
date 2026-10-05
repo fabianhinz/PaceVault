@@ -3,7 +3,6 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { m } from '@/paraglide/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { analyzeLaps, enrichAllLaps } from '@/lib/laps.ts';
 import { getSessionRecords, getSessionLaps } from '@/lib/indexeddb.ts';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.tsx';
@@ -45,15 +44,12 @@ export const SessionDetailPage = () => {
 
   useEffect(() => {
     if (laps.length > 0 && session) {
-      useMapFocusStore.getState().setFocusedLaps(laps, session.sport, records);
-      const deviceAnalysis = analyzeLaps(laps);
-      const deviceEnrichments = enrichAllLaps(laps, records);
-      useMapFocusStore.getState().setActiveLapData(deviceAnalysis, deviceEnrichments, null);
+      useMapFocusStore.getState().setFocusedSport(session.sport);
     }
     return () => {
-      useMapFocusStore.getState().clearFocusedLaps();
+      useMapFocusStore.getState().clearFocusedSport();
     };
-  }, [laps, records, session]);
+  }, [laps, session]);
 
   if (!session) {
     return (

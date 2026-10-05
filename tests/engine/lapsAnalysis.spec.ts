@@ -6,8 +6,6 @@ import {
   filterRecordsByLap,
   enrichLapFromRecords,
   enrichAllLaps,
-  findLapIndexAtCoordinate,
-  findDynamicLapIndexAtCoordinate,
 } from '@/lib/laps.ts';
 import type { SessionLap, SessionRecord } from '@/packages/engine/types.ts';
 import { makeLaps, makeCyclingRecords, makeRunningRecords } from '@tests/factories/records.ts';
@@ -423,107 +421,5 @@ describe('enrichAllLaps', () => {
   it('returns empty for empty records', () => {
     const laps = makeLaps(3);
     expect(enrichAllLaps(laps, [])).toHaveLength(0);
-  });
-});
-
-describe('findLapIndexAtCoordinate', () => {
-  const baseLaps: SessionLap[] = [
-    makeLap({ lapIndex: 0, startTime: 0, endTime: 300_000 }),
-    makeLap({ lapIndex: 1, startTime: 300_000, endTime: 600_000 }),
-    makeLap({ lapIndex: 2, startTime: 600_000, endTime: 900_000 }),
-  ];
-
-  const makeGpsRecord = (timestamp: number, lat: number, lng: number): SessionRecord => ({
-    timestamp,
-    lat,
-    lng,
-  });
-
-  it('returns undefined for empty laps', () => {
-    const records = [makeGpsRecord(10, 48.0, 11.0)];
-    expect(findLapIndexAtCoordinate([11.0, 48.0], records, [])).toBeUndefined();
-  });
-
-  it('returns undefined for empty records', () => {
-    expect(findLapIndexAtCoordinate([11.0, 48.0], [], baseLaps)).toBeUndefined();
-  });
-
-  it('returns undefined when records have no GPS data', () => {
-    const records: SessionRecord[] = [{ timestamp: 10 }, { timestamp: 100 }];
-    expect(findLapIndexAtCoordinate([11.0, 48.0], records, baseLaps)).toBeUndefined();
-  });
-
-  it('finds the correct lap for a coordinate near a record in lap 0', () => {
-    const records = [
-      makeGpsRecord(50, 48.1, 11.1), // lap 0 (0–300s)
-      makeGpsRecord(350, 48.2, 11.2), // lap 1 (300–600s)
-      makeGpsRecord(650, 48.3, 11.3), // lap 2 (600–900s)
-    ];
-    // Click near first record
-    expect(findLapIndexAtCoordinate([11.1001, 48.1001], records, baseLaps)).toBe(0);
-  });
-
-  it('finds the correct lap for a coordinate near a record in lap 1', () => {
-    const records = [
-      makeGpsRecord(50, 48.1, 11.1),
-      makeGpsRecord(350, 48.2, 11.2),
-      makeGpsRecord(650, 48.3, 11.3),
-    ];
-    expect(findLapIndexAtCoordinate([11.2001, 48.2001], records, baseLaps)).toBe(1);
-  });
-
-  it('returns last lap index as fallback when record exceeds lap bounds', () => {
-    const records = [makeGpsRecord(950, 48.1, 11.1)]; // beyond all lap end times
-    expect(findLapIndexAtCoordinate([11.1, 48.1], records, baseLaps)).toBe(2);
-  });
-});
-
-describe('findDynamicLapIndexAtCoordinate', () => {
-  const makeDistRecord = (
-    timestamp: number,
-    lat: number,
-    lng: number,
-    distance: number,
-  ): SessionRecord => ({
-    timestamp,
-    lat,
-    lng,
-    distance,
-  });
-
-  it('returns undefined for empty records', () => {
-    expect(findDynamicLapIndexAtCoordinate([11.0, 48.0], [], 1000, 3)).toBeUndefined();
-  });
-
-  it('returns undefined for zero split distance', () => {
-    const records = [makeDistRecord(10, 48.0, 11.0, 500)];
-    expect(findDynamicLapIndexAtCoordinate([11.0, 48.0], records, 0, 3)).toBeUndefined();
-  });
-
-  it('returns undefined when closest record has no distance', () => {
-    const records: SessionRecord[] = [{ timestamp: 10, lat: 48.0, lng: 11.0 }];
-    expect(findDynamicLapIndexAtCoordinate([11.0, 48.0], records, 1000, 3)).toBeUndefined();
-  });
-
-  it('maps coordinate to correct dynamic lap by distance', () => {
-    const records = [
-      makeDistRecord(0, 48.1, 11.1, 0),
-      makeDistRecord(100, 48.2, 11.2, 500),
-      makeDistRecord(200, 48.3, 11.3, 1200), // lap 1 (1000–2000m)
-      makeDistRecord(300, 48.4, 11.4, 2500), // lap 2 (2000–3000m)
-    ];
-    // Click near record at 1200m → should be lap 1
-    expect(findDynamicLapIndexAtCoordinate([11.3001, 48.3001], records, 1000, 3)).toBe(1);
-  });
-
-  it('clamps to last lap when distance exceeds total', () => {
-    const records = [makeDistRecord(0, 48.1, 11.1, 0), makeDistRecord(100, 48.2, 11.2, 5000)];
-    // 5000m with 1000m splits → index 5, but only 3 laps → clamp to 2
-    expect(findDynamicLapIndexAtCoordinate([11.2, 48.2], records, 1000, 3)).toBe(2);
-  });
-
-  it('returns lap 0 for record at the start', () => {
-    const records = [makeDistRecord(0, 48.1, 11.1, 0)];
-    expect(findDynamicLapIndexAtCoordinate([11.1, 48.1], records, 1000, 5)).toBe(0);
   });
 });
