@@ -7,6 +7,7 @@ import { useSessionDetailPath } from './hooks/useSessionDetailPath.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
 import {
   ADDITIVE_BLEND,
+  studioRouteModifiers,
   geoAccuracyFill,
   geoAccuracyLine,
   geoDotFill,
@@ -161,9 +162,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       return null;
     }
 
-    // Same highlight pattern as the session tracks: translucent by default,
-    // full opacity + wider stroke for the hovered route or the one whose
-    // detail page is open, everything else hidden while a route is hovered.
     const highlightedRouteId = hoveredStudioRouteId ?? studioTracks.focusedRouteId;
 
     return new PathLayer<(typeof studioSegments)[number]>({
@@ -171,18 +169,16 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       data: studioSegments,
       getPath: (d) => decodeCached(`studio-${d.routeId}-${d.segIndex}`, d.encodedPolyline),
       getColor: (d) => {
-        let alpha = trackModifiers.alpha.default;
+        let alpha = studioRouteModifiers.alpha.default;
         if (hoveredStudioRouteId && hoveredStudioRouteId !== d.routeId) {
-          alpha = 0;
-        } else if (highlightedRouteId === d.routeId) {
-          alpha = trackModifiers.alpha.highlighted;
+          alpha = studioRouteModifiers.alpha.hidden;
         }
         return [d.color[0], d.color[1], d.color[2], alpha];
       },
       getWidth: (d) =>
         d.routeId === highlightedRouteId
-          ? trackModifiers.width.highlighted
-          : trackModifiers.width.default,
+          ? studioRouteModifiers.width.highlighted
+          : studioRouteModifiers.width.default,
       widthMinPixels: 1,
       jointRounded: true,
       capRounded: true,
@@ -197,7 +193,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
         getWidth: 300,
         getColor: 300,
       },
-      parameters: ADDITIVE_BLEND,
       // Without the shared click/hover handlers the pickable flag does nothing —
       // deck routes picks through per-layer handlers, and onHover is what lights
       // up the pick circle on the track.
