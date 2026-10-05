@@ -41,12 +41,6 @@ type GroupBy = 'day' | 'week' | 'month';
 
 const HOVER_GROUP = 'dashboard-load';
 
-const avgPerBucketLabels: Record<GroupBy, () => string> = {
-  day: m.ui_rail_avg_per_day,
-  week: m.ui_rail_avg_per_week,
-  month: m.ui_rail_avg_per_month,
-};
-
 const sportColors: Record<Sport, string> = {
   running: tokens.sportRunning,
   cycling: tokens.sportCycling,
@@ -159,7 +153,6 @@ export const LoadChart = () => {
   if (groupedData.length > 0) {
     avgPerBucket = tssSummary.total / groupedData.length;
   }
-  const avgLabel = avgPerBucketLabels[groupBy]();
 
   const onHover = useCallback((date: string | null) => {
     if (date == null) {
@@ -196,12 +189,15 @@ export const LoadChart = () => {
       rest={{
         header: m.ui_rail_total(),
         value: railInt(tssSummary.total),
-        secondary: `${avgLabel} ${railInt(avgPerBucket)}`,
+        secondary: `${m.ui_rail_avg()} ${railInt(avgPerBucket)}`,
       }}
       readingAt={(x) => {
         const point = groupedByDate.get(x);
         if (!point) return undefined;
-        return { value: railInt(point.tss) };
+        return {
+          value: railInt(point.tss),
+          secondary: `${m.ui_rail_avg()} ${railInt(avgPerBucket)}`,
+        };
       }}
     />
   );

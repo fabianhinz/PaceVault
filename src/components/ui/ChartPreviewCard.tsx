@@ -65,7 +65,7 @@ export const ChartPreviewCard = (props: ChartPreviewCardProps) => {
       <div
         className={cn(
           expandCard.isExpanded ? 'flex-1 min-h-0' : `${props.compactHeight ?? 'h-[140px]'}`,
-          props.rail !== undefined && 'grid grid-cols-[84px_minmax(0,1fr)] gap-3',
+          props.rail !== undefined && 'grid grid-cols-[88px_minmax(0,1fr)] gap-3',
         )}
       >
         {props.rail}
