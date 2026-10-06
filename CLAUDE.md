@@ -71,6 +71,8 @@ Specific guidelines for features, testing, and state management are located in t
 
 > **Plan first, then build.** Create a new branch for every feature or bug fix.
 
+For a UI change without a settled design, first run the `explore-ui` skill (`.claude/skills/explore-ui/SKILL.md`): research and mockup rounds that end in the plan below.
+
 1. **Plan**: Write a plan in `./plans/<feature-name>.md` detailing context, approach, files to modify, and verification steps. Review with the user before writing code.
 2. **Implement**: Write the code and the tests `tests/CLAUDE.md` calls for.
 3. **Verify**: Run the following suite:
