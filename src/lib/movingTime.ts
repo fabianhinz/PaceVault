@@ -1,6 +1,5 @@
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
-export const STOP_CUTOFF_SEC = 30;
 const STOP_GAP_FACTOR = 2;
 const STOP_DISTANCE_M = 1;
 
@@ -47,7 +46,7 @@ export const movingSeconds = (records: SessionRecord[]): number[] => {
         timerPause(current, previous, step),
         standingGap(current, previous, step, typical),
       );
-      if (stop >= STOP_CUTOFF_SEC) {
+      if (stop > 0) {
         moving += Math.max(step - stop, typical);
       } else {
         moving += step;

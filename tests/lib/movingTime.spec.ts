@@ -25,7 +25,7 @@ describe('movingSeconds', () => {
       [20, 0],
       [4, 30],
     ]);
-    expect(movingSeconds(records)).toEqual([0, 4, 8, 12, 16, 36, 40]);
+    expect(movingSeconds(records)).toEqual([0, 4, 8, 12, 16, 20, 24]);
   });
 
   it('keeps a recording gap while moving on the axis', () => {
