@@ -29,10 +29,16 @@ export interface WindExposure {
 
 export type WindClass = 'head' | 'cross' | 'tail';
 
+export interface RelativeWind {
+  angle: number;
+  seconds: number;
+}
+
 interface WindSegment {
   recordIndex: number;
   seconds: number;
   angle: number;
+  signedAngle: number;
   windClass: WindClass;
 }
 
@@ -56,8 +62,7 @@ const segmentMetres = (a: ValidPoint, b: ValidPoint): number => {
   return Math.sqrt(x * x + y * y) * EARTH_RADIUS_M;
 };
 
-/** Smallest absolute angle (0–180°) between two compass bearings. */
-const angleDelta = (a: number, b: number): number => Math.abs(((a - b + 540) % 360) - 180);
+const signedAngleDelta = (from: number, to: number): number => ((to - from + 540) % 360) - 180;
 
 /** Index of the wind sample nearest in time to `targetMs`; `-1` when there are none. */
 const nearestWindIndex = (targetMs: number, wind: WindSample[]): number => {
@@ -103,14 +108,21 @@ const windSegments = (
     const sample = wind[windIdx];
     if (sample === undefined) continue;
 
-    const delta = angleDelta(bearingDeg(a, b), sample.direction);
+    const signedAngle = signedAngleDelta(bearingDeg(a, b), sample.direction);
+    const delta = Math.abs(signedAngle);
     let windClass: WindClass = 'cross';
     if (delta < SECTOR_HALF_DEG) {
       windClass = 'head';
     } else if (delta > 180 - SECTOR_HALF_DEG) {
       windClass = 'tail';
     }
-    segments.push({ recordIndex: b.recordIndex, seconds: dt, angle: delta, windClass });
+    segments.push({
+      recordIndex: b.recordIndex,
+      seconds: dt,
+      angle: delta,
+      signedAngle,
+      windClass,
+    });
   }
   return segments;
 };
@@ -125,6 +137,18 @@ export const windAngles = (
     angles[segment.recordIndex] = segment.angle;
   }
   return angles;
+};
+
+export const relativeWindAngles = (
+  records: SessionRecord[],
+  wind: WindSample[],
+  sessionStartMs: number,
+): Array<RelativeWind | undefined> => {
+  const relative: Array<RelativeWind | undefined> = records.map(() => undefined);
+  for (const segment of windSegments(records, wind, sessionStartMs)) {
+    relative[segment.recordIndex] = { angle: segment.signedAngle, seconds: segment.seconds };
+  }
+  return relative;
 };
 
 /**

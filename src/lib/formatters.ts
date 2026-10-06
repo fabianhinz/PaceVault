@@ -1,7 +1,6 @@
 import { getLocale } from '@/paraglide/runtime.js';
 import { m } from '@/paraglide/messages.js';
 import type { PersonalBest } from '@/packages/engine/types.ts';
-import type { LapAnalysis } from '@/lib/laps.ts';
 
 // ---------------------------------------------------------------------------
 // Intl instances (private)
@@ -69,12 +68,6 @@ export const formatDuration = (seconds: number): string => {
   return `${s}s`;
 };
 
-export const formatLapTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
-  return `${mins}:${s.toString().padStart(2, '0')}`;
-};
-
 /** Smart race-time: omits hours when < 1 h. */
 export const formatRaceTime = (seconds: number): string => {
   const h = Math.floor(seconds / 3600);
@@ -120,17 +113,6 @@ const formatMinSec = (totalSeconds: number): string => {
 };
 
 export const formatPace = (secPerKm: number): string => `${formatMinSec(secPerKm)} /km`;
-
-export const formatSpeed = (metersPerSec: number): string => {
-  return `${(metersPerSec * 3.6).toFixed(1)} km/h`;
-};
-
-export const formatPaceOrSpeed = (lap: LapAnalysis, isRunning: boolean): string => {
-  if (lap.paceSecPerKm === undefined) return '--';
-  if (isRunning) return formatPace(lap.paceSecPerKm);
-  const speedMs = 1000 / lap.paceSecPerKm;
-  return formatSpeed(speedMs);
-};
 
 /** Format decimal min/km to mm:ss (for time-series pace chart axes/tooltips). */
 export const formatPaceTick = (minPerKm: number): string => formatMinSec(minPerKm * 60);

@@ -28,8 +28,8 @@ export interface LapAnalysis {
   intensity: string;
   /** Maximum speed in m/s during the lap, or `undefined` when not recorded. */
   maxSpeed: number | undefined;
-  /** `true` when the session contains rest laps and this lap is classified as active. */
   isInterval: boolean;
+  isPartial: boolean;
 }
 
 /**
@@ -62,16 +62,27 @@ interface ProgressiveOverload {
 /** Minimum absolute pace or HR drift percentage required to classify a session as `'fading'` or `'building'`. */
 const DRIFT_THRESHOLD_PERCENT = 3;
 
-/**
- * Converts raw session laps into enriched {@link LapAnalysis} objects with derived pace and intensity fields.
- *
- * @param laps - Array of raw laps from a parsed FIT session.
- * @returns An array of {@link LapAnalysis} records in the same order as the input laps.
- */
+const MIN_RECOVERIES_FOR_INTERVALS = 2;
+
+const isRestLap = (lap: SessionLap): boolean =>
+  lap.intensity !== undefined && lap.intensity !== 'active';
+
+const hasIntervalStructure = (laps: SessionLap[]): boolean => {
+  const activeIndices: number[] = [];
+  laps.forEach((lap, i) => {
+    if (!isRestLap(lap)) activeIndices.push(i);
+  });
+  const firstActive = activeIndices[0];
+  const lastActive = activeIndices[activeIndices.length - 1];
+  if (firstActive === undefined || lastActive === undefined) return false;
+  const recoveries = laps.slice(firstActive + 1, lastActive).filter(isRestLap);
+  return recoveries.length >= MIN_RECOVERIES_FOR_INTERVALS;
+};
+
 export const analyzeLaps = (laps: SessionLap[]): LapAnalysis[] => {
   if (laps.length === 0) return [];
 
-  const hasRestLaps = laps.some((l) => l.intensity !== undefined && l.intensity !== 'active');
+  const isIntervalSession = hasIntervalStructure(laps);
 
   return laps.map((lap) => {
     const duration = lap.totalMovingTime ?? lap.totalTimerTime;
@@ -93,7 +104,8 @@ export const analyzeLaps = (laps: SessionLap[]): LapAnalysis[] => {
       elevationGain: lap.totalAscent,
       maxSpeed: lap.maxSpeed,
       intensity: lap.intensity ?? 'active',
-      isInterval: hasRestLaps && lap.intensity === 'active',
+      isPartial: false,
+      isInterval: isIntervalSession && lap.intensity === 'active',
     };
   });
 };

@@ -205,7 +205,6 @@ export const LoadChart = () => {
     data: groupedData,
     xKey: 'date',
     onZoomComplete: dashboardZoom.onZoomComplete,
-    onZoomReset: dashboardZoom.onZoomReset,
   });
 
   const tickFormatter = (v: string) => {

@@ -1,120 +1,123 @@
 import type { SessionRecord } from '@/packages/engine/types.ts';
+import { movingSeconds } from '@/lib/movingTime.ts';
+import type { LapSpan } from '@/lib/lapRanges.ts';
 import type { LapAnalysis, LapRecordEnrichment } from './laps.ts';
 import { enrichLapFromRecords } from './laps.ts';
+
+export const SPLIT_DISTANCES_M = [400, 1000, 2000, 5000] as const;
+
+export type SplitDistance = (typeof SPLIT_DISTANCES_M)[number];
 
 export interface DynamicLapResult {
   analysis: LapAnalysis[];
   enrichments: LapRecordEnrichment[];
+  spans: LapSpan[];
 }
 
-/**
- * Computes distance-based split laps from raw session records.
- *
- * Single O(n) pass: walks records by cumulative distance, closing a lap
- * each time `splitDistanceMetres` is reached. The last lap may be partial.
- */
+const roundedAverage = (values: number[]): number | undefined => {
+  if (values.length === 0) return undefined;
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+};
+
+const maxOf = (values: number[]): number | undefined => {
+  if (values.length === 0) return undefined;
+  return Math.max(...values);
+};
+
+const elevationGainOf = (slice: SessionRecord[]): number => {
+  let gain = 0;
+  for (let i = 1; i < slice.length; i++) {
+    const prev = slice[i - 1]?.elevation;
+    const curr = slice[i]?.elevation;
+    if (prev !== undefined && curr !== undefined && curr > prev) {
+      gain += curr - prev;
+    }
+  }
+  return gain;
+};
+
 export const computeDynamicLaps = (
   records: SessionRecord[],
   splitDistanceMetres: number,
 ): DynamicLapResult => {
-  const withDistance = records.filter((r) => r.distance !== undefined);
-  if (withDistance.length < 2) return { analysis: [], enrichments: [] };
+  const withDistance: number[] = [];
+  records.forEach((record, i) => {
+    if (record.distance !== undefined) withDistance.push(i);
+  });
+  const empty: DynamicLapResult = { analysis: [], enrichments: [], spans: [] };
+  const firstIndex = withDistance[0];
+  if (withDistance.length < 2 || firstIndex === undefined) return empty;
+  const firstDistance = records[firstIndex]?.distance;
+  if (firstDistance === undefined) return empty;
 
+  const moving = movingSeconds(records);
   const analysis: LapAnalysis[] = [];
   const enrichments: LapRecordEnrichment[] = [];
-
-  let lapStart = 0;
-  const firstRecord = withDistance[0];
-  if (!firstRecord) return { analysis: [], enrichments: [] };
-  let nextBoundary = (firstRecord.distance ?? 0) + splitDistanceMetres;
+  const spans: LapSpan[] = [];
   let lapIndex = 0;
 
-  const closeLap = (startIdx: number, endIdx: number) => {
-    const slice = withDistance.slice(startIdx, endIdx + 1);
-    if (slice.length < 2) return;
+  const closeLap = (startPos: number, endPos: number, isPartial: boolean) => {
+    const indices = withDistance.slice(startPos, endPos + 1);
+    const slice = indices.map((i) => records[i]).filter((r): r is SessionRecord => r !== undefined);
+    const startRecord = indices[0];
+    const endRecord = indices[indices.length - 1];
+    if (slice.length < 2 || startRecord === undefined || endRecord === undefined) return;
 
     const first = slice[0];
     const last = slice[slice.length - 1];
-    if (!first || !last) return;
+    const movingStart = moving[startRecord];
+    const movingEnd = moving[endRecord];
+    if (!first || !last || movingStart === undefined || movingEnd === undefined) return;
+    if (first.distance === undefined || last.distance === undefined) return;
 
-    const distance = (last.distance ?? 0) - (first.distance ?? 0);
+    const distance = last.distance - first.distance;
     const duration = last.timestamp - first.timestamp;
-    const movingTime = duration; // records are per-second; no stopped detection at record level
+    const movingTime = movingEnd - movingStart;
 
     let paceSecPerKm: number | undefined = undefined;
-    if (distance > 0 && duration > 0) {
-      paceSecPerKm = (duration / distance) * 1000;
+    if (distance > 0 && movingTime > 0) {
+      paceSecPerKm = (movingTime / distance) * 1000;
     }
 
     const hrs = slice.map((r) => r.hr).filter((h): h is number => h !== undefined);
-    let avgHr: number | undefined = undefined;
-    if (hrs.length > 0) {
-      avgHr = Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length);
-    }
-    let maxHr: number | undefined = undefined;
-    if (hrs.length > 0) {
-      maxHr = Math.max(...hrs);
-    }
-
     const cadences = slice.map((r) => r.cadence).filter((c): c is number => c !== undefined);
-    let avgCadence: number | undefined = undefined;
-    if (cadences.length > 0) {
-      avgCadence = Math.round(cadences.reduce((a, b) => a + b, 0) / cadences.length);
-    }
-
     const speeds = slice.map((r) => r.speed).filter((s): s is number => s !== undefined);
-    let maxSpeed: number | undefined = undefined;
-    if (speeds.length > 0) {
-      maxSpeed = Math.max(...speeds);
-    }
-
-    let elevationGain = 0;
-    for (let i = 1; i < slice.length; i++) {
-      const prevRecord = slice[i - 1];
-      const currRecord = slice[i];
-      if (!prevRecord || !currRecord) continue;
-      const prev = prevRecord.elevation;
-      const curr = currRecord.elevation;
-      if (prev !== undefined && curr !== undefined && curr > prev) {
-        elevationGain += curr - prev;
-      }
-    }
 
     analysis.push({
       lapIndex,
       paceSecPerKm,
-      avgHr,
-      minHr: undefined, // enrichment handles P5 percentile
-      maxHr,
-      avgCadence,
+      avgHr: roundedAverage(hrs),
+      minHr: undefined,
+      maxHr: maxOf(hrs),
+      avgCadence: roundedAverage(cadences),
       distance,
       duration,
       movingTime,
-      elevationGain,
+      elevationGain: elevationGainOf(slice),
       intensity: 'active',
-      maxSpeed,
+      maxSpeed: maxOf(speeds),
       isInterval: false,
+      isPartial,
     });
-
     enrichments.push(enrichLapFromRecords(lapIndex, slice));
+    spans.push({ lapIndex, startRecord, endRecord });
     lapIndex++;
   };
 
-  for (let i = 0; i < withDistance.length; i++) {
-    const rec = withDistance[i];
-    if (!rec) continue;
-    const d = rec.distance ?? 0;
-    if (d >= nextBoundary) {
-      closeLap(lapStart, i);
-      lapStart = i;
-      nextBoundary = d + splitDistanceMetres;
-    }
-  }
+  let lapStart = 0;
+  let nextBoundary = firstDistance + splitDistanceMetres;
+  withDistance.forEach((recordIndex, pos) => {
+    const d = records[recordIndex]?.distance;
+    if (d === undefined || d < nextBoundary) return;
+    closeLap(lapStart, pos, false);
+    lapStart = pos;
+    const crossed = Math.floor((d - firstDistance) / splitDistanceMetres);
+    nextBoundary = firstDistance + (crossed + 1) * splitDistanceMetres;
+  });
 
-  // Close the final (possibly partial) lap
   if (lapStart < withDistance.length - 1) {
-    closeLap(lapStart, withDistance.length - 1);
+    closeLap(lapStart, withDistance.length - 1, true);
   }
 
-  return { analysis, enrichments };
+  return { analysis, enrichments, spans };
 };

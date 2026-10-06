@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { Mountain, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
+import { ZoomResetChip } from '@/components/ui/ZoomResetChip.tsx';
 import { ElevationChart } from '@/components/charts/ElevationChart.tsx';
 import { GradeChart } from '@/components/charts/GradeChart.tsx';
 import { buildRouteProfile } from '@/packages/gpx/routeProfile.ts';
@@ -30,11 +31,6 @@ interface ChartEntry {
   chart: React.ReactNode;
 }
 
-/**
- * Route twin of SessionChartsExplorer: elevation + grade over distance,
- * compact previews with synced zoom/tooltips, expandable cards, and chart
- * hover highlighting the matching point on the map track.
- */
 interface RouteChartsExplorerProps {
   points: RoutePoint[];
   elevation: RouteElevationStats | undefined;
@@ -128,7 +124,6 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
           xAxis={routeDistanceXAxis}
           onActiveXChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -164,7 +159,6 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
           xAxis={routeDistanceXAxis}
           onActiveXChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -175,19 +169,22 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
   if (visibleCharts.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      {visibleCharts.map((chart) => (
-        <ChartPreviewCard
-          key={chart.key}
-          title={chart.title}
-          icon={chart.icon}
-          color={chart.color}
-          metricId={chart.metricId}
-          rail={chart.rail}
-        >
-          {chart.chart}
-        </ChartPreviewCard>
-      ))}
+    <div>
+      {zoom.isZoomed && <ZoomResetChip onReset={zoom.resetZoom} />}
+      <div className="space-y-3">
+        {visibleCharts.map((chart) => (
+          <ChartPreviewCard
+            key={chart.key}
+            title={chart.title}
+            icon={chart.icon}
+            color={chart.color}
+            metricId={chart.metricId}
+            rail={chart.rail}
+          >
+            {chart.chart}
+          </ChartPreviewCard>
+        ))}
+      </div>
     </div>
   );
 };

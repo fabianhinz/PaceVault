@@ -59,7 +59,9 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
   const onHover = useCallback(
     (info: PickingInfo) => {
       const stopPropagation = false;
-      setHoveringTrack(!!info.object && !openedSessionId);
+      const isLapPick =
+        info.layer?.id === 'session-detail' && useMapFocusStore.getState().sessionLaps !== null;
+      setHoveringTrack(!!info.object && (!openedSessionId || isLapPick));
       if (!popup) {
         if (
           !openedSessionId &&

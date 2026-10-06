@@ -154,3 +154,49 @@ describe('computeDynamicLaps with recorded zeros', () => {
     expect(lap?.avgCadence).toBe(45);
   });
 });
+
+describe('computeDynamicLaps splits', () => {
+  const steady = (from: number, seconds: number, startDistance: number): SessionRecord[] =>
+    Array.from({ length: seconds }, (_, i) => ({
+      timestamp: from + i,
+      distance: startDistance + i * 4,
+    }));
+
+  it('split pace includes a stop', () => {
+    const records: SessionRecord[] = [...steady(0, 126, 0), ...steady(245, 200, 500)];
+    const lap = computeDynamicLaps(records, 1000).analysis[0];
+    expect(lap?.distance).toBe(1000);
+    expect(lap?.duration).toBe(370);
+    expect(lap?.movingTime).toBe(251);
+    expect(lap?.paceSecPerKm).toBe(251);
+  });
+
+  it('marks only the last split as partial', () => {
+    const records = steady(0, 700, 0);
+    const result = computeDynamicLaps(records, 1000);
+    expect(result.analysis.map((lap) => lap.isPartial)).toEqual([false, false, true]);
+  });
+
+  it('cuts 400 m splits with record spans that share their boundaries', () => {
+    const records = steady(0, 301, 0);
+    const result = computeDynamicLaps(records, 400);
+    expect(result.analysis.map((lap) => lap.distance)).toEqual([400, 400, 400]);
+    expect(result.spans).toEqual([
+      { lapIndex: 0, startRecord: 0, endRecord: 100 },
+      { lapIndex: 1, startRecord: 100, endRecord: 200 },
+      { lapIndex: 2, startRecord: 200, endRecord: 300 },
+    ]);
+  });
+
+  it('0.4 km splits drift long and lose splits over a long ride', () => {
+    const records: SessionRecord[] = Array.from({ length: 1104 }, (_, i) => ({
+      timestamp: i * 3,
+      distance: i * 30,
+    }));
+    const result = computeDynamicLaps(records, 400);
+    expect(result.analysis).toHaveLength(83);
+    const full = result.analysis.slice(0, -1).map((lap) => lap.distance ?? 0);
+    expect(full.reduce((sum, distance) => sum + distance, 0) / full.length).toBeCloseTo(400, 0);
+    expect(result.analysis.at(-1)?.isPartial).toBe(true);
+  });
+});

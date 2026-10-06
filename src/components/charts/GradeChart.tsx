@@ -8,6 +8,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { LapBands, LAP_STRIP_TICK_MARGIN } from './LapBands.tsx';
 import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, type ChartXAxis } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
@@ -21,7 +22,8 @@ interface GradeChartProps<
   xAxis: ChartXAxis<K>;
   onActiveXChange?: (x: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
-  onZoomReset?: () => void;
+  onSelectX?: (x: number) => void;
+  lapBands?: boolean;
 }
 
 export const GradeChart = <
@@ -34,7 +36,7 @@ export const GradeChart = <
     data: props.data,
     xKey: props.xAxis.key,
     onZoomComplete: props.onZoomComplete,
-    onZoomReset: props.onZoomReset,
+    onClick: (x) => props.onSelectX?.(Number(x)),
   });
 
   return (
@@ -62,6 +64,7 @@ export const GradeChart = <
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
+          tickMargin={props.lapBands ? LAP_STRIP_TICK_MARGIN : undefined}
           tickFormatter={props.xAxis.tickFormatter}
         />
         <YAxis
@@ -75,6 +78,9 @@ export const GradeChart = <
           tickFormatter={(v: number) => `${v}%`}
         />
         <RechartsTooltip {...hoverOnlyTooltip} />
+        {props.lapBands && (
+          <LapBands rows={zoom.zoomedData} xKey={props.xAxis.key} yAxisId="left" />
+        )}
         <Line
           yAxisId="left"
           type="monotone"
@@ -84,7 +90,7 @@ export const GradeChart = <
           dot={false}
           name={m.ui_chart_series_grade()}
         />
-        {zoom.refAreaLeft && zoom.refAreaRight && (
+        {zoom.refAreaLeft !== null && zoom.refAreaRight !== null && (
           <ReferenceArea
             yAxisId="left"
             x1={zoom.refAreaLeft}

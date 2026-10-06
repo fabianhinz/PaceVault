@@ -64,7 +64,6 @@ export const PerformanceChart = () => {
     data: filtered,
     xKey: 'date',
     onZoomComplete: dashboardZoom.onZoomComplete,
-    onZoomReset: dashboardZoom.onZoomReset,
   });
 
   return (

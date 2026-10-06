@@ -24,11 +24,6 @@ export const sportTrackColor: Record<Sport, [number, number, number, number]> = 
   cycling: [249, 115, 22, trackModifiers.alpha.default],
 };
 
-export const sportMarkerColor: Record<Sport, [number, number, number, number]> = {
-  running: [74, 222, 128, 255],
-  cycling: [249, 115, 22, 255],
-};
-
 // Live "you are here" position. The accuracy disc mirrors the glass surface
 // (translucent white fill + faint white border); the dot is a solid locator
 // with a white ring, à la Google/Apple Maps.

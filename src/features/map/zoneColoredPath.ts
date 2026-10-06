@@ -1,4 +1,4 @@
-import { extractPathFromRecords, isValidCoordinate } from '@/packages/engine/gps.ts';
+import { isValidCoordinate } from '@/packages/engine/gps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { rgb } from 'd3-color';
 import { windColorAt, type ZoneMetric, type ZoneScale } from '@/lib/zoneColors.ts';
@@ -9,6 +9,7 @@ type Color = [number, number, number, number];
 
 export interface DetailPath {
   path: [number, number][];
+  recordIndices: number[];
   color: Color | Color[];
 }
 
@@ -42,20 +43,30 @@ const smoothedValues = (
     windowSec,
   );
 
+const validPath = (records: SessionRecord[]) => {
+  const path: [number, number][] = [];
+  const recordIndices: number[] = [];
+  records.forEach((r, index) => {
+    if (isValidCoordinate(r) && r.lng != null && r.lat != null) {
+      path.push([r.lng, r.lat]);
+      recordIndices.push(index);
+    }
+  });
+  return { path, recordIndices };
+};
+
 const buildColoredPath = (
   records: SessionRecord[],
   colorAt: (r: SessionRecord, index: number) => Color,
 ): DetailPath | null => {
-  const path: [number, number][] = [];
+  const valid = validPath(records);
+  if (valid.path.length < 2) return null;
   const colors: Color[] = [];
-  records.forEach((r, index) => {
-    if (isValidCoordinate(r) && r.lng != null && r.lat != null) {
-      path.push([r.lng, r.lat]);
-      colors.push(colorAt(r, index));
-    }
-  });
-  if (path.length < 2) return null;
-  return { path, color: colors };
+  for (const index of valid.recordIndices) {
+    const record = records[index];
+    if (record) colors.push(colorAt(record, index));
+  }
+  return { path: valid.path, recordIndices: valid.recordIndices, color: colors };
 };
 
 export const buildZoneColoredPath = (
@@ -91,8 +102,7 @@ export const buildSportColoredPath = (
   records: SessionRecord[],
   sportColor: Color,
 ): DetailPath | null => {
-  const path = extractPathFromRecords(records);
-  if (path.length < 2) return null;
-
-  return { path, color: sportColor };
+  const valid = validPath(records);
+  if (valid.path.length < 2) return null;
+  return { path: valid.path, recordIndices: valid.recordIndices, color: sportColor };
 };

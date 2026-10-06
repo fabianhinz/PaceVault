@@ -1,8 +1,6 @@
 import { Children, useState, type ReactNode } from 'react';
-import { ChevronRight } from 'lucide-react';
-import { Button } from './Button.tsx';
+import { CollapsibleHeader } from './Collapsible.tsx';
 import { Typography } from './Typography.tsx';
-import { cn } from '@/lib/utils.ts';
 
 interface CardGridProps {
   children: ReactNode;
@@ -23,17 +21,26 @@ export const CardGrid = (props: CardGridProps) => {
 
   return (
     <>
-      <div className="mb-4 flex items-start justify-between gap-2">
-        <Typography variant="title" as="h3">
-          {props.title}
-        </Typography>
-        {needsToggle && (
-          <Button variant="ghost" size="icon" onClick={() => setExpanded((prev) => !prev)}>
-            <Typography variant="caption">({totalCount})</Typography>
-            <ChevronRight className={cn('size-4 transition-transform', expanded && 'rotate-90')} />
-          </Button>
-        )}
-      </div>
+      {needsToggle ? (
+        <h3 className="mb-4">
+          <CollapsibleHeader
+            open={expanded}
+            onClick={() => setExpanded((prev) => !prev)}
+            trailing={<Typography variant="caption">({totalCount})</Typography>}
+            className="justify-between"
+          >
+            <Typography variant="title" as="span">
+              {props.title}
+            </Typography>
+          </CollapsibleHeader>
+        </h3>
+      ) : (
+        <div className="mb-4">
+          <Typography variant="title" as="h3">
+            {props.title}
+          </Typography>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         {Children.map(visibleChildren, (child) =>
           child != null ? (

@@ -43,16 +43,37 @@ describe('analyzeLaps', () => {
     expect(result[0].paceSecPerKm).toBeUndefined();
   });
 
-  it('marks intervals only when there are mixed intensities', () => {
+  it('marks intervals when recoveries sit between active laps', () => {
     const laps = [
       makeLap({ lapIndex: 0, intensity: 'active' }),
       makeLap({ lapIndex: 1, intensity: 'rest' }),
       makeLap({ lapIndex: 2, intensity: 'active' }),
+      makeLap({ lapIndex: 3, intensity: 'rest' }),
+      makeLap({ lapIndex: 4, intensity: 'active' }),
     ];
     const result = analyzeLaps(laps);
-    expect(result[0].isInterval).toBe(true);
-    expect(result[1].isInterval).toBe(false);
-    expect(result[2].isInterval).toBe(true);
+    expect(result.map((lap) => lap.isInterval)).toEqual([true, false, true, false, true]);
+  });
+
+  it('steady run with a trailing recovery lap is detected as intervals', () => {
+    const laps = [
+      ...Array.from({ length: 13 }, (_, i) => makeLap({ lapIndex: i, intensity: 'active' })),
+      makeLap({ lapIndex: 13, intensity: 'recovery', distance: 683 }),
+    ];
+    expect(analyzeLaps(laps).some((lap) => lap.isInterval)).toBe(false);
+    expect(detectIntervals(laps)).toEqual([]);
+    expect(detectProgressiveOverload(laps).lapCount).toBe(14);
+  });
+
+  it('a single recovery between two active laps is not an interval session', () => {
+    const laps = [
+      makeLap({ lapIndex: 0, intensity: 'warmup' }),
+      makeLap({ lapIndex: 1, intensity: 'active' }),
+      makeLap({ lapIndex: 2, intensity: 'rest' }),
+      makeLap({ lapIndex: 3, intensity: 'active' }),
+      makeLap({ lapIndex: 4, intensity: 'cooldown' }),
+    ];
+    expect(analyzeLaps(laps).some((lap) => lap.isInterval)).toBe(false);
   });
 
   it('all-active laps are not intervals (steady state)', () => {
@@ -88,9 +109,11 @@ describe('detectIntervals', () => {
       makeLap({ lapIndex: 1, intensity: 'rest', minHr: 130 }),
       makeLap({ lapIndex: 2, intensity: 'active', maxHr: 175 }),
       makeLap({ lapIndex: 3, intensity: 'rest', minHr: 135 }),
+      makeLap({ lapIndex: 4, intensity: 'active', maxHr: 178 }),
+      makeLap({ lapIndex: 5, intensity: 'rest', minHr: 140 }),
     ];
     const pairs = detectIntervals(laps);
-    expect(pairs).toHaveLength(2);
+    expect(pairs).toHaveLength(3);
     expect(pairs[0].active.lapIndex).toBe(0);
     expect(pairs[0].recovery?.lapIndex).toBe(1);
     expect(pairs[0].hrRecovery).toBe(40); // 170 - 130
@@ -104,20 +127,25 @@ describe('detectIntervals', () => {
       makeLap({ lapIndex: 0, intensity: 'active', maxHr: 170 }),
       makeLap({ lapIndex: 1, intensity: 'rest', minHr: 130 }),
       makeLap({ lapIndex: 2, intensity: 'active', maxHr: 175 }),
+      makeLap({ lapIndex: 3, intensity: 'rest', minHr: 132 }),
+      makeLap({ lapIndex: 4, intensity: 'active', maxHr: 176 }),
     ];
     const pairs = detectIntervals(laps);
-    expect(pairs).toHaveLength(2);
-    expect(pairs[1].recovery).toBeUndefined();
-    expect(pairs[1].hrRecovery).toBeUndefined();
+    expect(pairs).toHaveLength(3);
+    expect(pairs[2].recovery).toBeUndefined();
+    expect(pairs[2].hrRecovery).toBeUndefined();
   });
 
   it('handles missing HR data gracefully', () => {
     const laps = [
       makeLap({ lapIndex: 0, intensity: 'active' }),
       makeLap({ lapIndex: 1, intensity: 'rest' }),
+      makeLap({ lapIndex: 2, intensity: 'active' }),
+      makeLap({ lapIndex: 3, intensity: 'rest' }),
+      makeLap({ lapIndex: 4, intensity: 'active' }),
     ];
     const pairs = detectIntervals(laps);
-    expect(pairs).toHaveLength(1);
+    expect(pairs).toHaveLength(3);
     expect(pairs[0].hrRecovery).toBeUndefined();
   });
 });
@@ -207,12 +235,21 @@ describe('detectProgressiveOverload', () => {
         lapIndex: 2,
         intensity: 'active',
         distance: 1000,
-        totalTimerTime: 300,
+        totalTimerTime: 315,
         avgHr: 162,
+      }),
+      makeLap({ lapIndex: 3, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
+      makeLap({
+        lapIndex: 4,
+        intensity: 'active',
+        distance: 1000,
+        totalTimerTime: 300,
+        avgHr: 165,
       }),
     ];
     const result = detectProgressiveOverload(laps);
     expect(result.trend).toBe('building');
+    expect(result.lapCount).toBe(3);
     expect(result.paceDriftPercent ?? 0).toBeLessThan(-3);
   });
 

@@ -4,17 +4,19 @@ import { TrainingSummaryCard } from '@/features/dashboard/TrainingSummaryCard.ts
 import { PageGrid } from '@/components/ui/PageGrid.tsx';
 import { FormStatusCard } from '@/features/dashboard/FormStatusCard.tsx';
 import { DashboardPeek } from '@/features/dashboard/DashboardPeek.tsx';
+import { DashboardZoomReset } from '@/features/dashboard/DashboardZoomReset.tsx';
 
 export const DashboardPage = () => {
   return (
     <PageGrid>
       <DashboardPeek />
       <FormStatusCard />
-      <div className="lg:col-span-2">
-        <LoadChart />
-      </div>
-      <div className="lg:col-span-2">
-        <PerformanceChart />
+      <div>
+        <DashboardZoomReset />
+        <div className="flex flex-col gap-4">
+          <LoadChart />
+          <PerformanceChart />
+        </div>
       </div>
       <TrainingSummaryCard />
     </PageGrid>

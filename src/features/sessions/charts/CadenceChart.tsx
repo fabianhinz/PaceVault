@@ -8,6 +8,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { LapBands, LAP_STRIP_TICK_MARGIN } from '@/components/charts/LapBands.tsx';
 import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
@@ -18,7 +19,7 @@ interface CadenceChartProps {
   data: CadencePoint[];
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
-  onZoomReset?: () => void;
+  onSelectTime?: (time: number) => void;
 }
 
 export const CadenceChart = (props: CadenceChartProps) => {
@@ -26,7 +27,7 @@ export const CadenceChart = (props: CadenceChartProps) => {
     data: props.data,
     xKey: 'time',
     onZoomComplete: props.onZoomComplete,
-    onZoomReset: props.onZoomReset,
+    onClick: (x) => props.onSelectTime?.(Number(x)),
   });
 
   return (
@@ -52,6 +53,7 @@ export const CadenceChart = (props: CadenceChartProps) => {
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
+          tickMargin={LAP_STRIP_TICK_MARGIN}
           tickFormatter={formatChartTime}
         />
         <YAxis
@@ -65,6 +67,7 @@ export const CadenceChart = (props: CadenceChartProps) => {
           tickFormatter={(v: number) => formatTick(v)}
         />
         <RechartsTooltip {...hoverOnlyTooltip} />
+        <LapBands rows={zoom.zoomedData} xKey="time" yAxisId="left" />
         <Line
           yAxisId="left"
           type="monotone"
@@ -74,7 +77,7 @@ export const CadenceChart = (props: CadenceChartProps) => {
           dot={false}
           name={m.ui_chart_series_cadence()}
         />
-        {zoom.refAreaLeft && zoom.refAreaRight && (
+        {zoom.refAreaLeft !== null && zoom.refAreaRight !== null && (
           <ReferenceArea
             yAxisId="left"
             x1={zoom.refAreaLeft}

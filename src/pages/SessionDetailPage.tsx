@@ -1,34 +1,28 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { m } from '@/paraglide/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { getSessionRecords, getSessionLaps } from '@/lib/indexeddb.ts';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.tsx';
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/features/sessions/session/SessionActionsMenu.tsx';
-import { WeatherChips } from '@/features/sessions/session/WeatherChips.tsx';
+import { WeatherCard } from '@/features/sessions/session/WeatherCard.tsx';
 import { NoGpsBanner } from '@/features/sessions/session/NoGpsBanner.tsx';
 import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
-import { OverviewTab } from '@/features/sessions/session/OverviewTab.tsx';
-import { LapsTab } from '@/features/sessions/laps/LapsTab.tsx';
+import { useSessionLapsEffect } from '@/features/sessions/session/hooks/useSessionLapsEffect.ts';
+import { SessionOverview } from '@/features/sessions/session/SessionOverview.tsx';
 import { SessionPeek } from '@/features/sessions/SessionPeek.tsx';
-import { SessionColorBy } from '@/features/sessions/session/SessionColorBy.tsx';
+import { SessionMapControls } from '@/features/sessions/session/SessionMapControls.tsx';
 import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
 
-const validTabs = new Set(['overview', 'laps']);
-
 export const SessionDetailPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get('tab');
-  const tab = rawTab && validTabs.has(rawTab) ? rawTab : 'overview';
-
   const params = useParams<{ id: string }>();
   const session = useSessionsStore((s) => s.sessions.find((session) => session.id === params.id));
   const weather = useSessionWeather(params.id ?? '', session?.date ?? 0, session?.duration ?? 0);
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [laps, setLaps] = useState<SessionLap[]>([]);
+
+  useSessionLapsEffect(records, laps);
 
   useEffect(() => {
     if (params.id) {
@@ -43,15 +37,6 @@ export const SessionDetailPage = () => {
     }
   }, [params.id, session?.hasDetailedRecords]);
 
-  useEffect(() => {
-    if (laps.length > 0 && session) {
-      useMapFocusStore.getState().setFocusedSport(session.sport);
-    }
-    return () => {
-      useMapFocusStore.getState().clearFocusedSport();
-    };
-  }, [laps, session]);
-
   if (!session) {
     return (
       <Typography variant="body1" color="textSecondary">
@@ -59,10 +44,6 @@ export const SessionDetailPage = () => {
       </Typography>
     );
   }
-
-  const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
-  };
 
   if (records.length === 0) {
     return;
@@ -77,23 +58,10 @@ export const SessionDetailPage = () => {
         <SessionActionsMenu session={session} />
       </SessionHeader>
 
-      <WeatherChips query={weather} records={records} sessionStartMs={session.date} />
-      <SessionColorBy session={session} records={records} />
+      <WeatherCard query={weather} records={records} sessionStartMs={session.date} />
+      <SessionMapControls session={session} records={records} laps={laps} />
 
-      <Tabs defaultValue="overview" value={tab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="overview">{m.ui_session_tab_overview()}</TabsTrigger>
-          <TabsTrigger value="laps">{m.ui_session_tab_laps()}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <OverviewTab session={session} records={records} laps={laps} />
-        </TabsContent>
-
-        <TabsContent value="laps">
-          <LapsTab laps={laps} session={session} records={records} />
-        </TabsContent>
-      </Tabs>
+      <SessionOverview session={session} records={records} laps={laps} />
     </div>
   );
 };

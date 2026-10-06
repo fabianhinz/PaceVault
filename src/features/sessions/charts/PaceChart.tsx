@@ -8,6 +8,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { LapBands, LAP_STRIP_TICK_MARGIN } from '@/components/charts/LapBands.tsx';
 import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
@@ -21,7 +22,7 @@ interface PaceChartProps {
   data: PacePoint[];
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
-  onZoomReset?: () => void;
+  onSelectTime?: (time: number) => void;
   zoneScale?: ZoneScale;
 }
 
@@ -30,7 +31,7 @@ export const PaceChart = (props: PaceChartProps) => {
     data: props.data,
     xKey: 'time',
     onZoomComplete: props.onZoomComplete,
-    onZoomReset: props.onZoomReset,
+    onClick: (x) => props.onSelectTime?.(Number(x)),
   });
   const zoneLine = useZoneLineStroke(
     props.zoneScale,
@@ -62,6 +63,7 @@ export const PaceChart = (props: PaceChartProps) => {
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
+          tickMargin={LAP_STRIP_TICK_MARGIN}
           tickFormatter={formatChartTime}
         />
         <YAxis
@@ -76,6 +78,7 @@ export const PaceChart = (props: PaceChartProps) => {
           tickFormatter={formatPaceTick}
         />
         <RechartsTooltip {...hoverOnlyTooltip} />
+        <LapBands rows={zoom.zoomedData} xKey="time" yAxisId="left" />
         <Line
           yAxisId="left"
           type="monotone"
@@ -85,7 +88,7 @@ export const PaceChart = (props: PaceChartProps) => {
           dot={false}
           name={m.ui_chart_series_pace()}
         />
-        {zoom.refAreaLeft && zoom.refAreaRight && (
+        {zoom.refAreaLeft !== null && zoom.refAreaRight !== null && (
           <ReferenceArea
             yAxisId="left"
             x1={zoom.refAreaLeft}

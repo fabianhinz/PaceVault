@@ -62,19 +62,6 @@ const extractGPSPoints = (records: SessionRecord[]): GPSPoint[] =>
   }, []);
 
 /**
- * Extract valid GPS coordinates from session records as `[lng, lat]` tuples suitable for deck.gl / MapLibre layers.
- * @param records - Raw time-series records from a parsed FIT file.
- * @returns Array of `[lng, lat]` pairs containing only geographically valid coordinates.
- */
-export const extractPathFromRecords = (records: SessionRecord[]): [number, number][] =>
-  records.reduce<[number, number][]>((acc, r) => {
-    if (isValidCoordinate(r) && r.lng != null && r.lat != null) {
-      acc.push([r.lng, r.lat]);
-    }
-    return acc;
-  }, []);
-
-/**
  * Reduce the number of GPS points using the Ramer-Douglas-Peucker algorithm while preserving track shape.
  * @param points - Input GPS points to simplify.
  * @param tolerance - Maximum allowed deviation in degrees (default `0.00005`).

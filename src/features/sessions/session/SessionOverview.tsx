@@ -4,13 +4,13 @@ import { SessionChartsExplorer } from '@/features/sessions/charts/SessionChartsE
 import { SessionStatsGrid } from '@/features/sessions/session/SessionStatsGrid.tsx';
 import type { TrainingSession, SessionRecord, SessionLap } from '@/packages/engine/types.ts';
 
-interface OverviewTabProps {
+interface SessionOverviewProps {
   session: TrainingSession;
   records: SessionRecord[];
   laps: SessionLap[];
 }
 
-export const OverviewTab = (props: OverviewTabProps) => {
+export const SessionOverview = (props: SessionOverviewProps) => {
   return (
     <PageGrid>
       <div className="lg:col-span-2">

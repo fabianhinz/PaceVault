@@ -1,9 +1,5 @@
 import { useCallback, useState } from 'react';
 
-/**
- * Shared zoom range for a group of compact charts: zooming one chart filters
- * the data of every synced sibling to the same x range.
- */
 export const useSyncedChartZoom = () => {
   const [zoomRange, setZoomRange] = useState<{ from: number; to: number } | null>(null);
 
@@ -11,9 +7,9 @@ export const useSyncedChartZoom = () => {
     setZoomRange({ from: Number(from), to: Number(to) });
   }, []);
 
-  const onZoomReset = useCallback(() => {
+  const resetZoom = useCallback(() => {
     setZoomRange(null);
   }, []);
 
-  return { zoomRange, onZoomComplete, onZoomReset };
+  return { zoomRange, isZoomed: zoomRange !== null, onZoomComplete, resetZoom };
 };

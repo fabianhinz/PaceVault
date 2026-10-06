@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { Heart, Zap, Gauge, Mountain, Timer, TrendingUp, ArrowUpDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
+import { ZoomResetChip } from '@/components/ui/ZoomResetChip.tsx';
 import { buildSessionChartRows, gpsByX, hasSeriesValues } from '@/lib/chartData.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
@@ -21,6 +22,7 @@ import { SeriesRail } from '@/components/charts/ChartRail.tsx';
 import { sportIcon } from '@/lib/sportIcons.ts';
 import { formatChartTime, sessionTimeXAxis } from '@/lib/chartTheme.ts';
 import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
+import { lapIndexAtTime } from '@/lib/lapRanges.ts';
 import { HrChart } from './HrChart.tsx';
 import { PowerChart } from './PowerChart.tsx';
 import { SpeedChart } from './SpeedChart.tsx';
@@ -77,6 +79,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const powerScale = scaleFor('power');
   const paceScale = scaleFor('pace');
 
+  const lapBands = useMapFocusStore((s) => s.sessionLaps?.bands);
   const zoom = useSyncedChartZoom();
   const zoomRange = zoom.zoomRange;
 
@@ -103,20 +106,32 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       if (time == null) {
         useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
         useMapFocusStore.getState().clearHoveredPoint();
+        useMapFocusStore.getState().setHoveredLap(null);
         return;
       }
       useChartHoverStore.getState().setChartHover(HOVER_GROUP, time);
+      useMapFocusStore.getState().setHoveredLap(lapIndexAtTime(lapBands ?? [], time) ?? null);
       const point = gpsLookup.get(time);
       if (point) {
         useMapFocusStore.getState().setHoveredPoint(point);
       }
     },
-    [gpsLookup],
+    [gpsLookup, lapBands],
+  );
+
+  const onSelectTime = useCallback(
+    (time: number) => {
+      const lapIndex = lapIndexAtTime(lapBands ?? [], time);
+      if (lapIndex === undefined) return;
+      useMapFocusStore.getState().toggleSelectedLap(lapIndex);
+    },
+    [lapBands],
   );
 
   useEffect(
     () => () => {
       useMapFocusStore.getState().clearHoveredPoint();
+      useMapFocusStore.getState().setHoveredLap(null);
       useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
     },
     [],
@@ -176,7 +191,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           zoneScale={hrScale}
           onActiveTimeChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
+          onSelectTime={onSelectTime}
         />
       ),
     },
@@ -210,7 +225,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           zoneScale={powerScale}
           onActiveTimeChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
+          onSelectTime={onSelectTime}
         />
       ),
     },
@@ -246,7 +261,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           data={compactRows}
           onActiveTimeChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
+          onSelectTime={onSelectTime}
         />
       ),
     },
@@ -283,7 +298,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           xAxis={sessionTimeXAxis}
           onActiveXChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
+          onSelectX={onSelectTime}
+          lapBands
         />
       ),
     },
@@ -319,7 +335,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           data={compactRows}
           onActiveTimeChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
+          onSelectTime={onSelectTime}
         />
       ),
     },
@@ -355,7 +371,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           xAxis={sessionTimeXAxis}
           onActiveXChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
+          onSelectX={onSelectTime}
+          lapBands
         />
       ),
     },
@@ -393,7 +410,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           zoneScale={paceScale}
           onActiveTimeChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
+          onSelectTime={onSelectTime}
         />
       ),
     },
@@ -425,7 +442,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           data={compactRows}
           onActiveTimeChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
-          onZoomReset={zoom.onZoomReset}
+          onSelectTime={onSelectTime}
         />
       ),
     },
@@ -436,20 +453,23 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   if (visibleCharts.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      {visibleCharts.map((chart) => (
-        <ChartPreviewCard
-          key={chart.key}
-          title={chart.title}
-          icon={chart.icon}
-          color={chart.color}
-          compactHeight={chart.compactHeight}
-          metricId={chart.metricId}
-          rail={chart.rail}
-        >
-          {chart.chart}
-        </ChartPreviewCard>
-      ))}
+    <div>
+      {zoom.isZoomed && <ZoomResetChip onReset={zoom.resetZoom} />}
+      <div className="space-y-3">
+        {visibleCharts.map((chart) => (
+          <ChartPreviewCard
+            key={chart.key}
+            title={chart.title}
+            icon={chart.icon}
+            color={chart.color}
+            compactHeight={chart.compactHeight}
+            metricId={chart.metricId}
+            rail={chart.rail}
+          >
+            {chart.chart}
+          </ChartPreviewCard>
+        ))}
+      </div>
     </div>
   );
 };

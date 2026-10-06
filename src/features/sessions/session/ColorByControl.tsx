@@ -14,7 +14,7 @@ import {
   type ColorModeStatus,
   type ColorModeUnavailableReason,
 } from '@/lib/colorModes.ts';
-import { useSessionColoringStore } from '@/store/sessionColoring.ts';
+import { useMapFocusStore } from '@/store/mapFocus.ts';
 import type { Sport } from '@/packages/engine/types.ts';
 
 const MODE_LABEL: Record<ColorMode, () => string> = {
@@ -124,7 +124,7 @@ export const ColorByControl = (props: ColorByControlProps) => {
         onValueChange={(value) => {
           const mode = COLOR_MODES.find((candidate) => candidate === value);
           if (mode === undefined) return;
-          useSessionColoringStore.getState().setSessionColorMode(mode);
+          useMapFocusStore.getState().setSessionColorMode(mode);
           setOpen(false);
         }}
         className="gap-1"

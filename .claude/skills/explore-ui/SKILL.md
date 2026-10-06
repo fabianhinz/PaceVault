@@ -1,6 +1,6 @@
 ---
 name: explore-ui
-description: "Explores design variants for a PaceVault UI change through research subagents and an interactive HTML mockup, and turns the settled direction into plans/<feature>.md. Use when the owner wants to explore, compare or rethink how a screen, chart, panel or flow looks or behaves and no design has been chosen yet. Not for UI changes whose design is already settled (write the plan directly) and not for bug fixes."
+description: 'Explores design variants for a PaceVault UI change through research subagents and an interactive HTML mockup, and turns the settled direction into plans/<feature>.md. Use when the owner wants to explore, compare or rethink how a screen, chart, panel or flow looks or behaves and no design has been chosen yet. Not for UI changes whose design is already settled (write the plan directly) and not for bug fixes.'
 ---
 
 # Explore a UI idea before planning
@@ -51,7 +51,7 @@ The owner decides; you research, mock up, relay and ask. This skill ends in a re
    - **Removal**: what the change makes dead and deletes.
    - **Tests**: what `tests/CLAUDE.md` calls for, usually 0–3 tests.
    - **Verification**: the CLAUDE.md §5 suite plus what to check by hand on desktop and at 390 px.
-   Done when every settled decision is in the plan and the owner has reviewed it. Later answers go into the plan as well.
+     Done when every settled decision is in the plan and the owner has reviewed it. Later answers go into the plan as well.
 
 7. **Implement on go-ahead only.** After the owner's explicit go-ahead, implement the plan and run the CLAUDE.md §5 verification. Leave the changes in the working tree for the owner.
    Done when the verification suite passes and the changes are reported.

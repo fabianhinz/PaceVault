@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Sport } from '@/packages/engine/types.ts';
-import type { LapMarker } from '@/lib/lapMarkers.ts';
 import type { ColorMode } from '@/lib/colorModes.ts';
+import type { LapSet, LapSource } from '@/lib/lapSet.ts';
 
 interface MapFocusState {
   openedSessionId: string | null;
@@ -13,40 +12,51 @@ interface MapFocusState {
   setFocusedTripSessions: (ids: string[]) => void;
   hoveredStudioRouteId: string | null;
   setHoveredStudioRoute: (id: string | null) => void;
-  focusedSport: Sport | null;
-  setFocusedSport: (sport: Sport) => void;
-  clearFocusedSport: () => void;
   hoveredPoint: [number, number] | null;
   setHoveredPoint: (point: [number, number]) => void;
   clearHoveredPoint: () => void;
   pickCircle: [number, number] | null;
   setPickCircle: (center: [number, number]) => void;
   clearPickCircle: () => void;
-  lapMarkers: LapMarker[];
-  setLapMarkers: (markers: LapMarker[]) => void;
-  clearLapMarkers: () => void;
-  hoveredLapIndex: number | null;
-  setHoveredLapIndex: (index: number) => void;
-  clearHoveredLapIndex: () => void;
   trackColorMode: ColorMode;
   setTrackColorMode: (mode: ColorMode) => void;
+  sessionColorMode: ColorMode;
+  setSessionColorMode: (mode: ColorMode) => void;
+  lapSource: LapSource;
+  setLapSource: (source: LapSource) => void;
+  sessionLaps: LapSet | null;
+  setSessionLaps: (laps: LapSet | null) => void;
+  selectedLapIndex: number | null;
+  selectLap: (lapIndex: number) => void;
+  toggleSelectedLap: (lapIndex: number) => void;
+  clearSelectedLap: () => void;
+  hoveredLapIndex: number | null;
+  setHoveredLap: (lapIndex: number | null) => void;
 }
 
 export const useMapFocusStore = create<MapFocusState>()(
-  immer((set) => ({
+  immer((set, get) => ({
     openedSessionId: null,
     setOpenedSession: (id) => {
       if (id === null) {
         set({
           openedSessionId: null,
-          focusedSport: null,
           hoveredPoint: null,
-          lapMarkers: [],
-          hoveredLapIndex: null,
           trackColorMode: 'sport',
+          sessionColorMode: 'sport',
+          lapSource: 'device',
+          sessionLaps: null,
+          selectedLapIndex: null,
+          hoveredLapIndex: null,
         });
-      } else {
-        set({ openedSessionId: id });
+      } else if (id !== get().openedSessionId) {
+        set({
+          openedSessionId: id,
+          sessionColorMode: 'sport',
+          lapSource: 'device',
+          selectedLapIndex: null,
+          hoveredLapIndex: null,
+        });
       }
     },
     hoveredSessionId: null,
@@ -55,22 +65,34 @@ export const useMapFocusStore = create<MapFocusState>()(
     setFocusedTripSessions: (ids) => set({ focusedTripSessionIds: ids }),
     hoveredStudioRouteId: null,
     setHoveredStudioRoute: (id) => set({ hoveredStudioRouteId: id }),
-    focusedSport: null,
-    setFocusedSport: (sport) => set({ focusedSport: sport }),
-    clearFocusedSport: () => set({ focusedSport: null }),
     hoveredPoint: null,
     setHoveredPoint: (point) => set({ hoveredPoint: point }),
     clearHoveredPoint: () => set({ hoveredPoint: null }),
     pickCircle: null,
     setPickCircle: (center) => set({ pickCircle: center }),
     clearPickCircle: () => set({ pickCircle: null }),
-    lapMarkers: [],
-    setLapMarkers: (markers) => set({ lapMarkers: markers }),
-    clearLapMarkers: () => set({ lapMarkers: [] }),
-    hoveredLapIndex: null,
-    setHoveredLapIndex: (index) => set({ hoveredLapIndex: index }),
-    clearHoveredLapIndex: () => set({ hoveredLapIndex: null }),
     trackColorMode: 'sport',
     setTrackColorMode: (mode) => set({ trackColorMode: mode }),
+    sessionColorMode: 'sport',
+    setSessionColorMode: (mode) => set({ sessionColorMode: mode }),
+    lapSource: 'device',
+    setLapSource: (source) =>
+      set({ lapSource: source, selectedLapIndex: null, hoveredLapIndex: null }),
+    sessionLaps: null,
+    setSessionLaps: (laps) => set({ sessionLaps: laps }),
+    selectedLapIndex: null,
+    selectLap: (lapIndex) => set({ selectedLapIndex: lapIndex }),
+    toggleSelectedLap: (lapIndex) => {
+      if (get().selectedLapIndex === lapIndex) {
+        set({ selectedLapIndex: null });
+      } else {
+        set({ selectedLapIndex: lapIndex });
+      }
+    },
+    clearSelectedLap: () => set({ selectedLapIndex: null }),
+    hoveredLapIndex: null,
+    setHoveredLap: (lapIndex) => {
+      if (get().hoveredLapIndex !== lapIndex) set({ hoveredLapIndex: lapIndex });
+    },
   })),
 );
