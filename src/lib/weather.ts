@@ -79,14 +79,11 @@ export const computeHourlyWaypoints = (
   durationSec: number,
   records: SessionRecord[],
 ): Waypoint[] => {
-  const gpsRecords = records.filter(
-    (r) => r.lat !== undefined && r.lng !== undefined && r.timerTime !== undefined,
-  );
+  const gpsRecords = records.filter((r) => r.lat !== undefined && r.lng !== undefined);
   if (gpsRecords.length === 0) return [];
 
   const sessionEndMs = sessionDateMs + durationSec * 1000;
 
-  // Generate hourly boundary timestamps covering the session
   const hourMs = 3600 * 1000;
   const firstHour = Math.floor(sessionDateMs / hourMs) * hourMs;
   const hours: number[] = [];
@@ -98,7 +95,6 @@ export const computeHourlyWaypoints = (
     h += hourMs;
   }
 
-  // For short sessions (< 1h), ensure at least the start hour is included
   if (hours.length === 0) {
     hours.push(firstHour);
   }
@@ -107,17 +103,18 @@ export const computeHourlyWaypoints = (
   for (const hourTimestamp of hours) {
     const elapsedTarget = (hourTimestamp - sessionDateMs) / 1000;
     let closest = gpsRecords[0];
-    let closestDiff = Math.abs((closest?.timerTime ?? 0) - elapsedTarget);
+    if (closest === undefined) continue;
+    let closestDiff = Math.abs(closest.timestamp - elapsedTarget);
 
     for (const r of gpsRecords) {
-      const diff = Math.abs((r.timerTime ?? 0) - elapsedTarget);
+      const diff = Math.abs(r.timestamp - elapsedTarget);
       if (diff < closestDiff) {
         closest = r;
         closestDiff = diff;
       }
     }
 
-    if (closest?.lat !== undefined && closest?.lng !== undefined) {
+    if (closest.lat !== undefined && closest.lng !== undefined) {
       waypoints.push({
         time: hourTimestamp,
         lat: closest.lat,

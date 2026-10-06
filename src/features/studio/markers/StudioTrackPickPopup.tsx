@@ -9,24 +9,21 @@ import { toKm } from '@/lib/formatters.ts';
 import { AddMarkerButton } from './AddMarkerButton.tsx';
 import { segmentAtDistance } from './routeSegments.ts';
 import { useStudioSegmentExport } from '@/features/studio/hooks/useStudioSegmentExport.ts';
+import { useStudioRoutePoints } from '@/features/studio/hooks/useStudioRoutePoints.ts';
+import { sliceRoute } from '@/packages/gpx/routeCut.ts';
 
 export interface StudioTrackPickInfo {
   x: number;
   y: number;
   routeId: string;
-  /** Distance from the route start to the clicked point, in metres. */
   distanceM: number;
 }
 
-/**
- * Shown when the user clicks the focused route on the map: pick which kind of
- * marker to drop at that point, or export the segment the click falls into. The
- * add actions are the same ones the Tools-tab cards use.
- */
 export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose: () => void }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const route = useStudioStore((s) => s.routes.find((r) => r.id === props.info.routeId));
   const segmentExport = useStudioSegmentExport();
+  const routePoints = useStudioRoutePoints(props.info.routeId);
 
   const splitDistances = (route?.markers ?? [])
     .filter((mk) => mk.type === 'track_modifier')
@@ -37,8 +34,16 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
     ? segmentAtDistance(splitDistances, route.distance, props.info.distanceM)
     : null;
 
-  // When the click sits past a split, also show how far into the current segment
-  // the new marker lands.
+  let segmentPointCount = 0;
+  if (segment && routePoints.points) {
+    segmentPointCount = sliceRoute(routePoints.points, segment.startM, segment.endM).length;
+  }
+  const segmentTooShort = routePoints.points !== null && segmentPointCount < 2;
+
+  let exportLabel = m.ui_studio_export_segment();
+  if (!hasSplits) exportLabel = m.ui_studio_export_needs_split();
+  else if (segmentTooShort) exportLabel = m.ui_studio_export_segment_too_short();
+
   const subtitleParts = [m.ui_studio_pick_from_start({ km: toKm(props.info.distanceM) })];
   if (segment && segment.startSplit !== null) {
     subtitleParts.push(
@@ -82,14 +87,14 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
           <Button
             variant="secondary"
             className="w-full"
-            disabled={!hasSplits || segmentExport.exporting}
+            disabled={!hasSplits || segmentPointCount < 2 || segmentExport.exporting}
             onClick={() => {
               segmentExport.exportSegment(route, segment.startM, segment.endM, segment.index);
               props.onClose();
             }}
           >
             <Download className="size-4" />
-            {hasSplits ? m.ui_studio_export_segment() : m.ui_studio_export_needs_split()}
+            {exportLabel}
           </Button>
         )}
       </div>

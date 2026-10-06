@@ -9,15 +9,42 @@ export const formatChartTime = (minutes: number): string => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
-/**
- * Computes a Y-axis domain from avg values with ~10% padding.
- * Area range bands that exceed the domain get clipped by the SVG container.
- */
-export const avgDomain = (values: number[]): [number, number] => {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const padding = Math.round((max - min) * 0.2);
-  return [min - padding, max + padding];
+const NICE_STEPS = [1, 2, 5, 10];
+const DEFAULT_TICK_COUNT = 5;
+const PADDING_RATIO = 0.1;
+const FLAT_PADDING_RATIO = 0.05;
+
+const niceStep = (rough: number): number => {
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const normalized = rough / magnitude;
+  const step = NICE_STEPS.find((candidate) => candidate >= normalized) ?? 10;
+  return step * magnitude;
+};
+
+const roundToStep = (value: number): number => Number(value.toPrecision(12));
+
+export const niceAxis = (
+  values: Array<number | null | undefined>,
+  tickCount: number = DEFAULT_TICK_COUNT,
+): { domain: [number, number]; ticks: number[] } | undefined => {
+  const present = values.filter((v): v is number => v !== null && v !== undefined);
+  if (present.length === 0) return undefined;
+  const min = Math.min(...present);
+  const max = Math.max(...present);
+  let padding = (max - min) * PADDING_RATIO;
+  if (padding === 0) {
+    padding = Math.max(Math.abs(max) * FLAT_PADDING_RATIO, 1);
+  }
+  const low = min - padding;
+  const high = max + padding;
+  const step = niceStep((high - low) / Math.max(1, tickCount - 1));
+  const start = roundToStep(Math.floor(low / step) * step);
+  const end = roundToStep(Math.ceil(high / step) * step);
+  const ticks: number[] = [];
+  for (let tick = start; tick <= end + step / 2; tick += step) {
+    ticks.push(roundToStep(tick));
+  }
+  return { domain: [start, end], ticks };
 };
 
 export const formatTick = (v: number, unit?: string): string => {

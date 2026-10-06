@@ -7,25 +7,24 @@ import { routeColors } from '@/features/studio/routeColors.ts';
 import { glassClass } from '@/components/ui/Card.tsx';
 import { MAP_MARKER_Z } from '@/features/map/mapZ.ts';
 import { cn } from '@/lib/utils.ts';
-import { positionAtDistance } from './markerGeometry.ts';
+import { pointAtRouteDistance } from '@/packages/gpx/routeCut.ts';
+import { useStudioRoutePoints } from '@/features/studio/hooks/useStudioRoutePoints.ts';
 
-/**
- * Renders the focused route's markers as clickable pins on the shared map. Must
- * live inside the MapGL tree. Clicking a pin opens the shared edit dialog.
- */
 export const StudioMarkerPins = (props: { routeId: string }) => {
   const route = useStudioStore((s) => s.routes.find((r) => r.id === props.routeId));
+  const routePoints = useStudioRoutePoints(props.routeId);
+  const points = routePoints.points;
 
   const pins = useMemo(() => {
-    if (!route) return [];
+    if (!route || !points) return [];
     return route.markers
       .map((marker) => {
-        const position = positionAtDistance(route.id, route.encodedPolylines, marker.distanceM);
+        const position = pointAtRouteDistance(points, marker.distanceM);
         if (!position) return null;
         return { marker, position };
       })
       .filter((pin) => pin !== null);
-  }, [route]);
+  }, [route, points]);
 
   if (!route) return null;
   const hex = routeColors[route.color].hex;
@@ -36,10 +35,9 @@ export const StudioMarkerPins = (props: { routeId: string }) => {
     return (
       <Marker
         key={pin.marker.id}
-        longitude={pin.position[0]}
-        latitude={pin.position[1]}
+        longitude={pin.position.lng}
+        latitude={pin.position.lat}
         anchor="center"
-        // Lift the pin above deck.gl's overlaid track canvas — see MAP_MARKER_Z.
         className={MAP_MARKER_Z}
         onClick={(e) => {
           e.originalEvent.stopPropagation();

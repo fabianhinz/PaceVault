@@ -73,6 +73,7 @@ export const ElevationChart = <
           tickFormatter={props.xAxis.tickFormatter}
         />
         <YAxis
+          domain={['auto', 'auto']}
           yAxisId="left"
           width={compact ? chartTheme.compactYAxisWidth : undefined}
           tick={chartTheme.tick}
@@ -86,6 +87,7 @@ export const ElevationChart = <
           yAxisId="left"
           type="monotone"
           dataKey="elevation"
+          baseValue="dataMin"
           stroke={tokens.chartElevation}
           fill={tokens.chartElevation}
           fillOpacity={0.2}

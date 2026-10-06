@@ -64,6 +64,7 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
           tickFormatter={formatChartTime}
         />
         <YAxis
+          domain={['auto', 'auto']}
           yAxisId="left"
           width={compact ? chartTheme.compactYAxisWidth : undefined}
           tick={chartTheme.tick}

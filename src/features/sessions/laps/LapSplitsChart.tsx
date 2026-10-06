@@ -8,7 +8,7 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
 } from 'recharts';
-import { avgDomain, chartTheme, formatTick } from '@/lib/chartTheme.ts';
+import { chartTheme, niceAxis, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { formatPace, formatPaceInput } from '@/lib/formatters.ts';
@@ -30,7 +30,10 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
   const hasRangeData = props.data.some(
     (d) => (props.isRunning ? d.paceRange : d.speedRange) !== undefined,
   );
-  const yDomain = avgDomain(props.data.map((d) => (props.isRunning ? d.pace : d.speed)));
+  const yAxis = niceAxis(
+    props.data.map((d) => (props.isRunning ? d.pace : d.speed)),
+    compact ? 3 : undefined,
+  );
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -62,13 +65,13 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
           axisLine={chartTheme.axisLine}
         />
         <YAxis
-          domain={yDomain}
+          domain={yAxis?.domain}
+          ticks={yAxis?.ticks}
           width={compact ? chartTheme.compactYAxisWidth : undefined}
           allowDataOverflow
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
-          tickCount={compact ? 3 : undefined}
           reversed={props.isRunning}
           tickFormatter={(v: number) => {
             if (props.isRunning) {

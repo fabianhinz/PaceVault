@@ -8,7 +8,7 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
 } from 'recharts';
-import { avgDomain, chartTheme, formatTick } from '@/lib/chartTheme.ts';
+import { chartTheme, niceAxis, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { type LapPowerPoint, lapIndexAt } from '@/lib/lapChartData.ts';
@@ -23,7 +23,10 @@ interface LapPowerChartProps {
 
 export const LapPowerChart = (props: LapPowerChartProps) => {
   const compact = props.mode === 'compact';
-  const yDomain = avgDomain(props.data.map((d) => d.avgPower));
+  const yAxis = niceAxis(
+    props.data.map((d) => d.avgPower),
+    compact ? 3 : undefined,
+  );
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
@@ -54,13 +57,13 @@ export const LapPowerChart = (props: LapPowerChartProps) => {
           axisLine={chartTheme.axisLine}
         />
         <YAxis
-          domain={yDomain}
+          domain={yAxis?.domain}
+          ticks={yAxis?.ticks}
           width={compact ? chartTheme.compactYAxisWidth : undefined}
           allowDataOverflow
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
-          tickCount={compact ? 3 : undefined}
           tickFormatter={(v: number) => formatTick(v, compact ? undefined : 'W')}
         />
         <RechartsTooltip {...hoverOnlyTooltip} cursor={{ fill: `${tokens.accent}14` }} />

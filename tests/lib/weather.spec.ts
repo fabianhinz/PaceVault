@@ -148,8 +148,19 @@ describe('computeHourlyWaypoints', () => {
       makeRecord(3600, 48.2, 11.6),
     ];
     const result = computeHourlyWaypoints(sessionDate, 3600, records);
-    // First waypoint at hour boundary 10:00 should be closest to timerTime 0
     expect(result[0]?.lat).toBe(48.1);
+  });
+
+  it('weather waypoint lands an hour off after a paused stretch', () => {
+    const sessionDate = new Date('2026-04-08T10:00:00Z').getTime();
+    const records: SessionRecord[] = [
+      { timestamp: 0, timerTime: 0, lat: 48.1, lng: 11.5 },
+      { timestamp: 1800, timerTime: 1800, lat: 48.15, lng: 11.55 },
+      { timestamp: 5400, timerTime: 1801, lat: 48.2, lng: 11.6 },
+      { timestamp: 7200, timerTime: 3600, lat: 48.3, lng: 11.7 },
+    ];
+    const result = computeHourlyWaypoints(sessionDate, 7200, records);
+    expect(result.map((w) => w.lat)).toEqual([48.1, 48.15, 48.3]);
   });
 
   it('handles sessions crossing midnight', () => {

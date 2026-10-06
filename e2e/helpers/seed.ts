@@ -182,7 +182,7 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
     name: s.name,
     duration: s.duration ?? 3600,
     distance: s.distance ?? 10000,
-    elevationGain: s.elevationGain ?? 0,
+    elevationGain: s.elevationGain,
     tss: 80,
     stressMethod: 'trimp',
     sensorWarnings: [],

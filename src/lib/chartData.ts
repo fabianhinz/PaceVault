@@ -2,6 +2,7 @@ import type { SessionRecord } from '@/packages/engine/types.ts';
 import type { RouteProfile } from '@/packages/gpx/routeProfile.ts';
 import { gradeAdjustedPaceFactor } from '@/packages/engine/normalize.ts';
 import { bucketSeries, TARGET_ROWS } from '@/lib/chartBuckets.ts';
+import { movingSeconds } from '@/lib/movingTime.ts';
 
 export interface TimeSeriesPoint {
   time: number;
@@ -79,9 +80,10 @@ export const buildSessionChartRows = (
   options: SessionChartRowOptions,
 ) => {
   const includeGap = options.isRunning && records.some((r) => r.grade !== undefined);
+  const moving = movingSeconds(records);
   return bucketSeries(records, {
     xKey: 'time',
-    x: (r) => r.timestamp / 60,
+    x: (_, i) => (moving[i] ?? 0) / 60,
     channels: {
       hr: (r) => r.hr,
       power: (r) => r.power,

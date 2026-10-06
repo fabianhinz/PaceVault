@@ -6,10 +6,6 @@ import { buildRouteSegmentGpx } from '@/lib/gpxExport.ts';
 import { downloadFile } from '@/lib/downloadFile.ts';
 import type { StudioRoute } from '@/store/studio.ts';
 
-/**
- * Exports the slice of a route between two cumulative distances as a GPX file,
- * named `<route> - segment N.gpx`. Mirrors the session GPX export.
- */
 export const useStudioSegmentExport = () => {
   const [exporting, setExporting] = useState(false);
 
@@ -23,10 +19,7 @@ export const useStudioSegmentExport = () => {
         time: new Date(route.importedAt),
       });
 
-      if (gpx === null) {
-        toast(m.toast_export_no_gps(), undefined, 'error');
-        return;
-      }
+      if (gpx === null) return;
 
       const file = new File([gpx], `${name}.gpx`, { type: 'application/gpx+xml' });
       downloadFile(file);

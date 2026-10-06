@@ -4,7 +4,7 @@ type Accessor<Row> = (row: Row, index: number) => number | null | undefined;
 
 interface BucketSeriesOptions<Row, K extends string, C extends string> {
   xKey: K;
-  x: (row: Row) => number;
+  x: (row: Row, index: number) => number;
   channels: Record<C, Accessor<Row>>;
   range?: { from: number; to: number };
   targetRows: number;
@@ -47,7 +47,7 @@ export const bucketSeries = <Row, K extends string, C extends string>(
   rows: Row[],
   options: BucketSeriesOptions<Row, K, C>,
 ): BucketRow<Row, K, C>[] => {
-  const allXs = rows.map((row) => options.x(row));
+  const allXs = rows.map((row, index) => options.x(row, index));
   const channelKeys = Object.keys(options.channels) as C[];
   const values = new Map<C, Array<number | undefined>>();
   let channelSpacing = 0;
@@ -70,7 +70,7 @@ export const bucketSeries = <Row, K extends string, C extends string>(
   const indices: number[] = [];
   const xs: number[] = [];
   rows.forEach((row, index) => {
-    const x = allXs[index] ?? options.x(row);
+    const x = allXs[index] ?? options.x(row, index);
     if (options.range && (x < options.range.from || x > options.range.to)) return;
     indices.push(index);
     xs.push(x);
