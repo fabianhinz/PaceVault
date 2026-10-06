@@ -138,11 +138,6 @@ test.describe('mobile bottom sheet', () => {
       await expect(divider).toHaveCSS('opacity', '0');
     });
 
-    test('hides the chart expand button', async ({ page }) => {
-      await expect(page.getByText('Total Distance')).toBeVisible();
-      await expect(page.getByRole('button', { name: /expand chart/i })).toHaveCount(0);
-    });
-
     test('renders session rows past the first screen inside the sheet', async ({ page }) => {
       await page.getByRole('link', { name: /sessions/i }).click();
       await expect(page.locator('[data-testid="session-item"]').first()).toBeVisible();

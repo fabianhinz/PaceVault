@@ -27,7 +27,7 @@ interface ChartEntry {
   hasData: boolean;
   metricId?: MetricId;
   rail: React.ReactNode;
-  render: (mode: 'compact' | 'expanded') => React.ReactNode;
+  chart: React.ReactNode;
 }
 
 /**
@@ -47,7 +47,6 @@ const formatHoverDist = (x: ChartHoverX) => routeDistanceXAxis.tickFormatter(Num
 export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
   const profile = useMemo(() => buildRouteProfile(props.points), [props.points]);
 
-  // Synced zoom state for compact mode
   const zoom = useSyncedChartZoom();
   const zoomRange = zoom.zoomRange;
 
@@ -65,7 +64,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
     [rows, compactRows],
   );
 
-  const onCompactHover = useCallback(
+  const onHover = useCallback(
     (dist: number | null) => {
       if (dist == null) {
         useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
@@ -81,14 +80,6 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
     [gpsLookup],
   );
 
-  const onExpandedHover = useCallback((dist: number | null) => {
-    if (dist == null) {
-      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
-      return;
-    }
-    useChartHoverStore.getState().setChartHover(HOVER_GROUP, dist);
-  }, []);
-
   useEffect(
     () => () => {
       useMapFocusStore.getState().clearHoveredPoint();
@@ -101,8 +92,6 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
     () => summarizeValues(profile.grade.map((p) => p.grade)),
     [profile.grade],
   );
-  const hoverHandler = (mode: 'compact' | 'expanded') =>
-    mode === 'compact' ? onCompactHover : onExpandedHover;
   const elevation = props.elevation;
 
   const charts: ChartEntry[] = [
@@ -133,14 +122,13 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <ElevationChart
-          data={mode === 'compact' ? compactRows : rows}
+          data={compactRows}
           xAxis={routeDistanceXAxis}
-          mode={mode}
-          onActiveXChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          onActiveXChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -170,14 +158,13 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <GradeChart
-          data={mode === 'compact' ? compactRows : rows}
+          data={compactRows}
           xAxis={routeDistanceXAxis}
-          mode={mode}
-          onActiveXChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          onActiveXChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -198,7 +185,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
           metricId={chart.metricId}
           rail={chart.rail}
         >
-          {chart.render}
+          {chart.chart}
         </ChartPreviewCard>
       ))}
     </div>

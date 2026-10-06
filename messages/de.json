@@ -521,8 +521,6 @@
   "ui_sport_color_desc": "Belastung nach Sportart aufschlüsseln",
   "ui_lap_label": "Runde {number}",
   "ui_splits_subtitle_custom": "{distance} Abschnitte",
-  "ui_btn_collapse": "Einklappen",
-  "ui_btn_expand": "Ausklappen",
   "ui_map_popup_sessions_title": "{count} Einheiten",
   "ui_btn_export_gpx": "Als GPX exportieren",
   "ui_session_edit_in_studio": "Route im Studio bearbeiten",

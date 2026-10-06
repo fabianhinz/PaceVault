@@ -4,7 +4,6 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceArea,
 } from 'recharts';
@@ -17,14 +16,12 @@ import { m } from '@/paraglide/messages.js';
 
 interface CadenceChartProps {
   data: CadencePoint[];
-  mode?: 'compact' | 'expanded';
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onZoomReset?: () => void;
 }
 
 export const CadenceChart = (props: CadenceChartProps) => {
-  const compact = props.mode === 'compact';
   const zoom = useChartZoom({
     data: props.data,
     xKey: 'time',
@@ -35,7 +32,7 @@ export const CadenceChart = (props: CadenceChartProps) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart
-        syncId={compact ? 'session-detail' : undefined}
+        syncId={'session-detail'}
         data={zoom.zoomedData}
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
@@ -46,17 +43,12 @@ export const CadenceChart = (props: CadenceChartProps) => {
         onMouseUp={zoom.onMouseUp}
         {...chartHoverHandlers(props.onActiveTimeChange)}
       >
-        {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey="time"
-          ticks={
-            compact
-              ? [
-                  zoom.zoomedData[0]?.time ?? 0,
-                  zoom.zoomedData[zoom.zoomedData.length - 1]?.time ?? 0,
-                ]
-              : undefined
-          }
+          ticks={[
+            zoom.zoomedData[0]?.time ?? 0,
+            zoom.zoomedData[zoom.zoomedData.length - 1]?.time ?? 0,
+          ]}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
@@ -65,12 +57,12 @@ export const CadenceChart = (props: CadenceChartProps) => {
         <YAxis
           domain={['auto', 'auto']}
           yAxisId="left"
-          width={compact ? chartTheme.compactYAxisWidth : undefined}
+          width={chartTheme.compactYAxisWidth}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
-          tickCount={compact ? 3 : undefined}
-          tickFormatter={(v: number) => formatTick(v, compact ? undefined : 'rpm')}
+          tickCount={3}
+          tickFormatter={(v: number) => formatTick(v)}
         />
         <RechartsTooltip {...hoverOnlyTooltip} />
         <Line

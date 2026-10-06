@@ -91,7 +91,6 @@ export const chartTheme = {
   tick: { fill: tokens.textTertiary, fontSize: 11 },
   compactYAxisWidth: 36,
   axisLine: { stroke: tokens.border },
-  grid: { stroke: tokens.border },
   tooltip: {
     contentStyle: {
       backgroundColor: 'rgba(17, 19, 24, 0.85)',

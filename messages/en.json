@@ -521,8 +521,6 @@
   "ui_sport_color_desc": "Show per-sport load breakdown",
   "ui_lap_label": "Lap {number}",
   "ui_splits_subtitle_custom": "{distance} splits",
-  "ui_btn_collapse": "Collapse",
-  "ui_btn_expand": "Expand",
   "ui_map_popup_sessions_title": "{count} Sessions",
   "ui_btn_export_gpx": "Export as GPX",
   "ui_session_edit_in_studio": "Edit route in Studio",

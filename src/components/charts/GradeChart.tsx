@@ -4,10 +4,8 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceArea,
-  ReferenceLine,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
 import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
@@ -21,7 +19,6 @@ interface GradeChartProps<
 > {
   data: T[];
   xAxis: ChartXAxis<K>;
-  mode?: 'compact' | 'expanded';
   onActiveXChange?: (x: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onZoomReset?: () => void;
@@ -33,7 +30,6 @@ export const GradeChart = <
 >(
   props: GradeChartProps<K, T>,
 ) => {
-  const compact = props.mode === 'compact';
   const zoom = useChartZoom({
     data: props.data,
     xKey: props.xAxis.key,
@@ -44,7 +40,7 @@ export const GradeChart = <
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart
-        syncId={compact ? props.xAxis.syncId : undefined}
+        syncId={props.xAxis.syncId}
         data={zoom.zoomedData}
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
@@ -55,19 +51,14 @@ export const GradeChart = <
         onMouseUp={zoom.onMouseUp}
         {...chartHoverHandlers(props.onActiveXChange)}
       >
-        {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey={props.xAxis.key}
           type={props.xAxis.type}
           domain={props.xAxis.type === 'number' ? ['dataMin', 'dataMax'] : undefined}
-          ticks={
-            compact
-              ? [
-                  zoom.zoomedData[0]?.[props.xAxis.key] ?? 0,
-                  zoom.zoomedData[zoom.zoomedData.length - 1]?.[props.xAxis.key] ?? 0,
-                ]
-              : undefined
-          }
+          ticks={[
+            zoom.zoomedData[0]?.[props.xAxis.key] ?? 0,
+            zoom.zoomedData[zoom.zoomedData.length - 1]?.[props.xAxis.key] ?? 0,
+          ]}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
@@ -76,22 +67,14 @@ export const GradeChart = <
         <YAxis
           domain={['auto', 'auto']}
           yAxisId="left"
-          width={compact ? chartTheme.compactYAxisWidth : undefined}
+          width={chartTheme.compactYAxisWidth}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
-          tickCount={compact ? 3 : undefined}
+          tickCount={3}
           tickFormatter={(v: number) => `${v}%`}
         />
         <RechartsTooltip {...hoverOnlyTooltip} />
-        {!compact && (
-          <ReferenceLine
-            yAxisId="left"
-            y={0}
-            stroke={tokens.textQuaternary}
-            strokeDasharray="3 3"
-          />
-        )}
         <Line
           yAxisId="left"
           type="monotone"

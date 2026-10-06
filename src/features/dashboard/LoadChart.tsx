@@ -6,7 +6,6 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
-  CartesianGrid,
   ReferenceArea,
 } from 'recharts';
 import { useFilteredMetrics } from './hooks/useFilteredMetrics.ts';
@@ -244,113 +243,103 @@ export const LoadChart = () => {
         </ListItem>
       }
     >
-      {(mode) => {
-        const compact = mode === 'compact';
-        return groupedData.length > 0 ? (
-          <TabsPrimitive.Root
-            value={groupBy}
-            onValueChange={(v) => useFiltersStore.getState().setLoadChartGroupBy(v as GroupBy)}
-            className="h-full flex flex-col"
-          >
-            <TabsPrimitive.List className="inline-flex gap-1 mb-1">
-              {groupByTabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <TabsTrigger
-                    key={tab.key}
-                    value={tab.key}
-                    disabled={isGroupingDisabled && tab.key !== 'day'}
-                    className="flex-none gap-1 rounded-lg px-2 py-1 text-xs"
-                  >
-                    <Icon size={12} />
-                    {tab.label()}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsPrimitive.List>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart
-                  data={zoom.zoomedData}
-                  onMouseDown={zoom.onMouseDown}
-                  onMouseMove={(e) => {
-                    zoom.onMouseMove(e);
-                    if (e.activeLabel != null) onHover(String(e.activeLabel));
-                  }}
-                  onMouseUp={zoom.onMouseUp}
-                  onMouseLeave={() => onHover(null)}
-                  onTouchMove={(e) => {
-                    if (e.activeLabel != null) onHover(String(e.activeLabel));
-                  }}
-                  onTouchEnd={() => onHover(null)}
+      {groupedData.length > 0 ? (
+        <TabsPrimitive.Root
+          value={groupBy}
+          onValueChange={(v) => useFiltersStore.getState().setLoadChartGroupBy(v as GroupBy)}
+          className="h-full flex flex-col"
+        >
+          <TabsPrimitive.List className="inline-flex gap-1 mb-1">
+            {groupByTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.key}
+                  value={tab.key}
+                  disabled={isGroupingDisabled && tab.key !== 'day'}
+                  className="flex-none gap-1 rounded-lg px-2 py-1 text-xs"
                 >
-                  {!compact && (
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />
-                  )}
-                  <XAxis
-                    dataKey="date"
-                    ticks={
-                      compact
-                        ? [
-                            zoom.zoomedData[0]?.date,
-                            zoom.zoomedData[zoom.zoomedData.length - 1]?.date,
-                          ].filter((v): v is string => v != null)
-                        : undefined
-                    }
-                    tick={chartTheme.tick}
-                    tickLine={false}
-                    axisLine={chartTheme.axisLine}
-                    tickFormatter={tickFormatter}
-                  />
-                  <YAxis
-                    tick={chartTheme.tick}
-                    tickLine={false}
-                    axisLine={compact ? false : chartTheme.axisLine}
-                    width={40}
-                    tickCount={compact ? 3 : undefined}
-                    tickFormatter={(v: number) => String(Math.round(v))}
-                  />
-                  <RechartsTooltip {...hoverOnlyTooltip} />
-                  {showSportColors ? (
-                    SPORTS.map((sport) => (
-                      <Area
-                        key={sport}
-                        type="step"
-                        dataKey={sport}
-                        stackId="sport"
-                        fill={sportColors[sport]}
-                        fillOpacity={1}
-                        stroke="none"
-                        dot={false}
-                        name={sportNames[sport]()}
-                      />
-                    ))
-                  ) : (
+                  <Icon size={12} />
+                  {tab.label()}
+                </TabsTrigger>
+              );
+            })}
+          </TabsPrimitive.List>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={zoom.zoomedData}
+                onMouseDown={zoom.onMouseDown}
+                onMouseMove={(e) => {
+                  zoom.onMouseMove(e);
+                  if (e.activeLabel != null) onHover(String(e.activeLabel));
+                }}
+                onMouseUp={zoom.onMouseUp}
+                onMouseLeave={() => onHover(null)}
+                onTouchMove={(e) => {
+                  if (e.activeLabel != null) onHover(String(e.activeLabel));
+                }}
+                onTouchEnd={() => onHover(null)}
+              >
+                <XAxis
+                  dataKey="date"
+                  ticks={[
+                    zoom.zoomedData[0]?.date,
+                    zoom.zoomedData[zoom.zoomedData.length - 1]?.date,
+                  ].filter((v): v is string => v != null)}
+                  tick={chartTheme.tick}
+                  tickLine={false}
+                  axisLine={chartTheme.axisLine}
+                  tickFormatter={tickFormatter}
+                />
+                <YAxis
+                  tick={chartTheme.tick}
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                  tickCount={3}
+                  tickFormatter={(v: number) => String(Math.round(v))}
+                />
+                <RechartsTooltip {...hoverOnlyTooltip} />
+                {showSportColors ? (
+                  SPORTS.map((sport) => (
                     <Area
+                      key={sport}
                       type="step"
-                      dataKey="tss"
-                      fill={tokens.chartLoad}
+                      dataKey={sport}
+                      stackId="sport"
+                      fill={sportColors[sport]}
                       fillOpacity={1}
                       stroke="none"
                       dot={false}
-                      name={m.ui_chart_series_tss()}
+                      name={sportNames[sport]()}
                     />
-                  )}
-                  {zoom.refAreaLeft && zoom.refAreaRight && (
-                    <ReferenceArea
-                      x1={zoom.refAreaLeft}
-                      x2={zoom.refAreaRight}
-                      strokeOpacity={0.3}
-                      fill={tokens.accent}
-                      fillOpacity={0.15}
-                    />
-                  )}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </TabsPrimitive.Root>
-        ) : null;
-      }}
+                  ))
+                ) : (
+                  <Area
+                    type="step"
+                    dataKey="tss"
+                    fill={tokens.chartLoad}
+                    fillOpacity={1}
+                    stroke="none"
+                    dot={false}
+                    name={m.ui_chart_series_tss()}
+                  />
+                )}
+                {zoom.refAreaLeft && zoom.refAreaRight && (
+                  <ReferenceArea
+                    x1={zoom.refAreaLeft}
+                    x2={zoom.refAreaRight}
+                    strokeOpacity={0.3}
+                    fill={tokens.accent}
+                    fillOpacity={0.15}
+                  />
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsPrimitive.Root>
+      ) : null}
     </ChartPreviewCard>
   );
 };

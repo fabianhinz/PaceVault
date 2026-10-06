@@ -4,7 +4,6 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceArea,
 } from 'recharts';
@@ -20,7 +19,6 @@ interface ElevationChartProps<
 > {
   data: T[];
   xAxis: ChartXAxis<K>;
-  mode?: 'compact' | 'expanded';
   onActiveXChange?: (x: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onZoomReset?: () => void;
@@ -32,7 +30,6 @@ export const ElevationChart = <
 >(
   props: ElevationChartProps<K, T>,
 ) => {
-  const compact = props.mode === 'compact';
   const zoom = useChartZoom({
     data: props.data,
     xKey: props.xAxis.key,
@@ -43,7 +40,7 @@ export const ElevationChart = <
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart
-        syncId={compact ? props.xAxis.syncId : undefined}
+        syncId={props.xAxis.syncId}
         data={zoom.zoomedData}
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
@@ -54,19 +51,14 @@ export const ElevationChart = <
         onMouseUp={zoom.onMouseUp}
         {...chartHoverHandlers(props.onActiveXChange)}
       >
-        {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey={props.xAxis.key}
           type={props.xAxis.type}
           domain={props.xAxis.type === 'number' ? ['dataMin', 'dataMax'] : undefined}
-          ticks={
-            compact
-              ? [
-                  zoom.zoomedData[0]?.[props.xAxis.key] ?? 0,
-                  zoom.zoomedData[zoom.zoomedData.length - 1]?.[props.xAxis.key] ?? 0,
-                ]
-              : undefined
-          }
+          ticks={[
+            zoom.zoomedData[0]?.[props.xAxis.key] ?? 0,
+            zoom.zoomedData[zoom.zoomedData.length - 1]?.[props.xAxis.key] ?? 0,
+          ]}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
@@ -75,12 +67,12 @@ export const ElevationChart = <
         <YAxis
           domain={['auto', 'auto']}
           yAxisId="left"
-          width={compact ? chartTheme.compactYAxisWidth : undefined}
+          width={chartTheme.compactYAxisWidth}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
-          tickCount={compact ? 3 : undefined}
-          tickFormatter={(v: number) => formatTick(v, compact ? undefined : 'm')}
+          tickCount={3}
+          tickFormatter={(v: number) => formatTick(v)}
         />
         <RechartsTooltip {...hoverOnlyTooltip} />
         <Area

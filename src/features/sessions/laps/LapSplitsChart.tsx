@@ -5,26 +5,23 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
 } from 'recharts';
 import { chartTheme, niceAxis, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { hoverOnlyTooltip } from '@/lib/chartHover.ts';
-import { formatPace, formatPaceInput } from '@/lib/formatters.ts';
+import { formatPaceInput } from '@/lib/formatters.ts';
 import { type LapSplitPoint, lapIndexAt } from '@/lib/lapChartData.ts';
 import { m } from '@/paraglide/messages.js';
 
 interface LapSplitsChartProps {
   data: LapSplitPoint[];
-  mode: 'compact' | 'expanded';
   isRunning: boolean;
   syncId?: string;
   onActiveLapChange?: (lapIndex: number | null) => void;
 }
 
 export const LapSplitsChart = (props: LapSplitsChartProps) => {
-  const compact = props.mode === 'compact';
   const dataKey = props.isRunning ? 'pace' : 'speed';
   const fill = props.isRunning ? tokens.chartPace : tokens.chartSpeed;
   const hasRangeData = props.data.some(
@@ -32,14 +29,14 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
   );
   const yAxis = niceAxis(
     props.data.map((d) => (props.isRunning ? d.pace : d.speed)),
-    compact ? 3 : undefined,
+    3,
   );
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
         data={props.data}
-        syncId={compact ? props.syncId : undefined}
+        syncId={props.syncId}
         syncMethod="value"
         onMouseMove={(state) => {
           props.onActiveLapChange?.(lapIndexAt(props.data, state.activeTooltipIndex));
@@ -50,16 +47,11 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
         }}
         onTouchEnd={() => props.onActiveLapChange?.(null)}
       >
-        {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey="lap"
-          ticks={
-            compact
-              ? [props.data[0]?.lap, props.data[props.data.length - 1]?.lap].filter(
-                  (v): v is string => v != null,
-                )
-              : undefined
-          }
+          ticks={[props.data[0]?.lap, props.data[props.data.length - 1]?.lap].filter(
+            (v): v is string => v != null,
+          )}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
@@ -67,7 +59,7 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
         <YAxis
           domain={yAxis?.domain}
           ticks={yAxis?.ticks}
-          width={compact ? chartTheme.compactYAxisWidth : undefined}
+          width={chartTheme.compactYAxisWidth}
           allowDataOverflow
           tick={chartTheme.tick}
           tickLine={false}
@@ -75,9 +67,9 @@ export const LapSplitsChart = (props: LapSplitsChartProps) => {
           reversed={props.isRunning}
           tickFormatter={(v: number) => {
             if (props.isRunning) {
-              return compact ? formatPaceInput(v) : formatPace(v);
+              return formatPaceInput(v);
             }
-            return formatTick(v, compact ? undefined : 'km/h');
+            return formatTick(v);
           }}
         />
         <RechartsTooltip {...hoverOnlyTooltip} cursor={{ fill: `${tokens.accent}14` }} />

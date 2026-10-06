@@ -45,7 +45,7 @@ interface ChartEntry {
   compactHeight?: string;
   metricId?: MetricId;
   rail: React.ReactNode;
-  render: (mode: 'compact' | 'expanded') => React.ReactNode;
+  chart: React.ReactNode;
 }
 
 interface SessionChartsExplorerProps {
@@ -98,7 +98,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     [rows, compactRows],
   );
 
-  const onCompactHover = useCallback(
+  const onHover = useCallback(
     (time: number | null) => {
       if (time == null) {
         useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
@@ -114,14 +114,6 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     [gpsLookup],
   );
 
-  const onExpandedHover = useCallback((time: number | null) => {
-    if (time == null) {
-      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
-      return;
-    }
-    useChartHoverStore.getState().setChartHover(HOVER_GROUP, time);
-  }, []);
-
   useEffect(
     () => () => {
       useMapFocusStore.getState().clearHoveredPoint();
@@ -132,8 +124,6 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
 
   const session = props.session;
   const cadenceIcon = sportIcon[session.sport] ?? sportIcon.running;
-  const hoverHandler = (mode: 'compact' | 'expanded') =>
-    mode === 'compact' ? onCompactHover : onExpandedHover;
 
   let avgSpeed = session.avgSpeed;
   if (avgSpeed === undefined && session.distance !== undefined && session.duration > 0) {
@@ -180,14 +170,13 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <HrChart
-          data={mode === 'compact' ? compactRows : rows}
-          mode={mode}
+          data={compactRows}
           zoneScale={hrScale}
-          onActiveTimeChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          onActiveTimeChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -215,14 +204,13 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <PowerChart
-          data={mode === 'compact' ? compactRows : rows}
-          mode={mode}
+          data={compactRows}
           zoneScale={powerScale}
-          onActiveTimeChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          onActiveTimeChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -253,13 +241,12 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <SpeedChart
-          data={mode === 'compact' ? compactRows : rows}
-          mode={mode}
-          onActiveTimeChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          data={compactRows}
+          onActiveTimeChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -290,14 +277,13 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <ElevationChart
-          data={mode === 'compact' ? compactRows : rows}
+          data={compactRows}
           xAxis={sessionTimeXAxis}
-          mode={mode}
-          onActiveXChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          onActiveXChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -328,13 +314,12 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <CadenceChart
-          data={mode === 'compact' ? compactRows : rows}
-          mode={mode}
-          onActiveTimeChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          data={compactRows}
+          onActiveTimeChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -364,14 +349,13 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <GradeChart
-          data={mode === 'compact' ? compactRows : rows}
+          data={compactRows}
           xAxis={sessionTimeXAxis}
-          mode={mode}
-          onActiveXChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          onActiveXChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -403,14 +387,13 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <PaceChart
-          data={mode === 'compact' ? compactRows : rows}
-          mode={mode}
+          data={compactRows}
           zoneScale={paceScale}
-          onActiveTimeChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          onActiveTimeChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -437,13 +420,12 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      render: (mode) => (
+      chart: (
         <GradeAdjustedPaceChart
-          data={mode === 'compact' ? compactRows : rows}
-          mode={mode}
-          onActiveTimeChange={hoverHandler(mode)}
-          onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-          onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
+          data={compactRows}
+          onActiveTimeChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+          onZoomReset={zoom.onZoomReset}
         />
       ),
     },
@@ -465,7 +447,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           metricId={chart.metricId}
           rail={chart.rail}
         >
-          {chart.render}
+          {chart.chart}
         </ChartPreviewCard>
       ))}
     </div>

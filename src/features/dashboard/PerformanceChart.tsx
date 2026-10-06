@@ -7,7 +7,6 @@ import {
   YAxis,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  CartesianGrid,
   ReferenceArea,
 } from 'recharts';
 import { useFilteredMetrics } from './hooks/useFilteredMetrics.ts';
@@ -94,94 +93,86 @@ export const PerformanceChart = () => {
         />
       }
     >
-      {(mode) => {
-        const compact = mode === 'compact';
-        return filtered.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={zoom.zoomedData}
-              onMouseDown={zoom.onMouseDown}
-              onMouseMove={(e) => {
-                zoom.onMouseMove(e);
-                if (e.activeLabel != null) onHover(String(e.activeLabel));
-              }}
-              onMouseUp={zoom.onMouseUp}
-              onMouseLeave={() => onHover(null)}
-              onTouchMove={(e) => {
-                if (e.activeLabel != null) onHover(String(e.activeLabel));
-              }}
-              onTouchEnd={() => onHover(null)}
-            >
-              {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
-              <XAxis
-                dataKey="date"
-                ticks={
-                  compact
-                    ? [
-                        zoom.zoomedData[0]?.date,
-                        zoom.zoomedData[zoom.zoomedData.length - 1]?.date,
-                      ].filter((v): v is string => v != null)
-                    : undefined
-                }
-                tick={chartTheme.tick}
-                tickLine={false}
-                axisLine={chartTheme.axisLine}
-                tickFormatter={formatDashboardDate}
+      {filtered.length > 0 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={zoom.zoomedData}
+            onMouseDown={zoom.onMouseDown}
+            onMouseMove={(e) => {
+              zoom.onMouseMove(e);
+              if (e.activeLabel != null) onHover(String(e.activeLabel));
+            }}
+            onMouseUp={zoom.onMouseUp}
+            onMouseLeave={() => onHover(null)}
+            onTouchMove={(e) => {
+              if (e.activeLabel != null) onHover(String(e.activeLabel));
+            }}
+            onTouchEnd={() => onHover(null)}
+          >
+            <XAxis
+              dataKey="date"
+              ticks={[
+                zoom.zoomedData[0]?.date,
+                zoom.zoomedData[zoom.zoomedData.length - 1]?.date,
+              ].filter((v): v is string => v != null)}
+              tick={chartTheme.tick}
+              tickLine={false}
+              axisLine={chartTheme.axisLine}
+              tickFormatter={formatDashboardDate}
+            />
+            <YAxis
+              tick={chartTheme.tick}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+              tickCount={3}
+            />
+            <RechartsTooltip {...hoverOnlyTooltip} />
+            <Area
+              type="monotone"
+              dataKey="tsb"
+              fill={tokens.chartForm}
+              fillOpacity={0.1}
+              stroke="none"
+              tooltipType="none"
+            />
+            <Line
+              type="monotone"
+              dataKey="ctl"
+              stroke={tokens.chartFitness}
+              strokeWidth={2}
+              dot={false}
+              name={m.ui_chart_series_fitness()}
+            />
+            <Line
+              type="monotone"
+              dataKey="atl"
+              stroke={tokens.chartFatigue}
+              strokeWidth={2}
+              dot={false}
+              name={m.ui_chart_series_fatigue()}
+            />
+            <Line
+              type="monotone"
+              dataKey="tsb"
+              stroke={tokens.chartForm}
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              dot={false}
+              name={m.ui_chart_series_form()}
+            />
+            {zoom.refAreaLeft && zoom.refAreaRight && (
+              <ReferenceArea
+                x1={zoom.refAreaLeft}
+                x2={zoom.refAreaRight}
+                strokeOpacity={0.3}
+                fill={tokens.accent}
+                fillOpacity={0.15}
               />
-              <YAxis
-                tick={chartTheme.tick}
-                tickLine={false}
-                axisLine={compact ? false : chartTheme.axisLine}
-                width={40}
-                tickCount={compact ? 3 : undefined}
-              />
-              <RechartsTooltip {...hoverOnlyTooltip} />
-              <Area
-                type="monotone"
-                dataKey="tsb"
-                fill={tokens.chartForm}
-                fillOpacity={0.1}
-                stroke="none"
-                tooltipType="none"
-              />
-              <Line
-                type="monotone"
-                dataKey="ctl"
-                stroke={tokens.chartFitness}
-                strokeWidth={2}
-                dot={false}
-                name={m.ui_chart_series_fitness()}
-              />
-              <Line
-                type="monotone"
-                dataKey="atl"
-                stroke={tokens.chartFatigue}
-                strokeWidth={2}
-                dot={false}
-                name={m.ui_chart_series_fatigue()}
-              />
-              <Line
-                type="monotone"
-                dataKey="tsb"
-                stroke={tokens.chartForm}
-                strokeWidth={1.5}
-                strokeDasharray="4 4"
-                dot={false}
-                name={m.ui_chart_series_form()}
-              />
-              {zoom.refAreaLeft && zoom.refAreaRight && (
-                <ReferenceArea
-                  x1={zoom.refAreaLeft}
-                  x2={zoom.refAreaRight}
-                  strokeOpacity={0.3}
-                  fill={tokens.accent}
-                  fillOpacity={0.15}
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-        ) : null;
-      }}
+            )}
+          </ComposedChart>
+        </ResponsiveContainer>
+      ) : null}
     </ChartPreviewCard>
   );
 };

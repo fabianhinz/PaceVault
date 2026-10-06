@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { Download, X } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { useStudioStore } from '@/store/studio.ts';
@@ -20,7 +19,6 @@ export interface StudioTrackPickInfo {
 }
 
 export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose: () => void }) => {
-  const cardRef = useRef<HTMLDivElement>(null);
   const route = useStudioStore((s) => s.routes.find((r) => r.id === props.info.routeId));
   const segmentExport = useStudioSegmentExport();
   const routePoints = useStudioRoutePoints(props.info.routeId);
@@ -56,9 +54,7 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
       x={props.info.x}
       y={props.info.y}
       onClose={props.onClose}
-      isExpanded={false}
       desktopSizeClasses="w-[380px]"
-      cardRef={cardRef}
     >
       <CardHeader
         title={m.ui_studio_pick_title()}

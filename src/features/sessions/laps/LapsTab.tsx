@@ -171,14 +171,7 @@ export const LapsTab = (props: LapsTabProps) => {
             />
           }
         >
-          {(mode) => (
-            <LapHrChart
-              data={hrData}
-              mode={mode}
-              syncId={SYNC_ID}
-              onActiveLapChange={handleActiveLapChange}
-            />
-          )}
+          <LapHrChart data={hrData} syncId={SYNC_ID} onActiveLapChange={handleActiveLapChange} />
         </ChartPreviewCard>
       )}
 
@@ -209,14 +202,11 @@ export const LapsTab = (props: LapsTabProps) => {
             />
           }
         >
-          {(mode) => (
-            <LapPowerChart
-              data={powerData}
-              mode={mode}
-              syncId={SYNC_ID}
-              onActiveLapChange={handleActiveLapChange}
-            />
-          )}
+          <LapPowerChart
+            data={powerData}
+            syncId={SYNC_ID}
+            onActiveLapChange={handleActiveLapChange}
+          />
         </ChartPreviewCard>
       )}
 
@@ -259,15 +249,12 @@ export const LapsTab = (props: LapsTabProps) => {
             />
           }
         >
-          {(mode) => (
-            <LapSplitsChart
-              data={splitsData}
-              mode={mode}
-              isRunning={isRunning}
-              syncId={SYNC_ID}
-              onActiveLapChange={handleActiveLapChange}
-            />
-          )}
+          <LapSplitsChart
+            data={splitsData}
+            isRunning={isRunning}
+            syncId={SYNC_ID}
+            onActiveLapChange={handleActiveLapChange}
+          />
         </ChartPreviewCard>
       )}
 
