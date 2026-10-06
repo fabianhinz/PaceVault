@@ -14,12 +14,9 @@ export const SheetAbove = (props: { children: ReactNode }) => {
       style={{ y: sheet.y, height: sheet.height }}
       className="pointer-events-none fixed inset-x-0 bottom-0 z-10"
     >
-      <motion.div
-        style={{ opacity: sheet.opacity, pointerEvents: sheet.pointerEvents }}
-        className="absolute inset-x-0 bottom-full flex justify-center pb-3"
-      >
+      <div className="absolute inset-x-0 bottom-full flex justify-center pb-3">
         {props.children}
-      </motion.div>
+      </div>
     </motion.div>,
     document.body,
   );

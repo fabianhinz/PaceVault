@@ -42,8 +42,6 @@ const spring = { type: 'spring', stiffness: 400, damping: 40 } as const;
 
 const DIVIDER_SCROLL_THRESHOLD = 12;
 
-const ABOVE_FADE_RANGE = 0.2;
-
 const momentum = { power: 0.3, timeConstant: 200, bounceStiffness: 400, bounceDamping: 40 };
 
 interface BottomSheetProps {
@@ -65,19 +63,12 @@ export const BottomSheet = (props: BottomSheetProps) => {
   const peekOpacity = useTransform(y, fade, [0, 1]);
   const peekPointerEvents = useTransform(peekOpacity, (v) => (v > 0.5 ? 'auto' : 'none'));
   const contentOpacity = useTransform(y, fade, [1, 0]);
-  const aboveOpacity = useTransform(y, [0, layout.peekOffset * ABOVE_FADE_RANGE], [0, 1]);
-  const abovePointerEvents = useTransform(aboveOpacity, (v) => (v > 0.5 ? 'auto' : 'none'));
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    registerAbove({
-      y,
-      height: layout.sheetHeight,
-      opacity: aboveOpacity,
-      pointerEvents: abovePointerEvents,
-    });
+    registerAbove({ y, height: layout.sheetHeight });
     return () => registerAbove(null);
-  }, [registerAbove, y, layout.sheetHeight, aboveOpacity, abovePointerEvents]);
+  }, [registerAbove, y, layout.sheetHeight]);
 
   useEffect(() => {
     const handleResize = () => setLayout(readSheetLayout());

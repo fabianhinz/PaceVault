@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import { StatRail, type StatRailRow } from '@/components/ui/StatRail.tsx';
+import { StatRail, type StatRailNote, type StatRailRow } from '@/components/ui/StatRail.tsx';
 import { useChartHoverX, type ChartHoverX } from '@/store/chartHover.ts';
 import type { MetricId } from '@/lib/explanations.ts';
 
 export interface RailReading {
   value: ReactNode;
   secondary?: ReactNode;
-  note?: { text: string; color: string };
+  note?: StatRailNote;
 }
 
 interface SeriesRailProps {
@@ -35,13 +35,14 @@ export const SeriesRail = (props: SeriesRailProps) => {
     <StatRail
       header={header}
       active={active}
+      noteSlot
+      note={reading.note}
       rows={[
         {
           key: 'value',
           value: reading.value,
           unit: props.unit,
           secondary: reading.secondary,
-          note: reading.note,
         },
       ]}
     />
