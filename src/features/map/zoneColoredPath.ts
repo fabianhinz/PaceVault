@@ -1,8 +1,8 @@
 import { extractPathFromRecords, isValidCoordinate } from '@/packages/engine/gps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
-import type { WindClass } from '@/packages/engine/windExposure.ts';
 import { rgb } from 'd3-color';
-import { WIND_COLORS, type ZoneMetric, type ZoneScale } from '@/lib/zoneColors.ts';
+import { windColorAt, type ZoneMetric, type ZoneScale } from '@/lib/zoneColors.ts';
+import { rollingMean, TRACK_SMOOTHING_SEC } from '@/lib/trackSmoothing.ts';
 import { trackModifiers } from './trackColors.ts';
 
 type Color = [number, number, number, number];
@@ -19,12 +19,28 @@ const toColor = (css: string): Color => {
   return [Math.round(c.r), Math.round(c.g), Math.round(c.b), trackModifiers.alpha.highlighted];
 };
 
-const zoneValue = (r: SessionRecord, metric: ZoneMetric): number | undefined => {
+const rawZoneValue = (r: SessionRecord, metric: ZoneMetric): number | undefined => {
   if (metric === 'hr') return r.hr;
   if (metric === 'power') return r.power;
-  if (r.speed === undefined || r.speed <= 0) return undefined;
-  return 1000 / r.speed / 60;
+  return r.speed;
 };
+
+const toZoneValue = (value: number | undefined, metric: ZoneMetric): number | undefined => {
+  if (value === undefined || metric !== 'pace') return value;
+  if (value <= 0) return undefined;
+  return 1000 / value / 60;
+};
+
+const smoothedValues = (
+  records: SessionRecord[],
+  values: Array<number | undefined>,
+  windowSec: number,
+): Array<number | undefined> =>
+  rollingMean(
+    records.map((r) => r.timestamp),
+    values,
+    windowSec,
+  );
 
 const buildColoredPath = (
   records: SessionRecord[],
@@ -46,22 +62,30 @@ export const buildZoneColoredPath = (
   records: SessionRecord[],
   metric: ZoneMetric,
   scale: ZoneScale,
-): DetailPath | null =>
-  buildColoredPath(records, (r) => {
-    const value = zoneValue(r, metric);
+): DetailPath | null => {
+  const values = smoothedValues(
+    records,
+    records.map((r) => rawZoneValue(r, metric)),
+    TRACK_SMOOTHING_SEC[metric],
+  );
+  return buildColoredPath(records, (_, index) => {
+    const value = toZoneValue(values[index], metric);
     if (value === undefined) return FALLBACK_COLOR;
     return toColor(scale.colorAt(value));
   });
+};
 
 export const buildWindColoredPath = (
   records: SessionRecord[],
-  classes: Array<WindClass | undefined>,
-): DetailPath | null =>
-  buildColoredPath(records, (_, index) => {
-    const windClass = classes[index];
-    if (windClass === undefined) return FALLBACK_COLOR;
-    return toColor(WIND_COLORS[windClass]);
+  angles: Array<number | undefined>,
+): DetailPath | null => {
+  const values = smoothedValues(records, angles, TRACK_SMOOTHING_SEC.wind);
+  return buildColoredPath(records, (_, index) => {
+    const angle = values[index];
+    if (angle === undefined) return FALLBACK_COLOR;
+    return toColor(windColorAt(angle));
   });
+};
 
 export const buildSportColoredPath = (
   records: SessionRecord[],

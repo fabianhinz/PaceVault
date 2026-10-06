@@ -53,9 +53,9 @@ describe('buildZoneColoredPath', () => {
 });
 
 describe('buildWindColoredPath', () => {
-  it('colours classified segments and leaves skipped ones in the fallback colour', () => {
-    const records = [rec(1, 2), rec(3, 4), rec(5, 6)];
-    const colors = buildWindColoredPath(records, [undefined, 'tail', 'head'])?.color as [
+  it('blends by wind angle and leaves skipped segments in the fallback colour', () => {
+    const records = [rec(1, 2), rec(3, 4, { timestamp: 100 }), rec(5, 6, { timestamp: 200 })];
+    const colors = buildWindColoredPath(records, [undefined, 180, 0])?.color as [
       number,
       number,
       number,
@@ -64,6 +64,21 @@ describe('buildWindColoredPath', () => {
     expect(colors[0]).toEqual(FALLBACK_COLOR);
     expect(colors[1]?.slice(0, 3)).toEqual([52, 211, 153]);
     expect(colors[2]?.slice(0, 3)).toEqual([239, 68, 68]);
+  });
+});
+
+describe('track colour smoothing', () => {
+  it('power track turns into stripes when 1 s values jump between zones', () => {
+    const records = Array.from({ length: 60 }, (_, i) =>
+      rec(48, 11 + i * 0.0001, { timestamp: i, power: i % 2 === 0 ? 150 : 350 }),
+    );
+    const scale = zoneScale('power', { ftp: 250 }) as ZoneScale;
+    const colors = colorsOf(buildZoneColoredPath(records, 'power', scale));
+    const middle = colors.slice(20, 40);
+    for (let channel = 0; channel < 3; channel++) {
+      const values = middle.map((c) => c[channel] ?? 0);
+      expect(Math.max(...values) - Math.min(...values)).toBeLessThan(20);
+    }
   });
 });
 

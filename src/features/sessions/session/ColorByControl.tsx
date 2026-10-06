@@ -62,7 +62,7 @@ const SPORT_COLOR: Record<Sport, string> = {
 const swatchBackground = (mode: ColorMode, sport: Sport): string => {
   if (mode === 'sport') return SPORT_COLOR[sport];
   if (mode === 'wind') {
-    return `linear-gradient(to right, ${WIND_COLORS.tail} 0 33%, ${WIND_COLORS.cross} 33% 67%, ${WIND_COLORS.head} 67% 100%)`;
+    return `linear-gradient(to right, ${WIND_COLORS.tail}, ${WIND_COLORS.cross}, ${WIND_COLORS.head})`;
   }
   return `linear-gradient(to right, ${ZONE_PALETTES[mode].join(', ')})`;
 };

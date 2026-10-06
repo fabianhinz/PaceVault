@@ -1,7 +1,6 @@
 import { scaleLinear } from 'd3-scale';
 import { HR_ZONE_DEFS, POWER_ZONE_DEFS } from '@/packages/engine/zoneDistribution.ts';
 import { computeRunningZones } from '@/packages/engine/zones.ts';
-import type { WindClass } from '@/packages/engine/windExposure.ts';
 
 export type ZoneMetric = 'hr' | 'power' | 'pace';
 
@@ -32,11 +31,18 @@ export interface GradientStop {
   color: string;
 }
 
-export const WIND_COLORS: Record<WindClass, string> = {
+export const WIND_COLORS = {
   tail: '#34d399',
   cross: '#fbbf24',
   head: '#ef4444',
-};
+} as const;
+
+const windBlend = scaleLinear<string>()
+  .domain([22.5, 90, 157.5])
+  .range([WIND_COLORS.head, WIND_COLORS.cross, WIND_COLORS.tail])
+  .clamp(true);
+
+export const windColorAt = (angle: number): string => windBlend(angle);
 
 const OPEN_ZONE_SPAN = 0.5;
 

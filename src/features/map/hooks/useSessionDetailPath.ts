@@ -3,7 +3,7 @@ import { getSessionRecords } from '@/lib/indexeddb.ts';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useUserStore } from '@/store/user.ts';
-import { classifyWindSegments } from '@/packages/engine/windExposure.ts';
+import { windAngles } from '@/packages/engine/windExposure.ts';
 import { zoneScale } from '@/lib/zoneColors.ts';
 import { toWindSamples } from '@/lib/weather.ts';
 import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
@@ -62,8 +62,8 @@ export const useSessionDetailPath = (
     if (!session) return null;
 
     if (trackColorMode === 'wind' && weather) {
-      const classes = classifyWindSegments(loaded.records, toWindSamples(weather), session.date);
-      return buildWindColoredPath(loaded.records, classes);
+      const angles = windAngles(loaded.records, toWindSamples(weather), session.date);
+      return buildWindColoredPath(loaded.records, angles);
     }
 
     const isZoneMode =

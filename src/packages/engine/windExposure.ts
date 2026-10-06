@@ -32,6 +32,7 @@ export type WindClass = 'head' | 'cross' | 'tail';
 interface WindSegment {
   recordIndex: number;
   seconds: number;
+  angle: number;
   windClass: WindClass;
 }
 
@@ -109,21 +110,21 @@ const windSegments = (
     } else if (delta > 180 - SECTOR_HALF_DEG) {
       windClass = 'tail';
     }
-    segments.push({ recordIndex: b.recordIndex, seconds: dt, windClass });
+    segments.push({ recordIndex: b.recordIndex, seconds: dt, angle: delta, windClass });
   }
   return segments;
 };
 
-export const classifyWindSegments = (
+export const windAngles = (
   records: SessionRecord[],
   wind: WindSample[],
   sessionStartMs: number,
-): Array<WindClass | undefined> => {
-  const classes: Array<WindClass | undefined> = records.map(() => undefined);
+): Array<number | undefined> => {
+  const angles: Array<number | undefined> = records.map(() => undefined);
   for (const segment of windSegments(records, wind, sessionStartMs)) {
-    classes[segment.recordIndex] = segment.windClass;
+    angles[segment.recordIndex] = segment.angle;
   }
-  return classes;
+  return angles;
 };
 
 /**
