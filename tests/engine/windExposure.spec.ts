@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeWindExposure } from '@/packages/engine/windExposure.ts';
+import { classifyWindSegments, computeWindExposure } from '@/packages/engine/windExposure.ts';
 import type { WindSample } from '@/packages/engine/windExposure.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { makeIndoorRecords } from '@tests/factories/gps.ts';
@@ -109,5 +109,22 @@ describe('computeWindExposure', () => {
 
   it('returns null for fewer than two GPS points', () => {
     expect(computeWindExposure(eastTrack(1), windFrom(90), 0)).toBeNull();
+  });
+});
+
+describe('classifyWindSegments', () => {
+  it('classifies each record by the segment that ends there and leaves pauses unclassified', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, lat: 48, lng: 11.0 },
+      { timestamp: 1, lat: 48, lng: 11.001 },
+      { timestamp: 2, lat: 48, lng: 11.0 },
+      { timestamp: 1002, lat: 48, lng: 11.001 },
+    ];
+    expect(classifyWindSegments(records, windFrom(90), 0)).toEqual([
+      undefined,
+      'head',
+      'tail',
+      undefined,
+    ]);
   });
 });

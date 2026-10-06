@@ -49,6 +49,30 @@ test.describe('Session browsing', () => {
     await expect(rails.first()).toContainText(/\d/);
   });
 
+  test('color by HR zones colours the HR chart and is remembered for the next session', async ({
+    page,
+  }) => {
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
+    const sessionLinks = page.locator('[data-testid="session-item"]');
+    await expect(sessionLinks).toHaveCount(2, { timeout: 10_000 });
+    await sessionLinks.first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+
+    const pill = page.getByTestId('color-by-pill');
+    await expect(pill).toHaveText(/color by/i, { timeout: 10_000 });
+    await pill.click();
+    await page.getByRole('radio', { name: /heart rate/i }).click();
+    await expect(pill).toHaveText(/hr zones/i);
+    await expect(page.locator('path.recharts-line-curve[stroke^="url(#zone-"]')).toHaveCount(1);
+
+    await page.goBack();
+    await page.waitForURL('/sessions');
+    await sessionLinks.nth(1).click();
+    await page.waitForURL(/\/sessions\/.+/);
+    await expect(page.getByTestId('color-by-pill')).toHaveText(/hr zones/i, { timeout: 10_000 });
+  });
+
   test('edit route in studio → imports the track and opens it', async ({ page }) => {
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');

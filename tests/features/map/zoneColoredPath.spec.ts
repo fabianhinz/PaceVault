@@ -4,8 +4,9 @@ import type { SessionRecord } from '@/packages/engine/types.ts';
 import {
   buildZoneColoredPath,
   buildSportColoredPath,
-  type UserThresholds,
+  buildWindColoredPath,
 } from '@/features/map/zoneColoredPath.ts';
+import { zoneScale, type ZoneScale } from '@/lib/zoneColors.ts';
 
 const FALLBACK_COLOR: [number, number, number, number] = [160, 160, 160, 80];
 
@@ -16,72 +17,53 @@ const rec = (lat: number, lng: number, extras?: Partial<SessionRecord>): Session
   ...extras,
 });
 
-const hrThresholds: UserThresholds = { maxHr: 200, restHr: 60 };
+const hrScale = zoneScale('hr', { maxHr: 200, restHr: 60 }) as ZoneScale;
 
-describe('buildZoneColoredPath — structural', () => {
-  it('returns null for empty records', () => {
-    expect(buildZoneColoredPath([], 'hr', hrThresholds)).toBeNull();
-  });
+const colorsOf = (result: ReturnType<typeof buildZoneColoredPath>) =>
+  result?.color as [number, number, number, number][];
 
-  it('returns null for a single GPS record', () => {
-    expect(buildZoneColoredPath([rec(1, 2)], 'hr', hrThresholds)).toBeNull();
-  });
-
-  it('returns null when only one record has GPS', () => {
+describe('buildZoneColoredPath', () => {
+  it('returns null when fewer than two records have GPS', () => {
+    expect(buildZoneColoredPath([], 'hr', hrScale)).toBeNull();
     const records = [rec(1, 2), { sessionId: 's1', timestamp: 0 } as SessionRecord];
-    expect(buildZoneColoredPath(records, 'hr', hrThresholds)).toBeNull();
+    expect(buildZoneColoredPath(records, 'hr', hrScale)).toBeNull();
   });
 
-  it('produces a path and colors array of equal length', () => {
-    const records = [rec(1, 2, { hr: 150 }), rec(3, 4, { hr: 150 })];
-    const result = buildZoneColoredPath(records, 'hr', hrThresholds);
-    expect(result).not.toBeNull();
-    expect(result?.path).toHaveLength(2);
-    expect(result?.color).toHaveLength(2);
-  });
-
-  it('uses [lng, lat] coordinate order', () => {
+  it('produces one [lng, lat] point and one colour per GPS record', () => {
     const records = [rec(10, 20, { hr: 150 }), rec(30, 40, { hr: 150 })];
-    const result = buildZoneColoredPath(records, 'hr', hrThresholds);
-    expect(result?.path[0]).toEqual([20, 10]);
-    expect(result?.path[1]).toEqual([40, 30]);
-  });
-
-  it('returns FALLBACK_COLOR when hrReserve <= 0', () => {
-    const thresholds: UserThresholds = { maxHr: 60, restHr: 60 };
-    const records = [rec(1, 2, { hr: 60 }), rec(3, 4, { hr: 60 })];
-    const result = buildZoneColoredPath(records, 'hr', thresholds);
-    const colors = result?.color as [number, number, number, number][];
-    expect(colors[0]).toEqual(FALLBACK_COLOR);
+    const result = buildZoneColoredPath(records, 'hr', hrScale);
+    expect(result?.path).toEqual([
+      [20, 10],
+      [40, 30],
+    ]);
+    expect(result?.color).toHaveLength(2);
   });
 
   it('colours a recorded hr of 0 by its zone', () => {
     const records = [rec(1, 2, { hr: 0 }), rec(3, 4, { hr: 0 })];
-    const result = buildZoneColoredPath(records, 'hr', hrThresholds);
-    const colors = result?.color as [number, number, number, number][];
-    expect(colors[0]).not.toEqual(FALLBACK_COLOR);
+    expect(colorsOf(buildZoneColoredPath(records, 'hr', hrScale))[0]).not.toEqual(FALLBACK_COLOR);
   });
 
-  it('returns FALLBACK_COLOR when hr is undefined', () => {
-    const records = [rec(1, 2), rec(3, 4)];
-    const result = buildZoneColoredPath(records, 'hr', hrThresholds);
-    const colors = result?.color as [number, number, number, number][];
+  it('uses the fallback colour where the value is missing', () => {
+    const records = [rec(1, 2), rec(3, 4, { hr: 150 })];
+    const colors = colorsOf(buildZoneColoredPath(records, 'hr', hrScale));
     expect(colors[0]).toEqual(FALLBACK_COLOR);
+    expect(colors[1]).not.toEqual(FALLBACK_COLOR);
   });
+});
 
-  it('returns FALLBACK_COLOR when ftp is missing', () => {
-    const records = [rec(1, 2, { power: 150 }), rec(3, 4, { power: 150 })];
-    const result = buildZoneColoredPath(records, 'power', hrThresholds);
-    const colors = result?.color as [number, number, number, number][];
+describe('buildWindColoredPath', () => {
+  it('colours classified segments and leaves skipped ones in the fallback colour', () => {
+    const records = [rec(1, 2), rec(3, 4), rec(5, 6)];
+    const colors = buildWindColoredPath(records, [undefined, 'tail', 'head'])?.color as [
+      number,
+      number,
+      number,
+      number,
+    ][];
     expect(colors[0]).toEqual(FALLBACK_COLOR);
-  });
-
-  it('returns FALLBACK_COLOR when pace mode has thresholdPace=0', () => {
-    const thresholds: UserThresholds = { maxHr: 200, restHr: 60, thresholdPace: 0 };
-    const records = [rec(1, 2, { speed: 3 }), rec(3, 4, { speed: 3 })];
-    const result = buildZoneColoredPath(records, 'pace', thresholds);
-    const colors = result?.color as [number, number, number, number][];
-    expect(colors[0]).toEqual(FALLBACK_COLOR);
+    expect(colors[1]?.slice(0, 3)).toEqual([52, 211, 153]);
+    expect(colors[2]?.slice(0, 3)).toEqual([239, 68, 68]);
   });
 });
 

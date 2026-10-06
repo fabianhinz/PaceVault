@@ -1,7 +1,7 @@
 # Engine Rules
 
 - **Purity boundary**: Only two npm deps allowed (`@googlemaps/polyline-codec`, `simplify-ts`). No imports from `src/lib/`, `src/store/`, `src/features/`, or any React/browser API.
-- **Type placement**: Core domain types live in `types.ts`; derived/computed types are colocated with their computing module (e.g., `ZoneBucket` in `zone-distribution.ts`).
+- **Type placement**: Core domain types live in `types.ts`; derived/computed types are colocated with their computing module (e.g., `WindExposure` in `windExposure.ts`).
 - **Module layout**: Every file follows: imports, exported interfaces, exported constants, unexported helpers, exported functions.
 - **Return nullability**: `T | undefined` for insufficient data, `T | null` for no valid result. Never throw.
 - **Units**: seconds (duration), metres (distance), sec/km (pace), m/s (speed), watts (power), bpm (HR), unix ms (session and lap dates), elapsed seconds since the first record (record `timestamp`).

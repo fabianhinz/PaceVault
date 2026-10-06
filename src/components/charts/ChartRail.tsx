@@ -6,6 +6,7 @@ import type { MetricId } from '@/lib/explanations.ts';
 export interface RailReading {
   value: ReactNode;
   secondary?: ReactNode;
+  note?: { text: string; color: string };
 }
 
 interface SeriesRailProps {
@@ -35,7 +36,13 @@ export const SeriesRail = (props: SeriesRailProps) => {
       header={header}
       active={active}
       rows={[
-        { key: 'value', value: reading.value, unit: props.unit, secondary: reading.secondary },
+        {
+          key: 'value',
+          value: reading.value,
+          unit: props.unit,
+          secondary: reading.secondary,
+          note: reading.note,
+        },
       ]}
     />
   );

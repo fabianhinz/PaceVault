@@ -12,6 +12,8 @@ import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
 import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
+import type { ZoneScale } from '@/lib/zoneColors.ts';
+import { useZoneLineStroke } from '@/components/charts/ZoneGradient.tsx';
 import type { PowerPoint } from '@/lib/chartData.ts';
 import { m } from '@/paraglide/messages.js';
 
@@ -21,6 +23,7 @@ interface PowerChartProps {
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onZoomReset?: () => void;
+  zoneScale?: ZoneScale;
 }
 
 export const PowerChart = (props: PowerChartProps) => {
@@ -31,6 +34,11 @@ export const PowerChart = (props: PowerChartProps) => {
     onZoomComplete: props.onZoomComplete,
     onZoomReset: props.onZoomReset,
   });
+  const zoneLine = useZoneLineStroke(
+    props.zoneScale,
+    zoom.zoomedData.map((d) => d.power),
+    false,
+  );
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -46,6 +54,7 @@ export const PowerChart = (props: PowerChartProps) => {
         onMouseUp={zoom.onMouseUp}
         {...chartHoverHandlers(props.onActiveTimeChange)}
       >
+        {zoneLine.defs}
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey="time"
@@ -77,7 +86,7 @@ export const PowerChart = (props: PowerChartProps) => {
           yAxisId="left"
           type="monotone"
           dataKey="power"
-          stroke={tokens.chartPower}
+          stroke={zoneLine.stroke ?? tokens.chartPower}
           strokeWidth={1.5}
           dot={false}
           name={m.ui_chart_series_power()}

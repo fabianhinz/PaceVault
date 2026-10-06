@@ -27,6 +27,14 @@ export interface WindExposure {
   movingSeconds: number;
 }
 
+export type WindClass = 'head' | 'cross' | 'tail';
+
+interface WindSegment {
+  recordIndex: number;
+  seconds: number;
+  windClass: WindClass;
+}
+
 /** Segments spanning more than this many seconds are treated as a pause and skipped. */
 const GAP_CAP_SEC = 30;
 /** Minimum segment length in metres below which the travel bearing is too noisy to trust. */
@@ -66,6 +74,58 @@ const nearestWindIndex = (targetMs: number, wind: WindSample[]): number => {
   return bestIdx;
 };
 
+const windSegments = (
+  records: SessionRecord[],
+  wind: WindSample[],
+  sessionStartMs: number,
+): WindSegment[] => {
+  if (wind.length === 0) return [];
+
+  const points: Array<ValidPoint & { recordIndex: number }> = [];
+  records.forEach((r, recordIndex) => {
+    if (isValidCoordinate(r) && r.lat != null && r.lng != null) {
+      points.push({ lat: r.lat, lng: r.lng, elapsedSec: r.timestamp, recordIndex });
+    }
+  });
+
+  const segments: WindSegment[] = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    if (a === undefined || b === undefined) continue;
+
+    const dt = b.elapsedSec - a.elapsedSec;
+    if (dt <= 0 || dt > GAP_CAP_SEC) continue;
+    if (segmentMetres(a, b) < MIN_SEGMENT_M) continue;
+
+    const windIdx = nearestWindIndex(sessionStartMs + a.elapsedSec * 1000, wind);
+    const sample = wind[windIdx];
+    if (sample === undefined) continue;
+
+    const delta = angleDelta(bearingDeg(a, b), sample.direction);
+    let windClass: WindClass = 'cross';
+    if (delta < SECTOR_HALF_DEG) {
+      windClass = 'head';
+    } else if (delta > 180 - SECTOR_HALF_DEG) {
+      windClass = 'tail';
+    }
+    segments.push({ recordIndex: b.recordIndex, seconds: dt, windClass });
+  }
+  return segments;
+};
+
+export const classifyWindSegments = (
+  records: SessionRecord[],
+  wind: WindSample[],
+  sessionStartMs: number,
+): Array<WindClass | undefined> => {
+  const classes: Array<WindClass | undefined> = records.map(() => undefined);
+  for (const segment of windSegments(records, wind, sessionStartMs)) {
+    classes[segment.recordIndex] = segment.windClass;
+  }
+  return classes;
+};
+
 /**
  * Classify each moving segment of a GPS track by the wind angle relative to the direction of travel and
  * return the time-weighted share of headwind, crosswind, and tailwind.
@@ -86,40 +146,17 @@ export const computeWindExposure = (
   wind: WindSample[],
   sessionStartMs: number,
 ): WindExposure | null => {
-  if (wind.length === 0) return null;
-
-  const points: ValidPoint[] = [];
-  for (const r of records) {
-    if (isValidCoordinate(r) && r.lat != null && r.lng != null) {
-      points.push({ lat: r.lat, lng: r.lng, elapsedSec: r.timestamp });
-    }
-  }
-  if (points.length < 2) return null;
-
   let headSec = 0;
   let crossSec = 0;
   let tailSec = 0;
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i];
-    const b = points[i + 1];
-    if (a === undefined || b === undefined) continue;
-
-    const dt = b.elapsedSec - a.elapsedSec;
-    if (dt <= 0 || dt > GAP_CAP_SEC) continue;
-    if (segmentMetres(a, b) < MIN_SEGMENT_M) continue;
-
-    const windIdx = nearestWindIndex(sessionStartMs + a.elapsedSec * 1000, wind);
-    const sample = wind[windIdx];
-    if (sample === undefined) continue;
-
-    const delta = angleDelta(bearingDeg(a, b), sample.direction);
-    if (delta < SECTOR_HALF_DEG) {
-      headSec += dt;
-    } else if (delta > 180 - SECTOR_HALF_DEG) {
-      tailSec += dt;
+  for (const segment of windSegments(records, wind, sessionStartMs)) {
+    if (segment.windClass === 'head') {
+      headSec += segment.seconds;
+    } else if (segment.windClass === 'tail') {
+      tailSec += segment.seconds;
     } else {
-      crossSec += dt;
+      crossSec += segment.seconds;
     }
   }
 

@@ -13,23 +13,27 @@ import {
 import { m } from '@/paraglide/messages.js';
 import { SheetScrollContext } from '@/lib/hooks/useSheetScrollElement.ts';
 import { SheetPeekContext } from './sheetPeekContext.ts';
+import { SheetAboveContext, type SheetAboveMotion } from './sheetAboveContext.ts';
 
 export const BottomSheetProvider = (props: { children: ReactNode }) => {
   const [element, setElement] = useState<HTMLDivElement | null>(null);
   const [peekTarget, setPeekTarget] = useState<HTMLDivElement | null>(null);
   const [peekActive, setPeekActive] = useState(false);
+  const [aboveMotion, setAboveMotion] = useState<SheetAboveMotion | null>(null);
   return (
     <SheetScrollContext.Provider value={{ element, register: setElement }}>
-      <SheetPeekContext.Provider
-        value={{
-          target: peekTarget,
-          registerTarget: setPeekTarget,
-          active: peekActive,
-          setActive: setPeekActive,
-        }}
-      >
-        {props.children}
-      </SheetPeekContext.Provider>
+      <SheetAboveContext.Provider value={{ motion: aboveMotion, registerMotion: setAboveMotion }}>
+        <SheetPeekContext.Provider
+          value={{
+            target: peekTarget,
+            registerTarget: setPeekTarget,
+            active: peekActive,
+            setActive: setPeekActive,
+          }}
+        >
+          {props.children}
+        </SheetPeekContext.Provider>
+      </SheetAboveContext.Provider>
     </SheetScrollContext.Provider>
   );
 };
@@ -37,6 +41,8 @@ export const BottomSheetProvider = (props: { children: ReactNode }) => {
 const spring = { type: 'spring', stiffness: 400, damping: 40 } as const;
 
 const DIVIDER_SCROLL_THRESHOLD = 12;
+
+const ABOVE_FADE_RANGE = 0.2;
 
 const momentum = { power: 0.3, timeConstant: 200, bounceStiffness: 400, bounceDamping: 40 };
 
@@ -49,6 +55,7 @@ interface BottomSheetProps {
 export const BottomSheet = (props: BottomSheetProps) => {
   const register = useContext(SheetScrollContext).register;
   const peek = useContext(SheetPeekContext);
+  const registerAbove = useContext(SheetAboveContext).registerMotion;
   const [layout, setLayout] = useState(readSheetLayout);
   const y = useMotionValue(positionToOffset(layout, props.position));
   const dragControls = useDragControls();
@@ -58,7 +65,19 @@ export const BottomSheet = (props: BottomSheetProps) => {
   const peekOpacity = useTransform(y, fade, [0, 1]);
   const peekPointerEvents = useTransform(peekOpacity, (v) => (v > 0.5 ? 'auto' : 'none'));
   const contentOpacity = useTransform(y, fade, [1, 0]);
+  const aboveOpacity = useTransform(y, [0, layout.peekOffset * ABOVE_FADE_RANGE], [0, 1]);
+  const abovePointerEvents = useTransform(aboveOpacity, (v) => (v > 0.5 ? 'auto' : 'none'));
   const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    registerAbove({
+      y,
+      height: layout.sheetHeight,
+      opacity: aboveOpacity,
+      pointerEvents: abovePointerEvents,
+    });
+    return () => registerAbove(null);
+  }, [registerAbove, y, layout.sheetHeight, aboveOpacity, abovePointerEvents]);
 
   useEffect(() => {
     const handleResize = () => setLayout(readSheetLayout());

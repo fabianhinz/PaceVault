@@ -12,6 +12,8 @@ import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
 import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
+import type { ZoneScale } from '@/lib/zoneColors.ts';
+import { useZoneLineStroke } from '@/components/charts/ZoneGradient.tsx';
 import { formatPaceTick } from '@/lib/formatters.ts';
 import type { PacePoint } from '@/lib/chartData.ts';
 import { m } from '@/paraglide/messages.js';
@@ -22,6 +24,7 @@ interface PaceChartProps {
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onZoomReset?: () => void;
+  zoneScale?: ZoneScale;
 }
 
 export const PaceChart = (props: PaceChartProps) => {
@@ -32,6 +35,11 @@ export const PaceChart = (props: PaceChartProps) => {
     onZoomComplete: props.onZoomComplete,
     onZoomReset: props.onZoomReset,
   });
+  const zoneLine = useZoneLineStroke(
+    props.zoneScale,
+    zoom.zoomedData.map((d) => d.pace),
+    true,
+  );
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -47,6 +55,7 @@ export const PaceChart = (props: PaceChartProps) => {
         onMouseUp={zoom.onMouseUp}
         {...chartHoverHandlers(props.onActiveTimeChange)}
       >
+        {zoneLine.defs}
         {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey="time"
@@ -79,7 +88,7 @@ export const PaceChart = (props: PaceChartProps) => {
           yAxisId="left"
           type="monotone"
           dataKey="pace"
-          stroke={tokens.chartPace}
+          stroke={zoneLine.stroke ?? tokens.chartPace}
           strokeWidth={1.5}
           dot={false}
           name={m.ui_chart_series_pace()}

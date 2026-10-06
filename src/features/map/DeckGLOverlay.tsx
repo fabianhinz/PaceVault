@@ -42,7 +42,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const lapMarkers = useMapFocusStore((s) => s.lapMarkers);
   const focusedSport = useMapFocusStore((s) => s.focusedSport);
   const hoveredLapIndex = useMapFocusStore((s) => s.hoveredLapIndex);
-  const zoneColorMode = useMapFocusStore((s) => s.zoneColorMode);
+  const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
   const hoveredStudioRouteId = useMapFocusStore((s) => s.hoveredStudioRouteId);
   const geoPosition = useGeolocationStore((s) => s.position);
   const geoAccuracy = useGeolocationStore((s) => s.accuracy);
@@ -136,10 +136,10 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       jointRounded: true,
       capRounded: true,
       pickable: true,
-      updateTriggers: { getColor: [zoneColorMode, openedSessionId] },
+      updateTriggers: { getColor: [trackColorMode, openedSessionId] },
       ...eventHandlers,
     });
-  }, [detailPath, zoneColorMode, openedSessionId, eventHandlers]);
+  }, [detailPath, trackColorMode, openedSessionId, eventHandlers]);
 
   // One path per GPX segment — disconnected segments must not be joined.
   // Memoized separately from hover state so hovering a route card keeps the

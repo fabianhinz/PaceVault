@@ -32,6 +32,9 @@ import { GradeAdjustedPaceChart } from './GradeAdjustedPaceChart.tsx';
 import { tokens } from '@/lib/tokens.ts';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
+import { useUserStore } from '@/store/user.ts';
+import { zoneScale, type ZoneMetric, type ZoneScale } from '@/lib/zoneColors.ts';
+import { zoneLabel } from './zoneLabel.ts';
 
 interface ChartEntry {
   key: string;
@@ -54,12 +57,26 @@ const HOVER_GROUP = 'session-detail';
 
 const formatHoverTime = (x: ChartHoverX) => formatChartTime(Number(x));
 
+const zoneNote = (scale: ZoneScale | undefined, value: number | null) => {
+  if (!scale || value === null) return undefined;
+  const band = scale.bandAt(value);
+  return { text: zoneLabel(band), color: band.color };
+};
+
 export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const isRunning = props.session.sport === 'running';
 
   const extremes = useMemo(() => computeRecordExtremes(props.records), [props.records]);
+  const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
+  const thresholds = useUserStore((s) => s.profile?.thresholds);
+  const scaleFor = (metric: ZoneMetric) => {
+    if (trackColorMode !== metric || !thresholds) return undefined;
+    return zoneScale(metric, thresholds);
+  };
+  const hrScale = scaleFor('hr');
+  const powerScale = scaleFor('power');
+  const paceScale = scaleFor('pace');
 
-  // Synced zoom state for compact mode
   const zoom = useSyncedChartZoom();
   const zoomRange = zoom.zoomRange;
 
@@ -158,6 +175,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             return {
               value: railInt(point.hr),
               secondary: `${m.ui_rail_avg()} ${railInt(session.avgHr)}`,
+              note: zoneNote(hrScale, point.hr),
             };
           }}
         />
@@ -166,6 +184,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         <HrChart
           data={mode === 'compact' ? compactRows : rows}
           mode={mode}
+          zoneScale={hrScale}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
           onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
@@ -191,6 +210,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             return {
               value: railInt(point.power),
               secondary: `${powerRest.header} ${powerRest.value}`,
+              note: zoneNote(powerScale, point.power),
             };
           }}
         />
@@ -199,6 +219,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         <PowerChart
           data={mode === 'compact' ? compactRows : rows}
           mode={mode}
+          zoneScale={powerScale}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
           onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
@@ -377,6 +398,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             return {
               value: railPace(point.pace),
               secondary: `${m.ui_rail_avg()} ${railPaceFromSecPerKm(session.avgPace)}`,
+              note: zoneNote(paceScale, point.pace),
             };
           }}
         />
@@ -385,6 +407,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         <PaceChart
           data={mode === 'compact' ? compactRows : rows}
           mode={mode}
+          zoneScale={paceScale}
           onActiveTimeChange={hoverHandler(mode)}
           onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
           onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}

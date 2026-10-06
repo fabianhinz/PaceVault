@@ -12,6 +12,7 @@ export interface StatRailRow {
   value: ReactNode;
   unit?: string;
   secondary?: ReactNode;
+  note?: { text: string; color: string };
 }
 
 interface StatRailProps {
@@ -67,6 +68,17 @@ export const StatRail = (props: StatRailProps) => (
         {row.secondary !== undefined && (
           <Typography variant="caption" as="p" noWrap tabularNums color="textTertiary">
             {row.secondary}
+          </Typography>
+        )}
+        {row.note && (
+          <Typography
+            variant="caption"
+            as="p"
+            noWrap
+            data-testid="stat-rail-note"
+            style={{ color: row.note.color }}
+          >
+            {row.note.text}
           </Typography>
         )}
       </div>

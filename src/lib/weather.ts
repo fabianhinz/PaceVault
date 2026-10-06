@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { haversineM } from '@/packages/engine/gps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
+import type { WindSample } from '@/packages/engine/windExposure.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -339,3 +340,6 @@ export const fetchSessionWeather = async (
     fetchedAt: Date.now(),
   };
 };
+
+export const toWindSamples = (weather: SessionWeather): WindSample[] =>
+  weather.snapshots.map((s) => ({ time: s.time, direction: s.windDirection }));

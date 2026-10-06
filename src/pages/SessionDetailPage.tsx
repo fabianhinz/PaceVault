@@ -14,6 +14,7 @@ import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionW
 import { OverviewTab } from '@/features/sessions/session/OverviewTab.tsx';
 import { LapsTab } from '@/features/sessions/laps/LapsTab.tsx';
 import { SessionPeek } from '@/features/sessions/SessionPeek.tsx';
+import { SessionColorBy } from '@/features/sessions/session/SessionColorBy.tsx';
 import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
 
 const validTabs = new Set(['overview', 'laps']);
@@ -77,6 +78,7 @@ export const SessionDetailPage = () => {
       </SessionHeader>
 
       <WeatherChips query={weather} records={records} sessionStartMs={session.date} />
+      <SessionColorBy session={session} records={records} />
 
       <Tabs defaultValue="overview" value={tab} onValueChange={handleTabChange}>
         <TabsList>

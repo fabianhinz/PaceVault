@@ -25,6 +25,7 @@ import { formatWindDirection } from '@/lib/weather.ts';
 import type { WindExposure } from '@/packages/engine/windExposure.ts';
 import { useWindExposure } from './hooks/useWindExposure.ts';
 import { glassClass } from '@/components/ui/Card.tsx';
+import { WIND_COLORS } from '@/lib/zoneColors.ts';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 
 const conditionIcons: Record<WeatherCondition, LucideIcon> = {
@@ -62,7 +63,7 @@ const formatRange = (values: number[], unit: string): string => {
 
 interface ChipFill {
   pct: number;
-  fillClass: string;
+  color: string;
   textClass: string;
 }
 
@@ -80,7 +81,7 @@ const buildWindExposureChips = (exposure: WindExposure): ChipData[] => [
     label: `${m.ui_weather_tailwind()} ${exposure.tailwindPct}%`,
     fill: {
       pct: exposure.tailwindPct,
-      fillClass: 'bg-gradient-to-r from-teal-500/40 to-emerald-500/40',
+      color: WIND_COLORS.tail,
       textClass: 'text-emerald-200',
     },
   },
@@ -90,7 +91,7 @@ const buildWindExposureChips = (exposure: WindExposure): ChipData[] => [
     label: `${m.ui_weather_headwind()} ${exposure.headwindPct}%`,
     fill: {
       pct: exposure.headwindPct,
-      fillClass: 'bg-gradient-to-r from-amber-500/40 to-red-500/40',
+      color: WIND_COLORS.head,
       textClass: 'text-red-200',
     },
   },
@@ -100,8 +101,8 @@ const buildWindExposureChips = (exposure: WindExposure): ChipData[] => [
     label: `${m.ui_weather_crosswind()} ${exposure.crosswindPct}%`,
     fill: {
       pct: exposure.crosswindPct,
-      fillClass: 'bg-gradient-to-r from-slate-500/40 to-slate-400/40',
-      textClass: 'text-slate-200',
+      color: WIND_COLORS.cross,
+      textClass: 'text-amber-200',
     },
   },
 ];
@@ -109,7 +110,6 @@ const buildWindExposureChips = (exposure: WindExposure): ChipData[] => [
 const buildChips = (weather: SessionWeather, exposure: WindExposure | null): ChipData[] => {
   const chips: ChipData[] = [];
 
-  // Wind exposure leads — it's the headline insight — then the ambient weather summary.
   if (exposure) {
     chips.push(...buildWindExposureChips(exposure));
   }
@@ -183,8 +183,8 @@ export const WeatherChips = (props: WeatherChipsProps) => {
             {fill && (
               <span
                 aria-hidden
-                className={cn('absolute inset-y-0 left-0 z-0', fill.fillClass)}
-                style={{ width: `${fill.pct}%` }}
+                className="absolute inset-y-0 left-0 z-0 opacity-40"
+                style={{ width: `${fill.pct}%`, backgroundColor: fill.color }}
               />
             )}
             <Icon size={12} className={fgClass} />
