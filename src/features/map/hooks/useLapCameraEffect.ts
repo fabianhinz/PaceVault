@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
-import { mapSidePadding } from '../mapSidePadding.ts';
+import { MAP_FIT_MARGIN, mapPadding } from '../mapPadding.ts';
 
 const LAP_MAX_ZOOM = 16;
-const PADDING = 80;
 
 const boundsOf = (path: [number, number][]): [[number, number], [number, number]] | null => {
   const first = path[0];
@@ -42,14 +41,8 @@ export const useLapCameraEffect = (
     if (!target) return;
     const bounds = boundsOf(target);
     if (!bounds) return;
-    const side = mapSidePadding();
     map.fitBounds(bounds, {
-      padding: {
-        top: PADDING,
-        bottom: PADDING + side.bottom,
-        left: PADDING,
-        right: PADDING + side.right,
-      },
+      padding: mapPadding(MAP_FIT_MARGIN),
       maxZoom: LAP_MAX_ZOOM,
       duration: 800,
     });

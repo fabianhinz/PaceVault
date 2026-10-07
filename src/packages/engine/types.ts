@@ -63,7 +63,6 @@ export interface TrainingSession {
   gap?: number;
   tss: number;
   stressMethod: 'tss' | 'trimp' | 'duration';
-  sensorWarnings: string[];
   isPlanned: boolean;
   hasDetailedRecords: boolean;
   fingerprint?: string;

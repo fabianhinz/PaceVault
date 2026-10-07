@@ -1,14 +1,35 @@
-import type { SessionRecord } from '@/packages/engine/types.ts';
+import type { SessionRecord, Sport } from '@/packages/engine/types.ts';
 import { movingSeconds } from '@/lib/movingTime.ts';
 import type { LapSpan } from '@/lib/lapRanges.ts';
 import type { LapAnalysis, LapRecordEnrichment } from './laps.ts';
 import { enrichLapFromRecords } from './laps.ts';
 
-export const SPLIT_DISTANCES_M = [400, 1000, 2000, 5000] as const;
+interface SplitDistanceRange {
+  min: number;
+  max: number;
+  step: number;
+}
 
-export type SplitDistance = (typeof SPLIT_DISTANCES_M)[number];
+const SPLIT_RANGES: Record<Sport, SplitDistanceRange> = {
+  running: { min: 500, max: 10_000, step: 500 },
+  cycling: { min: 1000, max: 50_000, step: 1000 },
+};
 
-export interface DynamicLapResult {
+export const recordedDistance = (records: SessionRecord[]): number => {
+  const first = records.find((record) => record.distance !== undefined)?.distance;
+  const last = records.findLast((record) => record.distance !== undefined)?.distance;
+  if (first === undefined || last === undefined) return 0;
+  return Math.max(0, last - first);
+};
+
+export const splitDistanceRange = (sport: Sport, sessionMetres: number): SplitDistanceRange => {
+  const range = SPLIT_RANGES[sport];
+  const cap = Math.floor(sessionMetres / range.step) * range.step;
+  const max = Math.max(range.min, Math.min(range.max, cap));
+  return { min: range.min, max, step: range.step };
+};
+
+interface DynamicLapResult {
   analysis: LapAnalysis[];
   enrichments: LapRecordEnrichment[];
   spans: LapSpan[];
@@ -71,7 +92,7 @@ export const computeDynamicLaps = (
     if (first.distance === undefined || last.distance === undefined) return;
 
     const distance = last.distance - first.distance;
-    const duration = last.timestamp - first.timestamp;
+    const timerTime = last.timestamp - first.timestamp;
     const movingTime = movingEnd - movingStart;
 
     let paceSecPerKm: number | undefined = undefined;
@@ -91,7 +112,7 @@ export const computeDynamicLaps = (
       maxHr: maxOf(hrs),
       avgCadence: roundedAverage(cadences),
       distance,
-      duration,
+      timerTime,
       movingTime,
       elevationGain: elevationGainOf(slice),
       intensity: 'active',

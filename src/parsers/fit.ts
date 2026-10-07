@@ -9,7 +9,6 @@ import {
   type Sport,
   type Gender,
 } from '@/packages/engine/types.ts';
-import { validateRecords } from '@/lib/validation.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import { calculateGAP } from '@/packages/engine/normalize.ts';
 import { extractSessionName } from '@/lib/filename.ts';
@@ -22,13 +21,13 @@ import {
   type FitRecordInput,
 } from './fitSchemas.ts';
 
-export interface FitUserProfile {
+interface FitUserProfile {
   weight?: number;
   gender?: 'male' | 'female';
   restingHeartRate?: number;
 }
 
-export interface ParsedFitResult {
+interface ParsedFitResult {
   session: SessionFields;
   records: SessionRecord[];
   laps: SessionLap[];
@@ -115,7 +114,7 @@ const setIfDefined = <K extends keyof SessionRecord>(
   if (value !== undefined) record[key] = value;
 };
 
-export const mapFitRecord = (r: FitRecordInput): SessionRecord => {
+const mapFitRecord = (r: FitRecordInput): SessionRecord => {
   const record: SessionRecord = { timestamp: r.elapsed_time };
   setIfDefined(record, 'hr', r.heart_rate);
   setIfDefined(record, 'power', r.power);
@@ -237,9 +236,6 @@ export const parseFitFile = async (
     movingTime = laps.reduce((sum, lap) => sum + (lap.totalMovingTime ?? lap.totalTimerTime), 0);
   }
 
-  // Validate sensor data
-  const sensorWarnings = validateRecords(records, sport).map((w) => w.message);
-
   // Calculate stress — use FTP for all sports with power data, not just cycling
   const hasPowerRecords = records.some((r) => r.power !== undefined);
   let stressFtp: number | undefined = undefined;
@@ -316,7 +312,6 @@ export const parseFitFile = async (
     ...(gap !== undefined && { gap }),
     tss: stressResult.tss,
     stressMethod: stressResult.stressMethod,
-    sensorWarnings,
     isPlanned: false,
     hasDetailedRecords: records.length > 0,
     fingerprint,

@@ -27,7 +27,7 @@ export interface WindExposure {
   movingSeconds: number;
 }
 
-export type WindClass = 'head' | 'cross' | 'tail';
+type WindClass = 'head' | 'cross' | 'tail';
 
 export interface RelativeWind {
   angle: number;

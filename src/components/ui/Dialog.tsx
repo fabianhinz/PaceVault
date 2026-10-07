@@ -3,8 +3,6 @@ import { cn } from '@/lib/utils.ts';
 
 export const DialogRoot = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
-export const DialogClose = DialogPrimitive.Close;
-
 export const DialogOverlay = (props: DialogPrimitive.DialogOverlayProps) => {
   const { className, ...rest } = props;
   return (

@@ -4,20 +4,12 @@ import { gradeAdjustedPaceFactor } from '@/packages/engine/normalize.ts';
 import { bucketSeries, TARGET_ROWS } from '@/lib/chartBuckets.ts';
 import { movingSeconds } from '@/lib/movingTime.ts';
 
-export interface TimeSeriesPoint {
+interface TimeSeriesPoint {
   time: number;
 }
 
 export interface CadencePoint extends TimeSeriesPoint {
   cadence: number | null;
-}
-
-export interface ElevationPoint extends TimeSeriesPoint {
-  elevation: number | null;
-}
-
-export interface GradePoint extends TimeSeriesPoint {
-  grade: number | null;
 }
 
 export interface HrPoint extends TimeSeriesPoint {

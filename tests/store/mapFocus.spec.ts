@@ -9,7 +9,8 @@ describe('useMapFocusStore', () => {
       hoveredPoint: null,
       pickCircle: null,
       sessionColorMode: 'sport',
-      lapSource: 'device',
+      lapSource: 'splits',
+      splitDistance: null,
       selectedLapIndex: null,
       hoveredLapIndex: null,
     });
@@ -84,26 +85,32 @@ describe('useMapFocusStore', () => {
     expect(useMapFocusStore.getState().sessionColorMode).toBe('sport');
   });
 
-  it('laps start on device laps and neither source nor selection carries over to the next session', () => {
-    expect(useMapFocusStore.getState().lapSource).toBe('device');
+  it('laps start on the sport default splits and neither source, distance nor selection carries over to the next session', () => {
+    expect(useMapFocusStore.getState().lapSource).toBe('splits');
+    expect(useMapFocusStore.getState().splitDistance).toBeNull();
     useMapFocusStore.getState().setOpenedSession('first');
-    useMapFocusStore.getState().setLapSource(1000);
+    useMapFocusStore.getState().setSplitDistance(2500);
     useMapFocusStore.getState().selectLap(3);
     useMapFocusStore.getState().setOpenedSession('first');
-    expect(useMapFocusStore.getState().lapSource).toBe(1000);
+    expect(useMapFocusStore.getState().splitDistance).toBe(2500);
     expect(useMapFocusStore.getState().selectedLapIndex).toBe(3);
     useMapFocusStore.getState().setOpenedSession('second');
-    expect(useMapFocusStore.getState().lapSource).toBe('device');
+    expect(useMapFocusStore.getState().lapSource).toBe('splits');
+    expect(useMapFocusStore.getState().splitDistance).toBeNull();
     expect(useMapFocusStore.getState().selectedLapIndex).toBeNull();
-    useMapFocusStore.getState().setLapSource('off');
+    useMapFocusStore.getState().setLapSource('device');
     useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapFocusStore.getState().lapSource).toBe('device');
+    expect(useMapFocusStore.getState().lapSource).toBe('splits');
   });
 
-  it('changing the lap source clears the selected lap', () => {
+  it('changing the lap source or split distance clears the selected lap', () => {
     useMapFocusStore.getState().selectLap(2);
-    useMapFocusStore.getState().setLapSource(400);
+    useMapFocusStore.getState().setLapSource('device');
     expect(useMapFocusStore.getState().selectedLapIndex).toBeNull();
+    useMapFocusStore.getState().selectLap(2);
+    useMapFocusStore.getState().setSplitDistance(1500);
+    expect(useMapFocusStore.getState().selectedLapIndex).toBeNull();
+    expect(useMapFocusStore.getState().lapSource).toBe('splits');
   });
 
   it('tapping the selected lap again clears it', () => {

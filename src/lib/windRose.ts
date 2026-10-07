@@ -1,6 +1,6 @@
 import type { RelativeWind } from '@/packages/engine/windExposure.ts';
 
-export const WIND_ROSE_SECTORS = 16;
+const WIND_ROSE_SECTORS = 16;
 
 export const WIND_ROSE_SECTOR_DEG = 360 / WIND_ROSE_SECTORS;
 

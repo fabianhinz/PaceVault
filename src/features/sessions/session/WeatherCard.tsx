@@ -1,19 +1,13 @@
-import { useState } from 'react';
-import type { UseQueryResult } from '@tanstack/react-query';
-import { Cloud } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
-import { cn } from '@/lib/utils.ts';
-import { glassClass } from '@/components/ui/Card.tsx';
-import { CollapsibleContent, CollapsibleHeader } from '@/components/ui/Collapsible.tsx';
-import { ResponsivePopover } from '@/components/ui/ResponsivePopover.tsx';
+import { CollapsibleListItem } from '@/components/ui/Collapsible.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
-import type { SessionWeather, WeatherSnapshot } from '@/lib/weather.ts';
+import type { WeatherSnapshot } from '@/lib/weather.ts';
 import { summarizeWeather, type ValueRange, type WeatherSummary } from '@/lib/weatherSummary.ts';
 import { WIND_COLORS } from '@/lib/zoneColors.ts';
-import type { SessionRecord } from '@/packages/engine/types.ts';
+import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import type { WindExposure } from '@/packages/engine/windExposure.ts';
+import { useSessionWeather } from './hooks/useSessionWeather.ts';
 import { useWindExposure } from './hooks/useWindExposure.ts';
 import { useWindRose } from './hooks/useWindRose.ts';
 import { CONDITION_ICONS, CONDITION_LABELS } from './weatherConditions.ts';
@@ -26,57 +20,57 @@ const celsiusFmt = new Intl.NumberFormat(getLocale(), {
   unit: 'celsius',
   maximumFractionDigits: 0,
 });
+const windFmt = new Intl.NumberFormat(getLocale(), {
+  style: 'unit',
+  unit: 'kilometer-per-hour',
+  maximumFractionDigits: 0,
+});
 const percentFmt = new Intl.NumberFormat(getLocale(), { style: 'percent' });
 
-const formatTemperatureRange = (range: ValueRange): string => {
+const formatRange = (range: ValueRange, format: Intl.NumberFormat): string => {
   const min = Math.round(range.min);
   const max = Math.round(range.max);
-  if (min === max) return celsiusFmt.format(min);
-  return celsiusFmt.formatRange(min, max);
-};
-
-const PeekTitle = (props: { summary: WeatherSummary }) => {
-  const change = props.summary.firstChange;
-  return (
-    <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5 text-sm text-text-secondary tabular-nums">
-      <span className="font-medium text-text-primary">
-        {CONDITION_LABELS[props.summary.condition]()}
-      </span>
-      <span>{formatTemperatureRange(props.summary.temperature)}</span>
-      {change !== undefined && (
-        <span className="whitespace-nowrap max-lg:basis-full">
-          <span aria-hidden className="mr-1.5 text-text-quaternary max-lg:hidden">
-            ·
-          </span>
-          <span className="text-status-info">
-            {m.ui_weather_change_from({
-              condition: CONDITION_LABELS[change.condition](),
-              time: hourFmt.format(change.time),
-            })}
-          </span>
-        </span>
-      )}
-    </span>
-  );
+  if (min === max) return format.format(min);
+  return format.formatRange(min, max);
 };
 
 const WIND_LEGEND = [
   {
     key: 'head',
     label: m.ui_weather_headwind,
+    mostly: m.ui_weather_wind_mostly_head,
     pct: (exposure: WindExposure) => exposure.headwindPct,
   },
   {
     key: 'cross',
     label: m.ui_weather_crosswind,
+    mostly: m.ui_weather_wind_mostly_cross,
     pct: (exposure: WindExposure) => exposure.crosswindPct,
   },
   {
     key: 'tail',
     label: m.ui_weather_tailwind,
+    mostly: m.ui_weather_wind_mostly_tail,
     pct: (exposure: WindExposure) => exposure.tailwindPct,
   },
 ] as const;
+
+const secondaryLine = (summary: WeatherSummary, exposure: WindExposure | null): string => {
+  const change = summary.firstChange;
+  if (change !== undefined) {
+    return m.ui_weather_change_from({
+      condition: CONDITION_LABELS[change.condition](),
+      time: hourFmt.format(change.time),
+    });
+  }
+  const range = formatRange(summary.windSpeed, windFmt);
+  if (exposure === null) return m.ui_weather_wind({ range });
+  const dominant = WIND_LEGEND.reduce((best, entry) => {
+    if (entry.pct(exposure) > best.pct(exposure)) return entry;
+    return best;
+  });
+  return dominant.mostly({ range });
+};
 
 const WindLegend = (props: { exposure: WindExposure }) => (
   <div className="flex flex-wrap gap-3 text-xs text-text-tertiary tabular-nums">
@@ -120,74 +114,43 @@ const WeatherDetails = (props: WeatherDetailsProps) => (
 );
 
 interface WeatherCardProps {
-  query: UseQueryResult<SessionWeather | null, Error>;
+  session: TrainingSession;
   records: SessionRecord[];
-  sessionStartMs: number;
 }
 
 export const WeatherCard = (props: WeatherCardProps) => {
-  const weather = props.query.data ?? null;
-  const exposure = useWindExposure(props.records, weather, props.sessionStartMs);
-  const rose = useWindRose(props.records, weather, props.sessionStartMs);
-  const isDesktop = useIsDesktop();
-  const [open, setOpen] = useState(false);
+  const query = useSessionWeather(props.session.id, props.session.date, props.session.duration);
+  const weather = query.data ?? null;
+  const exposure = useWindExposure(props.records, weather, props.session.date);
+  const rose = useWindRose(props.records, weather, props.session.date);
 
-  if (props.query.isLoading) {
-    return <div className={cn(glassClass, 'h-12 animate-pulse rounded-2xl')} />;
+  if (query.isLoading) {
+    return <div className="h-[52px] animate-pulse bg-white/5" />;
   }
   if (weather === null) return null;
   const summary = summarizeWeather(weather.snapshots);
   if (summary === undefined) return null;
 
   const ConditionIcon = CONDITION_ICONS[summary.condition];
-  const peek = (
-    <>
-      {rose !== null ? (
-        <WindRoseGlyph shares={rose} size={30} />
-      ) : (
-        <ConditionIcon size={20} aria-hidden className="shrink-0 text-text-secondary" />
-      )}
-      <PeekTitle summary={summary} />
-    </>
-  );
-  const details = <WeatherDetails snapshots={weather.snapshots} rose={rose} exposure={exposure} />;
-  const headerClass = 'gap-2.5 rounded-2xl py-2 pr-2 pl-3';
-
-  if (isDesktop) {
-    return (
-      <div data-testid="weather-card" className={cn(glassClass, 'overflow-hidden rounded-2xl')}>
-        <CollapsibleHeader
-          open={open}
-          onClick={() => setOpen((prev) => !prev)}
-          className={headerClass}
-        >
-          {peek}
-        </CollapsibleHeader>
-        <CollapsibleContent open={open}>
-          <div className="px-3 pt-1 pb-3">{details}</div>
-        </CollapsibleContent>
-      </div>
-    );
-  }
 
   return (
-    <div data-testid="weather-card" className={cn(glassClass, 'overflow-hidden rounded-2xl')}>
-      <ResponsivePopover
-        open={open}
-        onOpenChange={setOpen}
-        title={m.ui_weather_title()}
-        trigger={
-          <CollapsibleHeader open={open} className={headerClass}>
-            {peek}
-          </CollapsibleHeader>
-        }
-      >
-        <div className="mb-3 flex items-center gap-2 text-text-tertiary">
-          <Cloud size={14} />
-          <Typography variant="caption">{m.ui_weather_title()}</Typography>
-        </div>
-        {details}
-      </ResponsivePopover>
-    </div>
+    <CollapsibleListItem
+      testId="weather-card"
+      avatar={
+        rose !== null ? (
+          <WindRoseGlyph shares={rose} size={30} />
+        ) : (
+          <ConditionIcon size={20} aria-hidden className="shrink-0 text-text-secondary" />
+        )
+      }
+      primary={
+        <span className="tabular-nums">
+          {CONDITION_LABELS[summary.condition]()} {formatRange(summary.temperature, celsiusFmt)}
+        </span>
+      }
+      secondary={secondaryLine(summary, exposure)}
+    >
+      <WeatherDetails snapshots={weather.snapshots} rose={rose} exposure={exposure} />
+    </CollapsibleListItem>
   );
 };

@@ -5,7 +5,7 @@ export interface ValueRange {
   max: number;
 }
 
-export interface ConditionChange {
+interface ConditionChange {
   condition: WeatherCondition;
   time: number;
 }
@@ -14,6 +14,7 @@ export interface WeatherSummary {
   condition: WeatherCondition;
   temperature: ValueRange;
   feelsLike: ValueRange;
+  windSpeed: ValueRange;
   firstChange: ConditionChange | undefined;
 }
 
@@ -46,6 +47,7 @@ export const summarizeWeather = (snapshots: WeatherSnapshot[]): WeatherSummary |
     condition: first.condition,
     temperature: rangeOf(snapshots.map((snapshot) => snapshot.temperature)),
     feelsLike: rangeOf(snapshots.map((snapshot) => snapshot.feelsLike)),
+    windSpeed: rangeOf(snapshots.map((snapshot) => snapshot.windSpeed)),
     firstChange,
   };
 };

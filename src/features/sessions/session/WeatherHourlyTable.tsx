@@ -1,17 +1,9 @@
 import type { ReactNode } from 'react';
-import {
-  ArrowUp,
-  Cloud,
-  Compass,
-  Droplets,
-  Thermometer,
-  Wind,
-  type LucideIcon,
-} from 'lucide-react';
+import { ArrowUp, Cloud, Droplets, Thermometer, Wind, type LucideIcon } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import { cn } from '@/lib/utils.ts';
-import { formatWindDirection, type WeatherSnapshot } from '@/lib/weather.ts';
+import type { WeatherSnapshot } from '@/lib/weather.ts';
 import { conditionChangeIndices } from '@/lib/weatherSummary.ts';
 import { CONDITION_ICONS, CONDITION_LABELS } from './weatherConditions.ts';
 
@@ -101,12 +93,6 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
       cell: (snapshot) => (
         <span className="text-text-tertiary">{integerFmt.format(snapshot.windGusts)}</span>
       ),
-    },
-    {
-      key: 'direction',
-      icon: Compass,
-      label: m.ui_weather_row_direction(),
-      cell: (snapshot) => formatWindDirection(snapshot.windDirection),
     },
   ];
 

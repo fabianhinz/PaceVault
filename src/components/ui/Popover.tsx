@@ -4,6 +4,9 @@ import { cn } from '@/lib/utils.ts';
 export const PopoverRoot = PopoverPrimitive.Root;
 export const PopoverTrigger = PopoverPrimitive.Trigger;
 
+const isFocusElsewhere = () =>
+  document.activeElement !== null && document.activeElement !== document.body;
+
 export const PopoverContent = (props: PopoverPrimitive.PopoverContentProps) => {
   const { className, sideOffset = 4, ...rest } = props;
   return (
@@ -17,6 +20,10 @@ export const PopoverContent = (props: PopoverPrimitive.PopoverContentProps) => {
         sideOffset={sideOffset}
         avoidCollisions
         {...rest}
+        onCloseAutoFocus={(event) => {
+          props.onCloseAutoFocus?.(event);
+          if (isFocusElsewhere()) event.preventDefault();
+        }}
       />
     </PopoverPrimitive.Portal>
   );

@@ -89,11 +89,6 @@ export const formatTimeHMS = (seconds: number): string => {
 // Distance / pace / speed formatters
 // ---------------------------------------------------------------------------
 
-export const formatElevation = (meters: number | undefined): string => {
-  if (meters === undefined) return '--';
-  return `${Math.round(meters)} m`;
-};
-
 export const formatDistance = (meters: number | undefined): string => {
   if (meters === undefined) return '--';
   if (meters >= 1000) {

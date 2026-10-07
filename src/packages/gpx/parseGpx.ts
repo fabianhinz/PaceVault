@@ -8,7 +8,7 @@ export interface ParsedGpxPoint {
   seg: number;
 }
 
-export interface ParsedGpx {
+interface ParsedGpx {
   name?: string;
   points: ParsedGpxPoint[];
 }

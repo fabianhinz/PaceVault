@@ -36,6 +36,7 @@ describe('summarizeWeather', () => {
     expect(summary?.condition).toBe('cloudy');
     expect(summary?.temperature).toEqual({ min: 9, max: 15 });
     expect(summary?.feelsLike).toEqual({ min: 6, max: 13 });
+    expect(summary?.windSpeed).toEqual({ min: 20, max: 20 });
     expect(summary?.firstChange).toEqual({ condition: 'rain', time: START_HOUR + 2 * HOUR_MS });
     expect([...conditionChangeIndices(snapshots)]).toEqual([2, 3]);
   });

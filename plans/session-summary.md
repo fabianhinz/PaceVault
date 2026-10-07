@@ -16,22 +16,22 @@ Mockup: `mockups/session-summary/index.html` (final, solution-only).
 ### Page
 
 - Order: header → sensor warning banner (if any) → `NoGpsBanner` (if any) → **summary card** → **charts card**. No stats card.
-- Map pills row ("Color by" + "Laps"): on the phone it scrolls horizontally when it doesn't fit (no scrollbar, edge fade); centred when it fits.
+- Map pills row ("Color by" + "Laps"): on the phone it scrolls horizontally when it doesn't fit (no scrollbar, no edge fade: a `mask-image` on the scroller makes it a backdrop root and kills the pills' glass); centred when it fits.
 
 ### Summary card (one glass card, rows split by `border-white/10`)
 
 - Each row is a collapsible ListItem (`src/components/ui/List.tsx:15-40` look): avatar = 30 px mini glyph (the only colour in the row), primary `body1` (text-sm, text-primary), secondary `caption` (text-xs, text-secondary), chevron on the right. Rows open independently and always start collapsed. **Desktop and phone expand inline** (no dialog).
 - **Disabled rows**: no chevron, no hover, not openable, `aria-disabled`, visibly muted.
-- **Weather row** (existing `WeatherCard` content): "Cloudy 14–15 °C" / "Rain from 7:00 PM"; open = rose + head/cross/tail split + hourly table **without the "From" row**. Loading skeleton / hidden without weather as today.
-- **Training effect row**: avatar = mini arcs (GaugeDial look). Primary = today's two labels "Maintaining · No Effect"; secondary "Aerobic 2.8 · Anaerobic 0.0 · TRIMP 81" (TSS value + method short label). Open = today's gauges unchanged (numbers, labels, ⓘ), labels at today's 12 px; long labels ("STARK VERBESSERND") wrap to two lines, centred; then today's footer exactly (divider + summary sentence as `caption`). No profile: row disabled, "Duration-Based Load 40" / "Set max & resting HR in your profile" (may wrap).
+- **Weather row** (existing `WeatherCard` content): "Cloudy 14–15 °C" / "Rain from 7:00 PM"; open = rose + head/cross/tail split + hourly table **without the "From" row**. Loading skeleton / hidden without weather as today. Without a condition change the secondary is "Wind 2–6 km/h · mostly crosswind" (without GPS: "Wind 2–6 km/h").
+- **Training effect row**: avatar = mini arcs (GaugeDial look). Primary = today's two labels "Maintaining · No Effect"; secondary "Aerobic 2.8 · Anaerobic 0.0 · TRIMP 81" (TSS value + method short label). Open = today's gauges unchanged (numbers, labels, ⓘ), labels at today's 12 px; long labels ("STARK VERBESSERND") wrap to two lines, centred; then today's footer exactly (divider + summary sentence as `caption`). No profile: row disabled, "Duration-Based Load 40" / "Set max & resting HR in your profile" (may wrap). Profile set but no HR (TE not computable): row disabled, "Training effect unavailable" / "This session has no heart rate data". No aria-label on rows.
 - **Laps row**: avatar = mini lap strip. Over **all laps exactly as recorded** (warm-up, recovery, partial split included), no trend: primary "14 splits · avg 5:59 /km" (rides km/h), secondary range "5:48–6:14 /km"; interval device laps add "· recovery 28 bpm". Open = larger strip + fastest/slowest lap (plain text, no pointer events, no outline) + HR recovery ⓘ on interval device laps.
   - Hover a strip bar = preview like hovering a chart band (band tint, map highlight); click = select like clicking a band. Chart ↔ strip sync both ways.
-  - Disabled with a nudge: laps Off ("Laps off" / "Choose device laps or splits in the Laps control"); fewer than 2 laps ("1 split" / "Choose a shorter split distance", device: "Choose splits in the Laps control").
+  - Disabled with a nudge: laps Off ("Laps off" / "Choose device laps or splits in the Laps control"); fewer than 2 laps ("1 split" / "Choose a shorter split distance", device: "Choose splits in the Laps control"). Splits without distance data: disabled, "Splits unavailable" / "This session has no distance data". Strip bar widths follow moving time (like the chart bands), so standing recovery laps stay hoverable.
 - Pacing trend is dropped (first→last drift misleads on real data).
 
 ### Laps control
 
-- Default source **Splits per sport**: running 1 km, cycling 5 km; reset per session (nothing remembered).
+- Default source **Splits per sport**: running 1 km, cycling 5 km; reset per session (nothing remembered). A default longer than the session clamps to the largest slider step that fits (never below the slider minimum): 0.7 km run → 0.5 km, 3.4 km ride → 3 km.
 - Splits distance via a **slider** (look of `src/components/ui/Slider.tsx`) inside the checked Splits row: running 0.5–10 km in 0.5 km steps, cycling 1–50 km in 1 km steps, capped at the session length; live label; bands and Laps row update while sliding. Replaces the 0.4/1/2/5 km chips.
 - Checked row subtitle shows only the count: "14 splits" / "14 laps" ("1 split" / "1 lap").
 - **Lap selection = Laps pill becomes the stepper** "⚑ ‹ Lap 4 › | ✕" (no floating peek, no "--"); ✕/Esc restores the pill. ‹ › never move.
@@ -39,12 +39,22 @@ Mockup: `mockups/session-summary/index.html` (final, solution-only).
 
 ### Sensor warnings
 
-- One `Banner variant="warning"` like `NoGpsBanner`, listing all warnings of the session as translated sentences. **Computed from the records at display time** (no stored strings, no migration; old sessions translate automatically).
+- One `Banner variant="warning"` like `NoGpsBanner`, listing all warnings of the session as translated sentences. **Computed from the records at display time** (no stored strings, no migration; old sessions translate automatically). German "HR zero" text: "Herzfrequenz war die ganze Einheit 0 – Sensor nicht verbunden".
 
-### Charts card
+### Charts card (all charts in the app)
 
+- The one-card rule applies to every chart: session, studio (`RouteChartsExplorer`) and dashboard (Load + Performance in one card; FormStatus and TrainingSummary stay separate), via one shared ui component. Dashboard rows: no avatar, the subtitle becomes the ListItem secondary.
 - All session charts in one glass card, one row per chart: ListItem title line (avatar = chart icon in its chart colour, title, ⓘ as today), then rail + chart. Always expanded: no chevron, no collapse, no hover on the title.
-- Zoom (desktop drag) unchanged; while zoomed a glass "⊖ Reset zoom" chip sits at the top-right of the charts card, absolutely positioned on the first title line (no layout shift). The rail top slot stays empty.
+- Zoom (desktop drag) unchanged. Reset lives in a toolbar, desktop only: a nested glass bar styled like `TabsList` (`src/components/ui/Tabs.tsx:10-20`), first child of the charts card, sticky like TabsList (`lg:sticky lg:top-6`), with one full-width button styled like a single `TabsTrigger`: "⊖ Reset zoom", dim and disabled until zoomed. Always present, so zooming causes no layout shift. The rail top slot stays empty. The toolbar has no bar of its own: the tab-styled button sits in the card's top area and is itself sticky, with its own blur.
+- Chart rows and summary rows share one ListItem header with `variant: "primary" | "secondary"`: charts are primary (the old chart title typography, `title`), summary rows secondary (body1 + caption).
+- With a lap selected, the rails' resting values cover only that lap; an active zoom wins over the lap. The rail header stays unchanged.
+
+### Map camera
+
+- Lap and session fits keep an 80 px margin from the dock, the content column, the pills and the top (plus the top safe area), via one shared `mapPadding` (`src/features/map/mapPadding.ts`). Locate me uses it too; onboarding reserves no column.
+- Desktop pills stay 40 px from the bottom.
+- Phone: when the sheet is above its middle snap point, the fit uses the middle snap point as its lowest point, so lowering the sheet to half shows the track framed.
+- Bug: the map popup treated 768 px as desktop while the layout switches at 1024 px; it uses the layout breakpoint.
 
 ## Approach
 
@@ -72,3 +82,9 @@ Mockup: `mockups/session-summary/index.html` (final, solution-only).
 ## Verification
 
 `vp check`, `vp test -- --run`, `vp exec playwright test`, `vp build`. By hand at desktop and 390 px: inline expand of all rows, disabled rows, slider ranges per sport, stepper, reset-zoom chip without layout shift, warnings banner in DE, German "STARK VERBESSERND" wrapping.
+
+## Next: performance (after this plan is verified)
+
+- Hovering and peeking (charts, lap strip, map) must feel instant; the same goes for the lap controls on the card (slider, stepper, strip).
+- Defer the computation that a control change triggers with React transitions (`useTransition` / `startTransition`, `useDeferredValue`), so the control itself updates immediately.
+- First step: profile which computations run on hover, lap selection and slider changes; then decide what to defer.

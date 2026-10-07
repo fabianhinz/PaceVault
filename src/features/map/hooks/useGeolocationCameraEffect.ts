@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { useGeolocationStore } from '@/store/geolocation.ts';
-import { mapSidePadding } from '../mapSidePadding.ts';
+import { mapPadding } from '../mapPadding.ts';
 
 export const useGeolocationCameraEffect = (mapRef: React.RefObject<MapRef | null>) => {
   const tracking = useGeolocationStore((s) => s.tracking);
@@ -18,12 +18,10 @@ export const useGeolocationCameraEffect = (mapRef: React.RefObject<MapRef | null
     }
     flownRef.current = true;
 
-    const side = mapSidePadding();
-
     mapRef.current.flyTo({
       center: position,
       zoom: 15,
-      padding: { top: 0, bottom: side.bottom, left: 0, right: side.right },
+      padding: mapPadding(0),
       duration: 800,
     });
   }, [tracking, position, mapRef]);

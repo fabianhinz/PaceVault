@@ -1,6 +1,6 @@
 import type { RoutePoint } from './routeGeometry.ts';
 
-export interface RoutePosition {
+interface RoutePosition {
   lat: number;
   lng: number;
 }

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { Heart, Zap, Gauge, Mountain, Timer, TrendingUp, ArrowUpDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
-import { ZoomResetChip } from '@/components/ui/ZoomResetChip.tsx';
+import { ChartRow, ChartsCard } from '@/components/ui/ChartsCard.tsx';
+import { ZoomResetButton } from '@/components/ui/ZoomResetButton.tsx';
 import { buildSessionChartRows, gpsByX, hasSeriesValues } from '@/lib/chartData.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
 import { indexByX } from '@/lib/chartHover.ts';
 import { computeRecordExtremes } from '@/lib/recordExtremes.ts';
+import { activeRailRange, computeRangeStats, type RangeStats } from '@/lib/railRange.ts';
 import {
   railFixed1,
   railGain,
@@ -44,7 +45,6 @@ interface ChartEntry {
   icon: LucideIcon;
   color: string;
   hasData: boolean;
-  compactHeight?: string;
   metricId?: MetricId;
   rail: React.ReactNode;
   chart: React.ReactNode;
@@ -140,20 +140,51 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const session = props.session;
   const cadenceIcon = sportIcon[session.sport] ?? sportIcon.running;
 
-  let avgSpeed = session.avgSpeed;
-  if (avgSpeed === undefined && session.distance !== undefined && session.duration > 0) {
-    avgSpeed = session.distance / session.duration;
-  }
-  const avgSpeedKmh = avgSpeed !== undefined ? avgSpeed * 3.6 : undefined;
-  const maxSpeedKmh = session.maxSpeed !== undefined ? session.maxSpeed * 3.6 : undefined;
+  const selectedLapIndex = useMapFocusStore((s) => s.selectedLapIndex);
+  const selectedBand = lapBands?.find((band) => band.lapIndex === selectedLapIndex);
+  const railRange = activeRailRange(zoomRange, selectedBand);
+  const railFrom = railRange?.from;
+  const railTo = railRange?.to;
+
+  const sessionStats = useMemo((): RangeStats => {
+    let avgSpeed = session.avgSpeed;
+    if (avgSpeed === undefined && session.distance !== undefined && session.duration > 0) {
+      avgSpeed = session.distance / session.duration;
+    }
+    return {
+      avgHr: session.avgHr,
+      maxHr: session.maxHr,
+      avgPower: session.avgPower,
+      normalizedPower: session.normalizedPower,
+      avgSpeed,
+      maxSpeed: session.maxSpeed,
+      avgCadence: session.avgCadence,
+      maxCadence: extremes.maxCadence,
+      elevationGain: session.elevationGain,
+      elevationLoss: session.elevationLoss,
+      maxGrade: extremes.maxGrade,
+      minGrade: extremes.minGrade,
+      avgPaceSecPerKm: session.avgPace,
+      bestPaceSecPerKm: extremes.bestPaceSecPerKm,
+      gapSecPerKm: session.gap,
+    };
+  }, [session, extremes]);
+
+  const stats = useMemo(() => {
+    if (railFrom === undefined || railTo === undefined) return sessionStats;
+    return computeRangeStats(props.records, { from: railFrom, to: railTo });
+  }, [sessionStats, props.records, railFrom, railTo]);
+
+  const avgSpeedKmh = stats.avgSpeed !== undefined ? stats.avgSpeed * 3.6 : undefined;
+  const maxSpeedKmh = stats.maxSpeed !== undefined ? stats.maxSpeed * 3.6 : undefined;
 
   let powerRest: { header: string; value: string; secondary?: string } = {
     header: m.ui_rail_np(),
-    value: railInt(session.normalizedPower),
-    secondary: `${m.ui_rail_avg()} ${railInt(session.avgPower)}`,
+    value: railInt(stats.normalizedPower),
+    secondary: `${m.ui_rail_avg()} ${railInt(stats.avgPower)}`,
   };
-  if (session.normalizedPower === undefined) {
-    powerRest = { header: m.ui_rail_avg(), value: railInt(session.avgPower) };
+  if (stats.normalizedPower === undefined) {
+    powerRest = { header: m.ui_rail_avg(), value: railInt(stats.avgPower) };
   }
 
   const charts: ChartEntry[] = [
@@ -171,15 +202,15 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           formatX={formatHoverTime}
           rest={{
             header: m.ui_rail_avg(),
-            value: railInt(session.avgHr),
-            secondary: `${m.ui_rail_max()} ${railInt(session.maxHr)}`,
+            value: railInt(stats.avgHr),
+            secondary: `${m.ui_rail_max()} ${railInt(stats.maxHr)}`,
           }}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.hr),
-              secondary: `${m.ui_rail_avg()} ${railInt(session.avgHr)}`,
+              secondary: `${m.ui_rail_avg()} ${railInt(stats.avgHr)}`,
               note: zoneNote(hrScale, point.hr),
             };
           }}
@@ -279,15 +310,15 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           formatX={formatHoverTime}
           rest={{
             header: '',
-            value: railGain(session.elevationGain),
-            secondary: `${railLoss(session.elevationLoss)} m`,
+            value: railGain(stats.elevationGain),
+            secondary: `${railLoss(stats.elevationLoss)} m`,
           }}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.elevation),
-              secondary: `${railGain(session.elevationGain)} m`,
+              secondary: `${railGain(stats.elevationGain)} m`,
             };
           }}
         />
@@ -317,15 +348,15 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           formatX={formatHoverTime}
           rest={{
             header: m.ui_rail_avg(),
-            value: railInt(session.avgCadence),
-            secondary: `${m.ui_rail_max()} ${railInt(extremes.maxCadence)}`,
+            value: railInt(stats.avgCadence),
+            secondary: `${m.ui_rail_max()} ${railInt(stats.maxCadence)}`,
           }}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.cadence),
-              secondary: `${m.ui_rail_avg()} ${railInt(session.avgCadence)}`,
+              secondary: `${m.ui_rail_avg()} ${railInt(stats.avgCadence)}`,
             };
           }}
         />
@@ -352,15 +383,15 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           formatX={formatHoverTime}
           rest={{
             header: m.ui_rail_max(),
-            value: railSigned1(extremes.maxGrade),
-            secondary: `${m.ui_rail_min()} ${railSigned1(extremes.minGrade)}`,
+            value: railSigned1(stats.maxGrade),
+            secondary: `${m.ui_rail_min()} ${railSigned1(stats.minGrade)}`,
           }}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railSigned1(point.grade),
-              secondary: `${m.ui_rail_max()} ${railSigned1(extremes.maxGrade)}`,
+              secondary: `${m.ui_rail_max()} ${railSigned1(stats.maxGrade)}`,
             };
           }}
         />
@@ -390,15 +421,15 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           formatX={formatHoverTime}
           rest={{
             header: m.ui_rail_avg(),
-            value: railPaceFromSecPerKm(session.avgPace),
-            secondary: `${m.ui_rail_best()} ${railPaceFromSecPerKm(extremes.bestPaceSecPerKm)}`,
+            value: railPaceFromSecPerKm(stats.avgPaceSecPerKm),
+            secondary: `${m.ui_rail_best()} ${railPaceFromSecPerKm(stats.bestPaceSecPerKm)}`,
           }}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railPace(point.pace),
-              secondary: `${m.ui_rail_avg()} ${railPaceFromSecPerKm(session.avgPace)}`,
+              secondary: `${m.ui_rail_avg()} ${railPaceFromSecPerKm(stats.avgPaceSecPerKm)}`,
               note: zoneNote(paceScale, point.pace),
             };
           }}
@@ -426,13 +457,13 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           group={HOVER_GROUP}
           unit="/km"
           formatX={formatHoverTime}
-          rest={{ header: m.ui_rail_avg(), value: railPaceFromSecPerKm(session.gap) }}
+          rest={{ header: m.ui_rail_avg(), value: railPaceFromSecPerKm(stats.gapSecPerKm) }}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railPace(point.gap),
-              secondary: `${m.ui_rail_avg()} ${railPaceFromSecPerKm(session.gap)}`,
+              secondary: `${m.ui_rail_avg()} ${railPaceFromSecPerKm(stats.gapSecPerKm)}`,
             };
           }}
         />
@@ -453,23 +484,19 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   if (visibleCharts.length === 0) return null;
 
   return (
-    <div>
-      {zoom.isZoomed && <ZoomResetChip onReset={zoom.resetZoom} />}
-      <div className="space-y-3">
-        {visibleCharts.map((chart) => (
-          <ChartPreviewCard
-            key={chart.key}
-            title={chart.title}
-            icon={chart.icon}
-            color={chart.color}
-            compactHeight={chart.compactHeight}
-            metricId={chart.metricId}
-            rail={chart.rail}
-          >
-            {chart.chart}
-          </ChartPreviewCard>
-        ))}
-      </div>
-    </div>
+    <ChartsCard toolbar={<ZoomResetButton isZoomed={zoom.isZoomed} onReset={zoom.resetZoom} />}>
+      {visibleCharts.map((chart) => (
+        <ChartRow
+          key={chart.key}
+          title={chart.title}
+          icon={chart.icon}
+          color={chart.color}
+          metricId={chart.metricId}
+          rail={chart.rail}
+        >
+          {chart.chart}
+        </ChartRow>
+      ))}
+    </ChartsCard>
   );
 };

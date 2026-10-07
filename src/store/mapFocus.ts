@@ -24,6 +24,8 @@ interface MapFocusState {
   setSessionColorMode: (mode: ColorMode) => void;
   lapSource: LapSource;
   setLapSource: (source: LapSource) => void;
+  splitDistance: number | null;
+  setSplitDistance: (metres: number) => void;
   sessionLaps: LapSet | null;
   setSessionLaps: (laps: LapSet | null) => void;
   selectedLapIndex: number | null;
@@ -44,7 +46,8 @@ export const useMapFocusStore = create<MapFocusState>()(
           hoveredPoint: null,
           trackColorMode: 'sport',
           sessionColorMode: 'sport',
-          lapSource: 'device',
+          lapSource: 'splits',
+          splitDistance: null,
           sessionLaps: null,
           selectedLapIndex: null,
           hoveredLapIndex: null,
@@ -53,7 +56,8 @@ export const useMapFocusStore = create<MapFocusState>()(
         set({
           openedSessionId: id,
           sessionColorMode: 'sport',
-          lapSource: 'device',
+          lapSource: 'splits',
+          splitDistance: null,
           selectedLapIndex: null,
           hoveredLapIndex: null,
         });
@@ -75,9 +79,17 @@ export const useMapFocusStore = create<MapFocusState>()(
     setTrackColorMode: (mode) => set({ trackColorMode: mode }),
     sessionColorMode: 'sport',
     setSessionColorMode: (mode) => set({ sessionColorMode: mode }),
-    lapSource: 'device',
+    lapSource: 'splits',
     setLapSource: (source) =>
       set({ lapSource: source, selectedLapIndex: null, hoveredLapIndex: null }),
+    splitDistance: null,
+    setSplitDistance: (metres) =>
+      set({
+        lapSource: 'splits',
+        splitDistance: metres,
+        selectedLapIndex: null,
+        hoveredLapIndex: null,
+      }),
     sessionLaps: null,
     setSessionLaps: (laps) => set({ sessionLaps: laps }),
     selectedLapIndex: null,

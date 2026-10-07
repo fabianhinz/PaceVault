@@ -12,7 +12,7 @@ import { useUserStore } from '@/store/user.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { runIntervalsImport } from './runIntervalsImport.ts';
 
-export interface IntervalsSyncSummary {
+interface IntervalsSyncSummary {
   available: number;
   pending: number;
   imported: number;

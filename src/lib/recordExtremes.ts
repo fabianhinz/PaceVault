@@ -1,6 +1,6 @@
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
-export interface RecordExtremes {
+interface RecordExtremes {
   bestPaceSecPerKm: number | undefined;
   maxCadence: number | undefined;
   maxGrade: number | undefined;

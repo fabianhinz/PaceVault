@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import {
   wmoToCondition,
-  formatWindDirection,
   computeHourlyWaypoints,
   deduplicateWaypoints,
   buildWeatherUrl,
@@ -61,44 +60,6 @@ describe('wmoToCondition', () => {
   it('falls back to cloudy for unknown codes', () => {
     expect(wmoToCondition(100)).toBe('cloudy');
     expect(wmoToCondition(-1)).toBe('cloudy');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// formatWindDirection
-// ---------------------------------------------------------------------------
-
-describe('formatWindDirection', () => {
-  it('maps 0 degrees to N', () => {
-    expect(formatWindDirection(0)).toBe('N');
-  });
-
-  it('maps 90 degrees to E', () => {
-    expect(formatWindDirection(90)).toBe('E');
-  });
-
-  it('maps 180 degrees to S', () => {
-    expect(formatWindDirection(180)).toBe('S');
-  });
-
-  it('maps 270 degrees to W', () => {
-    expect(formatWindDirection(270)).toBe('W');
-  });
-
-  it('maps 45 degrees to NE', () => {
-    expect(formatWindDirection(45)).toBe('NE');
-  });
-
-  it('maps 225 degrees to SW', () => {
-    expect(formatWindDirection(225)).toBe('SW');
-  });
-
-  it('maps 360 degrees to N', () => {
-    expect(formatWindDirection(360)).toBe('N');
-  });
-
-  it('handles negative degrees', () => {
-    expect(formatWindDirection(-90)).toBe('W');
   });
 });
 

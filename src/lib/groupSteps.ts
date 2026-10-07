@@ -1,6 +1,6 @@
 import type { WorkoutStep } from '@/types/index.ts';
 
-export type GroupedStep =
+type GroupedStep =
   | { kind: 'single'; step: WorkoutStep }
   | { kind: 'interval'; repeat: number; steps: WorkoutStep[] };
 

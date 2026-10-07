@@ -3,7 +3,7 @@ import { StatRail, type StatRailNote, type StatRailRow } from '@/components/ui/S
 import { useChartHoverX, type ChartHoverX } from '@/store/chartHover.ts';
 import type { MetricId } from '@/lib/explanations.ts';
 
-export interface RailReading {
+interface RailReading {
   value: ReactNode;
   secondary?: ReactNode;
   note?: StatRailNote;
@@ -49,7 +49,7 @@ export const SeriesRail = (props: SeriesRailProps) => {
   );
 };
 
-export interface MultiSeriesRailRow {
+interface MultiSeriesRailRow {
   key: string;
   name: string;
   color: string;

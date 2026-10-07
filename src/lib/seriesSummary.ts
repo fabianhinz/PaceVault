@@ -1,4 +1,4 @@
-export interface SeriesSummary {
+interface SeriesSummary {
   avg: number | undefined;
   min: number | undefined;
   max: number | undefined;

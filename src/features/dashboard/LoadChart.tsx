@@ -9,9 +9,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { useFilteredMetrics } from './hooks/useFilteredMetrics.ts';
-import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
-import { Typography } from '@/components/ui/Typography.tsx';
-import { MetricLabel } from '@/components/ui/MetricLabel.tsx';
+import { ChartRow } from '@/components/ui/ChartsCard.tsx';
 import { ListItem } from '@/components/ui/List.tsx';
 import { Switch } from '@/components/ui/Switch.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
@@ -217,18 +215,11 @@ export const LoadChart = () => {
   };
 
   return (
-    <ChartPreviewCard
-      title=""
-      titleSlot={
-        <div className="flex items-center gap-1 flex-1">
-          <Typography variant="title" as="h3">
-            {METRIC_EXPLANATIONS.tss.friendlyName}
-          </Typography>
-          <MetricLabel metricId="tss" size="sm" />
-        </div>
-      }
-      subtitle={METRIC_EXPLANATIONS.tss.oneLiner}
-      compactHeight="h-64"
+    <ChartRow
+      title={METRIC_EXPLANATIONS.tss.friendlyName}
+      metricId="tss"
+      secondary={METRIC_EXPLANATIONS.tss.oneLiner}
+      height="h-64"
       rail={groupedData.length > 0 ? rail : undefined}
       footer={
         <ListItem primary={m.ui_sport_color_title()} secondary={m.ui_sport_color_desc()}>
@@ -339,6 +330,6 @@ export const LoadChart = () => {
           </div>
         </TabsPrimitive.Root>
       ) : null}
-    </ChartPreviewCard>
+    </ChartRow>
   );
 };

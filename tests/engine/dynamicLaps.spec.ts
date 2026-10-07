@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeDynamicLaps } from '@/lib/dynamicLaps.ts';
+import { computeDynamicLaps, splitDistanceRange } from '@/lib/dynamicLaps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { makeRunningRecords, makeCyclingRecords } from '@tests/factories/records.ts';
 
@@ -25,10 +25,8 @@ describe('computeDynamicLaps', () => {
   });
 
   it('produces correct split count for running records with 1km splits', () => {
-    // ~3.5 m/s for 1000s → ~3500m → 3 full km splits + partial
     const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
-    // Total distance ~3500m, so we expect 3 full splits + 1 partial
     expect(result.analysis.length).toBeGreaterThanOrEqual(3);
     result.analysis.forEach((lap, i) => {
       expect(lap.lapIndex).toBe(i);
@@ -36,7 +34,6 @@ describe('computeDynamicLaps', () => {
   });
 
   it('produces correct split count for cycling records with 5km splits', () => {
-    // ~8-9 m/s for 2000s → ~16-18km → 3 full 5km splits + partial
     const records = makeCyclingRecords(2000);
     const result = computeDynamicLaps(records, 5000);
     expect(result.analysis.length).toBeGreaterThanOrEqual(3);
@@ -46,18 +43,15 @@ describe('computeDynamicLaps', () => {
   });
 
   it('handles partial final lap', () => {
-    // Create records covering ~2500m with 1000m splits → 2 full + 1 partial
-    const records = makeRunningRecords(715); // ~715 * 3.5 ≈ 2502m
+    const records = makeRunningRecords(715);
     const result = computeDynamicLaps(records, 1000);
     expect(result.analysis.length).toBe(3);
-    // Last lap should be smaller distance
     const lastLap = result.analysis[result.analysis.length - 1];
     expect(lastLap.distance).toBeLessThan(1000);
     expect(lastLap.distance).toBeGreaterThan(0);
   });
 
   it('returns 1 partial lap when split distance exceeds total distance', () => {
-    // ~3.5 m/s for 100s → ~350m, split at 1000m → just 1 partial lap
     const records = makeRunningRecords(100);
     const result = computeDynamicLaps(records, 1000);
     expect(result.analysis).toHaveLength(1);
@@ -67,8 +61,6 @@ describe('computeDynamicLaps', () => {
   it('computes pace correctly for running', () => {
     const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
-    // For running at ~3.5 m/s base, pace ≈ 286 sec/km.
-    // Random-walk speed with terrain can produce slower laps on uphills.
     result.analysis.forEach((lap) => {
       expect(lap.paceSecPerKm).toBeDefined();
       expect(lap.paceSecPerKm ?? 0).toBeGreaterThan(180);
@@ -166,7 +158,7 @@ describe('computeDynamicLaps splits', () => {
     const records: SessionRecord[] = [...steady(0, 126, 0), ...steady(245, 200, 500)];
     const lap = computeDynamicLaps(records, 1000).analysis[0];
     expect(lap?.distance).toBe(1000);
-    expect(lap?.duration).toBe(370);
+    expect(lap?.timerTime).toBe(370);
     expect(lap?.movingTime).toBe(251);
     expect(lap?.paceSecPerKm).toBe(251);
   });
@@ -198,5 +190,14 @@ describe('computeDynamicLaps splits', () => {
     const full = result.analysis.slice(0, -1).map((lap) => lap.distance ?? 0);
     expect(full.reduce((sum, distance) => sum + distance, 0) / full.length).toBeCloseTo(400, 0);
     expect(result.analysis.at(-1)?.isPartial).toBe(true);
+  });
+});
+
+describe('splitDistanceRange', () => {
+  it('caps the split slider at the session length, never below the sport minimum', () => {
+    expect(splitDistanceRange('running', 42_195)).toEqual({ min: 500, max: 10_000, step: 500 });
+    expect(splitDistanceRange('running', 3_240)).toEqual({ min: 500, max: 3_000, step: 500 });
+    expect(splitDistanceRange('cycling', 23_700)).toEqual({ min: 1000, max: 23_000, step: 1000 });
+    expect(splitDistanceRange('cycling', 400)).toEqual({ min: 1000, max: 1000, step: 1000 });
   });
 });

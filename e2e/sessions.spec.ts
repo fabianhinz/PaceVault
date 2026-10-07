@@ -59,16 +59,44 @@ test.describe('Session browsing', () => {
     // Should navigate to /sessions/:id
     await page.waitForURL(/\/sessions\/.+/);
 
-    // Detail page should show key sections
-    // Training effect card
-    await expect(page.getByText(/training effect/i)).toBeVisible({ timeout: 10_000 });
-
-    // Stats grid should be present
-    await expect(page.getByText(/duration/i).first()).toBeVisible();
+    const teToggle = page.getByTestId('training-effect-row').locator(':scope > button');
+    await expect(teToggle).toHaveAttribute('aria-expanded', 'false', { timeout: 10_000 });
+    await expect(teToggle).toContainText(/aerobic \d.*anaerobic \d/i);
+    await teToggle.click();
+    await expect(teToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByText(/^aerobic te$/i)).toBeVisible();
 
     const rails = page.getByTestId('stat-rail');
     await expect(rails.first()).toBeVisible();
     await expect(rails.first()).toContainText(/\d/);
+  });
+
+  test('summary rows open inline on the phone and the laps row follows the laps source', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
+    await page.locator('[data-testid="session-item"]').first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+
+    const teToggle = page.getByTestId('training-effect-row').locator(':scope > button');
+    const lapsRow = page.getByTestId('laps-row');
+    const lapsToggle = lapsRow.locator(':scope > button');
+    await expect(teToggle).toHaveAttribute('aria-expanded', 'false', { timeout: 10_000 });
+    await expect(lapsToggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(lapsToggle).toContainText(/^\d+ splits · avg/);
+
+    await teToggle.click();
+    await expect(teToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByText(/^aerobic te$/i)).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await page.getByTestId('laps-pill').click();
+    await page.getByRole('radio', { name: /^off/i }).click();
+    await page.keyboard.press('Escape');
+    await expect(lapsToggle).toHaveCount(0);
+    await expect(lapsRow.locator('[aria-disabled="true"]')).toContainText(/laps off/i);
   });
 
   test('color by HR zones colours the HR chart and is not carried over to the next session', async ({
@@ -95,7 +123,7 @@ test.describe('Session browsing', () => {
     await expect(page.getByTestId('color-by-pill')).toHaveText(/color by/i, { timeout: 10_000 });
   });
 
-  test('a lap picked on a chart opens the peek, steps without moving and resets on the next session', async ({
+  test('a lap picked on a chart turns the laps pill into a stepper, steps without moving and resets on the next session', async ({
     page,
   }) => {
     await page.getByRole('link', { name: /sessions/i }).click();
@@ -106,7 +134,8 @@ test.describe('Session browsing', () => {
     await page.waitForURL(/\/sessions\/.+/);
 
     const lapsPill = page.getByTestId('laps-pill');
-    await expect(lapsPill).toHaveText(/\d+ laps/, { timeout: 10_000 });
+    await expect(lapsPill).toHaveText(/^(1|5) km splits$/, { timeout: 10_000 });
+    const defaultLabel = await lapsPill.textContent();
 
     const chart = page.locator('.recharts-wrapper').first();
     await expect(chart.getByTestId('lap-band').first()).toBeAttached();
@@ -114,24 +143,34 @@ test.describe('Session browsing', () => {
     if (!box) throw new Error('chart has no box');
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 
-    const peek = page.getByTestId('lap-peek');
-    await expect(peek.getByTestId('lap-peek-name')).toHaveText(/^Lap \d+$/);
+    const stepper = page.getByTestId('lap-stepper');
+    await expect(stepper.getByTestId('lap-stepper-name')).toHaveText(/^Lap \d+$/);
+    await expect(lapsPill).toHaveCount(0);
     await expect(chart.getByTestId('lap-band-selected')).toBeAttached();
-    const firstName = await peek.getByTestId('lap-peek-name').textContent();
+    const firstName = await stepper.getByTestId('lap-stepper-name').textContent();
 
-    const next = peek.getByTestId('lap-peek-next');
+    const next = stepper.getByTestId('lap-stepper-next');
     const before = await next.boundingBox();
     await next.click();
-    await expect(peek.getByTestId('lap-peek-name')).not.toHaveText(firstName ?? '');
+    await expect(stepper.getByTestId('lap-stepper-name')).not.toHaveText(firstName ?? '');
     expect(await next.boundingBox()).toEqual(before);
 
-    await peek.getByTestId('lap-peek-clear').click();
-    await expect(peek).toHaveCount(0);
+    await stepper.getByTestId('lap-stepper-clear').click();
+    await expect(stepper).toHaveCount(0);
+    await expect(lapsPill).toBeVisible();
+
+    await page.getByTestId('laps-row').locator(':scope > button').click();
+    await page.getByTestId('lap-strip-bar').nth(1).click();
+    await expect(stepper.getByTestId('lap-stepper-name')).toHaveText('Lap 2');
+    await expect(page.getByTestId('lap-strip-selected')).toBeAttached();
+    await stepper.getByTestId('lap-stepper-clear').click();
+    await expect(lapsPill).toBeVisible();
 
     await lapsPill.click();
-    await page.getByRole('radio', { name: /splits/i }).click();
-    await page.getByRole('button', { name: /^2 km$/ }).click();
-    await expect(lapsPill).toHaveText(/2 km splits/);
+    await page.getByRole('slider', { name: /split distance/i }).press('ArrowRight');
+    await page.keyboard.press('Escape');
+    await expect(lapsPill).not.toHaveText(defaultLabel ?? '');
+    await expect(lapsPill).toHaveText(/km splits/);
     await page.getByTestId('color-by-pill').click();
     await page.getByRole('radio', { name: /heart rate/i }).click();
     await expect(page.getByTestId('color-by-pill')).toHaveText(/hr zones/i);
@@ -140,8 +179,38 @@ test.describe('Session browsing', () => {
     await page.waitForURL('/sessions');
     await sessionLinks.nth(1).click();
     await page.waitForURL(/\/sessions\/.+/);
-    await expect(page.getByTestId('laps-pill')).toHaveText(/\d+ laps/, { timeout: 10_000 });
+    await expect(page.getByTestId('laps-pill')).toHaveText(/^(1|5) km splits$/, {
+      timeout: 10_000,
+    });
     await expect(page.getByTestId('color-by-pill')).toHaveText(/color by/i);
+  });
+
+  test('Color by stays open when clicked right after Escape closes the laps picker', async ({
+    page,
+  }) => {
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
+    await page.locator('[data-testid="session-item"]').first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+
+    const colorByPill = page.getByTestId('color-by-pill');
+    await page.getByTestId('laps-pill').click();
+    await expect(page.getByRole('slider', { name: /split distance/i })).toBeVisible();
+    await page.evaluate(() => {
+      const picker = document.querySelector('[role="radiogroup"]');
+      const pill = document.querySelector<HTMLElement>('[data-testid="color-by-pill"]');
+      const observer = new MutationObserver(() => {
+        if (picker?.isConnected) return;
+        observer.disconnect();
+        pill?.click();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+    await page.keyboard.press('Escape');
+
+    await expect(colorByPill).toHaveAttribute('aria-expanded', 'true');
+    await page.getByRole('radio', { name: /heart rate/i }).click();
+    await expect(colorByPill).toHaveText(/hr zones/i);
   });
 
   test('edit route in studio → imports the track and opens it', async ({ page }) => {
@@ -152,7 +221,7 @@ test.describe('Session browsing', () => {
     await expect(sessionLinks.first()).toBeVisible({ timeout: 10_000 });
     await sessionLinks.first().click();
     await page.waitForURL(/\/sessions\/.+/);
-    await expect(page.getByText(/training effect/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('training-effect-row')).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole('button', { name: /session actions/i }).click();
     await page.getByRole('menuitem', { name: /edit route in studio/i }).click();
@@ -175,7 +244,7 @@ test.describe('Session browsing', () => {
     await page.waitForURL(/\/sessions\/.+/);
 
     const card = page.getByTestId('weather-card');
-    const toggle = card.getByRole('button');
+    const toggle = card.locator(':scope > button');
     await expect(toggle).toHaveAttribute('aria-expanded', 'false', { timeout: 10_000 });
     await expect(toggle).toContainText(/(cloudy|rain).*°C.*(cloudy|rain) from/i);
 
@@ -199,7 +268,7 @@ test.describe('Session browsing', () => {
     // Go to detail
     await sessionLinks.first().click();
     await page.waitForURL(/\/sessions\/.+/);
-    await expect(page.getByText(/training effect/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('training-effect-row')).toBeVisible({ timeout: 10_000 });
 
     // Navigate back via the Sessions nav link in the dock
     await page.getByRole('link', { name: /sessions/i }).click();

@@ -10,7 +10,7 @@ import {
   ReferenceArea,
 } from 'recharts';
 import { useFilteredMetrics } from './hooks/useFilteredMetrics.ts';
-import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
+import { ChartRow } from '@/components/ui/ChartsCard.tsx';
 import { MultiSeriesRail } from '@/components/charts/ChartRail.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
 import { chartTheme } from '@/lib/chartTheme.ts';
@@ -67,10 +67,10 @@ export const PerformanceChart = () => {
   });
 
   return (
-    <ChartPreviewCard
+    <ChartRow
       title={m.ui_metrics_chart_title()}
-      subtitle={m.ui_metrics_chart_subtitle()}
-      compactHeight="h-64"
+      secondary={m.ui_metrics_chart_subtitle()}
+      height="h-64"
       rail={
         <MultiSeriesRail
           group={HOVER_GROUP}
@@ -172,6 +172,6 @@ export const PerformanceChart = () => {
           </ComposedChart>
         </ResponsiveContainer>
       ) : null}
-    </ChartPreviewCard>
+    </ChartRow>
   );
 };

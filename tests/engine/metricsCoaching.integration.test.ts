@@ -129,7 +129,6 @@ describe('metrics → coaching pipeline', () => {
       tss: 200,
       isPlanned: true,
       hasDetailedRecords: false,
-      sensorWarnings: [],
     });
 
     const metricsWithout = computeMetrics([realSession, ghost]);

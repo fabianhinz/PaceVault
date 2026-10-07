@@ -282,7 +282,6 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
       distance: 0,
       tss: 0,
       stressMethod: 'duration',
-      sensorWarnings: [],
       isPlanned: false,
       hasDetailedRecords: true,
       source: { kind: 'demo' },

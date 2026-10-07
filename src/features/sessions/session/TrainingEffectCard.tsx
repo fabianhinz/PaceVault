@@ -1,13 +1,17 @@
 import { useMemo } from 'react';
-import { Card } from '@/components/ui/Card.tsx';
-import { CardHeader } from '@/components/ui/CardHeader.tsx';
+import { Gauge } from 'lucide-react';
+import { CollapsibleListItem } from '@/components/ui/Collapsible.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { GaugeDial } from '@/components/ui/GaugeDial.tsx';
+import { GaugeArcs, GaugeDial } from '@/components/ui/GaugeDial.tsx';
 import { MetricLabel } from '@/components/ui/MetricLabel.tsx';
+import { METRIC_EXPLANATIONS, type MetricId } from '@/lib/explanations.ts';
 import { tokens } from '@/lib/tokens.ts';
+import { cn } from '@/lib/utils.ts';
+import { ctlOnDate } from '@/lib/sessionFitness.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useMetrics } from '@/hooks/useMetrics.ts';
 import { m } from '@/paraglide/messages.js';
+import { getLocale } from '@/paraglide/runtime.js';
 import {
   calculateTrainingEffect,
   getTrainingEffectLabel,
@@ -42,6 +46,76 @@ const TE_TEXT: Record<string, string> = {
   red: 'text-status-danger',
 };
 
+const teFmt = new Intl.NumberFormat(getLocale(), {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+const loadFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });
+
+const fillOf = (value: number) => TE_FILL[getTrainingEffectLabel(value).color] ?? '';
+
+const TrainingEffectGlyph = (props: { aerobic: number; anaerobic: number }) => (
+  <svg width={30} height={30} viewBox="0 0 30 30" aria-hidden>
+    <GaugeArcs
+      cx={15}
+      cy={22}
+      radius={13}
+      stroke={3.5}
+      gapDeg={4}
+      min={0}
+      max={5}
+      value={props.aerobic}
+      zones={TE_ZONES}
+      valueFill={fillOf(props.aerobic)}
+    />
+    <GaugeArcs
+      cx={15}
+      cy={22}
+      radius={7.5}
+      stroke={3.5}
+      gapDeg={6}
+      min={0}
+      max={5}
+      value={props.anaerobic}
+      zones={TE_ZONES}
+      valueFill={fillOf(props.anaerobic)}
+    />
+  </svg>
+);
+
+const TrainingEffectGauge = (props: { value: number; metricId: MetricId }) => {
+  const label = getTrainingEffectLabel(props.value);
+  const textClass = TE_TEXT[label.color] ?? '';
+  return (
+    <div className="w-28">
+      <div className="flex flex-col items-center gap-1">
+        <div className="relative w-full max-w-[160px]">
+          <GaugeDial
+            min={0}
+            max={5}
+            value={props.value}
+            zones={TE_ZONES}
+            valueFill={fillOf(props.value)}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-end">
+            <Typography variant="h1" className={cn('leading-none pb-1', textClass)}>
+              {teFmt.format(props.value)}
+            </Typography>
+          </div>
+        </div>
+        <Typography
+          variant="overline"
+          as="p"
+          className={cn('min-h-8 max-w-full text-center text-balance', textClass)}
+        >
+          {localizedTELabel(label.label)}
+        </Typography>
+        <MetricLabel metricId={props.metricId} size="sm" alwaysShowLabel />
+      </div>
+    </div>
+  );
+};
+
 type TrainingEffectCardProps = {
   records: SessionRecord[];
   session: TrainingSession;
@@ -50,7 +124,7 @@ type TrainingEffectCardProps = {
 export const TrainingEffectCard = (props: TrainingEffectCardProps) => {
   const profile = useUserStore((s) => s.profile);
   const metrics = useMetrics();
-  const ctl = metrics.current?.ctl ?? 0;
+  const ctl = ctlOnDate(metrics.history, props.session.date);
 
   const te = useMemo(() => {
     if (!profile) return undefined;
@@ -63,83 +137,54 @@ export const TrainingEffectCard = (props: TrainingEffectCardProps) => {
     );
   }, [props.records, profile, ctl]);
 
-  if (!te) return null;
+  const load = METRIC_EXPLANATIONS[props.session.stressMethod];
+  const loadValue = loadFmt.format(props.session.tss);
 
-  const aerobicLabel = getTrainingEffectLabel(te.aerobic);
-  const anaerobicLabel = getTrainingEffectLabel(te.anaerobic);
-  const summary = getTrainingEffectSummary(te.aerobic, te.anaerobic);
+  if (!profile) {
+    return (
+      <CollapsibleListItem
+        testId="training-effect-row"
+        disabled
+        avatar={<Gauge size={24} aria-hidden className="text-text-tertiary" />}
+        primary={`${load.friendlyName} ${loadValue}`}
+        secondary={m.ui_te_no_profile()}
+      />
+    );
+  }
+
+  if (!te) {
+    return (
+      <CollapsibleListItem
+        testId="training-effect-row"
+        disabled
+        avatar={<Gauge size={24} aria-hidden className="text-text-tertiary" />}
+        primary={m.ui_te_unavailable()}
+        secondary={m.ui_te_no_hr()}
+      />
+    );
+  }
 
   return (
-    <Card
-      footer={
-        <Typography variant="caption" as="p">
-          {localizedTESummary(summary)}
-        </Typography>
-      }
+    <CollapsibleListItem
+      testId="training-effect-row"
+      avatar={<TrainingEffectGlyph aerobic={te.aerobic} anaerobic={te.anaerobic} />}
+      primary={`${localizedTELabel(getTrainingEffectLabel(te.aerobic).label)} · ${localizedTELabel(getTrainingEffectLabel(te.anaerobic).label)}`}
+      secondary={m.ui_te_values({
+        aerobic: teFmt.format(te.aerobic),
+        anaerobic: teFmt.format(te.anaerobic),
+        method: load.shortLabel ?? load.friendlyName,
+        load: loadValue,
+      })}
     >
-      <CardHeader title={m.ui_te_title()} subtitle={m.ui_te_subtitle()} />
-
-      <div className="flex justify-center gap-6">
-        <div className="w-28">
-          <div className="flex gap-1 flex-1 h-full flex-col items-center justify-end">
-            <div className="relative w-full max-w-[160px]">
-              <GaugeDial
-                min={0}
-                max={5}
-                value={te.aerobic}
-                zones={TE_ZONES}
-                valueFill={TE_FILL[aerobicLabel.color] ?? ''}
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-end">
-                <Typography
-                  variant="h1"
-                  className={`leading-none pb-1 ${TE_TEXT[aerobicLabel.color] ?? ''}`}
-                >
-                  {te.aerobic.toFixed(1)}
-                </Typography>
-              </div>
-            </div>
-            <Typography
-              variant="overline"
-              as="p"
-              className={`whitespace-nowrap ${TE_TEXT[aerobicLabel.color] ?? ''}`}
-            >
-              {localizedTELabel(aerobicLabel.label)}
-            </Typography>
-            <MetricLabel metricId="aerobicTE" size="sm" />
-          </div>
-        </div>
-
-        <div className="w-28">
-          <div className="flex gap-1 flex-1 h-full flex-col items-center justify-end">
-            <div className="relative w-full max-w-[160px]">
-              <GaugeDial
-                min={0}
-                max={5}
-                value={te.anaerobic}
-                zones={TE_ZONES}
-                valueFill={TE_FILL[anaerobicLabel.color] ?? ''}
-              />
-              <div className="absolute inset-0 flex flex-col items-center justify-end">
-                <Typography
-                  variant="h1"
-                  className={`leading-none pb-1 ${TE_TEXT[anaerobicLabel.color] ?? ''}`}
-                >
-                  {te.anaerobic.toFixed(1)}
-                </Typography>
-              </div>
-            </div>
-            <Typography
-              variant="overline"
-              as="p"
-              className={`whitespace-nowrap ${TE_TEXT[anaerobicLabel.color] ?? ''}`}
-            >
-              {localizedTELabel(anaerobicLabel.label)}
-            </Typography>
-            <MetricLabel metricId="anaerobicTE" size="sm" />
-          </div>
-        </div>
+      <div className="flex items-start justify-center gap-6">
+        <TrainingEffectGauge value={te.aerobic} metricId="aerobicTE" />
+        <TrainingEffectGauge value={te.anaerobic} metricId="anaerobicTE" />
       </div>
-    </Card>
+      <div className="border-t border-white/10 mt-4 pt-3">
+        <Typography variant="caption" as="p">
+          {localizedTESummary(getTrainingEffectSummary(te.aerobic, te.anaerobic))}
+        </Typography>
+      </div>
+    </CollapsibleListItem>
   );
 };

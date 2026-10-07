@@ -12,7 +12,7 @@ export const kmToMetres = (km: number): number => Math.round(km * 1000);
 export const metresToKm = (metres: number): number => Math.round(metres / 10) / 100;
 
 /** The session subset attribute filters operate on. */
-export type AttributeSession = Pick<TrainingSession, 'duration' | 'distance' | 'elevationGain'>;
+type AttributeSession = Pick<TrainingSession, 'duration' | 'distance' | 'elevationGain'>;
 
 interface AttributeConfig {
   /** Relative half-window as a fraction of the target. */

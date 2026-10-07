@@ -26,7 +26,7 @@ export interface ZoneScale {
   bandAt: (value: number) => ZoneBand;
 }
 
-export interface GradientStop {
+interface GradientStop {
   offset: number;
   color: string;
 }
@@ -131,7 +131,7 @@ export const zoneScale = (
   };
 };
 
-export const zoneGradientStops = (
+const zoneGradientStops = (
   scale: ZoneScale,
   values: Array<number | null | undefined>,
   reversed: boolean,
@@ -155,7 +155,7 @@ export const zoneGradientStops = (
     .sort((a, b) => a.offset - b.offset);
 };
 
-export interface ZoneLineStroke {
+interface ZoneLineStroke {
   stroke: string;
   stops?: GradientStop[];
 }

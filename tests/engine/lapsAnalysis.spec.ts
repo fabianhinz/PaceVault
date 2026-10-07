@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   analyzeLaps,
   detectIntervals,
-  detectProgressiveOverload,
   filterRecordsByLap,
   enrichLapFromRecords,
   enrichAllLaps,
@@ -33,7 +32,6 @@ describe('analyzeLaps', () => {
     const laps = [makeLap({ distance: 1000, totalTimerTime: 300 })];
     const result = analyzeLaps(laps);
     expect(result).toHaveLength(1);
-    // 300s / 1km = 300 sec/km
     expect(result[0].paceSecPerKm).toBe(300);
   });
 
@@ -55,14 +53,13 @@ describe('analyzeLaps', () => {
     expect(result.map((lap) => lap.isInterval)).toEqual([true, false, true, false, true]);
   });
 
-  it('steady run with a trailing recovery lap is detected as intervals', () => {
+  it('steady run with a trailing recovery lap is not detected as intervals', () => {
     const laps = [
       ...Array.from({ length: 13 }, (_, i) => makeLap({ lapIndex: i, intensity: 'active' })),
       makeLap({ lapIndex: 13, intensity: 'recovery', distance: 683 }),
     ];
     expect(analyzeLaps(laps).some((lap) => lap.isInterval)).toBe(false);
     expect(detectIntervals(laps)).toEqual([]);
-    expect(detectProgressiveOverload(laps).lapCount).toBe(14);
   });
 
   it('a single recovery between two active laps is not an interval session', () => {
@@ -89,7 +86,6 @@ describe('analyzeLaps', () => {
   it('uses movingTime for pace when available', () => {
     const laps = [makeLap({ distance: 1000, totalTimerTime: 300, totalMovingTime: 280 })];
     const result = analyzeLaps(laps);
-    // 280s / 1km = 280 sec/km
     expect(result[0].paceSecPerKm).toBe(280);
   });
 });
@@ -116,10 +112,10 @@ describe('detectIntervals', () => {
     expect(pairs).toHaveLength(3);
     expect(pairs[0].active.lapIndex).toBe(0);
     expect(pairs[0].recovery?.lapIndex).toBe(1);
-    expect(pairs[0].hrRecovery).toBe(40); // 170 - 130
+    expect(pairs[0].hrDropActiveMaxToRecoveryMin).toBe(40);
     expect(pairs[1].active.lapIndex).toBe(2);
     expect(pairs[1].recovery?.lapIndex).toBe(3);
-    expect(pairs[1].hrRecovery).toBe(40); // 175 - 135
+    expect(pairs[1].hrDropActiveMaxToRecoveryMin).toBe(40);
   });
 
   it('handles trailing active lap without recovery', () => {
@@ -133,7 +129,7 @@ describe('detectIntervals', () => {
     const pairs = detectIntervals(laps);
     expect(pairs).toHaveLength(3);
     expect(pairs[2].recovery).toBeUndefined();
-    expect(pairs[2].hrRecovery).toBeUndefined();
+    expect(pairs[2].hrDropActiveMaxToRecoveryMin).toBeUndefined();
   });
 
   it('handles missing HR data gracefully', () => {
@@ -146,133 +142,7 @@ describe('detectIntervals', () => {
     ];
     const pairs = detectIntervals(laps);
     expect(pairs).toHaveLength(3);
-    expect(pairs[0].hrRecovery).toBeUndefined();
-  });
-});
-
-describe('detectProgressiveOverload', () => {
-  it('returns stable with single lap', () => {
-    const result = detectProgressiveOverload([makeLap()]);
-    expect(result.trend).toBe('stable');
-    expect(result.lapCount).toBe(1);
-    expect(result.paceDriftPercent).toBeUndefined();
-  });
-
-  it('detects fading: pace slowing across intervals', () => {
-    const laps = [
-      makeLap({
-        lapIndex: 0,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 300,
-        avgHr: 155,
-      }),
-      makeLap({ lapIndex: 1, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 2,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 330,
-        avgHr: 162,
-      }),
-      makeLap({ lapIndex: 3, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 4,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 360,
-        avgHr: 168,
-      }),
-    ];
-    const result = detectProgressiveOverload(laps);
-    expect(result.trend).toBe('fading');
-    expect(result.lapCount).toBe(3);
-    expect(result.paceDriftPercent).toBeDefined();
-    expect(result.paceDriftPercent ?? 0).toBeGreaterThan(3);
-  });
-
-  it('detects stable: minimal drift', () => {
-    const laps = [
-      makeLap({
-        lapIndex: 0,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 300,
-        avgHr: 155,
-      }),
-      makeLap({ lapIndex: 1, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 2,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 303,
-        avgHr: 156,
-      }),
-      makeLap({ lapIndex: 3, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 4,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 302,
-        avgHr: 157,
-      }),
-    ];
-    const result = detectProgressiveOverload(laps);
-    expect(result.trend).toBe('stable');
-  });
-
-  it('detects building: pace improving (negative drift)', () => {
-    const laps = [
-      makeLap({
-        lapIndex: 0,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 330,
-        avgHr: 155,
-      }),
-      makeLap({ lapIndex: 1, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 2,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 315,
-        avgHr: 162,
-      }),
-      makeLap({ lapIndex: 3, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 4,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 300,
-        avgHr: 165,
-      }),
-    ];
-    const result = detectProgressiveOverload(laps);
-    expect(result.trend).toBe('building');
-    expect(result.lapCount).toBe(3);
-    expect(result.paceDriftPercent ?? 0).toBeLessThan(-3);
-  });
-
-  it('uses all laps when no intervals detected (steady state)', () => {
-    const laps = [
-      makeLap({
-        lapIndex: 0,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 300,
-        avgHr: 150,
-      }),
-      makeLap({
-        lapIndex: 1,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 330,
-        avgHr: 158,
-      }),
-    ];
-    const result = detectProgressiveOverload(laps);
-    expect(result.lapCount).toBe(2);
-    expect(result.paceDriftPercent).toBeDefined();
+    expect(pairs[0].hrDropActiveMaxToRecoveryMin).toBeUndefined();
   });
 });
 
@@ -283,7 +153,7 @@ describe('filterRecordsByLap', () => {
       { timestamp: 0 },
       { timestamp: 150 },
       { timestamp: 299 },
-      { timestamp: 300 }, // excluded (endTime boundary)
+      { timestamp: 300 },
       { timestamp: 500 },
     ];
     const result = filterRecordsByLap(records, lap, 0);
@@ -299,10 +169,10 @@ describe('filterRecordsByLap', () => {
     });
     const records: SessionRecord[] = [
       { timestamp: 200 },
-      { timestamp: 300 }, // lap start
+      { timestamp: 300 },
       { timestamp: 450 },
       { timestamp: 599 },
-      { timestamp: 600 }, // excluded
+      { timestamp: 600 },
     ];
     const result = filterRecordsByLap(records, lap, sessionStartMs);
     expect(result).toHaveLength(3);
@@ -338,7 +208,6 @@ describe('enrichLapFromRecords', () => {
     const result = enrichLapFromRecords(0, records);
     expect(result.minSpeed).toBeDefined();
     expect(result.minSpeed ?? 0).toBeGreaterThan(0);
-    // running records don't have power
     expect(result.avgPower).toBeUndefined();
   });
 
@@ -391,7 +260,7 @@ describe('enrichLapFromRecords', () => {
 
   it('returns true minimum HR including outliers', () => {
     const records: SessionRecord[] = [
-      { timestamp: 0, hr: 50 }, // sensor glitch — now included as true min
+      { timestamp: 0, hr: 50 },
       ...Array.from({ length: 20 }, (_, i) => ({
         sessionId: 'test',
         timestamp: i + 1,
@@ -399,7 +268,6 @@ describe('enrichLapFromRecords', () => {
       })),
     ];
     const result = enrichLapFromRecords(0, records);
-    // sorted: [50, 140, 141, ..., 159] — true min is 50
     expect(result.minHr).toBe(50);
   });
 
@@ -428,7 +296,6 @@ describe('enrichLapFromRecords', () => {
 describe('enrichAllLaps', () => {
   it('enriches each lap with correct record slice (cycling)', () => {
     const laps = makeLaps(5);
-    // makeLaps: 300s per lap → total 1500s. Generate matching records.
     const records = makeCyclingRecords(1500);
     const result = enrichAllLaps(laps, records);
     expect(result).toHaveLength(5);

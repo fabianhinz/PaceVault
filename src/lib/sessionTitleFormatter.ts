@@ -58,14 +58,14 @@ const buildAutoName = (sport: Sport, subSport: string | undefined, timestampMs: 
 
   return m.ui_session_name({ timeOfDay, sport: sportNoun });
 };
-export interface SessionNameInput {
+interface SessionNameInput {
   sport: Sport;
   subSport?: string;
   date: number;
   name?: string;
 }
 
-export interface SessionNameOptions {
+interface SessionNameOptions {
   useAutoNames?: boolean;
 }
 

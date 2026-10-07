@@ -1,4 +1,4 @@
-export interface RouteSegment {
+interface RouteSegment {
   /** 1-based number of the segment the distance falls into. */
   index: number;
   startM: number;

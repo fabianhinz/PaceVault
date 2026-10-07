@@ -18,7 +18,7 @@ export interface RouteElevationStats {
   maxGrade: number;
 }
 
-export interface RouteGeometry {
+interface RouteGeometry {
   points: RoutePoint[];
   /** One encoded polyline per GPX segment — disconnected segments stay disconnected. */
   encodedPolylines: string[];

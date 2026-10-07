@@ -1,8 +1,12 @@
-import { ZoomResetChip } from '@/components/ui/ZoomResetChip.tsx';
+import { ZoomResetButton } from '@/components/ui/ZoomResetButton.tsx';
 import { useFiltersStore } from '@/store/filters.ts';
 
 export const DashboardZoomReset = () => {
   const isZoomed = useFiltersStore((s) => s.customRange !== null);
-  if (!isZoomed) return null;
-  return <ZoomResetChip onReset={() => useFiltersStore.getState().clearDashboardChartRange()} />;
+  return (
+    <ZoomResetButton
+      isZoomed={isZoomed}
+      onReset={() => useFiltersStore.getState().clearDashboardChartRange()}
+    />
+  );
 };

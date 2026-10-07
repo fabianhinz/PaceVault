@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { ReferenceArea } from 'recharts';
 import { bandsOnRows } from '@/lib/lapRanges.ts';
-import { tokens } from '@/lib/tokens.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 
 export const LAP_STRIP_TICK_MARGIN = 12;
@@ -24,7 +23,7 @@ interface LapBandShapeProps extends AreaShapeProps {
 }
 
 const stripFill = (props: LapBandShapeProps): string => {
-  if (props.isSelected) return tokens.accent;
+  if (props.isSelected) return 'rgba(255,255,255,.95)';
   if (props.isHovered) return 'rgba(255,255,255,.6)';
   if (!props.isActive) return 'rgba(255,255,255,.1)';
   if (props.isAlternate) return 'rgba(255,255,255,.22)';
@@ -43,7 +42,7 @@ const LapBandShape = (props: LapBandShapeProps) => {
   return (
     <g data-testid="lap-band">
       {props.isHovered && !props.isSelected && (
-        <rect x={x} y={y} width={width} height={height} fill="rgba(255,255,255,.07)" />
+        <rect x={x} y={y} width={width} height={height} fill="rgba(255,255,255,.1)" />
       )}
       {props.isSelected && (
         <rect
@@ -53,9 +52,9 @@ const LapBandShape = (props: LapBandShapeProps) => {
           width={width}
           height={Math.max(0, height - 1.5)}
           rx={2}
-          fill={tokens.accent}
-          fillOpacity={0.08}
-          stroke={tokens.accent}
+          fill="#fff"
+          fillOpacity={0.06}
+          stroke="#fff"
           strokeWidth={1.5}
         />
       )}

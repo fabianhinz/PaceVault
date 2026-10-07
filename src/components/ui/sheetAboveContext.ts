@@ -15,3 +15,5 @@ export const SheetAboveContext = createContext<SheetAboveContextValue>({
   motion: null,
   registerMotion: () => {},
 });
+
+export const SHEET_ABOVE_GAP = 12;

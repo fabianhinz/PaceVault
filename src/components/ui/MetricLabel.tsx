@@ -15,6 +15,7 @@ interface MetricLabelProps {
   className?: string;
   contextLabel?: string;
   iconOnly?: boolean;
+  alwaysShowLabel?: boolean;
 }
 
 export const MetricLabel = (props: MetricLabelProps) => {
@@ -50,7 +51,12 @@ export const MetricLabel = (props: MetricLabelProps) => {
 
   return (
     <span className={cn('inline-flex items-center gap-1', props.className)}>
-      <span className="hidden sm:contents">
+      <span
+        className={cn(
+          props.alwaysShowLabel && 'contents',
+          !props.alwaysShowLabel && 'hidden sm:contents',
+        )}
+      >
         {labelContent}
 
         {props.showValue && (

@@ -1,17 +1,17 @@
 import type { RoutePoint } from './routeGeometry.ts';
 
-export interface RouteProfilePoint {
+interface RouteProfilePoint {
   /** Distance from the route start in km — the chart x-value and map lookup key. */
   dist: number;
   lng: number;
   lat: number;
 }
 
-export interface RouteElevationPoint extends RouteProfilePoint {
+interface RouteElevationPoint extends RouteProfilePoint {
   elevation: number;
 }
 
-export interface RouteGradePoint extends RouteProfilePoint {
+interface RouteGradePoint extends RouteProfilePoint {
   grade: number;
 }
 

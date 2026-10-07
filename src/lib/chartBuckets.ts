@@ -11,7 +11,7 @@ interface BucketSeriesOptions<Row, K extends string, C extends string> {
   emptyBuckets?: 'gap' | 'skip';
 }
 
-export type BucketRow<Row, K extends string, C extends string> = Record<K, number> &
+type BucketRow<Row, K extends string, C extends string> = Record<K, number> &
   Record<C, number | null> & { source: Row | undefined };
 
 interface ChannelBucket {

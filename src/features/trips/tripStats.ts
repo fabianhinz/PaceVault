@@ -2,7 +2,7 @@ import type { TrainingSession } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
 import { formatDistance, formatDuration } from '@/lib/formatters.ts';
 
-export interface TripTotals {
+interface TripTotals {
   count: number;
   distance: number;
   duration: number;

@@ -3,10 +3,6 @@ import { haversineM } from '@/packages/engine/gps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import type { WindSample } from '@/packages/engine/windExposure.ts';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export type WeatherCondition =
   | 'clear'
   | 'partly-cloudy'
@@ -37,10 +33,6 @@ export interface SessionWeather {
   fetchedAt: number;
 }
 
-// ---------------------------------------------------------------------------
-// WMO weather code → condition mapping
-// ---------------------------------------------------------------------------
-
 export const wmoToCondition = (code: number): WeatherCondition => {
   if (code === 0) return 'clear';
   if (code >= 1 && code <= 2) return 'partly-cloudy';
@@ -52,22 +44,6 @@ export const wmoToCondition = (code: number): WeatherCondition => {
   if (code === 95 || code === 96 || code === 99) return 'thunderstorm';
   return 'cloudy';
 };
-
-// ---------------------------------------------------------------------------
-// Wind direction → compass label
-// ---------------------------------------------------------------------------
-
-const COMPASS_LABELS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
-
-export const formatWindDirection = (degrees: number): string => {
-  const normalized = ((degrees % 360) + 360) % 360;
-  const index = Math.round(normalized / 45) % 8;
-  return COMPASS_LABELS[index] ?? 'N';
-};
-
-// ---------------------------------------------------------------------------
-// Hourly waypoint computation
-// ---------------------------------------------------------------------------
 
 interface Waypoint {
   time: number;
@@ -127,10 +103,6 @@ export const computeHourlyWaypoints = (
   return waypoints;
 };
 
-// ---------------------------------------------------------------------------
-// Waypoint deduplication
-// ---------------------------------------------------------------------------
-
 interface WaypointCluster {
   lat: number;
   lng: number;
@@ -164,10 +136,6 @@ export const deduplicateWaypoints = (
   return clusters;
 };
 
-// ---------------------------------------------------------------------------
-// Open-Meteo API
-// ---------------------------------------------------------------------------
-
 // The API is queried with timezone=UTC, so date params must be UTC days —
 // browser-local dates would shift the requested window near midnight.
 const toUtcDateStr = (ms: number): string => {
@@ -197,10 +165,6 @@ export const buildWeatherUrl = (
   return `https://archive-api.open-meteo.com/v1/archive?${params.toString()}`;
 };
 
-// ---------------------------------------------------------------------------
-// Zod schema for Open-Meteo response
-// ---------------------------------------------------------------------------
-
 const openMeteoHourlySchema = z.object({
   // unix epoch seconds (timeformat=unixtime)
   time: z.array(z.number()),
@@ -217,11 +181,7 @@ const openMeteoResponseSchema = z.object({
   hourly: openMeteoHourlySchema,
 });
 
-export type OpenMeteoResponse = z.infer<typeof openMeteoResponseSchema>;
-
-// ---------------------------------------------------------------------------
-// Fetch + merge logic
-// ---------------------------------------------------------------------------
+type OpenMeteoResponse = z.infer<typeof openMeteoResponseSchema>;
 
 const fetchClusterWeather = async (
   lat: number,

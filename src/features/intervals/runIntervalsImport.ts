@@ -9,7 +9,7 @@ import { createIngestBatcher } from '@/features/sessions/createIngestBatcher.ts'
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import type { UserProfile } from '@/types/index.ts';
 
-export interface IntervalsImportResult {
+interface IntervalsImportResult {
   imported: number;
   duplicated: number;
   failed: number;

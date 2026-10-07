@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { Mountain, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
-import { ZoomResetChip } from '@/components/ui/ZoomResetChip.tsx';
+import { ChartRow, ChartsCard } from '@/components/ui/ChartsCard.tsx';
+import { ZoomResetButton } from '@/components/ui/ZoomResetButton.tsx';
 import { ElevationChart } from '@/components/charts/ElevationChart.tsx';
 import { GradeChart } from '@/components/charts/GradeChart.tsx';
 import { buildRouteProfile } from '@/packages/gpx/routeProfile.ts';
@@ -169,22 +169,19 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
   if (visibleCharts.length === 0) return null;
 
   return (
-    <div>
-      {zoom.isZoomed && <ZoomResetChip onReset={zoom.resetZoom} />}
-      <div className="space-y-3">
-        {visibleCharts.map((chart) => (
-          <ChartPreviewCard
-            key={chart.key}
-            title={chart.title}
-            icon={chart.icon}
-            color={chart.color}
-            metricId={chart.metricId}
-            rail={chart.rail}
-          >
-            {chart.chart}
-          </ChartPreviewCard>
-        ))}
-      </div>
-    </div>
+    <ChartsCard toolbar={<ZoomResetButton isZoomed={zoom.isZoomed} onReset={zoom.resetZoom} />}>
+      {visibleCharts.map((chart) => (
+        <ChartRow
+          key={chart.key}
+          title={chart.title}
+          icon={chart.icon}
+          color={chart.color}
+          metricId={chart.metricId}
+          rail={chart.rail}
+        >
+          {chart.chart}
+        </ChartRow>
+      ))}
+    </ChartsCard>
   );
 };

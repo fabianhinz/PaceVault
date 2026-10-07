@@ -56,11 +56,6 @@ export const formatTick = (v: number, unit?: string): string => {
   return label;
 };
 
-export const formatChartDate = (isoDate: string): string => {
-  const d = new Date(isoDate);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' });
-};
-
 /**
  * X-axis variant for the shared detail charts: sessions plot over elapsed
  * time, studio routes over cumulative distance.

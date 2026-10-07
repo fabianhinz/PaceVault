@@ -2,7 +2,7 @@ import type { IdbStoreName } from './indexeddb.ts';
 
 export type StorageCategory = 'heatmap' | 'fitFiles' | 'weather' | 'appData';
 
-export const STORAGE_CATEGORIES: StorageCategory[] = ['fitFiles', 'heatmap', 'weather', 'appData'];
+const STORAGE_CATEGORIES: StorageCategory[] = ['fitFiles', 'heatmap', 'weather', 'appData'];
 
 const STORE_CATEGORIES: [IdbStoreName, StorageCategory][] = [
   ['session-gps', 'heatmap'],

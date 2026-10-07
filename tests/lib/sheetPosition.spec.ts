@@ -4,6 +4,7 @@ import {
   offsetToPosition,
   positionToOffset,
   settlePosition,
+  sheetFitHeight,
   sheetTapTarget,
 } from '@/lib/sheetPosition.ts';
 
@@ -45,5 +46,16 @@ describe('sheet position', () => {
     expect(sheetTapTarget(0.5)).toBe(1);
     expect(sheetTapTarget(0.51)).toBe(0);
     expect(sheetTapTarget(1)).toBe(0);
+  });
+
+  it('fits the map above the middle snap point while the sheet is dragged higher', () => {
+    const middle = sheetFitHeight(layout, 0.5);
+    expect(sheetFitHeight(layout, 0.8)).toBe(middle);
+    expect(sheetFitHeight(layout, 1)).toBe(middle);
+  });
+
+  it('fits the map above the real sheet while it sits below the middle', () => {
+    expect(sheetFitHeight(layout, 0)).toBe(layout.sheetHeight - layout.peekOffset);
+    expect(sheetFitHeight(layout, 0.25)).toBeLessThan(sheetFitHeight(layout, 0.5));
   });
 });

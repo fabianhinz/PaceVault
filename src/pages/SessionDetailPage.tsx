@@ -6,9 +6,8 @@ import { getSessionRecords, getSessionLaps } from '@/lib/indexeddb.ts';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/features/sessions/session/SessionActionsMenu.tsx';
-import { WeatherCard } from '@/features/sessions/session/WeatherCard.tsx';
+import { SensorWarningBanner } from '@/features/sessions/session/SensorWarningBanner.tsx';
 import { NoGpsBanner } from '@/features/sessions/session/NoGpsBanner.tsx';
-import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
 import { useSessionLapsEffect } from '@/features/sessions/session/hooks/useSessionLapsEffect.ts';
 import { SessionOverview } from '@/features/sessions/session/SessionOverview.tsx';
 import { SessionPeek } from '@/features/sessions/SessionPeek.tsx';
@@ -18,7 +17,6 @@ import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
 export const SessionDetailPage = () => {
   const params = useParams<{ id: string }>();
   const session = useSessionsStore((s) => s.sessions.find((session) => session.id === params.id));
-  const weather = useSessionWeather(params.id ?? '', session?.date ?? 0, session?.duration ?? 0);
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [laps, setLaps] = useState<SessionLap[]>([]);
 
@@ -52,13 +50,13 @@ export const SessionDetailPage = () => {
   return (
     <div className="space-y-4">
       <SessionPeek session={session} />
-      <NoGpsBanner records={records} />
 
       <SessionHeader session={session} titleVariant="h2" titleAs="h1">
         <SessionActionsMenu session={session} />
       </SessionHeader>
 
-      <WeatherCard query={weather} records={records} sessionStartMs={session.date} />
+      <SensorWarningBanner records={records} sport={session.sport} />
+      <NoGpsBanner records={records} />
       <SessionMapControls session={session} records={records} laps={laps} />
 
       <SessionOverview session={session} records={records} laps={laps} />
