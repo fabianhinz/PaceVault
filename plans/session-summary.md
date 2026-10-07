@@ -83,8 +83,7 @@ Mockup: `mockups/session-summary/index.html` (final, solution-only).
 
 `vp check`, `vp test -- --run`, `vp exec playwright test`, `vp build`. By hand at desktop and 390 px: inline expand of all rows, disabled rows, slider ranges per sport, stepper, reset-zoom chip without layout shift, warnings banner in DE, German "STARK VERBESSERND" wrapping.
 
-## Next: performance (after this plan is verified)
+## Performance
 
-- Hovering and peeking (charts, lap strip, map) must feel instant; the same goes for the lap controls on the card (slider, stepper, strip).
-- Defer the computation that a control change triggers with React transitions (`useTransition` / `startTransition`, `useDeferredValue`), so the control itself updates immediately.
-- First step: profile which computations run on hover, lap selection and slider changes; then decide what to defer.
+- Heavy consumers (lap set build, chart bands, laps row, rails, map lap path) read deferred copies of store values (`useDeferredValue`; Zustand updates are not transition-aware). Thumb, labels, stepper, hover and selection highlights, camera stay urgent.
+- Accepted: on fast slider drags the deferred consumers catch up for up to ~0.9 s; bands stay drawn by Recharts, line animation stays on.

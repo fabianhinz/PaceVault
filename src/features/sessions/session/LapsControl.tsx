@@ -9,6 +9,7 @@ import { glassClass } from '@/components/ui/Card.tsx';
 import { cn } from '@/lib/utils.ts';
 import { recordedDistance, splitDistanceRange } from '@/lib/dynamicLaps.ts';
 import {
+  buildDeviceLapSet,
   buildLapSet,
   effectiveSplitDistance,
   stepLap,
@@ -88,10 +89,13 @@ const LapsPicker = (props: LapsPickerProps) => {
   const current = props.current;
   const splitDistance = props.splitDistance;
 
-  const deviceSet = useMemo(() => {
-    if (source === 'device') return current;
-    return buildLapSet(records, laps, 'device', splitDistance);
-  }, [source, current, records, laps, splitDistance]);
+  const isDeviceSource = source === 'device';
+  const builtDeviceSet = useMemo(() => {
+    if (isDeviceSource) return null;
+    return buildDeviceLapSet(records, laps);
+  }, [isDeviceSource, records, laps]);
+  let deviceSet = builtDeviceSet;
+  if (isDeviceSource) deviceSet = current;
   const splitSet = useMemo(() => {
     if (source === 'splits') return current;
     return buildLapSet(records, laps, 'splits', splitDistance);

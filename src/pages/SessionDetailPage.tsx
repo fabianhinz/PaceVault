@@ -8,7 +8,7 @@ import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/features/sessions/session/SessionActionsMenu.tsx';
 import { SensorWarningBanner } from '@/features/sessions/session/SensorWarningBanner.tsx';
 import { NoGpsBanner } from '@/features/sessions/session/NoGpsBanner.tsx';
-import { useSessionLapsEffect } from '@/features/sessions/session/hooks/useSessionLapsEffect.ts';
+import { SessionLapSetSync } from '@/features/sessions/session/SessionLapSetSync.tsx';
 import { SessionOverview } from '@/features/sessions/session/SessionOverview.tsx';
 import { SessionPeek } from '@/features/sessions/SessionPeek.tsx';
 import { SessionMapControls } from '@/features/sessions/session/SessionMapControls.tsx';
@@ -19,8 +19,6 @@ export const SessionDetailPage = () => {
   const session = useSessionsStore((s) => s.sessions.find((session) => session.id === params.id));
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [laps, setLaps] = useState<SessionLap[]>([]);
-
-  useSessionLapsEffect(records, laps);
 
   useEffect(() => {
     if (params.id) {
@@ -35,31 +33,39 @@ export const SessionDetailPage = () => {
     }
   }, [params.id, session?.hasDetailedRecords]);
 
+  const lapSetSync = <SessionLapSetSync records={records} laps={laps} />;
+
   if (!session) {
     return (
-      <Typography variant="body1" color="textSecondary">
-        {m.ui_session_not_found()}
-      </Typography>
+      <>
+        {lapSetSync}
+        <Typography variant="body1" color="textSecondary">
+          {m.ui_session_not_found()}
+        </Typography>
+      </>
     );
   }
 
   if (records.length === 0) {
-    return;
+    return lapSetSync;
   }
 
   return (
-    <div className="space-y-4">
-      <SessionPeek session={session} />
+    <>
+      {lapSetSync}
+      <div className="space-y-4">
+        <SessionPeek session={session} />
 
-      <SessionHeader session={session} titleVariant="h2" titleAs="h1">
-        <SessionActionsMenu session={session} />
-      </SessionHeader>
+        <SessionHeader session={session} titleVariant="h2" titleAs="h1">
+          <SessionActionsMenu session={session} />
+        </SessionHeader>
 
-      <SensorWarningBanner records={records} sport={session.sport} />
-      <NoGpsBanner records={records} />
-      <SessionMapControls session={session} records={records} laps={laps} />
+        <SensorWarningBanner records={records} sport={session.sport} />
+        <NoGpsBanner records={records} />
+        <SessionMapControls session={session} records={records} laps={laps} />
 
-      <SessionOverview session={session} records={records} laps={laps} />
-    </div>
+        <SessionOverview session={session} records={records} laps={laps} />
+      </div>
+    </>
   );
 };

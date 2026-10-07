@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useDeferredValue, useMemo } from 'react';
 import { ReferenceArea } from 'recharts';
 import { bandsOnRows } from '@/lib/lapRanges.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
@@ -16,21 +16,28 @@ interface AreaShapeProps {
 }
 
 interface LapBandShapeProps extends AreaShapeProps {
+  lapIndex: number;
+  isActive: boolean;
+}
+
+interface StripFillState {
   isActive: boolean;
   isAlternate: boolean;
   isHovered: boolean;
   isSelected: boolean;
 }
 
-const stripFill = (props: LapBandShapeProps): string => {
-  if (props.isSelected) return 'rgba(255,255,255,.95)';
-  if (props.isHovered) return 'rgba(255,255,255,.6)';
-  if (!props.isActive) return 'rgba(255,255,255,.1)';
-  if (props.isAlternate) return 'rgba(255,255,255,.22)';
+const stripFill = (state: StripFillState): string => {
+  if (state.isSelected) return 'rgba(255,255,255,.95)';
+  if (state.isHovered) return 'rgba(255,255,255,.6)';
+  if (!state.isActive) return 'rgba(255,255,255,.1)';
+  if (state.isAlternate) return 'rgba(255,255,255,.22)';
   return 'rgba(255,255,255,.32)';
 };
 
 const LapBandShape = (props: LapBandShapeProps) => {
+  const isHovered = useMapFocusStore((s) => s.hoveredLapIndex === props.lapIndex);
+  const isSelected = useMapFocusStore((s) => s.selectedLapIndex === props.lapIndex);
   if (props.x === undefined || props.y === undefined) return null;
   if (props.width === undefined || props.height === undefined) return null;
   const x = props.x;
@@ -41,10 +48,10 @@ const LapBandShape = (props: LapBandShapeProps) => {
   if (width > 3) gap = 1;
   return (
     <g data-testid="lap-band">
-      {props.isHovered && !props.isSelected && (
+      {isHovered && !isSelected && (
         <rect x={x} y={y} width={width} height={height} fill="rgba(255,255,255,.1)" />
       )}
-      {props.isSelected && (
+      {isSelected && (
         <rect
           data-testid="lap-band-selected"
           x={x}
@@ -64,7 +71,12 @@ const LapBandShape = (props: LapBandShapeProps) => {
         width={Math.max(0.4, width - gap)}
         height={STRIP_HEIGHT}
         rx={1}
-        fill={stripFill(props)}
+        fill={stripFill({
+          isActive: props.isActive,
+          isAlternate: props.lapIndex % 2 === 1,
+          isHovered,
+          isSelected,
+        })}
       />
     </g>
   );
@@ -79,47 +91,39 @@ interface LapBandsProps<K extends string, T extends Record<K, number>> {
 export const LapBands = <K extends string, T extends Record<K, number>>(
   props: LapBandsProps<K, T>,
 ) => {
-  const sessionLaps = useMapFocusStore((s) => s.sessionLaps);
-  const selected = useMapFocusStore((s) => s.selectedLapIndex);
-  const hovered = useMapFocusStore((s) => s.hoveredLapIndex);
+  const sessionLaps = useDeferredValue(useMapFocusStore((s) => s.sessionLaps));
   const rows = props.rows;
   const xKey = props.xKey;
+  const yAxisId = props.yAxisId;
 
-  const bands = useMemo(() => {
+  return useMemo(() => {
     if (!sessionLaps) return [];
-    return bandsOnRows(
+    const activeByIndex = new Map<number, boolean>();
+    for (const lap of sessionLaps.analysis) {
+      activeByIndex.set(lap.lapIndex, lap.intensity === 'active');
+    }
+    const bands = bandsOnRows(
       sessionLaps.bands,
       rows.map((row) => row[xKey]),
     );
-  }, [sessionLaps, rows, xKey]);
-
-  const activeByIndex = useMemo(() => {
-    const map = new Map<number, boolean>();
-    for (const lap of sessionLaps?.analysis ?? []) {
-      map.set(lap.lapIndex, lap.intensity === 'active');
-    }
-    return map;
-  }, [sessionLaps]);
-
-  return bands.map((band) => (
-    <ReferenceArea
-      key={band.lapIndex}
-      yAxisId={props.yAxisId}
-      x1={band.from}
-      x2={band.to}
-      ifOverflow="visible"
-      shape={(shapeProps: AreaShapeProps) => (
-        <LapBandShape
-          x={shapeProps.x}
-          y={shapeProps.y}
-          width={shapeProps.width}
-          height={shapeProps.height}
-          isActive={activeByIndex.get(band.lapIndex) ?? true}
-          isAlternate={band.lapIndex % 2 === 1}
-          isHovered={hovered === band.lapIndex}
-          isSelected={selected === band.lapIndex}
-        />
-      )}
-    />
-  ));
+    return bands.map((band) => (
+      <ReferenceArea
+        key={band.lapIndex}
+        yAxisId={yAxisId}
+        x1={band.from}
+        x2={band.to}
+        ifOverflow="visible"
+        shape={(shapeProps: AreaShapeProps) => (
+          <LapBandShape
+            x={shapeProps.x}
+            y={shapeProps.y}
+            width={shapeProps.width}
+            height={shapeProps.height}
+            lapIndex={band.lapIndex}
+            isActive={activeByIndex.get(band.lapIndex) ?? true}
+          />
+        )}
+      />
+    ));
+  }, [sessionLaps, rows, xKey, yAxisId]);
 };

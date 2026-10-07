@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo } from 'react';
 import { Heart, Zap, Gauge, Mountain, Timer, TrendingUp, ArrowUpDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ChartRow, ChartsCard } from '@/components/ui/ChartsCard.tsx';
@@ -36,7 +36,13 @@ import { tokens } from '@/lib/tokens.ts';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
 import { useUserStore } from '@/store/user.ts';
-import { zoneScale, type ZoneMetric, type ZoneScale } from '@/lib/zoneColors.ts';
+import {
+  zoneScale,
+  type ZoneMetric,
+  type ZoneScale,
+  type ZoneThresholds,
+} from '@/lib/zoneColors.ts';
+import type { ColorMode } from '@/lib/colorModes.ts';
 import { zoneLabel } from './zoneLabel.ts';
 
 interface ChartEntry {
@@ -59,6 +65,17 @@ const HOVER_GROUP = 'session-detail';
 
 const formatHoverTime = (x: ChartHoverX) => formatChartTime(Number(x));
 
+const scaleFor = (
+  metric: ZoneMetric,
+  trackColorMode: ColorMode,
+  thresholds: ZoneThresholds | undefined,
+): ZoneScale | undefined => {
+  if (trackColorMode !== metric || !thresholds) return undefined;
+  return zoneScale(metric, thresholds);
+};
+
+const currentLapBands = () => useMapFocusStore.getState().sessionLaps?.bands ?? [];
+
 const zoneNote = (scale: ZoneScale | undefined, value: number | null) => {
   if (!scale || value === null) return undefined;
   const band = scale.bandAt(value);
@@ -71,15 +88,20 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const extremes = useMemo(() => computeRecordExtremes(props.records), [props.records]);
   const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
   const thresholds = useUserStore((s) => s.profile?.thresholds);
-  const scaleFor = (metric: ZoneMetric) => {
-    if (trackColorMode !== metric || !thresholds) return undefined;
-    return zoneScale(metric, thresholds);
-  };
-  const hrScale = scaleFor('hr');
-  const powerScale = scaleFor('power');
-  const paceScale = scaleFor('pace');
+  const hrScale = useMemo(
+    () => scaleFor('hr', trackColorMode, thresholds),
+    [trackColorMode, thresholds],
+  );
+  const powerScale = useMemo(
+    () => scaleFor('power', trackColorMode, thresholds),
+    [trackColorMode, thresholds],
+  );
+  const paceScale = useMemo(
+    () => scaleFor('pace', trackColorMode, thresholds),
+    [trackColorMode, thresholds],
+  );
 
-  const lapBands = useMapFocusStore((s) => s.sessionLaps?.bands);
+  const lapBands = useDeferredValue(useMapFocusStore((s) => s.sessionLaps?.bands));
   const zoom = useSyncedChartZoom();
   const zoomRange = zoom.zoomRange;
 
@@ -110,23 +132,20 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         return;
       }
       useChartHoverStore.getState().setChartHover(HOVER_GROUP, time);
-      useMapFocusStore.getState().setHoveredLap(lapIndexAtTime(lapBands ?? [], time) ?? null);
+      useMapFocusStore.getState().setHoveredLap(lapIndexAtTime(currentLapBands(), time) ?? null);
       const point = gpsLookup.get(time);
       if (point) {
         useMapFocusStore.getState().setHoveredPoint(point);
       }
     },
-    [gpsLookup, lapBands],
+    [gpsLookup],
   );
 
-  const onSelectTime = useCallback(
-    (time: number) => {
-      const lapIndex = lapIndexAtTime(lapBands ?? [], time);
-      if (lapIndex === undefined) return;
-      useMapFocusStore.getState().toggleSelectedLap(lapIndex);
-    },
-    [lapBands],
-  );
+  const onSelectTime = useCallback((time: number) => {
+    const lapIndex = lapIndexAtTime(currentLapBands(), time);
+    if (lapIndex === undefined) return;
+    useMapFocusStore.getState().toggleSelectedLap(lapIndex);
+  }, []);
 
   useEffect(
     () => () => {
@@ -140,7 +159,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const session = props.session;
   const cadenceIcon = sportIcon[session.sport] ?? sportIcon.running;
 
-  const selectedLapIndex = useMapFocusStore((s) => s.selectedLapIndex);
+  const selectedLapIndex = useDeferredValue(useMapFocusStore((s) => s.selectedLapIndex));
   const selectedBand = lapBands?.find((band) => band.lapIndex === selectedLapIndex);
   const railRange = activeRailRange(zoomRange, selectedBand);
   const railFrom = railRange?.from;
@@ -187,6 +206,84 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     powerRest = { header: m.ui_rail_avg(), value: railInt(stats.avgPower) };
   }
 
+  const onZoomComplete = zoom.onZoomComplete;
+  const chartNodes = useMemo(
+    () => ({
+      hr: (
+        <HrChart
+          data={compactRows}
+          zoneScale={hrScale}
+          onActiveTimeChange={onHover}
+          onZoomComplete={onZoomComplete}
+          onSelectTime={onSelectTime}
+        />
+      ),
+      power: (
+        <PowerChart
+          data={compactRows}
+          zoneScale={powerScale}
+          onActiveTimeChange={onHover}
+          onZoomComplete={onZoomComplete}
+          onSelectTime={onSelectTime}
+        />
+      ),
+      speed: (
+        <SpeedChart
+          data={compactRows}
+          onActiveTimeChange={onHover}
+          onZoomComplete={onZoomComplete}
+          onSelectTime={onSelectTime}
+        />
+      ),
+      elevation: (
+        <ElevationChart
+          data={compactRows}
+          xAxis={sessionTimeXAxis}
+          onActiveXChange={onHover}
+          onZoomComplete={onZoomComplete}
+          onSelectX={onSelectTime}
+          lapBands
+        />
+      ),
+      cadence: (
+        <CadenceChart
+          data={compactRows}
+          onActiveTimeChange={onHover}
+          onZoomComplete={onZoomComplete}
+          onSelectTime={onSelectTime}
+        />
+      ),
+      grade: (
+        <GradeChart
+          data={compactRows}
+          xAxis={sessionTimeXAxis}
+          onActiveXChange={onHover}
+          onZoomComplete={onZoomComplete}
+          onSelectX={onSelectTime}
+          lapBands
+        />
+      ),
+      pace: (
+        <PaceChart
+          data={compactRows}
+          zoneScale={paceScale}
+          onActiveTimeChange={onHover}
+          onZoomComplete={onZoomComplete}
+          onSelectTime={onSelectTime}
+        />
+      ),
+      gap: (
+        <GradeAdjustedPaceChart
+          data={compactRows}
+          onActiveTimeChange={onHover}
+          onZoomComplete={onZoomComplete}
+          onSelectTime={onSelectTime}
+        />
+      ),
+    }),
+    [compactRows, hrScale, powerScale, paceScale, onHover, onSelectTime, onZoomComplete],
+  );
+
   const charts: ChartEntry[] = [
     {
       key: 'hr',
@@ -216,15 +313,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      chart: (
-        <HrChart
-          data={compactRows}
-          zoneScale={hrScale}
-          onActiveTimeChange={onHover}
-          onZoomComplete={zoom.onZoomComplete}
-          onSelectTime={onSelectTime}
-        />
-      ),
+      chart: chartNodes.hr,
     },
     {
       key: 'power',
@@ -250,15 +339,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      chart: (
-        <PowerChart
-          data={compactRows}
-          zoneScale={powerScale}
-          onActiveTimeChange={onHover}
-          onZoomComplete={zoom.onZoomComplete}
-          onSelectTime={onSelectTime}
-        />
-      ),
+      chart: chartNodes.power,
     },
     {
       key: 'speed',
@@ -287,14 +368,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      chart: (
-        <SpeedChart
-          data={compactRows}
-          onActiveTimeChange={onHover}
-          onZoomComplete={zoom.onZoomComplete}
-          onSelectTime={onSelectTime}
-        />
-      ),
+      chart: chartNodes.speed,
     },
     {
       key: 'elevation',
@@ -323,16 +397,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      chart: (
-        <ElevationChart
-          data={compactRows}
-          xAxis={sessionTimeXAxis}
-          onActiveXChange={onHover}
-          onZoomComplete={zoom.onZoomComplete}
-          onSelectX={onSelectTime}
-          lapBands
-        />
-      ),
+      chart: chartNodes.elevation,
     },
     {
       key: 'cadence',
@@ -361,14 +426,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      chart: (
-        <CadenceChart
-          data={compactRows}
-          onActiveTimeChange={onHover}
-          onZoomComplete={zoom.onZoomComplete}
-          onSelectTime={onSelectTime}
-        />
-      ),
+      chart: chartNodes.cadence,
     },
     {
       key: 'grade',
@@ -396,16 +454,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      chart: (
-        <GradeChart
-          data={compactRows}
-          xAxis={sessionTimeXAxis}
-          onActiveXChange={onHover}
-          onZoomComplete={zoom.onZoomComplete}
-          onSelectX={onSelectTime}
-          lapBands
-        />
-      ),
+      chart: chartNodes.grade,
     },
     {
       key: 'pace',
@@ -435,15 +484,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      chart: (
-        <PaceChart
-          data={compactRows}
-          zoneScale={paceScale}
-          onActiveTimeChange={onHover}
-          onZoomComplete={zoom.onZoomComplete}
-          onSelectTime={onSelectTime}
-        />
-      ),
+      chart: chartNodes.pace,
     },
     {
       key: 'gap',
@@ -468,14 +509,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           }}
         />
       ),
-      chart: (
-        <GradeAdjustedPaceChart
-          data={compactRows}
-          onActiveTimeChange={onHover}
-          onZoomComplete={zoom.onZoomComplete}
-          onSelectTime={onSelectTime}
-        />
-      ),
+      chart: chartNodes.gap,
     },
   ];
 

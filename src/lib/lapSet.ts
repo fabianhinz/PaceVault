@@ -35,6 +35,24 @@ export interface LapSet {
   hrRecoveries: number[];
 }
 
+export const buildDeviceLapSet = (records: SessionRecord[], laps: SessionLap[]): LapSet | null => {
+  if (laps.length === 0) return null;
+  const spans = deviceLapSpans(records, laps);
+  const hrRecoveries: number[] = [];
+  for (const pair of detectIntervals(laps)) {
+    if (pair.hrDropActiveMaxToRecoveryMin !== undefined) {
+      hrRecoveries.push(pair.hrDropActiveMaxToRecoveryMin);
+    }
+  }
+  return {
+    analysis: analyzeLaps(laps),
+    enrichments: enrichAllLaps(laps, records),
+    spans,
+    bands: lapBands(records, spans),
+    hrRecoveries,
+  };
+};
+
 export const buildLapSet = (
   records: SessionRecord[],
   laps: SessionLap[],
@@ -42,23 +60,7 @@ export const buildLapSet = (
   splitDistance: number,
 ): LapSet | null => {
   if (source === 'off') return null;
-  if (source === 'device') {
-    if (laps.length === 0) return null;
-    const spans = deviceLapSpans(records, laps);
-    const hrRecoveries: number[] = [];
-    for (const pair of detectIntervals(laps)) {
-      if (pair.hrDropActiveMaxToRecoveryMin !== undefined) {
-        hrRecoveries.push(pair.hrDropActiveMaxToRecoveryMin);
-      }
-    }
-    return {
-      analysis: analyzeLaps(laps),
-      enrichments: enrichAllLaps(laps, records),
-      spans,
-      bands: lapBands(records, spans),
-      hrRecoveries,
-    };
-  }
+  if (source === 'device') return buildDeviceLapSet(records, laps);
   const result = computeDynamicLaps(records, splitDistance);
   if (result.analysis.length === 0) return null;
   return {

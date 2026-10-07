@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { m } from '@/paraglide/messages.js';
 import { cn } from '@/lib/utils.ts';
 import { tokens } from '@/lib/tokens.ts';
@@ -197,7 +197,8 @@ const LegendDot = (props: { color: string; opacity?: number; label: string }) =>
 const LapStripDetail = (props: { set: LapSet }) => {
   const hovered = useMapFocusStore((s) => s.hoveredLapIndex);
   const selected = useMapFocusStore((s) => s.selectedLapIndex);
-  const layout = layoutStrip(props.set, DETAIL_WIDTH, DETAIL_HEIGHT, 2);
+  const set = props.set;
+  const layout = useMemo(() => layoutStrip(set, DETAIL_WIDTH, DETAIL_HEIGHT, 2), [set]);
   const firstBand = props.set.bands[0];
   const lastBand = props.set.bands[props.set.bands.length - 1];
   const hoveredSpan = layout.spans.find(

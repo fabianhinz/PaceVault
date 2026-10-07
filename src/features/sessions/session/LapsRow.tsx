@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useDeferredValue, type ReactNode } from 'react';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import { CollapsibleListItem } from '@/components/ui/Collapsible.tsx';
@@ -94,7 +94,7 @@ interface LapsRowProps {
 
 export const LapsRow = (props: LapsRowProps) => {
   const lapSource = useMapFocusStore((s) => s.lapSource);
-  const sessionLaps = useMapFocusStore((s) => s.sessionLaps);
+  const sessionLaps = useDeferredValue(useMapFocusStore((s) => s.sessionLaps));
 
   let source = lapSource;
   if (source === 'device' && props.laps.length === 0) source = 'off';

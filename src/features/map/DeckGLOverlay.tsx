@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useDeferredValue, useMemo } from 'react';
 import { useMatch } from 'react-router-dom';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { PickingInfo } from '@deck.gl/core';
@@ -56,7 +56,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const hoveredPoint = useMapFocusStore((s) => s.hoveredPoint);
   const pickCircle = useMapFocusStore((s) => s.pickCircle);
-  const lapSpans = useMapFocusStore((s) => s.sessionLaps?.spans);
+  const lapSpans = useDeferredValue(useMapFocusStore((s) => s.sessionLaps?.spans));
   const selectedLapIndex = useMapFocusStore((s) => s.selectedLapIndex);
   const hoveredLapIndex = useMapFocusStore((s) => s.hoveredLapIndex);
   const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
@@ -203,23 +203,26 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     });
   }, [detailPath, trackColorMode, openedSessionId, detailHandlers, selectedLapPath]);
 
+  const lapHoverLayer = useMemo(() => {
+    if (!detailPath) return null;
+    let data: DetailPath[] = [];
+    if (hoveredLapPath) data = [hoveredLapPath];
+    return new PathLayer<DetailPath>({
+      id: 'lap-hover',
+      data,
+      visible: hoveredLapPath !== null,
+      getPath: (d) => d.path,
+      getColor: LAP_HOVER_COLOR,
+      getWidth: 3,
+      widthUnits: 'pixels',
+      jointRounded: true,
+      capRounded: true,
+      pickable: false,
+    });
+  }, [detailPath, hoveredLapPath]);
+
   const lapLayers = useMemo(() => {
     const layers = [];
-    if (hoveredLapPath) {
-      layers.push(
-        new PathLayer<DetailPath>({
-          id: 'lap-hover',
-          data: [hoveredLapPath],
-          getPath: (d) => d.path,
-          getColor: LAP_HOVER_COLOR,
-          getWidth: 3,
-          widthUnits: 'pixels',
-          jointRounded: true,
-          capRounded: true,
-          pickable: false,
-        }),
-      );
-    }
     if (selectedLapPath) {
       layers.push(
         new PathLayer<DetailPath>({
@@ -248,7 +251,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       );
     }
     return layers;
-  }, [hoveredLapPath, selectedLapPath, trackColorMode]);
+  }, [selectedLapPath, trackColorMode]);
 
   const studioSegments = useMemo(
     () =>
@@ -329,13 +332,13 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   }, [pickCircle]);
 
   const hoveredPointLayer = useMemo(() => {
-    if (!hoveredPoint) {
-      return null;
-    }
+    let data: Array<{ position: [number, number] }> = [];
+    if (hoveredPoint) data = [{ position: hoveredPoint }];
 
     return new ScatterplotLayer<{ position: [number, number] }>({
       id: 'hovered-point',
-      data: [{ position: hoveredPoint }],
+      data,
+      visible: hoveredPoint !== null,
       getPosition: (d) => d.position,
       getRadius: 12,
       radiusUnits: 'pixels',
@@ -356,8 +359,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
 
     const layers = [];
 
-    // Accuracy disc — real-world radius in meters, so it shrinks/grows with the
-    // GPS uncertainty as the map zooms.
     if (geoAccuracy) {
       layers.push(
         new ScatterplotLayer<{ center: [number, number] }>({
@@ -377,7 +378,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       );
     }
 
-    // Position dot — constant pixel size so it stays legible at any zoom.
     layers.push(
       new ScatterplotLayer<{ position: [number, number] }>({
         id: 'geo-dot',
@@ -408,6 +408,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       detailLayer,
       studioRouteLayer,
       pickCircleLayer,
+      lapHoverLayer,
       lapLayers,
       hoveredPointLayer,
       geoLayers,
