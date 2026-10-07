@@ -72,8 +72,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const match = useMatch('/sessions/:id');
   const highlightedSessionId = hoveredSessionId ?? match?.params.id ?? null;
 
-  // The studio is about future routes — session tracks are hidden while the
-  // studio tab or a route detail page is open.
   const studioActive = studioTracks.active;
 
   const eventHandlers = useMemo(
@@ -252,9 +250,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     return layers;
   }, [hoveredLapPath, selectedLapPath, trackColorMode]);
 
-  // One path per GPX segment — disconnected segments must not be joined.
-  // Memoized separately from hover state so hovering a route card keeps the
-  // data identity stable and deck.gl only re-evaluates the triggered accessors.
   const studioSegments = useMemo(
     () =>
       studioTracks.routes.flatMap((route) =>
@@ -293,8 +288,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       widthMinPixels: 1,
       jointRounded: true,
       capRounded: true,
-      // Pickable across the whole studio context: the detail page drops markers
-      // on its route, the studio tab lists the routes near the click.
       pickable: studioTracks.active,
       updateTriggers: {
         getColor: [highlightedRouteId, hoveredStudioRouteId],
@@ -304,9 +297,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
         getWidth: 300,
         getColor: 300,
       },
-      // Without the shared click/hover handlers the pickable flag does nothing —
-      // deck routes picks through per-layer handlers, and onHover is what lights
-      // up the pick circle on the track.
       ...eventHandlers,
     });
   }, [
