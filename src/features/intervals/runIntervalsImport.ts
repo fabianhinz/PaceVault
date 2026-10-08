@@ -35,9 +35,9 @@ export const runIntervalsImport = async (
   const batcher = createIngestBatcher({
     queryClient: options.queryClient,
     markNew: options.markNew,
-    onFlushed: (batch) => {
+    onFlushed: (stored) => {
       const ids: string[] = [];
-      for (const entry of batch) {
+      for (const entry of stored) {
         if (entry.source.kind === 'intervals') ids.push(entry.source.activityId);
       }
       options.onChunkIngested(ids);

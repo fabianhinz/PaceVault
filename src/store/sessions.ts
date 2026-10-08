@@ -1,4 +1,3 @@
-import { v4 } from 'uuid';
 import { z } from 'zod';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
@@ -27,9 +26,9 @@ const migrateSessionsState = (persisted: unknown, version: number): unknown => {
 interface SessionsState {
   sessions: TrainingSession[];
   addSessions: (
-    sessions: Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'>[],
+    sessions: Omit<TrainingSession, 'createdAt' | 'isNew'>[],
     options?: { markNew?: boolean },
-  ) => string[];
+  ) => void;
   deleteSession: (id: string) => void;
   renameSession: (id: string, name: string) => void;
   replaceSessions: (updates: Array<{ id: string; session: SessionFields }>) => void;
@@ -45,14 +44,12 @@ export const useSessionsStore = create<SessionsState>()(
         addSessions: (sessionsData, options) => {
           const newSessions = sessionsData.map((s) => ({
             ...s,
-            id: v4(),
             createdAt: Date.now(),
             isNew: options?.markNew === true,
           }));
           set((draft) => {
             draft.sessions.push(...newSessions);
           });
-          return newSessions.map((s) => s.id);
         },
         deleteSession: (id) =>
           set((draft) => {

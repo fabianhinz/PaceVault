@@ -95,3 +95,4 @@ Anything drawn on the map — sport tracks, studio routes, markers — has to ho
 - **Studio routes are never shown alongside session tracks**, so they only need to differ from the basemap and from each other. Studio colour keys are persisted, so renaming or removing one needs a store migration.
 - **Zone colours** (blue → green → yellow → orange → red) replace the sport colour on the session detail map rather than appearing next to it, so sharing a hue with a sport colour is acceptable there.
 - A sport colour lives in three places that must change together: the map (`src/features/map/trackColors.ts`), the CSS theme (`src/index.css`) and its JS mirror (`src/lib/tokens.ts`).
+- Every colour token in `src/lib/tokens.ts` mirrors one in `src/index.css`; change both together.

@@ -85,7 +85,6 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
           <span
             role="img"
             aria-label={label}
-            title={label}
             className="inline-flex flex-col items-center gap-[3px] align-middle"
           >
             <Icon size={16} aria-hidden className="block" />

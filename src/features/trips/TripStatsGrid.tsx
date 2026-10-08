@@ -8,10 +8,6 @@ import { formatDate, formatDistance, formatDuration } from '@/lib/formatters.ts'
 import type { TrainingSession } from '@/packages/engine/types.ts';
 import { computeTripTotals } from './tripStats.ts';
 
-// The complete stat inventory for a trip. The first entries repeat the trip
-// header's secondary line (sessions · distance · duration) in the same order,
-// so users never have to combine two places — expanding the grid reveals
-// everything.
 export const TripStatsGrid = (props: { sessions: TrainingSession[] }) => {
   const totals = computeTripTotals(props.sessions);
 
@@ -49,14 +45,16 @@ export const TripStatsGrid = (props: { sessions: TrainingSession[] }) => {
     { key: 'dates', label: m.ui_trip_stat_dates(), value: dateRange },
   ];
 
-  if (totals.elevationGain > 0) {
-    stats.push({
-      key: 'elevation',
-      label: m.ui_stat_elevation(),
-      value: `+${Math.round(totals.elevationGain)}`,
-      unit: 'm',
-    });
+  let elevation: { value: ReactNode; unit?: string } = { value: '--' };
+  if (totals.elevationGain !== undefined) {
+    elevation = { value: `+${Math.round(totals.elevationGain)}`, unit: 'm' };
   }
+  stats.push({
+    key: 'elevation',
+    label: m.ui_stat_elevation(),
+    value: elevation.value,
+    unit: elevation.unit,
+  });
 
   return (
     <Card>

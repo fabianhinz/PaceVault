@@ -59,7 +59,7 @@ describe('createIngestBatcher', () => {
   });
 
   it('rejects a fingerprint that already exists in the store', async () => {
-    const { id: _id, createdAt: _ca, ...session } = makeSession({ fingerprint: 'fp-1' });
+    const { createdAt: _ca, ...session } = makeSession({ fingerprint: 'fp-1' });
     useSessionsStore.getState().addSessions([session]);
 
     const outcome = await ingestAll([makeParsed('fp-1'), makeParsed('fp-2')]);
@@ -94,5 +94,23 @@ describe('createIngestBatcher', () => {
     expect(outcome.importedCount).toBe(INGEST_BATCH_SIZE);
     expect(outcome.duplicateCount).toBe(1);
     expect(useSessionsStore.getState().sessions).toHaveLength(INGEST_BATCH_SIZE);
+  });
+
+  it('a session whose data fails to save never appears in the list', async () => {
+    const savable = Array.from({ length: 10 }, (_, i) => makeParsed(`fp-${i}`));
+    const unstorableFit = makeParsed('fp-broken', {
+      rawData: { unstorable: () => undefined } as unknown as ArrayBuffer,
+    });
+
+    const outcome = await ingestAll([...savable, unstorableFit]);
+
+    expect(outcome.saveFailed).toBe(true);
+    expect(outcome.importedCount).toBe(10);
+    const sessions = useSessionsStore.getState().sessions;
+    expect(sessions.map((s) => s.fingerprint)).not.toContain('fp-broken');
+    expect(sessions).toHaveLength(10);
+    for (const session of sessions) {
+      expect(await getFitFile(session.id)).toBeDefined();
+    }
   });
 });

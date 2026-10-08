@@ -252,6 +252,7 @@ test.describe('Session browsing', () => {
     const lightRain = weatherRow.getByRole('img', { name: 'Light rain', exact: true });
     await expect(lightRain.first()).toBeVisible();
     await expect(lightRain.first().locator('circle')).toHaveCount(3);
+    await expect(weatherRow.locator('[title]')).toHaveCount(0);
     await expect(
       weatherRow.getByRole('img', { name: 'Cloudy', exact: true }).first(),
     ).toBeVisible();

@@ -1,7 +1,10 @@
 import type { FilterOption } from '@/components/layout/DockFilterOptions';
 import { m } from '@/paraglide/messages.js';
+import { getLocale } from '@/paraglide/runtime.js';
 
 export type TimeRange = '7d' | '30d' | '90d' | 'all' | 'custom';
+
+type FixedDayRange = Exclude<TimeRange, 'all' | 'custom'>;
 
 export const rangeMap: Record<Exclude<TimeRange, 'custom'>, number> = {
   '7d': 7,
@@ -10,12 +13,19 @@ export const rangeMap: Record<Exclude<TimeRange, 'custom'>, number> = {
   all: Infinity,
 };
 
-export const rangeLabelMap: Record<TimeRange, string> = {
-  '7d': m.ui_range_7d(),
-  '30d': m.ui_range_30d(),
-  '90d': m.ui_range_90d(),
-  all: m.ui_range_all_time(),
-  custom: m.ui_range_custom(),
+const fixedDayRanges: FixedDayRange[] = ['7d', '30d', '90d'];
+
+const unitFormat = (unit: 'day' | 'month', unitDisplay: 'narrow' | 'long') =>
+  new Intl.NumberFormat(getLocale(), { style: 'unit', unit, unitDisplay });
+
+export const formatTimeRangeLabel = (range: TimeRange): string => {
+  if (range === 'all') {
+    return m.ui_range_all_time();
+  }
+  if (range === 'custom') {
+    return m.ui_range_custom();
+  }
+  return unitFormat('day', 'long').format(rangeMap[range]);
 };
 
 export const rangeToCutoff = (
@@ -43,14 +53,16 @@ export const formatCustomRangeDuration = (range: { from: string; to: string }): 
       (new Date(range.to).getTime() - new Date(range.from).getTime()) / (24 * 60 * 60 * 1000),
     ) + 1;
   if (days > 99) {
-    return `~${Math.round(days / 30)}m`;
+    const months = Math.round(days / 30);
+    return unitFormat('month', 'narrow').formatRange(months, months);
   }
-  return `~${days}d`;
+  return unitFormat('day', 'narrow').formatRange(days, days);
 };
 
-export const timeRangeOptions: FilterOption<TimeRange>[] = [
-  { value: 'all', label: m.ui_range_all_short() },
-  { value: '7d', label: m.ui_range_7d_short() },
-  { value: '30d', label: m.ui_range_30d_short() },
-  { value: '90d', label: m.ui_range_90d_short() },
-];
+export const getTimeRangeOptions = (): FilterOption<TimeRange>[] => {
+  const dayFormat = unitFormat('day', 'narrow');
+  return [
+    { value: 'all', label: m.ui_range_all_short() },
+    ...fixedDayRanges.map((range) => ({ value: range, label: dayFormat.format(rangeMap[range]) })),
+  ];
+};

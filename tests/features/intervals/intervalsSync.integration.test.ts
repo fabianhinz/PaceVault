@@ -60,11 +60,7 @@ const listedOldest = (urls: string[]): string | null => {
 };
 
 const seedIntervalsSession = (date: number) => {
-  const {
-    id: _id,
-    createdAt: _ca,
-    ...data
-  } = makeSession({
+  const { createdAt: _ca, ...data } = makeSession({
     date,
     source: { kind: 'intervals', activityId: 'i1' },
   });
@@ -204,11 +200,7 @@ describe('runIntervalsSync', () => {
   it('lists from 14 days before the newest intervals.icu session', async () => {
     connect();
     seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
-    const {
-      id: _id,
-      createdAt: _ca,
-      ...file
-    } = makeSession({
+    const { createdAt: _ca, ...file } = makeSession({
       date: new Date(2026, 9, 30, 10).getTime(),
       source: { kind: 'file' },
     });
