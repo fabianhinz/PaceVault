@@ -6,7 +6,7 @@ export const MAX_ACTIVITIES_PER_IMPORT = 2000;
 
 export type IntervalsErrorCode = 'unauthorized' | 'rate-limited' | 'network' | 'failed';
 
-export type IntervalsResult<T> = { ok: true; data: T } | { ok: false; code: IntervalsErrorCode };
+type IntervalsResult<T> = { ok: true; data: T } | { ok: false; code: IntervalsErrorCode };
 
 const optStr = z.string().nullish();
 

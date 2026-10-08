@@ -48,7 +48,7 @@ export type WorkoutType =
   | 'threshold-intervals'
   | 'vo2max-intervals';
 
-export type StepType = 'warmup' | 'work' | 'recovery' | 'cooldown';
+type StepType = 'warmup' | 'work' | 'recovery' | 'cooldown';
 
 export interface WorkoutStep {
   type: StepType;

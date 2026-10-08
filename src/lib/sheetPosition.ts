@@ -19,6 +19,7 @@ const PEEK_FADE_RANGE = 0.15;
 const FULL_TOP_GAP_RATIO = 0.08;
 const FULL_TOP_GAP_MIN = 12;
 const DOCK_HEIGHT = 57;
+const MIDDLE_POSITION = 0.5;
 
 export const computeSheetLayout = (metrics: SheetMetrics): SheetLayout => {
   const topGap = Math.max(
@@ -72,10 +73,13 @@ export const sheetTapTarget = (position: number): number => {
   return 0;
 };
 
-export const sheetVisibleHeight = (layout: SheetLayout, position: number): number =>
+const sheetVisibleHeight = (layout: SheetLayout, position: number): number =>
   layout.sheetHeight - positionToOffset(layout, position);
 
-const readSafeAreaInset = (side: 'top' | 'bottom'): number => {
+export const sheetFitHeight = (layout: SheetLayout, position: number): number =>
+  sheetVisibleHeight(layout, Math.min(position, MIDDLE_POSITION));
+
+export const readSafeAreaInset = (side: 'top' | 'bottom'): number => {
   const probe = document.createElement('div');
   probe.style.position = 'fixed';
   probe.style.visibility = 'hidden';

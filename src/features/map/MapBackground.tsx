@@ -15,7 +15,6 @@ import { StudioRoutesPickPopup } from '../studio/markers/StudioRoutesPickPopup.t
 import { useStudioMapPopup } from '../studio/hooks/useStudioMapPopup.ts';
 import { useStudioRoutesPopup } from '../studio/hooks/useStudioRoutesPopup.ts';
 import { SessionsPickPopup } from '../sessions/SessionsPickPopup.tsx';
-import { LapPickPopup } from '../sessions/laps/LapPickPopup.tsx';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useWatchPositionEffect } from '@/lib/hooks/useWatchPositionEffect.ts';
 import { useGeolocationCameraEffect } from './hooks/useGeolocationCameraEffect.ts';
@@ -33,9 +32,6 @@ export const MapBackground = () => {
   const popupState = useMapPopupState(mapRef, mapTracks.tracks);
   const studioPopup = useStudioMapPopup();
   const studioRoutesPopup = useStudioRoutesPopup(mapRef);
-  const focusedLaps = useMapFocusStore((s) => s.focusedLaps);
-  const focusedSport = useMapFocusStore((s) => s.focusedSport);
-  const focusedRecords = useMapFocusStore((s) => s.focusedRecords);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
   const studioTracks = useStudioMapTracks();
@@ -84,7 +80,6 @@ export const MapBackground = () => {
         ref={mapRef}
         onLoad={() => setMapLoaded(true)}
         mapStyle={styles.dark}
-        cursor={popupState.hoveringTrack ? 'pointer' : undefined}
         initialViewState={{
           longitude: 10,
           latitude: 50,
@@ -105,6 +100,7 @@ export const MapBackground = () => {
           tracks={mapTracks.tracks}
           onClick={onMapClick}
           onHover={popupState.onHover}
+          hoveringTrack={popupState.hoveringTrack}
         />
         {studioTracks.focusedRouteId && <StudioMarkerPins routeId={studioTracks.focusedRouteId} />}
       </MapGL>
@@ -116,15 +112,6 @@ export const MapBackground = () => {
       )}
       {popupState.popup && (
         <SessionsPickPopup info={popupState.popup} onClose={popupState.closePopup} />
-      )}
-      {popupState.lapPopup && focusedSport && (
-        <LapPickPopup
-          info={popupState.lapPopup}
-          laps={focusedLaps}
-          records={focusedRecords}
-          sport={focusedSport}
-          onClose={popupState.closePopup}
-        />
       )}
     </div>
   );

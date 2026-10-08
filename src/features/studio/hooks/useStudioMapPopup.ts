@@ -1,14 +1,10 @@
 import { useState, useCallback } from 'react';
 import type { PickingInfo } from '@deck.gl/core';
 import { useStudioStore } from '@/store/studio.ts';
-import { distanceAtPosition } from '../markers/markerGeometry.ts';
+import { getStudioRoutePoints } from '@/lib/indexeddb.ts';
+import { routeDistanceAtPosition } from '@/packages/gpx/routeCut.ts';
 import type { StudioTrackPickInfo } from '../markers/StudioTrackPickPopup.tsx';
 
-/**
- * Pick state for clicks on the focused studio route: snaps the click to the
- * track, resolves its distance from the start, and anchors the marker-choice
- * popup there.
- */
 export const useStudioMapPopup = () => {
   const [popup, setPopup] = useState<StudioTrackPickInfo | null>(null);
 
@@ -23,8 +19,13 @@ export const useStudioMapPopup = () => {
     const route = useStudioStore.getState().routes.find((r) => r.id === routeId);
     if (!route) return;
 
-    const distanceM = distanceAtPosition(routeId, route.encodedPolylines, [lng, lat]);
-    setPopup({ x: info.x, y: info.y, routeId, distanceM });
+    const x = info.x;
+    const y = info.y;
+    getStudioRoutePoints(routeId).then((points) => {
+      const distanceM = routeDistanceAtPosition(points, { lat, lng });
+      if (distanceM === null) return;
+      setPopup({ x, y, routeId, distanceM });
+    });
   }, []);
 
   const close = useCallback(() => setPopup(null), []);

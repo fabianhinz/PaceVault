@@ -39,31 +39,31 @@ export const LT_HRR = 0.88;
  * Intensities above this are predominantly anaerobic.
  * @see [Swain1998], [Stagno2007], [ACSM2018]
  */
-export const VT2_HRR = 0.9;
+const VT2_HRR = 0.9;
 
 /**
  * Sub-linear dose–response exponent for aerobic training adaptation.
  * @see [Wenger1986] — diminishing returns from extended duration
  */
-export const DIMINISHING_P = 0.25;
+const DIMINISHING_P = 0.25;
 
 /**
  * Anchor point on the 0–5 TE scale: "Improving" threshold.
  * 1 hour at LT and 6 min at VO2max both map to this value.
  */
-export const TE_IMPROVING = 3.0;
+const TE_IMPROVING = 3.0;
 
 /**
  * Mean time-to-exhaustion at vVO2max.
  * @see [Billat1999] — mean tlim ≈ 6 min in trained runners
  */
-export const T_LIM_VO2MAX = 6.0;
+const T_LIM_VO2MAX = 6.0;
 
 /**
  * Professional endurance athlete CTL ceiling used to bound fitness scaling.
  * @see [Friel2009] — CTL ranges for elite cyclists
  */
-export const CTL_MAX = 200;
+const CTL_MAX = 200;
 
 /**
  * Compute the Banister TRIMP for the aerobic reference session:

@@ -9,9 +9,5 @@ export const useDashboardChartZoom = () => {
     useFiltersStore.getState().setDashboardChartRange(String(from), String(to));
   }, []);
 
-  const onZoomReset = useCallback(() => {
-    useFiltersStore.getState().clearDashboardChartRange();
-  }, []);
-
-  return { range, customRange, onZoomComplete, onZoomReset };
+  return { range, customRange, onZoomComplete };
 };

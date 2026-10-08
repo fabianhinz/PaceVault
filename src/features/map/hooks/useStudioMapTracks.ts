@@ -6,7 +6,7 @@ import { useStudioStore, type StudioRoute } from '@/store/studio.ts';
 import { routeColors } from '@/features/studio/routeColors.ts';
 import { resolveLabsTab } from '@/lib/labsTab.ts';
 
-export interface StudioMapRoute {
+interface StudioMapRoute {
   id: string;
   /** One encoded polyline per GPX segment — disconnected segments stay disconnected. */
   encodedPolylines: string[];

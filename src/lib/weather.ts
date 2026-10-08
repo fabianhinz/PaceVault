@@ -1,10 +1,7 @@
 import { z } from 'zod';
 import { haversineM } from '@/packages/engine/gps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import type { WindSample } from '@/packages/engine/windExposure.ts';
 
 export type WeatherCondition =
   | 'clear'
@@ -27,7 +24,6 @@ export interface WeatherSnapshot {
   windGusts: number;
   windDirection: number;
   weatherCode: number;
-  condition: WeatherCondition;
 }
 
 export interface SessionWeather {
@@ -35,10 +31,6 @@ export interface SessionWeather {
   snapshots: WeatherSnapshot[];
   fetchedAt: number;
 }
-
-// ---------------------------------------------------------------------------
-// WMO weather code → condition mapping
-// ---------------------------------------------------------------------------
 
 export const wmoToCondition = (code: number): WeatherCondition => {
   if (code === 0) return 'clear';
@@ -48,25 +40,142 @@ export const wmoToCondition = (code: number): WeatherCondition => {
   if (code >= 51 && code <= 57) return 'drizzle';
   if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
   if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 'snow';
-  if (code === 95 || code === 96 || code === 99) return 'thunderstorm';
+  if (code >= 95 && code <= 99) return 'thunderstorm';
   return 'cloudy';
 };
 
-// ---------------------------------------------------------------------------
-// Wind direction → compass label
-// ---------------------------------------------------------------------------
+export type WeatherDescription =
+  | WeatherCondition
+  | 'drizzle-light'
+  | 'drizzle-moderate'
+  | 'drizzle-dense'
+  | 'freezing-drizzle-light'
+  | 'freezing-drizzle-dense'
+  | 'rain-light'
+  | 'rain-moderate'
+  | 'rain-heavy'
+  | 'freezing-rain-light'
+  | 'freezing-rain-heavy'
+  | 'snow-light'
+  | 'snow-moderate'
+  | 'snow-heavy'
+  | 'snow-grains'
+  | 'rain-showers-light'
+  | 'rain-showers-moderate'
+  | 'rain-showers-heavy'
+  | 'snow-showers-light'
+  | 'snow-showers-heavy'
+  | 'thunderstorm-hail'
+  | 'thunderstorm-heavy'
+  | 'thunderstorm-hail-heavy';
 
-const COMPASS_LABELS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
-
-export const formatWindDirection = (degrees: number): string => {
-  const normalized = ((degrees % 360) + 360) % 360;
-  const index = Math.round(normalized / 45) % 8;
-  return COMPASS_LABELS[index] ?? 'N';
+const DESCRIPTION_BY_CODE: Partial<Record<number, WeatherDescription>> = {
+  51: 'drizzle-light',
+  53: 'drizzle-moderate',
+  55: 'drizzle-dense',
+  56: 'freezing-drizzle-light',
+  57: 'freezing-drizzle-dense',
+  61: 'rain-light',
+  63: 'rain-moderate',
+  65: 'rain-heavy',
+  66: 'freezing-rain-light',
+  67: 'freezing-rain-heavy',
+  71: 'snow-light',
+  73: 'snow-moderate',
+  75: 'snow-heavy',
+  77: 'snow-grains',
+  80: 'rain-showers-light',
+  81: 'rain-showers-moderate',
+  82: 'rain-showers-heavy',
+  85: 'snow-showers-light',
+  86: 'snow-showers-heavy',
+  95: 'thunderstorm',
+  96: 'thunderstorm-hail',
+  97: 'thunderstorm-heavy',
+  99: 'thunderstorm-hail-heavy',
 };
 
-// ---------------------------------------------------------------------------
-// Hourly waypoint computation
-// ---------------------------------------------------------------------------
+export const wmoToDescription = (code: number): WeatherDescription => {
+  const description = DESCRIPTION_BY_CODE[code];
+  if (description !== undefined) return description;
+  return wmoToCondition(code);
+};
+
+export type PrecipitationIntensity = 'none' | 'light' | 'moderate' | 'heavy';
+
+const INTENSITY_BY_CODE: Partial<Record<number, PrecipitationIntensity>> = {
+  51: 'light',
+  56: 'light',
+  61: 'light',
+  66: 'light',
+  71: 'light',
+  77: 'light',
+  80: 'light',
+  85: 'light',
+  53: 'moderate',
+  63: 'moderate',
+  73: 'moderate',
+  81: 'moderate',
+  95: 'moderate',
+  96: 'moderate',
+  55: 'heavy',
+  57: 'heavy',
+  65: 'heavy',
+  67: 'heavy',
+  75: 'heavy',
+  82: 'heavy',
+  86: 'heavy',
+  97: 'heavy',
+  99: 'heavy',
+};
+
+const DRY_CONDITIONS: ReadonlySet<WeatherCondition> = new Set([
+  'clear',
+  'partly-cloudy',
+  'cloudy',
+  'fog',
+]);
+
+export const wmoToPrecipitation = (code: number): PrecipitationIntensity | undefined => {
+  const intensity = INTENSITY_BY_CODE[code];
+  if (intensity !== undefined) return intensity;
+  if (DRY_CONDITIONS.has(wmoToCondition(code))) return 'none';
+  return undefined;
+};
+
+export type PrecipitationType = 'rain' | 'freezing' | 'snow' | 'thunderstorm';
+
+export type PrecipitationDots = 0 | 1 | 2 | 3;
+
+export interface PrecipitationMark {
+  dots: PrecipitationDots | undefined;
+  type: PrecipitationType | undefined;
+}
+
+const DOTS_BY_INTENSITY: Record<PrecipitationIntensity, PrecipitationDots> = {
+  none: 0,
+  light: 1,
+  moderate: 2,
+  heavy: 3,
+};
+
+const FREEZING_CODES: ReadonlySet<number> = new Set([56, 57, 66, 67]);
+
+const precipitationType = (code: number): PrecipitationType | undefined => {
+  if (FREEZING_CODES.has(code)) return 'freezing';
+  const condition = wmoToCondition(code);
+  if (condition === 'drizzle' || condition === 'rain') return 'rain';
+  if (condition === 'snow') return 'snow';
+  if (condition === 'thunderstorm') return 'thunderstorm';
+  return undefined;
+};
+
+export const wmoToPrecipitationMark = (code: number): PrecipitationMark => {
+  const intensity = wmoToPrecipitation(code);
+  let dots: PrecipitationDots | undefined = undefined;
+  if (intensity !== undefined) dots = DOTS_BY_INTENSITY[intensity];
+  return { dots, type: precipitationType(code) };
+};
 
 interface Waypoint {
   time: number;
@@ -79,14 +188,11 @@ export const computeHourlyWaypoints = (
   durationSec: number,
   records: SessionRecord[],
 ): Waypoint[] => {
-  const gpsRecords = records.filter(
-    (r) => r.lat !== undefined && r.lng !== undefined && r.timerTime !== undefined,
-  );
+  const gpsRecords = records.filter((r) => r.lat !== undefined && r.lng !== undefined);
   if (gpsRecords.length === 0) return [];
 
   const sessionEndMs = sessionDateMs + durationSec * 1000;
 
-  // Generate hourly boundary timestamps covering the session
   const hourMs = 3600 * 1000;
   const firstHour = Math.floor(sessionDateMs / hourMs) * hourMs;
   const hours: number[] = [];
@@ -98,7 +204,6 @@ export const computeHourlyWaypoints = (
     h += hourMs;
   }
 
-  // For short sessions (< 1h), ensure at least the start hour is included
   if (hours.length === 0) {
     hours.push(firstHour);
   }
@@ -107,17 +212,18 @@ export const computeHourlyWaypoints = (
   for (const hourTimestamp of hours) {
     const elapsedTarget = (hourTimestamp - sessionDateMs) / 1000;
     let closest = gpsRecords[0];
-    let closestDiff = Math.abs((closest?.timerTime ?? 0) - elapsedTarget);
+    if (closest === undefined) continue;
+    let closestDiff = Math.abs(closest.timestamp - elapsedTarget);
 
     for (const r of gpsRecords) {
-      const diff = Math.abs((r.timerTime ?? 0) - elapsedTarget);
+      const diff = Math.abs(r.timestamp - elapsedTarget);
       if (diff < closestDiff) {
         closest = r;
         closestDiff = diff;
       }
     }
 
-    if (closest?.lat !== undefined && closest?.lng !== undefined) {
+    if (closest.lat !== undefined && closest.lng !== undefined) {
       waypoints.push({
         time: hourTimestamp,
         lat: closest.lat,
@@ -128,10 +234,6 @@ export const computeHourlyWaypoints = (
 
   return waypoints;
 };
-
-// ---------------------------------------------------------------------------
-// Waypoint deduplication
-// ---------------------------------------------------------------------------
 
 interface WaypointCluster {
   lat: number;
@@ -166,10 +268,6 @@ export const deduplicateWaypoints = (
   return clusters;
 };
 
-// ---------------------------------------------------------------------------
-// Open-Meteo API
-// ---------------------------------------------------------------------------
-
 // The API is queried with timezone=UTC, so date params must be UTC days —
 // browser-local dates would shift the requested window near midnight.
 const toUtcDateStr = (ms: number): string => {
@@ -199,10 +297,6 @@ export const buildWeatherUrl = (
   return `https://archive-api.open-meteo.com/v1/archive?${params.toString()}`;
 };
 
-// ---------------------------------------------------------------------------
-// Zod schema for Open-Meteo response
-// ---------------------------------------------------------------------------
-
 const openMeteoHourlySchema = z.object({
   // unix epoch seconds (timeformat=unixtime)
   time: z.array(z.number()),
@@ -219,11 +313,7 @@ const openMeteoResponseSchema = z.object({
   hourly: openMeteoHourlySchema,
 });
 
-export type OpenMeteoResponse = z.infer<typeof openMeteoResponseSchema>;
-
-// ---------------------------------------------------------------------------
-// Fetch + merge logic
-// ---------------------------------------------------------------------------
+type OpenMeteoResponse = z.infer<typeof openMeteoResponseSchema>;
 
 const fetchClusterWeather = async (
   lat: number,
@@ -327,7 +417,6 @@ export const fetchSessionWeather = async (
         windGusts,
         windDirection,
         weatherCode,
-        condition: wmoToCondition(weatherCode),
       });
     }
   }
@@ -342,3 +431,6 @@ export const fetchSessionWeather = async (
     fetchedAt: Date.now(),
   };
 };
+
+export const toWindSamples = (weather: SessionWeather): WindSample[] =>
+  weather.snapshots.map((s) => ({ time: s.time, direction: s.windDirection }));

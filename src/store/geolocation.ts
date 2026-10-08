@@ -3,7 +3,7 @@ import { immer } from 'zustand/middleware/immer';
 
 // Why tracking couldn't produce a fix: the permission was refused, or the
 // device has no geolocation support / the position lookup failed.
-export type GeolocationError = 'denied' | 'unavailable';
+type GeolocationError = 'denied' | 'unavailable';
 
 interface GeolocationState {
   tracking: boolean;

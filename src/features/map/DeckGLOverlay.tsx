@@ -1,21 +1,23 @@
-import { useMemo } from 'react';
+import { useDeferredValue, useMemo } from 'react';
 import { useMatch } from 'react-router-dom';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { PickingInfo } from '@deck.gl/core';
-import { PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { PathLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { useSessionDetailPath } from './hooks/useSessionDetailPath.ts';
+import { useLapCameraEffect } from './hooks/useLapCameraEffect.ts';
+import { dimmedColor, lapSubPath, nearestRecordIndex } from './lapPath.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
 import {
   ADDITIVE_BLEND,
+  studioRouteModifiers,
   geoAccuracyFill,
   geoAccuracyLine,
   geoDotFill,
   geoDotLine,
-  sportMarkerColor,
   sportTrackColor,
   trackModifiers,
 } from './trackColors.ts';
-import type { LapMarker } from '@/lib/lapMarkers.ts';
+import { lapIndexAtRecord, type LapSpan } from '@/lib/lapRanges.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useGeolocationStore } from '@/store/geolocation.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
@@ -27,10 +29,27 @@ import { useControl } from 'react-map-gl/maplibre';
 
 type PickHandler = (info: PickingInfo, event: unknown) => boolean | void;
 
+const lapPathFor = (
+  detailPath: DetailPath | null,
+  spans: LapSpan[] | undefined,
+  lapIndex: number | null,
+): DetailPath | null => {
+  if (lapIndex === null || !detailPath || !spans) return null;
+  const span = spans.find((candidate) => candidate.lapIndex === lapIndex);
+  if (!span) return null;
+  return lapSubPath(detailPath, span);
+};
+
+const DIMMED_BRIGHTNESS = 0.3;
+const LAP_CASING_COLOR: [number, number, number, number] = [255, 255, 255, 255];
+const LAP_HOVER_COLOR: [number, number, number, number] = [255, 255, 255, 255];
+const LAP_CASING_SCALE = 1.6;
+
 interface DeckGLOverlayProps {
   tracks: MapTrack[];
   onClick?: PickHandler;
   onHover?: PickHandler;
+  hoveringTrack: boolean;
 }
 
 export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
@@ -38,10 +57,10 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const hoveredPoint = useMapFocusStore((s) => s.hoveredPoint);
   const pickCircle = useMapFocusStore((s) => s.pickCircle);
-  const lapMarkers = useMapFocusStore((s) => s.lapMarkers);
-  const focusedSport = useMapFocusStore((s) => s.focusedSport);
+  const lapSpans = useDeferredValue(useMapFocusStore((s) => s.sessionLaps?.spans));
+  const selectedLapIndex = useMapFocusStore((s) => s.selectedLapIndex);
   const hoveredLapIndex = useMapFocusStore((s) => s.hoveredLapIndex);
-  const zoneColorMode = useMapFocusStore((s) => s.zoneColorMode);
+  const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
   const hoveredStudioRouteId = useMapFocusStore((s) => s.hoveredStudioRouteId);
   const geoPosition = useGeolocationStore((s) => s.position);
   const geoAccuracy = useGeolocationStore((s) => s.accuracy);
@@ -54,8 +73,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const match = useMatch('/sessions/:id');
   const highlightedSessionId = hoveredSessionId ?? match?.params.id ?? null;
 
-  // The studio is about future routes — session tracks are hidden while the
-  // studio tab or a route detail page is open.
   const studioActive = studioTracks.active;
 
   const eventHandlers = useMemo(
@@ -63,6 +80,49 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       onboardingComplete ? { onClick: props.onClick, onHover: props.onHover } : {},
     [onboardingComplete, props.onClick, props.onHover],
   );
+
+  const selectedLapPath = useMemo(
+    () => lapPathFor(detailPath, lapSpans, selectedLapIndex),
+    [selectedLapIndex, detailPath, lapSpans],
+  );
+  let previewLapIndex = hoveredLapIndex;
+  if (previewLapIndex === selectedLapIndex) {
+    previewLapIndex = null;
+  }
+  const hoveredLapPath = useMemo(
+    () => lapPathFor(detailPath, lapSpans, previewLapIndex),
+    [previewLapIndex, detailPath, lapSpans],
+  );
+
+  useLapCameraEffect(selectedLapPath?.path ?? null, detailPath?.path ?? null);
+
+  const detailHandlers = useMemo(() => {
+    const lapAt = (info: PickingInfo) => {
+      if (!detailPath || !lapSpans || !info.coordinate) return undefined;
+      const lng = info.coordinate[0];
+      const lat = info.coordinate[1];
+      if (lng === undefined || lat === undefined) return undefined;
+      const recordIndex = nearestRecordIndex(detailPath, [lng, lat]);
+      if (recordIndex === undefined) return undefined;
+      return lapIndexAtRecord(lapSpans, recordIndex);
+    };
+    const onClick: PickHandler = (info, event) => {
+      const lapIndex = lapAt(info);
+      if (lapIndex === undefined) return eventHandlers.onClick?.(info, event);
+      useMapFocusStore.getState().toggleSelectedLap(lapIndex);
+      return true;
+    };
+    const onHover: PickHandler = (info, event) => {
+      let lapIndex: number | null = null;
+      if (info.object) {
+        lapIndex = lapAt(info) ?? null;
+      }
+      useMapFocusStore.getState().setHoveredLap(lapIndex);
+      return eventHandlers.onHover?.(info, event);
+    };
+    if (!eventHandlers.onClick) return {};
+    return { onClick, onHover };
+  }, [detailPath, lapSpans, eventHandlers]);
 
   const trackLayers = useMemo(() => {
     if (openedSessionId || studioActive) {
@@ -125,24 +185,75 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       return null;
     }
 
+    const isDimmed = selectedLapPath !== null;
     return new PathLayer<DetailPath>({
       id: 'session-detail',
       data: [detailPath],
       getPath: (d) => d.path,
-      getColor: (d) => d.color,
+      getColor: (d) => {
+        if (isDimmed) return dimmedColor(d.color, DIMMED_BRIGHTNESS);
+        return d.color;
+      },
       getWidth: trackModifiers.width.highlighted,
       widthMinPixels: 1,
       jointRounded: true,
       capRounded: true,
       pickable: true,
-      updateTriggers: { getColor: [zoneColorMode, openedSessionId] },
-      ...eventHandlers,
+      updateTriggers: { getColor: [trackColorMode, openedSessionId, isDimmed] },
+      ...detailHandlers,
     });
-  }, [detailPath, zoneColorMode, openedSessionId, eventHandlers]);
+  }, [detailPath, trackColorMode, openedSessionId, detailHandlers, selectedLapPath]);
 
-  // One path per GPX segment — disconnected segments must not be joined.
-  // Memoized separately from hover state so hovering a route card keeps the
-  // data identity stable and deck.gl only re-evaluates the triggered accessors.
+  const lapHoverLayer = useMemo(() => {
+    if (!detailPath) return null;
+    let data: DetailPath[] = [];
+    if (hoveredLapPath) data = [hoveredLapPath];
+    return new PathLayer<DetailPath>({
+      id: 'lap-hover',
+      data,
+      visible: hoveredLapPath !== null,
+      getPath: (d) => d.path,
+      getColor: LAP_HOVER_COLOR,
+      getWidth: 3,
+      widthUnits: 'pixels',
+      jointRounded: true,
+      capRounded: true,
+      pickable: false,
+    });
+  }, [detailPath, hoveredLapPath]);
+
+  const lapLayers = useMemo(() => {
+    const layers = [];
+    if (selectedLapPath) {
+      layers.push(
+        new PathLayer<DetailPath>({
+          id: 'lap-casing',
+          data: [selectedLapPath],
+          getPath: (d) => d.path,
+          getColor: LAP_CASING_COLOR,
+          getWidth: trackModifiers.width.highlighted * LAP_CASING_SCALE,
+          widthMinPixels: 9,
+          jointRounded: true,
+          capRounded: true,
+          pickable: false,
+        }),
+        new PathLayer<DetailPath>({
+          id: 'lap-selected',
+          data: [selectedLapPath],
+          getPath: (d) => d.path,
+          getColor: (d) => d.color,
+          getWidth: trackModifiers.width.highlighted,
+          widthMinPixels: 5,
+          jointRounded: true,
+          capRounded: true,
+          pickable: false,
+          updateTriggers: { getColor: [trackColorMode] },
+        }),
+      );
+    }
+    return layers;
+  }, [selectedLapPath, trackColorMode]);
+
   const studioSegments = useMemo(
     () =>
       studioTracks.routes.flatMap((route) =>
@@ -161,9 +272,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       return null;
     }
 
-    // Same highlight pattern as the session tracks: translucent by default,
-    // full opacity + wider stroke for the hovered route or the one whose
-    // detail page is open, everything else hidden while a route is hovered.
     const highlightedRouteId = hoveredStudioRouteId ?? studioTracks.focusedRouteId;
 
     return new PathLayer<(typeof studioSegments)[number]>({
@@ -171,23 +279,19 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       data: studioSegments,
       getPath: (d) => decodeCached(`studio-${d.routeId}-${d.segIndex}`, d.encodedPolyline),
       getColor: (d) => {
-        let alpha = trackModifiers.alpha.default;
+        let alpha = studioRouteModifiers.alpha.default;
         if (hoveredStudioRouteId && hoveredStudioRouteId !== d.routeId) {
-          alpha = 0;
-        } else if (highlightedRouteId === d.routeId) {
-          alpha = trackModifiers.alpha.highlighted;
+          alpha = studioRouteModifiers.alpha.hidden;
         }
         return [d.color[0], d.color[1], d.color[2], alpha];
       },
       getWidth: (d) =>
         d.routeId === highlightedRouteId
-          ? trackModifiers.width.highlighted
-          : trackModifiers.width.default,
+          ? studioRouteModifiers.width.highlighted
+          : studioRouteModifiers.width.default,
       widthMinPixels: 1,
       jointRounded: true,
       capRounded: true,
-      // Pickable across the whole studio context: the detail page drops markers
-      // on its route, the studio tab lists the routes near the click.
       pickable: studioTracks.active,
       updateTriggers: {
         getColor: [highlightedRouteId, hoveredStudioRouteId],
@@ -197,10 +301,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
         getWidth: 300,
         getColor: 300,
       },
-      parameters: ADDITIVE_BLEND,
-      // Without the shared click/hover handlers the pickable flag does nothing —
-      // deck routes picks through per-layer handlers, and onHover is what lights
-      // up the pick circle on the track.
       ...eventHandlers,
     });
   }, [
@@ -233,13 +333,13 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   }, [pickCircle]);
 
   const hoveredPointLayer = useMemo(() => {
-    if (!hoveredPoint) {
-      return null;
-    }
+    let data: Array<{ position: [number, number] }> = [];
+    if (hoveredPoint) data = [{ position: hoveredPoint }];
 
     return new ScatterplotLayer<{ position: [number, number] }>({
       id: 'hovered-point',
-      data: [{ position: hoveredPoint }],
+      data,
+      visible: hoveredPoint !== null,
       getPosition: (d) => d.position,
       getRadius: 12,
       radiusUnits: 'pixels',
@@ -253,52 +353,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     });
   }, [hoveredPoint]);
 
-  const lapMarkerLayers = useMemo(() => {
-    if (lapMarkers.length === 0 || !focusedSport) {
-      return null;
-    }
-
-    const fill = sportMarkerColor[focusedSport];
-    const [r, g, b] = sportTrackColor[focusedSport];
-
-    return lapMarkers.flatMap((marker) => {
-      let lineAlpha = 0;
-      if (hoveredLapIndex != null && marker.lapIndex === hoveredLapIndex) {
-        lineAlpha = 255;
-      }
-      return [
-        new ScatterplotLayer<LapMarker>({
-          id: `lap-marker-circle-${marker.lapIndex}`,
-          data: [marker],
-          getPosition: (d) => d.position,
-          getRadius: 12,
-          radiusUnits: 'pixels',
-          getFillColor: fill,
-          filled: true,
-          stroked: true,
-          getLineColor: [r, g, b, lineAlpha],
-          lineWidthUnits: 'pixels' as const,
-          getLineWidth: 4,
-          pickable: false,
-          updateTriggers: {
-            getLineColor: [hoveredLapIndex],
-          },
-        }),
-        new TextLayer<LapMarker>({
-          id: `lap-marker-label-${marker.lapIndex}`,
-          data: [marker],
-          getPosition: (d) => d.position,
-          getText: (d) => d.label,
-          getSize: 12,
-          getColor: [0, 0, 0, 255],
-          getTextAnchor: 'middle',
-          getAlignmentBaseline: 'center',
-          pickable: false,
-        }),
-      ];
-    });
-  }, [lapMarkers, focusedSport, hoveredLapIndex]);
-
   const geoLayers = useMemo(() => {
     if (!geoPosition) {
       return null;
@@ -306,8 +360,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
 
     const layers = [];
 
-    // Accuracy disc — real-world radius in meters, so it shrinks/grows with the
-    // GPS uncertainty as the map zooms.
     if (geoAccuracy) {
       layers.push(
         new ScatterplotLayer<{ center: [number, number] }>({
@@ -327,7 +379,6 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       );
     }
 
-    // Position dot — constant pixel size so it stays legible at any zoom.
     layers.push(
       new ScatterplotLayer<{ position: [number, number] }>({
         id: 'geo-dot',
@@ -349,7 +400,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   }, [geoPosition, geoAccuracy]);
 
   const overlay = useControl<MapboxOverlay>(
-    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS }),
+    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS, interleaved: true }),
   );
 
   overlay.setProps({
@@ -358,11 +409,16 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       detailLayer,
       studioRouteLayer,
       pickCircleLayer,
+      lapHoverLayer,
+      lapLayers,
       hoveredPointLayer,
-      lapMarkerLayers,
       geoLayers,
     ],
     pickingRadius: PICK_RADIUS,
+    getCursor: () => (props.hoveringTrack ? 'pointer' : ''),
+    onClick: (info) => {
+      if (!info.picked && openedSessionId) useMapFocusStore.getState().clearSelectedLap();
+    },
   });
 
   return null;

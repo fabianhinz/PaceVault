@@ -9,10 +9,6 @@ import { formatDate } from '@/lib/formatters.ts';
 import { createStudioRouteFromGpx } from '@/features/studio/createStudioRoute.ts';
 import type { TrainingSession } from '@/packages/engine/types.ts';
 
-/**
- * Imports a session's track into the studio as a new route and opens it, so
- * users can edit the GPX directly instead of exporting and re-importing.
- */
 export const useEditInStudio = (session: TrainingSession) => {
   const navigate = useNavigate();
   const [preparing, setPreparing] = useState(false);

@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import {
-  getAllFitFiles,
+  getFitFile,
+  getFitFileSessionIds,
   deleteSessionRecords,
   deleteSessionLaps,
   deleteSessionGPS,
@@ -16,7 +17,26 @@ import { toast } from '@/components/ui/toastStore.ts';
 import { m } from '@/paraglide/messages.js';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import type { SessionFields } from '@/packages/engine/types.ts';
+import type { UserProfile } from '@/types/index.ts';
 import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
+
+const reimportSession = async (
+  sessionId: string,
+  profile: UserProfile,
+): Promise<SessionFields | undefined> => {
+  const fitFile = await getFitFile(sessionId);
+  if (!fitFile) return undefined;
+  const result = await parseFitFile(fitFile.data, fitFile.fileName, toFitParseProfile(profile));
+
+  await deleteSessionRecords(sessionId);
+  await deleteSessionLaps(sessionId);
+  await deleteSessionGPS(sessionId);
+
+  await saveSessionRecords(sessionId, result.records);
+  await saveSessionLaps(sessionId, result.laps);
+
+  return result.session;
+};
 
 interface ReimportState {
   reimporting: boolean;
@@ -41,14 +61,14 @@ export const useReimport = () => {
 
     setState({ reimporting: true, processed: 0, total: 0 });
 
-    const fitFiles = await getAllFitFiles();
-    if (fitFiles.length === 0) {
+    const sessionIds = await getFitFileSessionIds();
+    if (sessionIds.length === 0) {
       toast(m.toast_reimport_no_files_title(), m.toast_reimport_no_files_desc(), 'warning');
       setState({ reimporting: false, processed: 0, total: 0 });
       return;
     }
 
-    setState((prev) => ({ ...prev, total: fitFiles.length }));
+    setState((prev) => ({ ...prev, total: sessionIds.length }));
 
     const updates: Array<{
       id: string;
@@ -56,24 +76,12 @@ export const useReimport = () => {
     }> = [];
     let failed = 0;
 
-    for (const fitFile of fitFiles) {
+    for (const sessionId of sessionIds) {
       try {
-        const result = await parseFitFile(
-          fitFile.data,
-          fitFile.fileName,
-          toFitParseProfile(profile),
-        );
-
-        await deleteSessionRecords(fitFile.sessionId);
-        await deleteSessionLaps(fitFile.sessionId);
-        await deleteSessionGPS(fitFile.sessionId);
-
-        await saveSessionRecords(fitFile.sessionId, result.records);
-        await saveSessionLaps(fitFile.sessionId, result.laps);
-
-        updates.push({ id: fitFile.sessionId, session: result.session });
+        const session = await reimportSession(sessionId, profile);
+        if (session) updates.push({ id: sessionId, session });
       } catch (err) {
-        console.error(`Reimport failed for ${fitFile.fileName}:`, err);
+        console.error(`Reimport failed for session ${sessionId}:`, err);
         failed++;
       }
 

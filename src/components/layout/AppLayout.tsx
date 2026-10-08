@@ -57,7 +57,7 @@ export const AppLayout = () => {
   useIntervalsSync();
 
   return (
-    <div className="min-h-screen overflow-hidden">
+    <div className="min-h-screen overflow-clip">
       <ErrorBoundary fallback={null}>
         <DebugCrashTrigger target="map" />
         <MapBackground />

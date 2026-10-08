@@ -1,14 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatPace,
+  formatPaceTick,
+  formatPaceInput,
   formatDate,
   formatDuration,
   formatDistance,
-  formatSpeed,
-  formatLapTime,
   formatSubSport,
   toDateString,
 } from '@/lib/formatters.ts';
+
+describe('pace formatters print "x:60" when seconds round up to a full minute', () => {
+  it('carries the rounded minute instead of printing 60 seconds', () => {
+    expect(formatPace(299.7)).toBe('5:00 /km');
+    expect(formatPaceTick(4.999)).toBe('5:00');
+    expect(formatPaceInput(359.6)).toBe('6:00');
+  });
+});
 
 describe('formatPace', () => {
   it('300 sec/km => "5:00 /km"', () => {
@@ -94,34 +102,6 @@ describe('formatDistance', () => {
 
   it('0 meters => "0 m"', () => {
     expect(formatDistance(0)).toBe('0 m');
-  });
-});
-
-describe('formatSpeed', () => {
-  it('1 m/s => "3.6 km/h"', () => {
-    expect(formatSpeed(1)).toBe('3.6 km/h');
-  });
-
-  it('10 m/s => "36.0 km/h"', () => {
-    expect(formatSpeed(10)).toBe('36.0 km/h');
-  });
-
-  it('0 m/s => "0.0 km/h"', () => {
-    expect(formatSpeed(0)).toBe('0.0 km/h');
-  });
-});
-
-describe('formatLapTime', () => {
-  it('300 seconds => "5:00"', () => {
-    expect(formatLapTime(300)).toBe('5:00');
-  });
-
-  it('61 seconds => "1:01"', () => {
-    expect(formatLapTime(61)).toBe('1:01');
-  });
-
-  it('0 seconds => "0:00"', () => {
-    expect(formatLapTime(0)).toBe('0:00');
   });
 });
 

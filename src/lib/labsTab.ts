@@ -1,4 +1,4 @@
-export type LabsTab = 'studio' | 'tools' | 'training';
+type LabsTab = 'studio' | 'tools' | 'training';
 
 /**
  * Single source of truth for which labs tab a `?tab=` param selects — the

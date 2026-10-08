@@ -4,12 +4,12 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceArea,
-  ReferenceLine,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { LapBands, LAP_STRIP_TICK_MARGIN } from './LapBands.tsx';
+import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, type ChartXAxis } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { m } from '@/paraglide/messages.js';
@@ -20,10 +20,10 @@ interface GradeChartProps<
 > {
   data: T[];
   xAxis: ChartXAxis<K>;
-  mode?: 'compact' | 'expanded';
   onActiveXChange?: (x: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
-  onZoomReset?: () => void;
+  onSelectX?: (x: number) => void;
+  lapBands?: boolean;
 }
 
 export const GradeChart = <
@@ -32,68 +32,54 @@ export const GradeChart = <
 >(
   props: GradeChartProps<K, T>,
 ) => {
-  const compact = props.mode === 'compact';
   const zoom = useChartZoom({
     data: props.data,
     xKey: props.xAxis.key,
     onZoomComplete: props.onZoomComplete,
-    onZoomReset: props.onZoomReset,
+    onClick: (x) => props.onSelectX?.(Number(x)),
   });
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart
-        syncId={compact ? props.xAxis.syncId : undefined}
+        syncId={props.xAxis.syncId}
         data={zoom.zoomedData}
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
           zoom.onMouseMove(e);
-          if (compact && props.onActiveXChange && e.activeLabel != null)
+          if (props.onActiveXChange && e.activeLabel != null)
             props.onActiveXChange(Number(e.activeLabel));
         }}
         onMouseUp={zoom.onMouseUp}
-        onMouseLeave={
-          compact && props.onActiveXChange ? () => props.onActiveXChange?.(null) : undefined
-        }
+        {...chartHoverHandlers(props.onActiveXChange)}
       >
-        {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey={props.xAxis.key}
-          ticks={
-            compact
-              ? [
-                  zoom.zoomedData[0]?.[props.xAxis.key] ?? 0,
-                  zoom.zoomedData[zoom.zoomedData.length - 1]?.[props.xAxis.key] ?? 0,
-                ]
-              : undefined
-          }
+          type={props.xAxis.type}
+          domain={props.xAxis.type === 'number' ? ['dataMin', 'dataMax'] : undefined}
+          ticks={[
+            zoom.zoomedData[0]?.[props.xAxis.key] ?? 0,
+            zoom.zoomedData[zoom.zoomedData.length - 1]?.[props.xAxis.key] ?? 0,
+          ]}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
+          tickMargin={props.lapBands ? LAP_STRIP_TICK_MARGIN : undefined}
           tickFormatter={props.xAxis.tickFormatter}
         />
         <YAxis
+          domain={['auto', 'auto']}
           yAxisId="left"
+          width={chartTheme.compactYAxisWidth}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
-          tickCount={compact ? 3 : undefined}
+          tickCount={3}
           tickFormatter={(v: number) => `${v}%`}
         />
-        <RechartsTooltip
-          contentStyle={chartTheme.tooltip.contentStyle}
-          labelStyle={chartTheme.tooltip.labelStyle}
-          isAnimationActive={chartTheme.tooltip.isAnimationActive}
-          separator={chartTheme.tooltip.separator}
-          labelFormatter={(v) => props.xAxis.tickFormatter(Number(v))}
-        />
-        {!compact && (
-          <ReferenceLine
-            yAxisId="left"
-            y={0}
-            stroke={tokens.textQuaternary}
-            strokeDasharray="3 3"
-          />
+        <RechartsTooltip {...hoverOnlyTooltip} />
+        {props.lapBands && (
+          <LapBands rows={zoom.zoomedData} xKey={props.xAxis.key} yAxisId="left" />
         )}
         <Line
           yAxisId="left"
@@ -102,10 +88,9 @@ export const GradeChart = <
           stroke={tokens.chartGrade}
           strokeWidth={1.5}
           dot={false}
-          connectNulls
           name={m.ui_chart_series_grade()}
         />
-        {zoom.refAreaLeft && zoom.refAreaRight && (
+        {zoom.refAreaLeft !== null && zoom.refAreaRight !== null && (
           <ReferenceArea
             yAxisId="left"
             x1={zoom.refAreaLeft}

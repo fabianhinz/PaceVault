@@ -9,23 +9,18 @@ const loadWeather = async (
   sessionDateMs: number,
   durationSec: number,
 ): Promise<SessionWeather | null> => {
-  // 1. Check IndexedDB cache
   const cached = await getSessionWeather(sessionId);
   if (cached) return cached;
 
-  // 2. Load records for GPS waypoints
   const records = await getSessionRecords(sessionId);
   const hasGps = records.some((r) => r.lat !== undefined && r.lng !== undefined);
   if (!hasGps) return null;
 
-  // 3. Check connectivity
   if (!navigator.onLine) return null;
 
-  // 4. Fetch from Open-Meteo
   const weather = await fetchSessionWeather(sessionId, sessionDateMs, durationSec, records);
   if (!weather) return null;
 
-  // 5. Persist to IndexedDB
   await saveSessionWeather(weather);
   return weather;
 };

@@ -1,8 +1,5 @@
 import { useMediaQuery } from './useMediaQuery';
 
-export const useIsDesktop = () => {
-  // tailwind breakpoint lg
-  const isDesktop = useMediaQuery('(min-width: 1024px)');
+export const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';
 
-  return isDesktop;
-};
+export const useIsDesktop = () => useMediaQuery(DESKTOP_MEDIA_QUERY);

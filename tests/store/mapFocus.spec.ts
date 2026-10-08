@@ -1,28 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import type { SessionLap } from '@/packages/engine/types.ts';
-
-const makeLap = (overrides: Partial<SessionLap> = {}): SessionLap => ({
-  lapIndex: 0,
-  startTime: 0,
-  endTime: 300,
-  totalElapsedTime: 300,
-  totalTimerTime: 300,
-  distance: 1000,
-  avgSpeed: 3.33,
-  ...overrides,
-});
 
 describe('useMapFocusStore', () => {
   beforeEach(() => {
     useMapFocusStore.setState({
       openedSessionId: null,
       hoveredSessionId: null,
-      focusedLaps: [],
-      focusedSport: null,
       hoveredPoint: null,
       pickCircle: null,
-      lapMarkers: [],
+      sessionColorMode: 'sport',
+      lapSource: 'splits',
+      splitDistance: null,
+      selectedLapIndex: null,
+      hoveredLapIndex: null,
     });
   });
 
@@ -56,45 +46,6 @@ describe('useMapFocusStore', () => {
     expect(useMapFocusStore.getState().hoveredSessionId).toBeNull();
   });
 
-  it('defaults focusedLaps to empty array', () => {
-    expect(useMapFocusStore.getState().focusedLaps).toEqual([]);
-  });
-
-  it('defaults focusedSport to null', () => {
-    expect(useMapFocusStore.getState().focusedSport).toBeNull();
-  });
-
-  it('setFocusedLaps stores laps and sport', () => {
-    const laps = [makeLap({ lapIndex: 0 }), makeLap({ lapIndex: 1 })];
-    useMapFocusStore.getState().setFocusedLaps(laps, 'running', []);
-    expect(useMapFocusStore.getState().focusedLaps).toEqual(laps);
-    expect(useMapFocusStore.getState().focusedSport).toBe('running');
-  });
-
-  it('clearFocusedLaps resets laps and sport', () => {
-    useMapFocusStore.getState().setFocusedLaps([makeLap()], 'cycling', []);
-    useMapFocusStore.getState().clearFocusedLaps();
-    expect(useMapFocusStore.getState().focusedLaps).toEqual([]);
-    expect(useMapFocusStore.getState().focusedSport).toBeNull();
-  });
-
-  it('setOpenedSession(null) also clears laps and sport', () => {
-    useMapFocusStore.getState().setOpenedSession('abc-123');
-    useMapFocusStore.getState().setFocusedLaps([makeLap()], 'running', []);
-    useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapFocusStore.getState().openedSessionId).toBeNull();
-    expect(useMapFocusStore.getState().focusedLaps).toEqual([]);
-    expect(useMapFocusStore.getState().focusedSport).toBeNull();
-  });
-
-  it('setOpenedSession(id) preserves existing laps', () => {
-    const laps = [makeLap()];
-    useMapFocusStore.getState().setFocusedLaps(laps, 'cycling', []);
-    useMapFocusStore.getState().setOpenedSession('new-id');
-    expect(useMapFocusStore.getState().focusedLaps).toEqual(laps);
-    expect(useMapFocusStore.getState().focusedSport).toBe('cycling');
-  });
-
   it('defaults pickCircle to null', () => {
     expect(useMapFocusStore.getState().pickCircle).toBeNull();
   });
@@ -110,56 +61,63 @@ describe('useMapFocusStore', () => {
     expect(useMapFocusStore.getState().pickCircle).toBeNull();
   });
 
-  it('defaults lapMarkers to empty array', () => {
-    expect(useMapFocusStore.getState().lapMarkers).toEqual([]);
+  it('defaults trackColorMode to sport', () => {
+    expect(useMapFocusStore.getState().trackColorMode).toBe('sport');
   });
 
-  it('setLapMarkers stores markers', () => {
-    const markers = [
-      { lapIndex: 0, position: [11.0, 48.0] as [number, number], label: '1' },
-      { lapIndex: 1, position: [11.1, 48.1] as [number, number], label: '2' },
-    ];
-    useMapFocusStore.getState().setLapMarkers(markers);
-    expect(useMapFocusStore.getState().lapMarkers).toEqual(markers);
-  });
-
-  it('clearLapMarkers resets to empty array', () => {
-    useMapFocusStore
-      .getState()
-      .setLapMarkers([{ lapIndex: 0, position: [11.0, 48.0] as [number, number], label: '1' }]);
-    useMapFocusStore.getState().clearLapMarkers();
-    expect(useMapFocusStore.getState().lapMarkers).toEqual([]);
-  });
-
-  it('setOpenedSession(null) also clears lapMarkers', () => {
+  it('setOpenedSession(null) resets trackColorMode to sport', () => {
     useMapFocusStore.getState().setOpenedSession('abc-123');
-    useMapFocusStore
-      .getState()
-      .setLapMarkers([{ lapIndex: 0, position: [11.0, 48.0] as [number, number], label: '1' }]);
+    useMapFocusStore.getState().setTrackColorMode('wind');
     useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapFocusStore.getState().lapMarkers).toEqual([]);
+    expect(useMapFocusStore.getState().trackColorMode).toBe('sport');
   });
 
-  it('defaults zoneColorMode to null', () => {
-    expect(useMapFocusStore.getState().zoneColorMode).toBeNull();
-  });
-
-  it('setZoneColorMode sets the mode', () => {
-    useMapFocusStore.getState().setZoneColorMode('hr');
-    expect(useMapFocusStore.getState().zoneColorMode).toBe('hr');
-  });
-
-  it('setZoneColorMode(null) clears the mode', () => {
-    useMapFocusStore.getState().setZoneColorMode('power');
-    useMapFocusStore.getState().setZoneColorMode(null);
-    expect(useMapFocusStore.getState().zoneColorMode).toBeNull();
-  });
-
-  it('setOpenedSession(null) resets zoneColorMode', () => {
-    useMapFocusStore.getState().setOpenedSession('abc-123');
-    useMapFocusStore.getState().setZoneColorMode('pace');
+  it('color by starts at sport and is not carried over to the next session', () => {
+    expect(useMapFocusStore.getState().sessionColorMode).toBe('sport');
+    useMapFocusStore.getState().setOpenedSession('first');
+    useMapFocusStore.getState().setSessionColorMode('hr');
+    useMapFocusStore.getState().setOpenedSession('first');
+    expect(useMapFocusStore.getState().sessionColorMode).toBe('hr');
+    useMapFocusStore.getState().setOpenedSession('second');
+    expect(useMapFocusStore.getState().sessionColorMode).toBe('sport');
+    useMapFocusStore.getState().setSessionColorMode('power');
     useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapFocusStore.getState().zoneColorMode).toBeNull();
+    expect(useMapFocusStore.getState().sessionColorMode).toBe('sport');
+  });
+
+  it('laps start on the sport default splits and neither source, distance nor selection carries over to the next session', () => {
+    expect(useMapFocusStore.getState().lapSource).toBe('splits');
+    expect(useMapFocusStore.getState().splitDistance).toBeNull();
+    useMapFocusStore.getState().setOpenedSession('first');
+    useMapFocusStore.getState().setSplitDistance(2500);
+    useMapFocusStore.getState().selectLap(3);
+    useMapFocusStore.getState().setOpenedSession('first');
+    expect(useMapFocusStore.getState().splitDistance).toBe(2500);
+    expect(useMapFocusStore.getState().selectedLapIndex).toBe(3);
+    useMapFocusStore.getState().setOpenedSession('second');
+    expect(useMapFocusStore.getState().lapSource).toBe('splits');
+    expect(useMapFocusStore.getState().splitDistance).toBeNull();
+    expect(useMapFocusStore.getState().selectedLapIndex).toBeNull();
+    useMapFocusStore.getState().setLapSource('device');
+    useMapFocusStore.getState().setOpenedSession(null);
+    expect(useMapFocusStore.getState().lapSource).toBe('splits');
+  });
+
+  it('changing the lap source or split distance clears the selected lap', () => {
+    useMapFocusStore.getState().selectLap(2);
+    useMapFocusStore.getState().setLapSource('device');
+    expect(useMapFocusStore.getState().selectedLapIndex).toBeNull();
+    useMapFocusStore.getState().selectLap(2);
+    useMapFocusStore.getState().setSplitDistance(1500);
+    expect(useMapFocusStore.getState().selectedLapIndex).toBeNull();
+    expect(useMapFocusStore.getState().lapSource).toBe('splits');
+  });
+
+  it('tapping the selected lap again clears it', () => {
+    useMapFocusStore.getState().toggleSelectedLap(1);
+    expect(useMapFocusStore.getState().selectedLapIndex).toBe(1);
+    useMapFocusStore.getState().toggleSelectedLap(1);
+    expect(useMapFocusStore.getState().selectedLapIndex).toBeNull();
   });
 
   it('defaults hoveredStudioRouteId to null', () => {

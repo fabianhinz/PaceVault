@@ -4,7 +4,7 @@ import darkMatterStyleSpec from './darkMatter.style.json';
 // import voyagerStyleSpec from './voyager.style.json';
 
 // TODO support voyager
-export type MapStyleId = 'dark';
+type MapStyleId = 'dark';
 
 const TILE_URL =
   'https://tiles-a.basemaps.cartocdn.com/vectortiles/carto.streets/v1/{z}/{x}/{y}.mvt';

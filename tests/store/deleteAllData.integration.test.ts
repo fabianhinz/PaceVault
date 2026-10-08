@@ -20,29 +20,23 @@ import { idbStorage } from '@/lib/idbStorage.ts';
 
 describe('delete all data', () => {
   it('clears sessions, profile, session-records, session-laps, and resets onboarding', async () => {
-    // Populate sessions store
-    const { id: _id, createdAt: _ca, ...sessionData } = makeSession();
-    const sessionId = useSessionsStore.getState().addSessions([sessionData])[0] ?? '';
+    const { createdAt: _ca, ...sessionData } = makeSession();
+    useSessionsStore.getState().addSessions([sessionData]);
+    const sessionId = sessionData.id;
 
-    // Populate user store
     const { id: _pid, createdAt: _pca, ...profileData } = makeUserProfile();
     useUserStore.getState().setProfile(profileData);
 
-    // Mark onboarding as complete
     useLayoutStore.getState().completeOnboarding();
 
-    // Populate IDB session-records
     const records = makeCyclingRecords(60, { basePower: 200 });
     await saveSessionRecords(sessionId, records);
 
-    // Populate IDB session-laps
     const laps = makeLaps(2);
     await saveSessionLaps(sessionId, laps);
 
-    // Populate IDB kv store (simulates Zustand persist)
     await idbStorage.setItem('store-user', '{"state":{"profile":{}}}');
 
-    // Populate coach plan cache
     useCoachPlanStore
       .getState()
       .setPlan(
@@ -50,18 +44,15 @@ describe('delete all data', () => {
         '2026-02-09:1:300',
       );
 
-    // Connect intervals.icu
     useIntervalsStore.getState().connectIntervals('secret-key');
     useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
 
-    // Set non-default filters
     useFiltersStore.setState({
       timeRange: '90d',
       sportFilter: 'cycling',
       attributeFilters: { duration: 3600, distance: 10000, elevationGain: 500 },
     });
 
-    // Verify everything is populated
     expect(useFiltersStore.getState().timeRange).toBe('90d');
     expect(useIntervalsStore.getState().apiKey).not.toBeNull();
     expect(useCoachPlanStore.getState().cachedPlan).not.toBeNull();
@@ -72,7 +63,6 @@ describe('delete all data', () => {
     expect(await getSessionLaps(sessionId)).toHaveLength(2);
     expect(await idbStorage.getItem('store-user')).not.toBeNull();
 
-    // Perform full data wipe (same sequence as DeleteAllDataDialog.handleDelete)
     useSessionsStore.getState().clearAll();
     useUserStore.getState().resetProfile();
     useCoachPlanStore.getState().clearPlan();
@@ -87,7 +77,6 @@ describe('delete all data', () => {
     });
     await clearAllRecords();
 
-    // Verify everything is cleared
     expect(useCoachPlanStore.getState().cachedPlan).toBeNull();
     expect(useCoachPlanStore.getState().cacheKey).toBeNull();
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
@@ -95,14 +84,10 @@ describe('delete all data', () => {
     expect(await getSessionLaps(sessionId)).toHaveLength(0);
     expect(await idbStorage.getItem('store-user')).toBeNull();
 
-    // Verify the intervals.icu connection is gone
     expect(useIntervalsStore.getState().apiKey).toBeNull();
     expect(useIntervalsStore.getState().importedActivityIds).toEqual([]);
-    // Verify profile is null (user returns to onboarding)
     expect(useUserStore.getState().profile).toBeNull();
-    // Verify onboarding is reset
     expect(useLayoutStore.getState().onboardingComplete).toBe(false);
-    // Verify filters are reset
     expect(useFiltersStore.getState().timeRange).toBe('all');
     expect(useFiltersStore.getState().sportFilter).toBe('all');
     expect(useFiltersStore.getState().attributeFilters).toEqual({

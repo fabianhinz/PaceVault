@@ -17,11 +17,11 @@ interface StudioMarkerBase {
   distanceM: number;
 }
 
-export interface TrackModifierMarker extends StudioMarkerBase {
+interface TrackModifierMarker extends StudioMarkerBase {
   type: 'track_modifier';
 }
 
-export interface PointOfInterestMarker extends StudioMarkerBase {
+interface PointOfInterestMarker extends StudioMarkerBase {
   type: 'point_of_interest';
   label: string;
   description?: string;
@@ -31,8 +31,8 @@ export type StudioMarker = TrackModifierMarker | PointOfInterestMarker;
 
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
 
-export type StudioMarkerInput = DistributiveOmit<StudioMarker, 'id'>;
-export type StudioPoiFields = Pick<PointOfInterestMarker, 'distanceM' | 'label' | 'description'>;
+type StudioMarkerInput = DistributiveOmit<StudioMarker, 'id'>;
+type StudioPoiFields = Pick<PointOfInterestMarker, 'distanceM' | 'label' | 'description'>;
 
 export interface StudioRoute {
   id: string;

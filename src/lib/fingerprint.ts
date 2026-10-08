@@ -4,12 +4,12 @@ import type { TrainingSession, Sport } from '@/packages/engine/types.ts';
 // Interfaces
 // ---------------------------------------------------------------------------
 
-export interface FitFileId {
+interface FitFileId {
   serial_number?: number;
   time_created: string | Date;
 }
 
-export interface FallbackFields {
+interface FallbackFields {
   sport: Sport;
   date: number;
   duration: number;

@@ -3,7 +3,9 @@ import { densestClusterBounds, unionBounds } from '@/packages/engine/gps.ts';
 import type { GPSBounds } from '@/packages/engine/types.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import type { MapTrack } from './useMapTracks.ts';
-import { mapSidePadding } from '../mapSidePadding.ts';
+import { MAP_FIT_MARGIN, mapPadding } from '../mapPadding.ts';
+
+const OVERVIEW_FIT_MARGIN = 50;
 
 export const useMapCameraEffect = (
   mapRef: React.RefObject<MapRef | null>,
@@ -16,8 +18,6 @@ export const useMapCameraEffect = (
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
 
-    const side = mapSidePadding();
-
     if (overrideBounds) {
       mapRef.current.fitBounds(
         [
@@ -25,7 +25,7 @@ export const useMapCameraEffect = (
           [overrideBounds.maxLng, overrideBounds.maxLat],
         ],
         {
-          padding: { top: 80, bottom: 80 + side.bottom, left: 80, right: 80 + side.right },
+          padding: mapPadding(MAP_FIT_MARGIN),
           duration: 1200,
         },
       );
@@ -44,7 +44,7 @@ export const useMapCameraEffect = (
           [b.maxLng, b.maxLat],
         ],
         {
-          padding: { top: 80, bottom: 80 + side.bottom, left: 80, right: 80 + side.right },
+          padding: mapPadding(MAP_FIT_MARGIN),
           duration: 1200,
         },
       );
@@ -65,7 +65,7 @@ export const useMapCameraEffect = (
         [bounds.maxLng, bounds.maxLat],
       ],
       {
-        padding: { top: 50, bottom: 50 + side.bottom, left: 50, right: 50 + side.right },
+        padding: mapPadding(OVERVIEW_FIT_MARGIN),
         duration: 1000,
       },
     );

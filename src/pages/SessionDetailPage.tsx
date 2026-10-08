@@ -1,32 +1,22 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { m } from '@/paraglide/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { analyzeLaps, enrichAllLaps } from '@/lib/laps.ts';
 import { getSessionRecords, getSessionLaps } from '@/lib/indexeddb.ts';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.tsx';
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/features/sessions/session/SessionActionsMenu.tsx';
-import { WeatherChips } from '@/features/sessions/session/WeatherChips.tsx';
+import { SensorWarningBanner } from '@/features/sessions/session/SensorWarningBanner.tsx';
 import { NoGpsBanner } from '@/features/sessions/session/NoGpsBanner.tsx';
-import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
-import { OverviewTab } from '@/features/sessions/session/OverviewTab.tsx';
-import { LapsTab } from '@/features/sessions/laps/LapsTab.tsx';
+import { SessionLapSetSync } from '@/features/sessions/session/SessionLapSetSync.tsx';
+import { SessionOverview } from '@/features/sessions/session/SessionOverview.tsx';
 import { SessionPeek } from '@/features/sessions/SessionPeek.tsx';
+import { SessionMapControls } from '@/features/sessions/session/SessionMapControls.tsx';
 import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
 
-const validTabs = new Set(['overview', 'laps']);
-
 export const SessionDetailPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get('tab');
-  const tab = rawTab && validTabs.has(rawTab) ? rawTab : 'overview';
-
   const params = useParams<{ id: string }>();
   const session = useSessionsStore((s) => s.sessions.find((session) => session.id === params.id));
-  const weather = useSessionWeather(params.id ?? '', session?.date ?? 0, session?.duration ?? 0);
   const [records, setRecords] = useState<SessionRecord[]>([]);
   const [laps, setLaps] = useState<SessionLap[]>([]);
 
@@ -43,59 +33,39 @@ export const SessionDetailPage = () => {
     }
   }, [params.id, session?.hasDetailedRecords]);
 
-  useEffect(() => {
-    if (laps.length > 0 && session) {
-      useMapFocusStore.getState().setFocusedLaps(laps, session.sport, records);
-      const deviceAnalysis = analyzeLaps(laps);
-      const deviceEnrichments = enrichAllLaps(laps, records);
-      useMapFocusStore.getState().setActiveLapData(deviceAnalysis, deviceEnrichments, null);
-    }
-    return () => {
-      useMapFocusStore.getState().clearFocusedLaps();
-    };
-  }, [laps, records, session]);
+  const lapSetSync = <SessionLapSetSync records={records} laps={laps} />;
 
   if (!session) {
     return (
-      <Typography variant="body1" color="textSecondary">
-        {m.ui_session_not_found()}
-      </Typography>
+      <>
+        {lapSetSync}
+        <Typography variant="body1" color="textSecondary">
+          {m.ui_session_not_found()}
+        </Typography>
+      </>
     );
   }
 
-  const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
-  };
-
   if (records.length === 0) {
-    return;
+    return lapSetSync;
   }
 
   return (
-    <div className="space-y-4">
-      <SessionPeek session={session} />
-      <NoGpsBanner records={records} />
+    <>
+      {lapSetSync}
+      <div className="space-y-4">
+        <SessionPeek session={session} />
 
-      <SessionHeader session={session} titleVariant="h2" titleAs="h1">
-        <SessionActionsMenu session={session} />
-      </SessionHeader>
+        <SessionHeader session={session} titleVariant="h2" titleAs="h1">
+          <SessionActionsMenu session={session} />
+        </SessionHeader>
 
-      <WeatherChips query={weather} records={records} sessionStartMs={session.date} />
+        <SensorWarningBanner records={records} sport={session.sport} />
+        <NoGpsBanner records={records} />
+        <SessionMapControls session={session} records={records} laps={laps} />
 
-      <Tabs defaultValue="overview" value={tab} onValueChange={handleTabChange}>
-        <TabsList>
-          <TabsTrigger value="overview">{m.ui_session_tab_overview()}</TabsTrigger>
-          <TabsTrigger value="laps">{m.ui_session_tab_laps()}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <OverviewTab session={session} records={records} laps={laps} />
-        </TabsContent>
-
-        <TabsContent value="laps">
-          <LapsTab laps={laps} session={session} records={records} />
-        </TabsContent>
-      </Tabs>
-    </div>
+        <SessionOverview session={session} records={records} laps={laps} />
+      </div>
+    </>
   );
 };

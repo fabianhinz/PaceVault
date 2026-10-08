@@ -98,8 +98,15 @@ export const deleteSessionGPS = async (sessionId: string): Promise<void> => {
   await tx.done;
 };
 
+interface SessionDataEntry {
+  sessionId: string;
+  records: SessionRecord[];
+  laps: SessionLap[];
+  fit?: { fileName: string; data: ArrayBuffer };
+}
+
 export const bulkSaveSessionData = async (
-  entries: Array<{ sessionId: string; records: SessionRecord[]; laps: SessionLap[] }>,
+  entries: SessionDataEntry[],
   options?: { chunkSize?: number; onChunkDone?: (chunkIndex: number) => void },
 ): Promise<void> => {
   const size = options?.chunkSize ?? 10;
@@ -114,28 +121,30 @@ export const bulkSaveSessionData = async (
       }),
     );
 
-    const tx = db.transaction(['session-records', 'session-laps'], 'readwrite');
+    const tx = db.transaction(['session-records', 'session-laps', 'fit-files'], 'readwrite');
     const recordStore = tx.objectStore('session-records');
     const lapStore = tx.objectStore('session-laps');
+    const fitStore = tx.objectStore('fit-files');
 
-    chunk.forEach((entry, i) => {
-      const records = encoded[i];
-      if (records) recordStore.put({ sessionId: entry.sessionId, ...records });
-      if (entry.laps.length > 0) lapStore.put({ sessionId: entry.sessionId, laps: entry.laps });
-    });
+    const writes: Promise<unknown>[] = [];
+    try {
+      chunk.forEach((entry, i) => {
+        const records = encoded[i];
+        if (records) writes.push(recordStore.put({ sessionId: entry.sessionId, ...records }));
+        if (entry.laps.length > 0) {
+          writes.push(lapStore.put({ sessionId: entry.sessionId, laps: entry.laps }));
+        }
+        if (entry.fit) writes.push(fitStore.put({ sessionId: entry.sessionId, ...entry.fit }));
+      });
+    } catch (err) {
+      tx.abort();
+      await Promise.allSettled([...writes, tx.done]);
+      throw err;
+    }
 
-    await tx.done;
+    await Promise.all([...writes, tx.done]);
     options?.onChunkDone?.(ci / size);
   }
-};
-
-export const saveFitFile = async (
-  sessionId: string,
-  fileName: string,
-  data: ArrayBuffer,
-): Promise<void> => {
-  const db = await getDB();
-  await db.put('fit-files', { sessionId, fileName, data });
 };
 
 export const getFitFile = async (
@@ -150,11 +159,9 @@ export const deleteFitFile = async (sessionId: string): Promise<void> => {
   await db.delete('fit-files', sessionId);
 };
 
-export const getAllFitFiles = async (): Promise<
-  Array<{ sessionId: string; fileName: string; data: ArrayBuffer }>
-> => {
+export const getFitFileSessionIds = async (): Promise<string[]> => {
   const db = await getDB();
-  return db.getAll('fit-files');
+  return db.getAllKeys('fit-files');
 };
 
 export type IdbStoreName = StoreNames<EnduranceTrackerDB>;

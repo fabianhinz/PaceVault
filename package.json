@@ -15,7 +15,7 @@
     "preview": "vp preview",
     "generate-test-data": "vp exec tsx scripts/generateTestData.ts",
     "generate-pwa-assets": "vp exec pwa-assets-generator",
-    "paraglide:compile": "vp exec npx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/paraglide"
+    "paraglide:compile": "vp exec npx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy localStorage preferredLanguage baseLocale"
   },
   "dependencies": {
     "@deck.gl/core": "^9.2.9",

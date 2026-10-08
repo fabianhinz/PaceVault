@@ -4,11 +4,12 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceArea,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { LapBands, LAP_STRIP_TICK_MARGIN } from '@/components/charts/LapBands.tsx';
+import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import type { CadencePoint } from '@/lib/chartData.ts';
@@ -16,68 +17,57 @@ import { m } from '@/paraglide/messages.js';
 
 interface CadenceChartProps {
   data: CadencePoint[];
-  mode?: 'compact' | 'expanded';
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
-  onZoomReset?: () => void;
+  onSelectTime?: (time: number) => void;
 }
 
 export const CadenceChart = (props: CadenceChartProps) => {
-  const compact = props.mode === 'compact';
   const zoom = useChartZoom({
     data: props.data,
     xKey: 'time',
     onZoomComplete: props.onZoomComplete,
-    onZoomReset: props.onZoomReset,
+    onClick: (x) => props.onSelectTime?.(Number(x)),
   });
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart
-        syncId={compact ? 'session-detail' : undefined}
+        syncId={'session-detail'}
         data={zoom.zoomedData}
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
           zoom.onMouseMove(e);
-          if (compact && props.onActiveTimeChange && e.activeLabel != null)
+          if (props.onActiveTimeChange && e.activeLabel != null)
             props.onActiveTimeChange(Number(e.activeLabel));
         }}
         onMouseUp={zoom.onMouseUp}
-        onMouseLeave={
-          compact && props.onActiveTimeChange ? () => props.onActiveTimeChange?.(null) : undefined
-        }
+        {...chartHoverHandlers(props.onActiveTimeChange)}
       >
-        {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
         <XAxis
           dataKey="time"
-          ticks={
-            compact
-              ? [
-                  zoom.zoomedData[0]?.time ?? 0,
-                  zoom.zoomedData[zoom.zoomedData.length - 1]?.time ?? 0,
-                ]
-              : undefined
-          }
+          ticks={[
+            zoom.zoomedData[0]?.time ?? 0,
+            zoom.zoomedData[zoom.zoomedData.length - 1]?.time ?? 0,
+          ]}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
+          tickMargin={LAP_STRIP_TICK_MARGIN}
           tickFormatter={formatChartTime}
         />
         <YAxis
+          domain={['auto', 'auto']}
           yAxisId="left"
+          width={chartTheme.compactYAxisWidth}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
-          tickCount={compact ? 3 : undefined}
-          tickFormatter={(v: number) => formatTick(v, compact ? undefined : 'rpm')}
+          tickCount={3}
+          tickFormatter={(v: number) => formatTick(v)}
         />
-        <RechartsTooltip
-          contentStyle={chartTheme.tooltip.contentStyle}
-          labelStyle={chartTheme.tooltip.labelStyle}
-          isAnimationActive={chartTheme.tooltip.isAnimationActive}
-          separator={chartTheme.tooltip.separator}
-          labelFormatter={(v) => formatChartTime(Number(v))}
-        />
+        <RechartsTooltip {...hoverOnlyTooltip} />
+        <LapBands rows={zoom.zoomedData} xKey="time" yAxisId="left" />
         <Line
           yAxisId="left"
           type="monotone"
@@ -85,10 +75,9 @@ export const CadenceChart = (props: CadenceChartProps) => {
           stroke={tokens.chartCadence}
           strokeWidth={1.5}
           dot={false}
-          connectNulls
           name={m.ui_chart_series_cadence()}
         />
-        {zoom.refAreaLeft && zoom.refAreaRight && (
+        {zoom.refAreaLeft !== null && zoom.refAreaRight !== null && (
           <ReferenceArea
             yAxisId="left"
             x1={zoom.refAreaLeft}

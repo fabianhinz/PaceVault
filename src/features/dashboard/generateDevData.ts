@@ -1,12 +1,7 @@
 import { decode } from '@googlemaps/polyline-codec';
+import { v4 } from 'uuid';
 import type { QueryClient } from '@tanstack/react-query';
-import type {
-  Sport,
-  SessionFields,
-  SessionRecord,
-  SessionLap,
-  TrainingSession,
-} from '@/packages/engine/types.ts';
+import type { Sport, SessionRecord, SessionLap, TrainingSession } from '@/packages/engine/types.ts';
 import { buildSessionGPS } from '@/packages/engine/gps.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
@@ -42,7 +37,7 @@ const PERSONA = {
   maxHr: 178,
   restHr: 48,
   ftp: 200,
-  thresholdPace: 300, // 5:00/km
+  thresholdPace: 300,
 };
 
 const randomBetween = (min: number, max: number): number => min + Math.random() * (max - min);
@@ -70,7 +65,6 @@ const INTENSITY_CONFIG: Record<
     running: { durationRange: [1500, 2400], speedRange: [0.65, 0.75], hrRange: [0.5, 0.6] },
     cycling: { durationRange: [1500, 2400], speedRange: [0.65, 0.75], hrRange: [0.5, 0.6] },
   },
-  // Indoor/treadmill sessions: full records but no GPS — triggers the no-GPS banner
   indoor: {
     running: { durationRange: [1800, 3000], speedRange: [0.7, 0.85], hrRange: [0.6, 0.7] },
     cycling: { durationRange: [1800, 3600], speedRange: [0.6, 0.75], hrRange: [0.6, 0.7] },
@@ -80,7 +74,6 @@ const INTENSITY_CONFIG: Record<
 const pickRoute = (routeData: RouteData, sport: 'running' | 'cycling', intent: SessionIntent) => {
   const routes = routeData[sport];
   if (intent === 'long-run') {
-    // Pick the longest route
     return routes.reduce((longest, r) => {
       if (r.distanceM > longest.distanceM) {
         return r;
@@ -89,7 +82,6 @@ const pickRoute = (routeData: RouteData, sport: 'running' | 'cycling', intent: S
     });
   }
   if (intent === 'high-intensity') {
-    // Pick one of the shorter routes
     const sorted = [...routes].sort((a, b) => a.distanceM - b.distanceM);
     const shortRoutes = sorted.slice(0, Math.max(2, Math.ceil(sorted.length / 2)));
     const picked = shortRoutes[Math.floor(Math.random() * shortRoutes.length)];
@@ -141,7 +133,6 @@ const generateRecordsWithGPS = (
   }
 
   if (intent !== 'indoor') {
-    // Overlay GPS coordinates from real routes
     const route = pickRoute(routeData, sport, intent);
     const gpsPoints = decodeAndFitGPS(route.polyline, durationSec);
     for (let ri = 0; ri < records.length; ri++) {
@@ -156,49 +147,44 @@ const generateRecordsWithGPS = (
   return records;
 };
 
-// Weekly template variations — each template is a 7-day plan (Mon=0 .. Sun=6)
-// Rules: max 2 sessions/day, long-run and high-intensity days are solo
 type DaySlot = Array<{ sport: Sport; intent: SessionIntent }>;
 
 const WEEKLY_TEMPLATES: Array<DaySlot[]> = [
-  // Template A
   [
-    /* Mon */ [{ sport: 'running', intent: 'recovery' }],
-    /* Tue */ [{ sport: 'running', intent: 'high-intensity' }],
-    /* Wed */ [
+    [{ sport: 'running', intent: 'recovery' }],
+    [{ sport: 'running', intent: 'high-intensity' }],
+    [
       { sport: 'cycling', intent: 'easy' },
       { sport: 'running', intent: 'easy' },
     ],
-    /* Thu */ [{ sport: 'running', intent: 'easy' }],
-    /* Fri */ [{ sport: 'running', intent: 'indoor' }],
-    /* Sat */ [{ sport: 'running', intent: 'long-run' }],
-    /* Sun */ [{ sport: 'cycling', intent: 'easy' }],
+    [{ sport: 'running', intent: 'easy' }],
+    [{ sport: 'running', intent: 'indoor' }],
+    [{ sport: 'running', intent: 'long-run' }],
+    [{ sport: 'cycling', intent: 'easy' }],
   ],
-  // Template B — swap double day to Thu
   [
-    /* Mon */ [{ sport: 'running', intent: 'easy' }],
-    /* Tue */ [{ sport: 'running', intent: 'high-intensity' }],
-    /* Wed */ [{ sport: 'cycling', intent: 'easy' }],
-    /* Thu */ [
+    [{ sport: 'running', intent: 'easy' }],
+    [{ sport: 'running', intent: 'high-intensity' }],
+    [{ sport: 'cycling', intent: 'easy' }],
+    [
       { sport: 'running', intent: 'easy' },
       { sport: 'cycling', intent: 'easy' },
     ],
-    /* Fri */ [{ sport: 'cycling', intent: 'indoor' }],
-    /* Sat */ [{ sport: 'running', intent: 'long-run' }],
-    /* Sun */ [{ sport: 'running', intent: 'recovery' }],
+    [{ sport: 'cycling', intent: 'indoor' }],
+    [{ sport: 'running', intent: 'long-run' }],
+    [{ sport: 'running', intent: 'recovery' }],
   ],
-  // Template C — long run on Sunday
   [
-    /* Mon */ [{ sport: 'running', intent: 'indoor' }],
-    /* Tue */ [{ sport: 'running', intent: 'high-intensity' }],
-    /* Wed */ [
+    [{ sport: 'running', intent: 'indoor' }],
+    [{ sport: 'running', intent: 'high-intensity' }],
+    [
       { sport: 'cycling', intent: 'easy' },
       { sport: 'running', intent: 'easy' },
     ],
-    /* Thu */ [{ sport: 'running', intent: 'easy' }],
-    /* Fri */ [{ sport: 'running', intent: 'recovery' }],
-    /* Sat */ [{ sport: 'cycling', intent: 'easy' }],
-    /* Sun */ [{ sport: 'running', intent: 'long-run' }],
+    [{ sport: 'running', intent: 'easy' }],
+    [{ sport: 'running', intent: 'recovery' }],
+    [{ sport: 'cycling', intent: 'easy' }],
+    [{ sport: 'running', intent: 'long-run' }],
   ],
 ];
 
@@ -209,7 +195,7 @@ const buildWeeklySchedule = (weekStartDayOffset: number): ScheduledSession[] => 
 
   for (let day = 0; day < 7; day++) {
     const dayOffset = weekStartDayOffset + day;
-    if (dayOffset < 0) continue; // skip days before our window
+    if (dayOffset < 0) continue;
     const slots = template[day];
     if (!slots) continue;
     for (const slot of slots) {
@@ -225,7 +211,6 @@ const generateAllSessions = (daySpan: number): ScheduledSession[] => {
   const allSessions: ScheduledSession[] = [];
 
   for (let week = 0; week < totalWeeks; week++) {
-    // Week 0 starts at dayOffset 0 (most recent), increasing into the past
     const weekStart = week * 7;
     const weekSessions = buildWeeklySchedule(weekStart);
     for (const s of weekSessions) {
@@ -247,7 +232,6 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
   useImportProgressStore.getState().beginImport({ foreground: true });
   const routeData = await fetchRouteData();
 
-  // Set user profile
   useUserStore.getState().setProfile({
     gender: PERSONA.gender,
     thresholds: {
@@ -265,8 +249,7 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
 
   const schedule = generateAllSessions(daySpan);
 
-  // Build session data
-  const sessionsToAdd: Array<Omit<TrainingSession, 'id' | 'createdAt' | 'isNew'>> = [];
+  const sessionsToAdd: Array<Omit<TrainingSession, 'createdAt' | 'isNew'>> = [];
   const sessionMeta: Array<{ sport: Sport; durationSec: number; intent: SessionIntent }> = [];
 
   for (const entry of schedule) {
@@ -276,13 +259,13 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
     sessionMeta.push({ sport: entry.sport, durationSec, intent: entry.intent });
 
     sessionsToAdd.push({
+      id: v4(),
       sport: entry.sport,
       date,
       duration: durationSec,
       distance: 0,
       tss: 0,
       stressMethod: 'duration',
-      sensorWarnings: [],
       isPlanned: false,
       hasDetailedRecords: true,
       source: { kind: 'demo' },
@@ -291,12 +274,7 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
 
   useImportProgressStore.getState().setImportTotal(schedule.length);
 
-  const sessionIds = useSessionsStore.getState().addSessions(sessionsToAdd);
-
-  const updates: Array<{
-    id: string;
-    session: SessionFields;
-  }> = [];
+  const completed: Array<Omit<TrainingSession, 'createdAt' | 'isNew'>> = [];
 
   const bulkEntries: Array<{
     sessionId: string;
@@ -305,11 +283,11 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
   }> = [];
   const gpsPromises: Promise<void>[] = [];
 
-  for (let i = 0; i < sessionIds.length; i++) {
-    const sessionId = sessionIds[i];
+  for (let i = 0; i < sessionsToAdd.length; i++) {
     const meta = sessionMeta[i];
     const original = sessionsToAdd[i];
-    if (!sessionId || !meta || !original) continue;
+    if (!meta || !original) continue;
+    const sessionId = original.id;
     const sport = meta.sport;
     const durationSec = meta.durationSec;
     const intent = meta.intent;
@@ -366,24 +344,21 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
       PERSONA.ftp,
     );
 
-    updates.push({
-      id: sessionId,
-      session: {
-        ...original,
-        distance: Math.round(distance),
-        avgHr: Math.round(avgHr),
-        maxHr: Math.round(maxHrVal),
-        avgSpeed: Math.round(avgSpeed * 100) / 100,
-        avgPace,
-        avgPower,
-        maxPower,
-        normalizedPower: stress.normalizedPower,
-        avgCadence,
-        elevationGain,
-        calories: Math.round(durationSec * randomBetween(0.15, 0.25)),
-        tss: stress.tss,
-        stressMethod: stress.stressMethod,
-      },
+    completed.push({
+      ...original,
+      distance: Math.round(distance),
+      avgHr: Math.round(avgHr),
+      maxHr: Math.round(maxHrVal),
+      avgSpeed: Math.round(avgSpeed * 100) / 100,
+      avgPace,
+      avgPower,
+      maxPower,
+      normalizedPower: stress.normalizedPower,
+      avgCadence,
+      elevationGain,
+      calories: Math.round(durationSec * randomBetween(0.15, 0.25)),
+      tss: stress.tss,
+      stressMethod: stress.stressMethod,
     });
 
     const laps = makeLapsFromRecords(records, 300);
@@ -399,14 +374,14 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
   useImportProgressStore.getState().markImportSaving();
   await Promise.all([bulkSaveSessionData(bulkEntries), ...gpsPromises]);
 
-  useSessionsStore.getState().replaceSessions(updates);
+  useSessionsStore.getState().addSessions(completed);
   invalidatePersonalBests(queryClient);
   useImportProgressStore.getState().finishImport({
     kind: 'imported',
-    imported: sessionIds.length,
+    imported: completed.length,
     duplicated: 0,
     failed: 0,
   });
 
-  return sessionIds.length;
+  return completed.length;
 };

@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { MouseHandlerDataParam } from 'recharts/types/synchronisation/types';
 
 interface UseChartZoomOptions<T> {
   data: T[];
   xKey: keyof T & string;
   onZoomComplete?: (from: string | number, to: string | number) => void;
-  onZoomReset?: () => void;
+  onClick?: (x: string | number) => void;
 }
 
 interface UseChartZoomReturn<T> {
@@ -23,14 +23,14 @@ export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomRe
   const data = options.data;
   const xKey = options.xKey;
   const onZoomComplete = options.onZoomComplete;
-  const onZoomReset = options.onZoomReset;
+  const onClick = options.onClick;
   const [refAreaLeft, setRefAreaLeft] = useState<string | number | null>(null);
   const [refAreaRight, setRefAreaRight] = useState<string | number | null>(null);
   const [startIndex, setStartIndex] = useState<number | null>(null);
   const [endIndex, setEndIndex] = useState<number | null>(null);
   const [prevData, setPrevData] = useState(data);
+  const pressedLabel = useRef<string | number | null>(null);
 
-  // Auto-reset when data changes (setState during render is the official React pattern)
   if (data !== prevData) {
     setPrevData(data);
     setStartIndex(null);
@@ -39,9 +39,8 @@ export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomRe
     setRefAreaRight(null);
   }
 
-  // Prevent text selection across the page during drag
   useEffect(() => {
-    if (!refAreaLeft) return;
+    if (refAreaLeft === null) return;
     const prev = document.body.style.userSelect;
     document.body.style.userSelect = 'none';
     return () => {
@@ -51,13 +50,14 @@ export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomRe
 
   const onMouseDown = useCallback((e: MouseHandlerDataParam) => {
     if (e.activeLabel == null) return;
+    pressedLabel.current = e.activeLabel;
     setRefAreaLeft(e.activeLabel);
     setRefAreaRight(null);
   }, []);
 
   const onMouseMove = useCallback(
     (e: MouseHandlerDataParam) => {
-      if (refAreaLeft && e.activeLabel != null) {
+      if (refAreaLeft !== null && e.activeLabel != null) {
         setRefAreaRight(e.activeLabel);
       }
     },
@@ -65,21 +65,17 @@ export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomRe
   );
 
   const onMouseUp = useCallback(() => {
-    if (!refAreaLeft || !refAreaRight) {
-      if (startIndex !== null && refAreaLeft) {
-        // Has internal zoom → reset it
-        setStartIndex(null);
-        setEndIndex(null);
-      } else if (refAreaLeft) {
-        // No internal zoom to reset → notify parent (used for custom range revert)
-        onZoomReset?.();
-      }
+    const pressed = pressedLabel.current;
+    pressedLabel.current = null;
+    if (pressed === null) return;
+    if (refAreaRight === null || refAreaRight === pressed) {
       setRefAreaLeft(null);
       setRefAreaRight(null);
+      onClick?.(pressed);
       return;
     }
 
-    let leftIdx = data.findIndex((d) => d[xKey] === refAreaLeft);
+    let leftIdx = data.findIndex((d) => d[xKey] === pressed);
     let rightIdx = data.findIndex((d) => d[xKey] === refAreaRight);
 
     if (leftIdx < 0 || rightIdx < 0) {
@@ -88,16 +84,8 @@ export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomRe
       return;
     }
 
-    // Normalize (handle right-to-left drag)
     if (leftIdx > rightIdx) {
       [leftIdx, rightIdx] = [rightIdx, leftIdx];
-    }
-
-    // Single-point click — no zoom
-    if (leftIdx === rightIdx) {
-      setRefAreaLeft(null);
-      setRefAreaRight(null);
-      return;
     }
 
     setStartIndex(leftIdx);
@@ -110,7 +98,7 @@ export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomRe
     if (leftItem && rightItem) {
       onZoomComplete?.(String(leftItem[xKey]), String(rightItem[xKey]));
     }
-  }, [data, xKey, refAreaLeft, refAreaRight, startIndex, onZoomComplete, onZoomReset]);
+  }, [data, xKey, refAreaRight, onZoomComplete, onClick]);
 
   const resetZoom = useCallback(() => {
     setStartIndex(null);

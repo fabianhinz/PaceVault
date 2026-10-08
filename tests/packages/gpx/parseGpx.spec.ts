@@ -88,6 +88,30 @@ describe('parseGpx', () => {
     expect(result?.points[0]).toEqual({ lat: 47.1, lng: 11.2, seg: 0 });
   });
 
+  it('keeps <time> on each track point instead of dropping it on import', () => {
+    const result = parseGpx(
+      gpx(
+        `<trk><trkseg>
+          <trkpt lat="47.1" lon="11.2"><time>2025-08-17T06:00:00Z</time></trkpt>
+          <trkpt lat="47.2" lon="11.3"><time>2025-08-17T06:00:05.500Z</time></trkpt>
+        </trkseg></trk>`,
+      ),
+    );
+    expect(result?.points.map((p) => p.time)).toEqual([
+      Date.parse('2025-08-17T06:00:00Z'),
+      Date.parse('2025-08-17T06:00:05.500Z'),
+    ]);
+  });
+
+  it('leaves time missing when it is absent or unparseable', () => {
+    const result = parseGpx(
+      gpx(
+        `<trk><trkseg><trkpt lat="47.1" lon="11.2"><time>yesterday</time></trkpt>${trkpt(47.2, 11.3)}</trkseg></trk>`,
+      ),
+    );
+    expect(result?.points.map((p) => p.time)).toEqual([undefined, undefined]);
+  });
+
   it('returns undefined name when no name element exists', () => {
     const result = parseGpx(
       gpx(`<trk><trkseg>${trkpt(47.1, 11.2)}${trkpt(47.2, 11.3)}</trkseg></trk>`),

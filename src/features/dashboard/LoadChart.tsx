@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   ComposedChart,
   Area,
@@ -6,17 +6,20 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
-  CartesianGrid,
   ReferenceArea,
 } from 'recharts';
 import { useFilteredMetrics } from './hooks/useFilteredMetrics.ts';
-import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
-import { Typography } from '@/components/ui/Typography.tsx';
-import { MetricLabel } from '@/components/ui/MetricLabel.tsx';
+import { ChartRow } from '@/components/ui/ChartsCard.tsx';
 import { ListItem } from '@/components/ui/List.tsx';
 import { Switch } from '@/components/ui/Switch.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
-import { chartTheme, formatChartDate } from '@/lib/chartTheme.ts';
+import { chartTheme } from '@/lib/chartTheme.ts';
+import { hoverOnlyTooltip, indexByX } from '@/lib/chartHover.ts';
+import { summarizeValues } from '@/lib/seriesSummary.ts';
+import { railInt } from '@/lib/railFormat.ts';
+import { useChartHoverStore } from '@/store/chartHover.ts';
+import { MultiSeriesRail, SeriesRail } from '@/components/charts/ChartRail.tsx';
+import { formatDashboardDate } from './dashboardDate.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { rangeMap } from '@/lib/timeRange.ts';
@@ -32,6 +35,8 @@ import { m } from '@/paraglide/messages.js';
 import { SPORTS, type Sport } from '@/packages/engine/types.ts';
 
 type GroupBy = 'day' | 'week' | 'month';
+
+const HOVER_GROUP = 'dashboard-load';
 
 const sportColors: Record<Sport, string> = {
   running: tokens.sportRunning,
@@ -130,39 +135,92 @@ export const LoadChart = () => {
     }));
   }, [chartData, groupBy]);
 
+  const groupedByDate = useMemo(() => indexByX(groupedData, 'date'), [groupedData]);
+  const tssSummary = useMemo(() => summarizeValues(chartData.map((d) => d.tss)), [chartData]);
+  const sportTotals = useMemo(() => {
+    const totals: Record<Sport, number> = { running: 0, cycling: 0 };
+    for (const d of chartData) {
+      totals.running += d.running;
+      totals.cycling += d.cycling;
+    }
+    return totals;
+  }, [chartData]);
+
+  let avgPerBucket: number | undefined = undefined;
+  if (groupedData.length > 0) {
+    avgPerBucket = tssSummary.total / groupedData.length;
+  }
+
+  const onHover = useCallback((date: string | null) => {
+    if (date == null) {
+      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
+      return;
+    }
+    useChartHoverStore.getState().setChartHover(HOVER_GROUP, date);
+  }, []);
+
+  useEffect(() => () => useChartHoverStore.getState().clearChartHover(HOVER_GROUP), []);
+
+  const rail = showSportColors ? (
+    <MultiSeriesRail
+      group={HOVER_GROUP}
+      restHeader={m.ui_rail_total()}
+      formatX={formatDashboardDate}
+      isKnownX={(x) => groupedByDate.has(x)}
+      rows={SPORTS.map((sport) => ({
+        key: sport,
+        name: sportNames[sport](),
+        color: sportColors[sport],
+        rest: { value: railInt(sportTotals[sport]) },
+        readingAt: (x) => {
+          const point = groupedByDate.get(x);
+          if (!point) return undefined;
+          return { value: railInt(point[sport]) };
+        },
+      }))}
+    />
+  ) : (
+    <SeriesRail
+      group={HOVER_GROUP}
+      formatX={formatDashboardDate}
+      rest={{
+        header: m.ui_rail_total(),
+        value: railInt(tssSummary.total),
+        secondary: `${m.ui_rail_avg()} ${railInt(avgPerBucket)}`,
+      }}
+      readingAt={(x) => {
+        const point = groupedByDate.get(x);
+        if (!point) return undefined;
+        return {
+          value: railInt(point.tss),
+          secondary: `${m.ui_rail_avg()} ${railInt(avgPerBucket)}`,
+        };
+      }}
+    />
+  );
+
   const zoom = useChartZoom({
     data: groupedData,
     xKey: 'date',
     onZoomComplete: dashboardZoom.onZoomComplete,
-    onZoomReset: dashboardZoom.onZoomReset,
   });
 
   const tickFormatter = (v: string) => {
-    if (groupBy === 'month') {
-      const d = new Date(v + '-01T00:00:00');
-      return d.toLocaleString(undefined, { month: 'short' });
-    }
-    const d = new Date(v + 'T00:00:00');
-    if (dashboardZoom.range === '7d') {
+    if (groupBy !== 'month' && dashboardZoom.range === '7d') {
+      const d = new Date(v + 'T00:00:00');
       const label = dayLabels[(d.getDay() + 6) % 7];
       if (label) return label();
     }
-    return `${d.getMonth() + 1}/${d.getDate()}`;
+    return formatDashboardDate(v);
   };
 
   return (
-    <ChartPreviewCard
-      title=""
-      titleSlot={
-        <div className="flex items-center gap-1 flex-1">
-          <Typography variant="title" as="h3">
-            {METRIC_EXPLANATIONS.tss.friendlyName}
-          </Typography>
-          <MetricLabel metricId="tss" size="sm" />
-        </div>
-      }
-      subtitle={METRIC_EXPLANATIONS.tss.oneLiner}
-      compactHeight="h-64"
+    <ChartRow
+      title={METRIC_EXPLANATIONS.tss.friendlyName}
+      metricId="tss"
+      secondary={METRIC_EXPLANATIONS.tss.oneLiner}
+      height="h-64"
+      rail={groupedData.length > 0 ? rail : undefined}
       footer={
         <ListItem primary={m.ui_sport_color_title()} secondary={m.ui_sport_color_desc()}>
           <Switch
@@ -175,111 +233,103 @@ export const LoadChart = () => {
         </ListItem>
       }
     >
-      {(mode) => {
-        const compact = mode === 'compact';
-        return groupedData.length > 0 ? (
-          <TabsPrimitive.Root
-            value={groupBy}
-            onValueChange={(v) => useFiltersStore.getState().setLoadChartGroupBy(v as GroupBy)}
-            className="h-full flex flex-col"
-          >
-            <TabsPrimitive.List className="inline-flex gap-1 mb-1">
-              {groupByTabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <TabsTrigger
-                    key={tab.key}
-                    value={tab.key}
-                    disabled={isGroupingDisabled && tab.key !== 'day'}
-                    className="flex-none gap-1 rounded-lg px-2 py-1 text-xs"
-                  >
-                    <Icon size={12} />
-                    {tab.label()}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsPrimitive.List>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart
-                  data={zoom.zoomedData}
-                  onMouseDown={zoom.onMouseDown}
-                  onMouseMove={zoom.onMouseMove}
-                  onMouseUp={zoom.onMouseUp}
+      {groupedData.length > 0 ? (
+        <TabsPrimitive.Root
+          value={groupBy}
+          onValueChange={(v) => useFiltersStore.getState().setLoadChartGroupBy(v as GroupBy)}
+          className="h-full flex flex-col"
+        >
+          <TabsPrimitive.List className="inline-flex gap-1 mb-1">
+            {groupByTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <TabsTrigger
+                  key={tab.key}
+                  value={tab.key}
+                  disabled={isGroupingDisabled && tab.key !== 'day'}
+                  className="flex-none gap-1 rounded-lg px-2 py-1 text-xs"
                 >
-                  {!compact && (
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />
-                  )}
-                  <XAxis
-                    dataKey="date"
-                    ticks={
-                      compact
-                        ? [
-                            zoom.zoomedData[0]?.date,
-                            zoom.zoomedData[zoom.zoomedData.length - 1]?.date,
-                          ].filter((v): v is string => v != null)
-                        : undefined
-                    }
-                    tick={chartTheme.tick}
-                    tickLine={false}
-                    axisLine={chartTheme.axisLine}
-                    tickFormatter={tickFormatter}
-                  />
-                  <YAxis
-                    tick={chartTheme.tick}
-                    tickLine={false}
-                    axisLine={compact ? false : chartTheme.axisLine}
-                    width={40}
-                    tickCount={compact ? 3 : undefined}
-                    tickFormatter={(v: number) => String(Math.round(v))}
-                  />
-                  <RechartsTooltip
-                    contentStyle={chartTheme.tooltip.contentStyle}
-                    labelStyle={chartTheme.tooltip.labelStyle}
-                    isAnimationActive={chartTheme.tooltip.isAnimationActive}
-                    separator={chartTheme.tooltip.separator}
-                    labelFormatter={(v) => formatChartDate(String(v))}
-                  />
-                  {showSportColors ? (
-                    SPORTS.map((sport) => (
-                      <Area
-                        key={sport}
-                        type="step"
-                        dataKey={sport}
-                        stackId="sport"
-                        fill={sportColors[sport]}
-                        fillOpacity={1}
-                        stroke="none"
-                        dot={false}
-                        name={sportNames[sport]()}
-                      />
-                    ))
-                  ) : (
+                  <Icon size={12} />
+                  {tab.label()}
+                </TabsTrigger>
+              );
+            })}
+          </TabsPrimitive.List>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart
+                data={zoom.zoomedData}
+                onMouseDown={zoom.onMouseDown}
+                onMouseMove={(e) => {
+                  zoom.onMouseMove(e);
+                  if (e.activeLabel != null) onHover(String(e.activeLabel));
+                }}
+                onMouseUp={zoom.onMouseUp}
+                onMouseLeave={() => onHover(null)}
+                onTouchMove={(e) => {
+                  if (e.activeLabel != null) onHover(String(e.activeLabel));
+                }}
+                onTouchEnd={() => onHover(null)}
+              >
+                <XAxis
+                  dataKey="date"
+                  ticks={[
+                    zoom.zoomedData[0]?.date,
+                    zoom.zoomedData[zoom.zoomedData.length - 1]?.date,
+                  ].filter((v): v is string => v != null)}
+                  tick={chartTheme.tick}
+                  tickLine={false}
+                  axisLine={chartTheme.axisLine}
+                  tickFormatter={tickFormatter}
+                />
+                <YAxis
+                  tick={chartTheme.tick}
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                  tickCount={3}
+                  tickFormatter={(v: number) => String(Math.round(v))}
+                />
+                <RechartsTooltip {...hoverOnlyTooltip} />
+                {showSportColors ? (
+                  SPORTS.map((sport) => (
                     <Area
+                      key={sport}
                       type="step"
-                      dataKey="tss"
-                      fill={tokens.chartLoad}
+                      dataKey={sport}
+                      stackId="sport"
+                      fill={sportColors[sport]}
                       fillOpacity={1}
                       stroke="none"
                       dot={false}
-                      name={m.ui_chart_series_tss()}
+                      name={sportNames[sport]()}
                     />
-                  )}
-                  {zoom.refAreaLeft && zoom.refAreaRight && (
-                    <ReferenceArea
-                      x1={zoom.refAreaLeft}
-                      x2={zoom.refAreaRight}
-                      strokeOpacity={0.3}
-                      fill={tokens.accent}
-                      fillOpacity={0.15}
-                    />
-                  )}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </TabsPrimitive.Root>
-        ) : null;
-      }}
-    </ChartPreviewCard>
+                  ))
+                ) : (
+                  <Area
+                    type="step"
+                    dataKey="tss"
+                    fill={tokens.chartLoad}
+                    fillOpacity={1}
+                    stroke="none"
+                    dot={false}
+                    name={m.ui_chart_series_tss()}
+                  />
+                )}
+                {zoom.refAreaLeft && zoom.refAreaRight && (
+                  <ReferenceArea
+                    x1={zoom.refAreaLeft}
+                    x2={zoom.refAreaRight}
+                    strokeOpacity={0.3}
+                    fill={tokens.accent}
+                    fillOpacity={0.15}
+                  />
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </TabsPrimitive.Root>
+      ) : null}
+    </ChartRow>
   );
 };

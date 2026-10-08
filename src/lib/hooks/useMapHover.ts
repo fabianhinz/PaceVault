@@ -7,7 +7,7 @@ const setHovered = {
   studioRoute: (id: string | null) => useMapFocusStore.getState().setHoveredStudioRoute(id),
 };
 
-export type MapHoverKind = keyof typeof setHovered;
+type MapHoverKind = keyof typeof setHovered;
 
 /**
  * Hovering a list item highlights the matching entity on the map (desktop

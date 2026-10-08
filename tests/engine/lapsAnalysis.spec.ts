@@ -2,12 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   analyzeLaps,
   detectIntervals,
-  detectProgressiveOverload,
   filterRecordsByLap,
   enrichLapFromRecords,
   enrichAllLaps,
-  findLapIndexAtCoordinate,
-  findDynamicLapIndexAtCoordinate,
 } from '@/lib/laps.ts';
 import type { SessionLap, SessionRecord } from '@/packages/engine/types.ts';
 import { makeLaps, makeCyclingRecords, makeRunningRecords } from '@tests/factories/records.ts';
@@ -35,7 +32,6 @@ describe('analyzeLaps', () => {
     const laps = [makeLap({ distance: 1000, totalTimerTime: 300 })];
     const result = analyzeLaps(laps);
     expect(result).toHaveLength(1);
-    // 300s / 1km = 300 sec/km
     expect(result[0].paceSecPerKm).toBe(300);
   });
 
@@ -45,16 +41,36 @@ describe('analyzeLaps', () => {
     expect(result[0].paceSecPerKm).toBeUndefined();
   });
 
-  it('marks intervals only when there are mixed intensities', () => {
+  it('marks intervals when recoveries sit between active laps', () => {
     const laps = [
       makeLap({ lapIndex: 0, intensity: 'active' }),
       makeLap({ lapIndex: 1, intensity: 'rest' }),
       makeLap({ lapIndex: 2, intensity: 'active' }),
+      makeLap({ lapIndex: 3, intensity: 'rest' }),
+      makeLap({ lapIndex: 4, intensity: 'active' }),
     ];
     const result = analyzeLaps(laps);
-    expect(result[0].isInterval).toBe(true);
-    expect(result[1].isInterval).toBe(false);
-    expect(result[2].isInterval).toBe(true);
+    expect(result.map((lap) => lap.isInterval)).toEqual([true, false, true, false, true]);
+  });
+
+  it('steady run with a trailing recovery lap is not detected as intervals', () => {
+    const laps = [
+      ...Array.from({ length: 13 }, (_, i) => makeLap({ lapIndex: i, intensity: 'active' })),
+      makeLap({ lapIndex: 13, intensity: 'recovery', distance: 683 }),
+    ];
+    expect(analyzeLaps(laps).some((lap) => lap.isInterval)).toBe(false);
+    expect(detectIntervals(laps)).toEqual([]);
+  });
+
+  it('a single recovery between two active laps is not an interval session', () => {
+    const laps = [
+      makeLap({ lapIndex: 0, intensity: 'warmup' }),
+      makeLap({ lapIndex: 1, intensity: 'active' }),
+      makeLap({ lapIndex: 2, intensity: 'rest' }),
+      makeLap({ lapIndex: 3, intensity: 'active' }),
+      makeLap({ lapIndex: 4, intensity: 'cooldown' }),
+    ];
+    expect(analyzeLaps(laps).some((lap) => lap.isInterval)).toBe(false);
   });
 
   it('all-active laps are not intervals (steady state)', () => {
@@ -70,7 +86,6 @@ describe('analyzeLaps', () => {
   it('uses movingTime for pace when available', () => {
     const laps = [makeLap({ distance: 1000, totalTimerTime: 300, totalMovingTime: 280 })];
     const result = analyzeLaps(laps);
-    // 280s / 1km = 280 sec/km
     expect(result[0].paceSecPerKm).toBe(280);
   });
 });
@@ -90,15 +105,17 @@ describe('detectIntervals', () => {
       makeLap({ lapIndex: 1, intensity: 'rest', minHr: 130 }),
       makeLap({ lapIndex: 2, intensity: 'active', maxHr: 175 }),
       makeLap({ lapIndex: 3, intensity: 'rest', minHr: 135 }),
+      makeLap({ lapIndex: 4, intensity: 'active', maxHr: 178 }),
+      makeLap({ lapIndex: 5, intensity: 'rest', minHr: 140 }),
     ];
     const pairs = detectIntervals(laps);
-    expect(pairs).toHaveLength(2);
+    expect(pairs).toHaveLength(3);
     expect(pairs[0].active.lapIndex).toBe(0);
     expect(pairs[0].recovery?.lapIndex).toBe(1);
-    expect(pairs[0].hrRecovery).toBe(40); // 170 - 130
+    expect(pairs[0].hrDropActiveMaxToRecoveryMin).toBe(40);
     expect(pairs[1].active.lapIndex).toBe(2);
     expect(pairs[1].recovery?.lapIndex).toBe(3);
-    expect(pairs[1].hrRecovery).toBe(40); // 175 - 135
+    expect(pairs[1].hrDropActiveMaxToRecoveryMin).toBe(40);
   });
 
   it('handles trailing active lap without recovery', () => {
@@ -106,138 +123,26 @@ describe('detectIntervals', () => {
       makeLap({ lapIndex: 0, intensity: 'active', maxHr: 170 }),
       makeLap({ lapIndex: 1, intensity: 'rest', minHr: 130 }),
       makeLap({ lapIndex: 2, intensity: 'active', maxHr: 175 }),
+      makeLap({ lapIndex: 3, intensity: 'rest', minHr: 132 }),
+      makeLap({ lapIndex: 4, intensity: 'active', maxHr: 176 }),
     ];
     const pairs = detectIntervals(laps);
-    expect(pairs).toHaveLength(2);
-    expect(pairs[1].recovery).toBeUndefined();
-    expect(pairs[1].hrRecovery).toBeUndefined();
+    expect(pairs).toHaveLength(3);
+    expect(pairs[2].recovery).toBeUndefined();
+    expect(pairs[2].hrDropActiveMaxToRecoveryMin).toBeUndefined();
   });
 
   it('handles missing HR data gracefully', () => {
     const laps = [
       makeLap({ lapIndex: 0, intensity: 'active' }),
       makeLap({ lapIndex: 1, intensity: 'rest' }),
+      makeLap({ lapIndex: 2, intensity: 'active' }),
+      makeLap({ lapIndex: 3, intensity: 'rest' }),
+      makeLap({ lapIndex: 4, intensity: 'active' }),
     ];
     const pairs = detectIntervals(laps);
-    expect(pairs).toHaveLength(1);
-    expect(pairs[0].hrRecovery).toBeUndefined();
-  });
-});
-
-describe('detectProgressiveOverload', () => {
-  it('returns stable with single lap', () => {
-    const result = detectProgressiveOverload([makeLap()]);
-    expect(result.trend).toBe('stable');
-    expect(result.lapCount).toBe(1);
-    expect(result.paceDriftPercent).toBeUndefined();
-  });
-
-  it('detects fading: pace slowing across intervals', () => {
-    const laps = [
-      makeLap({
-        lapIndex: 0,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 300,
-        avgHr: 155,
-      }),
-      makeLap({ lapIndex: 1, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 2,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 330,
-        avgHr: 162,
-      }),
-      makeLap({ lapIndex: 3, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 4,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 360,
-        avgHr: 168,
-      }),
-    ];
-    const result = detectProgressiveOverload(laps);
-    expect(result.trend).toBe('fading');
-    expect(result.lapCount).toBe(3);
-    expect(result.paceDriftPercent).toBeDefined();
-    expect(result.paceDriftPercent ?? 0).toBeGreaterThan(3);
-  });
-
-  it('detects stable: minimal drift', () => {
-    const laps = [
-      makeLap({
-        lapIndex: 0,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 300,
-        avgHr: 155,
-      }),
-      makeLap({ lapIndex: 1, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 2,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 303,
-        avgHr: 156,
-      }),
-      makeLap({ lapIndex: 3, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 4,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 302,
-        avgHr: 157,
-      }),
-    ];
-    const result = detectProgressiveOverload(laps);
-    expect(result.trend).toBe('stable');
-  });
-
-  it('detects building: pace improving (negative drift)', () => {
-    const laps = [
-      makeLap({
-        lapIndex: 0,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 330,
-        avgHr: 155,
-      }),
-      makeLap({ lapIndex: 1, intensity: 'rest', distance: 500, totalTimerTime: 180 }),
-      makeLap({
-        lapIndex: 2,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 300,
-        avgHr: 162,
-      }),
-    ];
-    const result = detectProgressiveOverload(laps);
-    expect(result.trend).toBe('building');
-    expect(result.paceDriftPercent ?? 0).toBeLessThan(-3);
-  });
-
-  it('uses all laps when no intervals detected (steady state)', () => {
-    const laps = [
-      makeLap({
-        lapIndex: 0,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 300,
-        avgHr: 150,
-      }),
-      makeLap({
-        lapIndex: 1,
-        intensity: 'active',
-        distance: 1000,
-        totalTimerTime: 330,
-        avgHr: 158,
-      }),
-    ];
-    const result = detectProgressiveOverload(laps);
-    expect(result.lapCount).toBe(2);
-    expect(result.paceDriftPercent).toBeDefined();
+    expect(pairs).toHaveLength(3);
+    expect(pairs[0].hrDropActiveMaxToRecoveryMin).toBeUndefined();
   });
 });
 
@@ -248,7 +153,7 @@ describe('filterRecordsByLap', () => {
       { timestamp: 0 },
       { timestamp: 150 },
       { timestamp: 299 },
-      { timestamp: 300 }, // excluded (endTime boundary)
+      { timestamp: 300 },
       { timestamp: 500 },
     ];
     const result = filterRecordsByLap(records, lap, 0);
@@ -264,10 +169,10 @@ describe('filterRecordsByLap', () => {
     });
     const records: SessionRecord[] = [
       { timestamp: 200 },
-      { timestamp: 300 }, // lap start
+      { timestamp: 300 },
       { timestamp: 450 },
       { timestamp: 599 },
-      { timestamp: 600 }, // excluded
+      { timestamp: 600 },
     ];
     const result = filterRecordsByLap(records, lap, sessionStartMs);
     expect(result).toHaveLength(3);
@@ -303,7 +208,6 @@ describe('enrichLapFromRecords', () => {
     const result = enrichLapFromRecords(0, records);
     expect(result.minSpeed).toBeDefined();
     expect(result.minSpeed ?? 0).toBeGreaterThan(0);
-    // running records don't have power
     expect(result.avgPower).toBeUndefined();
   });
 
@@ -356,7 +260,7 @@ describe('enrichLapFromRecords', () => {
 
   it('returns true minimum HR including outliers', () => {
     const records: SessionRecord[] = [
-      { timestamp: 0, hr: 50 }, // sensor glitch — now included as true min
+      { timestamp: 0, hr: 50 },
       ...Array.from({ length: 20 }, (_, i) => ({
         sessionId: 'test',
         timestamp: i + 1,
@@ -364,7 +268,6 @@ describe('enrichLapFromRecords', () => {
       })),
     ];
     const result = enrichLapFromRecords(0, records);
-    // sorted: [50, 140, 141, ..., 159] — true min is 50
     expect(result.minHr).toBe(50);
   });
 
@@ -393,7 +296,6 @@ describe('enrichLapFromRecords', () => {
 describe('enrichAllLaps', () => {
   it('enriches each lap with correct record slice (cycling)', () => {
     const laps = makeLaps(5);
-    // makeLaps: 300s per lap → total 1500s. Generate matching records.
     const records = makeCyclingRecords(1500);
     const result = enrichAllLaps(laps, records);
     expect(result).toHaveLength(5);
@@ -423,107 +325,5 @@ describe('enrichAllLaps', () => {
   it('returns empty for empty records', () => {
     const laps = makeLaps(3);
     expect(enrichAllLaps(laps, [])).toHaveLength(0);
-  });
-});
-
-describe('findLapIndexAtCoordinate', () => {
-  const baseLaps: SessionLap[] = [
-    makeLap({ lapIndex: 0, startTime: 0, endTime: 300_000 }),
-    makeLap({ lapIndex: 1, startTime: 300_000, endTime: 600_000 }),
-    makeLap({ lapIndex: 2, startTime: 600_000, endTime: 900_000 }),
-  ];
-
-  const makeGpsRecord = (timestamp: number, lat: number, lng: number): SessionRecord => ({
-    timestamp,
-    lat,
-    lng,
-  });
-
-  it('returns undefined for empty laps', () => {
-    const records = [makeGpsRecord(10, 48.0, 11.0)];
-    expect(findLapIndexAtCoordinate([11.0, 48.0], records, [])).toBeUndefined();
-  });
-
-  it('returns undefined for empty records', () => {
-    expect(findLapIndexAtCoordinate([11.0, 48.0], [], baseLaps)).toBeUndefined();
-  });
-
-  it('returns undefined when records have no GPS data', () => {
-    const records: SessionRecord[] = [{ timestamp: 10 }, { timestamp: 100 }];
-    expect(findLapIndexAtCoordinate([11.0, 48.0], records, baseLaps)).toBeUndefined();
-  });
-
-  it('finds the correct lap for a coordinate near a record in lap 0', () => {
-    const records = [
-      makeGpsRecord(50, 48.1, 11.1), // lap 0 (0–300s)
-      makeGpsRecord(350, 48.2, 11.2), // lap 1 (300–600s)
-      makeGpsRecord(650, 48.3, 11.3), // lap 2 (600–900s)
-    ];
-    // Click near first record
-    expect(findLapIndexAtCoordinate([11.1001, 48.1001], records, baseLaps)).toBe(0);
-  });
-
-  it('finds the correct lap for a coordinate near a record in lap 1', () => {
-    const records = [
-      makeGpsRecord(50, 48.1, 11.1),
-      makeGpsRecord(350, 48.2, 11.2),
-      makeGpsRecord(650, 48.3, 11.3),
-    ];
-    expect(findLapIndexAtCoordinate([11.2001, 48.2001], records, baseLaps)).toBe(1);
-  });
-
-  it('returns last lap index as fallback when record exceeds lap bounds', () => {
-    const records = [makeGpsRecord(950, 48.1, 11.1)]; // beyond all lap end times
-    expect(findLapIndexAtCoordinate([11.1, 48.1], records, baseLaps)).toBe(2);
-  });
-});
-
-describe('findDynamicLapIndexAtCoordinate', () => {
-  const makeDistRecord = (
-    timestamp: number,
-    lat: number,
-    lng: number,
-    distance: number,
-  ): SessionRecord => ({
-    timestamp,
-    lat,
-    lng,
-    distance,
-  });
-
-  it('returns undefined for empty records', () => {
-    expect(findDynamicLapIndexAtCoordinate([11.0, 48.0], [], 1000, 3)).toBeUndefined();
-  });
-
-  it('returns undefined for zero split distance', () => {
-    const records = [makeDistRecord(10, 48.0, 11.0, 500)];
-    expect(findDynamicLapIndexAtCoordinate([11.0, 48.0], records, 0, 3)).toBeUndefined();
-  });
-
-  it('returns undefined when closest record has no distance', () => {
-    const records: SessionRecord[] = [{ timestamp: 10, lat: 48.0, lng: 11.0 }];
-    expect(findDynamicLapIndexAtCoordinate([11.0, 48.0], records, 1000, 3)).toBeUndefined();
-  });
-
-  it('maps coordinate to correct dynamic lap by distance', () => {
-    const records = [
-      makeDistRecord(0, 48.1, 11.1, 0),
-      makeDistRecord(100, 48.2, 11.2, 500),
-      makeDistRecord(200, 48.3, 11.3, 1200), // lap 1 (1000–2000m)
-      makeDistRecord(300, 48.4, 11.4, 2500), // lap 2 (2000–3000m)
-    ];
-    // Click near record at 1200m → should be lap 1
-    expect(findDynamicLapIndexAtCoordinate([11.3001, 48.3001], records, 1000, 3)).toBe(1);
-  });
-
-  it('clamps to last lap when distance exceeds total', () => {
-    const records = [makeDistRecord(0, 48.1, 11.1, 0), makeDistRecord(100, 48.2, 11.2, 5000)];
-    // 5000m with 1000m splits → index 5, but only 3 laps → clamp to 2
-    expect(findDynamicLapIndexAtCoordinate([11.2, 48.2], records, 1000, 3)).toBe(2);
-  });
-
-  it('returns lap 0 for record at the start', () => {
-    const records = [makeDistRecord(0, 48.1, 11.1, 0)];
-    expect(findDynamicLapIndexAtCoordinate([11.1, 48.1], records, 1000, 5)).toBe(0);
   });
 });

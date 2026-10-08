@@ -5,44 +5,32 @@ import { getDB } from '@/lib/db';
 
 describe('sessions store', () => {
   it('deleteSession removes it', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
-    const id = useSessionsStore.getState().addSessions([data])[0] ?? '';
+    const { createdAt: _ca, ...data } = makeSession();
+    useSessionsStore.getState().addSessions([data]);
+    const id = data.id;
     expect(useSessionsStore.getState().sessions).toHaveLength(1);
 
     useSessionsStore.getState().deleteSession(id);
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
   });
 
-  it('addSessions batch-adds multiple sessions and returns IDs', () => {
+  it('addSessions batch-adds multiple sessions under the ids it is given', () => {
     const batch = [
-      makeSession(),
-      makeSession({ sport: 'running' }),
-      makeSession({ sport: 'cycling' }),
+      makeSession({ id: 'a' }),
+      makeSession({ id: 'b', sport: 'running' }),
+      makeSession({ id: 'c', sport: 'cycling' }),
     ];
-    const inputs = batch.map(({ id: _id, createdAt: _ca, ...data }) => data);
+    const inputs = batch.map(({ createdAt: _ca, ...data }) => data);
 
-    const ids = useSessionsStore.getState().addSessions(inputs);
-
-    expect(ids).toHaveLength(3);
-    ids.forEach((id) => {
-      expect(typeof id).toBe('string');
-      expect(id).toBeTruthy();
-    });
+    useSessionsStore.getState().addSessions(inputs);
 
     const sessions = useSessionsStore.getState().sessions;
-    expect(sessions).toHaveLength(3);
-    expect(sessions[0].sport).toBe('cycling');
-    expect(sessions[1].sport).toBe('running');
-    expect(sessions[2].sport).toBe('cycling');
-
-    // IDs returned match stored sessions
-    ids.forEach((id, i) => {
-      expect(sessions[i].id).toBe(id);
-    });
+    expect(sessions.map((s) => s.id)).toEqual(['a', 'b', 'c']);
+    expect(sessions.map((s) => s.sport)).toEqual(['cycling', 'running', 'cycling']);
   });
 
   it('does not badge added sessions as new unless asked to', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
+    const { createdAt: _ca, ...data } = makeSession();
     useSessionsStore.getState().addSessions([data]);
     useSessionsStore.getState().addSessions([data], { markNew: true });
 
@@ -50,14 +38,14 @@ describe('sessions store', () => {
   });
 
   it('addSessions with empty array is a no-op', () => {
-    const ids = useSessionsStore.getState().addSessions([]);
-    expect(ids).toHaveLength(0);
+    useSessionsStore.getState().addSessions([]);
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
   });
 
   it('renameSession updates the session name', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
-    const id = useSessionsStore.getState().addSessions([data])[0] ?? '';
+    const { createdAt: _ca, ...data } = makeSession();
+    useSessionsStore.getState().addSessions([data]);
+    const id = data.id;
 
     useSessionsStore.getState().renameSession(id, 'Morning Ride');
 
@@ -66,7 +54,7 @@ describe('sessions store', () => {
   });
 
   it('renameSession with unknown id is a no-op', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
+    const { createdAt: _ca, ...data } = makeSession();
     useSessionsStore.getState().addSessions([data]);
     const before = useSessionsStore.getState().sessions;
 
@@ -77,7 +65,7 @@ describe('sessions store', () => {
   });
 
   it('clearAll resets', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
+    const { createdAt: _ca, ...data } = makeSession();
     useSessionsStore.getState().addSessions([data]);
 
     expect(useSessionsStore.getState().sessions).toHaveLength(1);
@@ -87,8 +75,9 @@ describe('sessions store', () => {
   });
 
   it('replaceSessions preserves a cleared isNew so reimport does not re-badge', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
-    const id = useSessionsStore.getState().addSessions([data], { markNew: true })[0] ?? '';
+    const { createdAt: _ca, ...data } = makeSession();
+    useSessionsStore.getState().addSessions([data], { markNew: true });
+    const id = data.id;
     useSessionsStore.getState().markSessionSeen(id);
 
     const { id: _id2, createdAt: _ca2, ...updated } = makeSession({ sport: 'running' });
@@ -100,8 +89,9 @@ describe('sessions store', () => {
   });
 
   it('replaceSessions keeps a name the re-parsed file cannot recreate', () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession({ name: 'Evening Radfahren' });
-    const id = useSessionsStore.getState().addSessions([data])[0] ?? '';
+    const { createdAt: _ca, ...data } = makeSession({ name: 'Evening Radfahren' });
+    useSessionsStore.getState().addSessions([data]);
+    const id = data.id;
 
     const { id: _id2, createdAt: _ca2, ...updated } = makeSession({ name: undefined });
     useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
@@ -110,14 +100,11 @@ describe('sessions store', () => {
   });
 
   it('replaceSessions keeps the source the re-parsed file cannot know', () => {
-    const {
-      id: _id,
-      createdAt: _ca,
-      ...data
-    } = makeSession({
+    const { createdAt: _ca, ...data } = makeSession({
       source: { kind: 'intervals', activityId: 'i42' },
     });
-    const id = useSessionsStore.getState().addSessions([data])[0] ?? '';
+    useSessionsStore.getState().addSessions([data]);
+    const id = data.id;
 
     const {
       id: _id2,
@@ -162,10 +149,9 @@ describe('sessions store', () => {
   });
 
   it('persistence to IndexedDB', async () => {
-    const { id: _id, createdAt: _ca, ...data } = makeSession();
+    const { createdAt: _ca, ...data } = makeSession();
     useSessionsStore.getState().addSessions([data]);
 
-    // Allow async IDB write to complete
     await new Promise((r) => setTimeout(r, 50));
 
     const db = await getDB();

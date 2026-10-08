@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { Mountain, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ChartPreviewCard } from '@/components/ui/ChartPreviewCard.tsx';
+import { ChartRow, ChartsCard, ZoomResetPill } from '@/components/ui/ChartsCard.tsx';
 import { ElevationChart } from '@/components/charts/ElevationChart.tsx';
 import { GradeChart } from '@/components/charts/GradeChart.tsx';
 import { buildRouteProfile } from '@/packages/gpx/routeProfile.ts';
-import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
+import type { RouteElevationStats, RoutePoint } from '@/packages/gpx/routeGeometry.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { filterSeriesByKey } from '@/lib/chartData.ts';
+import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
+import { indexByX } from '@/lib/chartHover.ts';
+import { summarizeValues } from '@/lib/seriesSummary.ts';
+import { railGain, railInt, railLoss, railSigned1 } from '@/lib/railFormat.ts';
+import type { MetricId } from '@/lib/explanations.ts';
+import { SeriesRail } from '@/components/charts/ChartRail.tsx';
+import { buildRouteChartRows, gpsByX } from '@/lib/chartData.ts';
 import { routeDistanceXAxis } from '@/lib/chartTheme.ts';
 import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
 import { tokens } from '@/lib/tokens.ts';
@@ -19,117 +25,162 @@ interface ChartEntry {
   icon: LucideIcon;
   color: string;
   hasData: boolean;
-  render: (mode: 'compact' | 'expanded') => React.ReactNode;
+  metricId?: MetricId;
+  rail: React.ReactNode;
+  chart: React.ReactNode;
 }
 
-/**
- * Route twin of SessionChartsExplorer: elevation + grade over distance,
- * compact previews with synced zoom/tooltips, expandable cards, and chart
- * hover highlighting the matching point on the map track.
- */
-export const RouteChartsExplorer = (props: { points: RoutePoint[] }) => {
-  const profile = useMemo(() => buildRouteProfile(props.points), [props.points]);
-  const elevationData = profile.elevation;
-  const gradeData = profile.grade;
+interface RouteChartsExplorerProps {
+  points: RoutePoint[];
+  elevation: RouteElevationStats | undefined;
+}
 
-  // The series' dist values double as lookup keys back to the GPS coordinate.
-  const gpsByDist = useMemo(
-    () => new Map(elevationData.map((p) => [p.dist, [p.lng, p.lat] as [number, number]])),
-    [elevationData],
+const HOVER_GROUP = 'studio-detail';
+
+const formatHoverDist = (x: ChartHoverX) => routeDistanceXAxis.tickFormatter(Number(x));
+
+export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
+  const profile = useMemo(() => buildRouteProfile(props.points), [props.points]);
+
+  const zoom = useSyncedChartZoom();
+  const zoomRange = zoom.zoomRange;
+
+  const rows = useMemo(() => buildRouteChartRows(profile), [profile]);
+  const compactRows = useMemo(
+    () => (zoomRange ? buildRouteChartRows(profile, zoomRange) : rows),
+    [profile, zoomRange, rows],
+  );
+  const byDist = useMemo(
+    () => new Map([...indexByX(rows, 'dist'), ...indexByX(compactRows, 'dist')]),
+    [rows, compactRows],
+  );
+  const gpsLookup = useMemo(
+    () => new Map([...gpsByX(rows, 'dist'), ...gpsByX(compactRows, 'dist')]),
+    [rows, compactRows],
   );
 
-  const onActiveDistChange = useCallback(
+  const onHover = useCallback(
     (dist: number | null) => {
       if (dist == null) {
+        useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
         useMapFocusStore.getState().clearHoveredPoint();
         return;
       }
-      const point = gpsByDist.get(dist);
+      useChartHoverStore.getState().setChartHover(HOVER_GROUP, dist);
+      const point = gpsLookup.get(dist);
       if (point) {
         useMapFocusStore.getState().setHoveredPoint(point);
       }
     },
-    [gpsByDist],
+    [gpsLookup],
   );
 
-  useEffect(() => () => useMapFocusStore.getState().clearHoveredPoint(), []);
-
-  // Synced zoom state for compact mode
-  const zoom = useSyncedChartZoom();
-  const zoomRange = zoom.zoomRange;
-
-  const filteredElevationData = useMemo(
-    () =>
-      zoomRange
-        ? filterSeriesByKey(elevationData, 'dist', zoomRange.from, zoomRange.to)
-        : elevationData,
-    [elevationData, zoomRange],
-  );
-  const filteredGradeData = useMemo(
-    () =>
-      zoomRange ? filterSeriesByKey(gradeData, 'dist', zoomRange.from, zoomRange.to) : gradeData,
-    [gradeData, zoomRange],
+  useEffect(
+    () => () => {
+      useMapFocusStore.getState().clearHoveredPoint();
+      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
+    },
+    [],
   );
 
-  const charts: ChartEntry[] = useMemo(
-    () => [
-      {
-        key: 'elevation',
-        title: m.ui_stat_elevation(),
-        icon: Mountain,
-        color: tokens.chartElevation,
-        hasData: elevationData.length > 1,
-        render: (mode: 'compact' | 'expanded') => (
-          <ElevationChart
-            data={mode === 'compact' ? filteredElevationData : elevationData}
-            xAxis={routeDistanceXAxis}
-            mode={mode}
-            onActiveXChange={onActiveDistChange}
-            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
-          />
-        ),
-      },
-      {
-        key: 'grade',
-        title: m.ui_chart_title_grade(),
-        icon: TrendingUp,
-        color: tokens.chartGrade,
-        hasData: gradeData.length > 1,
-        render: (mode: 'compact' | 'expanded') => (
-          <GradeChart
-            data={mode === 'compact' ? filteredGradeData : gradeData}
-            xAxis={routeDistanceXAxis}
-            mode={mode}
-            onActiveXChange={onActiveDistChange}
-            onZoomComplete={mode === 'compact' ? zoom.onZoomComplete : undefined}
-            onZoomReset={mode === 'compact' ? zoom.onZoomReset : undefined}
-          />
-        ),
-      },
-    ],
-    [
-      elevationData,
-      gradeData,
-      filteredElevationData,
-      filteredGradeData,
-      onActiveDistChange,
-      zoom.onZoomComplete,
-      zoom.onZoomReset,
-    ],
+  const gradeSummary = useMemo(
+    () => summarizeValues(profile.grade.map((p) => p.grade)),
+    [profile.grade],
   );
+  const elevation = props.elevation;
+
+  const charts: ChartEntry[] = [
+    {
+      key: 'elevation',
+      title: m.ui_stat_elevation(),
+      icon: Mountain,
+      color: tokens.chartElevation,
+      metricId: 'elevation',
+      hasData: profile.elevation.length > 1,
+      rail: (
+        <SeriesRail
+          group={HOVER_GROUP}
+          unit="m"
+          formatX={formatHoverDist}
+          rest={{
+            header: '',
+            value: railGain(elevation?.gain),
+            secondary: `${railLoss(elevation?.loss)} m`,
+          }}
+          readingAt={(x) => {
+            const point = byDist.get(x);
+            if (!point) return undefined;
+            return {
+              value: railInt(point.elevation),
+              secondary: `${railGain(elevation?.gain)} m`,
+            };
+          }}
+        />
+      ),
+      chart: (
+        <ElevationChart
+          data={compactRows}
+          xAxis={routeDistanceXAxis}
+          onActiveXChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+        />
+      ),
+    },
+    {
+      key: 'grade',
+      title: m.ui_chart_title_grade(),
+      icon: TrendingUp,
+      color: tokens.chartGrade,
+      hasData: profile.grade.length > 1,
+      rail: (
+        <SeriesRail
+          group={HOVER_GROUP}
+          unit="%"
+          formatX={formatHoverDist}
+          rest={{
+            header: m.ui_rail_max(),
+            value: railSigned1(elevation?.maxGrade),
+            secondary: `${m.ui_rail_min()} ${railSigned1(gradeSummary.min)}`,
+          }}
+          readingAt={(x) => {
+            const point = byDist.get(x);
+            if (!point) return undefined;
+            return {
+              value: railSigned1(point.grade),
+              secondary: `${m.ui_rail_max()} ${railSigned1(elevation?.maxGrade)}`,
+            };
+          }}
+        />
+      ),
+      chart: (
+        <GradeChart
+          data={compactRows}
+          xAxis={routeDistanceXAxis}
+          onActiveXChange={onHover}
+          onZoomComplete={zoom.onZoomComplete}
+        />
+      ),
+    },
+  ];
 
   const visibleCharts = charts.filter((c) => c.hasData);
 
   if (visibleCharts.length === 0) return null;
 
   return (
-    <div className="space-y-3">
+    <ChartsCard zoomReset={<ZoomResetPill isZoomed={zoom.isZoomed} onReset={zoom.resetZoom} />}>
       {visibleCharts.map((chart) => (
-        <ChartPreviewCard key={chart.key} title={chart.title} icon={chart.icon} color={chart.color}>
-          {chart.render}
-        </ChartPreviewCard>
+        <ChartRow
+          key={chart.key}
+          title={chart.title}
+          icon={chart.icon}
+          color={chart.color}
+          metricId={chart.metricId}
+          rail={chart.rail}
+        >
+          {chart.chart}
+        </ChartRow>
       ))}
-    </div>
+    </ChartsCard>
   );
 };

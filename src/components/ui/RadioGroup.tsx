@@ -23,19 +23,18 @@ interface RadioGroupItemProps {
   value: string;
   children: ReactNode;
   className?: string;
+  disabled?: boolean;
   'aria-label'?: string;
 }
 
-/**
- * A selectable row that is itself the radio control (whole row is clickable).
- * The radio indicator renders leading, before the row content (Material spec).
- */
 export const RadioGroupItem = (props: RadioGroupItemProps) => (
   <RadioGroupPrimitive.Item
     value={props.value}
+    disabled={props.disabled}
     aria-label={props['aria-label']}
     className={cn(
       'group flex w-full cursor-pointer items-center gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-sunken',
+      'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
       props.className,
     )}
   >

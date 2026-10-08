@@ -4,97 +4,91 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
   ReferenceArea,
 } from 'recharts';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
+import { LapBands, LAP_STRIP_TICK_MARGIN } from '@/components/charts/LapBands.tsx';
+import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
+import type { ZoneScale } from '@/lib/zoneColors.ts';
+import { useZoneLineStroke } from '@/components/charts/ZoneGradient.tsx';
 import { formatPaceTick } from '@/lib/formatters.ts';
 import type { PacePoint } from '@/lib/chartData.ts';
 import { m } from '@/paraglide/messages.js';
 
 interface PaceChartProps {
   data: PacePoint[];
-  mode?: 'compact' | 'expanded';
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
-  onZoomReset?: () => void;
+  onSelectTime?: (time: number) => void;
+  zoneScale?: ZoneScale;
 }
 
 export const PaceChart = (props: PaceChartProps) => {
-  const compact = props.mode === 'compact';
   const zoom = useChartZoom({
     data: props.data,
     xKey: 'time',
     onZoomComplete: props.onZoomComplete,
-    onZoomReset: props.onZoomReset,
+    onClick: (x) => props.onSelectTime?.(Number(x)),
   });
+  const zoneLine = useZoneLineStroke(
+    props.zoneScale,
+    zoom.zoomedData.map((d) => d.pace),
+    true,
+  );
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart
-        syncId={compact ? 'session-detail' : undefined}
+        syncId={'session-detail'}
         data={zoom.zoomedData}
         onMouseDown={zoom.onMouseDown}
         onMouseMove={(e) => {
           zoom.onMouseMove(e);
-          if (compact && props.onActiveTimeChange && e.activeLabel != null)
+          if (props.onActiveTimeChange && e.activeLabel != null)
             props.onActiveTimeChange(Number(e.activeLabel));
         }}
         onMouseUp={zoom.onMouseUp}
-        onMouseLeave={
-          compact && props.onActiveTimeChange ? () => props.onActiveTimeChange?.(null) : undefined
-        }
+        {...chartHoverHandlers(props.onActiveTimeChange)}
       >
-        {!compact && <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.grid.stroke} />}
+        {zoneLine.defs}
         <XAxis
           dataKey="time"
-          ticks={
-            compact
-              ? [
-                  zoom.zoomedData[0]?.time ?? 0,
-                  zoom.zoomedData[zoom.zoomedData.length - 1]?.time ?? 0,
-                ]
-              : undefined
-          }
+          ticks={[
+            zoom.zoomedData[0]?.time ?? 0,
+            zoom.zoomedData[zoom.zoomedData.length - 1]?.time ?? 0,
+          ]}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={chartTheme.axisLine}
+          tickMargin={LAP_STRIP_TICK_MARGIN}
           tickFormatter={formatChartTime}
         />
         <YAxis
+          domain={['auto', 'auto']}
           yAxisId="left"
+          width={chartTheme.compactYAxisWidth}
           tick={chartTheme.tick}
           tickLine={false}
           axisLine={false}
           reversed
-          tickCount={compact ? 3 : undefined}
+          tickCount={3}
           tickFormatter={formatPaceTick}
         />
-        <RechartsTooltip
-          contentStyle={chartTheme.tooltip.contentStyle}
-          labelStyle={chartTheme.tooltip.labelStyle}
-          isAnimationActive={chartTheme.tooltip.isAnimationActive}
-          separator={chartTheme.tooltip.separator}
-          labelFormatter={(v) => formatChartTime(Number(v))}
-          formatter={(v: number | undefined) => [
-            v !== undefined ? formatPaceTick(v) : '',
-            m.ui_chart_series_pace(),
-          ]}
-        />
+        <RechartsTooltip {...hoverOnlyTooltip} />
+        <LapBands rows={zoom.zoomedData} xKey="time" yAxisId="left" />
         <Line
           yAxisId="left"
           type="monotone"
           dataKey="pace"
-          stroke={tokens.chartPace}
+          stroke={zoneLine.stroke ?? tokens.chartPace}
           strokeWidth={1.5}
           dot={false}
-          connectNulls
           name={m.ui_chart_series_pace()}
         />
-        {zoom.refAreaLeft && zoom.refAreaRight && (
+        {zoom.refAreaLeft !== null && zoom.refAreaRight !== null && (
           <ReferenceArea
             yAxisId="left"
             x1={zoom.refAreaLeft}

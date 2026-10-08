@@ -63,7 +63,6 @@ const makeSession = (overrides: Partial<TrainingSession> = {}): TrainingSession 
   distance: 10000,
   tss: 100,
   stressMethod: 'trimp',
-  sensorWarnings: [],
   isPlanned: false,
   hasDetailedRecords: true,
   createdAt: Date.now(),

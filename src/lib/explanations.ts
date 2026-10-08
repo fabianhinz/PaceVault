@@ -197,10 +197,6 @@ const anaerobicTE: MetricExplanation = {
   sports: ['all'],
 };
 
-// ---------------------------------------------------------------------------
-// Session stats (src/features/sessions/session/SessionStatsGrid.tsx)
-// ---------------------------------------------------------------------------
-
 const avgHr: MetricExplanation = {
   id: 'avgHr',
   shortLabel: m.exp_avgHr_shortLabel(),

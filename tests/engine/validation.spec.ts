@@ -7,9 +7,10 @@ import {
 } from '@tests/factories/records.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
-function makeRecord(overrides: Partial<SessionRecord>): SessionRecord {
-  return { timestamp: 0, ...overrides };
-}
+const makeRecord = (overrides: Partial<SessionRecord>): SessionRecord => ({
+  timestamp: 0,
+  ...overrides,
+});
 
 describe('validateRecords', () => {
   it('produces no warnings for clean cycling records', () => {
@@ -27,76 +28,66 @@ describe('validateRecords', () => {
   it('warns when HR exceeds 230 in more than 10 records', () => {
     const records = makeInvalidRecords('highHr');
     const warnings = validateRecords(records, 'cycling');
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0].field).toBe('hr');
-    expect(warnings[0].message).toContain('230 bpm');
+    expect(warnings).toEqual([
+      {
+        code: 'hr_above_max',
+        limit: 230,
+        count: records.filter((r) => r.hr !== undefined && r.hr > 230).length,
+      },
+    ]);
   });
 
   it('does not warn when HR exceeds 230 in exactly 10 records', () => {
     const records: SessionRecord[] = [];
-    // 10 records with high HR (boundary — should NOT trigger)
     for (let i = 0; i < 10; i++) {
       records.push(makeRecord({ timestamp: i, hr: 240 }));
     }
-    // 10 records with normal HR
     for (let i = 10; i < 20; i++) {
       records.push(makeRecord({ timestamp: i, hr: 150 }));
     }
     const warnings = validateRecords(records, 'cycling');
-    const hrWarnings = warnings.filter((w) => w.field === 'hr');
-    expect(hrWarnings).toHaveLength(0);
+    expect(warnings).toEqual([]);
   });
 
   it('warns when all HR values are zero', () => {
     const records = makeInvalidRecords('zeroHr');
     const warnings = validateRecords(records, 'cycling');
-    expect(warnings.some((w) => w.message.includes('sensor not connected'))).toBe(true);
+    expect(warnings).toContainEqual({ code: 'hr_all_zero' });
   });
 
   it('warns when power exceeds 2500W in more than 10 records', () => {
     const records = makeInvalidRecords('highPower');
     const warnings = validateRecords(records, 'cycling');
-    expect(warnings.some((w) => w.field === 'power')).toBe(true);
-    expect(warnings.find((w) => w.field === 'power')?.message).toContain('2500W');
+    expect(warnings.find((w) => w.code === 'power_above_max')).toMatchObject({ limit: 2500 });
   });
 
   it('warns when cycling speed exceeds 80 km/h in more than 10 records', () => {
     const records: SessionRecord[] = [];
     for (let i = 0; i < 15; i++) {
-      // 90 km/h = 25 m/s
       records.push(makeRecord({ timestamp: i, speed: 25 }));
     }
     const warnings = validateRecords(records, 'cycling');
-    expect(warnings.some((w) => w.field === 'speed')).toBe(true);
-    expect(warnings.find((w) => w.field === 'speed')?.message).toContain('80 km/h');
+    expect(warnings).toEqual([{ code: 'speed_above_max', limit: 80, count: 15 }]);
   });
 
   it('warns when running speed exceeds 25 km/h in more than 10 records', () => {
     const records: SessionRecord[] = [];
     for (let i = 0; i < 15; i++) {
-      // 30 km/h = 8.33 m/s
       records.push(makeRecord({ timestamp: i, speed: 8.33 }));
     }
     const warnings = validateRecords(records, 'running');
-    expect(warnings.some((w) => w.field === 'speed')).toBe(true);
-    expect(warnings.find((w) => w.field === 'speed')?.message).toContain('25 km/h');
+    expect(warnings).toEqual([{ code: 'speed_above_max', limit: 25, count: 15 }]);
   });
 
   it('returns multiple warnings when multiple sensor issues exist', () => {
     const records: SessionRecord[] = [];
     for (let i = 0; i < 20; i++) {
-      records.push(
-        makeRecord({
-          timestamp: i,
-          hr: 240,
-          power: 3000,
-        }),
-      );
+      records.push(makeRecord({ timestamp: i, hr: 240, power: 3000 }));
     }
     const warnings = validateRecords(records, 'cycling');
-    expect(warnings.length).toBeGreaterThanOrEqual(2);
-    const fields = warnings.map((w) => w.field);
-    expect(fields).toContain('hr');
-    expect(fields).toContain('power');
+    expect(warnings).toEqual([
+      { code: 'hr_above_max', limit: 230, count: 20 },
+      { code: 'power_above_max', limit: 2500, count: 20 },
+    ]);
   });
 });

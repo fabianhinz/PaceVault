@@ -1,5 +1,37 @@
 import { test, expect, type Page } from '../helpers/test';
-import { seedOnboardingComplete, seedWithSessions } from '../helpers/seed';
+import {
+  seedOnboardingComplete,
+  seedWithSessions,
+  CYCLING_FIT,
+  RUNNING_FIT,
+} from '../helpers/seed';
+import { uploadFitFiles } from '../helpers/upload';
+
+test.use({
+  launchOptions: {
+    args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+  },
+});
+
+const SCAN_STEP = 20;
+const SCAN_BOTTOM = 400;
+
+const findTrackPoint = async (page: Page) => {
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error('no viewport');
+  for (let y = SCAN_STEP; y < SCAN_BOTTOM; y += SCAN_STEP) {
+    for (let x = SCAN_STEP; x < viewport.width; x += SCAN_STEP) {
+      await page.mouse.move(x, y);
+      await page.waitForTimeout(30);
+      const picked = await page.evaluate(async () => {
+        const mapFocus = await import('/src/store/mapFocus.ts');
+        return mapFocus.useMapFocusStore.getState().pickCircle !== null;
+      });
+      if (picked) return { x, y };
+    }
+  }
+  throw new Error('no pickable track under any scanned point');
+};
 
 const sheet = (page: Page) => page.locator('[data-sheet-position]');
 
@@ -138,11 +170,6 @@ test.describe('mobile bottom sheet', () => {
       await expect(divider).toHaveCSS('opacity', '0');
     });
 
-    test('hides the chart expand button', async ({ page }) => {
-      await expect(page.getByText('Total Distance')).toBeVisible();
-      await expect(page.getByRole('button', { name: /expand chart/i })).toHaveCount(0);
-    });
-
     test('renders session rows past the first screen inside the sheet', async ({ page }) => {
       await page.getByRole('link', { name: /sessions/i }).click();
       await expect(page.locator('[data-testid="session-item"]').first()).toBeVisible();
@@ -151,5 +178,26 @@ test.describe('mobile bottom sheet', () => {
 
       await expect(page.locator('[data-index="39"]')).toBeVisible();
     });
+  });
+});
+
+test.describe('mobile map', () => {
+  test('tapping a track on a touch device opens the session picker', async ({ page }) => {
+    test.setTimeout(120_000);
+    await seedOnboardingComplete(page);
+    await uploadFitFiles(page, [CYCLING_FIT, RUNNING_FIT]);
+    await page.goto('/');
+    await page.waitForTimeout(3000);
+    const track = await findTrackPoint(page);
+    await page.mouse.move(2, 2);
+
+    const picker = page.getByText('Sessions recorded near this location');
+    await page.touchscreen.tap(track.x, track.y);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(500);
+    await expect(picker).toBeVisible();
+
+    await page.touchscreen.tap(track.x, 40);
+    await expect(picker).toBeHidden();
   });
 });

@@ -69,7 +69,9 @@ Specific guidelines for features, testing, and state management are located in t
 
 ## 5. Dev Workflow & Actionable Verification
 
-> **Plan first, then build.** Create a new branch for every feature or bug fix.
+> **Plan first, then build.** The owner creates branches and commits; Claude leaves all changes in the working tree.
+
+For a UI change without a settled design, first run the `explore-ui` skill (`.claude/skills/explore-ui/SKILL.md`): research and mockup rounds that end in the plan below.
 
 1. **Plan**: Write a plan in `./plans/<feature-name>.md` detailing context, approach, files to modify, and verification steps. Review with the user before writing code.
 2. **Implement**: Write the code and the tests `tests/CLAUDE.md` calls for.
@@ -93,3 +95,4 @@ Anything drawn on the map — sport tracks, studio routes, markers — has to ho
 - **Studio routes are never shown alongside session tracks**, so they only need to differ from the basemap and from each other. Studio colour keys are persisted, so renaming or removing one needs a store migration.
 - **Zone colours** (blue → green → yellow → orange → red) replace the sport colour on the session detail map rather than appearing next to it, so sharing a hue with a sport colour is acceptable there.
 - A sport colour lives in three places that must change together: the map (`src/features/map/trackColors.ts`), the CSS theme (`src/index.css`) and its JS mirror (`src/lib/tokens.ts`).
+- Every colour token in `src/lib/tokens.ts` mirrors one in `src/index.css`; change both together.

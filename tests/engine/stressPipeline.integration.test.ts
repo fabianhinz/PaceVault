@@ -55,7 +55,7 @@ describe('stress pipeline: records → validate → NP → TSS/TRIMP', () => {
     const combined = [...goodRecords, ...badRecords];
 
     const warnings = validateRecords(combined, 'cycling');
-    expect(warnings.some((w) => w.field === 'power')).toBe(true);
+    expect(warnings.some((w) => w.code === 'power_above_max')).toBe(true);
 
     const npWithSpikes = calculateNormalizedPower(combined) ?? 0;
     expect(npWithSpikes).toBeGreaterThan(calculateNormalizedPower(goodRecords) ?? 0);

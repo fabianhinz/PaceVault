@@ -9,7 +9,7 @@ import { createIngestBatcher } from '@/features/sessions/createIngestBatcher.ts'
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import type { UserProfile } from '@/types/index.ts';
 
-export interface IntervalsImportResult {
+interface IntervalsImportResult {
   imported: number;
   duplicated: number;
   failed: number;
@@ -35,9 +35,9 @@ export const runIntervalsImport = async (
   const batcher = createIngestBatcher({
     queryClient: options.queryClient,
     markNew: options.markNew,
-    onFlushed: (batch) => {
+    onFlushed: (stored) => {
       const ids: string[] = [];
-      for (const entry of batch) {
+      for (const entry of stored) {
         if (entry.source.kind === 'intervals') ids.push(entry.source.activityId);
       }
       options.onChunkIngested(ids);

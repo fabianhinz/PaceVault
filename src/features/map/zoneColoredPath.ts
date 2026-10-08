@@ -1,122 +1,112 @@
-import { extractPathFromRecords, isValidCoordinate } from '@/packages/engine/gps.ts';
+import { isValidCoordinate } from '@/packages/engine/gps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
-import { HR_ZONE_DEFS, POWER_ZONE_DEFS } from '@/packages/engine/zoneDistribution.ts';
-import { computeRunningZones } from '@/packages/engine/zones.ts';
-import { scaleLinear } from 'd3-scale';
 import { rgb } from 'd3-color';
+import { windColorAt, type ColorScale, type ZoneMetric } from '@/lib/zoneColors.ts';
+import { rollingMean, TRACK_SMOOTHING_SEC } from '@/lib/trackSmoothing.ts';
 import { trackModifiers } from './trackColors.ts';
 
-export type ZoneColorMode = 'hr' | 'power' | 'pace';
-
 type Color = [number, number, number, number];
-type ColorScale = (value: number) => Color;
+
+type TrackMetric = ZoneMetric | 'speed';
 
 export interface DetailPath {
   path: [number, number][];
+  recordIndices: number[];
   color: Color | Color[];
-}
-
-export interface UserThresholds {
-  maxHr: number;
-  restHr: number;
-  ftp?: number;
-  thresholdPace?: number;
 }
 
 const FALLBACK_COLOR: Color = [160, 160, 160, 80];
 
-const createZoneScale = (
-  defs: readonly { minPct: number; maxPct: number; color: string }[],
-  alpha: number,
-): ColorScale => {
-  const domain = defs.map((d) => {
-    let max = d.maxPct;
-    if (!Number.isFinite(max)) {
-      max = d.minPct + 0.5;
+const toColor = (css: string): Color => {
+  const c = rgb(css);
+  return [Math.round(c.r), Math.round(c.g), Math.round(c.b), trackModifiers.alpha.highlighted];
+};
+
+const rawZoneValue = (r: SessionRecord, metric: TrackMetric): number | undefined => {
+  if (metric === 'hr') return r.hr;
+  if (metric === 'power') return r.power;
+  return r.speed;
+};
+
+const toZoneValue = (value: number | undefined, metric: TrackMetric): number | undefined => {
+  if (value === undefined) return undefined;
+  if (metric === 'speed') return value * 3.6;
+  if (metric !== 'pace') return value;
+  if (value <= 0) return undefined;
+  return 1000 / value / 60;
+};
+
+const smoothedValues = (
+  records: SessionRecord[],
+  values: Array<number | undefined>,
+  windowSec: number,
+): Array<number | undefined> =>
+  rollingMean(
+    records.map((r) => r.timestamp),
+    values,
+    windowSec,
+  );
+
+const validPath = (records: SessionRecord[]) => {
+  const path: [number, number][] = [];
+  const recordIndices: number[] = [];
+  records.forEach((r, index) => {
+    if (isValidCoordinate(r) && r.lng != null && r.lat != null) {
+      path.push([r.lng, r.lat]);
+      recordIndices.push(index);
     }
-    return (d.minPct + max) / 2;
   });
-  const range = defs.map((d) => d.color);
-
-  const scale = scaleLinear<string>().domain(domain).range(range).clamp(true);
-
-  return (value: number): Color => {
-    const c = rgb(scale(value));
-    return [Math.round(c.r), Math.round(c.g), Math.round(c.b), alpha];
-  };
+  return { path, recordIndices };
 };
 
-const getHrColor = (hr: number, thresholds: UserThresholds, scale: ColorScale): Color | null => {
-  const hrReserve = thresholds.maxHr - thresholds.restHr;
-  if (hrReserve <= 0) return null;
-  const pct = (hr - thresholds.restHr) / hrReserve;
-  return scale(pct);
+const buildColoredPath = (
+  records: SessionRecord[],
+  colorAt: (r: SessionRecord, index: number) => Color,
+): DetailPath | null => {
+  const valid = validPath(records);
+  if (valid.path.length < 2) return null;
+  const colors: Color[] = [];
+  for (const index of valid.recordIndices) {
+    const record = records[index];
+    if (record) colors.push(colorAt(record, index));
+  }
+  return { path: valid.path, recordIndices: valid.recordIndices, color: colors };
 };
-
-const getPowerColor = (power: number, ftp: number, scale: ColorScale): Color => scale(power / ftp);
-
-const getPaceColor = (speed: number, scale: ColorScale): Color => scale(1000 / speed);
 
 export const buildZoneColoredPath = (
   records: SessionRecord[],
-  mode: ZoneColorMode,
-  thresholds: UserThresholds,
+  metric: TrackMetric,
+  scale: ColorScale,
 ): DetailPath | null => {
-  const alpha = trackModifiers.alpha.highlighted;
+  const values = smoothedValues(
+    records,
+    records.map((r) => rawZoneValue(r, metric)),
+    TRACK_SMOOTHING_SEC[metric],
+  );
+  return buildColoredPath(records, (_, index) => {
+    const value = toZoneValue(values[index], metric);
+    if (value === undefined) return FALLBACK_COLOR;
+    return toColor(scale.colorAt(value));
+  });
+};
 
-  let scale: ColorScale | null = null;
-  if (mode === 'hr') {
-    scale = createZoneScale(HR_ZONE_DEFS, alpha);
-  } else if (mode === 'power') {
-    scale = createZoneScale(POWER_ZONE_DEFS, alpha);
-  } else if (mode === 'pace' && thresholds.thresholdPace && thresholds.thresholdPace > 0) {
-    const zones = computeRunningZones(thresholds.thresholdPace);
-    const sorted = [...zones].sort((a, b) => {
-      const midA = (a.minPace + a.maxPace) / 2;
-      const midB = (b.minPace + b.maxPace) / 2;
-      return midA - midB;
-    });
-    scale = createZoneScale(
-      sorted.map((z) => ({ minPct: z.maxPace, maxPct: z.minPace, color: z.color })),
-      alpha,
-    );
-  }
-
-  const colorForRecord = (r: SessionRecord): Color => {
-    if (!scale) return FALLBACK_COLOR;
-    if (mode === 'hr' && r.hr != null) {
-      return getHrColor(r.hr, thresholds, scale) ?? FALLBACK_COLOR;
-    }
-    if (mode === 'power' && r.power != null && thresholds.ftp) {
-      return getPowerColor(r.power, thresholds.ftp, scale);
-    }
-    if (mode === 'pace' && r.speed != null && r.speed > 0) {
-      return getPaceColor(r.speed, scale);
-    }
-    return FALLBACK_COLOR;
-  };
-
-  const path: [number, number][] = [];
-  const colors: Color[] = [];
-
-  for (const r of records) {
-    if (isValidCoordinate(r) && r.lng != null && r.lat != null) {
-      path.push([r.lng, r.lat]);
-      colors.push(colorForRecord(r));
-    }
-  }
-
-  if (path.length < 2) return null;
-
-  return { path, color: colors };
+export const buildWindColoredPath = (
+  records: SessionRecord[],
+  angles: Array<number | undefined>,
+): DetailPath | null => {
+  const values = smoothedValues(records, angles, TRACK_SMOOTHING_SEC.wind);
+  return buildColoredPath(records, (_, index) => {
+    const angle = values[index];
+    if (angle === undefined) return FALLBACK_COLOR;
+    return toColor(windColorAt(angle));
+  });
 };
 
 export const buildSportColoredPath = (
   records: SessionRecord[],
   sportColor: Color,
 ): DetailPath | null => {
-  const path = extractPathFromRecords(records);
-  if (path.length < 2) return null;
-
-  return { path, color: sportColor };
+  const valid = validPath(records);
+  if (valid.path.length < 2) return null;
+  return { path: valid.path, recordIndices: valid.recordIndices, color: sportColor };
 };

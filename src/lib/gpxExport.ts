@@ -1,5 +1,5 @@
 import { buildGpxString } from '@/packages/gpx/buildGpx.ts';
-import { simplifyGpxPoints } from '@/packages/gpx/simplifyGpxPoints.ts';
+import { sliceRoute } from '@/packages/gpx/routeCut.ts';
 import { isValidCoordinate } from '@/packages/engine/gps.ts';
 import type { TrainingSession, SessionRecord } from '@/packages/engine/types.ts';
 import type { GpxPoint } from '@/packages/gpx/buildGpx.ts';
@@ -21,28 +21,21 @@ export const buildSessionGpx = (
     return acc;
   }, []);
 
-  const simplified = simplifyGpxPoints(points);
-
-  return buildGpxString(simplified, {
+  return buildGpxString(points, {
     name: session.name,
     time: new Date(session.date),
   });
 };
 
-/**
- * GPX for the slice of a route between two cumulative distances (metres from the
- * start) — used to export a segment cut by split points. Returns `null` when the
- * slice has fewer than two points.
- */
+const toGpxPoint = (p: RoutePoint): GpxPoint => {
+  const point: GpxPoint = { lat: p.lat, lon: p.lng, ele: p.ele };
+  if (p.time != null) point.time = new Date(p.time);
+  return point;
+};
+
 export const buildRouteSegmentGpx = (
   points: RoutePoint[],
   startM: number,
   endM: number,
   metadata: { name: string; time: Date },
-): string | null => {
-  const slice = points
-    .filter((p) => p.dist >= startM && p.dist <= endM)
-    .map<GpxPoint>((p) => ({ lat: p.lat, lon: p.lng, ele: p.ele }));
-
-  return buildGpxString(slice, metadata);
-};
+): string | null => buildGpxString(sliceRoute(points, startM, endM).map(toGpxPoint), metadata);

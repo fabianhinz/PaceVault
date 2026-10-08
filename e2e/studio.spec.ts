@@ -28,9 +28,9 @@ test.describe('Studio', () => {
     await expect(page.getByText('Elevation', { exact: true })).toBeVisible();
     await expect(page.getByText('Grade', { exact: true })).toBeVisible();
 
-    // The full stat inventory (incl. import metadata) sits behind the toggle
+    await expect(page.getByTestId('stat-rail').first()).toContainText('+');
+
     await page.getByRole('button', { name: /\(\d+\)/ }).click();
-    await expect(page.getByText(/ascent/i)).toBeVisible();
     await expect(page.getByText(/route\.gpx/)).toBeVisible();
 
     // Rename via the actions menu edit dialog

@@ -1,11 +1,11 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { v4 } from 'uuid';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
 import { findDuplicates } from '@/lib/fingerprint.ts';
-import { bulkSaveSessionData, saveFitFile } from '@/lib/indexeddb.ts';
+import { bulkSaveSessionData } from '@/lib/indexeddb.ts';
 import { requestPersistentStorage } from '@/lib/persistentStorage.ts';
 import type { ParsedFitResultWithMeta } from '@/parsers/fit.ts';
-import type { SessionRecord, SessionLap } from '@/packages/engine/types.ts';
 
 const CHUNK_SIZE = 10;
 export const INGEST_BATCH_SIZE = 50;
@@ -16,10 +16,14 @@ interface IngestOutcome {
   saveFailed: boolean;
 }
 
+interface BatchOutcome extends IngestOutcome {
+  stored: ParsedFitResultWithMeta[];
+}
+
 const ingestBatch = async (
   parsed: ParsedFitResultWithMeta[],
   markNew: boolean | undefined,
-): Promise<IngestOutcome> => {
+): Promise<BatchOutcome> => {
   const existingSessions = useSessionsStore.getState().sessions;
   const storeDups = findDuplicates(
     parsed.map((p) => p.fingerprint),
@@ -27,11 +31,11 @@ const ingestBatch = async (
   );
 
   const seenInBatch = new Set<string>();
-  let duplicateCount = 0;
+  const duplicates: ParsedFitResultWithMeta[] = [];
 
   const unique = parsed.filter((p) => {
     if (storeDups.has(p.fingerprint) || seenInBatch.has(p.fingerprint)) {
-      duplicateCount++;
+      duplicates.push(p);
       return false;
     }
     seenInBatch.add(p.fingerprint);
@@ -39,51 +43,64 @@ const ingestBatch = async (
   });
 
   if (unique.length === 0) {
-    return { importedCount: 0, duplicateCount, saveFailed: false };
+    return {
+      importedCount: 0,
+      duplicateCount: duplicates.length,
+      saveFailed: false,
+      stored: duplicates,
+    };
   }
 
+  const withIds = unique.map((entry) => ({ id: v4(), entry }));
+  const idbEntries = withIds.map((item) => {
+    let records = item.entry.records;
+    let laps = item.entry.laps;
+    if (records.length === 0) {
+      records = [];
+      laps = [];
+    }
+    return {
+      sessionId: item.id,
+      records,
+      laps,
+      fit: { fileName: item.entry.fileName, data: item.entry.rawData },
+    };
+  });
+
+  let savedCount = 0;
   let saveFailed = false;
-
   try {
-    const sessionIds = useSessionsStore.getState().addSessions(
-      unique.map((p) => ({ ...p.session, source: p.source })),
-      { markNew },
-    );
-
-    const idbEntries: Array<{ sessionId: string; records: SessionRecord[]; laps: SessionLap[] }> =
-      [];
-
-    for (let i = 0; i < unique.length; i++) {
-      const entry = unique[i];
-      const sessionId = sessionIds[i];
-      if (!entry || !sessionId) continue;
-      if (entry.records.length === 0) continue;
-
-      idbEntries.push({ sessionId, records: entry.records, laps: entry.laps });
-    }
-
-    if (idbEntries.length > 0) {
-      await bulkSaveSessionData(idbEntries, { chunkSize: CHUNK_SIZE });
-    }
-
-    for (let i = 0; i < unique.length; i++) {
-      const sid = sessionIds[i];
-      const u = unique[i];
-      if (!sid || !u) continue;
-      await saveFitFile(sid, u.fileName, u.rawData);
-    }
+    await bulkSaveSessionData(idbEntries, {
+      chunkSize: CHUNK_SIZE,
+      onChunkDone: (chunkIndex) => {
+        savedCount = Math.min((chunkIndex + 1) * CHUNK_SIZE, withIds.length);
+      },
+    });
   } catch (err) {
     console.error('Save error:', err);
     saveFailed = true;
   }
 
-  return { importedCount: unique.length, duplicateCount, saveFailed };
+  const saved = withIds.slice(0, savedCount);
+  if (saved.length > 0) {
+    useSessionsStore.getState().addSessions(
+      saved.map((item) => ({ ...item.entry.session, id: item.id, source: item.entry.source })),
+      { markNew },
+    );
+  }
+
+  return {
+    importedCount: saved.length,
+    duplicateCount: duplicates.length,
+    saveFailed,
+    stored: [...duplicates, ...saved.map((item) => item.entry)],
+  };
 };
 
 export const createIngestBatcher = (options: {
   queryClient: QueryClient;
   markNew?: boolean;
-  onFlushed?: (batch: ParsedFitResultWithMeta[]) => void;
+  onFlushed?: (stored: ParsedFitResultWithMeta[]) => void;
 }) => {
   let pending: ParsedFitResultWithMeta[] = [];
   const outcome: IngestOutcome = { importedCount: 0, duplicateCount: 0, saveFailed: false };
@@ -96,7 +113,7 @@ export const createIngestBatcher = (options: {
     outcome.importedCount += result.importedCount;
     outcome.duplicateCount += result.duplicateCount;
     outcome.saveFailed ||= result.saveFailed;
-    options.onFlushed?.(batch);
+    options.onFlushed?.(result.stored);
   };
 
   const add = async (entry: ParsedFitResultWithMeta) => {

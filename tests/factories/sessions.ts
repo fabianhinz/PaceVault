@@ -22,7 +22,6 @@ export function makeSession(overrides?: Partial<TrainingSession>): TrainingSessi
     elevationGain: 300,
     tss: 80,
     stressMethod: 'tss',
-    sensorWarnings: [],
     isPlanned: false,
     hasDetailedRecords: true,
     createdAt: Date.now(),

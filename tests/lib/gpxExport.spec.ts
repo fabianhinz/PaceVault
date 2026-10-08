@@ -12,6 +12,7 @@ const routePoints = (count: number): RoutePoint[] =>
     ele: 600 + i,
     seg: 0,
     dist: i * 1000,
+    time: 1700000000000 + i * 60_000,
   }));
 
 describe('buildSessionGpx', () => {
@@ -27,6 +28,13 @@ describe('buildSessionGpx', () => {
     expect(gpx).toContain('<ele>');
     expect(gpx).toContain('<time>');
     expect(gpx).toContain('Morning Run');
+  });
+
+  it('exports every recorded GPS point instead of a simplified track', () => {
+    const session = makeSession({ id: 'test-full', date: 1700000000000 });
+    const records = makeGPSRunningRecords(200);
+    const gpx = buildSessionGpx(session, records);
+    expect((gpx?.match(/<trkpt/g) ?? []).length).toBe(200);
   });
 
   it('returns null for indoor records with no GPS', () => {
@@ -57,7 +65,7 @@ describe('buildSessionGpx', () => {
 
     expect(gpx).not.toBeNull();
     const trkptCount = (gpx?.match(/<trkpt/g) ?? []).length;
-    expect(trkptCount).toBe(2);
+    expect(trkptCount).toBe(5);
   });
 
   it('returns null for empty records', () => {
@@ -71,14 +79,23 @@ describe('buildSessionGpx', () => {
 describe('buildRouteSegmentGpx', () => {
   const meta = { name: 'Alpine Loop - segment 2', time: new Date(1700000000000) };
 
-  it('exports only the points within the distance slice', () => {
-    const gpx = buildRouteSegmentGpx(routePoints(10), 3000, 6000, meta);
-    expect(gpx).not.toBeNull();
-    const trkptCount = (gpx?.match(/<trkpt/g) ?? []).length;
-    // dist 3000, 4000, 5000, 6000 — inclusive on both ends.
-    expect(trkptCount).toBe(4);
+  it('export filters points instead of cutting at the split', () => {
+    const gpx = buildRouteSegmentGpx(routePoints(10), 3500, 6000, meta);
+    const trkpts = gpx?.match(/<trkpt[\s\S]*?<\/trkpt>/g) ?? [];
+    expect(trkpts).toHaveLength(4);
+    expect(trkpts[0]).toContain('lat="47.003500" lon="11.003500"');
+    expect(trkpts[0]).toContain('<ele>603.5</ele>');
+    expect(trkpts[0]).toContain('<time>2023-11-14T22:16:50.000Z</time>');
+    expect(trkpts[3]).toContain('<time>2023-11-14T22:19:20.000Z</time>');
     expect(gpx).toContain('Alpine Loop - segment 2');
-    expect(gpx).toContain('<ele>');
+  });
+
+  it('exports no <time> for points that never had one', () => {
+    const points = routePoints(10).map((p) => ({ ...p, time: undefined }));
+    const gpx = buildRouteSegmentGpx(points, 3500, 6000, meta);
+    expect(gpx).not.toBeNull();
+    expect(gpx).not.toContain('<trkpt lat="47.003500" lon="11.003500">\n<ele>603.5</ele>\n<time>');
+    expect((gpx?.match(/<time>/g) ?? []).length).toBe(1);
   });
 
   it('returns null when the slice has fewer than two points', () => {

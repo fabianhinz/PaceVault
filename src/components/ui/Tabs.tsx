@@ -25,7 +25,8 @@ export const TabsTrigger = (props: React.ComponentProps<typeof TabsPrimitive.Tri
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'flex-1 inline-flex items-center justify-center rounded-lg px-3 py-2.5 text-sm font-medium text-text-tertiary transition-colors cursor-pointer hover:bg-white/10 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent data-[state=active]:bg-white/10 data-[state=active]:text-text-primary data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
+        'flex-1 inline-flex items-center justify-center rounded-lg px-3 py-2.5 text-sm font-medium text-text-tertiary transition-colors cursor-pointer hover:bg-white/10 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+        'data-[state=active]:bg-white/10 data-[state=active]:text-text-primary data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
         className,
       )}
       {...rest}

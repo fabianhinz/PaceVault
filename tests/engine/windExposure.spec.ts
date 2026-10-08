@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { computeWindExposure } from '@/packages/engine/windExposure.ts';
+import {
+  computeWindExposure,
+  relativeWindAngles,
+  windAngles,
+} from '@/packages/engine/windExposure.ts';
 import type { WindSample } from '@/packages/engine/windExposure.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { makeIndoorRecords } from '@tests/factories/gps.ts';
@@ -109,5 +113,43 @@ describe('computeWindExposure', () => {
 
   it('returns null for fewer than two GPS points', () => {
     expect(computeWindExposure(eastTrack(1), windFrom(90), 0)).toBeNull();
+  });
+});
+
+describe('windAngles', () => {
+  it('gives each record the wind angle of the segment that ends there and skips pauses', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, lat: 48, lng: 11.0 },
+      { timestamp: 1, lat: 48, lng: 11.001 },
+      { timestamp: 2, lat: 48, lng: 11.0 },
+      { timestamp: 1002, lat: 48, lng: 11.001 },
+    ];
+    const angles = windAngles(records, windFrom(90), 0);
+    expect(angles[0]).toBeUndefined();
+    expect(angles[1]).toBeCloseTo(0, 0);
+    expect(angles[2]).toBeCloseTo(180, 0);
+    expect(angles[3]).toBeUndefined();
+  });
+});
+
+describe('relativeWindAngles', () => {
+  it('gives wind from the right a positive and wind from the left a negative angle', () => {
+    const fromSouth = relativeWindAngles(eastTrack(3), windFrom(180), 0);
+    const fromNorth = relativeWindAngles(eastTrack(3), windFrom(0), 0);
+    expect(fromSouth[1]?.angle).toBeCloseTo(90, 0);
+    expect(fromNorth[1]?.angle).toBeCloseTo(-90, 0);
+  });
+
+  it('weights each moving record by its segment seconds and skips pauses', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, lat: 48, lng: 11.0 },
+      { timestamp: 2, lat: 48, lng: 11.001 },
+      { timestamp: 1002, lat: 48, lng: 11.002 },
+    ];
+    const relative = relativeWindAngles(records, windFrom(90), 0);
+    expect(relative[0]).toBeUndefined();
+    expect(relative[1]?.seconds).toBe(2);
+    expect(relative[1]?.angle).toBeCloseTo(0, 0);
+    expect(relative[2]).toBeUndefined();
   });
 });

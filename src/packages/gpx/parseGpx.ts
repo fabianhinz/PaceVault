@@ -4,11 +4,11 @@ export interface ParsedGpxPoint {
   lat: number;
   lng: number;
   ele?: number;
-  /** Index of the containing trkseg (or rte), preserved for future segment-aware editing. */
+  time?: number;
   seg: number;
 }
 
-export interface ParsedGpx {
+interface ParsedGpx {
   name?: string;
   points: ParsedGpxPoint[];
 }
@@ -17,12 +17,21 @@ const pointSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   ele: z.number().optional(),
+  time: z.number().optional(),
 });
 
 const parseElevation = (el: Element): number | undefined => {
   const eleEl = el.getElementsByTagNameNS('*', 'ele')[0];
   if (!eleEl?.textContent) return undefined;
   const value = Number(eleEl.textContent.trim());
+  if (Number.isNaN(value)) return undefined;
+  return value;
+};
+
+const parseTime = (el: Element): number | undefined => {
+  const timeEl = el.getElementsByTagNameNS('*', 'time')[0];
+  if (!timeEl?.textContent) return undefined;
+  const value = Date.parse(timeEl.textContent.trim());
   if (Number.isNaN(value)) return undefined;
   return value;
 };
@@ -40,6 +49,7 @@ const parsePoint = (el: Element, seg: number): ParsedGpxPoint | null => {
     lat: parseCoordAttribute(el, 'lat'),
     lng: parseCoordAttribute(el, 'lon'),
     ele: parseElevation(el),
+    time: parseTime(el),
   });
   if (!result.success) return null;
   return { ...result.data, seg };
@@ -71,12 +81,6 @@ const parseName = (doc: Document): string | undefined => {
   return name;
 };
 
-/**
- * Parse a GPX 1.0/1.1 document into a flat list of route points.
- * Track points (`trkpt`) win over route points (`rtept`); multiple
- * `trkseg`/`rte` containers are concatenated with an increasing `seg` index.
- * Returns `null` when the XML is invalid or fewer than 2 valid points exist.
- */
 export const parseGpx = (gpxText: string): ParsedGpx | null => {
   const doc = new DOMParser().parseFromString(gpxText, 'application/xml');
   if (doc.getElementsByTagName('parsererror').length > 0) return null;

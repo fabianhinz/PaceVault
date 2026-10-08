@@ -14,14 +14,14 @@ export const trackModifiers = {
   alpha: { default: 80, highlighted: 255 },
 };
 
+export const studioRouteModifiers = {
+  width: { default: 8, highlighted: 12 },
+  alpha: { default: 255, hidden: 0 },
+};
+
 export const sportTrackColor: Record<Sport, [number, number, number, number]> = {
   running: [74, 222, 128, trackModifiers.alpha.default],
   cycling: [249, 115, 22, trackModifiers.alpha.default],
-};
-
-export const sportMarkerColor: Record<Sport, [number, number, number, number]> = {
-  running: [74, 222, 128, 255],
-  cycling: [249, 115, 22, 255],
 };
 
 // Live "you are here" position. The accuracy disc mirrors the glass surface

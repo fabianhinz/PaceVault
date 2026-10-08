@@ -1,20 +1,15 @@
 import type { SessionRecord } from '@/packages/engine/types.ts';
+import type { RouteProfile } from '@/packages/gpx/routeProfile.ts';
 import { gradeAdjustedPaceFactor } from '@/packages/engine/normalize.ts';
+import { bucketSeries, TARGET_ROWS } from '@/lib/chartBuckets.ts';
+import { movingSeconds } from '@/lib/movingTime.ts';
 
-export interface TimeSeriesPoint {
+interface TimeSeriesPoint {
   time: number;
 }
 
 export interface CadencePoint extends TimeSeriesPoint {
   cadence: number | null;
-}
-
-export interface ElevationPoint extends TimeSeriesPoint {
-  elevation: number | null;
-}
-
-export interface GradePoint extends TimeSeriesPoint {
-  grade: number | null;
 }
 
 export interface HrPoint extends TimeSeriesPoint {
@@ -38,67 +33,10 @@ export interface GAPPoint extends TimeSeriesPoint {
   gap: number | null;
 }
 
-export const filterSeriesByKey = <K extends string, T extends Record<K, number>>(
-  data: T[],
-  key: K,
-  from: number,
-  to: number,
-): T[] => data.filter((d) => d[key] >= from && d[key] <= to);
-
-export const filterTimeSeries = <T extends TimeSeriesPoint>(
-  data: T[],
-  from: number,
-  to: number,
-): T[] => filterSeriesByKey(data, 'time', from, to);
-
-export const toMinutes = (timestamp: number): number => Math.round((timestamp / 60) * 100) / 100;
-
-export const buildTimeToGpsLookup = (records: SessionRecord[]): Map<number, [number, number]> => {
-  const map = new Map<number, [number, number]>();
-  for (const r of records) {
-    if (r.lat != null && r.lng != null) {
-      map.set(toMinutes(r.timestamp), [r.lng, r.lat]);
-    }
-  }
-  return map;
-};
-
-const roundTo = (value: number | undefined, factor: number): number | null => {
-  if (value === undefined) return null;
-  return Math.round(value * factor) / factor;
-};
-
-export const prepareHrData = (records: SessionRecord[]): HrPoint[] =>
-  records.map((r) => ({ time: toMinutes(r.timestamp), hr: roundTo(r.hr, 1) }));
-
-export const preparePowerData = (records: SessionRecord[]): PowerPoint[] =>
-  records.map((r) => ({ time: toMinutes(r.timestamp), power: roundTo(r.power, 1) }));
-
-export const prepareSpeedData = (records: SessionRecord[]): SpeedPoint[] =>
-  records.map((r) => {
-    let speed: number | null = null;
-    if (r.speed !== undefined) {
-      speed = Math.round(r.speed * 3.6 * 10) / 10;
-    }
-    return { time: toMinutes(r.timestamp), speed };
-  });
-
-export const prepareCadenceData = (records: SessionRecord[]): CadencePoint[] =>
-  records.map((r) => ({ time: toMinutes(r.timestamp), cadence: roundTo(r.cadence, 1) }));
-
-export const prepareElevationData = (records: SessionRecord[]): ElevationPoint[] =>
-  records.map((r) => ({ time: toMinutes(r.timestamp), elevation: roundTo(r.elevation, 10) }));
-
-export const prepareGradeData = (records: SessionRecord[]): GradePoint[] =>
-  records.map((r) => ({ time: toMinutes(r.timestamp), grade: roundTo(r.grade, 10) }));
-
 const speedToPace = (speed: number | undefined): number | undefined => {
   if (speed === undefined || speed <= 0) return undefined;
   return 1000 / speed / 60;
 };
-
-export const preparePaceData = (records: SessionRecord[]): PacePoint[] =>
-  records.map((r) => ({ time: toMinutes(r.timestamp), pace: roundTo(speedToPace(r.speed), 100) }));
 
 const gradientAt = (records: SessionRecord[], i: number): number | undefined => {
   const r = records[i];
@@ -119,18 +57,74 @@ const gradientAt = (records: SessionRecord[], i: number): number | undefined => 
   return (r.elevation - prev.elevation) / dx;
 };
 
-export const prepareGAPData = (records: SessionRecord[]): GAPPoint[] =>
-  records.map((r, i) => {
-    const pace = speedToPace(r.speed);
-    const gradient = gradientAt(records, i);
-    let gap: number | undefined = undefined;
-    if (pace !== undefined && gradient !== undefined) {
-      gap = pace / gradeAdjustedPaceFactor(gradient);
-    }
-    return { time: toMinutes(r.timestamp), pace: roundTo(pace, 100), gap: roundTo(gap, 100) };
-  });
-
 export const hasSeriesValues = <K extends string>(
   points: ReadonlyArray<Record<K, number | null>>,
   key: K,
 ): boolean => points.some((p) => p[key] !== null);
+
+interface SessionChartRowOptions {
+  isRunning: boolean;
+  range?: { from: number; to: number };
+}
+
+export const buildSessionChartRows = (
+  records: SessionRecord[],
+  options: SessionChartRowOptions,
+) => {
+  const includeGap = options.isRunning && records.some((r) => r.grade !== undefined);
+  const moving = movingSeconds(records);
+  return bucketSeries(records, {
+    xKey: 'time',
+    x: (_, i) => (moving[i] ?? 0) / 60,
+    channels: {
+      hr: (r) => r.hr,
+      power: (r) => r.power,
+      speed: (r) => {
+        if (r.speed === undefined) return undefined;
+        return r.speed * 3.6;
+      },
+      cadence: (r) => r.cadence,
+      elevation: (r) => r.elevation,
+      grade: (r) => r.grade,
+      pace: (r) => {
+        if (!options.isRunning) return undefined;
+        return speedToPace(r.speed);
+      },
+      gap: (r, i) => {
+        if (!includeGap) return undefined;
+        const pace = speedToPace(r.speed);
+        const gradient = gradientAt(records, i);
+        if (pace === undefined || gradient === undefined) return undefined;
+        return pace / gradeAdjustedPaceFactor(gradient);
+      },
+    },
+    range: options.range,
+    targetRows: TARGET_ROWS,
+  });
+};
+
+export const gpsByX = <K extends string>(
+  rows: ReadonlyArray<Record<K, number> & { source: { lat?: number; lng?: number } | undefined }>,
+  key: K,
+): Map<number, [number, number]> => {
+  const map = new Map<number, [number, number]>();
+  for (const row of rows) {
+    const lat = row.source?.lat;
+    const lng = row.source?.lng;
+    if (lat !== undefined && lng !== undefined) map.set(row[key], [lng, lat]);
+  }
+  return map;
+};
+
+export const buildRouteChartRows = (profile: RouteProfile, range?: { from: number; to: number }) =>
+  bucketSeries(profile.elevation, {
+    xKey: 'dist',
+    x: (p) => p.dist,
+    channels: {
+      elevation: (p) => p.elevation,
+      grade: (_, i) => profile.grade[i]?.grade,
+    },
+    range,
+    targetRows: TARGET_ROWS,
+    emptyBuckets: 'skip',
+  });

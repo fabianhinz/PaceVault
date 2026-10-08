@@ -32,9 +32,8 @@ import { IconBadge } from '@/components/ui/IconBadge.tsx';
 import { isAttributeFilterActive } from '@/lib/attributeFilters.ts';
 import { sportIcon } from '@/lib/sportIcons.ts';
 import {
-  type TimeRange,
-  timeRangeOptions,
-  rangeLabelMap,
+  getTimeRangeOptions,
+  formatTimeRangeLabel,
   formatCustomRangeDuration,
 } from '@/lib/timeRange.ts';
 import type { Sport } from '@/packages/engine/types.ts';
@@ -145,19 +144,16 @@ export const Dock = () => {
   const timeLabel =
     timeRange === 'custom' && customRange
       ? formatCustomRangeDuration(customRange)
-      : rangeLabelMap[timeRange];
+      : formatTimeRangeLabel(timeRange);
 
-  const timeFilterOptions: FilterOption<TimeRange>[] =
-    timeRange === 'custom' && customRange
-      ? [
-          ...timeRangeOptions,
-          {
-            value: 'custom',
-            label: formatCustomRangeDuration(customRange),
-            variant: 'accent' as const,
-          },
-        ]
-      : timeRangeOptions;
+  const timeFilterOptions = getTimeRangeOptions();
+  if (timeRange === 'custom' && customRange) {
+    timeFilterOptions.push({
+      value: 'custom',
+      label: formatCustomRangeDuration(customRange),
+      variant: 'accent',
+    });
+  }
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

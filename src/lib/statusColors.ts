@@ -57,9 +57,3 @@ export const sportColorClass: Record<string, string> = {
   running: 'bg-sport-running-muted text-sport-running',
   cycling: 'bg-sport-cycling-muted text-sport-cycling',
 };
-
-/** Sport icon watermark classes — very subtle tinted icon */
-export const sportIconWatermarkClass: Record<string, string> = {
-  running: 'text-sport-running/10',
-  cycling: 'text-sport-cycling/10',
-};

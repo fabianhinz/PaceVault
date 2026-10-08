@@ -73,20 +73,10 @@ describe('buildRouteProfile', () => {
     expect(maxGrade).toBeCloseTo(14, 0);
   });
 
-  it('keeps a short steep kicker visible after decimation of a huge route', () => {
-    // 100 km at 10 m spacing (10k points, well above the display cap) with one
-    // 200 m kicker at 14% — uniform every-nth sampling would flatten it.
-    const profile = buildRouteProfile(routeWithRamp(100_000, 50_000, 50_200, 14));
-    expect(profile.grade.length).toBeLessThanOrEqual(1000);
-    const maxGrade = Math.max(...profile.grade.map((p) => p.grade));
-    expect(maxGrade).toBeCloseTo(14, 0);
-  });
-
-  it('caps huge inputs while keeping the first and last points', () => {
+  it('keeps every elevated point at full resolution', () => {
     const points = Array.from({ length: 5000 }, (_, i) => point(i * 10, 100 + i));
     const profile = buildRouteProfile(points);
-    expect(profile.elevation.length).toBeLessThanOrEqual(1000);
-    expect(profile.elevation[0]?.dist).toBe(0);
+    expect(profile.elevation.length).toBe(5000);
     expect(profile.elevation[profile.elevation.length - 1]?.dist).toBe(49.99);
   });
 

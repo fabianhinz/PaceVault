@@ -7,24 +7,23 @@ import type { PopoverContentProps } from '@radix-ui/react-popover';
 
 interface ResponsivePopoverProps {
   trigger: ReactNode;
-  /** Accessible title for the mobile bottom sheet (visually hidden). */
   title: string;
   side?: PopoverContentProps['side'];
+  align?: PopoverContentProps['align'];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   className?: string;
   children: ReactNode;
 }
 
-/**
- * Popover on desktop, bottom-sheet Dialog on mobile (< lg).
- */
 export const ResponsivePopover = (props: ResponsivePopoverProps) => {
   const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return (
-      <PopoverRoot>
+      <PopoverRoot open={props.open} onOpenChange={props.onOpenChange}>
         <PopoverTrigger asChild>{props.trigger}</PopoverTrigger>
-        <PopoverContent side={props.side} className={props.className}>
+        <PopoverContent side={props.side} align={props.align} className={props.className}>
           {props.children}
         </PopoverContent>
       </PopoverRoot>
@@ -32,7 +31,7 @@ export const ResponsivePopover = (props: ResponsivePopoverProps) => {
   }
 
   return (
-    <DialogRoot>
+    <DialogRoot open={props.open} onOpenChange={props.onOpenChange}>
       <DialogTrigger asChild>{props.trigger}</DialogTrigger>
       <DialogContent aria-describedby={undefined} className={cn('p-4', props.className)}>
         <DialogTitle className="sr-only">{props.title}</DialogTitle>

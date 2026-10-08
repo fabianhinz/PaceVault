@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 
 const POPUP_WIDTH = 380;
 const POPUP_HEIGHT = 300;
@@ -12,7 +13,7 @@ export interface SafeZone {
   bottom: number;
 }
 
-export interface PopupPosition {
+interface PopupPosition {
   left: number;
   top: number;
   flipX: boolean;
@@ -26,7 +27,6 @@ export const computePopupPosition = (x: number, y: number, safeZone: SafeZone): 
   const popupW = Math.min(POPUP_WIDTH, safeWidth);
   const popupH = Math.min(POPUP_HEIGHT, safeHeight);
 
-  // Horizontal: try right of click
   let left = x + GAP;
   let flipX = false;
   if (left + popupW > safeZone.right) {
@@ -34,7 +34,6 @@ export const computePopupPosition = (x: number, y: number, safeZone: SafeZone): 
     flipX = true;
   }
 
-  // Vertical: try below click
   let top = y + GAP;
   let flipY = false;
   if (top + popupH > safeZone.bottom) {
@@ -42,7 +41,6 @@ export const computePopupPosition = (x: number, y: number, safeZone: SafeZone): 
     flipY = true;
   }
 
-  // Clamp (accounts for transform offset)
   if (flipX) {
     left = Math.max(safeZone.left + popupW, Math.min(left, safeZone.right));
   } else {
@@ -58,13 +56,13 @@ export const computePopupPosition = (x: number, y: number, safeZone: SafeZone): 
 };
 
 export const usePopupPosition = (x: number, y: number): React.CSSProperties => {
+  const isDesktop = useIsDesktop();
   return useMemo(() => {
     const dock = document.querySelector<HTMLElement>('[data-layout="dock"]');
     const main = document.querySelector<HTMLElement>('[data-layout="main"]');
 
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
 
     const safeZone: SafeZone = { left: 0, top: 0, right: vw, bottom: vh };
 
@@ -104,5 +102,5 @@ export const usePopupPosition = (x: number, y: number): React.CSSProperties => {
       top: finalTop,
       zIndex: 50,
     };
-  }, [x, y]);
+  }, [x, y, isDesktop]);
 };

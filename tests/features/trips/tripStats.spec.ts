@@ -5,13 +5,13 @@ import { makeSession } from '../../factories/sessions.ts';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe('computeTripTotals', () => {
-  it('returns zeroed totals and null date range for no sessions', () => {
+  it('returns zeroed totals, missing distance/elevation and null date range for no sessions', () => {
     const totals = computeTripTotals([]);
     expect(totals).toEqual({
       count: 0,
-      distance: 0,
+      distance: undefined,
       duration: 0,
-      elevationGain: 0,
+      elevationGain: undefined,
       tss: 0,
       startDate: null,
       endDate: null,
@@ -60,10 +60,29 @@ describe('computeTripTotals', () => {
     expect(totals.endDate).toBe(base + 2 * DAY_MS);
   });
 
-  it('treats missing elevationGain as zero', () => {
+  it('trip elevation total stays missing when no session recorded elevation', () => {
     const totals = computeTripTotals([
-      makeSession({ elevationGain: undefined, distance: 1000, duration: 100, tss: 10 }),
+      makeSession({ elevationGain: undefined, distance: undefined, duration: 100, tss: 10 }),
+      makeSession({ elevationGain: undefined, distance: undefined, duration: 200, tss: 20 }),
+    ]);
+    expect(totals.elevationGain).toBeUndefined();
+    expect(totals.distance).toBeUndefined();
+  });
+
+  it('trip totals sum only the sessions that recorded a value and keep a recorded 0', () => {
+    const totals = computeTripTotals([
+      makeSession({ elevationGain: undefined, distance: undefined, duration: 100, tss: 10 }),
+      makeSession({ elevationGain: 0, distance: 0, duration: 200, tss: 20 }),
     ]);
     expect(totals.elevationGain).toBe(0);
+    expect(totals.distance).toBe(0);
+
+    const mixed = computeTripTotals([
+      makeSession({ elevationGain: undefined, distance: 4000, duration: 100, tss: 10 }),
+      makeSession({ elevationGain: 150, distance: undefined, duration: 200, tss: 20 }),
+      makeSession({ elevationGain: 50, distance: 6000, duration: 300, tss: 30 }),
+    ]);
+    expect(mixed.elevationGain).toBe(200);
+    expect(mixed.distance).toBe(10000);
   });
 });
