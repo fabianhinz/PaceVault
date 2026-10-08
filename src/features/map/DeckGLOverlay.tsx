@@ -49,6 +49,7 @@ interface DeckGLOverlayProps {
   tracks: MapTrack[];
   onClick?: PickHandler;
   onHover?: PickHandler;
+  hoveringTrack: boolean;
 }
 
 export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
@@ -414,6 +415,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       geoLayers,
     ],
     pickingRadius: PICK_RADIUS,
+    getCursor: () => (props.hoveringTrack ? 'pointer' : ''),
     onClick: (info) => {
       if (!info.picked && openedSessionId) useMapFocusStore.getState().clearSelectedLap();
     },

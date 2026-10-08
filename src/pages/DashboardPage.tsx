@@ -12,7 +12,7 @@ export const DashboardPage = () => {
     <PageGrid>
       <DashboardPeek />
       <FormStatusCard />
-      <ChartsCard toolbar={<DashboardZoomReset />}>
+      <ChartsCard zoomReset={<DashboardZoomReset />}>
         <LoadChart />
         <PerformanceChart />
       </ChartsCard>

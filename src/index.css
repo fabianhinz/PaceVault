@@ -33,29 +33,24 @@
 
   --color-cyan-400: #22d3ee;
 
-  /* ── Semantic: Surfaces ── */
   --color-surface-base: #030712;
   --color-surface-sunken: var(--color-gray-950);
   --color-surface: var(--color-gray-900);
   --color-surface-elevated: var(--color-gray-800);
   --color-surface-overlay: var(--color-gray-700);
 
-  /* ── Semantic: Borders ── */
   --color-border: var(--color-gray-700);
 
-  /* ── Semantic: Text hierarchy ── */
   --color-text-primary: var(--color-gray-100);
   --color-text-secondary: var(--color-gray-300);
   --color-text-tertiary: var(--color-gray-400);
   --color-text-quaternary: var(--color-gray-500);
 
-  /* ── Semantic: Accent (primary action) ── */
   --color-accent: var(--color-blue-500);
   --color-accent-hover: var(--color-blue-400);
   --color-accent-strong: var(--color-blue-600);
   --color-accent-muted: #3b82f633;
 
-  /* ── Semantic: Status ── */
   --color-status-success: var(--color-green-400);
   --color-status-success-strong: var(--color-green-500);
   --color-status-success-muted: #22c55e33;
@@ -69,13 +64,11 @@
   --color-status-neutral: var(--color-gray-400);
   --color-status-neutral-muted: #5c616e33;
 
-  /* ── Semantic: Sport ── */
   --color-sport-running: var(--color-green-400);
   --color-sport-running-muted: #22c55e33;
   --color-sport-cycling: var(--color-orange-500);
   --color-sport-cycling-muted: #f9731633;
 
-  /* ── Semantic: Chart data series ── */
   --color-chart-fitness: var(--color-blue-500);
   --color-chart-fatigue: var(--color-pink-500);
   --color-chart-form: var(--color-yellow-500);
@@ -84,7 +77,11 @@
   --color-chart-speed: var(--color-green-500);
   --color-chart-grade: #a78bfa;
 
-  /* ── Spacing scale (4px base grid) ── */
+  --color-precip-rain: var(--color-blue-400);
+  --color-precip-freezing: #67e8f9;
+  --color-precip-snow: var(--color-gray-100);
+  --color-precip-thunderstorm: #fbbf24;
+
   --spacing-1: 4px;
   --spacing-2: 8px;
   --spacing-3: 12px;
@@ -93,7 +90,6 @@
   --spacing-8: 32px;
   --spacing-12: 48px;
 
-  /* ── Border radius ── */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;

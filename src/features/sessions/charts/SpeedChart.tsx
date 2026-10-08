@@ -12,6 +12,8 @@ import { LapBands, LAP_STRIP_TICK_MARGIN } from '@/components/charts/LapBands.ts
 import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
+import type { ColorScale } from '@/lib/zoneColors.ts';
+import { useZoneLineStroke } from '@/components/charts/ZoneGradient.tsx';
 import type { SpeedPoint } from '@/lib/chartData.ts';
 import { m } from '@/paraglide/messages.js';
 
@@ -20,6 +22,7 @@ interface SpeedChartProps {
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onSelectTime?: (time: number) => void;
+  colorScale?: ColorScale;
 }
 
 export const SpeedChart = (props: SpeedChartProps) => {
@@ -29,6 +32,11 @@ export const SpeedChart = (props: SpeedChartProps) => {
     onZoomComplete: props.onZoomComplete,
     onClick: (x) => props.onSelectTime?.(Number(x)),
   });
+  const colorLine = useZoneLineStroke(
+    props.colorScale,
+    zoom.zoomedData.map((d) => d.speed),
+    false,
+  );
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -44,6 +52,7 @@ export const SpeedChart = (props: SpeedChartProps) => {
         onMouseUp={zoom.onMouseUp}
         {...chartHoverHandlers(props.onActiveTimeChange)}
       >
+        {colorLine.defs}
         <XAxis
           dataKey="time"
           ticks={[
@@ -72,7 +81,7 @@ export const SpeedChart = (props: SpeedChartProps) => {
           yAxisId="left"
           type="monotone"
           dataKey="speed"
-          stroke={tokens.chartSpeed}
+          stroke={colorLine.stroke ?? tokens.chartSpeed}
           strokeWidth={1.5}
           dot={false}
           name={m.ui_chart_series_speed()}

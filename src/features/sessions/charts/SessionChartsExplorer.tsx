@@ -1,8 +1,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo } from 'react';
 import { Heart, Zap, Gauge, Mountain, Timer, TrendingUp, ArrowUpDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ChartRow, ChartsCard } from '@/components/ui/ChartsCard.tsx';
-import { ZoomResetButton } from '@/components/ui/ZoomResetButton.tsx';
+import { ChartRow, ChartsCard, ZoomResetPill } from '@/components/ui/ChartsCard.tsx';
 import { buildSessionChartRows, gpsByX, hasSeriesValues } from '@/lib/chartData.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
@@ -43,6 +42,7 @@ import {
   type ZoneThresholds,
 } from '@/lib/zoneColors.ts';
 import type { ColorMode } from '@/lib/colorModes.ts';
+import { speedScale } from '@/lib/speedScale.ts';
 import { zoneLabel } from './zoneLabel.ts';
 
 interface ChartEntry {
@@ -99,6 +99,10 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const paceScale = useMemo(
     () => scaleFor('pace', trackColorMode, thresholds),
     [trackColorMode, thresholds],
+  );
+  const speedColorScale = useMemo(
+    () => (trackColorMode === 'speed' ? speedScale(props.records) : undefined),
+    [trackColorMode, props.records],
   );
 
   const lapBands = useDeferredValue(useMapFocusStore((s) => s.sessionLaps?.bands));
@@ -230,6 +234,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       speed: (
         <SpeedChart
           data={compactRows}
+          colorScale={speedColorScale}
           onActiveTimeChange={onHover}
           onZoomComplete={onZoomComplete}
           onSelectTime={onSelectTime}
@@ -281,7 +286,16 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         />
       ),
     }),
-    [compactRows, hrScale, powerScale, paceScale, onHover, onSelectTime, onZoomComplete],
+    [
+      compactRows,
+      hrScale,
+      powerScale,
+      paceScale,
+      speedColorScale,
+      onHover,
+      onSelectTime,
+      onZoomComplete,
+    ],
   );
 
   const charts: ChartEntry[] = [
@@ -518,7 +532,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   if (visibleCharts.length === 0) return null;
 
   return (
-    <ChartsCard toolbar={<ZoomResetButton isZoomed={zoom.isZoomed} onReset={zoom.resetZoom} />}>
+    <ChartsCard zoomReset={<ZoomResetPill isZoomed={zoom.isZoomed} onReset={zoom.resetZoom} />}>
       {visibleCharts.map((chart) => (
         <ChartRow
           key={chart.key}

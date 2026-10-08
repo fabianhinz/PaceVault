@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils.ts';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { summarizeLaps } from '@/lib/lapSummary.ts';
 import type { LapAnalysis } from '@/lib/laps.ts';
-import type { LapSet } from '@/lib/lapSet.ts';
+import type { LapSet, LapSource } from '@/lib/lapSet.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import type { SessionLap, Sport } from '@/packages/engine/types.ts';
 import { LapStrip } from './LapStrip.tsx';
@@ -46,27 +46,42 @@ const KeyValue = (props: KeyValueProps) => (
   </div>
 );
 
-const LapExtreme = (props: { label: string; lap: LapAnalysis | undefined; sport: Sport }) => {
+const LapExtreme = (props: {
+  label: string;
+  lap: LapAnalysis | undefined;
+  sport: Sport;
+  source: LapSource;
+}) => {
   const pace = props.lap?.paceSecPerKm;
   if (props.lap === undefined || pace === undefined) return null;
   return (
     <KeyValue
       label={props.label}
       value={lapPaceLabel(pace, props.sport)}
-      detail={lapName(props.lap.lapIndex)}
+      detail={lapName(props.lap.lapIndex, props.source)}
     />
   );
 };
 
-const LapsDetails = (props: { set: LapSet; sport: Sport }) => {
+const LapsDetails = (props: { set: LapSet; sport: Sport; source: LapSource }) => {
   const summary = summarizeLaps(props.set);
   const recovery = METRIC_EXPLANATIONS.recovery;
   return (
     <div className="flex flex-col gap-3">
       <LapStrip set={props.set} size="detail" />
       <div className="flex flex-col gap-1 border-t border-white/10 pt-2.5">
-        <LapExtreme label={m.ui_laps_fastest()} lap={summary.fastest} sport={props.sport} />
-        <LapExtreme label={m.ui_laps_slowest()} lap={summary.slowest} sport={props.sport} />
+        <LapExtreme
+          label={m.ui_laps_fastest()}
+          lap={summary.fastest}
+          sport={props.sport}
+          source={props.source}
+        />
+        <LapExtreme
+          label={m.ui_laps_slowest()}
+          lap={summary.slowest}
+          sport={props.sport}
+          source={props.source}
+        />
         {summary.avgHrRecovery !== undefined && (
           <KeyValue
             interactive
@@ -111,7 +126,7 @@ export const LapsRow = (props: LapsRowProps) => {
       primary={labels.primary}
       secondary={labels.secondary === '' ? undefined : labels.secondary}
     >
-      {set !== null && <LapsDetails set={set} sport={props.sport} />}
+      {set !== null && <LapsDetails set={set} sport={props.sport} source={source} />}
     </CollapsibleListItem>
   );
 };

@@ -24,7 +24,6 @@ export interface WeatherSnapshot {
   windGusts: number;
   windDirection: number;
   weatherCode: number;
-  condition: WeatherCondition;
 }
 
 export interface SessionWeather {
@@ -41,8 +40,141 @@ export const wmoToCondition = (code: number): WeatherCondition => {
   if (code >= 51 && code <= 57) return 'drizzle';
   if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return 'rain';
   if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 'snow';
-  if (code === 95 || code === 96 || code === 99) return 'thunderstorm';
+  if (code >= 95 && code <= 99) return 'thunderstorm';
   return 'cloudy';
+};
+
+export type WeatherDescription =
+  | WeatherCondition
+  | 'drizzle-light'
+  | 'drizzle-moderate'
+  | 'drizzle-dense'
+  | 'freezing-drizzle-light'
+  | 'freezing-drizzle-dense'
+  | 'rain-light'
+  | 'rain-moderate'
+  | 'rain-heavy'
+  | 'freezing-rain-light'
+  | 'freezing-rain-heavy'
+  | 'snow-light'
+  | 'snow-moderate'
+  | 'snow-heavy'
+  | 'snow-grains'
+  | 'rain-showers-light'
+  | 'rain-showers-moderate'
+  | 'rain-showers-heavy'
+  | 'snow-showers-light'
+  | 'snow-showers-heavy'
+  | 'thunderstorm-hail'
+  | 'thunderstorm-heavy'
+  | 'thunderstorm-hail-heavy';
+
+const DESCRIPTION_BY_CODE: Partial<Record<number, WeatherDescription>> = {
+  51: 'drizzle-light',
+  53: 'drizzle-moderate',
+  55: 'drizzle-dense',
+  56: 'freezing-drizzle-light',
+  57: 'freezing-drizzle-dense',
+  61: 'rain-light',
+  63: 'rain-moderate',
+  65: 'rain-heavy',
+  66: 'freezing-rain-light',
+  67: 'freezing-rain-heavy',
+  71: 'snow-light',
+  73: 'snow-moderate',
+  75: 'snow-heavy',
+  77: 'snow-grains',
+  80: 'rain-showers-light',
+  81: 'rain-showers-moderate',
+  82: 'rain-showers-heavy',
+  85: 'snow-showers-light',
+  86: 'snow-showers-heavy',
+  95: 'thunderstorm',
+  96: 'thunderstorm-hail',
+  97: 'thunderstorm-heavy',
+  99: 'thunderstorm-hail-heavy',
+};
+
+export const wmoToDescription = (code: number): WeatherDescription => {
+  const description = DESCRIPTION_BY_CODE[code];
+  if (description !== undefined) return description;
+  return wmoToCondition(code);
+};
+
+export type PrecipitationIntensity = 'none' | 'light' | 'moderate' | 'heavy';
+
+const INTENSITY_BY_CODE: Partial<Record<number, PrecipitationIntensity>> = {
+  51: 'light',
+  56: 'light',
+  61: 'light',
+  66: 'light',
+  71: 'light',
+  77: 'light',
+  80: 'light',
+  85: 'light',
+  53: 'moderate',
+  63: 'moderate',
+  73: 'moderate',
+  81: 'moderate',
+  95: 'moderate',
+  96: 'moderate',
+  55: 'heavy',
+  57: 'heavy',
+  65: 'heavy',
+  67: 'heavy',
+  75: 'heavy',
+  82: 'heavy',
+  86: 'heavy',
+  97: 'heavy',
+  99: 'heavy',
+};
+
+const DRY_CONDITIONS: ReadonlySet<WeatherCondition> = new Set([
+  'clear',
+  'partly-cloudy',
+  'cloudy',
+  'fog',
+]);
+
+export const wmoToPrecipitation = (code: number): PrecipitationIntensity | undefined => {
+  const intensity = INTENSITY_BY_CODE[code];
+  if (intensity !== undefined) return intensity;
+  if (DRY_CONDITIONS.has(wmoToCondition(code))) return 'none';
+  return undefined;
+};
+
+export type PrecipitationType = 'rain' | 'freezing' | 'snow' | 'thunderstorm';
+
+export type PrecipitationDots = 0 | 1 | 2 | 3;
+
+export interface PrecipitationMark {
+  dots: PrecipitationDots | undefined;
+  type: PrecipitationType | undefined;
+}
+
+const DOTS_BY_INTENSITY: Record<PrecipitationIntensity, PrecipitationDots> = {
+  none: 0,
+  light: 1,
+  moderate: 2,
+  heavy: 3,
+};
+
+const FREEZING_CODES: ReadonlySet<number> = new Set([56, 57, 66, 67]);
+
+const precipitationType = (code: number): PrecipitationType | undefined => {
+  if (FREEZING_CODES.has(code)) return 'freezing';
+  const condition = wmoToCondition(code);
+  if (condition === 'drizzle' || condition === 'rain') return 'rain';
+  if (condition === 'snow') return 'snow';
+  if (condition === 'thunderstorm') return 'thunderstorm';
+  return undefined;
+};
+
+export const wmoToPrecipitationMark = (code: number): PrecipitationMark => {
+  const intensity = wmoToPrecipitation(code);
+  let dots: PrecipitationDots | undefined = undefined;
+  if (intensity !== undefined) dots = DOTS_BY_INTENSITY[intensity];
+  return { dots, type: precipitationType(code) };
 };
 
 interface Waypoint {
@@ -285,7 +417,6 @@ export const fetchSessionWeather = async (
         windGusts,
         windDirection,
         weatherCode,
-        condition: wmoToCondition(weatherCode),
       });
     }
   }

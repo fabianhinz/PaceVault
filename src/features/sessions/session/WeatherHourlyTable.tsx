@@ -3,9 +3,14 @@ import { ArrowUp, Cloud, Droplets, Thermometer, Wind, type LucideIcon } from 'lu
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import { cn } from '@/lib/utils.ts';
-import type { WeatherSnapshot } from '@/lib/weather.ts';
-import { conditionChangeIndices } from '@/lib/weatherSummary.ts';
-import { CONDITION_ICONS, CONDITION_LABELS } from './weatherConditions.ts';
+import { tokens } from '@/lib/tokens.ts';
+import {
+  wmoToPrecipitationMark,
+  type PrecipitationMark,
+  type PrecipitationType,
+  type WeatherSnapshot,
+} from '@/lib/weather.ts';
+import { weatherIcon, weatherLabel } from './weatherConditions.ts';
 
 const hourFmt = new Intl.DateTimeFormat(getLocale(), { hour: 'numeric', minute: '2-digit' });
 const integerFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });
@@ -21,31 +26,73 @@ interface Row {
   icon: LucideIcon;
   label: string;
   unit?: string;
-  cell: (snapshot: WeatherSnapshot, index: number) => ReactNode;
+  cell: (snapshot: WeatherSnapshot) => ReactNode;
 }
 
 const cellClass = 'h-8 min-w-[50px] whitespace-nowrap px-1 text-center';
 
-export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
-  const changes = conditionChangeIndices(props.snapshots);
+const PRECIPITATION_COLORS: Record<PrecipitationType, string> = {
+  rain: tokens.precipRain,
+  freezing: tokens.precipFreezing,
+  snow: tokens.precipSnow,
+  thunderstorm: tokens.precipThunderstorm,
+};
 
+const PrecipitationDots = (props: { mark: PrecipitationMark }) => {
+  const dots = props.mark.dots;
+  if (dots === undefined) {
+    return (
+      <svg width={12} height={6} viewBox="0 0 12 6" aria-hidden className="stroke-text-tertiary">
+        <path d="M0 3h5M7 3h5" strokeWidth={1.5} />
+      </svg>
+    );
+  }
+  if (dots === 0 || props.mark.type === undefined) return null;
+  const color = PRECIPITATION_COLORS[props.mark.type];
+  return (
+    <svg width={14} height={4} viewBox="0 0 14 4" aria-hidden>
+      {[0, 1, 2].map((index) => (
+        <circle
+          key={index}
+          cx={2 + index * 5}
+          cy={2}
+          r={1.6}
+          fill={index < dots ? color : undefined}
+          className={cn(index >= dots && 'fill-white/15')}
+        />
+      ))}
+    </svg>
+  );
+};
+
+const skyCellLabel = (weatherCode: number, mark: PrecipitationMark) => {
+  const label = weatherLabel(weatherCode);
+  if (mark.dots === undefined) return m.ui_weather_intensity_unknown({ condition: label });
+  return label;
+};
+
+export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
   const rows: Row[] = [
     {
-      key: 'sky',
+      key: 'weather',
       icon: Cloud,
-      label: m.ui_weather_row_sky(),
-      cell: (snapshot, index) => {
-        const Icon = CONDITION_ICONS[snapshot.condition];
-        const label = CONDITION_LABELS[snapshot.condition]();
+      label: m.ui_weather_row_weather(),
+      cell: (snapshot) => {
+        const Icon = weatherIcon(snapshot.weatherCode);
+        const mark = wmoToPrecipitationMark(snapshot.weatherCode);
+        const label = skyCellLabel(snapshot.weatherCode, mark);
         return (
-          <Icon
-            size={16}
+          <span
             role="img"
             aria-label={label}
-            className={cn('inline-block', changes.has(index) && 'text-status-info')}
+            title={label}
+            className="inline-flex flex-col items-center gap-[3px] align-middle"
           >
-            <title>{label}</title>
-          </Icon>
+            <Icon size={16} aria-hidden className="block" />
+            <span className="flex h-1.5 items-center justify-center">
+              <PrecipitationDots mark={mark} />
+            </span>
+          </span>
         );
       },
     },
@@ -119,15 +166,11 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
           <thead>
             <tr>
               <td className="sr-only" />
-              {props.snapshots.map((snapshot, index) => (
+              {props.snapshots.map((snapshot) => (
                 <th
                   key={snapshot.time}
                   scope="col"
-                  className={cn(
-                    cellClass,
-                    'font-medium text-text-tertiary',
-                    changes.has(index) && 'text-status-info',
-                  )}
+                  className={cn(cellClass, 'font-medium text-text-tertiary')}
                 >
                   {hourFmt.format(snapshot.time)}
                 </th>
@@ -140,12 +183,12 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
                 <th scope="row" className="sr-only">
                   {row.label}
                 </th>
-                {props.snapshots.map((snapshot, index) => (
+                {props.snapshots.map((snapshot) => (
                   <td
                     key={snapshot.time}
                     className={cn(cellClass, 'border-t border-white/5 text-text-primary')}
                   >
-                    {row.cell(snapshot, index)}
+                    {row.cell(snapshot)}
                   </td>
                 ))}
               </tr>

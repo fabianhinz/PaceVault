@@ -10,7 +10,7 @@ import type { WindExposure } from '@/packages/engine/windExposure.ts';
 import { useSessionWeather } from './hooks/useSessionWeather.ts';
 import { useWindExposure } from './hooks/useWindExposure.ts';
 import { useWindRose } from './hooks/useWindRose.ts';
-import { CONDITION_ICONS, CONDITION_LABELS } from './weatherConditions.ts';
+import { weatherIcon, weatherLabel } from './weatherConditions.ts';
 import { WeatherHourlyTable } from './WeatherHourlyTable.tsx';
 import { WindRose, WindRoseGlyph } from './WindRose.tsx';
 
@@ -59,7 +59,7 @@ const secondaryLine = (summary: WeatherSummary, exposure: WindExposure | null): 
   const change = summary.firstChange;
   if (change !== undefined) {
     return m.ui_weather_change_from({
-      condition: CONDITION_LABELS[change.condition](),
+      condition: weatherLabel(change.weatherCode),
       time: hourFmt.format(change.time),
     });
   }
@@ -131,7 +131,7 @@ export const WeatherCard = (props: WeatherCardProps) => {
   const summary = summarizeWeather(weather.snapshots);
   if (summary === undefined) return null;
 
-  const ConditionIcon = CONDITION_ICONS[summary.condition];
+  const ConditionIcon = weatherIcon(summary.weatherCode);
 
   return (
     <CollapsibleListItem
@@ -145,7 +145,7 @@ export const WeatherCard = (props: WeatherCardProps) => {
       }
       primary={
         <span className="tabular-nums">
-          {CONDITION_LABELS[summary.condition]()} {formatRange(summary.temperature, celsiusFmt)}
+          {weatherLabel(summary.weatherCode)} {formatRange(summary.temperature, celsiusFmt)}
         </span>
       }
       secondary={secondaryLine(summary, exposure)}

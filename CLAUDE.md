@@ -69,7 +69,7 @@ Specific guidelines for features, testing, and state management are located in t
 
 ## 5. Dev Workflow & Actionable Verification
 
-> **Plan first, then build.** Create a new branch for every feature or bug fix.
+> **Plan first, then build.** The owner creates branches and commits; Claude leaves all changes in the working tree.
 
 For a UI change without a settled design, first run the `explore-ui` skill (`.claude/skills/explore-ui/SKILL.md`): research and mockup rounds that end in the plan below.
 

@@ -1,11 +1,13 @@
 import { isValidCoordinate } from '@/packages/engine/gps.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { rgb } from 'd3-color';
-import { windColorAt, type ZoneMetric, type ZoneScale } from '@/lib/zoneColors.ts';
+import { windColorAt, type ColorScale, type ZoneMetric } from '@/lib/zoneColors.ts';
 import { rollingMean, TRACK_SMOOTHING_SEC } from '@/lib/trackSmoothing.ts';
 import { trackModifiers } from './trackColors.ts';
 
 type Color = [number, number, number, number];
+
+type TrackMetric = ZoneMetric | 'speed';
 
 export interface DetailPath {
   path: [number, number][];
@@ -20,14 +22,16 @@ const toColor = (css: string): Color => {
   return [Math.round(c.r), Math.round(c.g), Math.round(c.b), trackModifiers.alpha.highlighted];
 };
 
-const rawZoneValue = (r: SessionRecord, metric: ZoneMetric): number | undefined => {
+const rawZoneValue = (r: SessionRecord, metric: TrackMetric): number | undefined => {
   if (metric === 'hr') return r.hr;
   if (metric === 'power') return r.power;
   return r.speed;
 };
 
-const toZoneValue = (value: number | undefined, metric: ZoneMetric): number | undefined => {
-  if (value === undefined || metric !== 'pace') return value;
+const toZoneValue = (value: number | undefined, metric: TrackMetric): number | undefined => {
+  if (value === undefined) return undefined;
+  if (metric === 'speed') return value * 3.6;
+  if (metric !== 'pace') return value;
   if (value <= 0) return undefined;
   return 1000 / value / 60;
 };
@@ -71,8 +75,8 @@ const buildColoredPath = (
 
 export const buildZoneColoredPath = (
   records: SessionRecord[],
-  metric: ZoneMetric,
-  scale: ZoneScale,
+  metric: TrackMetric,
+  scale: ColorScale,
 ): DetailPath | null => {
   const values = smoothedValues(
     records,

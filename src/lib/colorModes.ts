@@ -1,19 +1,18 @@
 import type { SessionRecord, Sport } from '@/packages/engine/types.ts';
 import type { WindSample } from '@/packages/engine/windExposure.ts';
 import { zoneScale, type ZoneMetric, type ZoneThresholds } from '@/lib/zoneColors.ts';
+import { hasMovingSpeed } from '@/lib/speedScale.ts';
 
-export type ColorMode = 'sport' | ZoneMetric | 'wind';
-
-export const COLOR_MODES: ColorMode[] = ['sport', 'hr', 'power', 'pace', 'wind'];
+export type ColorMode = 'sport' | ZoneMetric | 'speed' | 'wind';
 
 export type ColorModeUnavailableReason =
   | 'hrThresholds'
   | 'ftp'
   | 'thresholdPace'
-  | 'runningOnly'
   | 'noHrData'
   | 'noPowerData'
   | 'noPaceData'
+  | 'noSpeedData'
   | 'noWeather'
   | 'weatherLoading'
   | 'noGps';
@@ -21,6 +20,11 @@ export type ColorModeUnavailableReason =
 export type ColorModeStatus =
   | { available: true }
   | { available: false; reason: ColorModeUnavailableReason };
+
+export interface ColorModeOption {
+  mode: ColorMode;
+  status: ColorModeStatus;
+}
 
 export type WindInput = { state: 'loading' } | { state: 'ready'; samples: WindSample[] };
 
@@ -56,10 +60,18 @@ const zoneStatus = (
   return AVAILABLE;
 };
 
-const paceStatus = (input: ColorModeInput): ColorModeStatus => {
-  if (input.sport !== 'running') return unavailable('runningOnly');
-  const hasPace = input.records.some((r) => r.speed !== undefined && r.speed > 0);
-  return zoneStatus('pace', input.thresholds, hasPace, 'thresholdPace', 'noPaceData');
+const paceStatus = (input: ColorModeInput): ColorModeStatus =>
+  zoneStatus(
+    'pace',
+    input.thresholds,
+    hasMovingSpeed(input.records),
+    'thresholdPace',
+    'noPaceData',
+  );
+
+const speedStatus = (input: ColorModeInput): ColorModeStatus => {
+  if (!hasMovingSpeed(input.records)) return unavailable('noSpeedData');
+  return AVAILABLE;
 };
 
 const windStatus = (input: ColorModeInput): ColorModeStatus => {
@@ -69,30 +81,39 @@ const windStatus = (input: ColorModeInput): ColorModeStatus => {
   return AVAILABLE;
 };
 
-export const colorModeStatuses = (input: ColorModeInput): Record<ColorMode, ColorModeStatus> => ({
-  sport: AVAILABLE,
-  hr: zoneStatus(
-    'hr',
-    input.thresholds,
-    hasValue(input.records, (r) => r.hr),
-    'hrThresholds',
-    'noHrData',
-  ),
-  power: zoneStatus(
-    'power',
-    input.thresholds,
-    hasValue(input.records, (r) => r.power),
-    'ftp',
-    'noPowerData',
-  ),
-  pace: paceStatus(input),
-  wind: windStatus(input),
-});
+const paceOrSpeed = (input: ColorModeInput): ColorModeOption => {
+  if (input.sport === 'running') return { mode: 'pace', status: paceStatus(input) };
+  return { mode: 'speed', status: speedStatus(input) };
+};
 
-export const effectiveColorMode = (
-  stored: ColorMode,
-  statuses: Record<ColorMode, ColorModeStatus>,
-): ColorMode => {
-  if (statuses[stored].available) return stored;
+export const colorModeOptions = (input: ColorModeInput): ColorModeOption[] => [
+  { mode: 'sport', status: AVAILABLE },
+  {
+    mode: 'hr',
+    status: zoneStatus(
+      'hr',
+      input.thresholds,
+      hasValue(input.records, (r) => r.hr),
+      'hrThresholds',
+      'noHrData',
+    ),
+  },
+  {
+    mode: 'power',
+    status: zoneStatus(
+      'power',
+      input.thresholds,
+      hasValue(input.records, (r) => r.power),
+      'ftp',
+      'noPowerData',
+    ),
+  },
+  paceOrSpeed(input),
+  { mode: 'wind', status: windStatus(input) },
+];
+
+export const effectiveColorMode = (stored: ColorMode, options: ColorModeOption[]): ColorMode => {
+  const option = options.find((candidate) => candidate.mode === stored);
+  if (option?.status.available) return stored;
   return 'sport';
 };

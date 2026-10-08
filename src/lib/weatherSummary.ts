@@ -1,4 +1,4 @@
-import type { WeatherCondition, WeatherSnapshot } from '@/lib/weather.ts';
+import { wmoToCondition, type WeatherSnapshot } from '@/lib/weather.ts';
 
 export interface ValueRange {
   min: number;
@@ -6,12 +6,12 @@ export interface ValueRange {
 }
 
 interface ConditionChange {
-  condition: WeatherCondition;
+  weatherCode: number;
   time: number;
 }
 
 export interface WeatherSummary {
-  condition: WeatherCondition;
+  weatherCode: number;
   temperature: ValueRange;
   feelsLike: ValueRange;
   windSpeed: ValueRange;
@@ -23,28 +23,21 @@ const rangeOf = (values: number[]): ValueRange => ({
   max: Math.max(...values),
 });
 
-export const conditionChangeIndices = (snapshots: WeatherSnapshot[]): Set<number> => {
-  const indices = new Set<number>();
-  for (let i = 1; i < snapshots.length; i++) {
-    if (snapshots[i]?.condition !== snapshots[i - 1]?.condition) {
-      indices.add(i);
-    }
-  }
-  return indices;
-};
-
 export const summarizeWeather = (snapshots: WeatherSnapshot[]): WeatherSummary | undefined => {
   const first = snapshots[0];
   if (first === undefined) return undefined;
 
+  const firstCondition = wmoToCondition(first.weatherCode);
   let firstChange: ConditionChange | undefined;
-  const changed = snapshots.find((snapshot) => snapshot.condition !== first.condition);
+  const changed = snapshots.find(
+    (snapshot) => wmoToCondition(snapshot.weatherCode) !== firstCondition,
+  );
   if (changed !== undefined) {
-    firstChange = { condition: changed.condition, time: changed.time };
+    firstChange = { weatherCode: changed.weatherCode, time: changed.time };
   }
 
   return {
-    condition: first.condition,
+    weatherCode: first.weatherCode,
     temperature: rangeOf(snapshots.map((snapshot) => snapshot.temperature)),
     feelsLike: rangeOf(snapshots.map((snapshot) => snapshot.feelsLike)),
     windSpeed: rangeOf(snapshots.map((snapshot) => snapshot.windSpeed)),

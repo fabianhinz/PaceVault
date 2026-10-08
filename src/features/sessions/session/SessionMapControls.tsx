@@ -41,7 +41,8 @@ export const SessionMapControls = (props: SessionMapControlsProps) => {
       <ColorByControl
         sport={props.session.sport}
         effective={effective}
-        statuses={coloring.statuses}
+        options={coloring.options}
+        speedScale={coloring.speedScale}
       />
       <LapsControl records={props.records} laps={props.laps} sport={props.session.sport} />
     </div>

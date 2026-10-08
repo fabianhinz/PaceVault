@@ -1,8 +1,8 @@
 import { useId } from 'react';
-import { zoneLineStroke, type ZoneScale } from '@/lib/zoneColors.ts';
+import { zoneLineStroke, type ColorScale } from '@/lib/zoneColors.ts';
 
 export const useZoneLineStroke = (
-  scale: ZoneScale | undefined,
+  scale: ColorScale | undefined,
   values: Array<number | null | undefined>,
   reversed: boolean,
 ) => {

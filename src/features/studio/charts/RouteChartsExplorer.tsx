@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { Mountain, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ChartRow, ChartsCard } from '@/components/ui/ChartsCard.tsx';
-import { ZoomResetButton } from '@/components/ui/ZoomResetButton.tsx';
+import { ChartRow, ChartsCard, ZoomResetPill } from '@/components/ui/ChartsCard.tsx';
 import { ElevationChart } from '@/components/charts/ElevationChart.tsx';
 import { GradeChart } from '@/components/charts/GradeChart.tsx';
 import { buildRouteProfile } from '@/packages/gpx/routeProfile.ts';
@@ -169,7 +168,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
   if (visibleCharts.length === 0) return null;
 
   return (
-    <ChartsCard toolbar={<ZoomResetButton isZoomed={zoom.isZoomed} onReset={zoom.resetZoom} />}>
+    <ChartsCard zoomReset={<ZoomResetPill isZoomed={zoom.isZoomed} onReset={zoom.resetZoom} />}>
       {visibleCharts.map((chart) => (
         <ChartRow
           key={chart.key}

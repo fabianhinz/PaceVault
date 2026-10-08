@@ -80,7 +80,6 @@ export const MapBackground = () => {
         ref={mapRef}
         onLoad={() => setMapLoaded(true)}
         mapStyle={styles.dark}
-        cursor={popupState.hoveringTrack ? 'pointer' : undefined}
         initialViewState={{
           longitude: 10,
           latitude: 50,
@@ -101,6 +100,7 @@ export const MapBackground = () => {
           tracks={mapTracks.tracks}
           onClick={onMapClick}
           onHover={popupState.onHover}
+          hoveringTrack={popupState.hoveringTrack}
         />
         {studioTracks.focusedRouteId && <StudioMarkerPins routeId={studioTracks.focusedRouteId} />}
       </MapGL>

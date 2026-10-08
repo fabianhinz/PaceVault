@@ -5,6 +5,7 @@ import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useUserStore } from '@/store/user.ts';
 import { windAngles } from '@/packages/engine/windExposure.ts';
 import { zoneScale } from '@/lib/zoneColors.ts';
+import { speedScale } from '@/lib/speedScale.ts';
 import { toWindSamples } from '@/lib/weather.ts';
 import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
 import {
@@ -64,6 +65,11 @@ export const useSessionDetailPath = (
     if (trackColorMode === 'wind' && weather) {
       const angles = windAngles(loaded.records, toWindSamples(weather), session.date);
       return buildWindColoredPath(loaded.records, angles);
+    }
+
+    if (trackColorMode === 'speed') {
+      const scale = speedScale(loaded.records);
+      if (scale) return buildZoneColoredPath(loaded.records, 'speed', scale);
     }
 
     const isZoneMode =

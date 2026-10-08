@@ -2,6 +2,7 @@ export const TRACK_SMOOTHING_SEC = {
   hr: 5,
   power: 30,
   pace: 10,
+  speed: 10,
   wind: 10,
 } as const;
 

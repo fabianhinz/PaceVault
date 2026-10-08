@@ -5,7 +5,7 @@ import { ResponsivePopover } from '@/components/ui/ResponsivePopover.tsx';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup.tsx';
 import { Slider } from '@/components/ui/Slider.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { glassClass } from '@/components/ui/Card.tsx';
+import { GlassPill, glassPillClass } from '@/components/ui/GlassPill.tsx';
 import { cn } from '@/lib/utils.ts';
 import { recordedDistance, splitDistanceRange } from '@/lib/dynamicLaps.ts';
 import {
@@ -206,7 +206,7 @@ const StepButton = (props: {
   </button>
 );
 
-const LapStepper = (props: { set: LapSet; lapIndex: number }) => {
+const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource }) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') useMapFocusStore.getState().clearSelectedLap();
@@ -224,11 +224,7 @@ const LapStepper = (props: { set: LapSet; lapIndex: number }) => {
       role="group"
       aria-label={m.ui_laps()}
       data-testid="lap-stepper"
-      className={cn(
-        glassClass,
-        'pointer-events-auto inline-flex shrink-0 items-center gap-0.5 rounded-full py-1 pr-1 pl-3',
-        'text-sm whitespace-nowrap text-text-primary',
-      )}
+      className={cn(glassPillClass, 'gap-0.5 py-1 pr-1 pl-3')}
     >
       <Flag size={16} className="mr-1 shrink-0" />
       <StepButton
@@ -248,7 +244,7 @@ const LapStepper = (props: { set: LapSet; lapIndex: number }) => {
           lap && lap.intensity !== 'active' && 'text-text-tertiary',
         )}
       >
-        {lapName(props.lapIndex)}
+        {lapName(props.lapIndex, props.source)}
       </span>
       <StepButton
         label={m.ui_lap_next()}
@@ -292,7 +288,7 @@ export const LapsControl = (props: LapsControlProps) => {
     sessionLaps !== null &&
     sessionLaps.bands.some((band) => band.lapIndex === selected);
   if (hasSelectedLap && sessionLaps) {
-    return <LapStepper set={sessionLaps} lapIndex={selected} />;
+    return <LapStepper set={sessionLaps} lapIndex={selected} source={source} />;
   }
 
   return (
@@ -304,21 +300,12 @@ export const LapsControl = (props: LapsControlProps) => {
       align="center"
       className="lg:w-80"
       trigger={
-        <button
-          type="button"
-          data-testid="laps-pill"
-          className={cn(
-            glassClass,
-            'pointer-events-auto inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 py-2',
-            'text-sm whitespace-nowrap text-text-primary transition-colors hover:bg-white/10',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-          )}
-        >
+        <GlassPill data-testid="laps-pill">
           <Flag size={16} />
           <span>{pillLabel(source, sessionLaps, splitDistance)}</span>
           {source !== 'off' && sessionLaps && <LapSwatch set={sessionLaps} />}
           <ChevronDown size={14} className="text-text-tertiary" />
-        </button>
+        </GlassPill>
       }
     >
       <div className="mb-3 flex items-center gap-2 text-text-tertiary">

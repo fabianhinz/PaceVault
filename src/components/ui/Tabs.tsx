@@ -1,6 +1,5 @@
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '@/lib/utils.ts';
-import { toolbarButtonClass } from './ToolbarButton.tsx';
 
 export const Tabs = (props: React.ComponentProps<typeof TabsPrimitive.Root>) => {
   const { className, ...rest } = props;
@@ -26,7 +25,7 @@ export const TabsTrigger = (props: React.ComponentProps<typeof TabsPrimitive.Tri
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        toolbarButtonClass,
+        'flex-1 inline-flex items-center justify-center rounded-lg px-3 py-2.5 text-sm font-medium text-text-tertiary transition-colors cursor-pointer hover:bg-white/10 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
         'data-[state=active]:bg-white/10 data-[state=active]:text-text-primary data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
         className,
       )}

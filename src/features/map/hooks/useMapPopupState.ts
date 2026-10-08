@@ -7,6 +7,12 @@ import type { PopupInfo } from '@/features/sessions/SessionsPickPopup.tsx';
 import { decodeCached, PICK_RADIUS } from './types.ts';
 import type { PickingInfo } from '@deck.gl/core';
 
+const isMouseEvent = (event: unknown): boolean =>
+  typeof event === 'object' &&
+  event !== null &&
+  'pointerType' in event &&
+  event.pointerType === 'mouse';
+
 export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks: MapTrack[]) => {
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
 
@@ -57,15 +63,16 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
   }, []);
 
   const onHover = useCallback(
-    (info: PickingInfo) => {
+    (info: PickingInfo, event?: unknown) => {
       const stopPropagation = false;
       const isLapPick =
         info.layer?.id === 'session-detail' && useMapFocusStore.getState().sessionLaps !== null;
-      setHoveringTrack(!!info.object && (!openedSessionId || isLapPick));
+      const pickable = !!info.object && (!openedSessionId || isLapPick);
+      setHoveringTrack(pickable);
       if (!popup) {
         if (
-          !openedSessionId &&
-          info.object &&
+          pickable &&
+          isMouseEvent(event) &&
           info.coordinate &&
           info.coordinate[0] != null &&
           info.coordinate[1] != null

@@ -27,7 +27,6 @@ const openMeteoFixture = (url: URL) => {
 test.describe('Session browsing', () => {
   test.beforeEach(async ({ page }) => {
     await seedOnboardingComplete(page);
-    // Upload two sessions so there's data to browse
     await uploadFitFiles(page, [CYCLING_FIT, RUNNING_FIT]);
   });
 
@@ -35,14 +34,11 @@ test.describe('Session browsing', () => {
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');
 
-    // Session items are links containing sport badge, date, metrics
     const sessionLinks = page.locator('[data-testid="session-item"]');
     await expect(sessionLinks).toHaveCount(2, { timeout: 10_000 });
 
-    // Each session item should have visible text content (name/date, distance, duration)
     const firstSession = sessionLinks.first();
     await expect(firstSession).toBeVisible();
-    // Session items display distance and duration separated by middot
     await expect(firstSession).toContainText('km');
   });
 
@@ -53,10 +49,8 @@ test.describe('Session browsing', () => {
     const sessionLinks = page.locator('[data-testid="session-item"]');
     await expect(sessionLinks.first()).toBeVisible({ timeout: 10_000 });
 
-    // Click the session item to navigate to its detail page
     await sessionLinks.first().click();
 
-    // Should navigate to /sessions/:id
     await page.waitForURL(/\/sessions\/.+/);
 
     const teToggle = page.getByTestId('training-effect-row').locator(':scope > button');
@@ -144,7 +138,7 @@ test.describe('Session browsing', () => {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 
     const stepper = page.getByTestId('lap-stepper');
-    await expect(stepper.getByTestId('lap-stepper-name')).toHaveText(/^Lap \d+$/);
+    await expect(stepper.getByTestId('lap-stepper-name')).toHaveText(/^Split \d+$/);
     await expect(lapsPill).toHaveCount(0);
     await expect(chart.getByTestId('lap-band-selected')).toBeAttached();
     const firstName = await stepper.getByTestId('lap-stepper-name').textContent();
@@ -161,7 +155,7 @@ test.describe('Session browsing', () => {
 
     await page.getByTestId('laps-row').locator(':scope > button').click();
     await page.getByTestId('lap-strip-bar').nth(1).click();
-    await expect(stepper.getByTestId('lap-stepper-name')).toHaveText('Lap 2');
+    await expect(stepper.getByTestId('lap-stepper-name')).toHaveText('Split 2');
     await expect(page.getByTestId('lap-strip-selected')).toBeAttached();
     await stepper.getByTestId('lap-stepper-clear').click();
     await expect(lapsPill).toBeVisible();
@@ -226,7 +220,6 @@ test.describe('Session browsing', () => {
     await page.getByRole('button', { name: /session actions/i }).click();
     await page.getByRole('menuitem', { name: /edit route in studio/i }).click();
 
-    // Lands on a fresh studio route with the Tools tab available.
     await page.waitForURL(/\/studio\/.+/);
     await page.getByRole('tab', { name: /tools/i }).click();
     await expect(page.getByRole('button', { name: /add split point/i })).toBeVisible();
@@ -254,8 +247,17 @@ test.describe('Session browsing', () => {
     await expect(table).toBeVisible();
     const hours = table.locator('thead th[scope="col"]');
     expect(await hours.count()).toBeGreaterThanOrEqual(2);
-    const skyCells = table.getByRole('row', { name: /sky/i }).getByRole('cell');
-    await expect(skyCells).toHaveCount(await hours.count());
+    const weatherRow = table.getByRole('row', { name: /^weather/i });
+    await expect(weatherRow.getByRole('cell')).toHaveCount(await hours.count());
+    const lightRain = weatherRow.getByRole('img', { name: 'Light rain', exact: true });
+    await expect(lightRain.first()).toBeVisible();
+    await expect(lightRain.first().locator('circle')).toHaveCount(3);
+    await expect(
+      weatherRow.getByRole('img', { name: 'Cloudy', exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      weatherRow.getByRole('img', { name: 'Cloudy', exact: true }).first().locator('circle'),
+    ).toHaveCount(0);
   });
 
   test('navigate back from detail to session list', async ({ page }) => {
@@ -265,16 +267,13 @@ test.describe('Session browsing', () => {
     const sessionLinks = page.locator('[data-testid="session-item"]');
     await expect(sessionLinks.first()).toBeVisible({ timeout: 10_000 });
 
-    // Go to detail
     await sessionLinks.first().click();
     await page.waitForURL(/\/sessions\/.+/);
     await expect(page.getByTestId('training-effect-row')).toBeVisible({ timeout: 10_000 });
 
-    // Navigate back via the Sessions nav link in the dock
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');
 
-    // Session list should be visible again
     await expect(page.locator('[data-testid="session-item"]').first()).toBeVisible({
       timeout: 10_000,
     });

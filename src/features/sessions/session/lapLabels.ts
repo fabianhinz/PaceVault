@@ -19,6 +19,11 @@ const speedFmt = new Intl.NumberFormat(getLocale(), {
 });
 const bpmFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });
 
+export const speedRangeLabel = (slowKmh: number, fastKmh: number): string => {
+  if (speedFmt.format(slowKmh) === speedFmt.format(fastKmh)) return speedFmt.format(fastKmh);
+  return speedFmt.formatRange(slowKmh, fastKmh);
+};
+
 export const splitKm = (metres: number): string => kmFmt.format(metres / 1000);
 
 export const splitDistanceLabel = (metres: number): string => kmUnitFmt.format(metres / 1000);
@@ -48,10 +53,7 @@ const lapPaceRangeLabel = (
     if (from === to) return m.ui_laps_pace({ pace: from });
     return m.ui_laps_pace_range({ from, to });
   }
-  const slow = 3600 / slowestSecPerKm;
-  const fast = 3600 / fastestSecPerKm;
-  if (speedFmt.format(slow) === speedFmt.format(fast)) return speedFmt.format(fast);
-  return speedFmt.formatRange(slow, fast);
+  return speedRangeLabel(3600 / slowestSecPerKm, 3600 / fastestSecPerKm);
 };
 
 interface LapsRowLabels {
@@ -111,5 +113,8 @@ export const lapsRowLabels = (
   return { disabled: false, primary, secondary };
 };
 
-export const lapName = (lapIndex: number): string =>
-  m.ui_lap_label({ number: String(lapIndex + 1) });
+export const lapName = (lapIndex: number, source: LapSource): string => {
+  const number = String(lapIndex + 1);
+  if (source === 'splits') return m.ui_split_label({ number });
+  return m.ui_lap_label({ number });
+};

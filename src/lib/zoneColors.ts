@@ -20,9 +20,13 @@ export interface ZoneBand {
   color: string;
 }
 
-export interface ZoneScale {
-  bands: ZoneBand[];
+export interface ColorScale {
+  domain: number[];
   colorAt: (value: number) => string;
+}
+
+export interface ZoneScale extends ColorScale {
+  bands: ZoneBand[];
   bandAt: (value: number) => ZoneBand;
 }
 
@@ -123,6 +127,7 @@ export const zoneScale = (
   if (!first || !last) return undefined;
   return {
     bands,
+    domain: bands.map((band) => band.mid),
     colorAt: (value) => blend(value),
     bandAt: (value) => {
       if (value < first.min) return first;
@@ -132,7 +137,7 @@ export const zoneScale = (
 };
 
 const zoneGradientStops = (
-  scale: ZoneScale,
+  scale: ColorScale,
   values: Array<number | null | undefined>,
   reversed: boolean,
 ): GradientStop[] | undefined => {
@@ -141,11 +146,7 @@ const zoneGradientStops = (
   const min = Math.min(...present);
   const max = Math.max(...present);
   if (max <= min) return undefined;
-  const points = [
-    min,
-    ...scale.bands.map((band) => band.mid).filter((v) => v > min && v < max),
-    max,
-  ];
+  const points = [min, ...scale.domain.filter((v) => v > min && v < max), max];
   const toOffset = (value: number) => {
     if (reversed) return (value - min) / (max - min);
     return (max - value) / (max - min);
@@ -161,7 +162,7 @@ interface ZoneLineStroke {
 }
 
 export const zoneLineStroke = (
-  scale: ZoneScale | undefined,
+  scale: ColorScale | undefined,
   values: Array<number | null | undefined>,
   reversed: boolean,
   gradientId: string,
