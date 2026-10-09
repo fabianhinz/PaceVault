@@ -192,14 +192,15 @@ test.describe('mobile dock', () => {
     ]);
   });
 
-  test('switches tabs and turns the pill into the filter field without moving the row', async ({
+  test('switches tabs and opens the filter card above the row without moving it', async ({
     page,
   }) => {
     const dock = page.locator('[data-layout="dock"]');
     const sessionsTab = dock.getByRole('link', { name: /sessions/i });
     const filterButton = dock.getByRole('button', { name: 'Filter', exact: true });
-    const field = page.getByLabel(/describe a filter/i);
-    const list = page.getByRole('group', { name: /choose filter/i });
+    const card = dock.locator('[data-dock-card]');
+    const field = card.getByLabel(/describe a filter/i);
+    const list = card.getByRole('group', { name: /choose filter/i });
 
     await sessionsTab.click();
     await page.waitForURL('/sessions');
@@ -209,7 +210,8 @@ test.describe('mobile dock', () => {
     await filterButton.click();
     await expect(field).toBeVisible();
     await expect(list).toBeVisible();
-    await expect(sessionsTab).toBeHidden();
+    await expect(sessionsTab).toBeVisible();
+    await expect(filterButton).toHaveAttribute('aria-expanded', 'true');
     expect(await dock.boundingBox()).toEqual(rowBefore);
 
     await list.getByRole('button', { name: 'last 7 days', exact: true }).click();
@@ -222,13 +224,17 @@ test.describe('mobile dock', () => {
     await expect(list).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(list).toBeHidden();
-    await expect(sessionsTab).toBeVisible();
+    await expect(filterButton).toHaveAttribute('aria-expanded', 'false');
     await expect(filterButton.getByTestId('icon-badge')).toBeVisible();
 
     await filterButton.click();
-    await dock.getByRole('button', { name: 'Close list' }).click();
+    await field.fill('run');
+    await page.mouse.click(195, 20);
     await expect(list).toBeHidden();
     await expect(filterButton).toHaveAttribute('aria-expanded', 'false');
+
+    await filterButton.click();
+    await expect(field).toHaveValue('');
   });
 });
 

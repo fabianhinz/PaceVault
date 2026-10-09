@@ -13,9 +13,10 @@ Mockup: `mockups/dock/index.html` (variant B4c, rail "icons only", active state 
 ### Phone
 
 - A **floating row** inset 12 px from the sides, above the bottom edge: **Orten** circle · **tab pill** (4 icon-only tabs) · **Filter** circle. The sheet runs underneath.
-- **Tapping Filter** cross-fades the tab pill and the Filter circle into **one search field in the same box** (the row doesn't grow); Orten stays. The filter list appears as a **floating card above the row** (12 px inset, 24 px radius) showing only the rows — the field is their input.
-- The card sizes to its content, **at most 4.5 rows** (254 px); while typing it shrinks to the suggestions.
-- **Typing:** the row rides on top of the soft keyboard (`visualViewport`), the card above it. Verify on an iPhone.
+- **Tapping Filter** reveals the filter card **above the row** (12 px inset, 24 px radius, fade only), like the desktop popover; the pill and the Filter circle stay, the Filter circle shows the open state (blue background). (Revised: the earlier pill-to-field swap didn't feel smooth.)
+- **Same card as desktop:** the shared filter list **with its own input header** (borderless field + line); only the placement differs.
+- The card sizes to its content: input header + **at most 4.5 rows**; while typing it shrinks to the suggestions.
+- **Typing:** the row and the card above it ride on top of the soft keyboard (`visualViewport`). Verify on an iPhone.
 - No ⋮ anymore; no second reveal layer.
 
 ### Desktop
@@ -35,10 +36,10 @@ Mockup: `mockups/dock/index.html` (variant B4c, rail "icons only", active state 
 
 - `src/components/layout/Dock.tsx`: rebuild as the phone row (pill + two circles) and the desktop rail; remove the ⋮ menu path, `revealStack` layers beyond the list, `dockItemMiniClass`/`dockItemMaxiClass`/`revealItemClass` (`:44-51`).
 - Sliding highlight: a small shared component in `src/components/ui/` that positions from index × fixed item size (desktop vertical, phone horizontal in % of the pill).
-- Filter field on the phone: `src/features/filters/FilterList.tsx` gets the option to use an input outside itself (the pill field) and to size to content with a 4.5-row cap; desktop replaces `h-[358px]` (`FilterList.tsx:86`) by rail height.
+- One filter card component for both: `src/features/filters/FilterList.tsx` with its input; phone sizes to content with a 4.5-row cap, desktop fills the rail height. No external field (`FilterField`, the × button and the pill/field cross-fade are removed).
 - `DockRevealPanel.tsx` is replaced by the floating card (phone) / side card (desktop) or removed if unused.
 - Sheet bottom space: `DOCK_HEIGHT = 57` (`src/lib/sheetPosition.ts:21`) becomes the floating row's footprint (about 88 px incl. inset); check the peek position.
-- Keyboard: a hook on `visualViewport` that lifts the phone row while the field is focused.
+- Keyboard: a hook on `visualViewport` that lifts the phone row and card while the list's input is focused.
 - Captions inside `Button`: pin to `font-normal` like `src/components/ui/StatItem.tsx:28`, since `Button` sets `font-medium` (`src/components/ui/Button.tsx:46`).
 
 ## Removal

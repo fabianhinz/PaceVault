@@ -1,21 +1,21 @@
 import { useLocation } from 'react-router-dom';
-import { ZoomOut } from 'lucide-react';
+import { Search, ZoomOut } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
+import { Input } from '@/components/ui/Input.tsx';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery.ts';
 import { cn } from '@/lib/utils.ts';
 import { filterKey, filterName, filterTile, zoomTile } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { filterIcon } from './filterIcon.ts';
-import { FilterField } from './FilterField.tsx';
-import type { FilterBuilder } from './hooks/useFilterBuilder.ts';
+import { useFilterBuilder } from './hooks/useFilterBuilder.ts';
 
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
 interface FilterListProps {
-  builder: FilterBuilder;
-  withInput: boolean;
+  open: boolean;
   sizing: 'fill' | 'content';
+  onClose: () => void;
 }
 
 export const FilterList = (props: FilterListProps) => {
@@ -23,7 +23,8 @@ export const FilterList = (props: FilterListProps) => {
   const activeFilter = useFiltersStore((s) => s.activeFilter);
   const finePointer = useMediaQuery(FINE_POINTER_QUERY);
   const location = useLocation();
-  const text = props.builder.text;
+  const builder = useFilterBuilder(props.open, props.onClose);
+  const text = builder.text;
 
   let activeKey: string | null = null;
   if (activeFilter) {
@@ -34,13 +35,23 @@ export const FilterList = (props: FilterListProps) => {
 
   return (
     <div className={cn('flex w-full flex-col', props.sizing === 'fill' && 'h-full')}>
-      {props.withInput && (
-        <div className="shrink-0 border-b border-white/10 px-3 py-1">
-          <FilterField builder={props.builder} />
-        </div>
-      )}
+      <div className="shrink-0 border-b border-white/10 px-3 py-1">
+        <Input
+          variant="bare"
+          icon={Search}
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          enterKeyHint="done"
+          aria-label={m.ui_filter_builder_label()}
+          placeholder={m.ui_filter_builder_placeholder()}
+          value={text}
+          onChange={(e) => builder.setText(e.target.value)}
+          onKeyDown={builder.handleKeyDown}
+        />
+      </div>
       <div
-        ref={props.builder.listRef}
+        ref={builder.listRef}
         role="group"
         aria-label={m.ui_filter_list()}
         className={cn(
@@ -51,13 +62,13 @@ export const FilterList = (props: FilterListProps) => {
       >
         {text !== '' && (
           <div
-            ref={props.builder.tilesRef}
+            ref={builder.tilesRef}
             role="group"
             aria-live="polite"
             data-testid="filter-builder-tiles"
             className="flex shrink-0 flex-col gap-1.5"
           >
-            {props.builder.interpretations.map((criteria) => {
+            {builder.interpretations.map((criteria) => {
               const tile = filterTile(criteria);
               const name = filterName(criteria);
               return (
@@ -70,7 +81,7 @@ export const FilterList = (props: FilterListProps) => {
                   description={tile.description}
                   selected={filterKey(criteria) === activeKey}
                   buttonProps={{ 'aria-label': m.ui_filter_apply({ name }), title: name }}
-                  onClick={() => props.builder.select(criteria)}
+                  onClick={() => builder.select(criteria)}
                 />
               );
             })}

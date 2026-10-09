@@ -1,18 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-import { X } from 'lucide-react';
-import { m } from '@/paraglide/messages.js';
+import { useCallback, useState } from 'react';
 import { useFileUpload } from '@/features/sessions/hooks/useFileUpload.ts';
 import { useFileDropEffect } from '@/features/sessions/hooks/useFileDropEffect.ts';
-import { useFilterBuilder } from '@/features/filters/hooks/useFilterBuilder.ts';
 import { FilterList } from '@/features/filters/FilterList.tsx';
-import { FilterField } from '@/features/filters/FilterField.tsx';
 import { cn } from '@/lib/utils.ts';
 import { DOCK_ROW_BOTTOM_CSS, DOCK_ROW_HEIGHT, DOCK_STACK_GAP } from '@/lib/dockGeometry.ts';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 import { useDismiss } from '@/lib/hooks/useDismiss.ts';
 import { useKeyboardInset } from '@/lib/hooks/useKeyboardInset.ts';
 import { useSheetScrollElement } from '@/lib/hooks/useSheetScrollElement.ts';
-import { Button } from '@/components/ui/Button.tsx';
 import { glassClass } from '@/components/ui/Card.tsx';
 import { DockFilterButton, DockLocateButton, DockSegment, DockTabs } from './DockItems.tsx';
 
@@ -22,35 +17,11 @@ const hiddenClass = 'invisible opacity-0 pointer-events-none';
 
 const useDockList = () => {
   const [open, setOpen] = useState(false);
-  const builder = useFilterBuilder();
-  const setText = builder.setText;
-  const text = builder.text;
   const sheetScroller = useSheetScrollElement();
 
-  const close = useCallback(() => {
-    setOpen(false);
-    setText('');
-  }, [setText]);
+  const close = useCallback(() => setOpen(false), []);
 
   const ref = useDismiss(close, { escapeEnabled: false, outsideEnabled: open });
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') {
-        return;
-      }
-      if (text !== '') {
-        setText('');
-        return;
-      }
-      close();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, text, setText, close]);
 
   const toggle = () => {
     if (open) {
@@ -69,7 +40,7 @@ const useDockList = () => {
     }
   };
 
-  return { open, builder, ref, close, toggle, handleTabClick };
+  return { open, ref, close, toggle, handleTabClick };
 };
 
 type DockList = ReturnType<typeof useDockList>;
@@ -94,14 +65,14 @@ const DockRail = (props: { list: DockList }) => (
         !props.list.open && hiddenClass,
       )}
     >
-      <FilterList builder={props.list.builder} withInput sizing="fill" />
+      <FilterList open={props.list.open} sizing="fill" onClose={props.list.close} />
     </div>
   </div>
 );
 
 const DockBar = (props: { list: DockList }) => {
-  const [fieldFocused, setFieldFocused] = useState(false);
-  const keyboard = useKeyboardInset(props.list.open && fieldFocused);
+  const [cardFocused, setCardFocused] = useState(false);
+  const keyboard = useKeyboardInset(props.list.open && cardFocused);
   let bottom = DOCK_ROW_BOTTOM_CSS;
   if (keyboard > 0) {
     bottom = `${keyboard + DOCK_STACK_GAP}px`;
@@ -114,37 +85,8 @@ const DockBar = (props: { list: DockList }) => {
       className="fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-50 flex gap-2"
     >
       <DockLocateButton kind="circle" />
-      <div className="relative min-w-0 flex-1">
-        <div
-          className={cn('absolute inset-0 flex gap-2', fadeClass, props.list.open && hiddenClass)}
-        >
-          <DockTabs kind="pill" onTabClick={props.list.handleTabClick} />
-          <DockFilterButton kind="circle" open={props.list.open} onClick={props.list.toggle} />
-        </div>
-        <div
-          className={cn(
-            glassClass,
-            'absolute inset-0 flex items-center gap-1 rounded-full pr-1 pl-4',
-            fadeClass,
-            !props.list.open && hiddenClass,
-          )}
-        >
-          <FilterField
-            builder={props.list.builder}
-            className="h-11"
-            onFocusChange={setFieldFocused}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-11 shrink-0 rounded-full text-text-tertiary"
-            onClick={props.list.close}
-            aria-label={m.ui_dock_close_list()}
-          >
-            <X size={20} strokeWidth={1.5} />
-          </Button>
-        </div>
-      </div>
+      <DockTabs kind="pill" onTabClick={props.list.handleTabClick} />
+      <DockFilterButton kind="circle" open={props.list.open} onClick={props.list.toggle} />
       <div
         data-dock-card
         style={{ bottom: `calc(100% + ${DOCK_STACK_GAP}px)` }}
@@ -154,8 +96,10 @@ const DockBar = (props: { list: DockList }) => {
           fadeClass,
           !props.list.open && hiddenClass,
         )}
+        onFocus={() => setCardFocused(true)}
+        onBlur={() => setCardFocused(false)}
       >
-        <FilterList builder={props.list.builder} withInput={false} sizing="content" />
+        <FilterList open={props.list.open} sizing="content" onClose={props.list.close} />
       </div>
     </div>
   );

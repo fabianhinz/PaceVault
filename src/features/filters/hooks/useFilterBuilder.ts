@@ -1,10 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { interpretFilterText } from '@/lib/filterGrammar.ts';
 import type { FilterCriteria } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 
-export const useFilterBuilder = () => {
+export const useFilterBuilder = (open: boolean, onClose: () => void) => {
   const sessions = useSessionsStore((s) => s.sessions);
   const [text, setText] = useState('');
   const tilesRef = useRef<HTMLDivElement>(null);
@@ -14,6 +14,31 @@ export const useFilterBuilder = () => {
     () => interpretFilterText(text, sessions, Date.now()),
     [text, sessions],
   );
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    return () => setText('');
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') {
+        return;
+      }
+      if (text !== '') {
+        setText('');
+        return;
+      }
+      onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, text, onClose]);
 
   const select = (criteria: FilterCriteria) => {
     useFiltersStore.getState().saveBuilderFilter(criteria);
@@ -41,5 +66,3 @@ export const useFilterBuilder = () => {
 
   return { text, setText, interpretations, select, handleKeyDown, tilesRef, listRef };
 };
-
-export type FilterBuilder = ReturnType<typeof useFilterBuilder>;
