@@ -19,10 +19,15 @@ Mockup: `mockups/dashboard-volume/index.html` (variant C).
 - **Always coloured by sport**, in Load and Volume; the "Color by sport" switch is removed. A single-sport filter shows that sport's colour.
 - Day/Week/Month tabs stay on the Load row and only affect Load.
 - **One shared date axis** for Load, Volume and Performance, like the session charts (shared x-axis, laps as bands): Load buckets become date spans; hovering a day highlights its bucket in Load and the day in Volume and Performance; drag-zoom and the reset pill act on all rows.
+- **Title** "Volume" (DE "Umfang").
+- **"Before" period** depends on the filter: relative filters (last N days/weeks/months) and chart-zoom ranges compare with the same number of days directly before; calendar filters (this/last year, a year, a month, a month range) compare with the same dates one year earlier, 29 Feb clamped to 28 Feb. Days align by position in the range; the cumulative sum still counts a leap-day session of the year before. The subtitle says which ("… the N days before" / "… the same dates last year").
+- **Phone** uses the desktop layout with a 100 px rail and text-only metric tabs.
+- **Load** x-axis shows days; its grouping defaults to **Week** (fresh install and migration fallback).
+- The dashboard peek lists Current Form · Training Load · Volume · Performance Metrics.
 
 ## Open
 
-- Exact layout of the rail and the switch on the phone (from the mockup).
+- None.
 
 ## Tests
 

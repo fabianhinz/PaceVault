@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '../helpers/test';
+import { DB_NAME } from '../../src/lib/db.ts';
 import {
   seedOnboardingComplete,
   seedWithSessions,
@@ -53,9 +54,9 @@ const dragHandle = async (page: Page, target: { by?: number; toY?: number }) => 
 
 const persistedPosition = (page: Page) =>
   page.evaluate(
-    () =>
+    (dbName) =>
       new Promise<number | undefined>((resolve) => {
-        const openReq = indexedDB.open('endurance-tracker');
+        const openReq = indexedDB.open(dbName);
         openReq.onsuccess = () => {
           const getReq = openReq.result.transaction('kv').objectStore('kv').get('store-layout');
           getReq.onsuccess = () => {
@@ -64,6 +65,7 @@ const persistedPosition = (page: Page) =>
           };
         };
       }),
+    DB_NAME,
   );
 
 test.describe('mobile bottom sheet', () => {

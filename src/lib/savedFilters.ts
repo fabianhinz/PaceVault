@@ -229,3 +229,37 @@ export const filterTile = (
   }
   return { kind: head.kind, title: capitalize(head.label), description: rest.join(' · ') };
 };
+
+const dayMonthRange = (from: Date, to: Date): string => {
+  const parts = new Intl.DateTimeFormat(getLocale(), {
+    day: 'numeric',
+    month: 'short',
+  }).formatRangeToParts(from, to);
+  return parts
+    .filter((part, i) => part.type !== 'year' && parts[i + 1]?.type !== 'year')
+    .map((part) => part.value)
+    .join('');
+};
+
+export const zoomTile = (
+  criteria: FilterCriteria | null,
+): { title: string; description: string } | null => {
+  if (criteria === null || criteria.time === null || criteria.time.kind !== 'range') {
+    return null;
+  }
+  if (criteria.time.source !== 'zoom') {
+    return null;
+  }
+  const from = parseDayKey(criteria.time.from);
+  const to = parseDayKey(criteria.time.to);
+  const rest = filterParts(criteria)
+    .filter((part) => part.kind !== 'time')
+    .map((part) => part.label);
+  return {
+    title: dayMonthRange(from, to),
+    description: [
+      new Intl.DateTimeFormat(getLocale(), { year: 'numeric' }).formatRange(from, to),
+      ...rest,
+    ].join(' · '),
+  };
+};

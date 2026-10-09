@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { sessionsStorage, useSessionsStore } from '@/store/sessions.ts';
+import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
-import { SESSIONS_DERIVATION_MARKER_KEY } from '@/lib/sessionsStorage.ts';
+import { SESSIONS_DERIVATION_MARKER_KEY } from '@/lib/guardedSessionsStorage.ts';
 import { SESSION_DERIVATION_VERSION } from '@/packages/engine/sessionDerivation.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { getDB } from '@/lib/db';
@@ -103,12 +103,12 @@ describe('sessions store', () => {
   it('a tab holding outdated sessions does not overwrite the persisted sessions', async () => {
     const { createdAt: _ca, ...data } = makeSession({ id: 'a', isNew: true });
     useSessionsStore.getState().addSessions([data], { markNew: true });
-    await sessionsStorage.flush();
+    await guardedSessionsStorage.flush();
 
     const stale = { ...useSessionsStore.getState().sessions[0], derivationVersion: 0 };
     useSessionsStore.setState({ sessions: [stale] });
     useSessionsStore.getState().markSessionSeen('a');
-    await sessionsStorage.flush();
+    await guardedSessionsStorage.flush();
 
     const db = await getDB();
     const parsed = JSON.parse((await db.get('kv', 'store-sessions')) ?? '{}');
@@ -125,7 +125,7 @@ describe('sessions store', () => {
     try {
       const { createdAt: _ca, ...data } = makeSession();
       useSessionsStore.getState().addSessions([data]);
-      await sessionsStorage.flush();
+      await guardedSessionsStorage.flush();
 
       expect(await db.get('kv', 'store-sessions')).toBe(before);
       expect(useSessionReprocessingStore.getState().newerVersionInOtherTab).toBe(true);

@@ -22,12 +22,16 @@ Research: `scratchpad/gap/` (window analysis on 10 runs), `scratchpad/gap-model/
   - Minimum size: running ≥ 40 m gain and ≥ 90 s; cycling ≥ 50 m gain and ≥ 2 min. Merge climbs separated by less than 120 s (running) / 60 s (cycling). VAM rounded to 10 m/h.
   - VAM over moving time only (same pairing as GAP: speed > 0, dt ≤ 10 s); descents never form a climb; missing elevation splits a climb and shows `--`.
   - Name "VAM" in EN and DE; the ⓘ explains "metres climbed per hour".
-- **Storage**: session GAP stays stored; old sessions get the new value through the reprocessing mechanism (separate plan, open: TSS frozen vs. current thresholds, automatic vs. prompt).
 - ⓘ text for GAP rewritten (today's "GAP slower than actual pace = downhill coasting" becomes wrong).
+- **Fitted curve**: f(g) = 1 + 2.754·g + 15.69·g² + 3.723·g³ + 7.218·g⁴ (g as a fraction, ±0.30), cited with `@see` tags in `normalize.ts` and documented in `SOURCES.md`.
+- **Hover** over a climb shows that climb's VAM.
+- The ⓘ on the elevation row explains VAM when the session has climbs.
+- **Climb colour**: violet-300 `#c4b5fd` (`chart-climb` token).
+- **Storage**: old sessions get the new GAP through the automatic reprocessing (`plans/session-reprocessing.md`); TSS stays frozen.
 
 ## Open
 
-- Reprocessing mechanism (prerequisite for updating stored session GAP).
+- None.
 
 ## Tests
 

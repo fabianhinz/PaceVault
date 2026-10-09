@@ -15,9 +15,13 @@ test.describe('Dashboard volume', () => {
     await page.goto('/');
   });
 
-  test('hides the volume row for all time', async ({ page }) => {
-    await expect(page.getByRole('region', { name: 'Performance Metrics' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Volume' })).toHaveCount(0);
+  test('adds up the whole history for all time without a comparison', async ({ page }) => {
+    const volume = page.getByRole('region', { name: 'Volume' });
+    const rail = volume.getByTestId('stat-rail');
+    await expect(volume).toContainText('Added up over the range');
+    await expect(rail).toContainText('30.0km');
+    await expect(rail).toContainText('3 sessions');
+    await expect(rail).not.toContainText('Before');
   });
 
   test('compares the range with the days before and remembers the metric', async ({ page }) => {
@@ -25,7 +29,8 @@ test.describe('Dashboard volume', () => {
 
     const volume = page.getByRole('region', { name: 'Volume' });
     const rail = volume.getByTestId('stat-rail');
-    await expect(volume).toContainText('This range against the 7 days before');
+    await expect(volume).toContainText('Added up over the range');
+    await expect(volume).toContainText(/Before · \S/);
     await expect(rail).toContainText('20.0km');
     await expect(rail).toContainText('2 sessions');
     await expect(rail).toContainText('10.0km');

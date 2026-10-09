@@ -1,11 +1,15 @@
 import type { SessionRecord } from './types.ts';
 import { windowedGradients } from './gradient.ts';
 
+/** @see [CogganAllen2010] */
 const NP_ROLLING_WINDOW_SEC = 30;
+/** @see [Strava2017] */
 const GAP_GRADIENT_LIMIT = 0.3;
+/** @see [Strava2017], [Kay2012], [Minetti2002] */
 const GAP_CURVE_COEFFICIENTS = [1, 2.754, 15.69, 3.723, 7.218] as const;
 const MAX_MOVING_PAIR_GAP_S = 10;
 
+/** @see [CogganAllen2010] */
 export const calculateNormalizedPower = (records: SessionRecord[]): number | undefined => {
   const powerData = records.map((r) => r.power).filter((v): v is number => v !== undefined);
 
@@ -28,6 +32,7 @@ export const calculateNormalizedPower = (records: SessionRecord[]): number | und
   return Math.round(Math.pow(fourthPowerAvg, 0.25));
 };
 
+/** @see [Strava2017], [Kay2012], [Minetti2002] */
 export const gradeAdjustedPaceFactor = (gradient: number): number => {
   const g = Math.max(-GAP_GRADIENT_LIMIT, Math.min(GAP_GRADIENT_LIMIT, gradient));
   return GAP_CURVE_COEFFICIENTS.reduce((sum, c, k) => sum + c * Math.pow(g, k), 0);

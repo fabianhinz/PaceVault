@@ -18,13 +18,17 @@ Prerequisite for `plans/gradient-gap-vam.md` (session GAP stays stored; old sess
 - **UI**: on app start, if any session is outdated, a blocking screen reusing the onboarding's circular progress (`src/components/ui/ImportProgressOverlay.tsx`, mounted in `src/components/layout/AppLayout.tsx:15`) with a calm message ("Updating your sessions…" / "Einheiten werden aktualisiert…"); the user continues when it's done.
 - **Removed features**:
   - Renaming sessions (`RenameSessionDialog.tsx`, the menu entry in `SessionActionsMenu.tsx`, `renameSession`).
-  - The auto-generated names toggle (`AutoSessionNamesToggle.tsx`, `useAutoSessionNames` in `src/types/index.ts:27`, `src/store/user.ts`, `src/lib/defaults.ts:13`, `ThresholdsSection.tsx:95`, `generateDevData.ts:260`). Titles always use the source name (intervals.icu activity name or the name from the file); the fallback for a missing name stays as today.
+  - The auto-generated names toggle (`AutoSessionNamesToggle.tsx`, `useAutoSessionNames` in `src/types/index.ts:27`, `src/store/user.ts`, `src/lib/defaults.ts:13`, `ThresholdsSection.tsx:95`, `generateDevData.ts:260`). Titles always use the source name (intervals.icu activity name or the name from the file); on reprocessing the name order is source name → stored name → fallback. The fallback is sport + time of day ("Morning Trail Run" / "Trail-Lauf am Morgen"), no toggle.
   - "Reimport all" in Settings (`useReimport.ts`, its section in `DataManagementSection.tsx`, its messages) — replaced by the automatic reprocessing.
   - Persisted stores lose fields → version bump + migration (`src/store/CLAUDE.md`).
+- **Names reset to the source name**: a session reparsed from its stored FIT takes the name from the FIT file name. intervals.icu imports keep their stored name — the activity name comes from the API at import and can't be recovered offline (the stored FIT is named `<activityId>.fit`). Sessions without a stored FIT keep their name.
+- **All existing sessions are reprocessed once** (they start below the current derivation version).
+- **Newer version in another tab**: a reload screen instead of the app, so an old tab never overwrites newer data.
+- **Robustness**: one runner across tabs (Web Lock), per-session commit so an interrupted run resumes, one FIT in memory at a time. `store-sessions` persists through `guardedSessionsStorage` (wrapping `idbStorage`), which refuses writes while a newer derivation version is stored.
 
 ## Open
 
-- Robustness details for the implementation: one runner across tabs (Web Lock), per-session commit so an interrupted run resumes, memory (one FIT at a time).
+- None.
 
 ## Tests
 

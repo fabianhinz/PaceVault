@@ -37,37 +37,41 @@ describe('useFiltersStore', () => {
     expect(store().activeFilter).toBeNull();
   });
 
-  it('saves a new filter from the builder and applies it', () => {
-    store().saveBuilderFilter(runLast30, null);
+  it('saves a new filter at the top and applies it', () => {
+    store().saveBuilderFilter(runLast30);
     expect(savedCriteria()).toHaveLength(4);
-    expect(savedCriteria()[3]).toEqual(runLast30);
+    expect(savedCriteria()[0]).toEqual(runLast30);
     expect(store().activeFilter).toEqual(runLast30);
   });
 
-  it('selects an identical filter instead of saving it twice', () => {
-    const last7 = criteria({ time: { kind: 'relative', amount: 7, unit: 'day' } });
-    store().saveBuilderFilter(last7, null);
-    expect(savedCriteria()).toHaveLength(3);
-    expect(store().activeFilter).toEqual(last7);
+  it('drops the oldest filter when a 16th is saved', () => {
+    const thisYear = criteria({ time: { kind: 'calendarYear', yearsAgo: 0 } });
+    for (let days = 1; days <= 12; days++) {
+      store().saveBuilderFilter(
+        criteria({ sport: 'running', time: { kind: 'relative', amount: days, unit: 'day' } }),
+      );
+    }
+    expect(savedCriteria()).toHaveLength(15);
+    expect(savedCriteria()[14]).toEqual(thisYear);
+    store().saveBuilderFilter(runLast30);
+    expect(savedCriteria()).toHaveLength(15);
+    expect(savedCriteria()[0]).toEqual(runLast30);
+    expect(savedCriteria()).not.toContainEqual(thisYear);
+    expect(savedCriteria()[14]).toEqual(
+      criteria({ time: { kind: 'relative', amount: 30, unit: 'day' } }),
+    );
   });
 
-  it('replaces an edited filter in place', () => {
-    const edited = store().savedFilters[1];
-    store().saveBuilderFilter(runLast30, edited?.id ?? null);
-    expect(store().savedFilters[1]).toEqual({ id: edited?.id, criteria: runLast30 });
-    expect(savedCriteria()).toHaveLength(3);
+  it('selects an existing filter without moving or duplicating it', () => {
+    const before = store().savedFilters;
+    const last30 = criteria({ time: { kind: 'relative', amount: 30, unit: 'day' } });
+    store().saveBuilderFilter(last30);
+    expect(store().savedFilters).toEqual(before);
+    expect(store().activeFilter).toEqual(last30);
   });
 
-  it('deletes a filter and clears it when it was active', () => {
-    const first = store().savedFilters[0];
-    store().toggleSavedFilter(first?.id ?? '');
-    store().deleteSavedFilter(first?.id ?? '');
-    expect(savedCriteria()).toHaveLength(2);
-    expect(store().activeFilter).toBeNull();
-  });
-
-  it('zooms the active filter to a chart range and restores its time on reset', () => {
-    store().saveBuilderFilter(runLast30, null);
+  it('zooms the active filter to a chart range', () => {
+    store().saveBuilderFilter(runLast30);
     store().setDashboardChartRange('2026-01-05', '2026-01-18');
     store().setDashboardChartRange('2026-01-08', '2026-01-12');
     expect(store().activeFilter).toEqual(
@@ -76,14 +80,17 @@ describe('useFiltersStore', () => {
         time: { kind: 'range', from: '2026-01-08', to: '2026-01-12', source: 'zoom' },
       }),
     );
-    store().clearDashboardChartRange();
-    expect(store().activeFilter).toEqual(runLast30);
   });
 
-  it('clears the active filter when a reset zoom leaves nothing', () => {
+  it('clearing the zoom does not bring back the filter that was active before zooming', () => {
+    store().saveBuilderFilter(runLast30);
     store().setDashboardChartRange('2026-01-05', '2026-01-18');
-    store().clearDashboardChartRange();
+    store().clearActiveFilter();
     expect(store().activeFilter).toBeNull();
+    store().setDashboardChartRange('2026-01-08', '2026-01-12');
+    expect(store().activeFilter).toEqual(
+      criteria({ time: { kind: 'range', from: '2026-01-08', to: '2026-01-12', source: 'zoom' } }),
+    );
   });
 
   it('persists saved and active filters', () => {
@@ -100,7 +107,7 @@ describe('useFiltersStore', () => {
 });
 
 describe('migrateFilters', () => {
-  it('drops the v2 sport, range and attribute state and keeps the load grouping', () => {
+  it('drops the v2 sport, range and attribute state, keeps the load grouping and seeds the default filters', () => {
     const migrated = migrateFilters(
       {
         timeRange: 'custom',
@@ -113,53 +120,20 @@ describe('migrateFilters', () => {
       },
       2,
     );
+    expect(Object.keys(migrated).toSorted()).toEqual([
+      'activeFilter',
+      'loadChartGroupBy',
+      'savedFilters',
+      'volumeChartMetric',
+    ]);
+    expect(migrated.savedFilters.map((f) => f.criteria)).toEqual([
+      criteria({ time: { kind: 'relative', amount: 7, unit: 'day' } }),
+      criteria({ time: { kind: 'relative', amount: 30, unit: 'day' } }),
+      criteria({ time: { kind: 'calendarYear', yearsAgo: 0 } }),
+    ]);
     expect(migrated.activeFilter).toBeNull();
-    expect(migrated.zoomRestoreTime).toBeNull();
-    expect(migrated.savedFilters).toHaveLength(3);
     expect(migrated.loadChartGroupBy).toBe('day');
     expect(migrated.volumeChartMetric).toBe('distance');
-    expect(migrated).not.toHaveProperty('sportFilter');
-    expect(migrated).not.toHaveProperty('loadChartShowSportColors');
-  });
-
-  it('keeps v3 saved and active filters, drops the sport colour switch and defaults the volume metric', () => {
-    const saved = [{ id: 'a', criteria: runLast30 }];
-    const zoomed = criteria({
-      sport: 'running',
-      time: { kind: 'range', from: '2026-01-08', to: '2026-01-12', source: 'zoom' },
-    });
-    const migrated = migrateFilters(
-      {
-        savedFilters: saved,
-        activeFilter: zoomed,
-        zoomRestoreTime: runLast30.time,
-        loadChartShowSportColors: false,
-        loadChartGroupBy: 'month',
-      },
-      3,
-    );
-    expect(migrated).toEqual({
-      savedFilters: saved,
-      activeFilter: zoomed,
-      zoomRestoreTime: runLast30.time,
-      loadChartGroupBy: 'month',
-      volumeChartMetric: 'distance',
-    });
-  });
-
-  it('falls back to default filters when v3 filters are unrecognised', () => {
-    const migrated = migrateFilters(
-      {
-        savedFilters: [{ id: 'a', criteria: { sport: 'swimming' } }],
-        activeFilter: null,
-        zoomRestoreTime: null,
-        loadChartGroupBy: 'day',
-      },
-      3,
-    );
-    expect(migrated.savedFilters).toHaveLength(3);
-    expect(migrated.activeFilter).toBeNull();
-    expect(migrated.loadChartGroupBy).toBe('day');
   });
 
   it('gives v1 state the chart defaults', () => {
@@ -171,10 +145,11 @@ describe('migrateFilters', () => {
 
   it('falls back to defaults for unrecognised state', () => {
     for (const state of [null, 'broken', { loadChartGroupBy: 'year' }]) {
-      const migrated = migrateFilters(state, 3);
+      const migrated = migrateFilters(state, 2);
       expect(migrated.savedFilters).toHaveLength(3);
       expect(migrated.activeFilter).toBeNull();
       expect(migrated.loadChartGroupBy).toBe('week');
+      expect(migrated.volumeChartMetric).toBe('distance');
     }
   });
 });

@@ -19,6 +19,7 @@ import { formatDashboardDate } from './dashboardDate.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { useDashboardAxis } from './hooks/useDashboardAxis.ts';
+import { useDashboardYAxisWidth } from './hooks/useDashboardYAxisWidth.ts';
 import { DASHBOARD_HOVER_GROUP, useDashboardChartEvents } from './hooks/useDashboardChartEvents.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { loadBucketDayRange } from '@/lib/weekKey.ts';
@@ -107,6 +108,7 @@ const LoadBucketBand = (props: {
 
 export const LoadChart = () => {
   const axis = useDashboardAxis();
+  const yAxisWidth = useDashboardYAxisWidth(axis);
   const sportFilter = useFiltersStore((s) => s.activeFilter?.sport ?? null);
   const groupBy = useFiltersStore((s) => s.loadChartGroupBy);
   const isGroupingDisabled = axis.days !== null && axis.days.count <= 7;
@@ -231,7 +233,7 @@ export const LoadChart = () => {
                   tick={chartTheme.tick}
                   tickLine={false}
                   axisLine={false}
-                  width={40}
+                  width={yAxisWidth}
                   tickCount={3}
                   tickFormatter={(v: number) => String(Math.round(v))}
                 />

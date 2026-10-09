@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import type { MouseHandlerDataParam } from 'recharts/types/synchronisation/types';
+import { categoryHoverHandlers } from '@/lib/chartHover.ts';
 import { useChartHoverStore } from '@/store/chartHover.ts';
 
 export const DASHBOARD_HOVER_GROUP = 'dashboard';
@@ -10,25 +11,22 @@ interface DashboardChartZoom {
   onMouseUp: () => void;
 }
 
-const hover = (label: MouseHandlerDataParam['activeLabel']) => {
-  if (label == null) {
+const onHover = (x: string | null) => {
+  if (x === null) {
+    useChartHoverStore.getState().clearChartHover(DASHBOARD_HOVER_GROUP);
     return;
   }
-  useChartHoverStore.getState().setChartHover(DASHBOARD_HOVER_GROUP, String(label));
-};
-
-const clearHover = () => {
-  useChartHoverStore.getState().clearChartHover(DASHBOARD_HOVER_GROUP);
+  useChartHoverStore.getState().setChartHover(DASHBOARD_HOVER_GROUP, x);
 };
 
 export const useDashboardChartEvents = (zoom: DashboardChartZoom) => {
-  useEffect(() => clearHover, []);
+  useEffect(() => () => onHover(null), []);
 
   const zoomMouseMove = zoom.onMouseMove;
   const onMouseMove = useCallback(
     (e: MouseHandlerDataParam) => {
       zoomMouseMove(e);
-      hover(e.activeLabel);
+      if (e.activeLabel != null) onHover(String(e.activeLabel));
     },
     [zoomMouseMove],
   );
@@ -38,8 +36,6 @@ export const useDashboardChartEvents = (zoom: DashboardChartZoom) => {
     onMouseDown: zoom.onMouseDown,
     onMouseMove,
     onMouseUp: zoom.onMouseUp,
-    onMouseLeave: clearHover,
-    onTouchMove: (e: MouseHandlerDataParam) => hover(e.activeLabel),
-    onTouchEnd: clearHover,
+    ...categoryHoverHandlers(onHover),
   };
 };

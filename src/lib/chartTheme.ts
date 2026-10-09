@@ -14,7 +14,7 @@ const DEFAULT_TICK_COUNT = 5;
 const PADDING_RATIO = 0.1;
 const FLAT_PADDING_RATIO = 0.05;
 
-const niceStep = (rough: number): number => {
+export const niceStep = (rough: number): number => {
   const magnitude = 10 ** Math.floor(Math.log10(rough));
   const normalized = rough / magnitude;
   const step = NICE_STEPS.find((candidate) => candidate >= normalized) ?? 10;
@@ -56,13 +56,8 @@ export const formatTick = (v: number, unit?: string): string => {
   return label;
 };
 
-/**
- * X-axis variant for the shared detail charts: sessions plot over elapsed
- * time, studio routes over cumulative distance.
- */
 export interface ChartXAxis<K extends string> {
   key: K;
-  /** Recharts syncId linking the compact charts' tooltips and zoom. */
   syncId: string;
   type: 'number' | 'category';
   tickFormatter: (v: number) => string;
@@ -98,3 +93,12 @@ export const chartTheme = {
     separator: ': ',
   },
 } as const;
+
+const MIN_Y_AXIS_WIDTH = 40;
+const TICK_CHAR_WIDTH = 6.6;
+const TICK_GAP = 8;
+
+export const yAxisWidthFor = (labels: readonly string[]): number => {
+  const longest = Math.max(0, ...labels.map((label) => label.length));
+  return Math.max(MIN_Y_AXIS_WIDTH, Math.ceil(longest * TICK_CHAR_WIDTH + TICK_GAP));
+};

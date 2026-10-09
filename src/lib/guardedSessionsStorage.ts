@@ -47,7 +47,7 @@ const writeUnlessNewerVersion = async (
   await tx.done;
 };
 
-export const createSessionsStorage = (guard: {
+export const createGuardedSessionsStorage = (guard: {
   canWrite: () => boolean;
   onNewerVersion: () => void;
 }): StateStorage & { flush: () => Promise<void> } => {

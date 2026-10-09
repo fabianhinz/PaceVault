@@ -18,9 +18,9 @@ import {
   saveSessionLaps,
   saveSessionRecords,
 } from '@/lib/indexeddb.ts';
-import { claimSessionsDerivationVersion } from '@/lib/sessionsStorage.ts';
+import { claimSessionsDerivationVersion } from '@/lib/guardedSessionsStorage.ts';
 import { withExclusiveLock } from '@/lib/webLock.ts';
-import { sessionsStorage, useSessionsStore } from '@/store/sessions.ts';
+import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
@@ -31,17 +31,19 @@ const mergeReparsedSession = (
   stored: TrainingSession,
   reparsed: SessionFields,
 ): TrainingSession => {
-  return {
+  const merged: TrainingSession = {
     ...reparsed,
     id: stored.id,
     createdAt: stored.createdAt,
     isNew: stored.isNew,
     source: stored.source,
-    name: stored.name ?? reparsed.name,
     tss: stored.tss,
     stressMethod: stored.stressMethod,
     derivationVersion: SESSION_DERIVATION_VERSION,
   };
+  if (stored.source.kind === 'intervals' && stored.name !== undefined) merged.name = stored.name;
+  if (merged.name === undefined && stored.name !== undefined) merged.name = stored.name;
+  return merged;
 };
 
 const reparseFit = async (
@@ -138,7 +140,7 @@ const runWithLock = async (): Promise<number> => {
     if (session) {
       const updated = await reprocessOrKeep(session, profile);
       useSessionsStore.getState().commitReprocessedSession(updated);
-      await sessionsStorage.flush();
+      await guardedSessionsStorage.flush();
     }
     useImportProgressStore.getState().advanceImport();
   }

@@ -46,16 +46,13 @@ describe('delete all data', () => {
     useIntervalsStore.getState().connectIntervals('secret-key');
     useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
 
-    useFiltersStore.getState().saveBuilderFilter(
-      {
-        sport: 'cycling',
-        time: { kind: 'relative', amount: 90, unit: 'day' },
-        distance: 10000,
-        duration: 3600,
-        elevationGain: 500,
-      },
-      null,
-    );
+    useFiltersStore.getState().saveBuilderFilter({
+      sport: 'cycling',
+      time: { kind: 'relative', amount: 90, unit: 'day' },
+      distance: 10000,
+      duration: 3600,
+      elevationGain: 500,
+    });
 
     expect(useFiltersStore.getState().activeFilter).not.toBeNull();
     expect(useIntervalsStore.getState().apiKey).not.toBeNull();

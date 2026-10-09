@@ -37,6 +37,15 @@ Mockup: `mockups/saved-filters/index.html` (final). Earlier explorations (panels
 - **Focus ring**: remove `ring-offset-2` app-wide (Input, Select, Textarea, Button, RadioGroup).
 - Remove: `DockFilterOptions.tsx`, `AttributeFilterDialog.tsx`, the sport/time/advanced dock items and reveal layers, unused messages.
 
+### Follow-up decisions
+
+- **Upgrade**: v2 sport/range/attribute state is dropped (no ad-hoc filter is created from it); only the Load grouping survives.
+- **Ranges end today**: a range reaching into the future is clamped to today.
+- **Relative days** count whole days including today ("last 7 days" = today and the 6 days before).
+- **Deleting the active filter** clears it.
+- **Names**: no thousands separator in generated names.
+- **Time model** gains `{ kind: 'calendarYear', yearsAgo }` for "this year" / "last year", so the default keeps meaning the current year after New Year.
+
 ## Open
 
 - Keeping the phone builder sheet above the soft keyboard (`visualViewport`) — verify on a device.

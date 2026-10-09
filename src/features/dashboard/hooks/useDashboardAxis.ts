@@ -22,3 +22,5 @@ export const useDashboardAxis = () => {
     onZoomComplete: zoom.onZoomComplete,
   };
 };
+
+export type DashboardAxis = ReturnType<typeof useDashboardAxis>;

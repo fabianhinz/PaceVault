@@ -3,10 +3,11 @@ import { type Page } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { SESSION_DERIVATION_VERSION } from '../../src/packages/engine/sessionDerivation.ts';
+import { DB_NAME, DB_VERSION } from '../../src/lib/db.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const DB = { name: 'endurance-tracker', version: 4 };
+const DB = { name: DB_NAME, version: DB_VERSION };
 
 const blockBasemap = async (page: Page) => {
   await page.route('**/*.cartocdn.com/**', (route) => route.abort());
@@ -168,7 +169,7 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
   }));
 
   const filtersState = JSON.stringify({
-    state: { activeFilter: null, zoomRestoreTime: null },
+    state: { activeFilter: null },
     version: 3,
   });
 

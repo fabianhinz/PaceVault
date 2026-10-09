@@ -20,13 +20,10 @@ import { hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { tokens } from '@/lib/tokens.ts';
 import {
   VOLUME_METRICS,
-  cumulativeVolume,
   formatVolume,
   formatVolumeTick,
   isVolumeIncomplete,
-  previousVolumeWindow,
-  shiftDayKey,
-  toVolumeDisplay,
+  volumeYAxisWidth,
   volumeUnit,
   type VolumeMetric,
   type VolumeTotal,
@@ -37,6 +34,7 @@ import { SPORTS, type Sport } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
 import { formatDashboardDate } from './dashboardDate.ts';
 import { useDashboardAxis } from './hooks/useDashboardAxis.ts';
+import { type VolumeSeries, useVolumeSeries } from './hooks/useVolumeSeries.ts';
 import { DASHBOARD_HOVER_GROUP, useDashboardChartEvents } from './hooks/useDashboardChartEvents.ts';
 
 const sportColors: Record<Sport, string> = {
@@ -50,31 +48,9 @@ const metricLabels: Record<VolumeMetric, () => string> = {
   elevation: m.ui_volume_elevation,
 };
 
-interface VolumeRow {
-  date: string;
-  current: number | null;
-  before: number | null;
-  running: number | null;
-  cycling: number | null;
-}
-
-const NO_ROWS: VolumeRow[] = [];
-
-interface VolumeSeries {
-  rows: VolumeRow[];
-  current: VolumeTotal[];
-  before: VolumeTotal[];
-  indexByDate: Map<ChartHoverX, number>;
-}
-
 const sessionCount = (count: number) => {
   if (count === 1) return m.ui_count_sessions_one();
   return m.ui_count_sessions_other({ count: String(count) });
-};
-
-const subtitle = (count: number) => {
-  if (count === 1) return m.ui_volume_subtitle_one();
-  return m.ui_volume_subtitle_other({ count: String(count) });
 };
 
 const VolumeCoverageNote = (props: { series: VolumeSeries }) => {
@@ -85,7 +61,7 @@ const VolumeCoverageNote = (props: { series: VolumeSeries }) => {
   }
   const entries = [
     { label: m.ui_volume_this_range(), total: props.series.current[index] },
-    { label: m.ui_volume_before(), total: props.series.before[index] },
+    { label: m.ui_volume_before(), total: props.series.before?.[index] },
   ];
   const notes = entries.flatMap((entry) => {
     if (entry.total === undefined || !isVolumeIncomplete(entry.total)) return [];
@@ -97,14 +73,13 @@ const VolumeCoverageNote = (props: { series: VolumeSeries }) => {
       }),
     ];
   });
-  if (notes.length === 0) return null;
   return (
     <Typography
       variant="caption"
       as="p"
       color="textTertiary"
       data-testid="volume-coverage-note"
-      className="mt-1 line-clamp-2 leading-4"
+      className="mt-1 h-8 shrink-0 line-clamp-2 leading-4 lg:h-4 lg:line-clamp-1"
     >
       {notes.join(' · ')}
     </Typography>
@@ -125,64 +100,20 @@ export const VolumeChart = () => {
   const axis = useDashboardAxis();
   const metric = useFiltersStore((s) => s.volumeChartMetric);
   const sportFilter = useFiltersStore((s) => s.activeFilter?.sport ?? null);
-  const days = axis.days;
 
   const sports = useMemo(() => {
     if (sportFilter === null) return [...SPORTS];
     return [sportFilter];
   }, [sportFilter]);
 
-  const series = useMemo((): VolumeSeries | null => {
-    if (days === null) return null;
-    const through = axis.history.map((d) => d.date);
-    const previous = previousVolumeWindow(days.from, days.count);
-    const current = cumulativeVolume(axis.sessions, metric, days.from, through);
-    const before = cumulativeVolume(
-      axis.sessions,
-      metric,
-      previous.from,
-      through.map((day) => shiftDayKey(day, -days.count)),
-    );
-    const bySport = new Map(
-      SPORTS.map((sport) => [
-        sport,
-        cumulativeVolume(
-          axis.sessions.filter((s) => s.sport === sport),
-          metric,
-          days.from,
-          through,
-        ),
-      ]),
-    );
-    const display = (total: VolumeTotal | undefined) => {
-      if (total === undefined || total.value === undefined) return null;
-      return toVolumeDisplay(metric, total.value);
-    };
-    const rows = through.map(
-      (date, i): VolumeRow => ({
-        date,
-        current: display(current[i]),
-        before: display(before[i]),
-        running: display(bySport.get('running')?.[i]),
-        cycling: display(bySport.get('cycling')?.[i]),
-      }),
-    );
-    return {
-      rows,
-      current,
-      before,
-      indexByDate: new Map(through.map((date, i) => [date, i])),
-    };
-  }, [axis.history, axis.sessions, days, metric]);
+  const series = useVolumeSeries(axis);
 
   const zoom = useChartZoom({
-    data: series?.rows ?? NO_ROWS,
+    data: series.rows,
     xKey: 'date',
     onZoomComplete: axis.onZoomComplete,
   });
   const events = useDashboardChartEvents(zoom);
-
-  if (days === null || series === null) return null;
 
   let lineColor: string = tokens.textPrimary;
   if (sportFilter !== null) {
@@ -192,28 +123,32 @@ export const VolumeChart = () => {
   const last = series.rows.length - 1;
   const hasData = series.rows.length > 0;
 
-  const railRow = (key: 'current' | 'before', name: string, color: string) => ({
+  const railRow = (key: string, totals: VolumeTotal[], name: string, color: string) => ({
     key,
     name,
     color,
     unit,
     rest: {
-      value: formatVolume(metric, series[key][last]?.value),
-      secondary: sessionCount(series[key][last]?.sessions ?? 0),
+      value: formatVolume(metric, totals[last]?.value),
+      secondary: sessionCount(totals[last]?.sessions ?? 0),
     },
     readingAt: (x: ChartHoverX) => {
       const index = series.indexByDate.get(x);
       if (index === undefined) return undefined;
-      const total = series[key][index];
+      const total = totals[index];
       if (total === undefined) return undefined;
       return { value: formatVolume(metric, total.value), secondary: sessionCount(total.sessions) };
     },
   });
+  const railRows = [railRow('current', series.current, m.ui_volume_this_range(), lineColor)];
+  if (series.before !== null) {
+    railRows.push(railRow('before', series.before, m.ui_volume_before(), tokens.textTertiary));
+  }
 
   return (
     <ChartRow
       title={m.ui_volume_title()}
-      secondary={subtitle(days.count)}
+      secondary={m.ui_volume_subtitle()}
       height="h-64"
       rail={
         hasData ? (
@@ -222,10 +157,7 @@ export const VolumeChart = () => {
             restHeader={m.ui_rail_total()}
             formatX={formatDashboardDate}
             isKnownX={(x) => series.indexByDate.has(x)}
-            rows={[
-              railRow('current', m.ui_volume_this_range(), lineColor),
-              railRow('before', m.ui_volume_before(), tokens.textTertiary),
-            ]}
+            rows={railRows}
           />
         ) : undefined
       }
@@ -261,9 +193,10 @@ export const VolumeChart = () => {
                   tick={chartTheme.tick}
                   tickLine={false}
                   axisLine={false}
-                  width={40}
+                  width={volumeYAxisWidth(series.ticks)}
                   tickCount={3}
-                  domain={[0, 'auto']}
+                  ticks={series.ticks}
+                  domain={[0, series.ticks?.[series.ticks.length - 1] ?? 'auto']}
                   tickFormatter={formatVolumeTick}
                 />
                 <RechartsTooltip {...hoverOnlyTooltip} />
@@ -280,15 +213,17 @@ export const VolumeChart = () => {
                     tooltipType="none"
                   />
                 ))}
-                <Line
-                  type="linear"
-                  dataKey="before"
-                  stroke={tokens.textTertiary}
-                  strokeWidth={1.5}
-                  strokeDasharray="5 4"
-                  dot={false}
-                  name={m.ui_volume_before()}
-                />
+                {series.before !== null && (
+                  <Line
+                    type="linear"
+                    dataKey="before"
+                    stroke={tokens.textTertiary}
+                    strokeWidth={1.5}
+                    strokeDasharray="5 4"
+                    dot={false}
+                    name={m.ui_volume_before()}
+                  />
+                )}
                 <Line
                   type="linear"
                   dataKey="current"
@@ -309,10 +244,18 @@ export const VolumeChart = () => {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-1.5 flex gap-3 text-xs text-text-tertiary">
-            <LegendLine color={lineColor} label={m.ui_volume_this_range()} />
-            <LegendLine color={tokens.textTertiary} dashed label={m.ui_volume_before()} />
-          </div>
+          {series.before !== null && (
+            <div className="mt-1.5 flex gap-3 text-xs text-text-tertiary">
+              <LegendLine color={lineColor} label={m.ui_volume_this_range()} />
+              <LegendLine
+                color={tokens.textTertiary}
+                dashed
+                label={[m.ui_volume_before(), series.beforeLabel]
+                  .filter((part) => part !== null)
+                  .join(' · ')}
+              />
+            </div>
+          )}
           <VolumeCoverageNote series={series} />
         </TabsPrimitive.Root>
       ) : null}

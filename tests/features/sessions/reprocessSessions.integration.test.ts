@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { reprocessOutdatedSessions } from '@/features/sessions/reprocessSessions.ts';
 import { parseFitFile } from '@/parsers/fit.ts';
-import { sessionsStorage, useSessionsStore } from '@/store/sessions.ts';
+import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
 import { bulkSaveSessionData, getSessionRecords } from '@/lib/indexeddb.ts';
@@ -47,7 +47,7 @@ const outdatedSession = (overrides: Partial<TrainingSession>): TrainingSession =
 const storeSessions = async (sessions: TrainingSession[]) => {
   useSessionReprocessingStore.setState({ phase: 'running' });
   useSessionsStore.setState({ sessions });
-  await sessionsStorage.flush();
+  await guardedSessionsStorage.flush();
   useSessionReprocessingStore.setState({ phase: 'pending' });
 };
 
@@ -56,7 +56,7 @@ const sessionById = (id: string): TrainingSession | undefined => {
 };
 
 describe('reprocessOutdatedSessions', () => {
-  it('updates an outdated session from its FIT file and keeps its TSS', async () => {
+  it('updates an outdated session from its FIT file and keeps its TSS and intervals.icu name', async () => {
     const profile = makeUserProfile();
     useUserStore.setState({ profile });
     const fit = runningFit();
@@ -92,6 +92,40 @@ describe('reprocessOutdatedSessions', () => {
       derivationVersion: SESSION_DERIVATION_VERSION,
     });
     expect(await getSessionRecords('fit')).toHaveLength(fresh.records.length);
+  });
+
+  it('reprocessing resets a renamed session to its source name', async () => {
+    useUserStore.setState({ profile: makeUserProfile() });
+    const fileName = '20240512_Morning_Run.fit';
+    await bulkSaveSessionData([
+      { sessionId: 'file', records: [], laps: [], fit: { fileName, data: runningFit() } },
+    ]);
+    await storeSessions([
+      outdatedSession({ id: 'file', name: 'Renamed run', source: { kind: 'file' } }),
+    ]);
+
+    await reprocessOutdatedSessions();
+
+    expect(sessionById('file')?.name).toBe('Morning Run');
+  });
+
+  it('reprocessing keeps the stored name when the file name yields none', async () => {
+    useUserStore.setState({ profile: makeUserProfile() });
+    await bulkSaveSessionData([
+      {
+        sessionId: 'file',
+        records: [],
+        laps: [],
+        fit: { fileName: 'activity.fit', data: runningFit() },
+      },
+    ]);
+    await storeSessions([
+      outdatedSession({ id: 'file', name: 'Morning Run', source: { kind: 'file' } }),
+    ]);
+
+    await reprocessOutdatedSessions();
+
+    expect(sessionById('file')?.name).toBe('Morning Run');
   });
 
   it('recomputes a session without a stored FIT file from its records', async () => {
@@ -130,7 +164,7 @@ describe('reprocessOutdatedSessions', () => {
     hang.sessionId = 'b';
     void reprocessOutdatedSessions();
     await vi.waitFor(() => expect(sessionById('a')?.gap).not.toBe(999));
-    await sessionsStorage.flush();
+    await guardedSessionsStorage.flush();
 
     hang.sessionId = null;
     useSessionReprocessingStore.setState({ phase: 'pending' });

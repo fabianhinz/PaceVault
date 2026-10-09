@@ -15,9 +15,16 @@ export const useDismiss = (onClose: () => void, options?: DismissOptions) => {
       if (e.key === 'Escape') onClose();
     };
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
+      if (!ref.current || !(e.target instanceof Element)) {
+        return;
       }
+      if (ref.current.contains(e.target)) {
+        return;
+      }
+      if (e.target.closest('[data-radix-popper-content-wrapper]')) {
+        return;
+      }
+      onClose();
     };
     if (escapeEnabled) document.addEventListener('keydown', handleKeyDown);
     if (outsideEnabled) document.addEventListener('pointerdown', handleClickOutside);

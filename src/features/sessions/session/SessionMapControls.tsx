@@ -63,7 +63,7 @@ export const SessionMapControls = (props: SessionMapControlsProps) => {
       <div
         ref={scroller}
         className={cn(
-          'pointer-events-none w-full overflow-x-auto px-4',
+          'pointer-events-auto max-w-full touch-pan-x overflow-x-auto overscroll-x-contain px-4',
           '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         )}
       >

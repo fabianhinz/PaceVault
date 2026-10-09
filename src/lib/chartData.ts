@@ -30,7 +30,6 @@ export interface PacePoint extends TimeSeriesPoint {
 }
 
 export interface GAPPoint extends TimeSeriesPoint {
-  pace: number | null;
   gap: number | null;
 }
 

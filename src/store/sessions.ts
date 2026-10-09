@@ -4,7 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { TrainingSession } from '@/packages/engine/types.ts';
 import { isSessionOutdated } from '@/packages/engine/sessionDerivation.ts';
-import { createSessionsStorage } from '@/lib/sessionsStorage.ts';
+import { createGuardedSessionsStorage } from '@/lib/guardedSessionsStorage.ts';
 import { useSessionReprocessingStore } from './sessionReprocessing.ts';
 
 const persistedSessionsSchema = z.looseObject({ sessions: z.array(z.unknown()) });
@@ -50,7 +50,7 @@ const canPersistSessions = (): boolean => {
   return !useSessionsStore.getState().sessions.some(isSessionOutdated);
 };
 
-export const sessionsStorage = createSessionsStorage({
+export const guardedSessionsStorage = createGuardedSessionsStorage({
   canWrite: canPersistSessions,
   onNewerVersion: () => useSessionReprocessingStore.getState().markNewerVersionInOtherTab(),
 });
@@ -91,7 +91,7 @@ export const useSessionsStore = create<SessionsState>()(
       }),
       {
         name: 'store-sessions',
-        storage: createJSONStorage(() => sessionsStorage),
+        storage: createJSONStorage(() => guardedSessionsStorage),
         skipHydration: true,
         version: 3,
         migrate: (persisted, version) => migrateSessionsState(persisted, version) as SessionsState,

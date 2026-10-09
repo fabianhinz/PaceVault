@@ -13,7 +13,13 @@ export const openFilterList = async (page: Page) => {
   await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'true');
 };
 
+export const closeFilterList = async (page: Page) => {
+  await page.keyboard.press('Escape');
+  await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'false');
+};
+
 export const applyFilter = async (page: Page, name: string) => {
   await openFilterList(page);
   await filterList(page).getByRole('button', { name, exact: true }).click();
+  await closeFilterList(page);
 };

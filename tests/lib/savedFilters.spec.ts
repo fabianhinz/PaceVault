@@ -5,6 +5,7 @@ import {
   filterName,
   filterTile,
   matchesFilters,
+  zoomTile,
 } from '@/lib/savedFilters.ts';
 import { overwriteGetLocale } from '@/paraglide/runtime.js';
 
@@ -113,5 +114,28 @@ describe('filter labels', () => {
       title: 'Radfahren',
       description: 'gesamter Zeitraum',
     });
+  });
+
+  it('titles the zoom row by day and month and describes it by year and the other criteria', () => {
+    overwriteGetLocale(() => 'de');
+    const zoomed = criteria({
+      sport: 'running',
+      time: { kind: 'range', from: '2026-09-27', to: '2026-10-07', source: 'zoom' },
+    });
+    expect(zoomTile(zoomed)).toEqual({
+      title: '27. Sept.\u2009–\u20097. Okt.',
+      description: '2026 · Laufen',
+    });
+    const acrossYears = criteria({
+      sport: 'running',
+      time: { kind: 'range', from: '2025-12-28', to: '2026-02-14', source: 'zoom' },
+      distance: 10000,
+    });
+    expect(zoomTile(acrossYears)).toEqual({
+      title: '28. Dez.\u2009–\u200914. Feb.',
+      description: '2025–2026 · Laufen · ca. 10 km',
+    });
+    expect(zoomTile(criteria({ time: { kind: 'calendarYear', yearsAgo: 0 } }))).toBeNull();
+    expect(zoomTile(null)).toBeNull();
   });
 });

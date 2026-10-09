@@ -19,6 +19,7 @@ import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { formatDashboardDate } from './dashboardDate.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { useDashboardAxis } from './hooks/useDashboardAxis.ts';
+import { useDashboardYAxisWidth } from './hooks/useDashboardYAxisWidth.ts';
 import { DASHBOARD_HOVER_GROUP, useDashboardChartEvents } from './hooks/useDashboardChartEvents.ts';
 import { m } from '@/paraglide/messages.js';
 
@@ -30,6 +31,7 @@ const SERIES = [
 
 export const PerformanceChart = () => {
   const axis = useDashboardAxis();
+  const yAxisWidth = useDashboardYAxisWidth(axis);
   const filtered = axis.history;
   const latest = filtered[filtered.length - 1];
   const byDate = useMemo(() => indexByX(filtered, 'date'), [filtered]);
@@ -85,7 +87,7 @@ export const PerformanceChart = () => {
               tick={chartTheme.tick}
               tickLine={false}
               axisLine={false}
-              width={40}
+              width={yAxisWidth}
               tickCount={3}
             />
             <RechartsTooltip {...hoverOnlyTooltip} />

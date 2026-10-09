@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 import { Card } from '@/components/ui/Card.tsx';
 import { SheetBackdrop } from '@/components/ui/SheetBackdrop.tsx';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
-import { useDismiss } from './hooks/useDismiss.ts';
+import { useDismiss } from '@/lib/hooks/useDismiss.ts';
 import { usePopupPosition } from './hooks/usePopupPosition.ts';
 import { cn } from '@/lib/utils.ts';
 import type { ReactNode } from 'react';

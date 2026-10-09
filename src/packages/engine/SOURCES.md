@@ -1,7 +1,7 @@
 # Engine — Scientific Sources
 
-Central bibliography for every published formula, model, or algorithm implemented in `src/engine/`.
-Each engine file contains a short `// Sources: [KEY]` comment pointing into this table.
+Central bibliography for every published formula, model, or algorithm implemented in `src/packages/engine/`.
+Every formula or constant derived from published science points into this table with a `@see [KEY]` JSDoc tag. Older modules still list their keys in a `// Sources: [KEY]` header instead. App heuristics (`gradient.ts`, `climbs.ts` and the modules listed below) carry no tag.
 
 ## Validation Summary
 

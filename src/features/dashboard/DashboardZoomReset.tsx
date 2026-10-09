@@ -7,7 +7,7 @@ export const DashboardZoomReset = () => {
   return (
     <ZoomResetPill
       isZoomed={isZoomed}
-      onReset={() => useFiltersStore.getState().clearDashboardChartRange()}
+      onReset={() => useFiltersStore.getState().clearActiveFilter()}
     />
   );
 };
