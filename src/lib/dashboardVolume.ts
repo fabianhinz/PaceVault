@@ -180,9 +180,6 @@ export const formatVolume = (metric: VolumeMetric, value: number | undefined): s
 export const formatVolumeTick = (value: number): string =>
   new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 }).format(value);
 
-export const isVolumeIncomplete = (total: VolumeTotal): boolean =>
-  total.recorded > 0 && total.recorded < total.sessions;
-
 const VOLUME_TICK_COUNT = 3;
 
 export const volumeAxisTicks = (values: readonly (number | null)[]): number[] | undefined => {
@@ -198,5 +195,4 @@ export const volumeAxisTicks = (values: readonly (number | null)[]): number[] | 
   return Array.from({ length: VOLUME_TICK_COUNT }, (_, i) => Number((i * step).toPrecision(12)));
 };
 
-export const volumeYAxisWidth = (ticks: readonly number[] | undefined): number =>
-  yAxisWidthFor((ticks ?? []).map(formatVolumeTick));
+export const DASHBOARD_Y_AXIS_WIDTH = yAxisWidthFor(['100.000']);

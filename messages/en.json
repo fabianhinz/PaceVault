@@ -568,7 +568,6 @@
   "ui_volume_elevation": "Elevation",
   "ui_volume_this_range": "This range",
   "ui_volume_before": "Before",
-  "ui_volume_from_of": "{label}: from {recorded} of {count} sessions",
   "ui_color_by": "Color by",
   "ui_color_by_sport": "Sport color",
   "ui_color_by_hr": "Heart rate",

@@ -22,8 +22,7 @@ import {
   VOLUME_METRICS,
   formatVolume,
   formatVolumeTick,
-  isVolumeIncomplete,
-  volumeYAxisWidth,
+  DASHBOARD_Y_AXIS_WIDTH,
   volumeUnit,
   type VolumeMetric,
   type VolumeTotal,
@@ -51,39 +50,6 @@ const metricLabels: Record<VolumeMetric, () => string> = {
 const sessionCount = (count: number) => {
   if (count === 1) return m.ui_count_sessions_one();
   return m.ui_count_sessions_other({ count: String(count) });
-};
-
-const VolumeCoverageNote = (props: { series: VolumeSeries }) => {
-  const x = useChartHoverX(DASHBOARD_HOVER_GROUP);
-  let index = props.series.rows.length - 1;
-  if (x !== null) {
-    index = props.series.indexByDate.get(x) ?? index;
-  }
-  const entries = [
-    { label: m.ui_volume_this_range(), total: props.series.current[index] },
-    { label: m.ui_volume_before(), total: props.series.before?.[index] },
-  ];
-  const notes = entries.flatMap((entry) => {
-    if (entry.total === undefined || !isVolumeIncomplete(entry.total)) return [];
-    return [
-      m.ui_volume_from_of({
-        label: entry.label,
-        recorded: String(entry.total.recorded),
-        count: String(entry.total.sessions),
-      }),
-    ];
-  });
-  return (
-    <Typography
-      variant="caption"
-      as="p"
-      color="textTertiary"
-      data-testid="volume-coverage-note"
-      className="mt-1 h-8 shrink-0 line-clamp-2 leading-4 lg:h-4 lg:line-clamp-1"
-    >
-      {notes.join(' · ')}
-    </Typography>
-  );
 };
 
 const LegendLine = (props: { color: string; dashed?: boolean; label: string }) => (
@@ -193,7 +159,7 @@ export const VolumeChart = () => {
                   tick={chartTheme.tick}
                   tickLine={false}
                   axisLine={false}
-                  width={volumeYAxisWidth(series.ticks)}
+                  width={DASHBOARD_Y_AXIS_WIDTH}
                   tickCount={3}
                   ticks={series.ticks}
                   domain={[0, series.ticks?.[series.ticks.length - 1] ?? 'auto']}
@@ -256,7 +222,6 @@ export const VolumeChart = () => {
               />
             </div>
           )}
-          <VolumeCoverageNote series={series} />
         </TabsPrimitive.Root>
       ) : null}
     </ChartRow>

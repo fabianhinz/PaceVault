@@ -7,9 +7,10 @@ import {
   formatVolumeWindow,
   volumeAxisTicks,
   volumeTotals,
-  volumeYAxisWidth,
+  DASHBOARD_Y_AXIS_WIDTH,
 } from '@/lib/dashboardVolume.ts';
 import { overwriteGetLocale } from '@/paraglide/runtime.js';
+import { yAxisWidthFor } from '@/lib/chartTheme.ts';
 
 const at = (day: string) => new Date(`${day}T10:00:00`).getTime();
 
@@ -78,11 +79,13 @@ describe('cumulativeVolume', () => {
 });
 
 describe('volume y-axis', () => {
-  it('volume y-axis labels fit the widest tick instead of being cut', () => {
+  it('dashboard y-axis keeps one width that fits the widest volume tick', () => {
     overwriteGetLocale(() => 'de');
     const ticks = volumeAxisTicks([null, 12, 87_300]);
     expect(ticks?.map(formatVolumeTick)).toEqual(['0', '50.000', '100.000']);
-    expect(volumeYAxisWidth(ticks)).toBeGreaterThan(volumeYAxisWidth([0, 50, 100]));
+    expect(yAxisWidthFor(ticks?.map(formatVolumeTick) ?? [])).toBeLessThanOrEqual(
+      DASHBOARD_Y_AXIS_WIDTH,
+    );
     expect(volumeAxisTicks([null, null])).toBeUndefined();
     overwriteGetLocale(() => 'en');
   });

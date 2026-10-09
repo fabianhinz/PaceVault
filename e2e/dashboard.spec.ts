@@ -38,9 +38,6 @@ test.describe('Dashboard volume', () => {
 
     await volume.getByRole('tab', { name: 'Elevation' }).click();
     await expect(rail).toContainText('100m');
-    await expect(volume.getByTestId('volume-coverage-note')).toHaveText(
-      'This range: from 1 of 2 sessions',
-    );
     await expect(rail).toContainText('--m');
 
     await page.reload();
