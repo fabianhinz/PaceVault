@@ -12,7 +12,6 @@ import {
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { ChartRow } from '@/components/ui/ChartsCard.tsx';
 import { TabsTrigger } from '@/components/ui/Tabs.tsx';
-import { Typography } from '@/components/ui/Typography.tsx';
 import { MultiSeriesRail } from '@/components/charts/ChartRail.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
 import { chartTheme } from '@/lib/chartTheme.ts';
@@ -27,13 +26,13 @@ import {
   type VolumeMetric,
   type VolumeTotal,
 } from '@/lib/dashboardVolume.ts';
-import { useChartHoverX, type ChartHoverX } from '@/store/chartHover.ts';
+import type { ChartHoverX } from '@/store/chartHover.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { SPORTS, type Sport } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
 import { formatDashboardDate } from './dashboardDate.ts';
 import { useDashboardAxis } from './hooks/useDashboardAxis.ts';
-import { type VolumeSeries, useVolumeSeries } from './hooks/useVolumeSeries.ts';
+import { useVolumeSeries } from './hooks/useVolumeSeries.ts';
 import { DASHBOARD_HOVER_GROUP, useDashboardChartEvents } from './hooks/useDashboardChartEvents.ts';
 
 const sportColors: Record<Sport, string> = {

@@ -20,7 +20,7 @@ export interface VolumeRow {
   cycling: number | null;
 }
 
-export interface VolumeSeries {
+interface VolumeSeries {
   rows: VolumeRow[];
   current: VolumeTotal[];
   before: VolumeTotal[] | null;
