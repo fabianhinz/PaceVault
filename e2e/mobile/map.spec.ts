@@ -183,6 +183,55 @@ test.describe('mobile bottom sheet', () => {
   });
 });
 
+test.describe('mobile dock', () => {
+  test.beforeEach(async ({ page }) => {
+    const now = Date.now();
+    await seedWithSessions(page, [
+      { sport: 'running', date: now - 2 * 24 * 60 * 60 * 1000, name: 'Recent Run' },
+      { sport: 'cycling', date: now - 20 * 24 * 60 * 60 * 1000, name: 'Older Ride' },
+    ]);
+  });
+
+  test('switches tabs and turns the pill into the filter field without moving the row', async ({
+    page,
+  }) => {
+    const dock = page.locator('[data-layout="dock"]');
+    const sessionsTab = dock.getByRole('link', { name: /sessions/i });
+    const filterButton = dock.getByRole('button', { name: 'Filter', exact: true });
+    const field = page.getByLabel(/describe a filter/i);
+    const list = page.getByRole('group', { name: /choose filter/i });
+
+    await sessionsTab.click();
+    await page.waitForURL('/sessions');
+    await expect(page.locator('[data-testid="session-item"]')).toHaveCount(2);
+    const rowBefore = await dock.boundingBox();
+
+    await filterButton.click();
+    await expect(field).toBeVisible();
+    await expect(list).toBeVisible();
+    await expect(sessionsTab).toBeHidden();
+    expect(await dock.boundingBox()).toEqual(rowBefore);
+
+    await list.getByRole('button', { name: 'last 7 days', exact: true }).click();
+    await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
+
+    await field.fill('ride');
+    await expect(page.getByTestId('filter-builder-tiles')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(field).toHaveValue('');
+    await expect(list).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(list).toBeHidden();
+    await expect(sessionsTab).toBeVisible();
+    await expect(filterButton.getByTestId('icon-badge')).toBeVisible();
+
+    await filterButton.click();
+    await dock.getByRole('button', { name: 'Close list' }).click();
+    await expect(list).toBeHidden();
+    await expect(filterButton).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
 test.describe('mobile map', () => {
   test('tapping a track on a touch device opens the session picker', async ({ page }) => {
     test.setTimeout(120_000);

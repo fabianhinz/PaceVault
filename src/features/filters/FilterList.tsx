@@ -1,50 +1,29 @@
-import { useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, ZoomOut } from 'lucide-react';
+import { ZoomOut } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
-import { Input } from '@/components/ui/Input.tsx';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery.ts';
-import { interpretFilterText } from '@/lib/filterGrammar.ts';
-import {
-  type FilterCriteria,
-  filterKey,
-  filterName,
-  filterTile,
-  zoomTile,
-} from '@/lib/savedFilters.ts';
+import { cn } from '@/lib/utils.ts';
+import { filterKey, filterName, filterTile, zoomTile } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-import { useSessionsStore } from '@/store/sessions.ts';
 import { filterIcon } from './filterIcon.ts';
+import { FilterField } from './FilterField.tsx';
+import type { FilterBuilder } from './hooks/useFilterBuilder.ts';
 
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
 interface FilterListProps {
-  open: boolean;
+  builder: FilterBuilder;
+  withInput: boolean;
+  sizing: 'fill' | 'content';
 }
 
 export const FilterList = (props: FilterListProps) => {
   const savedFilters = useFiltersStore((s) => s.savedFilters);
   const activeFilter = useFiltersStore((s) => s.activeFilter);
-  const sessions = useSessionsStore((s) => s.sessions);
   const finePointer = useMediaQuery(FINE_POINTER_QUERY);
   const location = useLocation();
-  const [text, setText] = useState('');
-  const [wasOpen, setWasOpen] = useState(props.open);
-  const tilesRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
-
-  if (props.open !== wasOpen) {
-    setWasOpen(props.open);
-    if (!props.open) {
-      setText('');
-    }
-  }
-
-  const interpretations = useMemo(
-    () => interpretFilterText(text, sessions, Date.now()),
-    [text, sessions],
-  );
+  const text = props.builder.text;
 
   let activeKey: string | null = null;
   if (activeFilter) {
@@ -53,67 +32,32 @@ export const FilterList = (props: FilterListProps) => {
   const zoom = zoomTile(activeFilter);
   const showZoomHint = zoom === null && finePointer && location.pathname === '/';
 
-  const select = (criteria: FilterCriteria) => {
-    useFiltersStore.getState().saveBuilderFilter(criteria);
-    setText('');
-    requestAnimationFrame(() => {
-      listRef.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest' });
-    });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const first = interpretations[0];
-    if (e.key === 'Enter' && first) {
-      e.preventDefault();
-      select(first);
-      return;
-    }
-    if (e.key === 'Escape' && text !== '') {
-      e.stopPropagation();
-      setText('');
-      return;
-    }
-    if (e.key === 'ArrowDown') {
-      const tile = tilesRef.current?.querySelector('button');
-      if (tile) {
-        e.preventDefault();
-        tile.focus();
-      }
-    }
-  };
-
   return (
-    <div className="flex h-[358px] w-full flex-col lg:w-64">
-      <div className="shrink-0 border-b border-white/10 px-3 py-1">
-        <Input
-          variant="bare"
-          icon={Search}
-          type="text"
-          autoComplete="off"
-          spellCheck={false}
-          enterKeyHint="done"
-          aria-label={m.ui_filter_builder_label()}
-          placeholder={m.ui_filter_builder_placeholder()}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-      </div>
+    <div className={cn('flex w-full flex-col', props.sizing === 'fill' && 'h-full')}>
+      {props.withInput && (
+        <div className="shrink-0 border-b border-white/10 px-3 py-1">
+          <FilterField builder={props.builder} />
+        </div>
+      )}
       <div
-        ref={listRef}
+        ref={props.builder.listRef}
         role="group"
         aria-label={m.ui_filter_list()}
-        className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-3 [scrollbar-width:none]"
+        className={cn(
+          'flex flex-col gap-1.5 overflow-y-auto p-3 [scrollbar-width:none]',
+          props.sizing === 'fill' && 'min-h-0 flex-1',
+          props.sizing === 'content' && 'max-h-[252px]',
+        )}
       >
         {text !== '' && (
           <div
-            ref={tilesRef}
+            ref={props.builder.tilesRef}
             role="group"
             aria-live="polite"
             data-testid="filter-builder-tiles"
             className="flex shrink-0 flex-col gap-1.5"
           >
-            {interpretations.map((criteria) => {
+            {props.builder.interpretations.map((criteria) => {
               const tile = filterTile(criteria);
               const name = filterName(criteria);
               return (
@@ -126,7 +70,7 @@ export const FilterList = (props: FilterListProps) => {
                   description={tile.description}
                   selected={filterKey(criteria) === activeKey}
                   buttonProps={{ 'aria-label': m.ui_filter_apply({ name }), title: name }}
-                  onClick={() => select(criteria)}
+                  onClick={() => props.builder.select(criteria)}
                 />
               );
             })}

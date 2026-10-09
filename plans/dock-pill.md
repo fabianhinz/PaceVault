@@ -25,8 +25,8 @@ Mockup: `mockups/dock/index.html` (variant B4c, rail "icons only", active state 
 
 ### Both
 
-- **Active tab: a sliding highlight** (muted accent) that moves between tabs in 250 ms. Its position is computed from the fixed item sizes, never measured from the DOM, so it cannot drift (the reason the old indicator was buggy).
-- **Filter button closed state:** badge dot while a filter is active; the whole circle in accent while a chart zoom is active.
+- **Active tab: a sliding highlight** (muted accent) that moves between tabs in 250 ms. Filter cards and the pill-to-field switch only fade (150 ms), no scale. Its position is computed from the fixed item sizes, never measured from the DOM, so it cannot drift (the reason the old indicator was buggy).
+- **Blue background = active** (the sliding highlight behind the current tab, the Filter button while its list is open on desktop); **white background = hover** on inactive items only; **badge = something is active elsewhere** (Filter: a filter or zoom is active; Orten: tracking). No accent look on the Filter button during a zoom.
 - **Orten** keeps its three states (off, tracking, error) and badge.
 - Labels in the dock, where any remain, use Typography `caption` instead of `text-[10px]`.
 - Escape: first clears typed text, then closes the list. Opening the list never changes the dock's size; nothing shifts on hover, Orten or filter changes.

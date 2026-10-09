@@ -1,263 +1,174 @@
 import { useCallback, useEffect, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Zap,
-  Settings,
-  EllipsisVertical,
-  X,
-  FlaskConical,
-  Funnel,
-  Locate,
-  LocateFixed,
-  LocateOff,
-} from 'lucide-react';
+import { X } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { useFileUpload } from '@/features/sessions/hooks/useFileUpload.ts';
 import { useFileDropEffect } from '@/features/sessions/hooks/useFileDropEffect.ts';
-import { cn } from '@/lib/utils.ts';
-import { cardClass } from '@/components/ui/Card.tsx';
-import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
-import { useFiltersStore } from '@/store/filters.ts';
-import { useGeolocationStore } from '@/store/geolocation.ts';
-import { Button } from '@/components/ui/Button.tsx';
-import { useSheetScrollElement } from '@/lib/hooks/useSheetScrollElement.ts';
-import { useDismiss } from '@/lib/hooks/useDismiss.ts';
-import { DockRevealPanel } from './DockRevealPanel.tsx';
-import { IconBadge } from '@/components/ui/IconBadge.tsx';
+import { useFilterBuilder } from '@/features/filters/hooks/useFilterBuilder.ts';
 import { FilterList } from '@/features/filters/FilterList.tsx';
+import { FilterField } from '@/features/filters/FilterField.tsx';
+import { cn } from '@/lib/utils.ts';
+import { DOCK_ROW_BOTTOM_CSS, DOCK_ROW_HEIGHT, DOCK_STACK_GAP } from '@/lib/dockGeometry.ts';
+import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
+import { useDismiss } from '@/lib/hooks/useDismiss.ts';
+import { useKeyboardInset } from '@/lib/hooks/useKeyboardInset.ts';
+import { useSheetScrollElement } from '@/lib/hooks/useSheetScrollElement.ts';
+import { Button } from '@/components/ui/Button.tsx';
+import { glassClass } from '@/components/ui/Card.tsx';
+import { DockFilterButton, DockLocateButton, DockSegment, DockTabs } from './DockItems.tsx';
 
-const tabs = [
-  { to: '/', label: m.ui_nav_dashboard, icon: LayoutDashboard },
-  { to: '/sessions', label: m.ui_nav_sessions, icon: Zap },
-  { to: '/labs', label: m.ui_nav_labs, icon: FlaskConical },
-  { to: '/settings', label: m.ui_nav_settings, icon: Settings },
-];
+const fadeClass = 'transition-[opacity,visibility] duration-150';
 
-const isTabActive = (to: string, pathname: string): boolean => {
-  if (to === '/') return pathname === '/';
-  if (to === '/sessions') return pathname.startsWith('/sessions') || pathname.startsWith('/trips');
-  if (to === '/labs') return pathname.startsWith('/labs') || pathname.startsWith('/studio');
-  return pathname.startsWith(to);
-};
+const hiddenClass = 'invisible opacity-0 pointer-events-none';
 
-const dockItemMiniClass =
-  'w-12 lg:w-10 h-10 rounded-lg text-text-tertiary hover:bg-white/10 hover:text-text-primary';
-
-const dockItemMaxiClass =
-  'w-14 lg:w-auto lg:min-w-16 lg:px-2 lg:self-stretch h-14 rounded-lg text-text-tertiary hover:bg-white/10 hover:text-text-primary flex-col gap-0.5';
-
-const revealItemClass =
-  'w-12 lg:w-10 h-12 rounded-lg text-text-tertiary hover:bg-white/10 hover:text-text-primary flex-col gap-0.5';
-
-type DockRevealLayer = 'menu' | 'filter-list';
-
-export const Dock = () => {
-  const location = useLocation();
-  const dockExpanded = useIsDesktop();
+const useDockList = () => {
+  const [open, setOpen] = useState(false);
+  const builder = useFilterBuilder();
+  const setText = builder.setText;
+  const text = builder.text;
   const sheetScroller = useSheetScrollElement();
-  const upload = useFileUpload();
-  useFileDropEffect(upload.handleFiles, !upload.uploading);
 
-  const [revealStack, setRevealStack] = useState<DockRevealLayer[]>([]);
+  const close = useCallback(() => {
+    setOpen(false);
+    setText('');
+  }, [setText]);
 
-  const isOpen = useCallback(
-    (layer: DockRevealLayer) => revealStack.includes(layer),
-    [revealStack],
-  );
+  const ref = useDismiss(close, { escapeEnabled: false, outsideEnabled: open });
 
-  const closeAll = useCallback(() => setRevealStack([]), []);
-  const dockRef = useDismiss(closeAll, {
-    escapeEnabled: false,
-    outsideEnabled: revealStack.includes('filter-list'),
-  });
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') {
+        return;
+      }
+      if (text !== '') {
+        setText('');
+        return;
+      }
+      close();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [open, text, setText, close]);
 
-  const handleTabClick = useCallback(() => {
-    closeAll();
+  const toggle = () => {
+    if (open) {
+      close();
+      return;
+    }
+    setOpen(true);
+  };
+
+  const handleTabClick = () => {
+    close();
     if (sheetScroller) {
       sheetScroller.scrollTo({ top: 0 });
     } else {
       window.scrollTo({ top: 0 });
     }
-  }, [closeAll, sheetScroller]);
+  };
 
-  const closeFrom = useCallback(
-    (layer: DockRevealLayer) =>
-      setRevealStack((prev) => {
-        const idx = prev.indexOf(layer);
-        return idx === -1 ? prev : prev.slice(0, idx);
-      }),
-    [],
-  );
+  return { open, builder, ref, close, toggle, handleTabClick };
+};
 
-  const toggleMaxiFilter = useCallback((layer: DockRevealLayer) => {
-    setRevealStack((prev) => (prev.length === 1 && prev[0] === layer ? [] : [layer]));
-  }, []);
+type DockList = ReturnType<typeof useDockList>;
 
-  const toggleMiniFilter = useCallback((layer: DockRevealLayer) => {
-    setRevealStack((prev) =>
-      prev.includes(layer) ? prev.filter((l) => l !== layer) : ['menu' as const, layer],
-    );
-  }, []);
-
-  const filterActive = useFiltersStore((s) => s.activeFilter !== null);
-
-  const geoTracking = useGeolocationStore((s) => s.tracking);
-  const geoError = useGeolocationStore((s) => s.error);
-  let LocateIcon = Locate;
-  if (geoError) {
-    LocateIcon = LocateOff;
-  } else if (geoTracking) {
-    LocateIcon = LocateFixed;
-  }
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && revealStack.length > 0) {
-        setRevealStack((prev) => prev.slice(0, -1));
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [revealStack.length]);
-
-  return (
+const DockRail = (props: { list: DockList }) => (
+  <div
+    ref={props.list.ref}
+    data-layout="dock"
+    className="fixed top-1/2 left-3 z-50 flex -translate-y-1/2 flex-col gap-2"
+  >
+    <DockTabs kind="rail" onTabClick={props.list.handleTabClick} />
+    <DockSegment className="flex-col gap-1 p-1">
+      <DockFilterButton kind="rail" open={props.list.open} onClick={props.list.toggle} />
+      <DockLocateButton kind="rail" />
+    </DockSegment>
     <div
-      ref={dockRef}
-      data-layout="dock"
+      data-dock-card
       className={cn(
-        'fixed z-50',
-        'bottom-0 inset-x-0',
-        'lg:inset-x-auto lg:bottom-auto lg:left-3 lg:top-1/2 lg:-translate-y-1/2',
-        'transition-all duration-300',
+        glassClass,
+        'absolute inset-y-0 left-[calc(100%+var(--spacing-3))] w-64 overflow-hidden rounded-3xl',
+        fadeClass,
+        !props.list.open && hiddenClass,
       )}
     >
-      <nav
+      <FilterList builder={props.list.builder} withInput sizing="fill" />
+    </div>
+  </div>
+);
+
+const DockBar = (props: { list: DockList }) => {
+  const [fieldFocused, setFieldFocused] = useState(false);
+  const keyboard = useKeyboardInset(props.list.open && fieldFocused);
+  let bottom = DOCK_ROW_BOTTOM_CSS;
+  if (keyboard > 0) {
+    bottom = `${keyboard + DOCK_STACK_GAP}px`;
+  }
+  return (
+    <div
+      ref={props.list.ref}
+      data-layout="dock"
+      style={{ bottom, height: DOCK_ROW_HEIGHT }}
+      className="fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-50 flex gap-2"
+    >
+      <DockLocateButton kind="circle" />
+      <div className="relative min-w-0 flex-1">
+        <div
+          className={cn('absolute inset-0 flex gap-2', fadeClass, props.list.open && hiddenClass)}
+        >
+          <DockTabs kind="pill" onTabClick={props.list.handleTabClick} />
+          <DockFilterButton kind="circle" open={props.list.open} onClick={props.list.toggle} />
+        </div>
+        <div
+          className={cn(
+            glassClass,
+            'absolute inset-0 flex items-center gap-1 rounded-full pr-1 pl-4',
+            fadeClass,
+            !props.list.open && hiddenClass,
+          )}
+        >
+          <FilterField
+            builder={props.list.builder}
+            className="h-11"
+            onFocusChange={setFieldFocused}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11 shrink-0 rounded-full text-text-tertiary"
+            onClick={props.list.close}
+            aria-label={m.ui_dock_close_list()}
+          >
+            <X size={20} strokeWidth={1.5} />
+          </Button>
+        </div>
+      </div>
+      <div
+        data-dock-card
+        style={{ bottom: `calc(100% + ${DOCK_STACK_GAP}px)` }}
         className={cn(
-          cardClass,
-          'lg:flex-row lg:items-center',
-          'border-0 border-t rounded-none',
-          'pb-[env(safe-area-inset-bottom)] lg:pb-0',
-          'lg:border lg:rounded-2xl',
+          glassClass,
+          'absolute inset-x-0 overflow-hidden rounded-3xl',
+          fadeClass,
+          !props.list.open && hiddenClass,
         )}
       >
-        <DockRevealPanel open={isOpen('filter-list')} className="p-0 lg:order-3">
-          <FilterList open={isOpen('filter-list')} />
-        </DockRevealPanel>
-
-        <DockRevealPanel open={isOpen('menu') && !dockExpanded} className="lg:order-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              revealItemClass,
-              isOpen('filter-list') && 'bg-white/10 text-text-primary',
-            )}
-            onClick={() => toggleMiniFilter('filter-list')}
-            aria-label={m.ui_dock_filter()}
-            aria-expanded={isOpen('filter-list')}
-          >
-            <IconBadge show={filterActive}>
-              <Funnel size={20} strokeWidth={1.5} />
-            </IconBadge>
-            <span className="text-[10px] leading-none">{m.ui_dock_filter()}</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={revealItemClass}
-            onClick={() => {
-              useGeolocationStore.getState().toggleTracking();
-              closeFrom('menu');
-            }}
-            aria-label={m.ui_dock_locate_me()}
-          >
-            <IconBadge show={geoTracking}>
-              <LocateIcon size={20} strokeWidth={1.5} />
-            </IconBadge>
-            <span className="text-[10px] leading-none">{m.ui_dock_locate()}</span>
-          </Button>
-        </DockRevealPanel>
-
-        <div className="relative flex flex-row lg:flex-col items-center justify-center p-2 lg:order-1">
-          {tabs.map((tab) => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              end={tab.to === '/'}
-              onClick={handleTabClick}
-              aria-label={tab.label()}
-              className={cn(
-                'relative flex items-center justify-center rounded-lg transition-all duration-300 overflow-hidden',
-                dockExpanded ? dockItemMaxiClass : 'w-12 lg:w-10 h-10',
-                isTabActive(tab.to, location.pathname)
-                  ? 'text-text-primary'
-                  : 'text-text-tertiary hover:bg-white/10 hover:text-text-primary',
-              )}
-            >
-              <tab.icon size={20} strokeWidth={1.5} />
-              {dockExpanded && <span className="text-[10px] leading-none">{tab.label()}</span>}
-            </NavLink>
-          ))}
-
-          <div
-            className={cn(
-              'bg-white/10 shrink-0 transition-all duration-300',
-              'w-px h-6 mx-1 lg:w-6 lg:h-px lg:my-1 lg:mx-0',
-            )}
-          />
-
-          {dockExpanded ? (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  dockItemMaxiClass,
-                  isOpen('filter-list') && 'bg-white/10 text-text-primary',
-                )}
-                onClick={() => toggleMaxiFilter('filter-list')}
-                aria-label={m.ui_dock_filter()}
-                aria-expanded={isOpen('filter-list')}
-              >
-                <IconBadge show={filterActive}>
-                  <Funnel size={20} strokeWidth={1.5} />
-                </IconBadge>
-                <span className="text-[10px] leading-none">{m.ui_dock_filter()}</span>
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className={dockItemMaxiClass}
-                onClick={() => useGeolocationStore.getState().toggleTracking()}
-                aria-label={m.ui_dock_locate_me()}
-              >
-                <IconBadge show={geoTracking}>
-                  <LocateIcon size={20} strokeWidth={1.5} />
-                </IconBadge>
-                <span className="text-[10px] leading-none">{m.ui_dock_locate()}</span>
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={dockItemMiniClass}
-              onClick={() => setRevealStack((prev) => (prev.includes('menu') ? [] : ['menu']))}
-              aria-label={isOpen('menu') ? m.ui_dock_close_menu() : m.ui_dock_more_actions()}
-            >
-              {isOpen('menu') ? (
-                <X size={20} strokeWidth={1.5} />
-              ) : (
-                <IconBadge show={filterActive}>
-                  <EllipsisVertical size={20} strokeWidth={1.5} />
-                </IconBadge>
-              )}
-            </Button>
-          )}
-        </div>
-      </nav>
+        <FilterList builder={props.list.builder} withInput={false} sizing="content" />
+      </div>
     </div>
   );
+};
+
+export const Dock = () => {
+  const isDesktop = useIsDesktop();
+  const upload = useFileUpload();
+  useFileDropEffect(upload.handleFiles, !upload.uploading);
+  const list = useDockList();
+
+  if (isDesktop) {
+    return <DockRail list={list} />;
+  }
+  return <DockBar list={list} />;
 };
