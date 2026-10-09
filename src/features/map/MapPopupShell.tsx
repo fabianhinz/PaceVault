@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 import { Card } from '@/components/ui/Card.tsx';
 import { SheetBackdrop } from '@/components/ui/SheetBackdrop.tsx';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
-import { useDismiss } from './hooks/useDismiss.ts';
+import { useDismiss } from '@/lib/hooks/useDismiss.ts';
 import { usePopupPosition } from './hooks/usePopupPosition.ts';
 import { cn } from '@/lib/utils.ts';
 import type { ReactNode } from 'react';
@@ -44,7 +44,11 @@ export const MapPopupShell = (props: MapPopupShellProps) => {
             : 'fixed inset-x-0 bottom-0 z-50 animate-in slide-in-from-bottom duration-300'
         }
       >
-        <Card variant="compact" className={cn('flex flex-col overflow-hidden', cardSizeClasses)}>
+        <Card
+          variant="compact"
+          floating
+          className={cn('flex flex-col overflow-hidden', cardSizeClasses)}
+        >
           {props.children}
         </Card>
       </div>

@@ -43,7 +43,7 @@ export const Button = (props: ButtonProps) => {
   return (
     <Comp
       className={cn(
-        'inline-flex items-center justify-center gap-1 rounded-lg font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-sunken disabled:pointer-events-none disabled:opacity-50',
+        'inline-flex items-center justify-center gap-1 rounded-lg font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50',
         variantClasses[variant],
         sizeClasses[size],
         className,

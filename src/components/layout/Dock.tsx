@@ -1,380 +1,107 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  Zap,
-  Settings,
-  EllipsisVertical,
-  X,
-  Activity,
-  Clock,
-  FlaskConical,
-  FunnelPlus,
-  Locate,
-  LocateFixed,
-  LocateOff,
-} from 'lucide-react';
-import { m } from '@/paraglide/messages.js';
+import { useCallback, useState } from 'react';
 import { useFileUpload } from '@/features/sessions/hooks/useFileUpload.ts';
 import { useFileDropEffect } from '@/features/sessions/hooks/useFileDropEffect.ts';
+import { FilterList } from '@/features/filters/FilterList.tsx';
 import { cn } from '@/lib/utils.ts';
-import { cardClass } from '@/components/ui/Card.tsx';
-import { useSlideIndicator } from '@/components/ui/SlideIndicator.tsx';
+import { DOCK_ROW_BOTTOM_CSS, DOCK_ROW_HEIGHT, DOCK_STACK_GAP } from '@/lib/dockGeometry.ts';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
-import { useFiltersStore } from '@/store/filters.ts';
-import { useGeolocationStore } from '@/store/geolocation.ts';
-import { Button } from '@/components/ui/Button.tsx';
+import { useDismiss } from '@/lib/hooks/useDismiss.ts';
 import { useSheetScrollElement } from '@/lib/hooks/useSheetScrollElement.ts';
-import { DockRevealPanel } from './DockRevealPanel.tsx';
-import { DockFilterOptions, type FilterOption } from './DockFilterOptions.tsx';
-import { AttributeFilterDialog } from './AttributeFilterDialog.tsx';
-import { IconBadge } from '@/components/ui/IconBadge.tsx';
-import { isAttributeFilterActive } from '@/lib/attributeFilters.ts';
-import { sportIcon } from '@/lib/sportIcons.ts';
-import {
-  getTimeRangeOptions,
-  formatTimeRangeLabel,
-  formatCustomRangeDuration,
-} from '@/lib/timeRange.ts';
-import type { Sport } from '@/packages/engine/types.ts';
+import { floatingClass } from '@/components/ui/Card.tsx';
+import { DockFilterButton, DockLocateButton, DockSegment, DockTabs } from './DockItems.tsx';
 
-const tabs = [
-  { to: '/', label: m.ui_nav_dashboard, icon: LayoutDashboard },
-  { to: '/sessions', label: m.ui_nav_sessions, icon: Zap },
-  { to: '/labs', label: m.ui_nav_labs, icon: FlaskConical },
-  { to: '/settings', label: m.ui_nav_settings, icon: Settings },
-];
+const fadeClass = 'transition-[opacity,visibility] duration-150';
 
-const isTabActive = (to: string, pathname: string): boolean => {
-  if (to === '/') return pathname === '/';
-  if (to === '/sessions') return pathname.startsWith('/sessions') || pathname.startsWith('/trips');
-  if (to === '/labs') return pathname.startsWith('/labs') || pathname.startsWith('/studio');
-  return pathname.startsWith(to);
-};
+const hiddenClass = 'invisible opacity-0 pointer-events-none';
 
-const sportOptions: FilterOption<Sport | 'all'>[] = [
-  { value: 'all', label: m.ui_dock_sport_all() },
-  { value: 'running', label: m.ui_dock_sport_run() },
-  { value: 'cycling', label: m.ui_dock_sport_cycle() },
-];
-
-const dockItemMiniClass =
-  'w-12 lg:w-10 h-10 rounded-lg text-text-tertiary hover:bg-white/10 hover:text-text-primary';
-
-const dockItemMaxiClass =
-  'w-14 lg:w-16 h-14 rounded-lg text-text-tertiary hover:bg-white/10 hover:text-text-primary flex-col gap-0.5';
-
-const revealItemClass =
-  'w-12 lg:w-10 h-12 rounded-lg text-text-tertiary hover:bg-white/10 hover:text-text-primary flex-col gap-0.5';
-
-type DockRevealLayer = 'menu' | 'sport-filter' | 'time-filter';
-
-export const Dock = () => {
-  const location = useLocation();
-  const activeIndex = tabs.findIndex((tab) => isTabActive(tab.to, location.pathname));
-  const dockBarRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<(HTMLElement | null)[]>([]);
-  const dockExpanded = useIsDesktop();
-  const indicatorElement = useSlideIndicator(dockBarRef, tabRefs, activeIndex, dockExpanded);
+const useDockList = () => {
+  const [open, setOpen] = useState(false);
   const sheetScroller = useSheetScrollElement();
-  const upload = useFileUpload();
-  useFileDropEffect(upload.handleFiles, !upload.uploading);
 
-  const [revealStack, setRevealStack] = useState<DockRevealLayer[]>([]);
+  const close = useCallback(() => setOpen(false), []);
 
-  const isOpen = useCallback(
-    (layer: DockRevealLayer) => revealStack.includes(layer),
-    [revealStack],
-  );
+  const ref = useDismiss(close, { escapeEnabled: false, outsideEnabled: open });
 
-  const closeAll = useCallback(() => setRevealStack([]), []);
+  const toggle = () => {
+    if (open) {
+      close();
+      return;
+    }
+    setOpen(true);
+  };
 
-  const handleTabClick = useCallback(() => {
-    closeAll();
+  const handleTabClick = () => {
+    close();
     if (sheetScroller) {
       sheetScroller.scrollTo({ top: 0 });
     } else {
       window.scrollTo({ top: 0 });
     }
-  }, [closeAll, sheetScroller]);
+  };
 
-  const closeFrom = useCallback(
-    (layer: DockRevealLayer) =>
-      setRevealStack((prev) => {
-        const idx = prev.indexOf(layer);
-        return idx === -1 ? prev : prev.slice(0, idx);
-      }),
-    [],
-  );
+  return { open, ref, close, toggle, handleTabClick };
+};
 
-  const toggleMaxiFilter = useCallback((layer: DockRevealLayer) => {
-    setRevealStack((prev) => (prev.length === 1 && prev[0] === layer ? [] : [layer]));
-  }, []);
+type DockList = ReturnType<typeof useDockList>;
 
-  const toggleMiniFilter = useCallback((layer: DockRevealLayer) => {
-    setRevealStack((prev) =>
-      prev.includes(layer) ? prev.filter((l) => l !== layer) : ['menu' as const, layer],
-    );
-  }, []);
+const DockRail = (props: { list: DockList }) => (
+  <div
+    ref={props.list.ref}
+    data-layout="dock"
+    className="fixed top-1/2 left-3 z-50 flex -translate-y-1/2 flex-col gap-2"
+  >
+    <DockTabs kind="rail" onTabClick={props.list.handleTabClick} />
+    <DockSegment className="flex-col gap-1 p-1">
+      <DockFilterButton kind="rail" open={props.list.open} onClick={props.list.toggle} />
+      <DockLocateButton kind="rail" />
+    </DockSegment>
+    <div
+      data-dock-card
+      className={cn(
+        floatingClass,
+        'absolute inset-y-0 left-[calc(100%+var(--spacing-3))] w-64 overflow-hidden rounded-3xl',
+        fadeClass,
+        !props.list.open && hiddenClass,
+      )}
+    >
+      <FilterList open={props.list.open} sizing="fill" onClose={props.list.close} />
+    </div>
+  </div>
+);
 
-  const sportFilter = useFiltersStore((s) => s.sportFilter);
-  const timeRange = useFiltersStore((s) => s.timeRange);
-  const customRange = useFiltersStore((s) => s.customRange);
-  const attributeFilters = useFiltersStore((s) => s.attributeFilters);
+const DockBar = (props: { list: DockList }) => (
+  <div
+    ref={props.list.ref}
+    data-layout="dock"
+    style={{ bottom: DOCK_ROW_BOTTOM_CSS, height: DOCK_ROW_HEIGHT }}
+    className="fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-50 flex gap-2"
+  >
+    <DockLocateButton kind="circle" />
+    <DockTabs kind="pill" onTabClick={props.list.handleTabClick} />
+    <DockFilterButton kind="circle" open={props.list.open} onClick={props.list.toggle} />
+    <div
+      data-dock-card
+      style={{ bottom: `calc(100% + ${DOCK_STACK_GAP}px)` }}
+      className={cn(
+        floatingClass,
+        'absolute inset-x-0 overflow-hidden rounded-3xl',
+        fadeClass,
+        !props.list.open && hiddenClass,
+      )}
+    >
+      <FilterList open={props.list.open} sizing="content" onClose={props.list.close} />
+    </div>
+  </div>
+);
 
-  const [attrDialogOpen, setAttrDialogOpen] = useState(false);
-  const attrActive = isAttributeFilterActive(attributeFilters);
-  const openAttrDialog = useCallback(() => {
-    setRevealStack([]);
-    setAttrDialogOpen(true);
-  }, []);
+export const Dock = () => {
+  const isDesktop = useIsDesktop();
+  const upload = useFileUpload();
+  useFileDropEffect(upload.handleFiles, !upload.uploading);
+  const list = useDockList();
 
-  const geoTracking = useGeolocationStore((s) => s.tracking);
-  const geoError = useGeolocationStore((s) => s.error);
-  let LocateIcon = Locate;
-  if (geoError) {
-    LocateIcon = LocateOff;
-  } else if (geoTracking) {
-    LocateIcon = LocateFixed;
+  if (isDesktop) {
+    return <DockRail list={list} />;
   }
-
-  const SportIcon = sportFilter === 'all' ? Activity : sportIcon[sportFilter];
-  const sportLabel = sportOptions.find((o) => o.value === sportFilter)?.label ?? sportFilter;
-
-  const timeLabel =
-    timeRange === 'custom' && customRange
-      ? formatCustomRangeDuration(customRange)
-      : formatTimeRangeLabel(timeRange);
-
-  const timeFilterOptions = getTimeRangeOptions();
-  if (timeRange === 'custom' && customRange) {
-    timeFilterOptions.push({
-      value: 'custom',
-      label: formatCustomRangeDuration(customRange),
-      variant: 'accent',
-    });
-  }
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && revealStack.length > 0) {
-        setRevealStack((prev) => prev.slice(0, -1));
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [revealStack.length]);
-
-  return (
-    <>
-      <div
-        data-layout="dock"
-        className={cn(
-          'fixed z-50',
-          'bottom-0 inset-x-0',
-          'lg:inset-x-auto lg:bottom-auto lg:left-3 lg:top-1/2 lg:-translate-y-1/2',
-          'transition-all duration-300',
-        )}
-      >
-        <nav
-          className={cn(
-            cardClass,
-            'lg:flex-row lg:items-center',
-            'border-0 border-t rounded-none',
-            'pb-[env(safe-area-inset-bottom)] lg:pb-0',
-            'lg:border lg:rounded-2xl',
-          )}
-        >
-          <DockRevealPanel open={isOpen('sport-filter')} className="lg:order-3">
-            <DockFilterOptions
-              options={sportOptions}
-              value={sportFilter}
-              onValueChange={(newSportFilter) => {
-                useFiltersStore.getState().setSportFilter(newSportFilter);
-                closeFrom('sport-filter');
-              }}
-            />
-          </DockRevealPanel>
-
-          <DockRevealPanel open={isOpen('time-filter')} className="lg:order-3">
-            <DockFilterOptions
-              options={timeFilterOptions}
-              value={timeRange}
-              onValueChange={(newTimeRange) => {
-                useFiltersStore.getState().setTimeRange(newTimeRange);
-                closeFrom('time-filter');
-              }}
-            />
-          </DockRevealPanel>
-
-          <DockRevealPanel open={isOpen('menu') && !dockExpanded} className="lg:order-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                revealItemClass,
-                isOpen('sport-filter') && 'bg-white/10 text-text-primary',
-              )}
-              onClick={() => toggleMiniFilter('sport-filter')}
-              aria-label={m.ui_dock_sport_filter()}
-            >
-              <SportIcon size={20} strokeWidth={1.5} />
-              <span className="text-[10px] leading-none">{m.ui_dock_sport()}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                revealItemClass,
-                isOpen('time-filter') && 'bg-white/10 text-text-primary',
-              )}
-              onClick={() => toggleMiniFilter('time-filter')}
-              aria-label={m.ui_dock_time_filter()}
-            >
-              <Clock size={20} strokeWidth={1.5} />
-              <span className="text-[10px] leading-none">{m.ui_dock_range()}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={revealItemClass}
-              onClick={openAttrDialog}
-              aria-label={m.ui_dock_attr_filter()}
-            >
-              <IconBadge show={attrActive}>
-                <FunnelPlus size={20} strokeWidth={1.5} />
-              </IconBadge>
-              <span className="text-[10px] leading-none">{m.ui_dock_attr()}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={revealItemClass}
-              onClick={() => {
-                useGeolocationStore.getState().toggleTracking();
-                closeFrom('menu');
-              }}
-              aria-label={m.ui_dock_locate_me()}
-            >
-              <IconBadge show={geoTracking}>
-                <LocateIcon size={20} strokeWidth={1.5} />
-              </IconBadge>
-              <span className="text-[10px] leading-none">{m.ui_dock_locate()}</span>
-            </Button>
-          </DockRevealPanel>
-
-          <div
-            ref={dockBarRef}
-            className="relative flex flex-row lg:flex-col items-center justify-center p-2 lg:order-1"
-          >
-            {indicatorElement}
-
-            {tabs.map((tab, i) => (
-              <NavLink
-                key={tab.to}
-                ref={(el) => {
-                  tabRefs.current[i] = el;
-                }}
-                to={tab.to}
-                end={tab.to === '/'}
-                onClick={handleTabClick}
-                aria-label={tab.label()}
-                className={cn(
-                  'relative flex items-center justify-center rounded-lg transition-all duration-300 overflow-hidden',
-                  dockExpanded ? dockItemMaxiClass : 'w-12 lg:w-10 h-10',
-                  isTabActive(tab.to, location.pathname)
-                    ? 'text-text-primary'
-                    : 'text-text-tertiary hover:bg-white/10 hover:text-text-primary',
-                )}
-              >
-                <tab.icon size={20} strokeWidth={1.5} />
-                {dockExpanded && <span className="text-[10px] leading-none">{tab.label()}</span>}
-              </NavLink>
-            ))}
-
-            <div
-              className={cn(
-                'bg-white/10 shrink-0 transition-all duration-300',
-                'w-px h-6 mx-1 lg:w-6 lg:h-px lg:my-1 lg:mx-0',
-              )}
-            />
-
-            {dockExpanded ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    dockItemMaxiClass,
-                    isOpen('sport-filter') && 'bg-white/10 text-text-primary',
-                  )}
-                  onClick={() => toggleMaxiFilter('sport-filter')}
-                  aria-label={m.ui_dock_sport_filter()}
-                >
-                  <SportIcon size={20} strokeWidth={1.5} />
-                  <span className="text-[10px] leading-none truncate max-w-14">{sportLabel}</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    dockItemMaxiClass,
-                    isOpen('time-filter') && 'bg-white/10 text-text-primary',
-                  )}
-                  onClick={() => toggleMaxiFilter('time-filter')}
-                  aria-label={m.ui_dock_time_filter()}
-                >
-                  <Clock size={20} strokeWidth={1.5} />
-                  <span className="text-[10px] leading-none truncate max-w-14">{timeLabel}</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={dockItemMaxiClass}
-                  onClick={openAttrDialog}
-                  aria-label={m.ui_dock_attr_filter()}
-                >
-                  <IconBadge show={attrActive}>
-                    <FunnelPlus size={20} strokeWidth={1.5} />
-                  </IconBadge>
-                  <span className="text-[10px] leading-none">{m.ui_dock_attr()}</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={dockItemMaxiClass}
-                  onClick={() => useGeolocationStore.getState().toggleTracking()}
-                  aria-label={m.ui_dock_locate_me()}
-                >
-                  <IconBadge show={geoTracking}>
-                    <LocateIcon size={20} strokeWidth={1.5} />
-                  </IconBadge>
-                  <span className="text-[10px] leading-none">{m.ui_dock_locate()}</span>
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={dockItemMiniClass}
-                onClick={() => setRevealStack((prev) => (prev.includes('menu') ? [] : ['menu']))}
-                aria-label={isOpen('menu') ? m.ui_dock_close_menu() : m.ui_dock_more_actions()}
-              >
-                {isOpen('menu') ? (
-                  <X size={20} strokeWidth={1.5} />
-                ) : (
-                  <EllipsisVertical size={20} strokeWidth={1.5} />
-                )}
-              </Button>
-            )}
-          </div>
-        </nav>
-      </div>
-
-      <AttributeFilterDialog open={attrDialogOpen} onOpenChange={setAttrDialogOpen} />
-    </>
-  );
+  return <DockBar list={list} />;
 };

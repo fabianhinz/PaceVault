@@ -36,8 +36,8 @@ export interface EnduranceTrackerDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'endurance-tracker';
-const DB_VERSION = 4;
+export const DB_NAME = 'endurance-tracker';
+export const DB_VERSION = 4;
 
 let dbPromise: Promise<IDBPDatabase<EnduranceTrackerDB>> | null = null;
 

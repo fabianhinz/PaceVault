@@ -6,7 +6,6 @@ interface IconBadgeProps {
   className?: string;
 }
 
-/** Wraps an icon and overlays a small accent dot when `show` is true. */
 export const IconBadge = (props: IconBadgeProps) => {
   return (
     <span className={cn('relative inline-flex', props.className)}>

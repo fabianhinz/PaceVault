@@ -1,10 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import { buildRouteChartRows, buildSessionChartRows, hasSeriesValues } from '@/lib/chartData.ts';
 import { buildRouteProfile } from '@/packages/gpx/routeProfile.ts';
-import type { SessionRecord } from '@/packages/engine/types.ts';
+import { buildSessionTerrain } from '@/lib/sessionTerrain.ts';
+import type { SessionRecord, Sport } from '@/packages/engine/types.ts';
 
-const rowsOf = (records: SessionRecord[], isRunning = true) =>
-  buildSessionChartRows(records, { isRunning });
+const rowsOf = (records: SessionRecord[], sport: Sport = 'running') =>
+  buildSessionChartRows(records, {
+    isRunning: sport === 'running',
+    terrain: buildSessionTerrain(sport, records),
+  });
+
+const steadyRun = (gradient: number): SessionRecord[] =>
+  Array.from({ length: 120 }, (_, i) => ({
+    timestamp: i,
+    speed: 3.5,
+    distance: i * 3.5,
+    elevation: 100 + i * 3.5 * gradient,
+  }));
 
 describe('buildSessionChartRows', () => {
   it('converts speed to km/h and pace to min/km', () => {
@@ -31,20 +43,14 @@ describe('buildSessionChartRows', () => {
         { timestamp: 0, speed: 8 },
         { timestamp: 1, speed: 8 },
       ],
-      false,
+      'cycling',
     );
     expect(hasSeriesValues(rows, 'pace')).toBe(false);
   });
 
   it('gap is faster than pace uphill and slower downhill', () => {
-    const up = rowsOf([
-      { timestamp: 0, speed: 3.5, grade: 10 },
-      { timestamp: 1, speed: 3.5, grade: 10 },
-    ])[0];
-    const down = rowsOf([
-      { timestamp: 0, speed: 3.5, grade: -10 },
-      { timestamp: 1, speed: 3.5, grade: -10 },
-    ])[0];
+    const up = rowsOf(steadyRun(0.1))[0];
+    const down = rowsOf(steadyRun(-0.1))[0];
     expect(up?.gap).toBeLessThan(up?.pace ?? 0);
     expect(down?.gap).toBeGreaterThan(down?.pace ?? 0);
   });
@@ -55,7 +61,6 @@ describe('buildSessionChartRows', () => {
       speed: 3.5,
       distance: i * 3.5,
       elevation: 100 + i * 0.35,
-      ...(i === 0 && { grade: 0 }),
     }));
     const rows = rowsOf(records);
     const gaps = rows.map((r) => r.gap).filter((g): g is number => g !== null);
@@ -64,12 +69,10 @@ describe('buildSessionChartRows', () => {
     expect(gaps.slice(1).every((g) => g < pace)).toBe(true);
   });
 
-  it('has no GAP without any grade data', () => {
-    const rows = rowsOf([
-      { timestamp: 0, speed: 3.5, elevation: 100, distance: 0 },
-      { timestamp: 60, speed: 3.5, elevation: 110, distance: 100 },
-    ]);
-    expect(hasSeriesValues(rows, 'gap')).toBe(false);
+  it('trail runs without a grade field get a GAP and a Grade chart', () => {
+    const rows = rowsOf(steadyRun(0.12));
+    expect(hasSeriesValues(rows, 'gap')).toBe(true);
+    expect(rows[60]?.grade).toBeCloseTo(12, 6);
   });
 });
 

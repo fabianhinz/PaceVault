@@ -13,6 +13,8 @@ import { DebugCrashTrigger } from '@/lib/debug/DebugCrashTrigger.tsx';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 import { useIntervalsSync } from '@/features/intervals/hooks/useIntervalsSync.ts';
 import { ImportProgressOverlay } from '@/components/ui/ImportProgressOverlay.tsx';
+import { useSessionReprocessingEffect } from '@/features/sessions/hooks/useSessionReprocessingEffect.ts';
+import { NewerVersionOverlay } from './NewerVersionOverlay.tsx';
 
 const RouteContent = () => {
   const location = useLocation();
@@ -54,6 +56,7 @@ export const AppLayout = () => {
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
   const isDesktop = useIsDesktop();
 
+  useSessionReprocessingEffect();
   useIntervalsSync();
 
   return (
@@ -90,6 +93,7 @@ export const AppLayout = () => {
         </main>
       )}
       <ImportProgressOverlay />
+      <NewerVersionOverlay />
     </div>
   );
 };

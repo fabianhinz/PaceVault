@@ -12,7 +12,6 @@ const layout = computeSheetLayout({
   viewportHeight: 844,
   safeTop: 47,
   safeBottom: 34,
-  dockHeight: 57,
 });
 
 describe('sheet position', () => {
@@ -52,6 +51,12 @@ describe('sheet position', () => {
     const middle = sheetFitHeight(layout, 0.5);
     expect(sheetFitHeight(layout, 0.8)).toBe(middle);
     expect(sheetFitHeight(layout, 1)).toBe(middle);
+  });
+
+  it('keeps the peek above the floating dock row, with and without a home indicator', () => {
+    expect(layout.bottomInset).toBe(28 + 52 + 8);
+    const flat = computeSheetLayout({ viewportHeight: 844, safeTop: 0, safeBottom: 0 });
+    expect(flat.bottomInset).toBe(12 + 52 + 8);
   });
 
   it('fits the map above the real sheet while it sits below the middle', () => {

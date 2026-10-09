@@ -1,6 +1,7 @@
 import { test, expect, type Page } from './helpers/test';
 import { seedOnboardingComplete, CYCLING_FIT } from './helpers/seed';
 import { uploadFitFiles } from './helpers/upload';
+import { applyFilter } from './helpers/filters';
 
 const recordLinks = (page: Page) => page.getByRole('tabpanel').locator('a[href^="/sessions/"]');
 
@@ -21,15 +22,7 @@ test.describe('Personal bests', () => {
     await expect(recordLinks(page).first()).toBeVisible();
     const count = await recordLinks(page).count();
 
-    await page
-      .locator('[data-layout="dock"]')
-      .getByRole('button', { name: /sport filter/i })
-      .last()
-      .click();
-    await page
-      .locator('[data-layout="dock"] .pointer-events-auto')
-      .getByRole('radio', { name: /run$/i })
-      .click();
+    await applyFilter(page, 'last 7 days');
     await expect(recordLinks(page)).toHaveCount(count);
 
     await recordLinks(page).first().click();

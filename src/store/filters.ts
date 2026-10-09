@@ -1,102 +1,125 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { v4 } from 'uuid';
+import { z } from 'zod';
 import { idbStorage } from '@/lib/idbStorage.ts';
-import type { TimeRange } from '@/lib/timeRange.ts';
 import {
-  type AttributeFilters,
-  createEmptyAttributeFilters,
-  sanitizeAttributeFilters,
-} from '@/lib/attributeFilters.ts';
-import type { Sport } from '@/packages/engine/types.ts';
-
-type LoadChartGroupBy = 'day' | 'week' | 'month';
+  type FilterCriteria,
+  type SavedFilter,
+  createDefaultSavedFilters,
+  emptyCriteria,
+  filterKey,
+} from '@/lib/savedFilters.ts';
+import type { LoadGroupBy } from '@/lib/loadAxis.ts';
+import type { VolumeMetric } from '@/lib/dashboardVolume.ts';
 
 interface FiltersState {
-  timeRange: TimeRange;
-  customRange: { from: string; to: string } | null;
-  prevDashboardRange: Exclude<TimeRange, 'custom'> | null;
-  sportFilter: Sport | 'all';
-  attributeFilters: AttributeFilters;
-  loadChartShowSportColors: boolean;
-  loadChartGroupBy: LoadChartGroupBy;
-  setTimeRange: (r: TimeRange) => void;
+  savedFilters: SavedFilter[];
+  activeFilter: FilterCriteria | null;
+  loadChartGroupBy: LoadGroupBy;
+  volumeChartMetric: VolumeMetric;
+  toggleSavedFilter: (id: string) => void;
+  saveBuilderFilter: (criteria: FilterCriteria) => void;
   setDashboardChartRange: (from: string, to: string) => void;
-  clearDashboardChartRange: () => void;
-  setSportFilter: (s: Sport | 'all') => void;
-  setAttributeFilters: (f: AttributeFilters) => void;
-  clearAttributeFilters: () => void;
-  setLoadChartShowSportColors: (show: boolean) => void;
-  setLoadChartGroupBy: (groupBy: LoadChartGroupBy) => void;
+  clearActiveFilter: () => void;
+  resetFilters: () => void;
+  setLoadChartGroupBy: (groupBy: LoadGroupBy) => void;
+  setVolumeChartMetric: (metric: VolumeMetric) => void;
 }
+
+type PersistedFilters = Pick<
+  FiltersState,
+  'savedFilters' | 'activeFilter' | 'loadChartGroupBy' | 'volumeChartMetric'
+>;
+
+const SAVED_FILTERS_LIMIT = 15;
+
+const groupBySchema = z.object({ loadChartGroupBy: z.enum(['day', 'week', 'month']) });
+
+export const migrateFilters = (persistedState: unknown, fromVersion: number): PersistedFilters => {
+  const migrated: PersistedFilters = {
+    savedFilters: createDefaultSavedFilters(),
+    activeFilter: null,
+    loadChartGroupBy: 'week',
+    volumeChartMetric: 'distance',
+  };
+  if (fromVersion < 2) {
+    return migrated;
+  }
+  const groupBy = groupBySchema.safeParse(persistedState);
+  if (groupBy.success) {
+    migrated.loadChartGroupBy = groupBy.data.loadChartGroupBy;
+  }
+  return migrated;
+};
 
 export const useFiltersStore = create<FiltersState>()(
   immer(
     persist(
-      (set) => ({
-        timeRange: 'all',
-        customRange: null,
-        prevDashboardRange: null,
-        sportFilter: 'all',
-        attributeFilters: createEmptyAttributeFilters(),
-        loadChartShowSportColors: true,
-        loadChartGroupBy: 'month',
-        setTimeRange: (r) => {
-          set({ timeRange: r, customRange: null, prevDashboardRange: null });
+      (set, get) => ({
+        savedFilters: createDefaultSavedFilters(),
+        activeFilter: null,
+        loadChartGroupBy: 'week',
+        volumeChartMetric: 'distance',
+        toggleSavedFilter: (id) => {
+          const state = get();
+          const filter = state.savedFilters.find((f) => f.id === id);
+          if (!filter) {
+            return;
+          }
+          if (state.activeFilter && filterKey(state.activeFilter) === filterKey(filter.criteria)) {
+            set({ activeFilter: null });
+            return;
+          }
+          set({ activeFilter: filter.criteria });
+        },
+        saveBuilderFilter: (criteria) => {
+          set((draft) => {
+            draft.activeFilter = structuredClone(criteria);
+            const key = filterKey(criteria);
+            if (draft.savedFilters.some((f) => filterKey(f.criteria) === key)) {
+              return;
+            }
+            draft.savedFilters.unshift({ id: v4(), criteria: structuredClone(criteria) });
+            draft.savedFilters.splice(SAVED_FILTERS_LIMIT);
+          });
         },
         setDashboardChartRange: (from, to) => {
           set((draft) => {
-            if (draft.timeRange !== 'custom') {
-              draft.prevDashboardRange = draft.timeRange as Exclude<TimeRange, 'custom'>;
-            }
-            draft.timeRange = 'custom';
-            draft.customRange = { from, to };
+            const active = draft.activeFilter ?? emptyCriteria();
+            active.time = { kind: 'range', from, to, source: 'zoom' };
+            draft.activeFilter = active;
           });
         },
-        clearDashboardChartRange: () => {
-          set((draft) => {
-            draft.timeRange = draft.prevDashboardRange ?? '90d';
-            draft.customRange = null;
-            draft.prevDashboardRange = null;
+        clearActiveFilter: () => {
+          set({ activeFilter: null });
+        },
+        resetFilters: () => {
+          set({
+            savedFilters: createDefaultSavedFilters(),
+            activeFilter: null,
           });
-        },
-        setSportFilter: (sportFilter) => {
-          set({ sportFilter });
-        },
-        setAttributeFilters: (f) => {
-          set({ attributeFilters: sanitizeAttributeFilters(f) });
-        },
-        clearAttributeFilters: () => {
-          set({ attributeFilters: createEmptyAttributeFilters() });
-        },
-        setLoadChartShowSportColors: (loadChartShowSportColors) => {
-          set({ loadChartShowSportColors });
         },
         setLoadChartGroupBy: (loadChartGroupBy) => {
           set({ loadChartGroupBy });
+        },
+        setVolumeChartMetric: (volumeChartMetric) => {
+          set({ volumeChartMetric });
         },
       }),
       {
         name: 'store-filters',
         storage: createJSONStorage(() => idbStorage),
         skipHydration: true,
-        version: 2,
-        migrate: (persistedState, fromVersion) => {
-          const state = persistedState as Partial<FiltersState>;
-          if (fromVersion < 2) {
-            state.loadChartShowSportColors = true;
-            state.loadChartGroupBy = 'week';
-          }
-          return state as FiltersState;
-        },
-        partialize: (state) => ({
-          timeRange: state.timeRange,
-          customRange: state.customRange,
-          prevDashboardRange: state.prevDashboardRange,
-          sportFilter: state.sportFilter,
-          attributeFilters: state.attributeFilters,
-          loadChartShowSportColors: state.loadChartShowSportColors,
+        version: 3,
+        migrate: (persistedState, fromVersion) =>
+          migrateFilters(persistedState, fromVersion) as FiltersState,
+        partialize: (state): PersistedFilters => ({
+          savedFilters: state.savedFilters,
+          activeFilter: state.activeFilter,
           loadChartGroupBy: state.loadChartGroupBy,
+          volumeChartMetric: state.volumeChartMetric,
         }),
       },
     ),

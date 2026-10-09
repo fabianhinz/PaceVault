@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
   ComposedChart,
   Line,
@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   ReferenceArea,
 } from 'recharts';
-import { useFilteredMetrics } from './hooks/useFilteredMetrics.ts';
 import { ChartRow } from '@/components/ui/ChartsCard.tsx';
 import { MultiSeriesRail } from '@/components/charts/ChartRail.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
@@ -17,15 +16,12 @@ import { chartTheme } from '@/lib/chartTheme.ts';
 import { hoverOnlyTooltip, indexByX } from '@/lib/chartHover.ts';
 import { railInt } from '@/lib/railFormat.ts';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
-import { useChartHoverStore } from '@/store/chartHover.ts';
 import { formatDashboardDate } from './dashboardDate.ts';
 import { tokens } from '@/lib/tokens.ts';
-import { rangeMap } from '@/lib/timeRange.ts';
-import type { TimeRange } from '@/lib/timeRange.ts';
-import { useDashboardChartZoom } from './hooks/useDashboardChartZoom.ts';
+import { useDashboardAxis } from './hooks/useDashboardAxis.ts';
+import { DASHBOARD_Y_AXIS_WIDTH } from '@/lib/dashboardVolume.ts';
+import { DASHBOARD_HOVER_GROUP, useDashboardChartEvents } from './hooks/useDashboardChartEvents.ts';
 import { m } from '@/paraglide/messages.js';
-
-const HOVER_GROUP = 'dashboard-performance';
 
 const SERIES = [
   { key: 'ctl', color: tokens.chartFitness },
@@ -34,37 +30,17 @@ const SERIES = [
 ] as const;
 
 export const PerformanceChart = () => {
-  const metrics = useFilteredMetrics();
-  const dashboardZoom = useDashboardChartZoom();
-
-  const filtered = useMemo(() => {
-    if (dashboardZoom.range === 'custom' && dashboardZoom.customRange) {
-      const range = dashboardZoom.customRange;
-      return metrics.history.filter((d) => d.date >= range.from && d.date <= range.to);
-    }
-    const days = rangeMap[dashboardZoom.range as Exclude<TimeRange, 'custom'>];
-    if (days === Infinity) return metrics.history;
-    return metrics.history.slice(-days);
-  }, [metrics.history, dashboardZoom.range, dashboardZoom.customRange]);
-
+  const axis = useDashboardAxis();
+  const filtered = axis.history;
   const latest = filtered[filtered.length - 1];
   const byDate = useMemo(() => indexByX(filtered, 'date'), [filtered]);
-
-  const onHover = useCallback((date: string | null) => {
-    if (date == null) {
-      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
-      return;
-    }
-    useChartHoverStore.getState().setChartHover(HOVER_GROUP, date);
-  }, []);
-
-  useEffect(() => () => useChartHoverStore.getState().clearChartHover(HOVER_GROUP), []);
 
   const zoom = useChartZoom({
     data: filtered,
     xKey: 'date',
-    onZoomComplete: dashboardZoom.onZoomComplete,
+    onZoomComplete: axis.onZoomComplete,
   });
+  const events = useDashboardChartEvents(zoom);
 
   return (
     <ChartRow
@@ -73,7 +49,7 @@ export const PerformanceChart = () => {
       height="h-64"
       rail={
         <MultiSeriesRail
-          group={HOVER_GROUP}
+          group={DASHBOARD_HOVER_GROUP}
           restHeader={m.ui_rail_latest()}
           formatX={formatDashboardDate}
           isKnownX={(x) => byDate.has(x)}
@@ -94,20 +70,7 @@ export const PerformanceChart = () => {
     >
       {filtered.length > 0 ? (
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={zoom.zoomedData}
-            onMouseDown={zoom.onMouseDown}
-            onMouseMove={(e) => {
-              zoom.onMouseMove(e);
-              if (e.activeLabel != null) onHover(String(e.activeLabel));
-            }}
-            onMouseUp={zoom.onMouseUp}
-            onMouseLeave={() => onHover(null)}
-            onTouchMove={(e) => {
-              if (e.activeLabel != null) onHover(String(e.activeLabel));
-            }}
-            onTouchEnd={() => onHover(null)}
-          >
+          <ComposedChart data={zoom.zoomedData} {...events}>
             <XAxis
               dataKey="date"
               ticks={[
@@ -123,7 +86,7 @@ export const PerformanceChart = () => {
               tick={chartTheme.tick}
               tickLine={false}
               axisLine={false}
-              width={40}
+              width={DASHBOARD_Y_AXIS_WIDTH}
               tickCount={3}
             />
             <RechartsTooltip {...hoverOnlyTooltip} />

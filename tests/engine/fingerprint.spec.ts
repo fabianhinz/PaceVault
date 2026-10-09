@@ -2,10 +2,7 @@ import { v4 } from 'uuid';
 import { describe, it, expect } from 'vitest';
 import { generateFingerprint, findDuplicates } from '@/lib/fingerprint.ts';
 import type { TrainingSession } from '@/packages/engine/types.ts';
-
-// ---------------------------------------------------------------------------
-// generateFingerprint
-// ---------------------------------------------------------------------------
+import { SESSION_DERIVATION_VERSION } from '@/packages/engine/sessionDerivation.ts';
 
 describe('generateFingerprint', () => {
   const fallback = {
@@ -51,10 +48,6 @@ describe('generateFingerprint', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// findDuplicates
-// ---------------------------------------------------------------------------
-
 const makeSession = (overrides: Partial<TrainingSession> = {}): TrainingSession => ({
   id: v4(),
   sport: 'running',
@@ -65,6 +58,7 @@ const makeSession = (overrides: Partial<TrainingSession> = {}): TrainingSession 
   stressMethod: 'trimp',
   isPlanned: false,
   hasDetailedRecords: true,
+  derivationVersion: SESSION_DERIVATION_VERSION,
   createdAt: Date.now(),
   source: { kind: 'file' },
   ...overrides,

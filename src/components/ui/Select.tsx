@@ -1,6 +1,7 @@
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
+import { floatingClass } from './Card.tsx';
 
 export const SelectRoot = SelectPrimitive.Root;
 export const SelectValue = SelectPrimitive.Value;
@@ -10,7 +11,7 @@ export const SelectTrigger = (props: SelectPrimitive.SelectTriggerProps) => {
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-10 w-full items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-text-primary cursor-pointer placeholder:text-text-quaternary focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface-sunken disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-10 w-full items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-text-primary cursor-pointer placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50',
         className,
       )}
       {...rest}
@@ -29,7 +30,8 @@ export const SelectContent = (props: SelectPrimitive.SelectContentProps) => {
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
         className={cn(
-          'relative z-50 w-[var(--radix-select-trigger-width)] max-h-64 overflow-hidden rounded-lg border border-white/10 bg-white/5 backdrop-blur-xl',
+          floatingClass,
+          'relative z-50 w-[var(--radix-select-trigger-width)] max-h-64 overflow-hidden rounded-lg',
           'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
           className,
         )}

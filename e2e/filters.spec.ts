@@ -1,221 +1,115 @@
 import { test, expect, type Page } from './helpers/test';
 import { seedWithSessions } from './helpers/seed';
+import { applyFilter, dockFilterButton, filterList, openFilterList } from './helpers/filters';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// The dock renders filter buttons in both mini (reveal panel) and maxi modes.
-// When dockExpanded is true both exist in the DOM — the mini ones are hidden
-// via opacity-0 but Playwright still considers them visible. The maxi buttons
-// are rendered after the reveal panel in DOM order, so .last() targets them.
-const dockButton = (page: Page, name: RegExp) =>
-  page.locator('[data-layout="dock"]').getByRole('button', { name }).last();
-
-// When a filter panel opens it gets `pointer-events-auto`. The closed panel
-// keeps `pointer-events-none`. Both sport and time panels have an "All" radio,
-// so we scope radio selections to the currently interactive panel.
-const openPanelRadio = (page: Page, name: RegExp) =>
-  page.locator('[data-layout="dock"] .pointer-events-auto').getByRole('radio', { name });
+const sessionItems = (page: Page) => page.locator('[data-testid="session-item"]');
+const dockBadge = (page: Page) => dockFilterButton(page).getByTestId('icon-badge');
 
 test.describe('Dock filters', () => {
-  test.describe('sport filter', () => {
-    test.beforeEach(async ({ page }) => {
-      const now = Date.now();
-      await seedWithSessions(page, [
-        { sport: 'running', date: now - 1 * DAY_MS, name: 'Morning Run' },
-        { sport: 'cycling', date: now - 2 * DAY_MS, name: 'Evening Ride' },
-        { sport: 'running', date: now - 3 * DAY_MS, name: 'Tempo Run' },
-      ]);
-      await page.getByRole('link', { name: /sessions/i }).click();
-      await page.waitForURL('/sessions');
-    });
-
-    test('shows all sessions by default', async ({ page }) => {
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(3);
-    });
-
-    test('filter by cycling shows only cycling sessions', async ({ page }) => {
-      await dockButton(page, /sport filter/i).click();
-      await openPanelRadio(page, /cycle/i).click();
-
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(1);
-      await expect(sessionLinks.first()).toContainText('Evening Ride');
-    });
-
-    test('filter by running shows only running sessions', async ({ page }) => {
-      await dockButton(page, /sport filter/i).click();
-      await openPanelRadio(page, /run$/i).click();
-
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(2);
-    });
-
-    test('switching back to all restores full list', async ({ page }) => {
-      await dockButton(page, /sport filter/i).click();
-      await openPanelRadio(page, /cycle/i).click();
-      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
-
-      await dockButton(page, /sport filter/i).click();
-      await openPanelRadio(page, /all/i).click();
-      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(3);
-    });
+  test.beforeEach(async ({ page }) => {
+    const now = Date.now();
+    await seedWithSessions(page, [
+      { sport: 'running', date: now - 2 * DAY_MS, name: 'Recent Run', distance: 10000 },
+      { sport: 'cycling', date: now - 15 * DAY_MS, name: 'Mid Ride', distance: 40000 },
+      { sport: 'running', date: now - 20 * DAY_MS, name: 'Long Run', distance: 21000 },
+      { sport: 'cycling', date: now - 120 * DAY_MS, name: 'Old Ride', distance: 60000 },
+    ]);
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
   });
 
-  test.describe('time filter', () => {
-    test.beforeEach(async ({ page }) => {
-      const now = Date.now();
-      await seedWithSessions(page, [
-        { sport: 'running', date: now - 2 * DAY_MS, name: 'Recent Run' },
-        { sport: 'cycling', date: now - 15 * DAY_MS, name: 'Mid Ride' },
-        { sport: 'running', date: now - 60 * DAY_MS, name: 'Older Run' },
-        { sport: 'cycling', date: now - 120 * DAY_MS, name: 'Old Ride' },
-      ]);
-      await page.getByRole('link', { name: /sessions/i }).click();
-      await page.waitForURL('/sessions');
-    });
+  test('applies a default filter, keeps the list open and clears it again', async ({ page }) => {
+    await expect(sessionItems(page)).toHaveCount(4);
+    await expect(dockBadge(page)).toHaveCount(0);
 
-    test('shows all sessions with "All" time filter', async ({ page }) => {
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(4);
-    });
+    await openFilterList(page);
+    const lastWeek = filterList(page).getByRole('button', { name: 'last 7 days', exact: true });
+    await lastWeek.click();
+    await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(lastWeek).toHaveAttribute('aria-pressed', 'true');
+    await expect(sessionItems(page)).toHaveCount(1);
+    await expect(sessionItems(page).first()).toContainText('Recent Run');
+    await expect(dockBadge(page)).toBeVisible();
 
-    test('7d filter shows only sessions from last 7 days', async ({ page }) => {
-      await dockButton(page, /time range filter/i).click();
-      await openPanelRadio(page, /^7d$/i).click();
+    await lastWeek.click();
+    await expect(sessionItems(page)).toHaveCount(4);
+    await expect(dockBadge(page)).toHaveCount(0);
+    await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'true');
 
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(1);
-      await expect(sessionLinks.first()).toContainText('Recent Run');
-    });
-
-    test('30d filter shows sessions from last 30 days', async ({ page }) => {
-      await dockButton(page, /time range filter/i).click();
-      await openPanelRadio(page, /^30d$/i).click();
-
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(2);
-    });
-
-    test('90d filter shows sessions from last 90 days', async ({ page }) => {
-      await dockButton(page, /time range filter/i).click();
-      await openPanelRadio(page, /^90d$/i).click();
-
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(3);
-    });
-
-    test('switching back to all restores full list', async ({ page }) => {
-      await dockButton(page, /time range filter/i).click();
-      await openPanelRadio(page, /^7d$/i).click();
-      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
-
-      await dockButton(page, /time range filter/i).click();
-      await openPanelRadio(page, /^all$/i).click();
-      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(4);
-    });
+    await page.getByRole('tab', { name: 'Log' }).click();
+    await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test.describe('attribute filter', () => {
-    const openDialog = async (page: Page) => {
-      await dockButton(page, /advanced filters/i).click();
-      return page.getByRole('dialog');
-    };
+  test('creates a filter through the inline input and puts it at the top', async ({ page }) => {
+    await openFilterList(page);
+    const input = page.getByLabel(/describe a filter/i);
+    await input.fill('run 30 days');
+    await expect(
+      filterList(page).getByRole('button', { name: 'last 7 days', exact: true }),
+    ).toHaveCount(0);
+    await page
+      .getByTestId('filter-builder-tiles')
+      .getByRole('button', { name: 'Apply filter: Running · last 30 days', exact: true })
+      .click();
+    await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(input).toHaveValue('');
+    await expect(page.getByTestId('filter-builder-tiles')).toHaveCount(0);
+    await expect(sessionItems(page)).toHaveCount(2);
+    const rows = filterList(page).getByRole('button');
+    await expect(rows.first()).toHaveAccessibleName('Running · last 30 days');
+    await expect(rows.first()).toHaveAttribute('aria-pressed', 'true');
 
-    const dockBadge = (page: Page) =>
-      dockButton(page, /advanced filters/i).getByTestId('icon-badge');
+    await input.fill('ride');
+    await input.press('Escape');
+    await expect(input).toHaveValue('');
+    await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'true');
+    await input.press('Escape');
+    await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'false');
+  });
 
-    test.beforeEach(async ({ page }) => {
-      const now = Date.now();
-      await seedWithSessions(page, [
-        {
-          sport: 'running',
-          date: now - 1 * DAY_MS,
-          name: 'Short Run',
-          duration: 1800,
-          distance: 5000,
-          elevationGain: 50,
-        },
-        {
-          sport: 'running',
-          date: now - 2 * DAY_MS,
-          name: 'Target Run',
-          duration: 3600,
-          distance: 10000,
-          elevationGain: 500,
-        },
-        {
-          sport: 'cycling',
-          date: now - 3 * DAY_MS,
-          name: 'Long Ride',
-          duration: 7200,
-          distance: 30000,
-          elevationGain: 1500,
-        },
-      ]);
-      await page.getByRole('link', { name: /sessions/i }).click();
-      await page.waitForURL('/sessions');
-    });
+  test('shows a chart zoom as a row that clears the whole filter', async ({ page }) => {
+    await applyFilter(page, 'last 30 days');
+    await page.getByRole('link', { name: /dashboard/i }).click();
+    await page.waitForURL('/');
+    const chart = page.getByRole('region', { name: 'Volume' }).locator('.recharts-surface');
+    await chart.scrollIntoViewIfNeeded();
+    const box = await chart.boundingBox();
+    if (!box) {
+      throw new Error('volume chart missing');
+    }
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect(page.getByTestId('zoom-reset-chip')).toBeVisible();
 
-    test('filters by fuzzy duration and shows a badge on the dock button', async ({ page }) => {
-      await expect(dockBadge(page)).not.toBeVisible();
+    await openFilterList(page);
+    const zoomHint = filterList(page).getByText('Take a closer look?');
+    const zoomRow = filterList(page).getByRole('button', { name: /^Remove filter: / });
+    await expect(zoomHint).toHaveCount(0);
+    await expect(zoomRow).toContainText(String(new Date().getFullYear()));
+    await expect(zoomRow).toHaveAttribute('aria-pressed', 'true');
 
-      const dialog = await openDialog(page);
-      await dialog.getByLabel(/duration \(h\)/i).fill('1');
-      await dialog.getByRole('button', { name: /apply/i }).click();
+    const input = page.getByLabel(/describe a filter/i);
+    await input.fill('run');
+    await expect(zoomRow).toHaveCount(0);
+    await input.fill('');
+    await zoomRow.click();
+    await expect(page.getByTestId('zoom-reset-chip')).toHaveCount(0);
+    await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(zoomRow).toHaveCount(0);
+    await expect(zoomHint).toBeVisible();
+    await expect(
+      filterList(page).getByRole('button', { name: 'last 30 days', exact: true }),
+    ).toHaveAttribute('aria-pressed', 'false');
+    await expect(dockBadge(page)).toHaveCount(0);
 
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(1);
-      await expect(sessionLinks.first()).toContainText('Target Run');
-      await expect(dockBadge(page)).toBeVisible();
-    });
-
-    test('filters by fuzzy elevation gain', async ({ page }) => {
-      const dialog = await openDialog(page);
-      await dialog.getByLabel(/elevation gain \(m\)/i).fill('500');
-      await dialog.getByRole('button', { name: /apply/i }).click();
-
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(1);
-      await expect(sessionLinks.first()).toContainText('Target Run');
-    });
-
-    test('filters by fuzzy distance via Enter key', async ({ page }) => {
-      const dialog = await openDialog(page);
-      await dialog.getByLabel(/distance \(km\)/i).fill('30');
-      await dialog.getByLabel(/distance \(km\)/i).press('Enter');
-
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(1);
-      await expect(sessionLinks.first()).toContainText('Long Ride');
-    });
-
-    test('accepts comma decimals', async ({ page }) => {
-      const dialog = await openDialog(page);
-      await dialog.getByLabel(/duration \(h\)/i).fill('1,0');
-      await dialog.getByRole('button', { name: /apply/i }).click();
-
-      const sessionLinks = page.locator('[data-testid="session-item"]');
-      await expect(sessionLinks).toHaveCount(1);
-      await expect(sessionLinks.first()).toContainText('Target Run');
-    });
-
-    test('disables apply on invalid input', async ({ page }) => {
-      const dialog = await openDialog(page);
-      await dialog.getByLabel(/duration \(h\)/i).fill('abc');
-      await expect(dialog.getByRole('button', { name: /apply/i })).toBeDisabled();
-    });
-
-    test('reset restores the full list', async ({ page }) => {
-      let dialog = await openDialog(page);
-      await dialog.getByLabel(/duration \(h\)/i).fill('1');
-      await dialog.getByRole('button', { name: /apply/i }).click();
-      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
-
-      dialog = await openDialog(page);
-      await dialog.getByRole('button', { name: /reset/i }).click();
-      await expect(page.locator('[data-testid="session-item"]')).toHaveCount(3);
-      await expect(dockBadge(page)).not.toBeVisible();
-    });
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
+    await openFilterList(page);
+    await expect(filterList(page).getByRole('button').first()).toBeVisible();
+    await expect(zoomHint).toHaveCount(0);
   });
 });

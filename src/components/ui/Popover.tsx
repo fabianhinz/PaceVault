@@ -1,5 +1,6 @@
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { cn } from '@/lib/utils.ts';
+import { floatingClass } from './Card.tsx';
 
 export const PopoverRoot = PopoverPrimitive.Root;
 export const PopoverTrigger = PopoverPrimitive.Trigger;
@@ -13,7 +14,8 @@ export const PopoverContent = (props: PopoverPrimitive.PopoverContentProps) => {
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
         className={cn(
-          'z-50 max-w-xs rounded-xl bg-white/5 border border-white/10 backdrop-blur-xl p-4',
+          floatingClass,
+          'z-50 max-w-xs rounded-xl p-4',
           'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
           className,
         )}

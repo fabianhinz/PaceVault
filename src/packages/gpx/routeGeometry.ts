@@ -1,11 +1,11 @@
 import { encode } from '@googlemaps/polyline-codec';
 import { computeBounds, haversineM } from '../engine/gps.ts';
+import { windowedGradients } from '../engine/gradient.ts';
 import type { GPSBounds } from '../engine/types.ts';
 import type { ParsedGpxPoint } from './parseGpx.ts';
 import { simplifyGpxPoints } from './simplifyGpxPoints.ts';
 
 export interface RoutePoint extends ParsedGpxPoint {
-  /** Cumulative distance from the route start in metres. */
   dist: number;
 }
 
@@ -14,26 +14,20 @@ export interface RouteElevationStats {
   loss: number;
   min: number;
   max: number;
-  /** Steepest sustained climb in percent, measured over windows of at least GRADE_WINDOW_M. */
   maxGrade: number;
 }
 
 interface RouteGeometry {
   points: RoutePoint[];
-  /** One encoded polyline per GPX segment — disconnected segments stay disconnected. */
   encodedPolylines: string[];
   bounds: GPSBounds;
-  /** Total route distance in metres. */
   distance: number;
   elevation?: RouteElevationStats;
 }
 
-/** Elevation changes smaller than this are treated as GPS noise, not gain/loss. */
 const ELEVATION_HYSTERESIS_M = 3;
-/** Minimum horizontal distance over which a grade is considered sustained. */
-const GRADE_WINDOW_M = 50;
 
-const groupBySegment = <T extends { seg: number }>(points: T[]): T[][] => {
+export const groupBySegment = <T extends { seg: number }>(points: T[]): T[][] => {
   const segments: T[][] = [];
   let current: T[] = [];
   let currentSeg: number | null = null;
@@ -49,18 +43,28 @@ const groupBySegment = <T extends { seg: number }>(points: T[]): T[][] => {
   return segments;
 };
 
+const steepestGrade = (points: RoutePoint[]): number => {
+  let maxGrade = 0;
+  for (const segment of groupBySegment(points)) {
+    const gradients = windowedGradients(
+      segment.map((p) => ({ distance: p.dist, elevation: p.ele })),
+    );
+    for (const gradient of gradients) {
+      if (gradient !== undefined && gradient * 100 > maxGrade) maxGrade = gradient * 100;
+    }
+  }
+  return maxGrade;
+};
+
 const computeElevationStats = (points: RoutePoint[]): RouteElevationStats | undefined => {
-  const elevated = points.filter((p): p is RoutePoint & { ele: number } => p.ele != null);
+  const elevated = points.filter((p): p is RoutePoint & { ele: number } => p.ele !== undefined);
   if (elevated.length < 2) return undefined;
 
   let min = Infinity;
   let max = -Infinity;
   let gain = 0;
   let loss = 0;
-  let maxGrade = 0;
 
-  // Gain/loss and grade never cross segment boundaries — the jump between two
-  // disconnected segments is not terrain.
   for (const segment of groupBySegment(elevated)) {
     const firstPoint = segment[0];
     if (!firstPoint) continue;
@@ -78,35 +82,11 @@ const computeElevationStats = (points: RoutePoint[]): RouteElevationStats | unde
         ref = p.ele;
       }
     }
-
-    // Two-pointer sweep: for each end point use the tightest window still >= GRADE_WINDOW_M.
-    let start = 0;
-    for (let end = 1; end < segment.length; end++) {
-      const endPoint = segment[end];
-      if (!endPoint) continue;
-      let next = segment[start + 1];
-      while (next && endPoint.dist - next.dist >= GRADE_WINDOW_M) {
-        start++;
-        next = segment[start + 1];
-      }
-      const startPoint = segment[start];
-      if (!startPoint) continue;
-      const run = endPoint.dist - startPoint.dist;
-      if (run < GRADE_WINDOW_M) continue;
-      const grade = ((endPoint.ele - startPoint.ele) / run) * 100;
-      if (grade > maxGrade) maxGrade = grade;
-    }
   }
 
-  return { gain, loss, min, max, maxGrade };
+  return { gain, loss, min, max, maxGrade: steepestGrade(points) };
 };
 
-/**
- * Derive everything the studio needs from parsed GPX points: cumulative
- * distances, bounds, elevation stats and one simplified encoded polyline per
- * segment for map rendering. Disconnected segments contribute neither distance
- * nor a connecting line. Returns `null` when fewer than 2 points are provided.
- */
 export const buildRouteGeometry = (parsedPoints: ParsedGpxPoint[]): RouteGeometry | null => {
   if (parsedPoints.length < 2) return null;
 
@@ -114,7 +94,6 @@ export const buildRouteGeometry = (parsedPoints: ParsedGpxPoint[]): RouteGeometr
   let dist = 0;
   let prev: ParsedGpxPoint | null = null;
   for (const p of parsedPoints) {
-    // The gap between two segments is not ridden distance.
     if (prev && prev.seg === p.seg) {
       dist += haversineM(prev, p);
     }

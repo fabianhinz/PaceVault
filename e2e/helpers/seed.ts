@@ -2,23 +2,17 @@ import { v4 } from 'uuid';
 import { type Page } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { SESSION_DERIVATION_VERSION } from '../../src/packages/engine/sessionDerivation.ts';
+import { DB_NAME, DB_VERSION } from '../../src/lib/db.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Must match DB_NAME / DB_VERSION in src/lib/db.ts. */
-const DB = { name: 'endurance-tracker', version: 4 };
+const DB = { name: DB_NAME, version: DB_VERSION };
 
 const blockBasemap = async (page: Page) => {
   await page.route('**/*.cartocdn.com/**', (route) => route.abort());
 };
 
-/**
- * Writes Zustand persist entries into IndexedDB's kv store, creating the full
- * app schema on the way (single source of truth for the seeded DB shape).
- *
- * Must be called AFTER page.goto (needs an origin) and BEFORE the app reads
- * state — reload the page afterwards so stores rehydrate from IDB.
- */
 const writeKvEntries = async (page: Page, entries: Record<string, string>) => {
   await page.evaluate(
     async ({
@@ -82,7 +76,6 @@ const userState = (profileId: string, thresholds: Record<string, number>) =>
         gender: 'male',
         thresholds,
         showMetricHelp: true,
-        useAutoSessionNames: false,
         createdAt: Date.now(),
       },
     },
@@ -95,10 +88,6 @@ const sessionsState = (sessions: unknown[]) =>
     version: 1,
   });
 
-/**
- * Seeds the app past onboarding by writing directly to IndexedDB's kv store,
- * which is where Zustand persists its state.
- */
 export const seedOnboardingComplete = async (page: Page) => {
   await blockBasemap(page);
   await page.goto('/');
@@ -107,7 +96,6 @@ export const seedOnboardingComplete = async (page: Page) => {
     'store-user': userState(v4(), { restHr: 50, maxHr: 185 }),
     'store-sessions': sessionsState([]),
   });
-  // Reload so the app rehydrates from the seeded IDB state
   await page.reload();
 };
 
@@ -120,9 +108,6 @@ const intervalsState = (importedActivityIds: string[] = []) =>
     version: 1,
   });
 
-/**
- * Seeds the app past onboarding with an active intervals.icu connection.
- */
 export const seedIntervalsConnected = async (
   page: Page,
   options?: { importedActivityIds?: string[]; intervalsSessionDates?: number[] },
@@ -139,6 +124,7 @@ export const seedIntervalsConnected = async (
     stressMethod: 'trimp',
     isPlanned: false,
     hasDetailedRecords: false,
+    derivationVersion: SESSION_DERIVATION_VERSION,
     createdAt: Date.now(),
     source: { kind: 'intervals', activityId: `seed${i}` },
   }));
@@ -151,10 +137,6 @@ export const seedIntervalsConnected = async (
   await page.reload();
 };
 
-/**
- * Minimal session shape matching TrainingSession — only the fields
- * the session list actually reads for rendering and filtering.
- */
 interface SeedSession {
   sport: 'running' | 'cycling';
   date: number;
@@ -164,10 +146,6 @@ interface SeedSession {
   elevationGain?: number;
 }
 
-/**
- * Seeds onboarding + pre-built sessions directly into IDB so tests
- * can start with a known set of sessions without uploading FIT files.
- */
 export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
   await blockBasemap(page);
   await page.goto('/');
@@ -186,17 +164,13 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
     stressMethod: 'trimp',
     isPlanned: false,
     hasDetailedRecords: false,
+    derivationVersion: SESSION_DERIVATION_VERSION,
     createdAt: now,
   }));
 
   const filtersState = JSON.stringify({
-    state: {
-      timeRange: 'all',
-      customRange: null,
-      prevDashboardRange: null,
-      sportFilter: 'all',
-    },
-    version: 1,
+    state: { activeFilter: null },
+    version: 3,
   });
 
   await writeKvEntries(page, {
@@ -210,10 +184,6 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
   return sessionIds;
 };
 
-/**
- * Seeds trips into IDB's kv store (the `store-trips` Zustand key).
- * Call AFTER seeding sessions, then the page reloads to rehydrate.
- */
 export const seedTrips = async (
   page: Page,
   trips: { name: string; description?: string; sessionIds: string[] }[],
@@ -243,12 +213,6 @@ interface SeedCoachSession {
   tss?: number;
 }
 
-/**
- * Seeds onboarding + a user profile with thresholdPace + pre-built sessions
- * directly into IDB so coach plan tests can start with a known state.
- *
- * Also clears store-coach-plan to prevent stale cache between tests.
- */
 export const seedCoachWithThresholdPace = async (
   page: Page,
   thresholdPace: number,
@@ -269,6 +233,7 @@ export const seedCoachWithThresholdPace = async (
     stressMethod: 'trimp',
     isPlanned: false,
     hasDetailedRecords: false,
+    derivationVersion: SESSION_DERIVATION_VERSION,
     createdAt: now,
   }));
 

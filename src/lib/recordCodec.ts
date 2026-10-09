@@ -16,7 +16,6 @@ const sessionRecordsSchema = z.array(
     lng: optNum,
     elevation: optNum,
     distance: optNum,
-    grade: optNum,
     timerTime: optNum,
   }),
 );

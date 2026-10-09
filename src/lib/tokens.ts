@@ -28,10 +28,10 @@ export const tokens = {
   chartHr: '#ef4444',
   chartPower: '#3b82f6',
   chartSpeed: '#22c55e',
-  chartLoad: '#3b82f6',
   chartGrade: '#a78bfa',
   chartCadence: '#f59e0b',
   chartElevation: '#8b5cf6',
+  chartClimb: '#c4b5fd',
   chartPace: '#06b6d4',
   chartGap: '#ec4899',
 
@@ -39,8 +39,4 @@ export const tokens = {
   precipFreezing: '#67e8f9',
   precipSnow: '#e5e7eb',
   precipThunderstorm: '#fbbf24',
-  radiusSm: '4px',
-  radiusMd: '8px',
-  radiusLg: '12px',
-  radiusXl: '16px',
 } as const;

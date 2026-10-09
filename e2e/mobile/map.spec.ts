@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '../helpers/test';
+import { DB_NAME } from '../../src/lib/db.ts';
 import {
   seedOnboardingComplete,
   seedWithSessions,
@@ -53,9 +54,9 @@ const dragHandle = async (page: Page, target: { by?: number; toY?: number }) => 
 
 const persistedPosition = (page: Page) =>
   page.evaluate(
-    () =>
+    (dbName) =>
       new Promise<number | undefined>((resolve) => {
-        const openReq = indexedDB.open('endurance-tracker');
+        const openReq = indexedDB.open(dbName);
         openReq.onsuccess = () => {
           const getReq = openReq.result.transaction('kv').objectStore('kv').get('store-layout');
           getReq.onsuccess = () => {
@@ -64,6 +65,7 @@ const persistedPosition = (page: Page) =>
           };
         };
       }),
+    DB_NAME,
   );
 
 test.describe('mobile bottom sheet', () => {
@@ -156,7 +158,7 @@ test.describe('mobile bottom sheet', () => {
       page,
     }) => {
       const divider = page.locator('[data-sheet-divider]');
-      await expect(page.getByText('Total Distance')).toBeVisible();
+      await expect(page.getByRole('region', { name: 'Performance Metrics' })).toBeVisible();
       await expect(divider).toHaveCSS('opacity', '0');
 
       await sheetScroller(page).evaluate((el) => el.scrollTo({ top: 6 }));
@@ -178,6 +180,80 @@ test.describe('mobile bottom sheet', () => {
 
       await expect(page.locator('[data-index="39"]')).toBeVisible();
     });
+  });
+});
+
+test.describe('mobile dock', () => {
+  test.beforeEach(async ({ page }) => {
+    const now = Date.now();
+    await seedWithSessions(page, [
+      { sport: 'running', date: now - 2 * 24 * 60 * 60 * 1000, name: 'Recent Run' },
+      { sport: 'cycling', date: now - 20 * 24 * 60 * 60 * 1000, name: 'Older Ride' },
+    ]);
+  });
+
+  test('switches tabs and opens the filter card above the row without moving it', async ({
+    page,
+  }) => {
+    const dock = page.locator('[data-layout="dock"]');
+    const sessionsTab = dock.getByRole('link', { name: /sessions/i });
+    const filterButton = dock.getByRole('button', { name: 'Filter', exact: true });
+    const card = dock.locator('[data-dock-card]');
+    const field = card.getByLabel(/describe a filter/i);
+    const list = card.getByRole('group', { name: /choose filter/i });
+
+    await sessionsTab.click();
+    await page.waitForURL('/sessions');
+    await expect(page.locator('[data-testid="session-item"]')).toHaveCount(2);
+    const rowBefore = await dock.boundingBox();
+
+    await filterButton.click();
+    await expect(field).toBeVisible();
+    await expect(list).toBeVisible();
+    await expect(sessionsTab).toBeVisible();
+    await expect(filterButton).toHaveAttribute('aria-expanded', 'true');
+    expect(await dock.boundingBox()).toEqual(rowBefore);
+
+    await list.getByRole('button', { name: 'last 7 days', exact: true }).click();
+    await expect(page.locator('[data-testid="session-item"]')).toHaveCount(1);
+
+    await field.fill('ride');
+    await expect(page.getByTestId('filter-builder-tiles')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(field).toHaveValue('');
+    await expect(list).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(list).toBeHidden();
+    await expect(filterButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(filterButton.getByTestId('icon-badge')).toBeVisible();
+
+    await filterButton.click();
+    await field.fill('run');
+    await page.mouse.click(195, 20);
+    await expect(list).toBeHidden();
+    await expect(filterButton).toHaveAttribute('aria-expanded', 'false');
+
+    await filterButton.click();
+    await expect(field).toHaveValue('');
+  });
+
+  test('toast does not cover the dock', async ({ page }) => {
+    const dock = page.locator('[data-layout="dock"]');
+    await expect(dock).toBeVisible();
+    await page.evaluate(async () => {
+      const store = await import('/src/components/ui/toastStore.ts');
+      store.useToastStore
+        .getState()
+        .addToast({ id: 'dock-overlap', title: 'Saved', persistent: true });
+    });
+    const toast = page.getByTestId('dock-overlap');
+    await expect(toast).toBeVisible();
+    await page.waitForTimeout(500);
+
+    const toastBox = await toast.boundingBox();
+    const dockBox = await dock.boundingBox();
+    if (!toastBox || !dockBox) throw new Error('toast or dock not rendered');
+    expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(dockBox.y);
   });
 });
 

@@ -11,6 +11,7 @@ export const DashboardPeek = () => (
     secondary={[
       m.ui_dashboard_current_form(),
       METRIC_EXPLANATIONS.tss.friendlyName,
+      m.ui_volume_title(),
       m.ui_metrics_chart_title(),
     ].join(' · ')}
   />

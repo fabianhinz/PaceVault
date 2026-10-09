@@ -4,7 +4,7 @@ import { m } from '@/paraglide/messages.js';
 import { ResponsivePopover } from '@/components/ui/ResponsivePopover.tsx';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { GlassPill } from '@/components/ui/GlassPill.tsx';
+import { FloatingPill } from '@/components/ui/FloatingPill.tsx';
 import { cn } from '@/lib/utils.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { WIND_COLORS, ZONE_PALETTES } from '@/lib/zoneColors.ts';
@@ -114,12 +114,12 @@ export const ColorByControl = (props: ColorByControlProps) => {
       align="center"
       className="lg:w-80"
       trigger={
-        <GlassPill data-testid="color-by-pill">
+        <FloatingPill data-testid="color-by-pill">
           <Layers size={16} />
           <span>{PILL_LABEL[props.effective]()}</span>
           {props.effective !== 'sport' && <Swatch mode={props.effective} sport={props.sport} />}
           <ChevronDown size={14} className="text-text-tertiary" />
-        </GlassPill>
+        </FloatingPill>
       }
     >
       <div className="mb-3 flex items-center gap-2 text-text-tertiary">

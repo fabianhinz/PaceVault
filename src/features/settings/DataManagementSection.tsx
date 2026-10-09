@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { m } from '@/paraglide/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { RotateCcw, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { List, ListItem } from '@/components/ui/List.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { DeleteAllDataDialog } from './DeleteAllDataDialog.tsx';
-import { ReimportDialog } from './ReimportDialog.tsx';
-import { useReimport } from './hooks/useReimport.ts';
 import { InlineSkeleton } from '@/components/ui/InlineSkeleton.tsx';
 import { SplitBar, type SplitBarSegment } from '@/components/ui/SplitBar.tsx';
 import { formatBytes, formatDate } from '@/lib/formatters.ts';
@@ -38,10 +36,8 @@ export const DataManagementSection = () => {
   const lastUpdated = useSessionsStore((s) =>
     s.sessions.length > 0 ? Math.max(...s.sessions.map((session) => session.createdAt)) : null,
   );
-  const [reimportOpen, setReimportOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const reimport = useReimport();
-  const storage = useStorageBreakdown(`${reimport.reimporting}-${sessionCount}`);
+  const storage = useStorageBreakdown(sessionCount);
 
   const sourceSegments: SplitBarSegment[] = [
     {
@@ -110,12 +106,6 @@ export const DataManagementSection = () => {
         <CardHeader title={m.ui_data_danger_zone()} />
         <List>
           <ListItem
-            primary={m.ui_data_reimport()}
-            secondary={m.ui_data_reimport_desc()}
-            icon={<RotateCcw size={16} />}
-            onClick={() => setReimportOpen(true)}
-          />
-          <ListItem
             primary={m.ui_data_delete_all()}
             secondary={m.ui_data_delete_all_desc()}
             icon={<Trash2 size={16} />}
@@ -124,12 +114,6 @@ export const DataManagementSection = () => {
         </List>
       </Card>
 
-      <ReimportDialog
-        open={reimportOpen}
-        onOpenChange={setReimportOpen}
-        reimporting={reimport.reimporting}
-        onReimport={reimport.reimportAll}
-      />
       <DeleteAllDataDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </>
   );

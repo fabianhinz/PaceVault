@@ -3,44 +3,38 @@ import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { computeMetrics } from '@/packages/engine/metrics.ts';
 import { toDateString } from '@/lib/formatters.ts';
-import { isAttributeFilterActive, matchesAttributeFilters } from '@/lib/attributeFilters.ts';
-import type { DailyMetrics } from '@/packages/engine/types.ts';
+import { emptyCriteria, matchesFilters } from '@/lib/savedFilters.ts';
+import type { DailyMetrics, TrainingSession } from '@/packages/engine/types.ts';
 
 export const useFilteredMetrics = (): {
   history: DailyMetrics[];
-  current: DailyMetrics | undefined;
   sportTss: Map<string, Record<string, number>>;
+  sessions: TrainingSession[];
 } => {
   const sessions = useSessionsStore((s) => s.sessions);
-  const sportFilter = useFiltersStore((s) => s.sportFilter);
-  const attributeFilters = useFiltersStore((s) => s.attributeFilters);
+  const activeFilter = useFiltersStore((s) => s.activeFilter);
 
   return useMemo(() => {
-    let filtered = sessions;
-    if (sportFilter !== 'all') {
-      filtered = sessions.filter((s) => s.sport === sportFilter);
-    }
-    if (isAttributeFilterActive(attributeFilters)) {
-      // Planned sessions feed load projections — exempt them from attribute filtering
-      filtered = filtered.filter(
-        (s) => s.isPlanned || matchesAttributeFilters(s, attributeFilters),
-      );
-    }
+    const now = Date.now();
+    const filtered = sessions.filter((s) => {
+      if (activeFilter === null) {
+        return true;
+      }
+      if (s.isPlanned) {
+        return matchesFilters(s, { ...emptyCriteria(), sport: activeFilter.sport }, now);
+      }
+      return matchesFilters(s, { ...activeFilter, time: null }, now);
+    });
     const history = computeMetrics(filtered);
-    let current: DailyMetrics | undefined = undefined;
-    if (history.length > 0) {
-      current = history[history.length - 1];
-    }
-
+    const completed = filtered.filter((s) => !s.isPlanned);
     const sportTss = new Map<string, Record<string, number>>();
-    for (const s of filtered) {
-      if (s.isPlanned) continue;
+    for (const s of completed) {
       const dateStr = toDateString(s.date);
       const entry = sportTss.get(dateStr) ?? {};
       entry[s.sport] = (entry[s.sport] ?? 0) + s.tss;
       sportTss.set(dateStr, entry);
     }
 
-    return { history, current, sportTss };
-  }, [sessions, sportFilter, attributeFilters]);
+    return { history, sportTss, sessions: completed };
+  }, [sessions, activeFilter]);
 };

@@ -96,3 +96,11 @@ Anything drawn on the map — sport tracks, studio routes, markers — has to ho
 - **Zone colours** (blue → green → yellow → orange → red) replace the sport colour on the session detail map rather than appearing next to it, so sharing a hue with a sport colour is acceptable there.
 - A sport colour lives in three places that must change together: the map (`src/features/map/trackColors.ts`), the CSS theme (`src/index.css`) and its JS mirror (`src/lib/tokens.ts`).
 - Every colour token in `src/lib/tokens.ts` mirrors one in `src/index.css`; change both together.
+
+## 7. Surfaces
+
+Every surface takes its background from `src/components/ui/Card.tsx`; never hand-copy the class string.
+
+- **Content** (cards, the bottom sheet, segmented controls, chart cards): `glassClass`.
+- **Floating** (anything drawn over other content: portals, fixed/absolute/sticky overlays, popups, map markers, pills over charts or the map): `floatingClass`, or `<Card floating>`.
+- Decide by placement, not by component: a `Card` over the map is floating, the bottom sheet is content.

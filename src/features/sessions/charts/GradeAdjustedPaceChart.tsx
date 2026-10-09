@@ -73,15 +73,6 @@ export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
         <Line
           yAxisId="left"
           type="monotone"
-          dataKey="pace"
-          stroke={tokens.chartPace}
-          strokeWidth={1.5}
-          dot={false}
-          name={m.ui_chart_series_pace()}
-        />
-        <Line
-          yAxisId="left"
-          type="monotone"
           dataKey="gap"
           stroke={tokens.chartGap}
           strokeWidth={1.5}

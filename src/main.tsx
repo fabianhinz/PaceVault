@@ -43,7 +43,7 @@ const boot = async (rootEl: HTMLElement) => {
             <App />
             <ToastViewport />
           </BrowserRouter>
-          <ReactQueryDevtools />
+          <ReactQueryDevtools buttonPosition="top-left" />
         </QueryClientProvider>
       </ErrorBoundary>
     </StrictMode>,

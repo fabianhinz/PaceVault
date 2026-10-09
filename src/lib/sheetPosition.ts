@@ -1,8 +1,9 @@
+import { dockFootprint } from './dockGeometry.ts';
+
 interface SheetMetrics {
   viewportHeight: number;
   safeTop: number;
   safeBottom: number;
-  dockHeight: number;
 }
 
 interface SheetLayout {
@@ -18,7 +19,6 @@ const HANDLE_HEIGHT = 24;
 const PEEK_FADE_RANGE = 0.15;
 const FULL_TOP_GAP_RATIO = 0.08;
 const FULL_TOP_GAP_MIN = 12;
-const DOCK_HEIGHT = 57;
 const MIDDLE_POSITION = 0.5;
 
 export const computeSheetLayout = (metrics: SheetMetrics): SheetLayout => {
@@ -27,7 +27,7 @@ export const computeSheetLayout = (metrics: SheetMetrics): SheetLayout => {
     metrics.viewportHeight * FULL_TOP_GAP_RATIO,
   );
   const sheetHeight = metrics.viewportHeight - topGap;
-  const bottomInset = metrics.dockHeight + metrics.safeBottom;
+  const bottomInset = dockFootprint(metrics.safeBottom);
   const peekOffset = Math.max(0, sheetHeight - PEEK_HEIGHT - bottomInset);
   return {
     sheetHeight,
@@ -95,5 +95,4 @@ export const readSheetLayout = (): SheetLayout =>
     viewportHeight: window.innerHeight,
     safeTop: readSafeAreaInset('top'),
     safeBottom: readSafeAreaInset('bottom'),
-    dockHeight: DOCK_HEIGHT,
   });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getMondayOfWeek, buildPlanCacheKey } from '@/lib/weekKey.ts';
+import { getMondayOfWeek, buildPlanCacheKey, loadBucketDayRange } from '@/lib/weekKey.ts';
 
 describe('getMondayOfWeek', () => {
   it('returns the same date when input is a Monday', () => {
@@ -7,7 +7,6 @@ describe('getMondayOfWeek', () => {
   });
 
   it('returns previous Monday for a mid-week date', () => {
-    // Wednesday
     expect(getMondayOfWeek('2026-02-11')).toBe('2026-02-09');
   });
 
@@ -16,12 +15,10 @@ describe('getMondayOfWeek', () => {
   });
 
   it('handles year boundary (Jan 1 is Thursday)', () => {
-    // 2026-01-01 is a Thursday, Monday is 2025-12-29
     expect(getMondayOfWeek('2026-01-01')).toBe('2025-12-29');
   });
 
   it('handles month boundary', () => {
-    // 2026-03-01 is a Sunday, Monday is 2026-02-23
     expect(getMondayOfWeek('2026-03-01')).toBe('2026-02-23');
   });
 
@@ -45,5 +42,22 @@ describe('buildPlanCacheKey', () => {
     const c = buildPlanCacheKey('2026-02-16', 5, 300);
     expect(a).not.toBe(b);
     expect(a).not.toBe(c);
+  });
+});
+
+describe('loadBucketDayRange', () => {
+  it('dashboard zoom on weekly or monthly load buckets keeps the whole last bucket', () => {
+    expect(loadBucketDayRange('2026-02-09', 'week')).toEqual({
+      from: '2026-02-09',
+      to: '2026-02-15',
+    });
+    expect(loadBucketDayRange('2026-02', 'month')).toEqual({
+      from: '2026-02-01',
+      to: '2026-02-28',
+    });
+    expect(loadBucketDayRange('2026-02-11', 'day')).toEqual({
+      from: '2026-02-11',
+      to: '2026-02-11',
+    });
   });
 });

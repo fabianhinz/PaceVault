@@ -1,156 +1,155 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useFiltersStore } from '@/store/filters.ts';
-import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
+import { migrateFilters, useFiltersStore } from '@/store/filters.ts';
+import { type FilterCriteria, emptyCriteria } from '@/lib/savedFilters.ts';
+
+const criteria = (overrides: Partial<FilterCriteria>): FilterCriteria => ({
+  ...emptyCriteria(),
+  ...overrides,
+});
+
+const store = () => useFiltersStore.getState();
+const savedCriteria = () => store().savedFilters.map((f) => f.criteria);
+
+const runLast30 = criteria({
+  sport: 'running',
+  time: { kind: 'relative', amount: 30, unit: 'day' },
+});
 
 describe('useFiltersStore', () => {
   beforeEach(() => {
-    useFiltersStore.setState({
-      timeRange: '90d',
-      customRange: null,
-      prevDashboardRange: null,
-      sportFilter: 'all',
-      attributeFilters: createEmptyAttributeFilters(),
-      loadChartShowSportColors: false,
-      loadChartGroupBy: 'week',
-    });
+    store().resetFilters();
   });
 
-  it('has correct default state', () => {
-    const state = useFiltersStore.getState();
-    expect(state.timeRange).toBe('90d');
-    expect(state.sportFilter).toBe('all');
-    expect(state.attributeFilters).toEqual({ duration: null, distance: null, elevationGain: null });
+  it('seeds last 7 days, last 30 days and this year', () => {
+    expect(savedCriteria()).toEqual([
+      criteria({ time: { kind: 'relative', amount: 7, unit: 'day' } }),
+      criteria({ time: { kind: 'relative', amount: 30, unit: 'day' } }),
+      criteria({ time: { kind: 'calendarYear', yearsAgo: 0 } }),
+    ]);
+    expect(store().activeFilter).toBeNull();
   });
 
-  it('updates time range', () => {
-    useFiltersStore.getState().setTimeRange('7d');
-    expect(useFiltersStore.getState().timeRange).toBe('7d');
+  it('applies a saved filter and clears it when picked again', () => {
+    const id = store().savedFilters[0]?.id ?? '';
+    store().toggleSavedFilter(id);
+    expect(store().activeFilter).toEqual(savedCriteria()[0]);
+    store().toggleSavedFilter(id);
+    expect(store().activeFilter).toBeNull();
   });
 
-  it('updates sport filter', () => {
-    useFiltersStore.getState().setSportFilter('cycling');
-    expect(useFiltersStore.getState().sportFilter).toBe('cycling');
+  it('saves a new filter at the top and applies it', () => {
+    store().saveBuilderFilter(runLast30);
+    expect(savedCriteria()).toHaveLength(4);
+    expect(savedCriteria()[0]).toEqual(runLast30);
+    expect(store().activeFilter).toEqual(runLast30);
   });
 
-  describe('attribute filters', () => {
-    it('sets attribute filters', () => {
-      useFiltersStore
-        .getState()
-        .setAttributeFilters({ duration: 3600, distance: 10000, elevationGain: 500 });
-      expect(useFiltersStore.getState().attributeFilters).toEqual({
-        duration: 3600,
-        distance: 10000,
-        elevationGain: 500,
-      });
-    });
-
-    it('sanitizes invalid targets to null', () => {
-      useFiltersStore
-        .getState()
-        .setAttributeFilters({ duration: -5, distance: NaN, elevationGain: 0 });
-      expect(useFiltersStore.getState().attributeFilters).toEqual({
-        duration: null,
-        distance: null,
-        elevationGain: null,
-      });
-    });
-
-    it('clears attribute filters', () => {
-      useFiltersStore.setState({
-        attributeFilters: { duration: 3600, distance: 10000, elevationGain: 500 },
-      });
-      useFiltersStore.getState().clearAttributeFilters();
-      expect(useFiltersStore.getState().attributeFilters).toEqual({
-        duration: null,
-        distance: null,
-        elevationGain: null,
-      });
-    });
-
-    it('persists attribute filters', () => {
-      const options = useFiltersStore.persist.getOptions();
-      if (!options.partialize) {
-        throw new Error('partialize missing');
-      }
-      const persisted = options.partialize(useFiltersStore.getState());
-      expect(persisted).toHaveProperty('attributeFilters');
-    });
+  it('drops the oldest filter when a 16th is saved', () => {
+    const thisYear = criteria({ time: { kind: 'calendarYear', yearsAgo: 0 } });
+    for (let days = 1; days <= 12; days++) {
+      store().saveBuilderFilter(
+        criteria({ sport: 'running', time: { kind: 'relative', amount: days, unit: 'day' } }),
+      );
+    }
+    expect(savedCriteria()).toHaveLength(15);
+    expect(savedCriteria()[14]).toEqual(thisYear);
+    store().saveBuilderFilter(runLast30);
+    expect(savedCriteria()).toHaveLength(15);
+    expect(savedCriteria()[0]).toEqual(runLast30);
+    expect(savedCriteria()).not.toContainEqual(thisYear);
+    expect(savedCriteria()[14]).toEqual(
+      criteria({ time: { kind: 'relative', amount: 30, unit: 'day' } }),
+    );
   });
 
-  describe('load chart preferences', () => {
-    it('defaults sport colors off and grouping to week', () => {
-      const state = useFiltersStore.getState();
-      expect(state.loadChartShowSportColors).toBe(false);
-      expect(state.loadChartGroupBy).toBe('week');
-    });
-
-    it('updates grouping to day', () => {
-      useFiltersStore.getState().setLoadChartGroupBy('day');
-      expect(useFiltersStore.getState().loadChartGroupBy).toBe('day');
-    });
-
-    it('toggles sport colors', () => {
-      useFiltersStore.getState().setLoadChartShowSportColors(true);
-      expect(useFiltersStore.getState().loadChartShowSportColors).toBe(true);
-    });
-
-    it('updates grouping', () => {
-      useFiltersStore.getState().setLoadChartGroupBy('week');
-      expect(useFiltersStore.getState().loadChartGroupBy).toBe('week');
-    });
-
-    it('persists load chart preferences', () => {
-      const options = useFiltersStore.persist.getOptions();
-      if (!options.partialize) {
-        throw new Error('partialize missing');
-      }
-      const persisted = options.partialize(useFiltersStore.getState());
-      expect(persisted).toHaveProperty('loadChartShowSportColors');
-      expect(persisted).toHaveProperty('loadChartGroupBy');
-    });
+  it('selects an existing filter without moving or duplicating it', () => {
+    const before = store().savedFilters;
+    const last30 = criteria({ time: { kind: 'relative', amount: 30, unit: 'day' } });
+    store().saveBuilderFilter(last30);
+    expect(store().savedFilters).toEqual(before);
+    expect(store().activeFilter).toEqual(last30);
   });
 
-  describe('setDashboardChartRange', () => {
-    it('sets custom range and switches to custom timeRange', () => {
-      useFiltersStore.getState().setDashboardChartRange('2025-01-01', '2025-01-31');
-      const state = useFiltersStore.getState();
-      expect(state.timeRange).toBe('custom');
-      expect(state.customRange).toEqual({ from: '2025-01-01', to: '2025-01-31' });
-    });
-
-    it('saves previous time range on first zoom', () => {
-      useFiltersStore.setState({ timeRange: '30d' });
-      useFiltersStore.getState().setDashboardChartRange('2025-01-01', '2025-01-15');
-      expect(useFiltersStore.getState().prevDashboardRange).toBe('30d');
-    });
-
-    it('preserves previous time range on subsequent zooms', () => {
-      useFiltersStore.setState({ timeRange: '30d' });
-      useFiltersStore.getState().setDashboardChartRange('2025-01-01', '2025-01-15');
-      useFiltersStore.getState().setDashboardChartRange('2025-01-05', '2025-01-10');
-      expect(useFiltersStore.getState().prevDashboardRange).toBe('30d');
-    });
+  it('zooms the active filter to a chart range', () => {
+    store().saveBuilderFilter(runLast30);
+    store().setDashboardChartRange('2026-01-05', '2026-01-18');
+    store().setDashboardChartRange('2026-01-08', '2026-01-12');
+    expect(store().activeFilter).toEqual(
+      criteria({
+        sport: 'running',
+        time: { kind: 'range', from: '2026-01-08', to: '2026-01-12', source: 'zoom' },
+      }),
+    );
   });
 
-  describe('clearDashboardChartRange', () => {
-    it('restores previous time range', () => {
-      useFiltersStore.setState({ timeRange: '30d' });
-      useFiltersStore.getState().setDashboardChartRange('2025-01-01', '2025-01-15');
-      useFiltersStore.getState().clearDashboardChartRange();
-      const state = useFiltersStore.getState();
-      expect(state.timeRange).toBe('30d');
-      expect(state.customRange).toBeNull();
-      expect(state.prevDashboardRange).toBeNull();
-    });
+  it('clearing the zoom does not bring back the filter that was active before zooming', () => {
+    store().saveBuilderFilter(runLast30);
+    store().setDashboardChartRange('2026-01-05', '2026-01-18');
+    store().clearActiveFilter();
+    expect(store().activeFilter).toBeNull();
+    store().setDashboardChartRange('2026-01-08', '2026-01-12');
+    expect(store().activeFilter).toEqual(
+      criteria({ time: { kind: 'range', from: '2026-01-08', to: '2026-01-12', source: 'zoom' } }),
+    );
+  });
 
-    it('falls back to 90d when no previous range', () => {
-      useFiltersStore.setState({
+  it('persists saved and active filters', () => {
+    const options = useFiltersStore.persist.getOptions();
+    if (!options.partialize) {
+      throw new Error('partialize missing');
+    }
+    const persisted = options.partialize(store());
+    expect(persisted).toHaveProperty('savedFilters');
+    expect(persisted).toHaveProperty('activeFilter');
+    expect(persisted).toHaveProperty('loadChartGroupBy');
+    expect(persisted).toHaveProperty('volumeChartMetric');
+  });
+});
+
+describe('migrateFilters', () => {
+  it('drops the v2 sport, range and attribute state, keeps the load grouping and seeds the default filters', () => {
+    const migrated = migrateFilters(
+      {
         timeRange: 'custom',
-        customRange: { from: '2025-01-01', to: '2025-01-15' },
-        prevDashboardRange: null,
-      });
-      useFiltersStore.getState().clearDashboardChartRange();
-      expect(useFiltersStore.getState().timeRange).toBe('90d');
-    });
+        customRange: { from: '2025-01-01', to: '2025-01-31' },
+        prevDashboardRange: '30d',
+        sportFilter: 'cycling',
+        attributeFilters: { duration: 3600, distance: null, elevationGain: null },
+        loadChartShowSportColors: false,
+        loadChartGroupBy: 'day',
+      },
+      2,
+    );
+    expect(Object.keys(migrated).toSorted()).toEqual([
+      'activeFilter',
+      'loadChartGroupBy',
+      'savedFilters',
+      'volumeChartMetric',
+    ]);
+    expect(migrated.savedFilters.map((f) => f.criteria)).toEqual([
+      criteria({ time: { kind: 'relative', amount: 7, unit: 'day' } }),
+      criteria({ time: { kind: 'relative', amount: 30, unit: 'day' } }),
+      criteria({ time: { kind: 'calendarYear', yearsAgo: 0 } }),
+    ]);
+    expect(migrated.activeFilter).toBeNull();
+    expect(migrated.loadChartGroupBy).toBe('day');
+    expect(migrated.volumeChartMetric).toBe('distance');
+  });
+
+  it('gives v1 state the chart defaults', () => {
+    const migrated = migrateFilters({ timeRange: '7d', sportFilter: 'all' }, 1);
+    expect(migrated.loadChartGroupBy).toBe('week');
+    expect(migrated.volumeChartMetric).toBe('distance');
+    expect(migrated.savedFilters).toHaveLength(3);
+  });
+
+  it('falls back to defaults for unrecognised state', () => {
+    for (const state of [null, 'broken', { loadChartGroupBy: 'year' }]) {
+      const migrated = migrateFilters(state, 2);
+      expect(migrated.savedFilters).toHaveLength(3);
+      expect(migrated.activeFilter).toBeNull();
+      expect(migrated.loadChartGroupBy).toBe('week');
+      expect(migrated.volumeChartMetric).toBe('distance');
+    }
   });
 });

@@ -1,5 +1,6 @@
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { cn } from '@/lib/utils.ts';
+import { glassClass } from './Card.tsx';
 
 type Option = { value: string; label: string };
 
@@ -18,11 +19,7 @@ export const SegmentedControl = (props: SegmentedControlProps) => {
       onValueChange={(v) => {
         if (v) props.onValueChange(v);
       }}
-      className={cn(
-        'bg-white/5 backdrop-blur-2xl border border-white/10',
-        'flex flex-row gap-2 rounded-2xl w-full p-2',
-        props.className,
-      )}
+      className={cn(glassClass, 'flex flex-row gap-2 rounded-2xl w-full p-2', props.className)}
     >
       {props.options.map((opt) => (
         <ToggleGroup.Item

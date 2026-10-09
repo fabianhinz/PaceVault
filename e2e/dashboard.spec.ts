@@ -1,74 +1,48 @@
-import { test, expect, type Page } from './helpers/test';
+import { test, expect } from './helpers/test';
 import { seedWithSessions } from './helpers/seed';
+import { applyFilter } from './helpers/filters';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const dockButton = (page: Page, name: RegExp) =>
-  page.locator('[data-layout="dock"]').getByRole('button', { name }).last();
-
-const openPanelRadio = (page: Page, name: RegExp) =>
-  page.locator('[data-layout="dock"] .pointer-events-auto').getByRole('radio', { name });
-
-test.describe('TrainingSummaryCard', () => {
-  test.describe('aggregation and labels', () => {
-    test.beforeEach(async ({ page }) => {
-      const now = Date.now();
-      await seedWithSessions(page, [
-        { sport: 'running', date: now - 1 * DAY_MS },
-        { sport: 'running', date: now - 2 * DAY_MS },
-        { sport: 'running', date: now - 3 * DAY_MS },
-      ]);
-      await page.goto('/');
-    });
-
-    test('shows stat labels', async ({ page }) => {
-      await expect(page.getByText('Total Distance')).toBeVisible();
-      await expect(page.getByText('Total Duration')).toBeVisible();
-    });
-
-    test('shows correct aggregated values', async ({ page }) => {
-      await expect(page.getByText('30.0 km')).toBeVisible();
-      await expect(page.getByText('3h 0m')).toBeVisible();
-    });
-
-    test('hides elevation row when no session has elevation data', async ({ page }) => {
-      await expect(page.getByText('Total Elevation')).toHaveCount(0);
-    });
+test.describe('Dashboard volume', () => {
+  test.beforeEach(async ({ page }) => {
+    const now = Date.now();
+    await seedWithSessions(page, [
+      { sport: 'running', date: now - 1 * DAY_MS, elevationGain: 100 },
+      { sport: 'running', date: now - 2 * DAY_MS },
+      { sport: 'running', date: now - 9 * DAY_MS },
+    ]);
+    await page.goto('/');
   });
 
-  test.describe('elevation row', () => {
-    test.beforeEach(async ({ page }) => {
-      const now = Date.now();
-      await seedWithSessions(page, [
-        { sport: 'running', date: now - 1 * DAY_MS, elevationGain: 500 },
-      ]);
-      await page.goto('/');
-    });
-
-    test('shows elevation row when sessions have elevation', async ({ page }) => {
-      await expect(page.getByText('Total Elevation')).toBeVisible();
-      await expect(page.getByText('+500')).toBeVisible();
-    });
+  test('adds up the whole history for all time without a comparison', async ({ page }) => {
+    const volume = page.getByRole('region', { name: 'Volume' });
+    const rail = volume.getByTestId('stat-rail');
+    await expect(volume).toContainText('Added up over the range');
+    await expect(rail).toContainText('30.0km');
+    await expect(rail).toContainText('3 sessions');
+    await expect(rail).not.toContainText('Before');
   });
 
-  test.describe('time range filter reactivity', () => {
-    test.beforeEach(async ({ page }) => {
-      const now = Date.now();
-      await seedWithSessions(page, [
-        { sport: 'running', date: now - 2 * DAY_MS },
-        { sport: 'running', date: now - 60 * DAY_MS },
-        { sport: 'running', date: now - 61 * DAY_MS },
-      ]);
-      await page.goto('/');
-    });
+  test('compares the range with the days before and remembers the metric', async ({ page }) => {
+    await applyFilter(page, 'last 7 days');
 
-    test('reacts to time range filter', async ({ page }) => {
-      await expect(page.getByText('30.0 km')).toBeVisible();
+    const volume = page.getByRole('region', { name: 'Volume' });
+    const rail = volume.getByTestId('stat-rail');
+    await expect(volume).toContainText('Added up over the range');
+    await expect(volume).toContainText(/Before · \S/);
+    await expect(rail).toContainText('20.0km');
+    await expect(rail).toContainText('2 sessions');
+    await expect(rail).toContainText('10.0km');
+    await expect(rail).toContainText('1 session');
 
-      await dockButton(page, /time range filter/i).click();
-      await openPanelRadio(page, /^7d$/i).click();
+    await volume.getByRole('tab', { name: 'Elevation' }).click();
+    await expect(rail).toContainText('100m');
+    await expect(rail).toContainText('--m');
 
-      await expect(page.getByText('10.0 km')).toBeVisible();
-    });
+    await page.reload();
+    await expect(
+      page.getByRole('region', { name: 'Volume' }).getByRole('tab', { name: 'Elevation' }),
+    ).toHaveAttribute('aria-selected', 'true');
   });
 });

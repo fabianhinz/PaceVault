@@ -1,7 +1,6 @@
 import { m } from '@/paraglide/messages.js';
 import type { Sport } from '@/packages/engine/types.ts';
 import { HR_ZONE_DEFS } from '@/packages/engine/zoneDistribution.ts';
-import { formatDate } from '@/lib/formatters.ts';
 
 const getTimeOfDayLabel = (hour: number): string => {
   if (hour >= 5 && hour <= 11) {
@@ -40,24 +39,6 @@ const ZONE_LABEL_MAP: Record<string, () => string> = {
   vo2max: m.ui_zone_vo2max,
 };
 
-const buildAutoName = (sport: Sport, subSport: string | undefined, timestampMs: number): string => {
-  const hour = new Date(timestampMs).getHours();
-  const timeOfDay = getTimeOfDayLabel(hour);
-  const sportNoun = SPORT_NOUN_MAP[sport]();
-
-  if (subSport && subSport !== 'generic' && subSport !== 'road') {
-    const prefixFn = SUB_SPORT_PREFIX_MAP[subSport];
-    if (prefixFn) {
-      return m.ui_session_name_sub({
-        timeOfDay,
-        subSport: prefixFn(),
-        sport: sportNoun,
-      });
-    }
-  }
-
-  return m.ui_session_name({ timeOfDay, sport: sportNoun });
-};
 interface SessionNameInput {
   sport: Sport;
   subSport?: string;
@@ -65,38 +46,21 @@ interface SessionNameInput {
   name?: string;
 }
 
-interface SessionNameOptions {
-  useAutoNames?: boolean;
-}
-
-/**
- * Resolve a session's display title.
- *
- * When useAutoNames is true: generates a localized name from
- * time-of-day, sub-sport, and sport noun.
- *   EN: "Morning Trail Run"
- *   DE: "Trail-Lauf am Morgen"
- *
- * When useAutoNames is false (default): returns the parsed filename,
- * stored name, or formatted date as fallback.
- */
-export const formatSessionName = (
-  input: SessionNameInput,
-  options?: SessionNameOptions,
-): string => {
-  const useAuto = options?.useAutoNames ?? false;
-
-  if (useAuto) {
-    return buildAutoName(input.sport, input.subSport, input.date);
+const buildFallbackName = (input: SessionNameInput): string => {
+  const timeOfDay = getTimeOfDayLabel(new Date(input.date).getHours());
+  const sport = SPORT_NOUN_MAP[input.sport]();
+  if (input.subSport !== undefined) {
+    const prefixFn = SUB_SPORT_PREFIX_MAP[input.subSport];
+    if (prefixFn) return m.ui_session_name_sub({ timeOfDay, subSport: prefixFn(), sport });
   }
-
-  return input.name ?? formatDate(input.date);
+  return m.ui_session_name({ timeOfDay, sport });
 };
 
-/**
- * Get the localized HR zone label for a session's average heart rate.
- * Returns undefined if data is insufficient or invalid.
- */
+export const formatSessionName = (input: SessionNameInput): string => {
+  if (input.name !== undefined) return input.name;
+  return buildFallbackName(input);
+};
+
 export const formatSessionZoneLabel = (
   avgHr: number | undefined,
   maxHr: number | undefined,

@@ -24,6 +24,7 @@ interface StatRailProps {
   rows: StatRailRow[];
   active: boolean;
   noteSlot?: boolean;
+  secondarySlot?: boolean;
   note?: StatRailNote;
 }
 
@@ -105,8 +106,15 @@ const StatRailContent = (props: StatRailProps) => (
             </Typography>
           )}
         </Typography>
-        {row.secondary !== undefined && (
-          <Typography variant="caption" as="p" noWrap tabularNums color="textTertiary">
+        {(row.secondary !== undefined || props.secondarySlot) && (
+          <Typography
+            variant="caption"
+            as="p"
+            noWrap
+            tabularNums
+            color="textTertiary"
+            className="min-h-4"
+          >
             {row.secondary}
           </Typography>
         )}

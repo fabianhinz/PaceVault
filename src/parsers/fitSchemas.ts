@@ -29,7 +29,6 @@ export const fitRecordSchema = z.object({
   altitude: optNum,
   enhanced_altitude: optNum,
   distance: optNum,
-  grade: optNum,
   timer_time: optNum,
 });
 
@@ -56,7 +55,6 @@ export const fitLapSchema = z.object({
   enhanced_max_altitude: optNum,
   avg_altitude: optNum,
   enhanced_avg_altitude: optNum,
-  avg_grade: optNum,
   avg_heart_rate: optNum,
   min_heart_rate: optNum,
   max_heart_rate: optNum,

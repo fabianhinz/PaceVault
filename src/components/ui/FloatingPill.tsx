@@ -1,15 +1,15 @@
 import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils.ts';
-import { glassClass } from './Card.tsx';
+import { floatingClass } from './Card.tsx';
 
-export const glassPillClass = `${glassClass} pointer-events-auto inline-flex shrink-0 items-center rounded-full text-sm whitespace-nowrap text-text-primary`;
+export const floatingPillClass = `${floatingClass} pointer-events-auto inline-flex shrink-0 items-center rounded-full text-sm whitespace-nowrap text-text-primary`;
 
-export const GlassPill = (props: ComponentProps<'button'>) => (
+export const FloatingPill = (props: ComponentProps<'button'>) => (
   <button
     type="button"
     {...props}
     className={cn(
-      glassPillClass,
+      floatingPillClass,
       'cursor-pointer gap-2 px-3 py-2 transition-colors hover:bg-white/10',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
       props.className,

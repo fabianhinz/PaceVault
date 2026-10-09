@@ -36,6 +36,7 @@ export const SeriesRail = (props: SeriesRailProps) => {
       header={header}
       active={active}
       noteSlot
+      secondarySlot
       note={reading.note}
       rows={[
         {
@@ -92,5 +93,12 @@ export const MultiSeriesRail = (props: MultiSeriesRailProps) => {
     header = props.formatX(x);
   }
 
-  return <StatRail header={header} active={active} rows={rows} />;
+  return (
+    <StatRail
+      header={header}
+      active={active}
+      secondarySlot={props.rows.some((row) => row.rest.secondary !== undefined)}
+      rows={rows}
+    />
+  );
 };
