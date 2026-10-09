@@ -22,6 +22,7 @@ const ALL_METRIC_IDS: MetricId[] = [
   'avgSpeed',
   'avgPower',
   'elevation',
+  'vam',
   'cadence',
   'vdot',
 ];

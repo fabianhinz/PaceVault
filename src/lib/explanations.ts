@@ -1,9 +1,3 @@
-// ---------------------------------------------------------------------------
-// Metric Explanation Registry
-// Pure data — no React, no state, no side effects.
-// Source of truth for all metric labels, descriptions, and scientific context.
-// ---------------------------------------------------------------------------
-
 import { m } from '@/paraglide/messages.js';
 
 export type MetricId =
@@ -27,6 +21,7 @@ export type MetricId =
   | 'avgSpeed'
   | 'avgPower'
   | 'elevation'
+  | 'vam'
   | 'cadence'
   | 'vdot';
 
@@ -38,10 +33,6 @@ export interface MetricExplanation {
   range: string;
   sports: ('running' | 'cycling' | 'all')[];
 }
-
-// ---------------------------------------------------------------------------
-// Stress metrics (src/engine/stress.ts)
-// ---------------------------------------------------------------------------
 
 const tss: MetricExplanation = {
   id: 'tss',
@@ -77,10 +68,6 @@ const tripLoad: MetricExplanation = {
   range: m.exp_tripLoad_range(),
   sports: ['all'],
 };
-
-// ---------------------------------------------------------------------------
-// Load metrics (src/engine/metrics.ts)
-// ---------------------------------------------------------------------------
 
 const ctl: MetricExplanation = {
   id: 'ctl',
@@ -118,10 +105,6 @@ const acwr: MetricExplanation = {
   sports: ['all'],
 };
 
-// ---------------------------------------------------------------------------
-// Normalized metrics (src/engine/normalize.ts)
-// ---------------------------------------------------------------------------
-
 const normalizedPower: MetricExplanation = {
   id: 'normalizedPower',
   shortLabel: m.exp_normalizedPower_shortLabel(),
@@ -139,10 +122,6 @@ const gradeAdjustedPace: MetricExplanation = {
   range: m.exp_gradeAdjustedPace_range(),
   sports: ['running'],
 };
-
-// ---------------------------------------------------------------------------
-// Session analysis (src/engine/laps.ts)
-// ---------------------------------------------------------------------------
 
 const recovery: MetricExplanation = {
   id: 'recovery',
@@ -162,10 +141,6 @@ const pacingTrend: MetricExplanation = {
   sports: ['running', 'cycling'],
 };
 
-// ---------------------------------------------------------------------------
-// Training zones (src/engine/zones.ts)
-// ---------------------------------------------------------------------------
-
 const trainingZones: MetricExplanation = {
   id: 'trainingZones',
   shortLabel: m.exp_trainingZones_shortLabel(),
@@ -174,10 +149,6 @@ const trainingZones: MetricExplanation = {
   range: m.exp_trainingZones_range(),
   sports: ['running'],
 };
-
-// ---------------------------------------------------------------------------
-// Training Effect (src/engine/trainingEffect.ts)
-// ---------------------------------------------------------------------------
 
 const aerobicTE: MetricExplanation = {
   id: 'aerobicTE',
@@ -242,6 +213,14 @@ const elevation: MetricExplanation = {
   sports: ['all'],
 };
 
+const vam: MetricExplanation = {
+  id: 'vam',
+  friendlyName: m.exp_vam_friendlyName(),
+  oneLiner: m.exp_vam_oneLiner(),
+  range: m.exp_vam_range(),
+  sports: ['all'],
+};
+
 const cadence: MetricExplanation = {
   id: 'cadence',
   shortLabel: m.exp_cadence_shortLabel(),
@@ -250,10 +229,6 @@ const cadence: MetricExplanation = {
   range: m.exp_cadence_range(),
   sports: ['all'],
 };
-
-// ---------------------------------------------------------------------------
-// VDOT (src/engine/vdot.ts)
-// ---------------------------------------------------------------------------
 
 const vdot: MetricExplanation = {
   id: 'vdot',
@@ -264,39 +239,28 @@ const vdot: MetricExplanation = {
   sports: ['running'],
 };
 
-// ---------------------------------------------------------------------------
-// Registry
-// ---------------------------------------------------------------------------
-
 export const METRIC_EXPLANATIONS: Record<MetricId, MetricExplanation> = {
-  // Stress metrics
   tss,
   trimp,
   duration,
   tripLoad,
-  // Load metrics
   ctl,
   atl,
   tsb,
   acwr,
-  // Normalized metrics
   normalizedPower,
   gradeAdjustedPace,
-  // Session analysis
   recovery,
   pacingTrend,
-  // Training zones
   trainingZones,
-  // Training Effect
   aerobicTE,
   anaerobicTE,
-  // Session stats
   avgHr,
   avgPace,
   avgSpeed,
   avgPower,
   elevation,
+  vam,
   cadence,
-  // VDOT
   vdot,
 };

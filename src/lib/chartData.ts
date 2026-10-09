@@ -3,6 +3,7 @@ import type { RouteProfile } from '@/packages/gpx/routeProfile.ts';
 import { gradeAdjustedPaceFactor } from '@/packages/engine/normalize.ts';
 import { bucketSeries, TARGET_ROWS } from '@/lib/chartBuckets.ts';
 import { movingSeconds } from '@/lib/movingTime.ts';
+import type { SessionTerrain } from '@/lib/sessionTerrain.ts';
 
 interface TimeSeriesPoint {
   time: number;
@@ -38,25 +39,6 @@ const speedToPace = (speed: number | undefined): number | undefined => {
   return 1000 / speed / 60;
 };
 
-const gradientAt = (records: SessionRecord[], i: number): number | undefined => {
-  const r = records[i];
-  if (!r) return undefined;
-  if (r.grade !== undefined) return r.grade / 100;
-  const prev = records[i - 1];
-  if (
-    !prev ||
-    r.elevation === undefined ||
-    prev.elevation === undefined ||
-    r.distance === undefined ||
-    prev.distance === undefined
-  ) {
-    return undefined;
-  }
-  const dx = r.distance - prev.distance;
-  if (dx <= 0) return undefined;
-  return (r.elevation - prev.elevation) / dx;
-};
-
 export const hasSeriesValues = <K extends string>(
   points: ReadonlyArray<Record<K, number | null>>,
   key: K,
@@ -64,6 +46,7 @@ export const hasSeriesValues = <K extends string>(
 
 interface SessionChartRowOptions {
   isRunning: boolean;
+  terrain: SessionTerrain;
   range?: { from: number; to: number };
 }
 
@@ -71,7 +54,6 @@ export const buildSessionChartRows = (
   records: SessionRecord[],
   options: SessionChartRowOptions,
 ) => {
-  const includeGap = options.isRunning && records.some((r) => r.grade !== undefined);
   const moving = movingSeconds(records);
   return bucketSeries(records, {
     xKey: 'time',
@@ -85,15 +67,23 @@ export const buildSessionChartRows = (
       },
       cadence: (r) => r.cadence,
       elevation: (r) => r.elevation,
-      grade: (r) => r.grade,
+      climbElevation: (r, i) => {
+        if (!options.terrain.inClimb[i]) return undefined;
+        return r.elevation;
+      },
+      grade: (_, i) => {
+        const gradient = options.terrain.gradients[i];
+        if (gradient === undefined) return undefined;
+        return gradient * 100;
+      },
       pace: (r) => {
         if (!options.isRunning) return undefined;
         return speedToPace(r.speed);
       },
       gap: (r, i) => {
-        if (!includeGap) return undefined;
+        if (!options.isRunning) return undefined;
         const pace = speedToPace(r.speed);
-        const gradient = gradientAt(records, i);
+        const gradient = options.terrain.gradients[i];
         if (pace === undefined || gradient === undefined) return undefined;
         return pace / gradeAdjustedPaceFactor(gradient);
       },

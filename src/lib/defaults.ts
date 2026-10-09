@@ -10,7 +10,6 @@ export const createDefaultProfile = (id: string): UserProfile => {
       restHr: 44,
     },
     showMetricHelp: true,
-    useAutoSessionNames: false,
     createdAt: Date.now(),
   };
 };

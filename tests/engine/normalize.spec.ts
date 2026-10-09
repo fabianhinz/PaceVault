@@ -7,9 +7,10 @@ import {
 import { makeCyclingRecords } from '@tests/factories/records.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
-function makeRecord(overrides: Partial<SessionRecord>): SessionRecord {
-  return { timestamp: 0, ...overrides };
-}
+const makeRecord = (overrides: Partial<SessionRecord>): SessionRecord => ({
+  timestamp: 0,
+  ...overrides,
+});
 
 describe('calculateNormalizedPower', () => {
   it('returns undefined for fewer than 30 records', () => {
@@ -47,7 +48,6 @@ describe('calculateNormalizedPower', () => {
     const records: SessionRecord[] = [];
     let totalPower = 0;
     for (let i = 0; i < 300; i++) {
-      // Oscillate between 100W and 300W
       const power = 200 + 100 * Math.sin(i * 0.1);
       totalPower += power;
       records.push(makeRecord({ timestamp: i, power }));
@@ -67,7 +67,6 @@ describe('calculateNormalizedPower', () => {
 
   it('filters out records without power before computing', () => {
     const records: SessionRecord[] = [];
-    // 60 records with power, interspersed with 60 without
     for (let i = 0; i < 120; i++) {
       if (i % 2 === 0) {
         records.push(makeRecord({ timestamp: i, power: 200 }));
@@ -75,7 +74,6 @@ describe('calculateNormalizedPower', () => {
         records.push(makeRecord({ timestamp: i, hr: 150 }));
       }
     }
-    // 60 power records >= 30 threshold
     const np = calculateNormalizedPower(records);
     expect(np).toBeDefined();
     expect(np).toBe(200);
@@ -83,74 +81,77 @@ describe('calculateNormalizedPower', () => {
 });
 
 describe('gradeAdjustedPaceFactor', () => {
-  it('returns factor close to 1.0 for flat gradient', () => {
-    const factor = gradeAdjustedPaceFactor(0);
-    expect(factor).toBeCloseTo(1.0, 5);
+  const grid = Array.from({ length: 601 }, (_, i) => -0.3 + i * 0.001);
+
+  it('costs exactly flat effort at 0 %', () => {
+    expect(gradeAdjustedPaceFactor(0)).toBe(1);
   });
 
-  it('returns factor greater than 1.0 for uphill', () => {
-    const factor = gradeAdjustedPaceFactor(0.1); // 10% uphill
-    expect(factor).toBeGreaterThan(1.0);
+  it('bottoms out around 0.88 near −9 %', () => {
+    const factors = grid.map((g) => gradeAdjustedPaceFactor(g));
+    const min = Math.min(...factors);
+    const at = grid[factors.indexOf(min)] ?? 0;
+    expect(min).toBeCloseTo(0.88, 2);
+    expect(at).toBeGreaterThanOrEqual(-0.1);
+    expect(at).toBeLessThanOrEqual(-0.08);
   });
 
-  it('returns factor less than 1.0 for moderate downhill', () => {
-    const factor = gradeAdjustedPaceFactor(-0.1); // 10% downhill
-    expect(factor).toBeLessThan(1.0);
+  it('is back at flat effort around −18 %', () => {
+    expect(gradeAdjustedPaceFactor(-0.18)).toBeCloseTo(1, 1);
   });
 
-  it('clamps gradient at +0.45', () => {
-    const atClamp = gradeAdjustedPaceFactor(0.45);
-    const beyondClamp = gradeAdjustedPaceFactor(0.6);
-    expect(beyondClamp).toBe(atClamp);
+  it('rises monotonically from −9 % to +30 %', () => {
+    const uphill = grid.filter((g) => g >= -0.09).map((g) => gradeAdjustedPaceFactor(g));
+    expect(uphill.every((f, i) => i === 0 || f > (uphill[i - 1] ?? Infinity))).toBe(true);
   });
 
-  it('clamps gradient at -0.45', () => {
-    const atClamp = gradeAdjustedPaceFactor(-0.45);
-    const beyondClamp = gradeAdjustedPaceFactor(-0.6);
-    expect(beyondClamp).toBe(atClamp);
-  });
-
-  it('steeper uphill produces higher factor than gentle uphill', () => {
-    const gentle = gradeAdjustedPaceFactor(0.05);
-    const steep = gradeAdjustedPaceFactor(0.2);
-    expect(steep).toBeGreaterThan(gentle);
+  it('limits the gradient to ±30 %', () => {
+    expect(gradeAdjustedPaceFactor(0.45)).toBe(gradeAdjustedPaceFactor(0.3));
+    expect(gradeAdjustedPaceFactor(-0.45)).toBe(gradeAdjustedPaceFactor(-0.3));
   });
 });
+
+const steadyRun = (seconds: number, gradient: number): SessionRecord[] =>
+  Array.from({ length: seconds }, (_, i) =>
+    makeRecord({ timestamp: i, speed: 3, distance: i * 3, elevation: 100 + i * 3 * gradient }),
+  );
 
 describe('calculateGAP', () => {
   it('returns undefined for empty records', () => {
     expect(calculateGAP([])).toBeUndefined();
   });
 
-  it('returns undefined for single record', () => {
-    const records = [makeRecord({ timestamp: 0, speed: 3.0, distance: 0, grade: 0 })];
-    expect(calculateGAP(records)).toBeUndefined();
-  });
-
   it('returns undefined for records without speed', () => {
-    const records = [
-      makeRecord({ timestamp: 0, distance: 0, grade: 0 }),
-      makeRecord({ timestamp: 1, distance: 3, grade: 0 }),
-    ];
+    const records = steadyRun(60, 0).map((r) => makeRecord({ ...r, speed: undefined }));
     expect(calculateGAP(records)).toBeUndefined();
   });
 
-  it('returns GAP close to actual pace on flat terrain', () => {
-    const records: SessionRecord[] = [];
-    for (let i = 0; i < 10; i++) {
-      records.push(
-        makeRecord({
-          timestamp: i,
-          speed: 3.0,
-          distance: i * 3,
-          grade: 0,
-        }),
-      );
-    }
-    const gap = calculateGAP(records);
-    const actualPace = (1 / 3.0) * 1000; // sec/km
-    expect(gap).toBeDefined();
-    expect(Math.abs((gap ?? 0) - actualPace)).toBeLessThan(1);
+  it('returns the actual pace on flat terrain', () => {
+    expect(calculateGAP(steadyRun(120, 0))).toBeCloseTo(1000 / 3, 6);
+  });
+
+  it('is faster than the actual pace uphill and slower on a gentle descent', () => {
+    expect(calculateGAP(steadyRun(120, 0.08)) ?? 0).toBeLessThan(1000 / 3);
+    expect(calculateGAP(steadyRun(120, -0.08)) ?? 0).toBeGreaterThan(1000 / 3);
+  });
+
+  it('pairs records that carry a distance when the device writes it only every few seconds', () => {
+    const sparse = steadyRun(300, 0.08).map((r) => {
+      if (r.timestamp % 3 === 0) return r;
+      return makeRecord({ ...r, distance: undefined });
+    });
+    expect(calculateGAP(sparse)).toBeCloseTo(calculateGAP(steadyRun(300, 0.08)) ?? 0, 0);
+  });
+
+  it('session GAP ignores stops and timer pauses', () => {
+    const running = steadyRun(600, 0);
+    const stop = Array.from({ length: 300 }, (_, i) =>
+      makeRecord({ timestamp: 600 + i, speed: 0, distance: 1797, elevation: 100 }),
+    );
+    const afterPause = steadyRun(600, 0).map((r) =>
+      makeRecord({ ...r, timestamp: r.timestamp + 1500, distance: (r.distance ?? 0) + 1800 }),
+    );
+    expect(calculateGAP([...running, ...stop, ...afterPause])).toBeCloseTo(1000 / 3, 6);
   });
 });
 

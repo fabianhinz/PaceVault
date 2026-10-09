@@ -19,7 +19,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.t
 import { ThresholdsSection } from '@/features/settings/ThresholdsSection.tsx';
 import { DataManagementSection } from '@/features/settings/DataManagementSection.tsx';
 import { AboutSection } from '@/features/settings/AboutSection.tsx';
-import { AutoSessionNamesToggle } from '@/features/sessions/AutoSessionNamesToggle.tsx';
 import { IntegrationsCard } from '@/features/settings/IntegrationsCard.tsx';
 import { FitFilesCard } from '@/features/settings/FitFilesCard.tsx';
 import { SettingsPeek } from '@/features/settings/SettingsPeek.tsx';
@@ -88,7 +87,6 @@ export const SettingsPage = () => {
                   }
                 />
               </ListItem>
-              <AutoSessionNamesToggle />
             </List>
           </Card>
 

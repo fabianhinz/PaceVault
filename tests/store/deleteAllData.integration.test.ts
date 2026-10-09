@@ -5,7 +5,6 @@ import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
-import { createEmptyAttributeFilters } from '@/lib/attributeFilters.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
 import { makeCyclingRecords, makeLaps } from '@tests/factories/records.ts';
@@ -47,13 +46,18 @@ describe('delete all data', () => {
     useIntervalsStore.getState().connectIntervals('secret-key');
     useIntervalsStore.getState().recordIntervalsImported(['i1', 'i2']);
 
-    useFiltersStore.setState({
-      timeRange: '90d',
-      sportFilter: 'cycling',
-      attributeFilters: { duration: 3600, distance: 10000, elevationGain: 500 },
-    });
+    useFiltersStore.getState().saveBuilderFilter(
+      {
+        sport: 'cycling',
+        time: { kind: 'relative', amount: 90, unit: 'day' },
+        distance: 10000,
+        duration: 3600,
+        elevationGain: 500,
+      },
+      null,
+    );
 
-    expect(useFiltersStore.getState().timeRange).toBe('90d');
+    expect(useFiltersStore.getState().activeFilter).not.toBeNull();
     expect(useIntervalsStore.getState().apiKey).not.toBeNull();
     expect(useCoachPlanStore.getState().cachedPlan).not.toBeNull();
     expect(useSessionsStore.getState().sessions).toHaveLength(1);
@@ -68,13 +72,7 @@ describe('delete all data', () => {
     useCoachPlanStore.getState().clearPlan();
     useIntervalsStore.getState().disconnectIntervals();
     useLayoutStore.setState({ onboardingComplete: false });
-    useFiltersStore.setState({
-      timeRange: 'all',
-      customRange: null,
-      prevDashboardRange: null,
-      sportFilter: 'all',
-      attributeFilters: createEmptyAttributeFilters(),
-    });
+    useFiltersStore.getState().resetFilters();
     await clearAllRecords();
 
     expect(useCoachPlanStore.getState().cachedPlan).toBeNull();
@@ -88,12 +86,7 @@ describe('delete all data', () => {
     expect(useIntervalsStore.getState().importedActivityIds).toEqual([]);
     expect(useUserStore.getState().profile).toBeNull();
     expect(useLayoutStore.getState().onboardingComplete).toBe(false);
-    expect(useFiltersStore.getState().timeRange).toBe('all');
-    expect(useFiltersStore.getState().sportFilter).toBe('all');
-    expect(useFiltersStore.getState().attributeFilters).toEqual({
-      duration: null,
-      distance: null,
-      elevationGain: null,
-    });
+    expect(useFiltersStore.getState().activeFilter).toBeNull();
+    expect(useFiltersStore.getState().savedFilters).toHaveLength(3);
   });
 });

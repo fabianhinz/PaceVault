@@ -1,6 +1,6 @@
 # Dashboard: volume row in the charts card, one shared date axis
 
-Mockup: `mockups/dashboard-stats/index.html` (variant C).
+Mockup: `mockups/dashboard-volume/index.html` (variant C).
 
 ## Context
 

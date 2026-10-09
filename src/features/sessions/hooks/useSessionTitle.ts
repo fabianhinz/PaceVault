@@ -9,14 +9,13 @@ interface SessionTitle {
 }
 
 export const useSessionTitle = (session: TrainingSession | undefined): SessionTitle => {
-  const useAutoNames = useUserStore((s) => s.profile?.useAutoSessionNames ?? false);
   const thresholds = useUserStore((s) => s.profile?.thresholds);
 
   if (!session) {
     return { title: '', subtitle: '' };
   }
 
-  const title = formatSessionName(session, { useAutoNames });
+  const title = formatSessionName(session);
   const zoneLabel = formatSessionZoneLabel(session.avgHr, thresholds?.maxHr, thresholds?.restHr);
 
   const parts = [formatDate(session.date)];

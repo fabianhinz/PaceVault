@@ -131,7 +131,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       title: m.ui_chart_title_grade(),
       icon: TrendingUp,
       color: tokens.chartGrade,
-      hasData: profile.grade.length > 1,
+      hasData: profile.grade.filter((p) => p.grade !== undefined).length > 1,
       rail: (
         <SeriesRail
           group={HOVER_GROUP}

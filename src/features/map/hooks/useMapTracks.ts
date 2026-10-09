@@ -3,8 +3,7 @@ import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { getSessionGPS } from '@/lib/indexeddb.ts';
-import { rangeToCutoff, customRangeToCutoffs } from '@/lib/timeRange.ts';
-import { matchesAttributeFilters } from '@/lib/attributeFilters.ts';
+import { matchesFilters } from '@/lib/savedFilters.ts';
 import type { SessionGPS, Sport, TrainingSession } from '@/packages/engine/types.ts';
 
 export interface MapTrack {
@@ -16,10 +15,7 @@ export interface MapTrack {
 
 export const useMapTracks = (gpsData: SessionGPS[] | null) => {
   const sessions = useSessionsStore((s) => s.sessions);
-  const timeRange = useFiltersStore((s) => s.timeRange);
-  const customRange = useFiltersStore((s) => s.customRange);
-  const sportFilter = useFiltersStore((s) => s.sportFilter);
-  const attributeFilters = useFiltersStore((s) => s.attributeFilters);
+  const activeFilter = useFiltersStore((s) => s.activeFilter);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
 
@@ -68,19 +64,8 @@ export const useMapTracks = (gpsData: SessionGPS[] | null) => {
         return;
       }
 
-      const filtered = sessions.filter((s) => {
-        if (sportFilter !== 'all' && s.sport !== sportFilter) return false;
-        if (!matchesAttributeFilters(s, attributeFilters)) return false;
-        if (timeRange === 'custom' && customRange) {
-          const cutoffs = customRangeToCutoffs(customRange);
-          return s.date >= cutoffs.from && s.date <= cutoffs.to;
-        }
-        if (timeRange !== 'custom') {
-          const cutoff = rangeToCutoff(timeRange);
-          return s.date >= cutoff;
-        }
-        return true;
-      });
+      const now = Date.now();
+      const filtered = sessions.filter((s) => matchesFilters(s, activeFilter, now));
 
       const result: MapTrack[] = [];
       for (const s of filtered) {
@@ -98,16 +83,7 @@ export const useMapTracks = (gpsData: SessionGPS[] | null) => {
     return () => {
       cancelled = true;
     };
-  }, [
-    sessions,
-    timeRange,
-    customRange,
-    sportFilter,
-    attributeFilters,
-    gpsData,
-    openedSessionId,
-    focusedTripSessionIds,
-  ]);
+  }, [sessions, activeFilter, gpsData, openedSessionId, focusedTripSessionIds]);
 
   return { tracks, loading };
 };

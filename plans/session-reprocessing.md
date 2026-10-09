@@ -1,6 +1,6 @@
 # Reprocessing sessions when a calculation changes
 
-Prerequisite for `plans/gap.md` (session GAP stays stored; old sessions need the new value).
+Prerequisite for `plans/gradient-gap-vam.md` (session GAP stays stored; old sessions need the new value).
 
 ## Context
 

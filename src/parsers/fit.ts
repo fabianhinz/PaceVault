@@ -10,7 +10,11 @@ import {
   type Gender,
 } from '@/packages/engine/types.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
-import { calculateGAP } from '@/packages/engine/normalize.ts';
+import {
+  SESSION_DERIVATION_VERSION,
+  deriveMovingTimeFromLaps,
+  deriveSessionFieldsFromRecords,
+} from '@/packages/engine/sessionDerivation.ts';
 import { extractSessionName } from '@/lib/filename.ts';
 import { generateFingerprint } from '@/lib/fingerprint.ts';
 import {
@@ -27,7 +31,7 @@ interface FitUserProfile {
   restingHeartRate?: number;
 }
 
-interface ParsedFitResult {
+export interface ParsedFitResult {
   session: SessionFields;
   records: SessionRecord[];
   laps: SessionLap[];
@@ -66,40 +70,6 @@ const mapFitSportToAppSport = (fitSport?: string): Sport | undefined => {
   return SPORTS.find((sport) => FIT_SPORT_BY_SPORT[sport] === fitSport);
 };
 
-// Metric derivation priority:
-// 1. Calculate from records (most accurate)
-// 2. Fall back to session-level FIT value
-// 3. Leave undefined (never fabricate)
-
-export const deriveDistanceFromRecords = (records: SessionRecord[]): number | undefined => {
-  for (let i = records.length - 1; i >= 0; i--) {
-    const r = records[i];
-    if (!r) continue;
-    if (r.distance !== undefined) {
-      return r.distance;
-    }
-  }
-  return undefined;
-};
-
-export const deriveAvgFromRecords = (
-  records: SessionRecord[],
-  field: 'power' | 'cadence',
-): number | undefined => {
-  const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined);
-  if (values.length === 0) return undefined;
-  return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
-};
-
-export const deriveMaxFromRecords = (
-  records: SessionRecord[],
-  field: 'power' | 'speed',
-): number | undefined => {
-  const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined);
-  if (values.length === 0) return undefined;
-  return Math.max(...values);
-};
-
 const roundTo = (value: number | undefined, decimals: number): number | undefined => {
   if (value === undefined) return undefined;
   const factor = 10 ** decimals;
@@ -124,7 +94,6 @@ const mapFitRecord = (r: FitRecordInput): SessionRecord => {
   setIfDefined(record, 'lng', roundTo(r.position_long, 7));
   setIfDefined(record, 'elevation', roundTo(r.enhanced_altitude ?? r.altitude, 1));
   setIfDefined(record, 'distance', roundTo(r.distance, 2));
-  setIfDefined(record, 'grade', roundTo(r.grade, 2));
   setIfDefined(record, 'timerTime', r.timer_time);
   return record;
 };
@@ -151,7 +120,6 @@ export const mapFitLaps = (fitLaps: FitLapInput[]): SessionLap[] => {
       minAltitude: lap.enhanced_min_altitude ?? lap.min_altitude,
       maxAltitude: lap.enhanced_max_altitude ?? lap.max_altitude,
       avgAltitude: lap.enhanced_avg_altitude ?? lap.avg_altitude,
-      avgGrade: lap.avg_grade,
       avgHr: lap.avg_heart_rate,
       minHr: lap.min_heart_rate,
       maxHr: lap.max_heart_rate,
@@ -230,13 +198,8 @@ export const parseFitFile = async (
   }
   const laps = mapFitLaps(lapsResult.data);
 
-  // Derive moving time from laps; fall back to timer time per lap when moving time is unavailable
-  let movingTime: number | undefined = undefined;
-  if (laps.length > 0) {
-    movingTime = laps.reduce((sum, lap) => sum + (lap.totalMovingTime ?? lap.totalTimerTime), 0);
-  }
+  const movingTime = deriveMovingTimeFromLaps(laps);
 
-  // Calculate stress — use FTP for all sports with power data, not just cycling
   const hasPowerRecords = records.some((r) => r.power !== undefined);
   let stressFtp: number | undefined = undefined;
   if (hasPowerRecords) {
@@ -252,17 +215,13 @@ export const parseFitFile = async (
     stressFtp,
   );
 
-  // Compute advanced metrics from records
-  let gap: number | undefined = undefined;
-  if (sport === 'running') {
-    gap = calculateGAP(records);
-  }
+  const derived = deriveSessionFieldsFromRecords(sport, records);
 
   const avgSpeed = fitSession.enhanced_avg_speed ?? fitSession.avg_speed;
   const name = meta?.name ?? extractSessionName(fileName);
 
   const fileIdResult = fitFileIdSchema.safeParse(data.file_ids?.[0]);
-  const sessionDistance = deriveDistanceFromRecords(records) ?? fitSession.total_distance;
+  const sessionDistance = derived.distance ?? fitSession.total_distance;
 
   let fileIdData: Parameters<typeof generateFingerprint>[0] = undefined;
   if (fileIdResult.success) {
@@ -288,10 +247,10 @@ export const parseFitFile = async (
     distance: sessionDistance,
     avgHr: fitSession.avg_heart_rate,
     maxHr: fitSession.max_heart_rate,
-    avgPower: deriveAvgFromRecords(records, 'power') ?? fitSession.avg_power,
-    maxPower: deriveMaxFromRecords(records, 'power') ?? fitSession.max_power,
+    avgPower: derived.avgPower ?? fitSession.avg_power,
+    maxPower: derived.maxPower ?? fitSession.max_power,
     normalizedPower: stressResult.normalizedPower ?? fitSession.normalized_power,
-    avgCadence: deriveAvgFromRecords(records, 'cadence') ?? fitSession.avg_cadence,
+    avgCadence: derived.avgCadence ?? fitSession.avg_cadence,
     avgSpeed,
     avgPace,
     calories: fitSession.total_calories,
@@ -302,19 +261,17 @@ export const parseFitFile = async (
     deviceTss: fitSession.training_stress_score,
     deviceIf: fitSession.intensity_factor,
     deviceFtp: fitSession.threshold_power,
-    maxSpeed:
-      fitSession.enhanced_max_speed ??
-      fitSession.max_speed ??
-      deriveMaxFromRecords(records, 'speed'),
+    maxSpeed: fitSession.enhanced_max_speed ?? fitSession.max_speed ?? derived.maxSpeed,
     minAltitude: fitSession.enhanced_min_altitude ?? fitSession.min_altitude,
     maxAltitude: fitSession.enhanced_max_altitude ?? fitSession.max_altitude,
     avgAltitude: fitSession.enhanced_avg_altitude ?? fitSession.avg_altitude,
-    ...(gap !== undefined && { gap }),
+    ...(derived.gap !== undefined && { gap: derived.gap }),
     tss: stressResult.tss,
     stressMethod: stressResult.stressMethod,
     isPlanned: false,
     hasDetailedRecords: records.length > 0,
     fingerprint,
+    derivationVersion: SESSION_DERIVATION_VERSION,
   };
 
   return { session, records, laps, fingerprint };

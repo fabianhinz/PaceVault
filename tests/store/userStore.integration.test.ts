@@ -46,7 +46,6 @@ describe('user store', () => {
     const { id: _id, createdAt: _ca, ...profileData } = makeUserProfile();
     useUserStore.getState().setProfile(profileData);
 
-    // Allow async IDB write to complete
     await new Promise((r) => setTimeout(r, 50));
 
     const db = await getDB();
@@ -59,11 +58,25 @@ describe('user store', () => {
   it('operations on null profile are no-ops', () => {
     expect(useUserStore.getState().profile).toBeNull();
 
-    // These should not throw
     useUserStore.getState().setProfileGender('female');
     useUserStore.getState().updateThresholds({ maxHr: 200, restHr: 55 });
 
     expect(useUserStore.getState().profile).toBeNull();
+  });
+
+  it('drops the auto session names toggle when migrating version 1 profiles', () => {
+    const migrate = useUserStore.persist.getOptions().migrate;
+    const migrated = migrate?.(
+      { profile: { id: 'p', gender: 'female', useAutoSessionNames: true } },
+      1,
+    );
+    expect(migrated).toEqual({ profile: { id: 'p', gender: 'female' } });
+  });
+
+  it('keeps a missing or unrecognised profile when migrating version 1', () => {
+    const migrate = useUserStore.persist.getOptions().migrate;
+    expect(migrate?.({ profile: null }, 1)).toEqual({ profile: null });
+    expect(migrate?.('garbage', 1)).toBe('garbage');
   });
 });
 
@@ -90,5 +103,6 @@ describe('createDefaultProfile', () => {
     expect('goals' in profile).toBe(false);
     expect('welcomeDismissed' in profile).toBe(false);
     expect('onboardingCompleted' in profile).toBe(false);
+    expect('useAutoSessionNames' in profile).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import { PerformanceChart } from '@/features/dashboard/PerformanceChart';
 import { LoadChart } from '@/features/dashboard/LoadChart';
-import { TrainingSummaryCard } from '@/features/dashboard/TrainingSummaryCard.tsx';
+import { VolumeChart } from '@/features/dashboard/VolumeChart.tsx';
 import { PageGrid } from '@/components/ui/PageGrid.tsx';
 import { ChartsCard } from '@/components/ui/ChartsCard.tsx';
 import { FormStatusCard } from '@/features/dashboard/FormStatusCard.tsx';
@@ -14,9 +14,9 @@ export const DashboardPage = () => {
       <FormStatusCard />
       <ChartsCard zoomReset={<DashboardZoomReset />}>
         <LoadChart />
+        <VolumeChart />
         <PerformanceChart />
       </ChartsCard>
-      <TrainingSummaryCard />
     </PageGrid>
   );
 };

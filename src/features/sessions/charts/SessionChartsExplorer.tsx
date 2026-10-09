@@ -16,9 +16,13 @@ import {
   railPace,
   railPaceFromSecPerKm,
   railSigned1,
+  railVam,
 } from '@/lib/railFormat.ts';
+import { buildSessionTerrain, climbSpanAt, climbSpansInMinutes } from '@/lib/sessionTerrain.ts';
+import { climbingRate } from '@/packages/engine/climbs.ts';
 import type { MetricId } from '@/lib/explanations.ts';
 import { SeriesRail } from '@/components/charts/ChartRail.tsx';
+import type { StatRailNote } from '@/components/ui/StatRail.tsx';
 import { sportIcon } from '@/lib/sportIcons.ts';
 import { formatChartTime, sessionTimeXAxis } from '@/lib/chartTheme.ts';
 import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
@@ -76,6 +80,14 @@ const scaleFor = (
 
 const currentLapBands = () => useMapFocusStore.getState().sessionLaps?.bands ?? [];
 
+const vamNote = (
+  vam: number | undefined,
+  message: (inputs: { vam: string }) => string,
+): StatRailNote | undefined => {
+  if (vam === undefined) return undefined;
+  return { text: message({ vam: railVam(vam) }), color: tokens.chartClimb };
+};
+
 const zoneNote = (scale: ZoneScale | undefined, value: number | null) => {
   if (!scale || value === null) return undefined;
   const band = scale.bandAt(value);
@@ -85,7 +97,18 @@ const zoneNote = (scale: ZoneScale | undefined, value: number | null) => {
 export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const isRunning = props.session.sport === 'running';
 
-  const extremes = useMemo(() => computeRecordExtremes(props.records), [props.records]);
+  const terrain = useMemo(
+    () => buildSessionTerrain(props.session.sport, props.records),
+    [props.session.sport, props.records],
+  );
+  const climbSpans = useMemo(
+    () => climbSpansInMinutes(props.records, terrain.climbs),
+    [props.records, terrain],
+  );
+  const extremes = useMemo(
+    () => computeRecordExtremes(props.records, terrain.gradients),
+    [props.records, terrain],
+  );
   const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
   const thresholds = useUserStore((s) => s.profile?.thresholds);
   const hrScale = useMemo(
@@ -110,13 +133,15 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const zoomRange = zoom.zoomRange;
 
   const rows = useMemo(
-    () => buildSessionChartRows(props.records, { isRunning }),
-    [props.records, isRunning],
+    () => buildSessionChartRows(props.records, { isRunning, terrain }),
+    [props.records, isRunning, terrain],
   );
   const compactRows = useMemo(
     () =>
-      zoomRange ? buildSessionChartRows(props.records, { isRunning, range: zoomRange }) : rows,
-    [props.records, isRunning, zoomRange, rows],
+      zoomRange
+        ? buildSessionChartRows(props.records, { isRunning, terrain, range: zoomRange })
+        : rows,
+    [props.records, isRunning, terrain, zoomRange, rows],
   );
   const byTime = useMemo(
     () => new Map([...indexByX(rows, 'time'), ...indexByX(compactRows, 'time')]),
@@ -190,13 +215,14 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       avgPaceSecPerKm: session.avgPace,
       bestPaceSecPerKm: extremes.bestPaceSecPerKm,
       gapSecPerKm: session.gap,
+      vam: climbingRate(props.records, terrain.climbs, 0, props.records.length - 1),
     };
-  }, [session, extremes]);
+  }, [session, extremes, props.records, terrain]);
 
   const stats = useMemo(() => {
     if (railFrom === undefined || railTo === undefined) return sessionStats;
-    return computeRangeStats(props.records, { from: railFrom, to: railTo });
-  }, [sessionStats, props.records, railFrom, railTo]);
+    return computeRangeStats(props.records, { from: railFrom, to: railTo }, terrain);
+  }, [sessionStats, props.records, railFrom, railTo, terrain]);
 
   const avgSpeedKmh = stats.avgSpeed !== undefined ? stats.avgSpeed * 3.6 : undefined;
   const maxSpeedKmh = stats.maxSpeed !== undefined ? stats.maxSpeed * 3.6 : undefined;
@@ -209,6 +235,9 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   if (stats.normalizedPower === undefined) {
     powerRest = { header: m.ui_rail_avg(), value: railInt(stats.avgPower) };
   }
+
+  let elevationMetricId: MetricId = 'elevation';
+  if (terrain.climbs.length > 0) elevationMetricId = 'vam';
 
   const onZoomComplete = zoom.onZoomComplete;
   const chartNodes = useMemo(
@@ -248,6 +277,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           onZoomComplete={onZoomComplete}
           onSelectX={onSelectTime}
           lapBands
+          climbs={terrain.climbs.length > 0}
         />
       ),
       cadence: (
@@ -295,6 +325,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       onHover,
       onSelectTime,
       onZoomComplete,
+      terrain,
     ],
   );
 
@@ -389,7 +420,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       title: m.ui_stat_elevation(),
       icon: Mountain,
       color: tokens.chartElevation,
-      metricId: 'elevation',
+      metricId: elevationMetricId,
       hasData: hasSeriesValues(rows, 'elevation'),
       rail: (
         <SeriesRail
@@ -400,6 +431,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             header: '',
             value: railGain(stats.elevationGain),
             secondary: `${railLoss(stats.elevationLoss)} m`,
+            note: vamNote(stats.vam, m.ui_rail_vam_avg),
           }}
           readingAt={(x) => {
             const point = byTime.get(x);
@@ -407,6 +439,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
             return {
               value: railInt(point.elevation),
               secondary: `${railGain(stats.elevationGain)} m`,
+              note: vamNote(climbSpanAt(climbSpans, Number(x))?.vam, m.ui_rail_vam),
             };
           }}
         />

@@ -156,7 +156,7 @@ test.describe('mobile bottom sheet', () => {
       page,
     }) => {
       const divider = page.locator('[data-sheet-divider]');
-      await expect(page.getByText('Total Distance')).toBeVisible();
+      await expect(page.getByRole('region', { name: 'Performance Metrics' })).toBeVisible();
       await expect(divider).toHaveCSS('opacity', '0');
 
       await sheetScroller(page).evaluate((el) => el.scrollTo({ top: 6 }));

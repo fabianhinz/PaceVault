@@ -5,27 +5,29 @@ Each engine file contains a short `// Sources: [KEY]` comment pointing into this
 
 ## Validation Summary
 
-| Module                | Formula / Model                                           | Source Key                                                        | Verdict                                                     |
-| --------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------- |
-| `metrics.ts`          | Coggan PMC (CTL / ATL / TSB via EWMA)                     | `[CogganAllen2010]`, `[TP-PMC]`                                   | Matches published model                                     |
-| `stress.ts`           | Banister TRIMP (HR-based training impulse)                | `[Banister1991]`, `[Fellrnr]`                                     | Matches published coefficients                              |
-| `stress.ts`           | Coggan TSS (power-based training stress)                  | `[CogganAllen2010]`                                               | Matches published formula                                   |
-| `normalize.ts`        | Normalized Power (30 s rolling → 4th power)               | `[CogganAllen2010]`                                               | Matches published algorithm                                 |
-| `normalize.ts`        | Grade Adjusted Pace (Minetti energy-cost curve)           | `[Minetti2002]`                                                   | Matches published polynomial; distance-adjusted aggregation |
-| `vdot.ts`             | Daniels/Gilbert VDOT & race predictions                   | `[DanielsGilbert1979]`, `[Daniels2013]`                           | Matches published tables                                    |
-| `zoneDistribution.ts` | Karvonen HRR zones                                        | `[Karvonen1957]`                                                  | Matches published method                                    |
-| `zoneDistribution.ts` | Coggan power zones                                        | `[CogganAllen2010]`                                               | Matches published zones                                     |
-| `coaching.ts`         | Gabbett ACWR (acute:chronic workload ratio)               | `[Gabbett2016]`                                                   | Matches published thresholds                                |
-| `coaching.ts`         | Friel CTL ramp-rate guidelines                            | `[Friel2009]`, `[TP-PMC]`                                         | Matches published ranges                                    |
-| `zones.ts`            | Daniels pace zones (% of VDOT pace)                       | `[Daniels2013]`                                                   | Matches published zone boundaries                           |
-| `trainingEffect.ts`   | Aerobic TE: Banister TRIMP → reference-anchored power-law | `[Banister1991]`, `[Karvonen1957]`, `[Swain1998]`, `[Wenger1986]` | Derived from published reference values                     |
-| `trainingEffect.ts`   | Anaerobic TE: time above VT2 → reference-anchored linear  | `[Billat1999]`, `[Swain1998]`, `[Stagno2007]`, `[ACSM2018]`       | Derived from published reference values                     |
-| `trainingEffect.ts`   | Fitness scaling: CTL-based divisor                        | `[CogganAllen2010]`, `[Friel2009]`                                | Matches published CTL ranges                                |
-| `gps.ts`              | Ramer–Douglas–Peucker simplification                      | `[Ramer1972]`, `[DouglasPeucker1973]`                             | Standard algorithm                                          |
-| `gps.ts`              | Liang–Barsky line clipping                                | `[LiangBarsky1984]`                                               | Standard algorithm                                          |
-| `gps.ts`              | Initial bearing (forward azimuth)                         | `[Veness2019]`                                                    | Standard great-circle formula                               |
-| `gps.ts`              | Haversine great-circle distance                           | `[Veness2019]`                                                    | Standard great-circle formula                               |
-| `windExposure.ts`     | Head/cross/tail classification (±45° sectors)             | `[Veness2019]`                                                    | Bearing per standard formula; ±45° sectors are convention   |
+| Module                | Formula / Model                                           | Source Key                                                        | Verdict                                                   |
+| --------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- |
+| `metrics.ts`          | Coggan PMC (CTL / ATL / TSB via EWMA)                     | `[CogganAllen2010]`, `[TP-PMC]`                                   | Matches published model                                   |
+| `stress.ts`           | Banister TRIMP (HR-based training impulse)                | `[Banister1991]`, `[Fellrnr]`                                     | Matches published coefficients                            |
+| `stress.ts`           | Coggan TSS (power-based training stress)                  | `[CogganAllen2010]`                                               | Matches published formula                                 |
+| `normalize.ts`        | Normalized Power (30 s rolling → 4th power)               | `[CogganAllen2010]`                                               | Matches published algorithm                               |
+| `normalize.ts`        | Grade Adjusted Pace (Strava-shaped cost curve, ±30 %)     | `[Strava2017]`, `[Kay2012]`, `[Minetti2002]`                      | Own quartic fit to published anchors, see below           |
+| `gradient.ts`         | Gradient over a centred 50 m distance window              | —                                                                 | App heuristic, see below                                  |
+| `climbs.ts`           | Climb detection and VAM (metres climbed per hour)         | —                                                                 | App heuristic, see below                                  |
+| `vdot.ts`             | Daniels/Gilbert VDOT & race predictions                   | `[DanielsGilbert1979]`, `[Daniels2013]`                           | Matches published tables                                  |
+| `zoneDistribution.ts` | Karvonen HRR zones                                        | `[Karvonen1957]`                                                  | Matches published method                                  |
+| `zoneDistribution.ts` | Coggan power zones                                        | `[CogganAllen2010]`                                               | Matches published zones                                   |
+| `coaching.ts`         | Gabbett ACWR (acute:chronic workload ratio)               | `[Gabbett2016]`                                                   | Matches published thresholds                              |
+| `coaching.ts`         | Friel CTL ramp-rate guidelines                            | `[Friel2009]`, `[TP-PMC]`                                         | Matches published ranges                                  |
+| `zones.ts`            | Daniels pace zones (% of VDOT pace)                       | `[Daniels2013]`                                                   | Matches published zone boundaries                         |
+| `trainingEffect.ts`   | Aerobic TE: Banister TRIMP → reference-anchored power-law | `[Banister1991]`, `[Karvonen1957]`, `[Swain1998]`, `[Wenger1986]` | Derived from published reference values                   |
+| `trainingEffect.ts`   | Anaerobic TE: time above VT2 → reference-anchored linear  | `[Billat1999]`, `[Swain1998]`, `[Stagno2007]`, `[ACSM2018]`       | Derived from published reference values                   |
+| `trainingEffect.ts`   | Fitness scaling: CTL-based divisor                        | `[CogganAllen2010]`, `[Friel2009]`                                | Matches published CTL ranges                              |
+| `gps.ts`              | Ramer–Douglas–Peucker simplification                      | `[Ramer1972]`, `[DouglasPeucker1973]`                             | Standard algorithm                                        |
+| `gps.ts`              | Liang–Barsky line clipping                                | `[LiangBarsky1984]`                                               | Standard algorithm                                        |
+| `gps.ts`              | Initial bearing (forward azimuth)                         | `[Veness2019]`                                                    | Standard great-circle formula                             |
+| `gps.ts`              | Haversine great-circle distance                           | `[Veness2019]`                                                    | Standard great-circle formula                             |
+| `windExposure.ts`     | Head/cross/tail classification (±45° sectors)             | `[Veness2019]`                                                    | Bearing per standard formula; ±45° sectors are convention |
 
 ## Full Bibliography
 
@@ -36,6 +38,8 @@ Each engine file contains a short `// Sources: [KEY]` comment pointing into this
 | `[Karvonen1957]`       | Karvonen, M.J., Kentala, E. & Mustala, O. (1957). "The effects of training on heart rate." _Ann. Med. Exp. Biol. Fenn._, 35(3), 307–315.                                            |
 | `[Banister1991]`       | Banister, E.W. (1991). "Modeling elite athletic performance." In: Green et al. (eds.) _Physiological Testing of Elite Athletes_. Human Kinetics, pp. 403–424.                       |
 | `[Minetti2002]`        | Minetti, A.E. et al. (2002). "Energy cost of walking and running at extreme uphill and downhill slopes." _J. Appl. Physiol._, 93(3), 1039–1046.                                     |
+| `[Kay2012]`            | Kay, A. (2012). "Pace and critical gradient for hill runners: an analysis of race records." _J. Quant. Anal. Sports_, 8(4). doi:10.1515/1559-0410.1456                              |
+| `[Strava2017]`         | Robb, D. (2017). "An Improved GAP Model." Strava Engineering. <https://medium.com/strava-engineering/an-improved-gap-model-8b07ae8886c3>                                            |
 | `[CogganAllen2010]`    | Coggan, A. & Allen, H. (2010). _Training and Racing with a Power Meter_, 2nd ed. VeloPress.                                                                                         |
 | `[Friel2009]`          | Friel, J. (2009). _The Cyclist's Training Bible_, 4th ed. VeloPress.                                                                                                                |
 | `[Gabbett2016]`        | Gabbett, T.J. (2016). "The training—injury prevention paradox." _Br. J. Sports Med._, 50(5), 273–280.                                                                               |
@@ -57,3 +61,23 @@ App-specific heuristics and feature logic (fingerprinting, downsampling, lap ana
 | Module              | Logic                                        | Notes                               |
 | ------------------- | -------------------------------------------- | ----------------------------------- |
 | `paceCalculator.ts` | Pace / distance / time arithmetic converters | Basic algebra, no published formula |
+
+## Grade Adjusted Pace curve
+
+`gradeAdjustedPaceFactor` is our own least-squares quartic, not a published polynomial:
+
+f(g) = 1 + 2.754·g + 15.69·g² + 3.723·g³ + 7.218·g⁴, with g as a fraction limited to ±0.30.
+
+| Anchor                                              | Source                          | Fit                                         |
+| --------------------------------------------------- | ------------------------------- | ------------------------------------------- |
+| f(0) = 1                                            | definition                      | 1.000 (exact)                               |
+| minimum ≈ 0.88 at −9 %                              | `[Strava2017]`, `[Kay2012]`     | 0.877 at −9.0 %                             |
+| f(−18 %) ≈ 1.0                                      | `[Strava2017]`                  | 0.998                                       |
+| uphill ≈ Minetti cost shifted by ~2 % (+4 to +30 %) | `[Minetti2002]`, `[Strava2017]` | 1.44 at +10 %, 2.22 at +20 %, 3.40 at +30 % |
+
+Minetti's curve alone is too cheap on descents (about half the effort the owner's heart-rate data shows); the Strava-shaped curve fitted best on every terrain class of the owner's trail runs. Session GAP sums `time / Σ(distance · f(gradient))` over neighbouring records with speed > 0 and at most 10 s apart, so stops and timer pauses never count.
+
+## Gradient and climbs
+
+- `gradient.ts`: slope between the elevations at least 25 m behind and ahead of each point (a centred 50 m window, wider where points are sparser). Points without distance are skipped, points at the same distance (stops) merge into one, and the window never bridges missing elevation. Sessions and Studio routes share it.
+- `climbs.ts`: hysteresis on that gradient — a climb starts at ≥ 15 % (running) or ≥ 5 % (cycling) and ends below 10 % or 3 %. A climb needs ≥ 40 m and ≥ 90 s (running) or ≥ 50 m and ≥ 2 min (cycling); climbs less than 120 s (running) or 60 s (cycling) apart merge, never across missing elevation. VAM = net elevation gain / moving time on the climb, in m/h, rounded to 10.

@@ -1,68 +1,68 @@
-import type { FilterOption } from '@/components/layout/DockFilterOptions';
-import { m } from '@/paraglide/messages.js';
-import { getLocale } from '@/paraglide/runtime.js';
+export type FilterTimeUnit = 'day' | 'week' | 'month';
 
-export type TimeRange = '7d' | '30d' | '90d' | 'all' | 'custom';
+type FilterRangeSource = 'year' | 'month' | 'months' | 'zoom';
 
-type FixedDayRange = Exclude<TimeRange, 'all' | 'custom'>;
+export type FilterTime =
+  | { kind: 'relative'; amount: number; unit: FilterTimeUnit }
+  | { kind: 'calendarYear'; yearsAgo: number }
+  | { kind: 'range'; from: string; to: string; source: FilterRangeSource };
 
-export const rangeMap: Record<Exclude<TimeRange, 'custom'>, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-  all: Infinity,
+interface ResolvedRange {
+  from: number;
+  to: number;
+}
+
+const pad = (n: number): string => String(n).padStart(2, '0');
+
+export const toDayKey = (year: number, monthIndex: number, day: number): string => {
+  const d = new Date(year, monthIndex, day);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
-const fixedDayRanges: FixedDayRange[] = ['7d', '30d', '90d'];
+export const parseDayKey = (key: string): Date => {
+  const parts = key.split('-').map(Number);
+  return new Date(parts[0] ?? NaN, (parts[1] ?? NaN) - 1, parts[2] ?? NaN);
+};
 
-const unitFormat = (unit: 'day' | 'month', unitDisplay: 'narrow' | 'long') =>
-  new Intl.NumberFormat(getLocale(), { style: 'unit', unit, unitDisplay });
+const endOfDay = (date: Date): number => {
+  const end = new Date(date);
+  end.setHours(23, 59, 59, 999);
+  return end.getTime();
+};
 
-export const formatTimeRangeLabel = (range: TimeRange): string => {
-  if (range === 'all') {
-    return m.ui_range_all_time();
+const relativeStart = (amount: number, unit: FilterTimeUnit, now: number): number => {
+  const today = new Date(now);
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const day = today.getDate();
+  if (unit === 'month') {
+    return new Date(year, month - amount, day + 1).getTime();
   }
-  if (range === 'custom') {
-    return m.ui_range_custom();
+  let days = amount;
+  if (unit === 'week') {
+    days = amount * 7;
   }
-  return unitFormat('day', 'long').format(rangeMap[range]);
+  return new Date(year, month, day - days + 1).getTime();
 };
 
-export const rangeToCutoff = (
-  range: Exclude<TimeRange, 'custom'>,
-  now: number = Date.now(),
-): number => {
-  const days = rangeMap[range];
-  if (days === Infinity) {
-    return 0;
+const unclampedRange = (time: FilterTime, now: number): ResolvedRange => {
+  if (time.kind === 'relative') {
+    return { from: relativeStart(time.amount, time.unit, now), to: endOfDay(new Date(now)) };
   }
-  return now - days * 24 * 60 * 60 * 1000;
-};
-
-export const customRangeToCutoffs = (range: {
-  from: string;
-  to: string;
-}): { from: number; to: number } => ({
-  from: new Date(range.from).setHours(0, 0, 0, 0),
-  to: new Date(range.to).setHours(23, 59, 59, 999),
-});
-
-export const formatCustomRangeDuration = (range: { from: string; to: string }): string => {
-  const days =
-    Math.round(
-      (new Date(range.to).getTime() - new Date(range.from).getTime()) / (24 * 60 * 60 * 1000),
-    ) + 1;
-  if (days > 99) {
-    const months = Math.round(days / 30);
-    return unitFormat('month', 'narrow').formatRange(months, months);
+  if (time.kind === 'calendarYear') {
+    const year = new Date(now).getFullYear() - time.yearsAgo;
+    return { from: new Date(year, 0, 1).getTime(), to: endOfDay(new Date(year, 11, 31)) };
   }
-  return unitFormat('day', 'narrow').formatRange(days, days);
+  return { from: parseDayKey(time.from).getTime(), to: endOfDay(parseDayKey(time.to)) };
 };
 
-export const getTimeRangeOptions = (): FilterOption<TimeRange>[] => {
-  const dayFormat = unitFormat('day', 'narrow');
-  return [
-    { value: 'all', label: m.ui_range_all_short() },
-    ...fixedDayRanges.map((range) => ({ value: range, label: dayFormat.format(rangeMap[range]) })),
-  ];
+export const resolveFilterRange = (time: FilterTime | null, now: number): ResolvedRange | null => {
+  if (time === null) {
+    return null;
+  }
+  const range = unclampedRange(time, now);
+  return { from: range.from, to: Math.min(range.to, endOfDay(new Date(now))) };
 };
+
+export const isZoomTime = (time: FilterTime | null): boolean =>
+  time !== null && time.kind === 'range' && time.source === 'zoom';

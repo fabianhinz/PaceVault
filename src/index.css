@@ -76,6 +76,7 @@
   --color-chart-power: var(--color-blue-500);
   --color-chart-speed: var(--color-green-500);
   --color-chart-grade: #a78bfa;
+  --color-chart-climb: #c4b5fd;
 
   --color-precip-rain: var(--color-blue-400);
   --color-precip-freezing: #67e8f9;

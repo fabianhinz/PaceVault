@@ -16,7 +16,7 @@ import { m } from '@/paraglide/messages.js';
 
 interface ElevationChartProps<
   K extends string,
-  T extends { elevation: number | null } & Record<K, number>,
+  T extends { elevation: number | null; climbElevation?: number | null } & Record<K, number>,
 > {
   data: T[];
   xAxis: ChartXAxis<K>;
@@ -24,11 +24,12 @@ interface ElevationChartProps<
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onSelectX?: (x: number) => void;
   lapBands?: boolean;
+  climbs?: boolean;
 }
 
 export const ElevationChart = <
   K extends string,
-  T extends { elevation: number | null } & Record<K, number>,
+  T extends { elevation: number | null; climbElevation?: number | null } & Record<K, number>,
 >(
   props: ElevationChartProps<K, T>,
 ) => {
@@ -93,6 +94,20 @@ export const ElevationChart = <
           dot={false}
           name={m.ui_chart_series_elevation()}
         />
+        {props.climbs && (
+          <Area
+            yAxisId="left"
+            type="monotone"
+            dataKey="climbElevation"
+            baseValue="dataMin"
+            stroke={tokens.chartClimb}
+            fill={tokens.chartClimb}
+            fillOpacity={0.35}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            dot={false}
+          />
+        )}
         {zoom.refAreaLeft !== null && zoom.refAreaRight !== null && (
           <ReferenceArea
             yAxisId="left"

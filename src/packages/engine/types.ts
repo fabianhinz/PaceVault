@@ -66,6 +66,7 @@ export interface TrainingSession {
   isPlanned: boolean;
   hasDetailedRecords: boolean;
   fingerprint?: string;
+  derivationVersion: number;
   createdAt: number;
   isNew?: boolean;
   source: SessionSource;
@@ -83,7 +84,6 @@ export interface SessionRecord {
   lng?: number;
   elevation?: number;
   distance?: number;
-  grade?: number;
   timerTime?: number;
 }
 
@@ -101,7 +101,6 @@ export interface SessionLap {
   minAltitude?: number;
   maxAltitude?: number;
   avgAltitude?: number;
-  avgGrade?: number;
   avgHr?: number;
   minHr?: number;
   maxHr?: number;

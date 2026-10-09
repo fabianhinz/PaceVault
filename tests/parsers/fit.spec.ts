@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { parseFitFile } from '@/parsers/fit.ts';
 import {
   deriveDistanceFromRecords,
   deriveAvgFromRecords,
   deriveMaxFromRecords,
-  parseFitFile,
-} from '@/parsers/fit.ts';
+} from '@/packages/engine/sessionDerivation.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 function makeRecord(overrides: Partial<SessionRecord> = {}): SessionRecord {

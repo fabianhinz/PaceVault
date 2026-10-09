@@ -5,22 +5,20 @@ import { useSessionsStore } from '@/store/sessions.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
+import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
 import { resetDBInstance } from '@/lib/db.ts';
 import { enableMapSet } from 'immer';
 
 enableMapSet();
 
 beforeEach(() => {
-  // Only fake Date (not setTimeout/setInterval) to avoid blocking async IndexedDB
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-02-11T00:00:00Z'));
 
   localStorage.clear();
 
-  // Reset IDB singleton so each test gets a fresh connection
   resetDBInstance();
 
-  // Reset Zustand stores (merge, not replace — keeps action methods)
   useUserStore.setState({ profile: null });
   useSessionsStore.setState({ sessions: [] });
   useCoachPlanStore.setState({ cachedPlan: null, cacheKey: null });
@@ -31,6 +29,7 @@ beforeEach(() => {
     backlogPending: false,
   });
   useImportProgressStore.setState({ runningImports: 0, foreground: null });
+  useSessionReprocessingStore.setState({ phase: 'pending', newerVersionInOtherTab: false });
 });
 
 afterEach(() => {

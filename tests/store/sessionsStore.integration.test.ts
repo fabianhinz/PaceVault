@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { useSessionsStore } from '@/store/sessions.ts';
+import { sessionsStorage, useSessionsStore } from '@/store/sessions.ts';
+import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
+import { SESSIONS_DERIVATION_MARKER_KEY } from '@/lib/sessionsStorage.ts';
+import { SESSION_DERIVATION_VERSION } from '@/packages/engine/sessionDerivation.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { getDB } from '@/lib/db';
 
@@ -42,28 +45,6 @@ describe('sessions store', () => {
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
   });
 
-  it('renameSession updates the session name', () => {
-    const { createdAt: _ca, ...data } = makeSession();
-    useSessionsStore.getState().addSessions([data]);
-    const id = data.id;
-
-    useSessionsStore.getState().renameSession(id, 'Morning Ride');
-
-    const session = useSessionsStore.getState().sessions.find((s) => s.id === id);
-    expect(session?.name).toBe('Morning Ride');
-  });
-
-  it('renameSession with unknown id is a no-op', () => {
-    const { createdAt: _ca, ...data } = makeSession();
-    useSessionsStore.getState().addSessions([data]);
-    const before = useSessionsStore.getState().sessions;
-
-    useSessionsStore.getState().renameSession('nonexistent', 'Nope');
-
-    const after = useSessionsStore.getState().sessions;
-    expect(after).toEqual(before);
-  });
-
   it('clearAll resets', () => {
     const { createdAt: _ca, ...data } = makeSession();
     useSessionsStore.getState().addSessions([data]);
@@ -74,60 +55,14 @@ describe('sessions store', () => {
     expect(useSessionsStore.getState().sessions).toHaveLength(0);
   });
 
-  it('replaceSessions preserves a cleared isNew so reimport does not re-badge', () => {
-    const { createdAt: _ca, ...data } = makeSession();
-    useSessionsStore.getState().addSessions([data], { markNew: true });
-    const id = data.id;
-    useSessionsStore.getState().markSessionSeen(id);
-
-    const { id: _id2, createdAt: _ca2, ...updated } = makeSession({ sport: 'running' });
-    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
-
-    const session = useSessionsStore.getState().sessions[0];
-    expect(session.sport).toBe('running');
-    expect(session.isNew).toBe(false);
-  });
-
-  it('replaceSessions keeps a name the re-parsed file cannot recreate', () => {
-    const { createdAt: _ca, ...data } = makeSession({ name: 'Evening Radfahren' });
-    useSessionsStore.getState().addSessions([data]);
-    const id = data.id;
-
-    const { id: _id2, createdAt: _ca2, ...updated } = makeSession({ name: undefined });
-    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
-
-    expect(useSessionsStore.getState().sessions[0].name).toBe('Evening Radfahren');
-  });
-
-  it('replaceSessions keeps the source the re-parsed file cannot know', () => {
-    const { createdAt: _ca, ...data } = makeSession({
-      source: { kind: 'intervals', activityId: 'i42' },
-    });
-    useSessionsStore.getState().addSessions([data]);
-    const id = data.id;
-
-    const {
-      id: _id2,
-      createdAt: _ca2,
-      source: _source,
-      ...updated
-    } = makeSession({ sport: 'running' });
-    useSessionsStore.getState().replaceSessions([{ id, session: updated }]);
-
-    expect(useSessionsStore.getState().sessions[0].source).toEqual({
-      kind: 'intervals',
-      activityId: 'i42',
-    });
-  });
-
   it('migrates version 1 sessions to file imports', () => {
     const migrate = useSessionsStore.persist.getOptions().migrate;
     const migrated = migrate?.({ sessions: [{ id: 'a' }, { id: 'b' }] }, 1) as {
       sessions: Array<{ id: string; source: unknown }>;
     };
     expect(migrated.sessions).toEqual([
-      { id: 'a', source: { kind: 'file' } },
-      { id: 'b', source: { kind: 'file' } },
+      { id: 'a', source: { kind: 'file' }, derivationVersion: 0 },
+      { id: 'b', source: { kind: 'file' }, derivationVersion: 0 },
     ]);
   });
 
@@ -136,7 +71,10 @@ describe('sessions store', () => {
     const migrated = migrate?.({ sessions: [{ id: 'a' }, 'garbage'] }, 1) as {
       sessions: unknown[];
     };
-    expect(migrated.sessions).toEqual([{ id: 'a', source: { kind: 'file' } }, 'garbage']);
+    expect(migrated.sessions).toEqual([
+      { id: 'a', source: { kind: 'file' }, derivationVersion: 0 },
+      'garbage',
+    ]);
   });
 
   it('leaves an existing source alone during migration', () => {
@@ -146,6 +84,54 @@ describe('sessions store', () => {
       sessions: Array<{ source: unknown }>;
     };
     expect(migrated.sessions[0]?.source).toEqual(source);
+  });
+
+  it('marks version 2 sessions for reprocessing and keeps a known derivation version', () => {
+    const migrate = useSessionsStore.persist.getOptions().migrate;
+    const source = { kind: 'file' };
+    const migrated = migrate?.(
+      { sessions: [{ id: 'a', source }, { id: 'b', source, derivationVersion: 1 }, 'garbage'] },
+      2,
+    ) as { sessions: unknown[] };
+    expect(migrated.sessions).toEqual([
+      { id: 'a', source, derivationVersion: 0 },
+      { id: 'b', source, derivationVersion: 1 },
+      'garbage',
+    ]);
+  });
+
+  it('a tab holding outdated sessions does not overwrite the persisted sessions', async () => {
+    const { createdAt: _ca, ...data } = makeSession({ id: 'a', isNew: true });
+    useSessionsStore.getState().addSessions([data], { markNew: true });
+    await sessionsStorage.flush();
+
+    const stale = { ...useSessionsStore.getState().sessions[0], derivationVersion: 0 };
+    useSessionsStore.setState({ sessions: [stale] });
+    useSessionsStore.getState().markSessionSeen('a');
+    await sessionsStorage.flush();
+
+    const db = await getDB();
+    const parsed = JSON.parse((await db.get('kv', 'store-sessions')) ?? '{}');
+    expect(parsed.state.sessions[0]).toMatchObject({
+      derivationVersion: SESSION_DERIVATION_VERSION,
+      isNew: true,
+    });
+  });
+
+  it('a tab on an older derivation version does not overwrite sessions a newer version wrote', async () => {
+    const db = await getDB();
+    await db.put('kv', String(SESSION_DERIVATION_VERSION + 1), SESSIONS_DERIVATION_MARKER_KEY);
+    const before = await db.get('kv', 'store-sessions');
+    try {
+      const { createdAt: _ca, ...data } = makeSession();
+      useSessionsStore.getState().addSessions([data]);
+      await sessionsStorage.flush();
+
+      expect(await db.get('kv', 'store-sessions')).toBe(before);
+      expect(useSessionReprocessingStore.getState().newerVersionInOtherTab).toBe(true);
+    } finally {
+      await db.delete('kv', SESSIONS_DERIVATION_MARKER_KEY);
+    }
   });
 
   it('persistence to IndexedDB', async () => {

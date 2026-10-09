@@ -148,16 +148,14 @@ const buildCadenceArray = (count: number, base: number, min: number, max: number
   return cadences;
 };
 
-// Grade: derived from elevation and speed
 const buildGradeArray = (elevations: number[], speeds: number[]): number[] =>
   elevations.map((elev, i) => {
     if (i === 0) return 0;
     const elevDiff = elev - (elevations[i - 1] ?? elev);
-    const distance = Math.max(speeds[i] ?? 0.5, 0.5); // meters traveled in 1s
+    const distance = Math.max(speeds[i] ?? 0.5, 0.5);
     return Math.round((elevDiff / distance) * 100 * 10) / 10;
   });
 
-// Power random walk for cycling, correlated with speed/grade
 const buildPowerArray = (
   count: number,
   basePower: number,
@@ -175,13 +173,10 @@ const buildPowerArray = (
     } else {
       currentPower = randomWalk(currentPower, 0.7, 5, 0.2, 30);
 
-      // Grade influence: uphill = more power, downhill = slightly less
       currentPower += grades[i] ?? 0;
 
-      // Speed influence
       currentPower += ((speeds[i] ?? baseSpeed) - baseSpeed) * 2;
 
-      // Mean reversion
       currentPower += (basePower - currentPower) * 0.02;
     }
     powers.push(Math.round(clamp(currentPower, basePower * 0.1, basePower * 2)));
@@ -190,14 +185,12 @@ const buildPowerArray = (
   return powers;
 };
 
-// Assemble per-index arrays into SessionRecord objects
 const assembleRecords = (
   speeds: number[],
   hrs: number[],
   channels?: {
     elevations?: number[];
     cadences?: number[];
-    grades?: number[];
     powers?: number[];
   },
 ): SessionRecord[] => {
@@ -216,7 +209,6 @@ const assembleRecords = (
     };
     if (channels?.elevations) record.elevation = channels.elevations[i];
     if (channels?.cadences) record.cadence = channels.cadences[i];
-    if (channels?.grades) record.grade = channels.grades[i];
     if (channels?.powers) record.power = channels.powers[i];
     records.push(record);
   }
@@ -239,7 +231,7 @@ export const makeCyclingRecords = (
   const grades = buildGradeArray(elevations, speeds);
   const powers = buildPowerArray(count, basePower, speeds, grades, baseSpeed);
 
-  return assembleRecords(speeds, hrs, { elevations, cadences, grades, powers });
+  return assembleRecords(speeds, hrs, { elevations, cadences, powers });
 };
 
 export const makeRunningRecords = (
@@ -253,9 +245,8 @@ export const makeRunningRecords = (
   const hrs = buildHrArray(count, baseHr);
   const speeds = buildSpeedArray(count, baseSpeed, elevations);
   const cadences = buildCadenceArray(count, 78, 74, 82);
-  const grades = buildGradeArray(elevations, speeds);
 
-  return assembleRecords(speeds, hrs, { elevations, cadences, grades });
+  return assembleRecords(speeds, hrs, { elevations, cadences });
 };
 
 export const makeLaps = (count: number): SessionLap[] => {

@@ -17,20 +17,24 @@ const minOf = (current: number | undefined, value: number): number => {
   return current;
 };
 
-export const computeRecordExtremes = (records: SessionRecord[]): RecordExtremes => {
+export const computeRecordExtremes = (
+  records: SessionRecord[],
+  gradients: Array<number | undefined>,
+): RecordExtremes => {
   let maxSpeed: number | undefined = undefined;
   let maxCadence: number | undefined = undefined;
   let maxGrade: number | undefined = undefined;
   let minGrade: number | undefined = undefined;
 
-  for (const r of records) {
+  records.forEach((r, i) => {
     if (r.speed !== undefined && r.speed > 0) maxSpeed = maxOf(maxSpeed, r.speed);
     if (r.cadence !== undefined) maxCadence = maxOf(maxCadence, r.cadence);
-    if (r.grade !== undefined) {
-      maxGrade = maxOf(maxGrade, r.grade);
-      minGrade = minOf(minGrade, r.grade);
+    const gradient = gradients[i];
+    if (gradient !== undefined) {
+      maxGrade = maxOf(maxGrade, gradient * 100);
+      minGrade = minOf(minGrade, gradient * 100);
     }
-  }
+  });
 
   let bestPaceSecPerKm: number | undefined = undefined;
   if (maxSpeed !== undefined) {

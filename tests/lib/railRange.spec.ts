@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { activeRailRange, computeRangeStats } from '@/lib/railRange.ts';
+import { buildSessionTerrain } from '@/lib/sessionTerrain.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 const ride = (hrs: number[], elevations: number[]): SessionRecord[] =>
@@ -31,7 +32,11 @@ describe('activeRailRange', () => {
 describe('computeRangeStats', () => {
   it('rail values of a selected lap only cover that lap', () => {
     const records = ride([100, 110, 150, 170, 120], [10, 12, 20, 15, 30]);
-    const stats = computeRangeStats(records, { from: 2, to: 3 });
+    const stats = computeRangeStats(
+      records,
+      { from: 2, to: 3 },
+      buildSessionTerrain('cycling', records),
+    );
     expect(stats.avgHr).toBe(160);
     expect(stats.maxHr).toBe(170);
     expect(stats.elevationGain).toBe(0);
@@ -42,7 +47,11 @@ describe('computeRangeStats', () => {
 
   it('counts a recorded 0 cadence as a value', () => {
     const records = ride([100, 110, 120], [10, 10, 10]);
-    const stats = computeRangeStats(records, { from: 0, to: 2 });
+    const stats = computeRangeStats(
+      records,
+      { from: 0, to: 2 },
+      buildSessionTerrain('cycling', records),
+    );
     expect(stats.avgCadence).toBe(0);
     expect(stats.maxCadence).toBe(0);
   });

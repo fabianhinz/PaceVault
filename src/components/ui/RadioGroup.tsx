@@ -33,7 +33,7 @@ export const RadioGroupItem = (props: RadioGroupItemProps) => (
     disabled={props.disabled}
     aria-label={props['aria-label']}
     className={cn(
-      'group flex w-full cursor-pointer items-center gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-sunken',
+      'group flex w-full cursor-pointer items-center gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent',
       'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
       props.className,
     )}

@@ -1,6 +1,6 @@
 # GAP and gradient: one derived gradient, Strava-shaped curve
 
-Research: `scratchpad/gap/` (window analysis on 10 runs), `scratchpad/gap-model/` (model comparison against the owner's HR-equivalent pace). Mockup for vertical speed: `mockups/vertical-speed/index.html` (in progress).
+Research: `scratchpad/gap/` (window analysis on 10 runs), `scratchpad/gap-model/` (model comparison against the owner's HR-equivalent pace). Mockup for VAM: `mockups/gradient-gap-vam/index.html` (in progress).
 
 ## Context
 
@@ -15,7 +15,7 @@ Research: `scratchpad/gap/` (window analysis on 10 runs), `scratchpad/gap-model/
 - **One gradient for all sources**: always derived from elevation + distance over a centred **50 m distance window**; device `grade` is ignored. Shared engine helper used by sessions (GAP chart, session GAP, rails, Grade chart, min/max grade in `src/lib/recordExtremes.ts`, `src/lib/railRange.ts`) and the Studio (`routeProfile.ts`, `routeGeometry.ts`). Window never bridges missing elevation; records without distance are skipped; stops (same distance) merge.
 - **Curve**: Strava-shaped, our own fit to public anchors (minimum ≈ 0.88 at −9 %, 1.0 at −18 %, uphill ≈ Minetti shifted ~2 %; Kay 2012), cited in `src/packages/engine/SOURCES.md`. Gradient limited to **±30 %**.
 - **Pairing**: only neighbouring records with speed > 0 and dt ≤ 10 s (fixes stops/pauses counted as running time).
-- **Steep climbs**: keep GAP and add **VAM** (metres climbed per hour, m/h) for all sports, mockup `mockups/vertical-speed/index.html` variant **4** (elevation profile, single colour):
+- **Steep climbs**: keep GAP and add **VAM** (metres climbed per hour, m/h) for all sports, mockup `mockups/gradient-gap-vam/index.html` variant **4** (elevation profile, single colour):
   - The elevation profile highlights every climb in **one** colour of the elevation violet family (no colour ramp: with few climbs a relative ramp exaggerates tiny differences). VAM appears as numbers only.
   - The elevation rail shows "↗ 840 m/h" on hover over a climb and the average VAM of the climbs at rest (session, lap or zoom range; zoom wins over lap). Nowhere else (not in the summary card or header).
   - Climb detection with **hysteresis** on the shared 50 m gradient: a climb starts at the sport's threshold (running ≥ 15 %, cycling ≥ 5 %) and continues until the gradient drops clearly below it (exit: running < 10 %, cycling < 3 %); flatter bits inside a climb count.

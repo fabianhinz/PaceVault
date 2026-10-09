@@ -4,6 +4,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { Sport, SessionRecord, SessionLap, TrainingSession } from '@/packages/engine/types.ts';
 import { buildSessionGPS } from '@/packages/engine/gps.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
+import { SESSION_DERIVATION_VERSION } from '@/packages/engine/sessionDerivation.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
 import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
@@ -241,7 +242,6 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
       thresholdPace: PERSONA.thresholdPace,
     },
     showMetricHelp: true,
-    useAutoSessionNames: false,
   });
 
   const now = Date.now();
@@ -268,6 +268,7 @@ export const generateDevData = async (queryClient: QueryClient): Promise<number>
       stressMethod: 'duration',
       isPlanned: false,
       hasDetailedRecords: true,
+      derivationVersion: SESSION_DERIVATION_VERSION,
       source: { kind: 'demo' },
     });
   }

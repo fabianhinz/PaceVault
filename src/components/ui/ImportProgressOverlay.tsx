@@ -23,6 +23,11 @@ const phaseLabel = (phase: ImportPhase): string => {
   return m.ui_import_phase_importing();
 };
 
+const foregroundLabel = (foreground: ForegroundImport): string => {
+  if (foreground.task === 'reprocess') return m.ui_reprocess_updating();
+  return phaseLabel(foreground.phase);
+};
+
 const importedTitle = (summary: Extract<ImportSummary, { kind: 'imported' }>): string => {
   if (summary.imported > 0) return m.ui_import_summary_imported_title();
   if (summary.failed > 0) return m.ui_import_summary_nothing_imported_title();
@@ -145,7 +150,7 @@ const OverlayContent = (props: { foreground: ForegroundImport }) => {
         </div>
       ) : (
         <div className="grid place-items-center gap-6">
-          <Typography variant="subtitle1">{phaseLabel(props.foreground.phase)}</Typography>
+          <Typography variant="subtitle1">{foregroundLabel(props.foreground)}</Typography>
           <ProgressRing foreground={props.foreground} />
         </div>
       )}

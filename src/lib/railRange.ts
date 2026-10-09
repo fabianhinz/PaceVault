@@ -1,7 +1,9 @@
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { calculateGAP, calculateNormalizedPower } from '@/packages/engine/normalize.ts';
+import { climbingRate } from '@/packages/engine/climbs.ts';
 import { movingSeconds } from './movingTime.ts';
 import { summarizeValues } from './seriesSummary.ts';
+import type { SessionTerrain } from './sessionTerrain.ts';
 import type { LapBand } from './lapRanges.ts';
 
 interface RailRange {
@@ -25,6 +27,7 @@ export interface RangeStats {
   avgPaceSecPerKm: number | undefined;
   bestPaceSecPerKm: number | undefined;
   gapSecPerKm: number | undefined;
+  vam: number | undefined;
 }
 
 export const activeRailRange = (
@@ -70,23 +73,44 @@ const paceOf = (speed: number | undefined): number | undefined => {
   return 1000 / speed;
 };
 
-export const computeRangeStats = (records: SessionRecord[], range: RailRange): RangeStats => {
+export const computeRangeStats = (
+  records: SessionRecord[],
+  range: RailRange,
+  terrain: SessionTerrain,
+): RangeStats => {
   const allMoving = movingSeconds(records);
   const inRange: SessionRecord[] = [];
+  const gradients: Array<number | undefined> = [];
   const moving: number[] = [];
-  records.forEach((record, i) => {
+  let firstIndex: number | undefined = undefined;
+  let lastIndex: number | undefined = undefined;
+  for (let i = 0; i < records.length; i++) {
+    const record = records[i];
     const seconds = allMoving[i] ?? 0;
     const minutes = seconds / 60;
-    if (minutes < range.from || minutes > range.to) return;
+    if (!record || minutes < range.from || minutes > range.to) continue;
+    firstIndex ??= i;
+    lastIndex = i;
     inRange.push(record);
+    gradients.push(terrain.gradients[i]);
     moving.push(seconds);
-  });
+  }
+
+  let vam: number | undefined = undefined;
+  if (firstIndex !== undefined && lastIndex !== undefined) {
+    vam = climbingRate(records, terrain.climbs, firstIndex, lastIndex);
+  }
 
   const hr = summarizeValues(inRange.map((r) => r.hr));
   const power = summarizeValues(inRange.map((r) => r.power));
   const speed = summarizeValues(inRange.map((r) => r.speed));
   const cadence = summarizeValues(inRange.map((r) => r.cadence));
-  const grade = summarizeValues(inRange.map((r) => r.grade));
+  const grade = summarizeValues(
+    gradients.map((gradient) => {
+      if (gradient === undefined) return undefined;
+      return gradient * 100;
+    }),
+  );
   const elevation = elevationChange(inRange);
   const avgSpeed = averageSpeed(inRange, moving);
 
@@ -105,6 +129,7 @@ export const computeRangeStats = (records: SessionRecord[], range: RailRange): R
     minGrade: grade.min,
     avgPaceSecPerKm: paceOf(avgSpeed),
     bestPaceSecPerKm: paceOf(speed.max),
-    gapSecPerKm: calculateGAP(inRange),
+    gapSecPerKm: calculateGAP(inRange, gradients),
+    vam,
   };
 };

@@ -92,7 +92,6 @@ export const ThresholdsSection = (props: { variant?: 'standalone' | 'embedded' }
         gender: nextGender,
         thresholds: newThresholds,
         showMetricHelp: true,
-        useAutoSessionNames: false,
       }),
     );
   };

@@ -10,7 +10,6 @@ const point = (dist: number, ele?: number): RoutePoint => ({
   dist,
 });
 
-/** Flat route with a single steep ramp of `rampGrade`% between rampFrom/rampTo (10 m spacing). */
 const routeWithRamp = (
   totalM: number,
   rampFrom: number,
@@ -53,7 +52,6 @@ describe('buildRouteProfile', () => {
   });
 
   it('computes grade over a centered window on a constant climb', () => {
-    // 10% climb throughout — every point inside the route reads 10%.
     const points = Array.from({ length: 51 }, (_, i) => point(i * 10, 100 + i));
     const profile = buildRouteProfile(points);
     const middle = profile.grade[25];
@@ -67,9 +65,8 @@ describe('buildRouteProfile', () => {
   });
 
   it('preserves the full steepness of a sustained ramp', () => {
-    // 200 m at 14% inside a flat 2 km route.
     const profile = buildRouteProfile(routeWithRamp(2000, 1000, 1200, 14));
-    const maxGrade = Math.max(...profile.grade.map((p) => p.grade));
+    const maxGrade = Math.max(...profile.grade.map((p) => p.grade ?? -Infinity));
     expect(maxGrade).toBeCloseTo(14, 0);
   });
 
@@ -81,14 +78,12 @@ describe('buildRouteProfile', () => {
   });
 
   it('smooths single-point elevation noise instead of spiking', () => {
-    // One bogus +5 m blip on an otherwise flat route: pointwise grade would
-    // read 50%; the 30 m window keeps it in the low tens.
     const points = Array.from({ length: 101 }, (_, i) => {
       if (i === 50) return point(i * 10, 105);
       return point(i * 10, 100);
     });
     const profile = buildRouteProfile(points);
-    const maxGrade = Math.max(...profile.grade.map((p) => Math.abs(p.grade)));
+    const maxGrade = Math.max(...profile.grade.map((p) => Math.abs(p.grade ?? 0)));
     expect(maxGrade).toBeLessThanOrEqual(20);
   });
 });

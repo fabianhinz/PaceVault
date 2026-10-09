@@ -8,35 +8,27 @@ import {
   Tooltip as RechartsTooltip,
   ReferenceArea,
 } from 'recharts';
-import { useFilteredMetrics } from './hooks/useFilteredMetrics.ts';
 import { ChartRow } from '@/components/ui/ChartsCard.tsx';
-import { ListItem } from '@/components/ui/List.tsx';
-import { Switch } from '@/components/ui/Switch.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
 import { chartTheme } from '@/lib/chartTheme.ts';
-import { hoverOnlyTooltip, indexByX } from '@/lib/chartHover.ts';
-import { summarizeValues } from '@/lib/seriesSummary.ts';
+import { hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { railInt } from '@/lib/railFormat.ts';
-import { useChartHoverStore } from '@/store/chartHover.ts';
-import { MultiSeriesRail, SeriesRail } from '@/components/charts/ChartRail.tsx';
+import { useChartHoverX } from '@/store/chartHover.ts';
+import { MultiSeriesRail } from '@/components/charts/ChartRail.tsx';
 import { formatDashboardDate } from './dashboardDate.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
-import { rangeMap } from '@/lib/timeRange.ts';
-import type { TimeRange } from '@/lib/timeRange.ts';
-import { useDashboardChartZoom } from './hooks/useDashboardChartZoom.ts';
+import { useDashboardAxis } from './hooks/useDashboardAxis.ts';
+import { DASHBOARD_HOVER_GROUP, useDashboardChartEvents } from './hooks/useDashboardChartEvents.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-import { getMondayOfWeek, getMonthKey } from '@/lib/weekKey.ts';
+import { loadBucketDayRange } from '@/lib/weekKey.ts';
+import { buildLoadAxis, loadBucketKey, type LoadBucket, type LoadGroupBy } from '@/lib/loadAxis.ts';
 import { CalendarDays, CalendarRange, Calendar } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { TabsTrigger } from '@/components/ui/Tabs.tsx';
 import { m } from '@/paraglide/messages.js';
 import { SPORTS, type Sport } from '@/packages/engine/types.ts';
-
-type GroupBy = 'day' | 'week' | 'month';
-
-const HOVER_GROUP = 'dashboard-load';
 
 const sportColors: Record<Sport, string> = {
   running: tokens.sportRunning,
@@ -48,7 +40,7 @@ const sportNames: Record<Sport, () => string> = {
   cycling: m.ui_sport_cycling,
 };
 
-const groupByTabs: { key: GroupBy; label: () => string; icon: LucideIcon }[] = [
+const groupByTabs: { key: LoadGroupBy; label: () => string; icon: LucideIcon }[] = [
   { key: 'day', label: m.ui_group_day, icon: CalendarDays },
   { key: 'week', label: m.ui_group_week, icon: CalendarRange },
   { key: 'month', label: m.ui_group_month, icon: Calendar },
@@ -64,49 +56,60 @@ const dayLabels = [
   m.ui_day_sun,
 ];
 
+interface BandShapeProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
+
+const LoadBucketBand = (props: {
+  dates: string[];
+  buckets: Map<string, LoadBucket>;
+  groupBy: LoadGroupBy;
+}) => {
+  const x = useChartHoverX(DASHBOARD_HOVER_GROUP);
+  if (x === null) return null;
+  const bucket = props.buckets.get(loadBucketKey(String(x), props.groupBy));
+  if (!bucket) return null;
+  const first = props.dates.indexOf(bucket.from);
+  const last = props.dates.indexOf(bucket.to);
+  if (first < 0 || last < 0) return null;
+  const start = Math.max(first - 1, 0);
+  const end = Math.min(last + 1, props.dates.length - 1);
+  const steps = end - start;
+  if (steps === 0) return null;
+  return (
+    <ReferenceArea
+      x1={props.dates[start]}
+      x2={props.dates[end]}
+      ifOverflow="visible"
+      shape={(shape: BandShapeProps) => {
+        if (shape.x === undefined || shape.y === undefined) return <g />;
+        if (shape.width === undefined || shape.height === undefined) return <g />;
+        const half = shape.width / steps / 2;
+        const left = start < first ? half : 0;
+        const right = end > last ? half : 0;
+        return (
+          <rect
+            x={shape.x + left}
+            y={shape.y}
+            width={Math.max(0, shape.width - left - right)}
+            height={shape.height}
+            fill="#fff"
+            fillOpacity={0.1}
+          />
+        );
+      }}
+    />
+  );
+};
+
 export const LoadChart = () => {
-  const metrics = useFilteredMetrics();
-  const dashboardZoom = useDashboardChartZoom();
-  const sportFilter = useFiltersStore((s) => s.sportFilter);
-
-  const showSportColors = useFiltersStore((s) => s.loadChartShowSportColors);
-  const isSportColorDisabled = sportFilter !== 'all';
-
-  useEffect(() => {
-    if (isSportColorDisabled) {
-      useFiltersStore.getState().setLoadChartShowSportColors(false);
-    }
-  }, [isSportColorDisabled]);
-
-  const chartData = useMemo(() => {
-    let slice: typeof metrics.history;
-    if (dashboardZoom.range === 'custom' && dashboardZoom.customRange) {
-      const range = dashboardZoom.customRange;
-      slice = metrics.history.filter((d) => d.date >= range.from && d.date <= range.to);
-    } else {
-      const days = rangeMap[dashboardZoom.range as Exclude<TimeRange, 'custom'>];
-      slice = days === Infinity ? metrics.history : metrics.history.slice(-days);
-    }
-
-    return slice.map((d) => {
-      const sportEntry = showSportColors ? (metrics.sportTss.get(d.date) ?? {}) : {};
-      return {
-        date: d.date,
-        tss: d.tss,
-        running: sportEntry.running ?? 0,
-        cycling: sportEntry.cycling ?? 0,
-      };
-    });
-  }, [
-    metrics.history,
-    metrics.sportTss,
-    dashboardZoom.range,
-    dashboardZoom.customRange,
-    showSportColors,
-  ]);
-
+  const axis = useDashboardAxis();
+  const sportFilter = useFiltersStore((s) => s.activeFilter?.sport ?? null);
   const groupBy = useFiltersStore((s) => s.loadChartGroupBy);
-  const isGroupingDisabled = dashboardZoom.range === '7d';
+  const isGroupingDisabled = axis.days !== null && axis.days.count <= 7;
 
   useEffect(() => {
     if (isGroupingDisabled) {
@@ -114,99 +117,43 @@ export const LoadChart = () => {
     }
   }, [isGroupingDisabled]);
 
-  const groupedData = useMemo(() => {
-    if (groupBy === 'day') return chartData;
+  const sports = useMemo(() => {
+    if (sportFilter === null) return [...SPORTS];
+    return [sportFilter];
+  }, [sportFilter]);
 
-    const buckets = new Map<string, { tss: number; running: number; cycling: number }>();
-    for (const d of chartData) {
-      const key = groupBy === 'week' ? getMondayOfWeek(d.date) : getMonthKey(d.date);
-      const prev = buckets.get(key) ?? { tss: 0, running: 0, cycling: 0 };
-      prev.tss += d.tss;
-      prev.running += d.running;
-      prev.cycling += d.cycling;
-      buckets.set(key, prev);
-    }
-
-    return Array.from(buckets, ([date, { tss, running, cycling }]) => ({
-      date,
-      tss: parseFloat(tss.toFixed(1)),
-      running: parseFloat(running.toFixed(1)),
-      cycling: parseFloat(cycling.toFixed(1)),
-    }));
-  }, [chartData, groupBy]);
-
-  const groupedByDate = useMemo(() => indexByX(groupedData, 'date'), [groupedData]);
-  const tssSummary = useMemo(() => summarizeValues(chartData.map((d) => d.tss)), [chartData]);
-  const sportTotals = useMemo(() => {
-    const totals: Record<Sport, number> = { running: 0, cycling: 0 };
-    for (const d of chartData) {
-      totals.running += d.running;
-      totals.cycling += d.cycling;
-    }
-    return totals;
-  }, [chartData]);
-
-  let avgPerBucket: number | undefined = undefined;
-  if (groupedData.length > 0) {
-    avgPerBucket = tssSummary.total / groupedData.length;
-  }
-
-  const onHover = useCallback((date: string | null) => {
-    if (date == null) {
-      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
-      return;
-    }
-    useChartHoverStore.getState().setChartHover(HOVER_GROUP, date);
-  }, []);
-
-  useEffect(() => () => useChartHoverStore.getState().clearChartHover(HOVER_GROUP), []);
-
-  const rail = showSportColors ? (
-    <MultiSeriesRail
-      group={HOVER_GROUP}
-      restHeader={m.ui_rail_total()}
-      formatX={formatDashboardDate}
-      isKnownX={(x) => groupedByDate.has(x)}
-      rows={SPORTS.map((sport) => ({
-        key: sport,
-        name: sportNames[sport](),
-        color: sportColors[sport],
-        rest: { value: railInt(sportTotals[sport]) },
-        readingAt: (x) => {
-          const point = groupedByDate.get(x);
-          if (!point) return undefined;
-          return { value: railInt(point[sport]) };
-        },
-      }))}
-    />
-  ) : (
-    <SeriesRail
-      group={HOVER_GROUP}
-      formatX={formatDashboardDate}
-      rest={{
-        header: m.ui_rail_total(),
-        value: railInt(tssSummary.total),
-        secondary: `${m.ui_rail_avg()} ${railInt(avgPerBucket)}`,
-      }}
-      readingAt={(x) => {
-        const point = groupedByDate.get(x);
-        if (!point) return undefined;
-        return {
-          value: railInt(point.tss),
-          secondary: `${m.ui_rail_avg()} ${railInt(avgPerBucket)}`,
-        };
-      }}
-    />
+  const load = useMemo(
+    () => buildLoadAxis(axis.history, axis.sportTss, groupBy),
+    [axis.history, axis.sportTss, groupBy],
   );
 
-  const zoom = useChartZoom({
-    data: groupedData,
-    xKey: 'date',
-    onZoomComplete: dashboardZoom.onZoomComplete,
-  });
+  const sportTotals = useMemo(() => {
+    const totals: Record<Sport, number> = { running: 0, cycling: 0 };
+    for (const bucket of load.buckets.values()) {
+      for (const sport of SPORTS) {
+        totals[sport] += bucket[sport];
+      }
+    }
+    return totals;
+  }, [load.buckets]);
+
+  const bucketAt = (x: string | number) => load.buckets.get(loadBucketKey(String(x), groupBy));
+
+  const zoomToBuckets = axis.onZoomComplete;
+  const onZoomComplete = useCallback(
+    (from: string | number, to: string | number) => {
+      const first = loadBucketDayRange(loadBucketKey(String(from), groupBy), groupBy);
+      const last = loadBucketDayRange(loadBucketKey(String(to), groupBy), groupBy);
+      zoomToBuckets(first.from, last.to);
+    },
+    [groupBy, zoomToBuckets],
+  );
+
+  const zoom = useChartZoom({ data: load.rows, xKey: 'date', onZoomComplete });
+  const events = useDashboardChartEvents(zoom);
 
   const tickFormatter = (v: string) => {
-    if (groupBy !== 'month' && dashboardZoom.range === '7d') {
+    if (isGroupingDisabled) {
       const d = new Date(v + 'T00:00:00');
       const label = dayLabels[(d.getDay() + 6) % 7];
       if (label) return label();
@@ -214,29 +161,40 @@ export const LoadChart = () => {
     return formatDashboardDate(v);
   };
 
+  const hasData = load.rows.length > 0;
+
   return (
     <ChartRow
       title={METRIC_EXPLANATIONS.tss.friendlyName}
       metricId="tss"
       secondary={METRIC_EXPLANATIONS.tss.oneLiner}
       height="h-64"
-      rail={groupedData.length > 0 ? rail : undefined}
-      footer={
-        <ListItem primary={m.ui_sport_color_title()} secondary={m.ui_sport_color_desc()}>
-          <Switch
-            checked={showSportColors}
-            onCheckedChange={(checked) =>
-              useFiltersStore.getState().setLoadChartShowSportColors(checked)
-            }
-            disabled={isSportColorDisabled}
+      rail={
+        hasData ? (
+          <MultiSeriesRail
+            group={DASHBOARD_HOVER_GROUP}
+            restHeader={m.ui_rail_total()}
+            formatX={(x) => formatDashboardDate(bucketAt(x)?.key ?? String(x))}
+            isKnownX={(x) => bucketAt(x) !== undefined}
+            rows={sports.map((sport) => ({
+              key: sport,
+              name: sportNames[sport](),
+              color: sportColors[sport],
+              rest: { value: railInt(sportTotals[sport]) },
+              readingAt: (x) => {
+                const bucket = bucketAt(x);
+                if (!bucket) return undefined;
+                return { value: railInt(bucket[sport]) };
+              },
+            }))}
           />
-        </ListItem>
+        ) : undefined
       }
     >
-      {groupedData.length > 0 ? (
+      {hasData ? (
         <TabsPrimitive.Root
           value={groupBy}
-          onValueChange={(v) => useFiltersStore.getState().setLoadChartGroupBy(v as GroupBy)}
+          onValueChange={(v) => useFiltersStore.getState().setLoadChartGroupBy(v as LoadGroupBy)}
           className="h-full flex flex-col"
         >
           <TabsPrimitive.List className="inline-flex gap-1 mb-1">
@@ -257,20 +215,7 @@ export const LoadChart = () => {
           </TabsPrimitive.List>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={zoom.zoomedData}
-                onMouseDown={zoom.onMouseDown}
-                onMouseMove={(e) => {
-                  zoom.onMouseMove(e);
-                  if (e.activeLabel != null) onHover(String(e.activeLabel));
-                }}
-                onMouseUp={zoom.onMouseUp}
-                onMouseLeave={() => onHover(null)}
-                onTouchMove={(e) => {
-                  if (e.activeLabel != null) onHover(String(e.activeLabel));
-                }}
-                onTouchEnd={() => onHover(null)}
-              >
+              <ComposedChart data={zoom.zoomedData} {...events}>
                 <XAxis
                   dataKey="date"
                   ticks={[
@@ -291,31 +236,24 @@ export const LoadChart = () => {
                   tickFormatter={(v: number) => String(Math.round(v))}
                 />
                 <RechartsTooltip {...hoverOnlyTooltip} />
-                {showSportColors ? (
-                  SPORTS.map((sport) => (
-                    <Area
-                      key={sport}
-                      type="step"
-                      dataKey={sport}
-                      stackId="sport"
-                      fill={sportColors[sport]}
-                      fillOpacity={1}
-                      stroke="none"
-                      dot={false}
-                      name={sportNames[sport]()}
-                    />
-                  ))
-                ) : (
+                <LoadBucketBand
+                  dates={zoom.zoomedData.map((row) => row.date)}
+                  buckets={load.buckets}
+                  groupBy={groupBy}
+                />
+                {sports.map((sport) => (
                   <Area
+                    key={sport}
                     type="step"
-                    dataKey="tss"
-                    fill={tokens.chartLoad}
+                    dataKey={sport}
+                    stackId="sport"
+                    fill={sportColors[sport]}
                     fillOpacity={1}
                     stroke="none"
                     dot={false}
-                    name={m.ui_chart_series_tss()}
+                    name={sportNames[sport]()}
                   />
-                )}
+                ))}
                 {zoom.refAreaLeft && zoom.refAreaRight && (
                   <ReferenceArea
                     x1={zoom.refAreaLeft}

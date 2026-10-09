@@ -6,10 +6,8 @@ import {
   Settings,
   EllipsisVertical,
   X,
-  Activity,
-  Clock,
   FlaskConical,
-  FunnelPlus,
+  Funnel,
   Locate,
   LocateFixed,
   LocateOff,
@@ -26,17 +24,10 @@ import { useGeolocationStore } from '@/store/geolocation.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { useSheetScrollElement } from '@/lib/hooks/useSheetScrollElement.ts';
 import { DockRevealPanel } from './DockRevealPanel.tsx';
-import { DockFilterOptions, type FilterOption } from './DockFilterOptions.tsx';
-import { AttributeFilterDialog } from './AttributeFilterDialog.tsx';
 import { IconBadge } from '@/components/ui/IconBadge.tsx';
-import { isAttributeFilterActive } from '@/lib/attributeFilters.ts';
-import { sportIcon } from '@/lib/sportIcons.ts';
-import {
-  getTimeRangeOptions,
-  formatTimeRangeLabel,
-  formatCustomRangeDuration,
-} from '@/lib/timeRange.ts';
-import type { Sport } from '@/packages/engine/types.ts';
+import { FilterList } from '@/features/filters/FilterList.tsx';
+import { FilterBuilderDialog } from '@/features/filters/FilterBuilderDialog.tsx';
+import { useFilterBuilderShortcutEffect } from '@/features/filters/hooks/useFilterBuilderShortcutEffect.ts';
 
 const tabs = [
   { to: '/', label: m.ui_nav_dashboard, icon: LayoutDashboard },
@@ -52,12 +43,6 @@ const isTabActive = (to: string, pathname: string): boolean => {
   return pathname.startsWith(to);
 };
 
-const sportOptions: FilterOption<Sport | 'all'>[] = [
-  { value: 'all', label: m.ui_dock_sport_all() },
-  { value: 'running', label: m.ui_dock_sport_run() },
-  { value: 'cycling', label: m.ui_dock_sport_cycle() },
-];
-
 const dockItemMiniClass =
   'w-12 lg:w-10 h-10 rounded-lg text-text-tertiary hover:bg-white/10 hover:text-text-primary';
 
@@ -67,7 +52,7 @@ const dockItemMaxiClass =
 const revealItemClass =
   'w-12 lg:w-10 h-12 rounded-lg text-text-tertiary hover:bg-white/10 hover:text-text-primary flex-col gap-0.5';
 
-type DockRevealLayer = 'menu' | 'sport-filter' | 'time-filter';
+type DockRevealLayer = 'menu' | 'filter-list';
 
 export const Dock = () => {
   const location = useLocation();
@@ -117,17 +102,21 @@ export const Dock = () => {
     );
   }, []);
 
-  const sportFilter = useFiltersStore((s) => s.sportFilter);
-  const timeRange = useFiltersStore((s) => s.timeRange);
-  const customRange = useFiltersStore((s) => s.customRange);
-  const attributeFilters = useFiltersStore((s) => s.attributeFilters);
+  const filterActive = useFiltersStore((s) => s.activeFilter !== null);
 
-  const [attrDialogOpen, setAttrDialogOpen] = useState(false);
-  const attrActive = isAttributeFilterActive(attributeFilters);
-  const openAttrDialog = useCallback(() => {
+  const [builder, setBuilder] = useState<{ open: boolean; editingId: string | null }>({
+    open: false,
+    editingId: null,
+  });
+  const openBuilder = useCallback((editingId: string | null) => {
     setRevealStack([]);
-    setAttrDialogOpen(true);
+    setBuilder({ open: true, editingId });
   }, []);
+  const toggleBuilder = useCallback(() => {
+    setRevealStack([]);
+    setBuilder((prev) => ({ open: !prev.open, editingId: null }));
+  }, []);
+  useFilterBuilderShortcutEffect(toggleBuilder);
 
   const geoTracking = useGeolocationStore((s) => s.tracking);
   const geoError = useGeolocationStore((s) => s.error);
@@ -136,23 +125,6 @@ export const Dock = () => {
     LocateIcon = LocateOff;
   } else if (geoTracking) {
     LocateIcon = LocateFixed;
-  }
-
-  const SportIcon = sportFilter === 'all' ? Activity : sportIcon[sportFilter];
-  const sportLabel = sportOptions.find((o) => o.value === sportFilter)?.label ?? sportFilter;
-
-  const timeLabel =
-    timeRange === 'custom' && customRange
-      ? formatCustomRangeDuration(customRange)
-      : formatTimeRangeLabel(timeRange);
-
-  const timeFilterOptions = getTimeRangeOptions();
-  if (timeRange === 'custom' && customRange) {
-    timeFilterOptions.push({
-      value: 'custom',
-      label: formatCustomRangeDuration(customRange),
-      variant: 'accent',
-    });
   }
 
   useEffect(() => {
@@ -185,25 +157,11 @@ export const Dock = () => {
             'lg:border lg:rounded-2xl',
           )}
         >
-          <DockRevealPanel open={isOpen('sport-filter')} className="lg:order-3">
-            <DockFilterOptions
-              options={sportOptions}
-              value={sportFilter}
-              onValueChange={(newSportFilter) => {
-                useFiltersStore.getState().setSportFilter(newSportFilter);
-                closeFrom('sport-filter');
-              }}
-            />
-          </DockRevealPanel>
-
-          <DockRevealPanel open={isOpen('time-filter')} className="lg:order-3">
-            <DockFilterOptions
-              options={timeFilterOptions}
-              value={timeRange}
-              onValueChange={(newTimeRange) => {
-                useFiltersStore.getState().setTimeRange(newTimeRange);
-                closeFrom('time-filter');
-              }}
+          <DockRevealPanel open={isOpen('filter-list')} className="lg:order-3">
+            <FilterList
+              onApplied={closeAll}
+              onCreate={() => openBuilder(null)}
+              onEdit={(id) => openBuilder(id)}
             />
           </DockRevealPanel>
 
@@ -213,38 +171,16 @@ export const Dock = () => {
               size="icon"
               className={cn(
                 revealItemClass,
-                isOpen('sport-filter') && 'bg-white/10 text-text-primary',
+                isOpen('filter-list') && 'bg-white/10 text-text-primary',
               )}
-              onClick={() => toggleMiniFilter('sport-filter')}
-              aria-label={m.ui_dock_sport_filter()}
+              onClick={() => toggleMiniFilter('filter-list')}
+              aria-label={m.ui_dock_filter()}
+              aria-expanded={isOpen('filter-list')}
             >
-              <SportIcon size={20} strokeWidth={1.5} />
-              <span className="text-[10px] leading-none">{m.ui_dock_sport()}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                revealItemClass,
-                isOpen('time-filter') && 'bg-white/10 text-text-primary',
-              )}
-              onClick={() => toggleMiniFilter('time-filter')}
-              aria-label={m.ui_dock_time_filter()}
-            >
-              <Clock size={20} strokeWidth={1.5} />
-              <span className="text-[10px] leading-none">{m.ui_dock_range()}</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={revealItemClass}
-              onClick={openAttrDialog}
-              aria-label={m.ui_dock_attr_filter()}
-            >
-              <IconBadge show={attrActive}>
-                <FunnelPlus size={20} strokeWidth={1.5} />
+              <IconBadge show={filterActive}>
+                <Funnel size={20} strokeWidth={1.5} />
               </IconBadge>
-              <span className="text-[10px] leading-none">{m.ui_dock_attr()}</span>
+              <span className="text-[10px] leading-none">{m.ui_dock_filter()}</span>
             </Button>
             <Button
               variant="ghost"
@@ -306,40 +242,16 @@ export const Dock = () => {
                   size="icon"
                   className={cn(
                     dockItemMaxiClass,
-                    isOpen('sport-filter') && 'bg-white/10 text-text-primary',
+                    isOpen('filter-list') && 'bg-white/10 text-text-primary',
                   )}
-                  onClick={() => toggleMaxiFilter('sport-filter')}
-                  aria-label={m.ui_dock_sport_filter()}
+                  onClick={() => toggleMaxiFilter('filter-list')}
+                  aria-label={m.ui_dock_filter()}
+                  aria-expanded={isOpen('filter-list')}
                 >
-                  <SportIcon size={20} strokeWidth={1.5} />
-                  <span className="text-[10px] leading-none truncate max-w-14">{sportLabel}</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    dockItemMaxiClass,
-                    isOpen('time-filter') && 'bg-white/10 text-text-primary',
-                  )}
-                  onClick={() => toggleMaxiFilter('time-filter')}
-                  aria-label={m.ui_dock_time_filter()}
-                >
-                  <Clock size={20} strokeWidth={1.5} />
-                  <span className="text-[10px] leading-none truncate max-w-14">{timeLabel}</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={dockItemMaxiClass}
-                  onClick={openAttrDialog}
-                  aria-label={m.ui_dock_attr_filter()}
-                >
-                  <IconBadge show={attrActive}>
-                    <FunnelPlus size={20} strokeWidth={1.5} />
+                  <IconBadge show={filterActive}>
+                    <Funnel size={20} strokeWidth={1.5} />
                   </IconBadge>
-                  <span className="text-[10px] leading-none">{m.ui_dock_attr()}</span>
+                  <span className="text-[10px] leading-none">{m.ui_dock_filter()}</span>
                 </Button>
 
                 <Button
@@ -366,7 +278,9 @@ export const Dock = () => {
                 {isOpen('menu') ? (
                   <X size={20} strokeWidth={1.5} />
                 ) : (
-                  <EllipsisVertical size={20} strokeWidth={1.5} />
+                  <IconBadge show={filterActive}>
+                    <EllipsisVertical size={20} strokeWidth={1.5} />
+                  </IconBadge>
                 )}
               </Button>
             )}
@@ -374,7 +288,11 @@ export const Dock = () => {
         </nav>
       </div>
 
-      <AttributeFilterDialog open={attrDialogOpen} onOpenChange={setAttrDialogOpen} />
+      <FilterBuilderDialog
+        open={builder.open}
+        editingId={builder.editingId}
+        onOpenChange={(open) => setBuilder((prev) => ({ open, editingId: prev.editingId }))}
+      />
     </>
   );
 };

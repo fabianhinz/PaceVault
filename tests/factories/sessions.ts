@@ -1,10 +1,8 @@
 import type { TrainingSession } from '@/packages/engine/types.ts';
+import { SESSION_DERIVATION_VERSION } from '@/packages/engine/sessionDerivation.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/**
- * Create a single training session with sensible defaults.
- */
 export function makeSession(overrides?: Partial<TrainingSession>): TrainingSession {
   return {
     id: `session-${Date.now()}`,
@@ -24,16 +22,13 @@ export function makeSession(overrides?: Partial<TrainingSession>): TrainingSessi
     stressMethod: 'tss',
     isPlanned: false,
     hasDetailedRecords: true,
+    derivationVersion: SESSION_DERIVATION_VERSION,
     createdAt: Date.now(),
     source: { kind: 'file' },
     ...overrides,
   };
 }
 
-/**
- * Create a chronological sequence of sessions spaced over days.
- * TSS varies between 60–120 using a deterministic sine pattern.
- */
 export function makeSessionSequence(
   count: number,
   options?: {

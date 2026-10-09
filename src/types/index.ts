@@ -21,10 +21,9 @@ export interface UserProfile {
     ftp?: number;
     maxHr: number;
     restHr: number;
-    thresholdPace?: number; // sec/km
+    thresholdPace?: number;
   };
   showMetricHelp: boolean;
-  useAutoSessionNames: boolean;
   createdAt: number;
 }
 
@@ -36,8 +35,6 @@ export interface CoachingRecommendation {
   injuryRisk: InjuryRisk;
   dataMaturityDays: number;
 }
-
-// --- Running Zones & Coaching Plan ---
 
 export type WorkoutType =
   | 'rest'
@@ -54,14 +51,14 @@ export interface WorkoutStep {
   type: StepType;
   durationSec: number;
   zone: RunningZoneName;
-  targetPaceMin: number; // sec/km
-  targetPaceMax: number; // sec/km
+  targetPaceMin: number;
+  targetPaceMax: number;
   repeat?: number;
 }
 
 export interface PrescribedWorkout {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   dayLabel: string;
   type: WorkoutType;
   title: string;

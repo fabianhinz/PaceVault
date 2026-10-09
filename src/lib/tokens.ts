@@ -28,10 +28,10 @@ export const tokens = {
   chartHr: '#ef4444',
   chartPower: '#3b82f6',
   chartSpeed: '#22c55e',
-  chartLoad: '#3b82f6',
   chartGrade: '#a78bfa',
   chartCadence: '#f59e0b',
   chartElevation: '#8b5cf6',
+  chartClimb: '#c4b5fd',
   chartPace: '#06b6d4',
   chartGap: '#ec4899',
 
