@@ -39,8 +39,4 @@ export const tokens = {
   precipFreezing: '#67e8f9',
   precipSnow: '#e5e7eb',
   precipThunderstorm: '#fbbf24',
-  radiusSm: '4px',
-  radiusMd: '8px',
-  radiusLg: '12px',
-  radiusXl: '16px',
 } as const;

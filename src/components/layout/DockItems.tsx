@@ -16,7 +16,7 @@ import type { HighlightTrack } from '@/lib/slidingHighlight.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useGeolocationStore } from '@/store/geolocation.ts';
 import { Button } from '@/components/ui/Button.tsx';
-import { glassClass } from '@/components/ui/Card.tsx';
+import { floatingClass } from '@/components/ui/Card.tsx';
 import { IconBadge } from '@/components/ui/IconBadge.tsx';
 import { SlidingHighlight } from '@/components/ui/SlidingHighlight.tsx';
 
@@ -57,7 +57,7 @@ const itemClass = 'relative shrink-0 rounded-full text-text-tertiary';
 const activeItemClass =
   'bg-accent-muted text-accent-hover hover:bg-accent-muted hover:text-accent-hover';
 
-const segmentClass = cn(glassClass, 'flex rounded-full');
+const segmentClass = cn(floatingClass, 'flex rounded-full');
 
 export const DockSegment = (props: { className?: string; children: ReactNode }) => (
   <div className={cn(segmentClass, props.className)}>{props.children}</div>
@@ -106,7 +106,7 @@ export const DockTabs = (props: DockTabsProps) => {
 };
 
 const DockCircle = (props: { children: ReactNode }) => (
-  <div className={cn(glassClass, 'shrink-0 rounded-full p-[3px]')}>{props.children}</div>
+  <div className={cn(floatingClass, 'shrink-0 rounded-full p-[3px]')}>{props.children}</div>
 );
 
 interface DockFilterButtonProps {

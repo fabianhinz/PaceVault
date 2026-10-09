@@ -1,5 +1,6 @@
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { cn } from '@/lib/utils.ts';
+import { floatingClass } from './Card.tsx';
 
 export const DropdownMenuRoot = DropdownMenuPrimitive.Root;
 export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
@@ -11,7 +12,8 @@ export const DropdownMenuContent = (props: DropdownMenuPrimitive.DropdownMenuCon
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-50 min-w-[160px] bg-white/5 rounded-xl border border-white/10 backdrop-blur-xl p-1',
+          floatingClass,
+          'z-50 min-w-[160px] rounded-xl p-1',
           'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
           className,
         )}

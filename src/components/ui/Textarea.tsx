@@ -12,7 +12,7 @@ export const Textarea = (props: TextareaProps) => {
     <div className="w-full">
       <textarea
         className={cn(
-          'flex min-h-20 w-full resize-y rounded-lg border bg-white/5 px-3 py-2 text-base lg:text-sm text-text-primary placeholder:text-text-quaternary focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50',
+          'flex min-h-20 w-full resize-y rounded-lg border bg-white/5 px-3 py-2 text-base lg:text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50',
           error ? 'border-status-danger-strong' : 'border-white/10',
           className,
         )}

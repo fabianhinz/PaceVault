@@ -16,7 +16,7 @@ Mockup: `mockups/dock/index.html` (variant B4c, rail "icons only", active state 
 - **Tapping Filter** reveals the filter card **above the row** (12 px inset, 24 px radius, fade only), like the desktop popover; the pill and the Filter circle stay, the Filter circle shows the open state (blue background). (Revised: the earlier pill-to-field swap didn't feel smooth.)
 - **Same card as desktop:** the shared filter list **with its own input header** (borderless field + line); only the placement differs.
 - The card sizes to its content: input header + **at most 4.5 rows**; while typing it shrinks to the suggestions.
-- **Typing:** the row and the card above it ride on top of the soft keyboard (`visualViewport`). Verify on an iPhone.
+- **Typing:** no custom keyboard handling; iOS scrolls the focused input into view. Check on an iPhone.
 - No ⋮ anymore; no second reveal layer.
 
 ### Desktop
@@ -39,7 +39,6 @@ Mockup: `mockups/dock/index.html` (variant B4c, rail "icons only", active state 
 - One filter card component for both: `src/features/filters/FilterList.tsx` with its input; phone sizes to content with a 4.5-row cap, desktop fills the rail height. No external field (`FilterField`, the × button and the pill/field cross-fade are removed).
 - `DockRevealPanel.tsx` is replaced by the floating card (phone) / side card (desktop) or removed if unused.
 - Sheet bottom space: `DOCK_HEIGHT = 57` (`src/lib/sheetPosition.ts:21`) becomes the floating row's footprint (about 88 px incl. inset); check the peek position.
-- Keyboard: a hook on `visualViewport` that lifts the phone row and card while the list's input is focused.
 - Captions inside `Button`: pin to `font-normal` like `src/components/ui/StatItem.tsx:28`, since `Button` sets `font-medium` (`src/components/ui/Button.tsx:46`).
 
 ## Removal

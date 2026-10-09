@@ -29,7 +29,7 @@ You are building an interactive design mockup for PaceVault, a local-first PWA (
 
 Copy classes, spacing, radii and colours from these files rather than inventing them:
 
-- `src/components/ui/Card.tsx` (`glassClass`), `src/components/ui/Typography.tsx`, `src/components/ui/Button.tsx`, `src/components/ui/Label.tsx`, `src/components/ui/Input.tsx`, `src/components/ui/GlassPill.tsx`, `src/components/ui/RadioGroup.tsx`, `src/components/ui/ResponsivePopover.tsx`, `src/components/ui/Popover.tsx`, `src/components/ui/Dialog.tsx`
+- `src/components/ui/Card.tsx` (`glassClass`), `src/components/ui/Typography.tsx`, `src/components/ui/Button.tsx`, `src/components/ui/Label.tsx`, `src/components/ui/Input.tsx`, `src/components/ui/FloatingPill.tsx`, `src/components/ui/RadioGroup.tsx`, `src/components/ui/ResponsivePopover.tsx`, `src/components/ui/Popover.tsx`, `src/components/ui/Dialog.tsx`
 - forms as the app builds them: `src/components/layout/AttributeFilterDialog.tsx`, `src/features/settings/ThresholdsSection.tsx`
 - `src/index.css` and its JS mirror `src/lib/tokens.ts`
 - the app shell: `src/components/layout/AppLayout.tsx`, `src/components/layout/Dock.tsx`, `src/components/ui/BottomSheet.tsx`
@@ -50,7 +50,7 @@ Copy classes, spacing, radii and colours from these files rather than inventing 
 - Plausible fake data at the resolution PaceVault really has ({data resolution}); no more precision than the data supports.
 - Use existing components and copy their classes exactly; map every part to its component (path:line) in the notes and flag anything that would need a new component.
 - Text only through the `Typography` variants (with their colour tokens); no ad-hoc font sizes or weights.
-- Buttons only with the `Button` variants and sizes, pills only via `GlassPill`; the same role gets the same size everywhere.
+- Buttons only with the `Button` variants and sizes, pills only via `FloatingPill`; the same role gets the same size everywhere.
 - Form fields as the app builds them: a `Label` above every `Input`, hints and errors through Input's `helperText`/`error`; every input has a label.
 - Spacing from the app's existing components, not one-off values.
 - No layout shift: nothing visible moves while the user types, hovers, or when hints, counts, previews, chips or lists appear and disappear. Reserve fixed slots, give lists a max height and scroll inside.

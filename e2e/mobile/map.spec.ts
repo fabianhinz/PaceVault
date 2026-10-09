@@ -236,6 +236,25 @@ test.describe('mobile dock', () => {
     await filterButton.click();
     await expect(field).toHaveValue('');
   });
+
+  test('toast does not cover the dock', async ({ page }) => {
+    const dock = page.locator('[data-layout="dock"]');
+    await expect(dock).toBeVisible();
+    await page.evaluate(async () => {
+      const store = await import('/src/components/ui/toastStore.ts');
+      store.useToastStore
+        .getState()
+        .addToast({ id: 'dock-overlap', title: 'Saved', persistent: true });
+    });
+    const toast = page.getByTestId('dock-overlap');
+    await expect(toast).toBeVisible();
+    await page.waitForTimeout(500);
+
+    const toastBox = await toast.boundingBox();
+    const dockBox = await dock.boundingBox();
+    if (!toastBox || !dockBox) throw new Error('toast or dock not rendered');
+    expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(dockBox.y);
+  });
 });
 
 test.describe('mobile map', () => {

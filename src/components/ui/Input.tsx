@@ -22,7 +22,7 @@ export const Input = (props: InputProps) => {
   const input = (
     <input
       className={cn(
-        'flex w-full min-w-0 text-base text-text-primary placeholder:text-text-quaternary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+        'flex w-full min-w-0 text-base text-text-primary placeholder:text-text-tertiary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
         variantClasses[variant],
         error ? 'border-status-danger-strong' : 'border-white/10',
         className,
@@ -36,7 +36,7 @@ export const Input = (props: InputProps) => {
         input
       ) : (
         <div className="flex w-full items-center gap-2.5">
-          <props.icon size={18} strokeWidth={1.5} className="shrink-0 text-text-quaternary" />
+          <props.icon size={18} strokeWidth={1.5} className="shrink-0 text-text-tertiary" />
           {input}
         </div>
       )}

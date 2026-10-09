@@ -4,7 +4,7 @@ import { MapPin, Split } from 'lucide-react';
 import { useStudioStore } from '@/store/studio.ts';
 import { useStudioMarkerEditorStore } from '@/store/studioMarkerEditor.ts';
 import { routeColors } from '@/features/studio/routeColors.ts';
-import { glassClass } from '@/components/ui/Card.tsx';
+import { floatingClass } from '@/components/ui/Card.tsx';
 import { MAP_MARKER_Z } from '@/features/map/mapZ.ts';
 import { cn } from '@/lib/utils.ts';
 import { pointAtRouteDistance } from '@/packages/gpx/routeCut.ts';
@@ -47,8 +47,8 @@ export const StudioMarkerPins = (props: { routeId: string }) => {
         <button
           type="button"
           className={cn(
-            glassClass,
-            'flex size-9 cursor-pointer items-center justify-center rounded-lg shadow-lg transition-colors hover:bg-white/10 active:bg-white/15',
+            floatingClass,
+            'flex size-9 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-white/10 active:bg-white/15',
           )}
           style={{ color: hex }}
         >

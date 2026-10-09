@@ -6,9 +6,8 @@ import { cn } from '@/lib/utils.ts';
 import { DOCK_ROW_BOTTOM_CSS, DOCK_ROW_HEIGHT, DOCK_STACK_GAP } from '@/lib/dockGeometry.ts';
 import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
 import { useDismiss } from '@/lib/hooks/useDismiss.ts';
-import { useKeyboardInset } from '@/lib/hooks/useKeyboardInset.ts';
 import { useSheetScrollElement } from '@/lib/hooks/useSheetScrollElement.ts';
-import { glassClass } from '@/components/ui/Card.tsx';
+import { floatingClass } from '@/components/ui/Card.tsx';
 import { DockFilterButton, DockLocateButton, DockSegment, DockTabs } from './DockItems.tsx';
 
 const fadeClass = 'transition-[opacity,visibility] duration-150';
@@ -59,7 +58,7 @@ const DockRail = (props: { list: DockList }) => (
     <div
       data-dock-card
       className={cn(
-        glassClass,
+        floatingClass,
         'absolute inset-y-0 left-[calc(100%+var(--spacing-3))] w-64 overflow-hidden rounded-3xl',
         fadeClass,
         !props.list.open && hiddenClass,
@@ -70,40 +69,30 @@ const DockRail = (props: { list: DockList }) => (
   </div>
 );
 
-const DockBar = (props: { list: DockList }) => {
-  const [cardFocused, setCardFocused] = useState(false);
-  const keyboard = useKeyboardInset(props.list.open && cardFocused);
-  let bottom = DOCK_ROW_BOTTOM_CSS;
-  if (keyboard > 0) {
-    bottom = `${keyboard + DOCK_STACK_GAP}px`;
-  }
-  return (
+const DockBar = (props: { list: DockList }) => (
+  <div
+    ref={props.list.ref}
+    data-layout="dock"
+    style={{ bottom: DOCK_ROW_BOTTOM_CSS, height: DOCK_ROW_HEIGHT }}
+    className="fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-50 flex gap-2"
+  >
+    <DockLocateButton kind="circle" />
+    <DockTabs kind="pill" onTabClick={props.list.handleTabClick} />
+    <DockFilterButton kind="circle" open={props.list.open} onClick={props.list.toggle} />
     <div
-      ref={props.list.ref}
-      data-layout="dock"
-      style={{ bottom, height: DOCK_ROW_HEIGHT }}
-      className="fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-50 flex gap-2"
+      data-dock-card
+      style={{ bottom: `calc(100% + ${DOCK_STACK_GAP}px)` }}
+      className={cn(
+        floatingClass,
+        'absolute inset-x-0 overflow-hidden rounded-3xl',
+        fadeClass,
+        !props.list.open && hiddenClass,
+      )}
     >
-      <DockLocateButton kind="circle" />
-      <DockTabs kind="pill" onTabClick={props.list.handleTabClick} />
-      <DockFilterButton kind="circle" open={props.list.open} onClick={props.list.toggle} />
-      <div
-        data-dock-card
-        style={{ bottom: `calc(100% + ${DOCK_STACK_GAP}px)` }}
-        className={cn(
-          glassClass,
-          'absolute inset-x-0 overflow-hidden rounded-3xl',
-          fadeClass,
-          !props.list.open && hiddenClass,
-        )}
-        onFocus={() => setCardFocused(true)}
-        onBlur={() => setCardFocused(false)}
-      >
-        <FilterList open={props.list.open} sizing="content" onClose={props.list.close} />
-      </div>
+      <FilterList open={props.list.open} sizing="content" onClose={props.list.close} />
     </div>
-  );
-};
+  </div>
+);
 
 export const Dock = () => {
   const isDesktop = useIsDesktop();

@@ -5,7 +5,7 @@ import { ResponsivePopover } from '@/components/ui/ResponsivePopover.tsx';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup.tsx';
 import { Slider } from '@/components/ui/Slider.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { GlassPill, glassPillClass } from '@/components/ui/GlassPill.tsx';
+import { FloatingPill, floatingPillClass } from '@/components/ui/FloatingPill.tsx';
 import { cn } from '@/lib/utils.ts';
 import { recordedDistance, splitDistanceRange } from '@/lib/dynamicLaps.ts';
 import {
@@ -224,7 +224,7 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
       role="group"
       aria-label={m.ui_laps()}
       data-testid="lap-stepper"
-      className={cn(glassPillClass, 'gap-0.5 py-1 pr-1 pl-3')}
+      className={cn(floatingPillClass, 'gap-0.5 py-1 pr-1 pl-3')}
     >
       <Flag size={16} className="mr-1 shrink-0" />
       <StepButton
@@ -300,12 +300,12 @@ export const LapsControl = (props: LapsControlProps) => {
       align="center"
       className="lg:w-80"
       trigger={
-        <GlassPill data-testid="laps-pill">
+        <FloatingPill data-testid="laps-pill">
           <Flag size={16} />
           <span>{pillLabel(source, sessionLaps, splitDistance)}</span>
           {source !== 'off' && sessionLaps && <LapSwatch set={sessionLaps} />}
           <ChevronDown size={14} className="text-text-tertiary" />
-        </GlassPill>
+        </FloatingPill>
       }
     >
       <div className="mb-3 flex items-center gap-2 text-text-tertiary">

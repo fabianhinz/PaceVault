@@ -1,5 +1,6 @@
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '@/lib/utils.ts';
+import { floatingClass } from './Card.tsx';
 
 export const Tabs = (props: React.ComponentProps<typeof TabsPrimitive.Root>) => {
   const { className, ...rest } = props;
@@ -11,7 +12,7 @@ export const TabsList = (props: React.ComponentProps<typeof TabsPrimitive.List>)
   return (
     <TabsPrimitive.List
       className={cn(
-        'bg-white/5 backdrop-blur-2xl border border-white/10',
+        floatingClass,
         'flex flex-row gap-2 rounded-2xl w-full p-3 lg:sticky lg:top-6 z-10',
         className,
       )}

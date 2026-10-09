@@ -2,9 +2,10 @@ import { useDeferredValue, type ReactNode } from 'react';
 import { ZoomOut, type LucideIcon } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { cn } from '@/lib/utils.ts';
+import { glassClass } from './Card.tsx';
 import type { MetricId } from '@/lib/explanations.ts';
 import { ListItemHeader } from './ListItemHeader.tsx';
-import { GlassPill } from './GlassPill.tsx';
+import { FloatingPill } from './FloatingPill.tsx';
 
 interface ChartsCardProps {
   zoomReset: ReactNode;
@@ -12,8 +13,8 @@ interface ChartsCardProps {
 }
 
 export const ChartsCard = (props: ChartsCardProps) => (
-  <div className="relative isolate overflow-clip rounded-2xl border border-white/10">
-    <div aria-hidden className="absolute inset-0 -z-10 bg-white/5 backdrop-blur-xl" />
+  <div className="relative isolate overflow-clip rounded-2xl">
+    <div aria-hidden className={cn(glassClass, 'absolute inset-0 -z-10 rounded-[inherit]')} />
     {props.zoomReset}
     <div className="divide-y divide-white/10">{props.children}</div>
   </div>
@@ -23,10 +24,10 @@ export const ZoomResetPill = (props: { isZoomed: boolean; onReset: () => void })
   if (!props.isZoomed) return null;
   return (
     <div className="pointer-events-none sticky top-3 z-10 hidden h-0 items-start justify-end lg:flex">
-      <GlassPill data-testid="zoom-reset-chip" className="mt-3 mr-3" onClick={props.onReset}>
+      <FloatingPill data-testid="zoom-reset-chip" className="mt-3 mr-3" onClick={props.onReset}>
         <ZoomOut size={16} />
         <span>{m.ui_chart_reset_zoom()}</span>
-      </GlassPill>
+      </FloatingPill>
     </div>
   );
 };
