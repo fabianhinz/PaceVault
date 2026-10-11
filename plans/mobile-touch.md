@@ -28,7 +28,7 @@
 
 ### M1: tab shadow
 
-- `src/components/ui/Card.tsx:5-6`: split the string into a private `floatingSurface` (bg, blur, border). Then `floatingClass = \`${floatingSurface} shadow-[…]\`` and a new export `floatingLgClass = \`${floatingSurface} lg:shadow-[…]\`` (surface that floats only from `lg`). Both are full class literals, so Tailwind's scanner picks them up.
+- `src/components/ui/Card.tsx:5-6`: split the string into a private `floatingSurface` (bg, blur, border). Then `floatingClass = \`${floatingSurface} shadow-[…]\`` and a new export `floatingLgClass = \`${floatingSurface} lg:shadow-[…]\``(surface that floats only from`lg`). Both are full class literals, so Tailwind's scanner picks them up.
 - `Tabs.tsx:3,15`: use `floatingLgClass`.
 - `CLAUDE.md` §7: add one line: "sticky only from `lg`: `floatingLgClass`".
 
@@ -93,6 +93,7 @@
 ## Verification
 
 `vp check`, `vp test -- --run`, `vp exec playwright test`, `vp build`. By hand, on a phone or in DevTools touch emulation:
+
 - tabs have no shadow below `lg`
 - the filter opens as a sheet, and the input does not move while typing (suggestion, not understood, no match, empty)
 - a map tap opens the picker sheet

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { zipSync } from 'fflate';
+import { gzipSync, zipSync } from 'fflate';
 import { extractArchiveEntry, isArchiveFile, listActivityEntries } from '@/lib/archive.ts';
 
 describe('isArchiveFile', () => {
@@ -112,6 +112,16 @@ describe('listActivityEntries', () => {
     const result = listActivityEntries(zip);
 
     expect(result).toHaveLength(2);
+  });
+
+  it('lists a Strava .fit.gz entry as .fit and extracts the decompressed bytes', () => {
+    const zip = makeZip({ 'activities/123.fit.gz': gzipSync(dummyFit) });
+    const result = listActivityEntries(zip);
+
+    expect(result).toEqual([
+      { path: 'activities/123.fit.gz', fileName: '123.fit', extension: '.fit' },
+    ]);
+    expect(new Uint8Array(extractArchiveEntry(zip, 'activities/123.fit.gz'))).toEqual(dummyFit);
   });
 
   it('throws on invalid ZIP data', () => {

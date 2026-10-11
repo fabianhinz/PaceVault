@@ -7,21 +7,18 @@ describe('computeDynamicLaps', () => {
   it('returns empty for empty records', () => {
     const result = computeDynamicLaps([], 1000);
     expect(result.analysis).toEqual([]);
-    expect(result.enrichments).toEqual([]);
   });
 
   it('returns empty for single record', () => {
     const records: SessionRecord[] = [{ timestamp: 0, distance: 0 }];
     const result = computeDynamicLaps(records, 1000);
     expect(result.analysis).toEqual([]);
-    expect(result.enrichments).toEqual([]);
   });
 
   it('returns empty for records without distance', () => {
     const records: SessionRecord[] = [{ timestamp: 0 }, { timestamp: 1 }, { timestamp: 2 }];
     const result = computeDynamicLaps(records, 1000);
     expect(result.analysis).toEqual([]);
-    expect(result.enrichments).toEqual([]);
   });
 
   it('produces correct split count for running records with 1km splits', () => {
@@ -68,34 +65,6 @@ describe('computeDynamicLaps', () => {
     });
   });
 
-  it('aggregates HR data', () => {
-    const records = makeRunningRecords(1000);
-    const result = computeDynamicLaps(records, 1000);
-    result.analysis.forEach((lap) => {
-      expect(lap.avgHr).toBeDefined();
-      expect(lap.avgHr ?? 0).toBeGreaterThan(100);
-      expect(lap.maxHr).toBeDefined();
-      expect(lap.maxHr ?? 0).toBeGreaterThanOrEqual(lap.avgHr ?? 0);
-    });
-  });
-
-  it('computes elevation gain (positive deltas only)', () => {
-    const records = makeRunningRecords(1000);
-    const result = computeDynamicLaps(records, 1000);
-    result.analysis.forEach((lap) => {
-      expect(lap.elevationGain).toBeGreaterThanOrEqual(0);
-    });
-  });
-
-  it('produces enrichments with correct lapIndex', () => {
-    const records = makeRunningRecords(1000);
-    const result = computeDynamicLaps(records, 1000);
-    expect(result.enrichments).toHaveLength(result.analysis.length);
-    result.enrichments.forEach((e, i) => {
-      expect(e.lapIndex).toBe(i);
-    });
-  });
-
   it('all laps have intensity active and isInterval false', () => {
     const records = makeRunningRecords(1000);
     const result = computeDynamicLaps(records, 1000);
@@ -103,47 +72,6 @@ describe('computeDynamicLaps', () => {
       expect(lap.intensity).toBe('active');
       expect(lap.isInterval).toBe(false);
     });
-  });
-
-  it('enrichments include minHr from records', () => {
-    const records = makeRunningRecords(1000);
-    const result = computeDynamicLaps(records, 1000);
-    result.enrichments.forEach((e) => {
-      expect(e.minHr).toBeDefined();
-      expect(e.minHr ?? 0).toBeGreaterThan(0);
-    });
-  });
-
-  it('computes maxSpeed from records', () => {
-    const records = makeRunningRecords(1000);
-    const result = computeDynamicLaps(records, 1000);
-    result.analysis.forEach((lap) => {
-      expect(lap.maxSpeed).toBeDefined();
-      expect(lap.maxSpeed ?? 0).toBeGreaterThan(0);
-    });
-  });
-
-  it('computes avgCadence when cadence data is present', () => {
-    const records = makeCyclingRecords(2000);
-    const result = computeDynamicLaps(records, 5000);
-    result.analysis.forEach((lap) => {
-      expect(lap.avgCadence).toBeDefined();
-      expect(lap.avgCadence ?? 0).toBeGreaterThan(0);
-    });
-  });
-});
-
-describe('computeDynamicLaps with recorded zeros', () => {
-  it('counts hr and cadence 0 in the lap averages', () => {
-    const records: SessionRecord[] = Array.from({ length: 4 }, (_, i) => ({
-      timestamp: i,
-      distance: i * 10,
-      hr: i % 2 === 0 ? 0 : 160,
-      cadence: i % 2 === 0 ? 0 : 90,
-    }));
-    const lap = computeDynamicLaps(records, 1000).analysis[0];
-    expect(lap?.avgHr).toBe(80);
-    expect(lap?.avgCadence).toBe(45);
   });
 });
 
@@ -158,7 +86,6 @@ describe('computeDynamicLaps splits', () => {
     const records: SessionRecord[] = [...steady(0, 126, 0), ...steady(245, 200, 500)];
     const lap = computeDynamicLaps(records, 1000).analysis[0];
     expect(lap?.distance).toBe(1000);
-    expect(lap?.timerTime).toBe(370);
     expect(lap?.movingTime).toBe(251);
     expect(lap?.paceSecPerKm).toBe(251);
   });

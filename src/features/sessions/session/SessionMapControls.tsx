@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { SheetAbove } from '@/components/ui/SheetAbove.tsx';
-import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { cn } from '@/lib/utils.ts';
 import { MAP_CONTROLS_BOTTOM, MAP_CONTROLS_HEIGHT } from '@/features/map/mapPadding.ts';
 import type { SessionLap, SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
@@ -16,21 +16,13 @@ interface SessionMapControlsProps {
 }
 
 export const SessionMapControls = (props: SessionMapControlsProps) => {
-  const isDesktop = useIsDesktop();
+  const device = useDevice();
   const coloring = useSessionColorModes(props.session, props.records);
   const effective = coloring.effective;
-  const hasSelectedLap = useMapFocusStore((s) => s.selectedLapIndex !== null);
-  const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     useMapFocusStore.getState().setTrackColorMode(effective);
   }, [effective]);
-
-  useEffect(() => {
-    const element = scroller.current;
-    if (!element || !hasSelectedLap) return;
-    element.scrollLeft = element.scrollWidth;
-  }, [hasSelectedLap]);
 
   const pills = (
     <div
@@ -48,7 +40,7 @@ export const SessionMapControls = (props: SessionMapControlsProps) => {
     </div>
   );
 
-  if (isDesktop) {
+  if (device.isDesktop) {
     return (
       <div
         className="pointer-events-none fixed left-[calc(30dvw+2.375rem)] z-20 mb-0 -translate-x-1/2"
@@ -61,7 +53,6 @@ export const SessionMapControls = (props: SessionMapControlsProps) => {
   return (
     <SheetAbove>
       <div
-        ref={scroller}
         className={cn(
           'pointer-events-auto max-w-full touch-pan-x overflow-x-auto overscroll-x-contain px-4',
           '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',

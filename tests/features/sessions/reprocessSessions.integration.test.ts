@@ -138,7 +138,6 @@ describe('reprocessOutdatedSessions', () => {
         id: 'demo',
         gap: 999,
         distance: 1,
-        movingTime: 1,
         tss: 55,
         source: { kind: 'demo' },
       }),
@@ -149,7 +148,6 @@ describe('reprocessOutdatedSessions', () => {
     expect(sessionById('demo')).toMatchObject({
       gap: calculateGAP(records),
       distance: records.at(-1)?.distance,
-      movingTime: 580,
       tss: 55,
       derivationVersion: SESSION_DERIVATION_VERSION,
     });

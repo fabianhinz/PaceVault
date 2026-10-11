@@ -52,6 +52,7 @@ describe('delete all data', () => {
       distance: 10000,
       duration: 3600,
       elevationGain: 500,
+      name: null,
     });
 
     expect(useFiltersStore.getState().activeFilter).not.toBeNull();

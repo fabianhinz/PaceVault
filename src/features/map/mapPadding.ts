@@ -1,18 +1,12 @@
 import { useLayoutStore } from '@/store/layout.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { readSafeAreaInset, readSheetLayout, sheetFitHeight } from '@/lib/sheetPosition.ts';
-import { DESKTOP_MEDIA_QUERY } from '@/lib/hooks/useIsDesktop.ts';
+import { DESKTOP_MEDIA_QUERY } from '@/lib/hooks/useDevice.ts';
 import { SHEET_ABOVE_GAP } from '@/components/ui/sheetAboveContext.ts';
-
-interface MapPadding {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-}
+import { fitPadding, PHONE_FIT_MARGIN, type MapPadding } from './fitPadding.ts';
 
 export const MAP_FIT_MARGIN = 80;
-export const MAP_CONTROLS_HEIGHT = 38;
+export const MAP_CONTROLS_HEIGHT = 44;
 export const MAP_CONTROLS_BOTTOM = 40;
 
 const hasMapControls = (): boolean => useMapFocusStore.getState().openedSessionId !== null;
@@ -39,8 +33,12 @@ const desktopInsets = (): MapPadding => {
   return insets;
 };
 
-const phoneInsets = (): MapPadding => {
-  let covered = sheetFitHeight(readSheetLayout(), useLayoutStore.getState().mobileSheetPosition);
+const phoneInsets = (sheetCap: number | undefined): MapPadding => {
+  let covered = sheetFitHeight(
+    readSheetLayout(),
+    useLayoutStore.getState().mobileSheetPosition,
+    sheetCap,
+  );
   if (hasMapControls()) {
     covered += SHEET_ABOVE_GAP + MAP_CONTROLS_HEIGHT;
   }
@@ -52,17 +50,18 @@ const phoneInsets = (): MapPadding => {
   };
 };
 
-const layoutInsets = (): MapPadding => {
-  if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) return desktopInsets();
-  return phoneInsets();
-};
+interface MapPaddingOptions {
+  sheetCap?: number;
+}
 
-export const mapPadding = (margin: number): MapPadding => {
-  const insets = layoutInsets();
-  return {
-    top: insets.top + margin,
-    bottom: insets.bottom + margin,
-    left: insets.left + margin,
-    right: insets.right + margin,
-  };
+export const mapPadding = (margin: number, options?: MapPaddingOptions): MapPadding => {
+  const canvasHeight = window.innerHeight;
+  if (window.matchMedia(DESKTOP_MEDIA_QUERY).matches) {
+    return fitPadding({ canvasHeight, insets: desktopInsets(), margin });
+  }
+  return fitPadding({
+    canvasHeight,
+    insets: phoneInsets(options?.sheetCap),
+    margin: Math.min(margin, PHONE_FIT_MARGIN),
+  });
 };

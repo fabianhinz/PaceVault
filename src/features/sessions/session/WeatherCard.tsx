@@ -1,6 +1,8 @@
+import { CloudSun } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import { CollapsibleListItem } from '@/components/ui/Collapsible.tsx';
+import { ExternalLink } from '@/components/ui/ExternalLink.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import type { WeatherSnapshot } from '@/lib/weather.ts';
 import { summarizeWeather, type ValueRange, type WeatherSummary } from '@/lib/weatherSummary.ts';
@@ -13,6 +15,8 @@ import { useWindRose } from './hooks/useWindRose.ts';
 import { weatherIcon, weatherLabel } from './weatherConditions.ts';
 import { WeatherHourlyTable } from './WeatherHourlyTable.tsx';
 import { WindRose, WindRoseGlyph } from './WindRose.tsx';
+
+const OPEN_METEO_URL = 'https://open-meteo.com/';
 
 const hourFmt = new Intl.DateTimeFormat(getLocale(), { hour: 'numeric', minute: '2-digit' });
 const celsiusFmt = new Intl.NumberFormat(getLocale(), {
@@ -110,6 +114,9 @@ const WeatherDetails = (props: WeatherDetailsProps) => (
       </div>
     )}
     <WeatherHourlyTable snapshots={props.snapshots} />
+    <ExternalLink href={OPEN_METEO_URL} icon={CloudSun}>
+      {m.ui_weather_attribution()}
+    </ExternalLink>
   </div>
 );
 

@@ -135,19 +135,19 @@
 
 ### Messages: `messages/en.json`, `messages/de.json`
 
-| key | en | de |
-| --- | --- | --- |
-| `ui_filter_builder_placeholder` | e.g. ride this month 50 km | z. B. Rad diesen Monat 50 km |
-| `ui_filter_did_you_mean` | Did you mean {word}? | Meintest du {word}? |
-| `ui_filter_not_understood` | Not understood: {words} | Nicht verstanden: {words} |
-| `ui_filter_not_understood_title` | Not understood | Nicht verstanden |
-| `ui_filter_not_understood_desc` | Try a sport, a date, a distance, a duration or a session name | Probier eine Sportart, ein Datum, eine Strecke, eine Dauer oder einen Namen |
-| `ui_filter_no_match_title` | No sessions match | Keine passenden Einheiten |
-| `ui_filter_today` / `_yesterday` | today / yesterday | heute / gestern |
-| `ui_filter_this_week` / `_this_month` | this week / this month | diese Woche / diesen Monat |
-| `ui_filter_since` | since {date} | seit {date} |
-| `ui_filter_last_years` | last {count} years | letzte {count} Jahre |
-| `ui_filter_name` | “{value}” | „{value}“ |
+| key                                   | en                                                            | de                                                                          |
+| ------------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `ui_filter_builder_placeholder`       | e.g. ride this month 50 km                                    | z. B. Rad diesen Monat 50 km                                                |
+| `ui_filter_did_you_mean`              | Did you mean {word}?                                          | Meintest du {word}?                                                         |
+| `ui_filter_not_understood`            | Not understood: {words}                                       | Nicht verstanden: {words}                                                   |
+| `ui_filter_not_understood_title`      | Not understood                                                | Nicht verstanden                                                            |
+| `ui_filter_not_understood_desc`       | Try a sport, a date, a distance, a duration or a session name | Probier eine Sportart, ein Datum, eine Strecke, eine Dauer oder einen Namen |
+| `ui_filter_no_match_title`            | No sessions match                                             | Keine passenden Einheiten                                                   |
+| `ui_filter_today` / `_yesterday`      | today / yesterday                                             | heute / gestern                                                             |
+| `ui_filter_this_week` / `_this_month` | this week / this month                                        | diese Woche / diesen Monat                                                  |
+| `ui_filter_since`                     | since {date}                                                  | seit {date}                                                                 |
+| `ui_filter_last_years`                | last {count} years                                            | letzte {count} Jahre                                                        |
+| `ui_filter_name`                      | “{value}”                                                     | „{value}“                                                                   |
 
 The `ui_filter_last_year` key gets deleted. Run `vp build` before `vp check` (Paraglide).
 
@@ -188,6 +188,7 @@ The `ui_filter_last_year` key gets deleted. Run `vp build` before `vp check` (Pa
 `vp build` (Paraglide), `vp check`, `vp test -- --run`, `vp exec playwright test`, `vp build`.
 
 By hand, on desktop and in phone emulation:
+
 - type `runing` and tap the suggestion
 - type `herrenalb` with an intervals.icu session
 - `since march`, `1:30`, `10 mi`

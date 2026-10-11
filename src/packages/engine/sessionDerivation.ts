@@ -1,10 +1,9 @@
-import type { SessionLap, SessionRecord, Sport } from './types.ts';
+import type { SessionRecord, Sport } from './types.ts';
 import { calculateGAP } from './normalize.ts';
 
 export interface RecordDerivedFields {
   distance?: number;
   avgPower?: number;
-  maxPower?: number;
   avgCadence?: number;
   maxSpeed?: number;
   gap?: number;
@@ -45,11 +44,6 @@ export const deriveMaxFromRecords = (
   return Math.max(...values);
 };
 
-export const deriveMovingTimeFromLaps = (laps: SessionLap[]): number | undefined => {
-  if (laps.length === 0) return undefined;
-  return laps.reduce((sum, lap) => sum + (lap.totalMovingTime ?? lap.totalTimerTime), 0);
-};
-
 export const deriveSessionFieldsFromRecords = (
   sport: Sport,
   records: SessionRecord[],
@@ -61,7 +55,6 @@ export const deriveSessionFieldsFromRecords = (
   return {
     distance: deriveDistanceFromRecords(records),
     avgPower: deriveAvgFromRecords(records, 'power'),
-    maxPower: deriveMaxFromRecords(records, 'power'),
     avgCadence: deriveAvgFromRecords(records, 'cadence'),
     maxSpeed: deriveMaxFromRecords(records, 'speed'),
     gap,

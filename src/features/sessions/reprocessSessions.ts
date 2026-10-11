@@ -2,7 +2,6 @@ import type { SessionFields, TrainingSession } from '@/packages/engine/types.ts'
 import type { UserProfile } from '@/types/index.ts';
 import {
   SESSION_DERIVATION_VERSION,
-  deriveMovingTimeFromLaps,
   deriveSessionFieldsFromRecords,
   isSessionOutdated,
 } from '@/packages/engine/sessionDerivation.ts';
@@ -13,7 +12,6 @@ import {
   deleteSessionLaps,
   deleteSessionRecords,
   getFitFile,
-  getSessionLaps,
   getSessionRecords,
   saveSessionLaps,
   saveSessionRecords,
@@ -73,7 +71,6 @@ const replaceSessionData = async (sessionId: string, parsed: ParsedFitResult) =>
 
 const recomputeFromRecords = async (session: TrainingSession): Promise<TrainingSession> => {
   const records = await getSessionRecords(session.id);
-  const laps = await getSessionLaps(session.id);
   const derived = deriveSessionFieldsFromRecords(session.sport, records);
 
   let gap = session.gap;
@@ -83,10 +80,8 @@ const recomputeFromRecords = async (session: TrainingSession): Promise<TrainingS
     ...session,
     distance: derived.distance ?? session.distance,
     avgPower: derived.avgPower ?? session.avgPower,
-    maxPower: derived.maxPower ?? session.maxPower,
     avgCadence: derived.avgCadence ?? session.avgCadence,
     maxSpeed: session.maxSpeed ?? derived.maxSpeed,
-    movingTime: deriveMovingTimeFromLaps(laps) ?? session.movingTime,
     gap,
     derivationVersion: SESSION_DERIVATION_VERSION,
   };

@@ -20,7 +20,7 @@ describe('useMapHover', () => {
     useMapFocusStore.setState({ hoveredSessionId: null, hoveredStudioRouteId: null });
   });
 
-  it('sets and clears hoveredSessionId via pointer handlers on desktop', () => {
+  it('sets and clears hoveredSessionId via pointer handlers with a fine pointer', () => {
     stubMatchMedia(true);
     const { result } = renderHook(() => useMapHover('session', 'session-abc'));
 
@@ -51,7 +51,7 @@ describe('useMapHover', () => {
     expect(useMapFocusStore.getState().hoveredStudioRouteId).toBeNull();
   });
 
-  it('does not touch the store on non-desktop viewports', () => {
+  it('does not touch the store on touch (no fine pointer)', () => {
     stubMatchMedia(false);
     const { result } = renderHook(() => useMapHover('session', 'session-abc'));
 

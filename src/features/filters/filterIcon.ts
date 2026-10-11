@@ -1,4 +1,11 @@
-import { CalendarRange, Mountain, MoveHorizontal, Timer, type LucideIcon } from 'lucide-react';
+import {
+  CalendarRange,
+  Mountain,
+  MoveHorizontal,
+  TextSearch,
+  Timer,
+  type LucideIcon,
+} from 'lucide-react';
 import { sportIcon } from '@/lib/sportIcons.ts';
 import { type FilterCriteria, type FilterPartKind, filterParts } from '@/lib/savedFilters.ts';
 
@@ -7,6 +14,7 @@ const partIcons: Record<Exclude<FilterPartKind, 'sport'>, LucideIcon> = {
   distance: MoveHorizontal,
   duration: Timer,
   elevationGain: Mountain,
+  name: TextSearch,
 };
 
 export const filterIcon = (criteria: FilterCriteria): LucideIcon => {

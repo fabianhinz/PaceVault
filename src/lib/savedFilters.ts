@@ -3,7 +3,9 @@ import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import type { Sport, TrainingSession } from '@/packages/engine/types.ts';
 import { ATTRIBUTE_FILTER_KEYS, matchesFuzzy } from '@/lib/attributeFilters.ts';
+import { normalizeText } from '@/lib/filterVocabulary.ts';
 import {
+  type FilterCalendarUnit,
   type FilterTime,
   type FilterTimeUnit,
   parseDayKey,
@@ -16,6 +18,7 @@ export interface FilterCriteria {
   distance: number | null;
   duration: number | null;
   elevationGain: number | null;
+  name: string | null;
 }
 
 export interface SavedFilter {
@@ -23,11 +26,11 @@ export interface SavedFilter {
   criteria: FilterCriteria;
 }
 
-export type FilterPartKind = 'sport' | 'time' | 'distance' | 'duration' | 'elevationGain';
+export type FilterPartKind = 'sport' | 'time' | 'distance' | 'duration' | 'elevationGain' | 'name';
 
 type FilterSession = Pick<
   TrainingSession,
-  'sport' | 'date' | 'duration' | 'distance' | 'elevationGain'
+  'sport' | 'date' | 'duration' | 'distance' | 'elevationGain' | 'name'
 >;
 
 export const emptyCriteria = (): FilterCriteria => ({
@@ -36,11 +39,13 @@ export const emptyCriteria = (): FilterCriteria => ({
   distance: null,
   duration: null,
   elevationGain: null,
+  name: null,
 });
 
 export const isEmptyCriteria = (criteria: FilterCriteria): boolean =>
   criteria.sport === null &&
   criteria.time === null &&
+  criteria.name === null &&
   ATTRIBUTE_FILTER_KEYS.every((key) => criteria[key] === null);
 
 export const createDefaultSavedFilters = (): SavedFilter[] => [
@@ -65,6 +70,12 @@ const timeKey = (time: FilterTime | null): string => {
   if (time.kind === 'calendarYear') {
     return `calendarYear:${time.yearsAgo}`;
   }
+  if (time.kind === 'calendar') {
+    return `calendar:${time.unit}:${time.ago}`;
+  }
+  if (time.kind === 'since') {
+    return `since:${time.from}`;
+  }
   return `range:${time.from}:${time.to}:${time.source}`;
 };
 
@@ -75,7 +86,21 @@ export const filterKey = (criteria: FilterCriteria): string =>
     criteria.distance ?? '',
     criteria.duration ?? '',
     criteria.elevationGain ?? '',
+    criteria.name ?? '',
   ].join('|');
+
+const matchesName = (sessionName: string | undefined, name: string | null): boolean => {
+  if (name === null) {
+    return true;
+  }
+  if (sessionName === undefined) {
+    return false;
+  }
+  const haystack = normalizeText(sessionName);
+  return normalizeText(name)
+    .split(/\s+/)
+    .every((word) => haystack.includes(word));
+};
 
 export const matchesFilters = (
   session: FilterSession,
@@ -90,6 +115,9 @@ export const matchesFilters = (
   }
   const range = resolveFilterRange(criteria.time, now);
   if (range !== null && (session.date < range.from || session.date > range.to)) {
+    return false;
+  }
+  if (!matchesName(session.name, criteria.name)) {
     return false;
   }
   return (
@@ -126,10 +154,42 @@ const relativeLabel = (amount: number, unit: FilterTimeUnit): string => {
     }
     return m.ui_filter_last_months({ count });
   }
+  if (unit === 'year') {
+    if (amount === 1) {
+      return m.ui_filter_last_year();
+    }
+    return m.ui_filter_last_years({ count });
+  }
+  if (amount === 365) {
+    return m.ui_filter_last_year();
+  }
   if (amount === 1) {
     return m.ui_filter_last_day();
   }
   return m.ui_filter_last_days({ count });
+};
+
+const calendarLabel = (unit: FilterCalendarUnit, ago: number): string => {
+  if (unit === 'day' && ago === 0) {
+    return m.ui_filter_today();
+  }
+  if (unit === 'day' && ago === 1) {
+    return m.ui_filter_yesterday();
+  }
+  if (unit === 'week' && ago === 0) {
+    return m.ui_filter_this_week();
+  }
+  if (unit === 'month' && ago === 0) {
+    return m.ui_filter_this_month();
+  }
+  const range = resolveFilterRange({ kind: 'calendar', unit, ago }, Date.now());
+  if (range === null) {
+    return '';
+  }
+  return new Intl.DateTimeFormat(getLocale(), { day: 'numeric', month: 'short' }).formatRange(
+    range.from,
+    range.to,
+  );
 };
 
 const timeLabel = (time: FilterTime): string => {
@@ -140,10 +200,19 @@ const timeLabel = (time: FilterTime): string => {
     if (time.yearsAgo === 0) {
       return m.ui_filter_this_year();
     }
-    if (time.yearsAgo === 1) {
-      return m.ui_filter_last_year();
-    }
     return String(new Date().getFullYear() - time.yearsAgo);
+  }
+  if (time.kind === 'calendar') {
+    return calendarLabel(time.unit, time.ago);
+  }
+  if (time.kind === 'since') {
+    const since = parseDayKey(time.from);
+    if (since.getMonth() === 0 && since.getDate() === 1) {
+      return m.ui_filter_since({ date: String(since.getFullYear()) });
+    }
+    return m.ui_filter_since({
+      date: new Intl.DateTimeFormat(getLocale(), { month: 'long', year: 'numeric' }).format(since),
+    });
   }
   const from = parseDayKey(time.from);
   const to = parseDayKey(time.to);
@@ -204,6 +273,9 @@ export const filterParts = (criteria: FilterCriteria): FilterPart[] => {
         value: m.ui_filter_elevation({ value: formatNumber(criteria.elevationGain) }),
       }),
     });
+  }
+  if (criteria.name !== null) {
+    parts.push({ kind: 'name', label: m.ui_filter_name({ value: criteria.name }) });
   }
   return parts;
 };

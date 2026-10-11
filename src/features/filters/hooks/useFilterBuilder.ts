@@ -1,19 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { interpretFilterText } from '@/lib/filterGrammar.ts';
+import { type FilterSuggestion, interpretFilterText } from '@/lib/filterGrammar.ts';
 import type { FilterCriteria } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
+
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const replaceWord = (text: string, word: string, replacement: string): string =>
+  text.replace(
+    new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(word)}(?![\\p{L}\\p{N}])`, 'iu'),
+    replacement,
+  );
 
 export const useFilterBuilder = (open: boolean, onClose: () => void) => {
   const sessions = useSessionsStore((s) => s.sessions);
   const [text, setText] = useState('');
   const tilesRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const interpretations = useMemo(
-    () => interpretFilterText(text, sessions, Date.now()),
-    [text, sessions],
-  );
+  const reading = useMemo(() => interpretFilterText(text, sessions, Date.now()), [text, sessions]);
+  const interpretations = reading.interpretations;
 
   useEffect(() => {
     if (!open) {
@@ -64,5 +71,21 @@ export const useFilterBuilder = (open: boolean, onClose: () => void) => {
     }
   };
 
-  return { text, setText, interpretations, select, handleKeyDown, tilesRef, listRef };
+  const applySuggestion = (suggestion: FilterSuggestion) => {
+    setText(replaceWord(text, suggestion.word, suggestion.replacement));
+    inputRef.current?.focus();
+  };
+
+  return {
+    text,
+    setText,
+    reading,
+    interpretations,
+    select,
+    applySuggestion,
+    handleKeyDown,
+    tilesRef,
+    listRef,
+    inputRef,
+  };
 };

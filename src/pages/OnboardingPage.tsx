@@ -6,7 +6,7 @@ import { useLayoutStore } from '@/store/layout.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { FitUploadButton } from '@/features/sessions/FitUploadButton.tsx';
 
-import { generateDevData } from '@/features/dashboard/generateDevData.ts';
+import { loadDemoData } from '@/features/demo/loadDemoData.ts';
 import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/Button.tsx';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
@@ -24,7 +24,7 @@ export const OnboardingPage = () => {
 
   const handleGenerate = async () => {
     try {
-      await generateDevData(queryClient);
+      await loadDemoData(queryClient);
       useLayoutStore.getState().completeOnboarding();
       useLayoutStore.getState().setDemoMode(true);
     } catch {

@@ -10,7 +10,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { RouteErrorFallback } from '@/components/ui/ErrorFallbacks.tsx';
 import { BottomSheet, BottomSheetProvider } from '@/components/ui/BottomSheet.tsx';
 import { DebugCrashTrigger } from '@/lib/debug/DebugCrashTrigger.tsx';
-import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { useIntervalsSync } from '@/features/intervals/hooks/useIntervalsSync.ts';
 import { ImportProgressOverlay } from '@/components/ui/ImportProgressOverlay.tsx';
 import { useSessionReprocessingEffect } from '@/features/sessions/hooks/useSessionReprocessingEffect.ts';
@@ -54,7 +54,7 @@ const MobileSheet = () => {
 
 export const AppLayout = () => {
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
-  const isDesktop = useIsDesktop();
+  const device = useDevice();
 
   useSessionReprocessingEffect();
   useIntervalsSync();
@@ -65,7 +65,7 @@ export const AppLayout = () => {
         <DebugCrashTrigger target="map" />
         <MapBackground />
       </ErrorBoundary>
-      {onboardingComplete && isDesktop && (
+      {onboardingComplete && device.isDesktop && (
         <>
           <main
             data-layout="main"
@@ -81,7 +81,7 @@ export const AppLayout = () => {
           <Dock />
         </>
       )}
-      {onboardingComplete && !isDesktop && (
+      {onboardingComplete && !device.isDesktop && (
         <BottomSheetProvider>
           <MobileSheet />
           <Dock />

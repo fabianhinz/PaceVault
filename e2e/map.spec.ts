@@ -65,4 +65,24 @@ test.describe('map hover', () => {
     await page.waitForTimeout(3000);
     await expectPointerOnlyOverTrack(page);
   });
+
+  test('track click opens the picker popover at the click point', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(3000);
+    const hit = await findPickableTrack(page);
+    await page.mouse.click(hit.x, hit.y);
+
+    const popover = page.locator('[data-radix-popper-content-wrapper]').getByRole('dialog');
+    await expect(popover).toContainText('Sessions recorded near this location');
+    await page.waitForTimeout(300);
+    const box = await popover.boundingBox();
+    if (!box) throw new Error('picker not rendered');
+    const nearX = Math.min(Math.abs(box.x - hit.x), Math.abs(box.x + box.width - hit.x));
+    const nearY = Math.min(Math.abs(box.y - hit.y), Math.abs(box.y + box.height - hit.y));
+    expect(nearX).toBeLessThanOrEqual(8);
+    expect(nearY).toBeLessThanOrEqual(8);
+
+    await page.keyboard.press('Escape');
+    await expect(popover).toBeHidden();
+  });
 });

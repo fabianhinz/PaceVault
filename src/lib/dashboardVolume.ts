@@ -64,7 +64,9 @@ const sameDateLastYear = (key: string): string => {
 
 const isCalendarTime = (time: FilterTime | null): boolean => {
   if (time === null) return false;
-  if (time.kind === 'calendarYear') return true;
+  if (time.kind === 'calendarYear' || time.kind === 'calendar' || time.kind === 'since') {
+    return true;
+  }
   return time.kind === 'range' && time.source !== 'zoom';
 };
 

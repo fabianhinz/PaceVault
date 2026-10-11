@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 
 const setHovered = {
   session: (id: string | null) => useMapFocusStore.getState().setHoveredSession(id),
@@ -10,11 +10,12 @@ const setHovered = {
 type MapHoverKind = keyof typeof setHovered;
 
 /**
- * Hovering a list item highlights the matching entity on the map (desktop
- * only — touch has no hover); leaving or unmounting clears the highlight.
+ * Hovering a list item highlights the matching entity on the map (fine
+ * pointer only — a tap on touch would leave the highlight stuck); leaving or
+ * unmounting clears the highlight.
  */
 export const useMapHover = (kind: MapHoverKind, id: string) => {
-  const isDesktop = useIsDesktop();
+  const pointerFine = useDevice().pointerFine;
 
   useEffect(() => {
     return () => {
@@ -23,16 +24,16 @@ export const useMapHover = (kind: MapHoverKind, id: string) => {
   }, [kind]);
 
   const onPointerEnter = useCallback(() => {
-    if (isDesktop) {
+    if (pointerFine) {
       setHovered[kind](id);
     }
-  }, [kind, id, isDesktop]);
+  }, [kind, id, pointerFine]);
 
   const onPointerLeave = useCallback(() => {
-    if (isDesktop) {
+    if (pointerFine) {
       setHovered[kind](null);
     }
-  }, [kind, isDesktop]);
+  }, [kind, pointerFine]);
 
   return { onPointerEnter, onPointerLeave };
 };

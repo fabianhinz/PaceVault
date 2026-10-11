@@ -144,12 +144,83 @@ describe('migrateFilters', () => {
   });
 
   it('falls back to defaults for unrecognised state', () => {
-    for (const state of [null, 'broken', { loadChartGroupBy: 'year' }]) {
-      const migrated = migrateFilters(state, 2);
-      expect(migrated.savedFilters).toHaveLength(3);
-      expect(migrated.activeFilter).toBeNull();
-      expect(migrated.loadChartGroupBy).toBe('week');
-      expect(migrated.volumeChartMetric).toBe('distance');
+    for (const fromVersion of [2, 3]) {
+      for (const state of [null, 'broken', { loadChartGroupBy: 'year' }]) {
+        const migrated = migrateFilters(state, fromVersion);
+        expect(migrated.savedFilters).toHaveLength(3);
+        expect(migrated.activeFilter).toBeNull();
+        expect(migrated.loadChartGroupBy).toBe('week');
+        expect(migrated.volumeChartMetric).toBe('distance');
+      }
     }
+  });
+
+  it('v3 keeps saved filters and adds an empty name', () => {
+    const v3Run = {
+      sport: 'running',
+      time: { kind: 'relative', amount: 30, unit: 'day' },
+      distance: 10000,
+      duration: null,
+      elevationGain: null,
+    };
+    const migrated = migrateFilters(
+      {
+        savedFilters: [
+          { id: 'a', criteria: v3Run },
+          { id: 'b', criteria: { sport: 'swimming', time: null } },
+          {
+            id: 'c',
+            criteria: {
+              sport: null,
+              time: { kind: 'range', from: '2025-01-01', to: '2025-12-31', source: 'year' },
+              distance: null,
+              duration: null,
+              elevationGain: 1000,
+            },
+          },
+        ],
+        activeFilter: v3Run,
+        loadChartGroupBy: 'month',
+        volumeChartMetric: 'elevation',
+      },
+      3,
+    );
+    expect(migrated.savedFilters).toEqual([
+      { id: 'a', criteria: { ...v3Run, name: null } },
+      {
+        id: 'c',
+        criteria: criteria({
+          time: { kind: 'range', from: '2025-01-01', to: '2025-12-31', source: 'year' },
+          elevationGain: 1000,
+        }),
+      },
+    ]);
+    expect(migrated.activeFilter).toEqual({ ...v3Run, name: null });
+    expect(migrated.loadChartGroupBy).toBe('month');
+    expect(migrated.volumeChartMetric).toBe('elevation');
+  });
+
+  it('v3 "last year" becomes the rolling 365 days', () => {
+    const lastYear = {
+      sport: null,
+      time: { kind: 'calendarYear', yearsAgo: 1 },
+      distance: null,
+      duration: null,
+      elevationGain: null,
+    };
+    const rolling = criteria({ time: { kind: 'relative', amount: 365, unit: 'day' } });
+    const migrated = migrateFilters(
+      {
+        savedFilters: [
+          { id: 'a', criteria: lastYear },
+          { id: 'b', criteria: { ...rolling, name: undefined } },
+        ],
+        activeFilter: lastYear,
+        volumeChartMetric: 'distance',
+      },
+      3,
+    );
+    expect(migrated.savedFilters).toEqual([{ id: 'a', criteria: rolling }]);
+    expect(migrated.activeFilter).toEqual(rolling);
   });
 });

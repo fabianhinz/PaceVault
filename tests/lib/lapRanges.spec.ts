@@ -14,7 +14,6 @@ const lap = (lapIndex: number, fromSec: number, toSec: number): SessionLap => ({
   lapIndex,
   startTime: START_MS + fromSec * 1000,
   endTime: START_MS + toSec * 1000,
-  totalElapsedTime: toSec - fromSec,
   totalTimerTime: toSec - fromSec,
 });
 

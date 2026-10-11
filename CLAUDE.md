@@ -103,4 +103,5 @@ Every surface takes its background from `src/components/ui/Card.tsx`; never hand
 
 - **Content** (cards, the bottom sheet, segmented controls, chart cards): `glassClass`.
 - **Floating** (anything drawn over other content: portals, fixed/absolute/sticky overlays, popups, map markers, pills over charts or the map): `floatingClass`, or `<Card floating>`.
+- **Sticky only from `lg`** (floats on desktop, scrolls with the page below): `floatingLgClass`.
 - Decide by placement, not by component: a `Card` over the map is floating, the bottom sheet is content.

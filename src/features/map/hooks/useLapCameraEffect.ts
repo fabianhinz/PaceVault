@@ -3,6 +3,7 @@ import { useMap } from 'react-map-gl/maplibre';
 import { MAP_FIT_MARGIN, mapPadding } from '../mapPadding.ts';
 
 const LAP_MAX_ZOOM = 16;
+const LAP_SHEET_CAP = 0.85;
 
 const boundsOf = (path: [number, number][]): [[number, number], [number, number]] | null => {
   const first = path[0];
@@ -42,7 +43,7 @@ export const useLapCameraEffect = (
     const bounds = boundsOf(target);
     if (!bounds) return;
     map.fitBounds(bounds, {
-      padding: mapPadding(MAP_FIT_MARGIN),
+      padding: mapPadding(MAP_FIT_MARGIN, { sheetCap: LAP_SHEET_CAP }),
       maxZoom: LAP_MAX_ZOOM,
       duration: 800,
     });

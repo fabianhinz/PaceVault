@@ -2,8 +2,12 @@ import { cn } from '@/lib/utils.ts';
 
 export const glassClass = 'bg-surface/55 backdrop-blur-xl border border-white/10';
 
-export const floatingClass =
-  'bg-surface/85 backdrop-blur-xl border border-white/10 shadow-[0_8px_24px_rgb(0_0_0/0.4)]';
+const floatingSurface = 'bg-surface/85 backdrop-blur-xl border border-white/10';
+
+export const floatingClass = `${floatingSurface} shadow-[0_8px_24px_rgb(0_0_0/0.4)]`;
+
+/** Surface that only floats from `lg` (e.g. sticky from `lg`), so it drops the shadow below. */
+export const floatingLgClass = `${floatingSurface} lg:shadow-[0_8px_24px_rgb(0_0_0/0.4)]`;
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;

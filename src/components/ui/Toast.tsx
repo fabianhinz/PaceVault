@@ -1,7 +1,7 @@
 import * as ToastPrimitive from '@radix-ui/react-toast';
 import { cn } from '@/lib/utils.ts';
 import { DOCK_FOOTPRINT_CSS } from '@/lib/dockGeometry.ts';
-import { useIsDesktop } from '@/lib/hooks/useIsDesktop.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { floatingClass } from './Card.tsx';
 import { useToastStore } from './toastStore.ts';
 
@@ -14,7 +14,7 @@ const variantClasses: Record<string, string> = {
 
 export const ToastViewport = () => {
   const toasts = useToastStore((s) => s.toasts);
-  const isDesktop = useIsDesktop();
+  const device = useDevice();
 
   return (
     <ToastPrimitive.Provider swipeDirection="right">
@@ -47,7 +47,7 @@ export const ToastViewport = () => {
         );
       })}
       <ToastPrimitive.Viewport
-        style={{ bottom: isDesktop ? undefined : DOCK_FOOTPRINT_CSS }}
+        style={{ bottom: device.isDesktop ? undefined : DOCK_FOOTPRINT_CSS }}
         className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex max-w-sm flex-col gap-2 rounded-lg"
       />
     </ToastPrimitive.Provider>

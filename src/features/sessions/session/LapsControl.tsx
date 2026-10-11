@@ -196,7 +196,7 @@ const StepButton = (props: {
     disabled={props.disabled}
     onClick={props.onClick}
     className={cn(
-      'inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full',
+      '-my-px inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full',
       'text-text-secondary transition-colors hover:bg-white/10 hover:text-text-primary',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
       'disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent',
@@ -220,51 +220,53 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
   const next = stepLap(props.set.bands, props.lapIndex, 1);
 
   return (
-    <div
-      role="group"
-      aria-label={m.ui_laps()}
-      data-testid="lap-stepper"
-      className={cn(floatingPillClass, 'gap-0.5 py-1 pr-1 pl-3')}
-    >
-      <Flag size={16} className="mr-1 shrink-0" />
-      <StepButton
-        label={m.ui_lap_prev()}
-        testId="lap-stepper-prev"
-        disabled={previous === undefined}
-        onClick={() => {
-          if (previous !== undefined) useMapFocusStore.getState().selectLap(previous);
-        }}
+    <>
+      <div
+        role="group"
+        aria-label={m.ui_laps()}
+        data-testid="lap-stepper"
+        className={cn(floatingPillClass, 'h-11 gap-0 pr-0 pl-3')}
       >
-        <ChevronLeft size={16} />
-      </StepButton>
-      <span
-        data-testid="lap-stepper-name"
-        className={cn(
-          'w-[72px] text-center tabular-nums',
-          lap && lap.intensity !== 'active' && 'text-text-tertiary',
-        )}
-      >
-        {lapName(props.lapIndex, props.source)}
-      </span>
-      <StepButton
-        label={m.ui_lap_next()}
-        testId="lap-stepper-next"
-        disabled={next === undefined}
-        onClick={() => {
-          if (next !== undefined) useMapFocusStore.getState().selectLap(next);
-        }}
-      >
-        <ChevronRight size={16} />
-      </StepButton>
-      <span aria-hidden className="h-5 w-px shrink-0 bg-white/10" />
-      <StepButton
-        label={m.ui_lap_clear()}
-        testId="lap-stepper-clear"
+        <Flag size={16} className="mr-1 shrink-0" />
+        <StepButton
+          label={m.ui_lap_prev()}
+          testId="lap-stepper-prev"
+          disabled={previous === undefined}
+          onClick={() => {
+            if (previous !== undefined) useMapFocusStore.getState().selectLap(previous);
+          }}
+        >
+          <ChevronLeft size={16} />
+        </StepButton>
+        <span
+          data-testid="lap-stepper-name"
+          className={cn(
+            'w-[72px] text-center tabular-nums',
+            lap && lap.intensity !== 'active' && 'text-text-tertiary',
+          )}
+        >
+          {lapName(props.lapIndex, props.source)}
+        </span>
+        <StepButton
+          label={m.ui_lap_next()}
+          testId="lap-stepper-next"
+          disabled={next === undefined}
+          onClick={() => {
+            if (next !== undefined) useMapFocusStore.getState().selectLap(next);
+          }}
+        >
+          <ChevronRight size={16} />
+        </StepButton>
+      </div>
+      <FloatingPill
+        aria-label={m.ui_lap_clear()}
+        data-testid="lap-stepper-clear"
+        className="ml-1 size-11 justify-center p-0 text-text-secondary"
         onClick={() => useMapFocusStore.getState().clearSelectedLap()}
       >
         <X size={16} />
-      </StepButton>
-    </div>
+      </FloatingPill>
+    </>
   );
 };
 
@@ -300,7 +302,7 @@ export const LapsControl = (props: LapsControlProps) => {
       align="center"
       className="lg:w-80"
       trigger={
-        <FloatingPill data-testid="laps-pill">
+        <FloatingPill data-testid="laps-pill" className="h-11">
           <Flag size={16} />
           <span>{pillLabel(source, sessionLaps, splitDistance)}</span>
           {source !== 'off' && sessionLaps && <LapSwatch set={sessionLaps} />}

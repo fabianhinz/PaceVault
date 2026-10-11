@@ -26,6 +26,7 @@ import type { StatRailNote } from '@/components/ui/StatRail.tsx';
 import { sportIcon } from '@/lib/sportIcons.ts';
 import { formatChartTime, sessionTimeXAxis } from '@/lib/chartTheme.ts';
 import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { lapIndexAtTime } from '@/lib/lapRanges.ts';
 import { HrChart } from './HrChart.tsx';
 import { PowerChart } from './PowerChart.tsx';
@@ -152,6 +153,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     [rows, compactRows],
   );
 
+  const pointerFine = useDevice().pointerFine;
   const onHover = useCallback(
     (time: number | null) => {
       if (time == null) {
@@ -163,11 +165,11 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       useChartHoverStore.getState().setChartHover(HOVER_GROUP, time);
       useMapFocusStore.getState().setHoveredLap(lapIndexAtTime(currentLapBands(), time) ?? null);
       const point = gpsLookup.get(time);
-      if (point) {
+      if (point && pointerFine) {
         useMapFocusStore.getState().setHoveredPoint(point);
       }
     },
-    [gpsLookup],
+    [gpsLookup, pointerFine],
   );
 
   const onSelectTime = useCallback((time: number) => {

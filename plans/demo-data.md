@@ -106,6 +106,7 @@
 `vp check`, `vp test -- --run`, `vp exec playwright test` (the existing `e2e/onboarding.spec.ts:40` test covers the flow; check that it stays within its 30 s timeout), `vp build`.
 
 By hand:
+
 - Onboarding → test data, online and offline.
 - The dashboard shows 12 months of CTL/ATL/TSB with the break and the taper.
 - The Munich heatmap has overlapping loops.

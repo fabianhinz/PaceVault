@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/Button.tsx';
+import { ExternalLink } from '@/components/ui/ExternalLink.tsx';
 import { Input } from '@/components/ui/Input.tsx';
 import { Label } from '@/components/ui/Label.tsx';
 import { useIntervalsStore } from '@/store/intervals.ts';
@@ -150,17 +151,9 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
             pastingRef.current = false;
           }}
           helperText={
-            <div className="flex gap-1 align-center text-accent">
-              <Info size={16} strokeWidth={1.5} className="shrink-0" />
-              <a
-                href={SETTINGS_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="cursor-pointer hover:underline"
-              >
-                {m.ui_intervals_connect_help()}
-              </a>
-            </div>
+            <ExternalLink href={SETTINGS_URL} icon={Info}>
+              {m.ui_intervals_connect_help()}
+            </ExternalLink>
           }
         />
       </div>

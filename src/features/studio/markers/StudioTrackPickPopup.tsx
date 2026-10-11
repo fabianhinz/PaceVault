@@ -1,9 +1,8 @@
-import { Download, X } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { useStudioStore } from '@/store/studio.ts';
 import { Button } from '@/components/ui/Button.tsx';
-import { CardHeader } from '@/components/ui/CardHeader.tsx';
-import { MapPopupShell } from '@/features/map/MapPopupShell.tsx';
+import { MapPickPopup } from '@/features/map/MapPickPopup.tsx';
 import { toKm } from '@/lib/formatters.ts';
 import { AddMarkerButton } from './AddMarkerButton.tsx';
 import { segmentAtDistance } from './routeSegments.ts';
@@ -50,50 +49,40 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
   }
 
   return (
-    <MapPopupShell
+    <MapPickPopup
       x={props.info.x}
       y={props.info.y}
+      title={m.ui_studio_pick_title()}
+      subtitle={subtitleParts.join(' · ')}
       onClose={props.onClose}
-      desktopSizeClasses="w-[380px]"
     >
-      <CardHeader
-        title={m.ui_studio_pick_title()}
-        subtitle={subtitleParts.join(' · ')}
-        actions={
-          <Button variant="ghost" size="icon" aria-label={m.ui_btn_close()} onClick={props.onClose}>
-            <X size={16} />
-          </Button>
-        }
+      <AddMarkerButton
+        routeId={props.info.routeId}
+        type="track_modifier"
+        distanceM={props.info.distanceM}
+        onDone={props.onClose}
       />
-      <div className="space-y-2">
-        <AddMarkerButton
-          routeId={props.info.routeId}
-          type="track_modifier"
-          distanceM={props.info.distanceM}
-          onDone={props.onClose}
-        />
-        <AddMarkerButton
-          routeId={props.info.routeId}
-          type="point_of_interest"
-          distanceM={props.info.distanceM}
-          onDone={props.onClose}
-        />
+      <AddMarkerButton
+        routeId={props.info.routeId}
+        type="point_of_interest"
+        distanceM={props.info.distanceM}
+        onDone={props.onClose}
+      />
 
-        {route && segment && (
-          <Button
-            variant="secondary"
-            className="w-full"
-            disabled={!hasSplits || segmentPointCount < 2 || segmentExport.exporting}
-            onClick={() => {
-              segmentExport.exportSegment(route, segment.startM, segment.endM, segment.index);
-              props.onClose();
-            }}
-          >
-            <Download className="size-4" />
-            {exportLabel}
-          </Button>
-        )}
-      </div>
-    </MapPopupShell>
+      {route && segment && (
+        <Button
+          variant="secondary"
+          className="w-full"
+          disabled={!hasSplits || segmentPointCount < 2 || segmentExport.exporting}
+          onClick={() => {
+            segmentExport.exportSegment(route, segment.startM, segment.endM, segment.index);
+            props.onClose();
+          }}
+        >
+          <Download className="size-4" />
+          {exportLabel}
+        </Button>
+      )}
+    </MapPickPopup>
   );
 };

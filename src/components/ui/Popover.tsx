@@ -4,6 +4,7 @@ import { floatingClass } from './Card.tsx';
 
 export const PopoverRoot = PopoverPrimitive.Root;
 export const PopoverTrigger = PopoverPrimitive.Trigger;
+export const PopoverAnchor = PopoverPrimitive.Anchor;
 
 const isFocusElsewhere = () =>
   document.activeElement !== null && document.activeElement !== document.body;

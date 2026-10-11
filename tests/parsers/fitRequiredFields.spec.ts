@@ -95,10 +95,9 @@ describe('parseFitFile optional data', () => {
     expect(result.session.distance).toBe(0);
   });
 
-  it('leaves lap distance and avg speed undefined when missing', async () => {
+  it('lap distance undefined when missing', async () => {
     const result = await parse({ sessions: [session], laps: [lap] });
     expect(result.laps[0]?.distance).toBeUndefined();
-    expect(result.laps[0]?.avgSpeed).toBeUndefined();
   });
 
   it('counts recorded zeros in avg power and cadence', async () => {

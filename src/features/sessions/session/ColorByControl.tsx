@@ -45,6 +45,11 @@ const PILL_LABEL: Record<ColorMode, () => string> = {
   wind: m.ui_color_by_pill_wind,
 };
 
+const COMPACT_MODE_LABEL: Record<ColorMode, () => string> = {
+  ...PILL_LABEL,
+  sport: m.ui_color_by_sport,
+};
+
 const REASON: Record<ColorModeUnavailableReason, () => string> = {
   hrThresholds: m.ui_color_by_reason_hrThresholds,
   ftp: m.ui_color_by_reason_ftp,
@@ -104,6 +109,7 @@ interface ColorByControlProps {
 
 export const ColorByControl = (props: ColorByControlProps) => {
   const [open, setOpen] = useState(false);
+  const hasSelectedLap = useMapFocusStore((s) => s.selectedLapIndex !== null);
 
   return (
     <ResponsivePopover
@@ -114,12 +120,24 @@ export const ColorByControl = (props: ColorByControlProps) => {
       align="center"
       className="lg:w-80"
       trigger={
-        <FloatingPill data-testid="color-by-pill">
-          <Layers size={16} />
-          <span>{PILL_LABEL[props.effective]()}</span>
-          {props.effective !== 'sport' && <Swatch mode={props.effective} sport={props.sport} />}
-          <ChevronDown size={14} className="text-text-tertiary" />
-        </FloatingPill>
+        hasSelectedLap ? (
+          <FloatingPill
+            data-testid="color-by-pill"
+            aria-label={m.ui_color_by_compact_label({
+              mode: COMPACT_MODE_LABEL[props.effective](),
+            })}
+            className="size-11 justify-center p-0"
+          >
+            <Layers size={16} />
+          </FloatingPill>
+        ) : (
+          <FloatingPill data-testid="color-by-pill" className="h-11">
+            <Layers size={16} />
+            <span>{PILL_LABEL[props.effective]()}</span>
+            {props.effective !== 'sport' && <Swatch mode={props.effective} sport={props.sport} />}
+            <ChevronDown size={14} className="text-text-tertiary" />
+          </FloatingPill>
+        )
       }
     >
       <div className="mb-3 flex items-center gap-2 text-text-tertiary">

@@ -26,25 +26,29 @@
   - Body: `grid-cols-[1fr_272px_272px]`. Left: 3 × 2 grid of 5 desktop tiles, the heatmap spans both rows. Right: 2 phone tiles (frame ~232 px wide, 390:844, rounded, `gray-800` border; shot `object-fit: cover`, `object-position: top`). Each frame has a drawn iOS-style status bar row above the shot ("9:41" left; right: lucide `Signal` + `Wifi` + `BatteryFull` on tile 6, `Plane` + `BatteryFull` on tile 3 = airplane mode, the offline cue a screenshot alone can't give).
   - Each tile is one `<Card>` (content surface → `glassClass`): screenshot (`object-fit: cover` with a per-tile `object-position`, rounded), then the title/subtitle pair `CardHeader` uses — `Typography title` + `Typography caption` — at 1.5× (`zoom: 1.5` on the text block, so 24/18 px; variants unchanged). Title strip text gets the same 1.5×. Text never wraps; overflow is a bug.
   - Rendered as a React page served by `vp dev`, importing `@/index.css`, `Card` and `Typography` directly — no copied class strings or hex values.
-- **Output:** committed `docs/readme/banner.png`; raw tile shots in `scripts/readme/out/` (gitignored). `app.png` deleted.
+- **Output:** committed `docs/readme/de_banner.png` (embedded in README) and `docs/readme/en_banner.png`; `vp run readme:banner [--locale de|en]` (default `de`, via `scripts/readme/run.ts` → `README_LOCALE`); raw tile shots in `scripts/readme/out/<locale>/` (gitignored). `app.png` deleted.
+- **Rendering:** Playwright `channel: 'chromium'` (full build, new headless, real GPU). The headless shell / SwiftShader composited `backdrop-filter` only partly and `clip` screenshots dropped it, so every shot is a whole-window screenshot cropped in a helper page, taken after animations finish and two frames match.
 - **Tiles (final):** 7. The local-first claim lives in the title strip; the storage tile and Personal bests are out.
 
-  | #   | Shot                                                                                                 | Viewport | Place             | Title                  | Subtitle                        |
-  | --- | ---------------------------------------------------------------------------------------------------- | -------- | ----------------- | ---------------------- | ------------------------------- |
-  | 1   | `/`, all time, sheet collapsed; a track clicked where runs and rides overlap, pick popover open      | desktop  | left, both rows   | Interactive heatmap    | Click a track, see its sessions |
-  | 2   | session detail, Color by → Heart rate, lap selected, zoomed out 3 steps                              | desktop  | grid              | Zones on the route     | HR, power or wind, lap by lap   |
-  | 3   | session detail while offline: map with tiles + track, stats, expanded `weather-card` below the map    | mobile   | phone 1           | Works offline          | Map and weather, no signal      |
-  | 4   | charts explorer, 1 km splits, pace + GAP                                                             | desktop  | grid              | Laps, splits & GAP     | Lap bands on every chart        |
-  | 5   | dashboard performance chart + readiness/ACWR gauges                                                  | desktop  | grid              | Fitness & form         | Load, fatigue and readiness     |
-  | 6   | filter input typed "ride 90 days 50 km" with result list                                             | mobile   | phone 2           | Filters in plain words | Type “ride 90 days 50 km”       |
-  | 7   | Studio: route with 2 split points, 1 waypoint, export popup open                                     | desktop  | grid              | Route studio           | Split a GPX, export segments    |
+  | #   | Shot                                                                                         | Viewport | Place           | Session                                     |
+  | --- | -------------------------------------------------------------------------------------------- | -------- | --------------- | ------------------------------------------- |
+  | 1   | `/`, locate me at a point on the Isar shared by runs and rides, click the dot → pick popover | desktop  | left, both rows | tracks under the dot (≥ 3, run + ride)      |
+  | 2   | session detail, Color by → Heart rate, no lap selected                                       | desktop  | grid            | most recent "6×800 m Isar" (all 5 HR zones) |
+  | 3   | GAP chart with a selected 1 km lap, stacked over the dock filter with the typed query        | desktop  | grid            | most recent "Flaucher easy"                 |
+  | 4   | dashboard Current Form gauges + Performance Metrics                                          | desktop  | grid            | dashboard                                   |
+  | 5   | Studio: route with 2 split points, 1 waypoint, export popup open                             | desktop  | grid            | studio route "Tegernsee loop"               |
+  | 6   | session detail offline (preview build, SW cache): map, track, stats                          | mobile   | phone 1         | most recent "Starnberger See long ride"     |
+  | 7   | session detail, Color by → Wind, weather card expanded                                       | mobile   | phone 2         | most recent "Dachau loop"                   |
 
-  No "only/first/unique" claims, no trademarked metric names (TSS/NP/IF). Tile 1 leads with interactivity (the heatmap is clickable, not a static image) without claiming nobody else does it. Tile 6's subtitle is exactly the typed text; change both together.
-- **Tile 1 capture:** desktop, camera as fitted. Scan a grid around the viewport centre (the fitted dense cluster) with `findTrackPoint` (moved to `e2e/helpers/` by `plans/mobile-touch.md`), keeping the first point whose pick popover lists ≥ 3 sessions incl. both a run and a ride. Hover it (track highlight), click, wait for the popover (`ResponsivePopover` anchored at the click point), settle, shot. Mouse stays on the point.
-- **Tile 2 capture** (as in the mockup): open the session, `color-by-pill` → "Heart rate" → Escape; expand `laps-row` (first button); click `lap-strip-bar` index 3 (an active 800 m rep); wait 1.2 s for the lap camera; blur focus. Then `mouse.move` to the map centre (mockup: 600, 450 in the 1440 × 900 viewport) and `mouse.wheel(0, 700)` 3 times with 500 ms between; then settle (`networkidle` + settle) and shot. The lap stays bright, the rest of the route dims but stays visible. `map.zoomTo` is not reachable without an app hook, hence the wheel.
-- **Offline tile replaces the weather tile (7 tiles stay):** a third phone column would squeeze the desktop tiles below the width their 1.5× text needs, and the offline shot still shows the (cached) weather card.
-- **Tile 3 capture (offline):** the SW is only registered in a production build (`VitePWA` has no `devOptions`, `vite.config.ts:89-120`), so this test runs against `vp build && vp preview` (own origin, own demo load). Steps: load demo data → `navigator.serviceWorker.ready`, reload so the SW controls the page → open the session online at the shot viewport (Open-Meteo stubbed via `context.route`, which also sees SW requests) → `networkidle` + settle so `carto-tiles`/`carto-assets` and the `session-weather` IDB entry are filled (check `caches.has('carto-tiles')`) → `context.setOffline(true)` plus `context.route` aborting `cartocdn.com` and `open-meteo.com` (proves cache only) → `page.reload()` → settle → expand `weather-card`, scroll the sheet so it sits under the map → shot. Map tiles, track and weather must render; a blank basemap fails the run.
-- **Tile 6 typed text:** "ride 90 days 50 km" reads the same under `plans/filter-query.md` (explicit `days`/`km` units, no caps; its "last year" = 365 days change does not touch it; leftover-word name search gets no leftovers). The new placeholder is not shown because the field is filled.
+  Titles, subtitles, tagline and the typed filter live per locale in `scripts/readme/tiles.ts` (`BANNER_TEXT`); tile 3's subtitle quotes the typed query exactly (en "ride 50", de "rad 50", 3 readings each).
+
+  No "only/first/unique" claims, no trademarked metric names (TSS/NP/IF). Tile 1 leads with interactivity (the heatmap is clickable, not a static image) without claiming nobody else does it. Tile 3's subtitle is exactly the typed text; change both together.
+
+- **Tile 1 capture:** desktop, geolocation granted and set to a point on the Isar shared by the Isar runs and the Starnberger / Wolfratshausen rides; click "locate me", find the blue position dot in the screenshot, click it → pick popover (≥ 3 sessions, run + ride). Mouse stays on the dot. GPX export is only named in the subtitle.
+- **Tile 2 capture:** session picked by scoring every demo GPS session's HR/power zone share along the track; "6×800 m Isar" spreads over all five HR zones on a compact route. Color by → Heart rate, no lap selected, no zoom.
+- **Laps/GAP and filter share one tile; weather gets its own phone tile (7 tiles stay):** GAP is the smaller share (2 : 3 stacked with the filter shot).
+- **Tile 6 capture (offline):** the SW is only registered in a production build (`VitePWA` has no `devOptions`, `vite.config.ts:89-120`), so this test runs against `vp build && vp preview` (own origin, own demo load). Steps: load demo data → `navigator.serviceWorker.ready`, reload so the SW controls the page → open the session online at the shot viewport (Open-Meteo stubbed via `context.route`, which also sees SW requests) → `networkidle` + settle so `carto-tiles`/`carto-assets` and the `session-weather` IDB entry are filled (check `caches.has('carto-tiles')`) → `context.setOffline(true)` plus `context.route` aborting `cartocdn.com` and `open-meteo.com` (proves cache only) → `page.reload()` → settle → shot (weather card collapsed; it gets tile 7). Map tiles, track and stats must render; a blank basemap fails the run.
+- **Tile 3 typed text:** en "ride 50" / de "rad 50" — a bare number reads as km, days and min, so the filter shows 3 readings against the demo data.
 - **README:** users first, contributors at the bottom of the same file.
 
 ## Approach
@@ -67,15 +71,15 @@
 
 ## Demo sessions per tile
 
-| Tile | Demo data used |
-| ---- | -------------- |
-| 1 | all Munich foot + bike loops from HOME (camera fits the densest cluster, Garda trip ignored); runs and rides overlap near HOME |
-| 2 | most recent "6×800 m Isar" (HR, real DEM elevation, warmup/active/rest laps); `lap-strip-bar` index 3 |
-| 3 | most recent "Starnberger See long ride" (outdoor GPS; weather from the stub, cached before going offline) |
-| 4 | most recent "Flaucher easy" (1 km auto-laps, elevation → GAP) |
-| 5 | dashboard as is (last 8 weeks rebuild → rising CTL) |
-| 6 | filter "ride 90 days 50 km" → "Starnberger See long ride" instances |
-| 7 | studio route "Tegernsee loop" |
+| Tile | Demo data used                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | all Munich foot + bike loops from HOME (camera fits the densest cluster, Garda trip ignored); runs and rides overlap near HOME |
+| 2    | most recent "6×800 m Isar" (HR, real DEM elevation, warmup/active/rest laps); `lap-strip-bar` index 3                          |
+| 3    | most recent "Starnberger See long ride" (outdoor GPS; weather from the stub, cached before going offline)                      |
+| 4    | most recent "Flaucher easy" (1 km auto-laps, elevation → GAP)                                                                  |
+| 5    | dashboard as is (last 8 weeks rebuild → rising CTL)                                                                            |
+| 3    | filter "ride 50" / "rad 50" → about 50 km, last 50 days, about 50 min                                                          |
+| 7    | studio route "Tegernsee loop"                                                                                                  |
 
 ## Needs from demo-data
 
