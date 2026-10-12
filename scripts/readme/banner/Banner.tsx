@@ -1,27 +1,27 @@
-import { useLayoutEffect, useRef } from 'react';
-import { BatteryFull, Plane, Signal, Wifi } from 'lucide-react';
+import { Fragment, useLayoutEffect, useRef } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { cn } from '@/lib/utils.ts';
 import {
+  BANNER_FLOWS,
   BANNER_TEXT,
   BANNER_TILES,
   DEFAULT_BANNER_LOCALE,
   isBannerLocale,
+  type BannerFlow,
+  type BannerFrame,
   type BannerTile,
 } from '../tiles.ts';
 
-/** Banner text is the app's own type scale, enlarged so it stays readable at README width. */
 const TEXT_ZOOM = 1.5;
 
-/** The capture opens this page with `?locale=de|en`. */
 const localeParam = new URLSearchParams(window.location.search).get('locale');
 const locale = isBannerLocale(localeParam) ? localeParam : DEFAULT_BANNER_LOCALE;
 const text = BANNER_TEXT[locale];
 
 const shotUrl = (file: string) => `/scripts/readme/out/${locale}/${file}`;
 
-/** Text that never wraps; flags itself with `data-overflow` when it does not fit. */
 const FitText = (props: { children: React.ReactNode; className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -45,83 +45,112 @@ const FitText = (props: { children: React.ReactNode; className?: string }) => {
   );
 };
 
-const TileText = (props: { tile: BannerTile; className?: string }) => (
-  <FitText className={cn('px-1', props.className)}>
-    <Typography variant="title" as="span">
-      {text.tiles[props.tile.key].title}
-    </Typography>
-    <Typography variant="caption" as="span">
-      {text.tiles[props.tile.key].subtitle}
-    </Typography>
-  </FitText>
-);
-
-const DesktopTile = (props: { tile: BannerTile }) => (
-  <Card className={cn('min-h-0 min-w-0 gap-2.5 p-3', props.tile.place === 'hero' && 'row-span-2')}>
-    <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden rounded-[10px] bg-surface-sunken">
-      {props.tile.shots.map((shot) => (
-        <img
-          key={shot.file}
-          src={shotUrl(shot.file)}
-          alt=""
-          className="block min-h-0 w-full flex-1 basis-0 object-cover"
-          style={{ objectPosition: shot.objectPosition, flexGrow: shot.grow ?? 1 }}
-        />
-      ))}
-    </div>
-    <TileText tile={props.tile} />
-  </Card>
-);
-
-const StatusBar = (props: { mode: BannerTile['statusBar'] }) => (
-  <div className="flex h-6 shrink-0 items-center justify-between bg-surface-base px-5 text-[11px] font-semibold text-text-primary">
-    <span>9:41</span>
-    <span className="flex items-center gap-1">
-      {props.mode === 'airplane' && <Plane size={12} />}
-      {props.mode === 'online' && (
-        <>
-          <Signal size={12} />
-          <Wifi size={12} />
-        </>
+const Shot = (props: { file: string; fit: 'cover' | 'contain'; className?: string }) => (
+  <div
+    className={cn(
+      'min-h-0 min-w-0 overflow-hidden rounded-[10px] bg-surface-sunken',
+      props.className,
+    )}
+  >
+    <img
+      src={shotUrl(props.file)}
+      alt=""
+      className={cn(
+        'block size-full',
+        props.fit === 'cover' && 'object-cover object-top',
+        props.fit === 'contain' && 'object-contain object-center',
       )}
-      <BatteryFull size={14} />
-    </span>
+    />
   </div>
 );
 
-const PhoneTile = (props: { tile: BannerTile }) => (
-  <Card className="min-h-0 min-w-0 items-center justify-center gap-3.5 px-3 py-3.5">
-    <div className="flex aspect-[390/844] w-[232px] shrink-0 flex-col overflow-hidden rounded-[34px] border-[6px] border-gray-800 bg-black shadow-[0_8px_24px_rgb(0_0_0/0.4)]">
-      <StatusBar mode={props.tile.statusBar} />
-      {props.tile.shots.map((shot) => (
-        <img
-          key={shot.file}
-          src={shotUrl(shot.file)}
-          alt=""
-          className="block min-h-0 w-full flex-1 object-cover"
-          style={{ objectPosition: shot.objectPosition }}
-        />
-      ))}
+const StepCaption = (props: { step: number; label: string }) => (
+  <div className="flex h-9 items-center gap-2.5">
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-text-primary text-lg font-bold text-surface-base">
+      {props.step}
+    </span>
+    <FitText className="flex-1">
+      <Typography variant="title" as="span">
+        {props.label}
+      </Typography>
+    </FitText>
+  </div>
+);
+
+const FrameShots = (props: { frame: BannerFrame }) => {
+  if (props.frame.below === undefined) {
+    return <Shot file={props.frame.file} fit="cover" className="h-[556px]" />;
+  }
+  return (
+    <div className="flex h-[556px] flex-col gap-2">
+      <Shot file={props.frame.file} fit="cover" className="h-[398px]" />
+      <Shot file={props.frame.below} fit="contain" className="h-[150px]" />
     </div>
-    <TileText tile={props.tile} className="w-full text-center" />
+  );
+};
+
+const FlowCard = (props: { flow: BannerFlow; index: number }) => {
+  const flowText = text.flows[props.flow.key];
+  const fill = props.index === 0;
+  return (
+    <Card className={cn('min-w-0 gap-3 p-3', fill && 'flex-1', !fill && 'flex-none')}>
+      <FitText className="px-1">
+        <Typography variant="title" as="span">
+          {flowText.title}
+        </Typography>
+      </FitText>
+      <div className="flex">
+        {props.flow.frames.map((frame, frameIndex) => (
+          <Fragment key={frame.file}>
+            {frameIndex > 0 && (
+              <div className="flex h-[556px] w-12 flex-none items-center justify-center text-text-tertiary">
+                <ArrowRight size={28} />
+              </div>
+            )}
+            <div
+              className={cn(
+                'flex flex-col gap-2.5',
+                fill && 'min-w-0 flex-1',
+                !fill && 'w-[246px] flex-none',
+              )}
+            >
+              <FrameShots frame={frame} />
+              <StepCaption step={frameIndex + 1} label={flowText.steps[frameIndex] ?? ''} />
+            </div>
+          </Fragment>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+const Tile = (props: { tile: BannerTile }) => (
+  <Card className="min-h-0 min-w-0 gap-2.5 p-3">
+    <Shot file={props.tile.file} fit="contain" className="flex-1 [&>img]:p-3.5" />
+    <FitText className="px-1">
+      <Typography variant="title" as="span">
+        {text.tiles[props.tile.key].title}
+      </Typography>
+      <Typography variant="caption" as="span">
+        {text.tiles[props.tile.key].subtitle}
+      </Typography>
+    </FitText>
   </Card>
 );
 
 export const Banner = () => {
-  const hero = BANNER_TILES.find((tile) => tile.place === 'hero');
-  const grid = BANNER_TILES.filter((tile) => tile.place !== 'phone');
-  const phones = BANNER_TILES.filter((tile) => tile.place === 'phone');
+  const backdrop = BANNER_FLOWS[0]?.frames[1]?.file;
 
   return (
     <div
       id="banner"
-      className="relative flex h-[900px] w-[1600px] flex-col gap-[22px] overflow-hidden bg-surface-sunken px-10 pt-7 pb-9 font-sans"
+      className="relative flex h-[1180px] w-[1600px] flex-col gap-[22px] overflow-hidden bg-surface-sunken px-10 pt-7 pb-9 font-sans"
     >
-      {hero && (
+      {backdrop && (
         <div
           aria-hidden
           className="absolute -inset-10 bg-cover bg-center opacity-35 blur-[28px] saturate-[1.2]"
-          style={{ backgroundImage: `url(${shotUrl(hero.shots[0]?.file ?? '')})` }}
+          style={{ backgroundImage: `url(${shotUrl(backdrop)})` }}
         />
       )}
       <div className="relative flex items-center gap-[18px]">
@@ -135,14 +164,14 @@ export const Banner = () => {
           </Typography>
         </FitText>
       </div>
-      <div className="relative grid min-h-0 flex-1 grid-cols-[1fr_272px_272px] gap-5">
-        <div className="grid min-h-0 grid-cols-3 grid-rows-2 gap-[18px]">
-          {grid.map((tile) => (
-            <DesktopTile key={tile.key} tile={tile} />
-          ))}
-        </div>
-        {phones.map((tile) => (
-          <PhoneTile key={tile.key} tile={tile} />
+      <div className="relative flex h-[674px] flex-none gap-10">
+        {BANNER_FLOWS.map((flow, index) => (
+          <FlowCard key={flow.key} flow={flow} index={index} />
+        ))}
+      </div>
+      <div className="relative grid h-[320px] flex-none grid-cols-5 gap-[18px]">
+        {BANNER_TILES.map((tile) => (
+          <Tile key={tile.key} tile={tile} />
         ))}
       </div>
     </div>

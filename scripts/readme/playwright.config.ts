@@ -5,10 +5,6 @@ import { readmeLocale } from './env.ts';
 const repoRoot = resolve(import.meta.dirname, '../..');
 const BROWSER_LOCALES = { de: 'de-DE', en: 'en-US' } as const;
 
-/**
- * Captures the README banner tiles. Not part of the e2e suite or CI:
- * run with `vp run readme:banner [--locale de|en]`.
- */
 export default defineConfig({
   testDir: '.',
   testMatch: '*.readme.ts',
@@ -33,19 +29,10 @@ export default defineConfig({
 
   projects: [{ name: 'readme' }],
 
-  webServer: [
-    {
-      command: 'vp dev',
-      cwd: repoRoot,
-      url: 'http://localhost:5173',
-      reuseExistingServer: true,
-    },
-    {
-      command: 'vp build && vp preview --port 4173 --strictPort',
-      cwd: repoRoot,
-      url: 'http://localhost:4173',
-      reuseExistingServer: false,
-      timeout: 300_000,
-    },
-  ],
+  webServer: {
+    command: 'vp dev',
+    cwd: repoRoot,
+    url: 'http://localhost:5173',
+    reuseExistingServer: true,
+  },
 });
