@@ -5,6 +5,7 @@ import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useUserStore } from '@/store/user.ts';
 import { windAngles } from '@/packages/engine/windExposure.ts';
 import { zoneScale } from '@/lib/zoneColors.ts';
+import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 import { speedScale } from '@/lib/speedScale.ts';
 import { toWindSamples } from '@/lib/weather.ts';
 import { useSessionWeather } from '@/features/sessions/session/hooks/useSessionWeather.ts';
@@ -75,7 +76,7 @@ export const useSessionDetailPath = (
     const isZoneMode =
       trackColorMode === 'hr' || trackColorMode === 'power' || trackColorMode === 'pace';
     if (isZoneMode && profile) {
-      const scale = zoneScale(trackColorMode, profile.thresholds);
+      const scale = zoneScale(trackColorMode, thresholdsAt(profile, session.date));
       if (scale) return buildZoneColoredPath(loaded.records, trackColorMode, scale);
     }
 

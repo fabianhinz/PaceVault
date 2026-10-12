@@ -31,10 +31,11 @@ const calculateTSS = (
   ftp: number,
 ): { tss: number; normalizedPower: number } | undefined => {
   const np = calculateNormalizedPower(records);
-  if (np === undefined || ftp <= 0) return undefined;
+  if (np === undefined) return undefined;
+  const factor = intensityFactor(np, ftp);
+  if (factor === undefined) return undefined;
 
-  const intensityFactor = np / ftp;
-  const tss = ((durationSec * np * intensityFactor) / (ftp * 3600)) * 100;
+  const tss = ((durationSec * np * factor) / (ftp * 3600)) * 100;
 
   return {
     tss: Math.round(tss * 10) / 10,
@@ -80,6 +81,18 @@ const calculateTRIMP = (
   const normFactor = (60 * thresholdHrRatio * a * Math.exp(b * thresholdHrRatio)) / 100;
 
   return Math.round((trimp / normFactor) * 10) / 10;
+};
+
+/** @see [CogganAllen2010] */
+export const intensityFactor = (np: number, ftp: number): number | undefined => {
+  if (ftp <= 0) return undefined;
+  return np / ftp;
+};
+
+/** @see [CogganAllen2010] */
+export const variabilityIndex = (np: number, avgPower: number): number | undefined => {
+  if (avgPower <= 0) return undefined;
+  return np / avgPower;
 };
 
 /**

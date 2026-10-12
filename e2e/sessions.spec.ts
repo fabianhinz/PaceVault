@@ -244,6 +244,33 @@ test.describe('Session browsing', () => {
     ).toHaveCount(0);
   });
 
+  test('more stats row lists its topics and sends missing body data to settings', async ({
+    page,
+  }) => {
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
+    await page.locator('[data-testid="session-item"]').filter({ hasText: /run/i }).click();
+    await page.waitForURL(/\/sessions\/.+/);
+
+    const row = page.getByTestId('session-stats-row');
+    const toggle = row.locator(':scope > button');
+    await expect(toggle).toContainText('Calories · Stride · Zones · Decoupling', {
+      timeout: 10_000,
+    });
+
+    await toggle.click();
+    await expect(row.locator('[data-stat="step"]')).toContainText('spm');
+    await expect(
+      page.getByRole('region', { name: 'Cadence' }).getByTestId('stat-rail'),
+    ).toContainText('spm');
+
+    await row
+      .locator('[data-stat="calories"]')
+      .getByRole('link', { name: 'Add your weight' })
+      .click();
+    await page.waitForURL('/settings');
+  });
+
   test('navigate back from detail to session list', async ({ page }) => {
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');

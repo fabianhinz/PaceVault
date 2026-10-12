@@ -19,8 +19,8 @@ const makePowerBests = (value: number, date: number): PersonalBest[] =>
 describe('computePBsForSessions', () => {
   it('returns best values from the stronger cycling session', () => {
     const now = Date.now();
-    const weakRecords = makeCyclingRecords(3600, { basePower: 200 });
-    const strongRecords = makeCyclingRecords(3600, {
+    const weakRecords = makeCyclingRecords(3601, { basePower: 200 });
+    const strongRecords = makeCyclingRecords(3601, {
       basePower: 280,
     });
 
@@ -64,7 +64,7 @@ describe('computePBsForSessions', () => {
 
   it("keeps each sport's peaks separate in mixed-sport batch", () => {
     const now = Date.now();
-    const cyclingRecords = makeCyclingRecords(3600, { basePower: 250 });
+    const cyclingRecords = makeCyclingRecords(3601, { basePower: 250 });
     const runningRecords = makeRunningRecords(3600, { baseSpeed: 3.5 });
 
     const result = computePBsForSessions([
@@ -93,10 +93,10 @@ describe('computePBsForSessions', () => {
 
   it('lower power does NOT overwrite higher power (higher is better for cycling)', () => {
     const now = Date.now();
-    const strongRecords = makeCyclingRecords(3600, {
+    const strongRecords = makeCyclingRecords(3601, {
       basePower: 300,
     });
-    const weakRecords = makeCyclingRecords(3600, { basePower: 180 });
+    const weakRecords = makeCyclingRecords(3601, { basePower: 180 });
 
     const result = computePBsForSessions([
       {
@@ -210,7 +210,7 @@ describe('computePBsForSessions', () => {
       sessionId,
       date: Date.now(),
       sport: 'cycling' as const,
-      records: makeCyclingRecords(3600, { basePower }),
+      records: makeCyclingRecords(3601, { basePower }),
     });
 
     it('replaces the PBs a new session beats', () => {
@@ -250,5 +250,22 @@ describe('computePBsForSessions with recorded zeros', () => {
     const result = computePBsForSessions([{ sessionId: 's', date: 0, sport: 'cycling', records }]);
     const peak60 = result.find((pb) => pb.category === 'peak-power' && pb.window === 60);
     expect(peak60?.value).toBe(200);
+  });
+});
+
+describe('computePBsForSessions on smart recording', () => {
+  it('peak windows on smart recording count seconds, not samples', () => {
+    const records = Array.from({ length: 151 }, (_, i) => ({ timestamp: i * 4, power: 250 }));
+    const result = computePBsForSessions([{ sessionId: 's', date: 0, sport: 'cycling', records }]);
+    const peak = (window: number) =>
+      result.find((pb) => pb.category === 'peak-power' && pb.window === window);
+    expect(peak(300)?.value).toBe(250);
+    expect(peak(1200)).toBeUndefined();
+  });
+
+  it('gives no personal best for a ride with only 0 W', () => {
+    const records = Array.from({ length: 120 }, (_, i) => ({ timestamp: i, power: 0 }));
+    const result = computePBsForSessions([{ sessionId: 's', date: 0, sport: 'cycling', records }]);
+    expect(result.filter((pb) => pb.category === 'peak-power')).toEqual([]);
   });
 });

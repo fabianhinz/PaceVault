@@ -102,15 +102,17 @@ export const mapFitLaps = (fitLaps: FitLapInput[]): SessionLap[] => {
   });
 };
 
+export interface FitParseProfile {
+  restHr: number;
+  maxHr: number;
+  gender: Gender;
+  ftp?: number;
+}
+
 export const parseFitFile = async (
   arrayBuffer: ArrayBuffer,
   fileName: string,
-  userProfile: {
-    restHr: number;
-    maxHr: number;
-    gender: Gender;
-    ftp?: number;
-  },
+  profileAt: (date: number) => FitParseProfile,
   meta?: { name?: string },
 ): Promise<ParsedFitResult> => {
   const parser = new FitParser({
@@ -169,6 +171,7 @@ export const parseFitFile = async (
   }
   const laps = mapFitLaps(lapsResult.data);
 
+  const userProfile = profileAt(sessionDate);
   const hasPowerRecords = records.some((r) => r.power !== undefined);
   let stressFtp: number | undefined = undefined;
   if (hasPowerRecords) {

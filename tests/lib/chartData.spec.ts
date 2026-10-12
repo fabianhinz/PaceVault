@@ -76,6 +76,17 @@ describe('buildSessionChartRows', () => {
   });
 });
 
+describe('running cadence', () => {
+  it('running cadence chart shows steps per minute', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, cadence: 85 },
+      { timestamp: 1, cadence: 85 },
+    ];
+    expect(rowsOf(records, 'running')[0]?.cadence).toBe(170);
+    expect(rowsOf(records, 'cycling')[0]?.cadence).toBe(85);
+  });
+});
+
 describe('hasSeriesValues', () => {
   it('is true when at least one value is not null, including 0', () => {
     expect(hasSeriesValues([{ hr: null }, { hr: 0 }], 'hr')).toBe(true);

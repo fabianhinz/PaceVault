@@ -1,8 +1,23 @@
 import { describe, it, expect } from 'vitest';
 import { useUserStore } from '@/store/user.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
-import { createDefaultProfile } from '@/lib/defaults.ts';
 import { getDB } from '@/lib/db';
+import { thresholdsAt } from '@/lib/thresholdsAt.ts';
+
+const flatProfile = (thresholds: Record<string, number>) => ({
+  id: 'p',
+  gender: 'female',
+  thresholds,
+  showMetricHelp: true,
+  createdAt: 1,
+});
+
+const rehydrateFrom = async (state: unknown, version: number) => {
+  const db = await getDB();
+  await db.put('kv', JSON.stringify({ state, version }), 'store-user');
+  await useUserStore.persist.rehydrate();
+  return useUserStore.getState().profile;
+};
 
 describe('user store', () => {
   it('setProfile auto-generates id and createdAt', () => {
@@ -16,21 +31,22 @@ describe('user store', () => {
     expect(profile?.gender).toBe('male');
   });
 
-  it('updateThresholds only changes thresholds', () => {
+  it('saveTodaysThresholds twice on one day keeps one entry for today with the second value', () => {
     const { id: _id, createdAt: _ca, ...profileData } = makeUserProfile();
     useUserStore.getState().setProfile(profileData);
 
-    useUserStore.getState().updateThresholds({
-      ftp: 280,
-      maxHr: 195,
-      restHr: 48,
-    });
+    useUserStore.getState().saveTodaysThresholds({ ftp: 270, weight: 70 });
+    useUserStore.getState().saveTodaysThresholds({ ftp: 280 });
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const profile = useUserStore.getState().profile;
-    expect(profile?.thresholds.ftp).toBe(280);
-    expect(profile?.thresholds.maxHr).toBe(195);
-    expect(profile?.thresholds.restHr).toBe(48);
-    expect(profile?.gender).toBe('male');
+    expect(profile?.thresholds.ftp).toEqual([
+      { date: 0, value: 250 },
+      { date: today.getTime(), value: 280 },
+    ]);
+    expect(profile?.weight).toEqual([{ date: today.getTime(), value: 70 }]);
+    expect(profile?.thresholds.restHr).toEqual([{ date: 0, value: 50 }]);
   });
 
   it('resetProfile → null', () => {
@@ -59,7 +75,7 @@ describe('user store', () => {
     expect(useUserStore.getState().profile).toBeNull();
 
     useUserStore.getState().setProfileGender('female');
-    useUserStore.getState().updateThresholds({ maxHr: 200, restHr: 55 });
+    useUserStore.getState().saveTodaysThresholds({ maxHr: 200, restHr: 55 });
 
     expect(useUserStore.getState().profile).toBeNull();
   });
@@ -78,31 +94,61 @@ describe('user store', () => {
     expect(migrate?.({ profile: null }, 1)).toEqual({ profile: null });
     expect(migrate?.('garbage', 1)).toBe('garbage');
   });
-});
 
-describe('createDefaultProfile', () => {
-  it('returns a complete profile with sensible defaults', () => {
-    const profile = createDefaultProfile('test-id');
+  it('migrates flat version 2 and version 1 thresholds into epoch-dated histories', async () => {
+    const v2 = await rehydrateFrom(
+      { profile: flatProfile({ restHr: 48, maxHr: 186, ftp: 240, thresholdPace: 280 }) },
+      2,
+    );
+    expect(v2?.thresholds).toEqual({
+      restHr: [{ date: 0, value: 48 }],
+      maxHr: [{ date: 0, value: 186 }],
+      ftp: [{ date: 0, value: 240 }],
+      thresholdPace: [{ date: 0, value: 280 }],
+    });
+    if (!v2) throw new Error('profile missing');
+    const anySession = thresholdsAt(v2, new Date('2019-05-04').getTime());
+    expect(anySession).toMatchObject({ restHr: 48, maxHr: 186, ftp: 240, thresholdPace: 280 });
 
-    expect(profile.id).toBe('test-id');
-    expect(profile.gender).toBe('male');
-    expect(profile.thresholds.maxHr).toBe(203);
-    expect(profile.thresholds.restHr).toBe(44);
-    expect(profile.showMetricHelp).toBe(true);
-    expect(profile.createdAt).toBeGreaterThan(0);
+    const v1 = await rehydrateFrom({ profile: flatProfile({ restHr: 50, maxHr: 185 }) }, 1);
+    expect(v1?.thresholds).toEqual({
+      restHr: [{ date: 0, value: 50 }],
+      maxHr: [{ date: 0, value: 185 }],
+    });
+    if (!v1) throw new Error('profile missing');
+    expect(thresholdsAt(v1, Date.now()).ftp).toBeUndefined();
   });
 
-  it('does not include removed fields', () => {
-    const profile = createDefaultProfile('test-id');
-    expect('name' in profile).toBe(false);
-    expect('age' in profile).toBe(false);
-    expect('weight' in profile).toBe(false);
-    expect('height' in profile).toBe(false);
-    expect('sports' in profile).toBe(false);
-    expect('trainingDays' in profile).toBe(false);
-    expect('goals' in profile).toBe(false);
-    expect('welcomeDismissed' in profile).toBe(false);
-    expect('onboardingCompleted' in profile).toBe(false);
-    expect('useAutoSessionNames' in profile).toBe(false);
+  it('keeps an unrecognised shape when migrating version 2', () => {
+    const migrate = useUserStore.persist.getOptions().migrate;
+    expect(migrate?.('garbage', 2)).toBe('garbage');
+    expect(migrate?.({ profile: { id: 'p', thresholds: 'x' } }, 2)).toEqual({
+      profile: { id: 'p', thresholds: 'x' },
+    });
+  });
+
+  it('drops an invalid history entry on hydration and keeps the rest', async () => {
+    const profile = await rehydrateFrom(
+      {
+        profile: {
+          ...flatProfile({}),
+          thresholds: {
+            restHr: [{ date: 0, value: 48 }],
+            maxHr: [{ date: 0, value: 186 }],
+            ftp: [
+              { date: 0, value: 240 },
+              { date: 'yesterday', value: 260 },
+              { date: 5_000, value: 250 },
+            ],
+          },
+        },
+      },
+      3,
+    );
+    expect(profile?.thresholds.ftp).toEqual([
+      { date: 0, value: 240 },
+      { date: 5_000, value: 250 },
+    ]);
+    expect(profile?.thresholds.restHr).toEqual([{ date: 0, value: 48 }]);
   });
 });

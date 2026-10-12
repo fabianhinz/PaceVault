@@ -53,31 +53,40 @@ describe('deriveAvgFromRecords', () => {
     expect(deriveAvgFromRecords(records, 'power')).toBeUndefined();
   });
 
-  it('returns rounded mean of valid power values', () => {
+  it('returns the rounded time-weighted mean of power values', () => {
     const records = [
-      makeRecord({ power: 200 }),
-      makeRecord({ power: 250 }),
-      makeRecord({ power: 300 }),
+      makeRecord({ timestamp: 0, power: 200 }),
+      makeRecord({ timestamp: 1, power: 250 }),
+      makeRecord({ timestamp: 2, power: 301 }),
     ];
-    expect(deriveAvgFromRecords(records, 'power')).toBe(250);
+    expect(deriveAvgFromRecords(records, 'power')).toBe(276);
   });
 
   it('counts zero values', () => {
     const records = [
-      makeRecord({ power: 0 }),
-      makeRecord({ power: 200 }),
-      makeRecord({ power: 300 }),
+      makeRecord({ timestamp: 0, power: 200 }),
+      makeRecord({ timestamp: 1, power: 0 }),
+      makeRecord({ timestamp: 2, power: 300 }),
     ];
-    expect(deriveAvgFromRecords(records, 'power')).toBe(167);
+    expect(deriveAvgFromRecords(records, 'power')).toBe(150);
   });
 
-  it('returns rounded mean of valid cadence values', () => {
+  it('returns the rounded time-weighted mean of cadence values', () => {
     const records = [
-      makeRecord({ cadence: 80 }),
-      makeRecord({ cadence: 85 }),
-      makeRecord({ cadence: 83 }),
+      makeRecord({ timestamp: 0, cadence: 80 }),
+      makeRecord({ timestamp: 1, cadence: 85 }),
+      makeRecord({ timestamp: 2, cadence: 82 }),
     ];
-    expect(deriveAvgFromRecords(records, 'cadence')).toBe(83);
+    expect(deriveAvgFromRecords(records, 'cadence')).toBe(84);
+  });
+
+  it('average power on smart recording is weighted by time', () => {
+    const records = [
+      makeRecord({ timestamp: 0, power: 100 }),
+      makeRecord({ timestamp: 1, power: 100 }),
+      makeRecord({ timestamp: 5, power: 300 }),
+    ];
+    expect(deriveAvgFromRecords(records, 'power')).toBe(260);
   });
 });
 
@@ -123,7 +132,7 @@ describe('parseFitFile session name', () => {
     return bytes.buffer;
   };
 
-  const profile = { restHr: 48, maxHr: 188, gender: 'male' as const, ftp: 265 };
+  const profile = () => ({ restHr: 48, maxHr: 188, gender: 'male' as const, ftp: 265 });
 
   it('lets an intervals.icu name win over the filename', async () => {
     const result = await parseFitFile(fixture(), '15487122967_Lauf_am_Morgen.fit', profile, {

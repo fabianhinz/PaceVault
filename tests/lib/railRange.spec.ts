@@ -46,7 +46,7 @@ describe('computeRangeStats', () => {
   });
 
   it('counts a recorded 0 cadence as a value', () => {
-    const records = ride([100, 110, 120], [10, 10, 10]);
+    const records = [0, 1, 2].map((i) => ({ timestamp: i, hr: 100, cadence: 0 }));
     const stats = computeRangeStats(
       records,
       { from: 0, to: 2 },
@@ -54,5 +54,19 @@ describe('computeRangeStats', () => {
     );
     expect(stats.avgCadence).toBe(0);
     expect(stats.maxCadence).toBe(0);
+  });
+
+  it('zoomed avg power on smart recording is weighted by time', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, power: 100 },
+      { timestamp: 1, power: 100 },
+      { timestamp: 5, power: 300 },
+    ];
+    const stats = computeRangeStats(
+      records,
+      { from: 0, to: 1 },
+      buildSessionTerrain('cycling', records),
+    );
+    expect(stats.avgPower).toBe(260);
   });
 });

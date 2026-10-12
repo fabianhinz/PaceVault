@@ -1,6 +1,8 @@
 import { m } from '@/paraglide/messages.js';
 import { useTripsStore } from '@/store/trips.ts';
 import { Button } from '@/components/ui/Button.tsx';
+import { tileClass } from '@/components/ui/Card.tsx';
+import { cn } from '@/lib/utils.ts';
 import {
   DialogRoot,
   DialogContent,
@@ -41,7 +43,10 @@ export const ManageTripDialog = (props: {
               <RadioGroupItem
                 key={trip.id}
                 value={trip.id}
-                className="cursor-pointer rounded-xl border border-white/10 bg-white/5 p-3 transition-colors hover:bg-white/10 data-[state=checked]:bg-white/10"
+                className={cn(
+                  tileClass,
+                  'cursor-pointer p-3 transition-colors hover:bg-white/10 data-[state=checked]:bg-white/10',
+                )}
               >
                 <TripHeader trip={trip} />
               </RadioGroupItem>

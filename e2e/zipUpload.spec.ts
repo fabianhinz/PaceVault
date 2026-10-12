@@ -16,15 +16,14 @@ test.describe('ZIP archive upload', () => {
       await page.getByText('FIT files', { exact: true }).click();
       await page.fill('#thresh-restHr', '50');
       await page.fill('#thresh-maxHr', '185');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
 
       const uploadButton = page.getByRole('button', { name: /upload fit files/i });
       await expect(uploadButton).toBeEnabled({ timeout: 3000 });
 
-      // Upload a ZIP via the file picker
       const summary = await uploadFiles(page, [CYCLING_ONLY_ZIP]);
       expect(summary).toContain('1 new session');
 
-      // Onboarding should auto-complete — dock should be visible
       await expect(page.locator('[data-layout="dock"]')).toBeVisible();
     });
 
@@ -34,6 +33,7 @@ test.describe('ZIP archive upload', () => {
       await page.getByText('FIT files', { exact: true }).click();
       await page.fill('#thresh-restHr', '50');
       await page.fill('#thresh-maxHr', '185');
+      await page.getByRole('button', { name: 'Save', exact: true }).click();
 
       const uploadButton = page.getByRole('button', { name: /upload fit files/i });
       await expect(uploadButton).toBeEnabled({ timeout: 3000 });
@@ -48,13 +48,13 @@ test.describe('ZIP archive upload', () => {
   test.describe('post-onboarding (drag and drop)', () => {
     test.beforeEach(async ({ page }) => {
       await seedOnboardingComplete(page);
+      await expect(page.locator('[data-layout="dock"]')).toBeVisible();
     });
 
     test('drop a ZIP file → sessions extracted and uploaded', async ({ page }) => {
       const summary = await dropFiles(page, [ACTIVITIES_ZIP]);
       expect(summary).toContain('2 new sessions');
 
-      // Navigate to sessions page and verify sessions are listed
       await page.getByRole('link', { name: /sessions/i }).click();
       await page.waitForURL('/sessions');
 
@@ -73,9 +73,6 @@ test.describe('ZIP archive upload', () => {
     });
 
     test('drag hint toast appears while dragging files', async ({ page }) => {
-      // Wait for the dock (and its useFileDropEffect) to be fully mounted
-      await expect(page.locator('[data-layout="dock"]')).toBeVisible();
-
       // Use a custom event class to bypass DragEvent.dataTransfer being non-configurable
       await page.evaluate(() => {
         const mockDt = { types: ['Files'], files: [], items: [] };

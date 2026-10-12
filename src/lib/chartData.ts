@@ -1,6 +1,7 @@
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import type { RouteProfile } from '@/packages/gpx/routeProfile.ts';
 import { gradeAdjustedPaceFactor } from '@/packages/engine/normalize.ts';
+import { stepsPerMinute } from '@/packages/engine/cadence.ts';
 import { bucketSeries, TARGET_ROWS } from '@/lib/chartBuckets.ts';
 import { movingSeconds } from '@/lib/movingTime.ts';
 import type { SessionTerrain } from '@/lib/sessionTerrain.ts';
@@ -64,7 +65,10 @@ export const buildSessionChartRows = (
         if (r.speed === undefined) return undefined;
         return r.speed * 3.6;
       },
-      cadence: (r) => r.cadence,
+      cadence: (r) => {
+        if (r.cadence === undefined || !options.isRunning) return r.cadence;
+        return stepsPerMinute(r.cadence);
+      },
       elevation: (r) => r.elevation,
       climbElevation: (r, i) => {
         if (!options.terrain.inClimb[i]) return undefined;

@@ -13,7 +13,7 @@ const makeRecord = (overrides: Partial<SessionRecord>): SessionRecord => ({
 });
 
 describe('calculateNormalizedPower', () => {
-  it('returns undefined for fewer than 30 records', () => {
+  it('returns undefined for less than 30 s of power', () => {
     const records = makeCyclingRecords(29);
     expect(calculateNormalizedPower(records)).toBeUndefined();
   });
@@ -165,9 +165,35 @@ describe('calculateNormalizedPower with recorded zeros', () => {
   });
 
   it('skips records without power', () => {
-    const records = Array.from({ length: 60 }, (_, i) =>
+    const records = Array.from({ length: 62 }, (_, i) =>
       makeRecord({ timestamp: i, power: i % 2 === 0 ? 200 : undefined }),
     );
     expect(calculateNormalizedPower(records)).toBe(200);
+  });
+});
+
+describe('calculateNormalizedPower on smart recording', () => {
+  const blockPower = (block: number): number => 150 + ((block * 37) % 5) * 40;
+
+  it('NP on a smart-recording ride matches the same ride at 1 Hz', () => {
+    const oneHz = Array.from({ length: 601 }, (_, t) =>
+      makeRecord({ timestamp: t, power: blockPower(Math.ceil(t / 5)) }),
+    );
+    const everyFive = Array.from({ length: 121 }, (_, k) =>
+      makeRecord({ timestamp: k * 5, power: blockPower(k) }),
+    );
+    expect(calculateNormalizedPower(everyFive)).toBe(calculateNormalizedPower(oneHz));
+    expect(calculateNormalizedPower(everyFive)).toBeGreaterThan(0);
+  });
+
+  it('adds no samples across a 30 s gap', () => {
+    const before = Array.from({ length: 21 }, (_, t) => makeRecord({ timestamp: t, power: 200 }));
+    const after = Array.from({ length: 10 }, (_, t) =>
+      makeRecord({ timestamp: 50 + t, power: 200 }),
+    );
+    expect(calculateNormalizedPower([...before, ...after])).toBeUndefined();
+    expect(
+      calculateNormalizedPower([...before, ...after, makeRecord({ timestamp: 60, power: 200 })]),
+    ).toBe(200);
   });
 });

@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils.ts';
 import { Typography } from './Typography.tsx';
 import { InlineSkeleton } from './InlineSkeleton.tsx';
+import { SegmentBar } from './SegmentBar.tsx';
 
 export interface SplitBarSegment {
   key: string;
@@ -15,21 +16,15 @@ interface SplitBarProps {
 }
 
 export const SplitBar = (props: SplitBarProps) => {
-  let total = 0;
-  for (const segment of props.segments) total += segment.value;
-
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-white/5">
-        {total > 0 &&
-          props.segments.map((segment) => (
-            <div
-              key={segment.key}
-              className={cn('opacity-70', segment.colorClass)}
-              style={{ width: `${(segment.value / total) * 100}%` }}
-            />
-          ))}
-      </div>
+      <SegmentBar
+        segments={props.segments.map((segment) => ({
+          key: segment.key,
+          value: segment.value,
+          className: cn('opacity-70', segment.colorClass),
+        }))}
+      />
       {props.segments.map((segment) => (
         <div key={segment.key} className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">

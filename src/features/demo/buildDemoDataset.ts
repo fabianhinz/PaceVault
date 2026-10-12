@@ -5,6 +5,8 @@ import type {
   TrainingSession,
 } from '@/packages/engine/types.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
+import { valueAt, type DatedValue } from '@/packages/engine/datedValue.ts';
+import type { UserProfile } from '@/types/index.ts';
 import {
   SESSION_DERIVATION_VERSION,
   deriveSessionFieldsFromRecords,
@@ -32,8 +34,9 @@ import { createSeededRandom } from './seededRandom.ts';
 /** Fixed seed so every visitor gets the same dataset. */
 export const DEMO_SEED = 20_260_518;
 
-export const DEMO_PERSONA: DemoPersona & { gender: Gender } = {
+export const DEMO_PERSONA: DemoPersona & { gender: Gender; birthYear: number } = {
   gender: 'female',
+  birthYear: 1992,
   maxHr: 178,
   restHr: 48,
   ftp: 200,
@@ -49,11 +52,7 @@ export interface DemoSessionData {
 }
 
 export interface DemoDataset {
-  profile: {
-    gender: Gender;
-    thresholds: { maxHr: number; restHr: number; ftp: number; thresholdPace: number };
-    showMetricHelp: boolean;
-  };
+  profile: Omit<UserProfile, 'id' | 'createdAt'>;
   sessions: DemoSession[];
   sessionData: DemoSessionData[];
   trips: Array<{ name: string; description: string; sessionIds: string[] }>;
@@ -113,11 +112,32 @@ const average = (values: number[]): number | undefined => {
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 };
 
+const DEMO_FTP_STEP = { daysBeforeNewest: 60, ftp: 210 };
+const DEMO_WEIGHTS = [
+  { daysBeforeNewest: 90, kg: 61 },
+  { daysBeforeNewest: 30, kg: 60 },
+];
+
+const daysBefore = (day: Date, days: number): number =>
+  new Date(day.getFullYear(), day.getMonth(), day.getDate() - days).getTime();
+
+const demoFtpHistory = (newestDay: Date): DatedValue<number>[] => [
+  { date: 0, value: DEMO_PERSONA.ftp },
+  { date: daysBefore(newestDay, DEMO_FTP_STEP.daysBeforeNewest), value: DEMO_FTP_STEP.ftp },
+];
+
+const demoWeightHistory = (newestDay: Date): DatedValue<number>[] =>
+  DEMO_WEIGHTS.map((entry) => ({
+    date: daysBefore(newestDay, entry.daysBeforeNewest),
+    value: entry.kg,
+  }));
+
 const buildSession = (
   id: string,
   date: number,
   workout: DemoWorkout,
   records: SessionRecord[],
+  ftpHistory: DatedValue<number>[],
 ): DemoSession => {
   const sport = workout.sport;
   const lastRecord = records[records.length - 1];
@@ -135,7 +155,7 @@ const buildSession = (
   }
 
   let stressFtp: number | undefined = undefined;
-  if (records.some((r) => r.power !== undefined)) stressFtp = DEMO_PERSONA.ftp;
+  if (records.some((r) => r.power !== undefined)) stressFtp = valueAt(ftpHistory, date);
   const stress = calculateSessionStress(
     records,
     duration,
@@ -209,6 +229,12 @@ export const buildDemoDataset = (input: {
   const placed = placedEntries();
   const lastOffset = Math.max(...placed.map(dayOffset));
   const monday = finalMonday(input.today, lastOffset);
+  const newestDay = new Date(
+    monday.getFullYear(),
+    monday.getMonth(),
+    monday.getDate() + lastOffset,
+  );
+  const ftpHistory = demoFtpHistory(newestDay);
 
   const sessions: DemoSession[] = [];
   const sessionData: DemoSessionData[] = [];
@@ -234,7 +260,7 @@ export const buildDemoDataset = (input: {
       cityStops:
         workout.sport === 'cycling' && workout.route !== undefined && cityRoutes.has(workout.route),
     });
-    sessions.push(buildSession(id, date, workout, simulated.records));
+    sessions.push(buildSession(id, date, workout, simulated.records, ftpHistory));
     sessionData.push({
       sessionId: id,
       records: simulated.records,
@@ -247,11 +273,13 @@ export const buildDemoDataset = (input: {
     profile: {
       gender: DEMO_PERSONA.gender,
       thresholds: {
-        maxHr: DEMO_PERSONA.maxHr,
-        restHr: DEMO_PERSONA.restHr,
-        ftp: DEMO_PERSONA.ftp,
-        thresholdPace: DEMO_PERSONA.thresholdPace,
+        maxHr: [{ date: 0, value: DEMO_PERSONA.maxHr }],
+        restHr: [{ date: 0, value: DEMO_PERSONA.restHr }],
+        ftp: ftpHistory,
+        thresholdPace: [{ date: 0, value: DEMO_PERSONA.thresholdPace }],
       },
+      weight: demoWeightHistory(newestDay),
+      birthYear: DEMO_PERSONA.birthYear,
       showMetricHelp: true,
     },
     sessions,

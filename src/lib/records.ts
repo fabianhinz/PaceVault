@@ -1,4 +1,5 @@
 import type { SessionRecord, PersonalBest, PBCategory, Sport } from '@/packages/engine/types.ts';
+import { powerPerSecond } from '@/packages/engine/normalize.ts';
 
 /**
  * Rolling power-window durations (in seconds) used for peak-power PB detection.
@@ -45,20 +46,14 @@ export const PB_SLOTS: Record<Sport, Array<{ category: PBCategory; window: numbe
   ],
 };
 
-/**
- * Find peak average value over a rolling window.
- * Returns the maximum average value found for the given window size.
- */
-const findPeakAverage = (values: number[], windowSize: number): number => {
-  if (values.length < windowSize) return 0;
+const findPeakAverage = (values: number[], windowSize: number): number | undefined => {
+  if (values.length < windowSize) return undefined;
 
-  let maxAvg = 0;
   let windowSum = 0;
-
   for (let i = 0; i < windowSize; i++) {
     windowSum += values[i] ?? 0;
   }
-  maxAvg = windowSum / windowSize;
+  let maxAvg = windowSum / windowSize;
 
   for (let i = windowSize; i < values.length; i++) {
     windowSum += (values[i] ?? 0) - (values[i - windowSize] ?? 0);
@@ -69,22 +64,13 @@ const findPeakAverage = (values: number[], windowSize: number): number => {
   return Math.round(maxAvg * 10) / 10;
 };
 
-/**
- * Extract peak average power for each standard duration window from a session's records.
- * @param records - Time-series session records, each optionally containing a `power` field in watts.
- * @returns Map keyed by window duration in seconds, valued by peak average power in watts; windows with no data are omitted.
- */
-const extractPeakPower = (records: SessionRecord[]): Map<number, number> => {
-  const powerData = records.map((r) => r.power).filter((p): p is number => p !== undefined);
-
+export const extractPeakPower = (records: SessionRecord[]): Map<number, number> => {
+  const seconds = powerPerSecond(records);
   const peaks = new Map<number, number>();
   for (const w of POWER_WINDOWS) {
-    const peak = findPeakAverage(powerData, w.seconds);
-    if (peak > 0) {
-      peaks.set(w.seconds, peak);
-    }
+    const peak = findPeakAverage(seconds, w.seconds);
+    if (peak !== undefined) peaks.set(w.seconds, peak);
   }
-
   return peaks;
 };
 
@@ -155,6 +141,7 @@ const extractSessionPeaks = (
   if (sport === 'cycling') {
     const powerPeaks = extractPeakPower(records);
     for (const [seconds, value] of powerPeaks) {
+      if (value <= 0) continue;
       peaks.push({ category: 'peak-power', window: seconds, value, higherIsBetter: true });
     }
   }

@@ -1,18 +1,15 @@
 import type { UserProfile } from '@/types/index.ts';
-import type { Gender } from '@/packages/engine/types.ts';
+import type { FitParseProfile } from '@/parsers/fit.ts';
+import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 
-interface FitParseProfile {
-  restHr: number;
-  maxHr: number;
-  gender: Gender;
-  ftp?: number;
-}
-
-export const toFitParseProfile = (profile: UserProfile): FitParseProfile => {
-  return {
-    restHr: profile.thresholds.restHr,
-    maxHr: profile.thresholds.maxHr,
-    gender: profile.gender,
-    ftp: profile.thresholds.ftp,
+export const toFitParseProfile =
+  (profile: UserProfile) =>
+  (date: number): FitParseProfile => {
+    const resolved = thresholdsAt(profile, date);
+    return {
+      restHr: resolved.restHr,
+      maxHr: resolved.maxHr,
+      gender: resolved.gender,
+      ftp: resolved.ftp,
+    };
   };
-};

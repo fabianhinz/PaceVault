@@ -20,6 +20,7 @@ import {
 } from '@/lib/railFormat.ts';
 import { buildSessionTerrain, climbSpanAt, climbSpansInMinutes } from '@/lib/sessionTerrain.ts';
 import { climbingRate } from '@/packages/engine/climbs.ts';
+import { stepsPerMinute } from '@/packages/engine/cadence.ts';
 import type { MetricId } from '@/lib/explanations.ts';
 import { SeriesRail } from '@/components/charts/ChartRail.tsx';
 import type { StatRailNote } from '@/components/ui/StatRail.tsx';
@@ -39,7 +40,7 @@ import { GradeAdjustedPaceChart } from './GradeAdjustedPaceChart.tsx';
 import { tokens } from '@/lib/tokens.ts';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
-import { useUserStore } from '@/store/user.ts';
+import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
 import {
   zoneScale,
   type ZoneMetric,
@@ -79,6 +80,11 @@ const scaleFor = (
   return zoneScale(metric, thresholds);
 };
 
+const railCadence = (cadence: number | undefined, isRunning: boolean) => {
+  if (cadence === undefined || !isRunning) return cadence;
+  return stepsPerMinute(cadence);
+};
+
 const currentLapBands = () => useMapFocusStore.getState().sessionLaps?.bands ?? [];
 
 const vamNote = (
@@ -111,7 +117,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     [props.records, terrain],
   );
   const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
-  const thresholds = useUserStore((s) => s.profile?.thresholds);
+  const thresholds = useThresholdsAt(props.session.date);
   const hrScale = useMemo(
     () => scaleFor('hr', trackColorMode, thresholds),
     [trackColorMode, thresholds],
@@ -285,6 +291,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       cadence: (
         <CadenceChart
           data={compactRows}
+          seriesName={isRunning ? m.ui_chart_series_cadence_running() : m.ui_chart_series_cadence()}
           onActiveTimeChange={onHover}
           onZoomComplete={onZoomComplete}
           onSelectTime={onSelectTime}
@@ -320,6 +327,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     }),
     [
       compactRows,
+      isRunning,
       hrScale,
       powerScale,
       paceScale,
@@ -458,19 +466,19 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
-          unit="rpm"
+          unit={isRunning ? 'spm' : 'rpm'}
           formatX={formatHoverTime}
           rest={{
             header: m.ui_rail_avg(),
-            value: railInt(stats.avgCadence),
-            secondary: `${m.ui_rail_max()} ${railInt(stats.maxCadence)}`,
+            value: railInt(railCadence(stats.avgCadence, isRunning)),
+            secondary: `${m.ui_rail_max()} ${railInt(railCadence(stats.maxCadence, isRunning))}`,
           }}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.cadence),
-              secondary: `${m.ui_rail_avg()} ${railInt(stats.avgCadence)}`,
+              secondary: `${m.ui_rail_avg()} ${railInt(railCadence(stats.avgCadence, isRunning))}`,
             };
           }}
         />

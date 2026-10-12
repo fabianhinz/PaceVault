@@ -10,7 +10,7 @@ vi.mock('fit-file-parser', () => ({
 
 import { parseFitFile } from '@/parsers/fit.ts';
 
-const profile = { restHr: 50, maxHr: 190, gender: 'male' as const };
+const profile = () => ({ restHr: 50, maxHr: 190, gender: 'male' as const });
 
 const session = {
   start_time: '2026-01-01T09:00:00.000Z',
@@ -104,8 +104,9 @@ describe('parseFitFile optional data', () => {
     const result = await parse({
       sessions: [session],
       records: [
-        { elapsed_time: 0, power: 0, cadence: 0 },
-        { elapsed_time: 1, power: 200, cadence: 90 },
+        { elapsed_time: 0, power: 200, cadence: 90 },
+        { elapsed_time: 1, power: 0, cadence: 0 },
+        { elapsed_time: 2, power: 200, cadence: 90 },
       ],
     });
     expect(result.session.avgPower).toBe(100);

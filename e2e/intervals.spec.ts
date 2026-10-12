@@ -53,6 +53,7 @@ test('intervals.icu onboarding: thresholds + key, then import', async ({ page })
 
   await page.fill('#thresh-restHr', '50');
   await page.fill('#thresh-maxHr', '185');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
 
   const keyInput = page.locator('input[type="password"]');
   await expect(keyInput).toBeVisible({ timeout: 5000 });

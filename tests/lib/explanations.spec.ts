@@ -13,7 +13,6 @@ const ALL_METRIC_IDS: MetricId[] = [
   'normalizedPower',
   'gradeAdjustedPace',
   'recovery',
-  'pacingTrend',
   'trainingZones',
   'aerobicTE',
   'anaerobicTE',
@@ -25,6 +24,15 @@ const ALL_METRIC_IDS: MetricId[] = [
   'vam',
   'cadence',
   'vdot',
+  'calories',
+  'movingTime',
+  'decoupling',
+  'work',
+  'intensityFactor',
+  'variabilityIndex',
+  'peakPower',
+  'coasting',
+  'stepLength',
 ];
 
 const REQUIRED_FIELDS: (keyof MetricExplanation)[] = [

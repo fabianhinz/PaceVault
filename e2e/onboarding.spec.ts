@@ -1,5 +1,5 @@
 import { test, expect } from './helpers/test';
-import { RUNNING_FIT } from './helpers/seed';
+import { RUNNING_FIT, seedOnboardingComplete } from './helpers/seed';
 import { closeImportSummary, uploadFitFiles } from './helpers/upload';
 
 test.describe('Onboarding flow', () => {
@@ -8,32 +8,24 @@ test.describe('Onboarding flow', () => {
 
     await page.getByText('FIT files', { exact: true }).click();
 
-    // Onboarding page should be shown (thresholds card visible)
     const thresholdsCard = page.locator('#thresh-restHr');
     await expect(thresholdsCard).toBeVisible();
 
-    // The dock should NOT be visible during onboarding
     await expect(page.locator('[data-layout="dock"]')).not.toBeVisible();
 
-    // Fill in required thresholds
     await page.fill('#thresh-restHr', '50');
     await page.fill('#thresh-maxHr', '185');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
 
-    // Wait for profile creation (500ms debounce + processing)
-    // The upload button should become enabled once profile is created
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
     await expect(uploadButton).toBeEnabled({ timeout: 3000 });
 
-    // Upload a FIT file via the hidden input
     await uploadFitFiles(page, [RUNNING_FIT]);
 
-    // After upload, onboarding auto-completes — dock should now be visible
     await expect(page.locator('[data-layout="dock"]')).toBeVisible();
 
-    // Verify: onboarding content should be gone
     await expect(page.locator('#thresh-restHr')).not.toBeVisible();
 
-    // Demo banner should NOT be visible after uploading real data
     await expect(page.getByText(/test data/i)).not.toBeVisible();
   });
 
@@ -50,7 +42,6 @@ test.describe('Onboarding flow', () => {
     await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30000 });
     await expect(generateButton).not.toBeVisible();
 
-    // Demo banner should be visible after generating test data
     await expect(page.getByText(/test data/i)).toBeVisible();
   });
 
@@ -59,19 +50,44 @@ test.describe('Onboarding flow', () => {
 
     await page.getByText('FIT files', { exact: true }).click();
 
-    // Upload button should be disabled before thresholds
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
     await expect(uploadButton).toBeDisabled();
 
-    // Fill only restHr — button should still be disabled (need both)
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
     await page.fill('#thresh-restHr', '50');
-
-    // Wait a bit for debounce
-    await page.waitForTimeout(600);
+    await expect(saveButton).toBeDisabled();
     await expect(uploadButton).toBeDisabled();
 
-    // Fill maxHr — now profile should be created and button enabled
     await page.fill('#thresh-maxHr', '185');
+    await saveButton.click();
     await expect(uploadButton).toBeEnabled({ timeout: 3000 });
+  });
+
+  test("changing FTP in settings saves it as today's entry", async ({ page }) => {
+    await seedOnboardingComplete(page);
+    await page.goto('/settings');
+
+    const ftpField = page.getByLabel('FTP (watts)');
+    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
+    await ftpField.fill('280');
+    await expect(saveButton).toBeEnabled();
+    await saveButton.click();
+    await expect(
+      page.getByRole('region', { name: /notifications/i }).getByText('Thresholds saved'),
+    ).toBeVisible();
+
+    const history = page.getByRole('region', { name: 'Profile history' });
+    await history.getByRole('tab', { name: 'FTP' }).click();
+    const rail = history.getByTestId('stat-rail');
+    await expect(rail).toContainText('latest');
+    await expect(rail).toContainText('280');
+
+    await page.reload();
+    await expect(ftpField).toHaveValue('280');
+
+    await ftpField.fill('290');
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(ftpField).toHaveValue('280');
+    await expect(saveButton).toBeDisabled();
   });
 });

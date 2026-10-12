@@ -1,4 +1,6 @@
 import { Typography } from '@/components/ui/Typography.tsx';
+import { tileClass } from '@/components/ui/Card.tsx';
+import { cn } from '@/lib/utils.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { PaceRange } from '@/components/ui/PaceRange.tsx';
 import { formatDuration } from '@/lib/formatters.ts';
@@ -15,7 +17,7 @@ export const WorkoutExpansionPanel = (props: {
   onClose: () => void;
 }) => {
   return (
-    <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+    <div className={cn(tileClass, 'mt-3 p-4 space-y-3')}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <Typography variant="body1" color="textPrimary" className="font-medium">

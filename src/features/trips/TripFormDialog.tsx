@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils.ts';
 import { useTripsStore } from '@/store/trips.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { Button } from '@/components/ui/Button.tsx';
+import { tileClass } from '@/components/ui/Card.tsx';
 import { Input } from '@/components/ui/Input.tsx';
 import { Textarea } from '@/components/ui/Textarea.tsx';
 import {
@@ -111,7 +112,8 @@ export const TripFormDialog = (props: {
                 aria-pressed={selected}
                 onClick={() => toggle(session.id)}
                 className={cn(
-                  'flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 text-left transition-colors hover:bg-white/10',
+                  tileClass,
+                  'flex cursor-pointer items-center gap-3 p-3 text-left transition-colors hover:bg-white/10',
                   selected && 'bg-white/10',
                 )}
               >

@@ -1,4 +1,4 @@
-import type { SessionFields, TrainingSession } from '@/packages/engine/types.ts';
+import type { SessionFields, SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import type { UserProfile } from '@/types/index.ts';
 import {
   SESSION_DERIVATION_VERSION,
@@ -6,7 +6,9 @@ import {
   isSessionOutdated,
 } from '@/packages/engine/sessionDerivation.ts';
 import { parseFitFile, type ParsedFitResult } from '@/parsers/fit.ts';
+import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
+import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 import {
   deleteSessionGPS,
   deleteSessionLaps,
@@ -29,14 +31,20 @@ const mergeReparsedSession = (
   stored: TrainingSession,
   reparsed: SessionFields,
 ): TrainingSession => {
+  let tss = stored.tss;
+  let stressMethod = stored.stressMethod;
+  if (stored.stressMethod === 'tss' && reparsed.stressMethod === 'tss') {
+    tss = reparsed.tss;
+    stressMethod = reparsed.stressMethod;
+  }
   const merged: TrainingSession = {
     ...reparsed,
     id: stored.id,
     createdAt: stored.createdAt,
     isNew: stored.isNew,
     source: stored.source,
-    tss: stored.tss,
-    stressMethod: stored.stressMethod,
+    tss,
+    stressMethod,
     derivationVersion: SESSION_DERIVATION_VERSION,
   };
   if (stored.source.kind === 'intervals' && stored.name !== undefined) merged.name = stored.name;
@@ -69,7 +77,40 @@ const replaceSessionData = async (sessionId: string, parsed: ParsedFitResult) =>
   await saveSessionLaps(sessionId, laps);
 };
 
-const recomputeFromRecords = async (session: TrainingSession): Promise<TrainingSession> => {
+const recomputedStress = (
+  session: TrainingSession,
+  records: SessionRecord[],
+  profile: UserProfile | null,
+): Pick<TrainingSession, 'tss' | 'stressMethod' | 'normalizedPower'> => {
+  const stored = {
+    tss: session.tss,
+    stressMethod: session.stressMethod,
+    normalizedPower: session.normalizedPower,
+  };
+  if (profile === null || session.stressMethod !== 'tss') return stored;
+  const thresholds = thresholdsAt(profile, session.date);
+  if (thresholds.ftp === undefined || thresholds.ftp <= 0) return stored;
+  const result = calculateSessionStress(
+    records,
+    session.duration,
+    session.avgHr,
+    thresholds.restHr,
+    thresholds.maxHr,
+    thresholds.gender,
+    thresholds.ftp,
+  );
+  if (result.stressMethod !== 'tss') return stored;
+  return {
+    tss: result.tss,
+    stressMethod: result.stressMethod,
+    normalizedPower: result.normalizedPower,
+  };
+};
+
+const recomputeFromRecords = async (
+  session: TrainingSession,
+  profile: UserProfile | null,
+): Promise<TrainingSession> => {
   const records = await getSessionRecords(session.id);
   const derived = deriveSessionFieldsFromRecords(session.sport, records);
 
@@ -78,6 +119,7 @@ const recomputeFromRecords = async (session: TrainingSession): Promise<TrainingS
 
   return {
     ...session,
+    ...recomputedStress(session, records, profile),
     distance: derived.distance ?? session.distance,
     avgPower: derived.avgPower ?? session.avgPower,
     avgCadence: derived.avgCadence ?? session.avgCadence,
@@ -92,7 +134,7 @@ const reprocessSession = async (
   profile: UserProfile | null,
 ): Promise<TrainingSession> => {
   const parsed = await reparseFit(session, profile);
-  if (!parsed) return recomputeFromRecords(session);
+  if (!parsed) return recomputeFromRecords(session, profile);
   await replaceSessionData(session.id, parsed);
   return mergeReparsedSession(session, parsed.session);
 };

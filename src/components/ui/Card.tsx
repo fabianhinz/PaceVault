@@ -2,6 +2,8 @@ import { cn } from '@/lib/utils.ts';
 
 export const glassClass = 'bg-surface/55 backdrop-blur-xl border border-white/10';
 
+export const tileClass = 'rounded-xl border border-white/10 bg-white/5';
+
 const floatingSurface = 'bg-surface/85 backdrop-blur-xl border border-white/10';
 
 export const floatingClass = `${floatingSurface} shadow-[0_8px_24px_rgb(0_0_0/0.4)]`;
