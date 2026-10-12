@@ -1,26 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { type FilterSuggestion, interpretFilterText } from '@/lib/filterGrammar.ts';
+import { interpretFilterText } from '@/lib/filterGrammar.ts';
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
 import type { FilterCriteria } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 
-const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const replaceWord = (text: string, word: string, replacement: string): string =>
-  text.replace(
-    new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(word)}(?![\\p{L}\\p{N}])`, 'iu'),
-    replacement,
-  );
+const NOT_UNDERSTOOD_DEBOUNCE_MS = 600;
 
 export const useFilterBuilder = (open: boolean, onClose: () => void) => {
   const sessions = useSessionsStore((s) => s.sessions);
   const [text, setText] = useState('');
   const tilesRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const reading = useMemo(() => interpretFilterText(text, sessions, Date.now()), [text, sessions]);
   const interpretations = reading.interpretations;
+  const notUnderstood = text !== '' && reading.understood === null;
+  let notUnderstoodText = '';
+  if (notUnderstood) {
+    notUnderstoodText = text;
+  }
+  const pausedNotUnderstoodText = useDebouncedValue(notUnderstoodText, NOT_UNDERSTOOD_DEBOUNCE_MS);
+  const showNotUnderstood = notUnderstood && pausedNotUnderstoodText !== '';
 
   useEffect(() => {
     if (!open) {
@@ -71,21 +72,15 @@ export const useFilterBuilder = (open: boolean, onClose: () => void) => {
     }
   };
 
-  const applySuggestion = (suggestion: FilterSuggestion) => {
-    setText(replaceWord(text, suggestion.word, suggestion.replacement));
-    inputRef.current?.focus();
-  };
-
   return {
     text,
     setText,
     reading,
     interpretations,
+    showNotUnderstood,
     select,
-    applySuggestion,
     handleKeyDown,
     tilesRef,
     listRef,
-    inputRef,
   };
 };

@@ -75,7 +75,7 @@ test.describe('Dock filters', () => {
     await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('tells not understood apart from no match and keeps the input in place', async ({
+  test('shows not understood once typing stops, apart from no match, with the input in place', async ({
     page,
   }) => {
     await openFilterList(page);
@@ -87,6 +87,17 @@ test.describe('Dock filters', () => {
       .click();
     await expect(sessionItems(page)).toHaveCount(1);
     await expect(sessionItems(page).first()).toContainText('Isar Loop');
+  });
+
+  test('searches quoted text only in session names', async ({ page }) => {
+    await openFilterList(page);
+    await page.getByLabel(/describe a filter/i).fill('"ride"');
+    await page
+      .getByTestId('filter-builder-tiles')
+      .getByRole('button', { name: 'Apply filter: “ride”', exact: true })
+      .click();
+    await expect(sessionItems(page)).toHaveCount(1);
+    await expect(sessionItems(page).first()).toContainText('Mid Ride');
   });
 
   test('shows a chart zoom as a row that clears the whole filter', async ({ page }) => {

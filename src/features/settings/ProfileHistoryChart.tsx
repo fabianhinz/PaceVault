@@ -238,6 +238,7 @@ export const ProfileHistoryChart = () => {
                   strokeWidth={2}
                   connectNulls
                   dot={(dotProps) => {
+                    if (dotProps.payload?.carried) return <g key={dotProps.key} />;
                     const active = dotProps.payload?.date === activeDate;
                     return (
                       <Dot

@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export const dockFilterButton = (page: Page) =>
   page
@@ -24,44 +24,54 @@ export const applyFilter = async (page: Page, name: string) => {
   await closeFilterList(page);
 };
 
-/** Walks the filter input through every feedback state and checks the input never moves. */
+const settledBox = async (locator: Locator) => {
+  let last: Awaited<ReturnType<Locator['boundingBox']>> = null;
+  await expect
+    .poll(async () => {
+      const box = await locator.boundingBox();
+      const settled =
+        box !== null && last !== null && box.y === last.y && box.height === last.height;
+      last = box;
+      return settled;
+    })
+    .toBe(true);
+  if (last === null) {
+    throw new Error('element missing');
+  }
+  return last;
+};
+
 export const expectFilterInputStaysPut = async (page: Page, nameWord: string) => {
   const input = page.getByLabel(/describe a filter/i);
+  const list = filterList(page);
   const tiles = page.getByTestId('filter-builder-tiles');
-  const feedback = page.getByTestId('filter-feedback');
+  const notUnderstood = tiles.getByText('Not understood', { exact: true });
   await expect(input).toBeVisible();
-  await page.waitForTimeout(400);
-  const start = await input.boundingBox();
-  if (!start) {
-    throw new Error('filter input missing');
-  }
+  const inputStart = await settledBox(input);
+  const listStart = await settledBox(list);
   const expectInPlace = async () => {
-    const box = await input.boundingBox();
-    expect(box?.y ?? Number.NaN).toBeCloseTo(start.y, 0);
-    expect(box?.height ?? Number.NaN).toBeCloseTo(start.height, 0);
+    const inputBox = await input.boundingBox();
+    expect(inputBox?.y ?? Number.NaN).toBeCloseTo(inputStart.y, 0);
+    expect(inputBox?.height ?? Number.NaN).toBeCloseTo(inputStart.height, 0);
+    const listBox = await list.boundingBox();
+    expect(listBox?.y ?? Number.NaN).toBeCloseTo(listStart.y, 0);
+    expect(listBox?.height ?? Number.NaN).toBeCloseTo(listStart.height, 0);
   };
 
   await input.fill('run');
   await expect(tiles.getByRole('button').first()).toBeVisible();
   await expectInPlace();
 
-  await input.fill('runing');
-  await expect(feedback).toContainText('Did you mean running?');
+  await input.fill('');
+  await input.pressSequentially('xyzzy', { delay: 50 });
+  await expect(notUnderstood).toHaveCount(0);
   await expectInPlace();
-  await feedback.getByRole('button', { name: 'running', exact: true }).click();
-  await expect(input).toHaveValue('running');
-  await expect(input).toBeFocused();
-  await expect(feedback).toHaveCount(0);
-  await expectInPlace();
-
-  await input.fill('xyzzy');
-  await expect(feedback).toContainText('Not understood: xyzzy');
-  await expect(tiles).toContainText('Not understood');
+  await expect(notUnderstood).toBeVisible();
   await expectInPlace();
 
   await input.fill('ride 5 km');
   await expect(tiles).toContainText('No sessions match');
-  await expect(feedback).toHaveCount(0);
+  await expect(notUnderstood).toHaveCount(0);
   await expectInPlace();
 
   await input.fill(nameWord);

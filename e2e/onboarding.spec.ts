@@ -1,6 +1,6 @@
 import { test, expect } from './helpers/test';
 import { RUNNING_FIT, seedOnboardingComplete } from './helpers/seed';
-import { closeImportSummary, uploadFitFiles } from './helpers/upload';
+import { closeImportSummary, uploadFilesWithButton } from './helpers/upload';
 
 test.describe('Onboarding flow', () => {
   test('set thresholds → upload FIT → complete onboarding', async ({ page }) => {
@@ -15,12 +15,12 @@ test.describe('Onboarding flow', () => {
 
     await page.fill('#thresh-restHr', '50');
     await page.fill('#thresh-maxHr', '185');
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
 
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
-    await expect(uploadButton).toBeEnabled({ timeout: 3000 });
+    await expect(uploadButton).toBeEnabled();
 
-    await uploadFitFiles(page, [RUNNING_FIT]);
+    await uploadFilesWithButton(page, uploadButton, [RUNNING_FIT]);
 
     await expect(page.locator('[data-layout="dock"]')).toBeVisible();
 
@@ -45,7 +45,7 @@ test.describe('Onboarding flow', () => {
     await expect(page.getByText(/test data/i)).toBeVisible();
   });
 
-  test('upload button is disabled until thresholds are set', async ({ page }) => {
+  test('upload button is disabled until thresholds are valid', async ({ page }) => {
     await page.goto('/');
 
     await page.getByText('FIT files', { exact: true }).click();
@@ -53,14 +53,15 @@ test.describe('Onboarding flow', () => {
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
     await expect(uploadButton).toBeDisabled();
 
-    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
     await page.fill('#thresh-restHr', '50');
-    await expect(saveButton).toBeDisabled();
+    await expect(uploadButton).toBeDisabled();
+
+    await page.fill('#thresh-maxHr', '40');
+    await expect(page.getByText('Min 120 bpm')).toBeVisible();
     await expect(uploadButton).toBeDisabled();
 
     await page.fill('#thresh-maxHr', '185');
-    await saveButton.click();
-    await expect(uploadButton).toBeEnabled({ timeout: 3000 });
+    await expect(uploadButton).toBeEnabled();
   });
 
   test("changing FTP in settings saves it as today's entry", async ({ page }) => {
@@ -85,9 +86,7 @@ test.describe('Onboarding flow', () => {
     await page.reload();
     await expect(ftpField).toHaveValue('280');
 
-    await ftpField.fill('290');
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(ftpField).toHaveValue('280');
     await expect(saveButton).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
   });
 });

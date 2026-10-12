@@ -9,23 +9,32 @@ import { parseFitFile, type ParsedFitResult } from '@/parsers/fit.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { thresholdsAt } from '@/lib/thresholdsAt.ts';
-import {
-  deleteSessionGPS,
-  deleteSessionLaps,
-  deleteSessionRecords,
-  getFitFile,
-  getSessionRecords,
-  saveSessionLaps,
-  saveSessionRecords,
-} from '@/lib/indexeddb.ts';
+import { bulkReplaceSessionData, getFitFile, getSessionRecords } from '@/lib/indexeddb.ts';
 import { claimSessionsDerivationVersion } from '@/lib/guardedSessionsStorage.ts';
 import { withExclusiveLock } from '@/lib/webLock.ts';
 import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
+import { INGEST_BATCH_SIZE, INGEST_CHUNK_SIZE } from './createIngestBatcher.ts';
 
 const SESSION_REPROCESSING_LOCK = 'pacevault-session-reprocessing';
+
+export const REPROCESS_BATCH_SIZE = INGEST_BATCH_SIZE;
+
+interface ReparsedSession {
+  stored: TrainingSession;
+  merged: TrainingSession;
+  parsed: ParsedFitResult;
+}
+
+type ReprocessOutcome =
+  | { kind: 'reparsed'; reparsed: ReparsedSession }
+  | { kind: 'updated'; session: TrainingSession };
+
+const markedCurrent = (session: TrainingSession): TrainingSession => {
+  return { ...session, derivationVersion: SESSION_DERIVATION_VERSION };
+};
 
 const mergeReparsedSession = (
   stored: TrainingSession,
@@ -65,16 +74,6 @@ const reparseFit = async (
     console.error(`Reparsing the FIT file of session ${session.id} failed:`, err);
     return undefined;
   }
-};
-
-const replaceSessionData = async (sessionId: string, parsed: ParsedFitResult) => {
-  let laps = parsed.laps;
-  if (parsed.records.length === 0) laps = [];
-  await deleteSessionRecords(sessionId);
-  await deleteSessionLaps(sessionId);
-  await deleteSessionGPS(sessionId);
-  await saveSessionRecords(sessionId, parsed.records);
-  await saveSessionLaps(sessionId, laps);
 };
 
 const recomputedStress = (
@@ -132,23 +131,67 @@ const recomputeFromRecords = async (
 const reprocessSession = async (
   session: TrainingSession,
   profile: UserProfile | null,
-): Promise<TrainingSession> => {
+): Promise<ReprocessOutcome> => {
   const parsed = await reparseFit(session, profile);
-  if (!parsed) return recomputeFromRecords(session, profile);
-  await replaceSessionData(session.id, parsed);
-  return mergeReparsedSession(session, parsed.session);
+  if (!parsed) return { kind: 'updated', session: await recomputeFromRecords(session, profile) };
+  const merged = mergeReparsedSession(session, parsed.session);
+  return { kind: 'reparsed', reparsed: { stored: session, merged, parsed } };
 };
 
 const reprocessOrKeep = async (
   session: TrainingSession,
   profile: UserProfile | null,
-): Promise<TrainingSession> => {
+): Promise<ReprocessOutcome> => {
   try {
     return await reprocessSession(session, profile);
   } catch (err) {
     console.error(`Reprocessing session ${session.id} failed:`, err);
-    return { ...session, derivationVersion: SESSION_DERIVATION_VERSION };
+    return { kind: 'updated', session: markedCurrent(session) };
   }
+};
+
+const saveReparsedSessions = async (reparsed: ReparsedSession[]): Promise<TrainingSession[]> => {
+  const entries = reparsed.map((item) => {
+    let laps = item.parsed.laps;
+    if (item.parsed.records.length === 0) laps = [];
+    return { sessionId: item.stored.id, records: item.parsed.records, laps };
+  });
+  try {
+    await bulkReplaceSessionData(entries);
+    return reparsed.map((item) => item.merged);
+  } catch (err) {
+    console.error('Saving reprocessed session data failed:', err);
+    return reparsed.map((item) => markedCurrent(item.stored));
+  }
+};
+
+const reprocessBatch = async (
+  ids: string[],
+  profile: UserProfile | null,
+): Promise<TrainingSession[]> => {
+  const storedById = new Map(useSessionsStore.getState().sessions.map((s) => [s.id, s]));
+  const updated: TrainingSession[] = [];
+  let pending: ReparsedSession[] = [];
+
+  const savePending = async () => {
+    if (pending.length === 0) return;
+    const chunk = pending;
+    pending = [];
+    updated.push(...(await saveReparsedSessions(chunk)));
+  };
+
+  for (const id of ids) {
+    const session = storedById.get(id);
+    if (session) {
+      const outcome = await reprocessOrKeep(session, profile);
+      if (outcome.kind === 'reparsed') pending.push(outcome.reparsed);
+      else updated.push(outcome.session);
+      if (pending.length >= INGEST_CHUNK_SIZE) await savePending();
+    }
+    useImportProgressStore.getState().advanceImport();
+  }
+  await savePending();
+  return updated;
 };
 
 const hasOutdatedSessions = (): boolean => {
@@ -172,14 +215,11 @@ const runWithLock = async (): Promise<number> => {
   useImportProgressStore.getState().setImportTotal(outdatedIds.length);
   const profile = useUserStore.getState().profile;
 
-  for (const id of outdatedIds) {
-    const session = useSessionsStore.getState().sessions.find((s) => s.id === id);
-    if (session) {
-      const updated = await reprocessOrKeep(session, profile);
-      useSessionsStore.getState().commitReprocessedSession(updated);
-      await guardedSessionsStorage.flush();
-    }
-    useImportProgressStore.getState().advanceImport();
+  for (let start = 0; start < outdatedIds.length; start += REPROCESS_BATCH_SIZE) {
+    const batch = outdatedIds.slice(start, start + REPROCESS_BATCH_SIZE);
+    const updated = await reprocessBatch(batch, profile);
+    useSessionsStore.getState().commitReprocessedSessions(updated);
+    await guardedSessionsStorage.flush();
   }
   return outdatedIds.length;
 };

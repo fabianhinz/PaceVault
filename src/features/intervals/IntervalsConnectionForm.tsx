@@ -21,6 +21,7 @@ import {
   verifyIntervalsKeyOrThrow,
 } from './hooks/useIntervalsKeyCheck.ts';
 import { Typography } from '@/components/ui/Typography.tsx';
+import type { ProfileGate } from '@/features/settings/hooks/useThresholdsForm.ts';
 
 const SETTINGS_URL = 'https://intervals.icu/settings';
 const CHECK_DEBOUNCE_MS = 600;
@@ -34,12 +35,15 @@ const errorMessage = (code: IntervalsErrorCode): string => {
 
 interface IntervalsConnectionFormProps {
   onSynced?: () => void;
+  profileGate?: ProfileGate;
   children?: ReactNode;
 }
 
 export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => {
   const storedKey = useIntervalsStore((s) => s.apiKey);
   const hasProfile = useUserStore((s) => s.profile !== null);
+  let profileReady = hasProfile;
+  if (props.profileGate) profileReady = props.profileGate.ready;
 
   const [keyInput, setKeyInput] = useState(storedKey ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +72,8 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
   const handleImport = async () => {
     const trimmed = keyInput.trim();
     if (trimmed.length === 0) return;
+
+    props.profileGate?.save();
 
     setManual(true);
     setError(null);
@@ -167,7 +173,7 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
           disabled={
             manual ||
             trimmedInput === '' ||
-            !hasProfile ||
+            !profileReady ||
             check?.kind === 'checking' ||
             check?.kind === 'rejected'
           }

@@ -3,7 +3,7 @@ import { useMatch } from 'react-router-dom';
 import MapGL from 'react-map-gl/maplibre';
 import type { PickingInfo } from '@deck.gl/core';
 import { styles } from './mapStyle.ts';
-import { useMapTracks } from './hooks/useMapTracks.ts';
+import { useMapTracks, type MapTrack } from './hooks/useMapTracks.ts';
 import { useGPSBackfill } from './hooks/useGpsBackfill.ts';
 import { useMapCameraEffect } from './hooks/useMapCameraEffect.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
@@ -18,9 +18,12 @@ import { SessionsPickPopup } from '../sessions/SessionsPickPopup.tsx';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useWatchPositionEffect } from '@/lib/hooks/useWatchPositionEffect.ts';
 import { useGeolocationCameraEffect } from './hooks/useGeolocationCameraEffect.ts';
+import { useSessionReprocessingActive } from '../sessions/hooks/useSessionReprocessingActive.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map-attribution.css';
+
+const NO_TRACKS: MapTrack[] = [];
 
 export const MapBackground = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -28,8 +31,10 @@ export const MapBackground = () => {
   const mapRef = useRef<MapRef>(null);
 
   const backfill = useGPSBackfill();
+  const reprocessing = useSessionReprocessingActive();
   const mapTracks = useMapTracks(backfill.gpsData);
-  const popupState = useMapPopupState(mapRef, mapTracks.tracks);
+  const tracks = reprocessing ? NO_TRACKS : mapTracks.tracks;
+  const popupState = useMapPopupState(mapRef, tracks);
   const studioPopup = useStudioMapPopup();
   const studioRoutesPopup = useStudioRoutesPopup(mapRef);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
@@ -46,7 +51,7 @@ export const MapBackground = () => {
 
   useMapCameraEffect(
     mapRef,
-    mapTracks.tracks,
+    tracks,
     openedSessionId,
     mapLoaded,
     focusedTripSessionIds.length > 0,
@@ -97,7 +102,7 @@ export const MapBackground = () => {
         style={{ width: '100%', height: '100%' }}
       >
         <DeckGLOverlay
-          tracks={mapTracks.tracks}
+          tracks={tracks}
           onClick={onMapClick}
           onHover={popupState.onHover}
           hoveringTrack={popupState.hoveringTrack}

@@ -21,7 +21,7 @@ const percent = (fraction: number): string => `${Math.max(0, Math.min(1, fractio
 export const MeterBar = (props: MeterBarProps) => {
   const from = props.fill.from ?? 0;
   return (
-    <div className="relative flex h-6 w-full items-center">
+    <div className="relative flex h-8 w-full items-center">
       <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-white/5">
         <div
           className={cn('absolute inset-y-0 rounded-full', FILL_CLASS[props.sport][props.alpha])}

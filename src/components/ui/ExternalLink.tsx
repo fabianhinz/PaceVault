@@ -8,7 +8,7 @@ interface ExternalLinkProps {
 }
 
 export const ExternalLink = (props: ExternalLinkProps) => (
-  <div className="flex gap-1 align-center text-accent">
+  <span className="flex text-xs gap-1 align-center text-accent">
     <props.icon size={16} strokeWidth={1.5} className="shrink-0" />
     <a
       href={props.href}
@@ -18,5 +18,5 @@ export const ExternalLink = (props: ExternalLinkProps) => (
     >
       {props.children}
     </a>
-  </div>
+  </span>
 );

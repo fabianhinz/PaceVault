@@ -1,9 +1,11 @@
-import { Typography } from '@/components/ui/Typography.tsx';
-import { PEAK_WINDOWS, peakScale } from '@/lib/moreStats.ts';
+import { PEAK_WINDOW_SECONDS, peakScale } from '@/lib/moreStats.ts';
 import { cn } from '@/lib/utils.ts';
 import type { Sport } from '@/packages/engine/types.ts';
+import { m } from '@/paraglide/messages.js';
+import type { MiniRailSegmentProps } from './hooks/useMiniRailHover.ts';
+import { peakWindow, watts } from './statFormat.ts';
 
-const BAR_HEIGHT_PX = 24;
+const BAR_HEIGHT_PX = 32;
 
 const BAR_CLASS: Record<Sport, { soft: string; strong: string }> = {
   running: { soft: 'bg-sport-running/35', strong: 'bg-sport-running/95' },
@@ -14,50 +16,42 @@ interface PeakBarsProps {
   sport: Sport;
   watts: Array<number | undefined>;
   highlight: number;
-  ftp: number | undefined;
+  segmentProps: (segment: number) => MiniRailSegmentProps;
 }
 
 export const PeakBars = (props: PeakBarsProps) => {
-  const scale = peakScale(props.watts, props.ftp, BAR_HEIGHT_PX);
+  const heights = peakScale(props.watts, BAR_HEIGHT_PX);
   const colors = BAR_CLASS[props.sport];
   return (
-    <div className="relative flex h-6 w-full items-end gap-1">
-      {scale.bars.map((height, i) => {
-        const key = PEAK_WINDOWS[i]?.label ?? i;
-        if (height === undefined) return <span key={key} className="block flex-1" />;
+    <div className="flex h-8 w-full items-end gap-1">
+      {heights.map((height, i) => {
+        const seconds = PEAK_WINDOW_SECONDS[i] ?? i;
+        const value = props.watts[i];
+        if (height === undefined || value === undefined) {
+          return <span key={seconds} aria-hidden className="block h-full flex-1" />;
+        }
         return (
           <span
-            key={key}
-            className={cn(
-              'block flex-1 rounded-sm',
-              i === props.highlight && colors.strong,
-              i !== props.highlight && colors.soft,
-            )}
-            style={{ height: `${height}px` }}
-          />
+            key={seconds}
+            role="img"
+            aria-label={m.ui_more_stats_peak_aria({
+              window: peakWindow(seconds),
+              watts: watts(value),
+            })}
+            className="flex h-full flex-1 cursor-pointer items-end"
+            {...props.segmentProps(i)}
+          >
+            <span
+              className={cn(
+                'block w-full rounded-sm',
+                i === props.highlight && colors.strong,
+                i !== props.highlight && colors.soft,
+              )}
+              style={{ height: `${height}px` }}
+            />
+          </span>
         );
       })}
-      {scale.ftpLine !== undefined && (
-        <div
-          className="pointer-events-none absolute inset-x-0 border-t border-dashed border-white/30"
-          style={{ bottom: `${scale.ftpLine}px` }}
-        />
-      )}
     </div>
   );
 };
-
-export const PeakAxis = () => (
-  <div className="flex h-4 w-full gap-1">
-    {PEAK_WINDOWS.map((window) => (
-      <Typography
-        key={window.label}
-        variant="caption"
-        color="textTertiary"
-        className="flex-1 text-center"
-      >
-        {window.label}
-      </Typography>
-    ))}
-  </div>
-);

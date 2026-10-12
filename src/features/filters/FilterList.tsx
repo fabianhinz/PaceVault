@@ -7,7 +7,7 @@ import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { cn } from '@/lib/utils.ts';
 import { filterKey, filterName, filterTile, zoomTile } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-import { FilterEmptyState, FilterFeedback } from './FilterFeedback.tsx';
+import { FilterEmptyState } from './FilterEmptyState.tsx';
 import { filterIcon } from './filterIcon.ts';
 import { useFilterBuilder } from './hooks/useFilterBuilder.ts';
 
@@ -31,16 +31,12 @@ export const FilterList = (props: FilterListProps) => {
   }
   const zoom = zoomTile(activeFilter);
   const showZoomHint = zoom === null && device.pointerFine && location.pathname === '/';
-  const reading = builder.reading;
-  const suggestion = reading.suggestions[0];
-  const showFeedback = text !== '' && (suggestion !== undefined || reading.unknown.length > 0);
-  const understood = reading.understood;
+  const understood = builder.reading.understood;
 
   return (
     <div className={cn('flex w-full flex-col', props.sizing === 'fill' && 'h-full')}>
       <div className="shrink-0 border-b border-white/10 px-3 py-1">
         <Input
-          ref={builder.inputRef}
           variant="bare"
           icon={Search}
           type="text"
@@ -55,104 +51,93 @@ export const FilterList = (props: FilterListProps) => {
         />
       </div>
       <div
+        ref={builder.listRef}
+        role="group"
+        aria-label={m.ui_filter_list()}
         className={cn(
-          'flex flex-col',
+          'flex flex-col gap-1.5 overflow-y-auto p-3 [scrollbar-width:none]',
           props.sizing === 'fill' && 'min-h-0 flex-1',
           props.sizing === 'content' && 'h-[252px]',
         )}
       >
-        {showFeedback && (
-          <FilterFeedback
-            suggestion={suggestion}
-            unknown={reading.unknown}
-            onSuggestion={builder.applySuggestion}
-          />
-        )}
-        <div
-          ref={builder.listRef}
-          role="group"
-          aria-label={m.ui_filter_list()}
-          className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-3 [scrollbar-width:none]"
-        >
-          {text !== '' && (
-            <div
-              ref={builder.tilesRef}
-              role="group"
-              aria-live="polite"
-              data-testid="filter-builder-tiles"
-              className="flex shrink-0 flex-col gap-1.5"
-            >
-              {builder.interpretations.map((criteria) => {
-                const tile = filterTile(criteria);
-                const name = filterName(criteria);
-                return (
-                  <ActionTile
-                    key={filterKey(criteria)}
-                    layout="row"
-                    look="dashed"
-                    icon={filterIcon(criteria)}
-                    title={tile.title}
-                    description={tile.description}
-                    selected={filterKey(criteria) === activeKey}
-                    buttonProps={{ 'aria-label': m.ui_filter_apply({ name }), title: name }}
-                    onClick={() => builder.select(criteria)}
-                  />
-                );
-              })}
-              {builder.interpretations.length === 0 && understood !== null && (
-                <FilterEmptyState kind="noMatch" description={filterName(understood)} />
-              )}
-              {builder.interpretations.length === 0 && understood === null && (
-                <FilterEmptyState
-                  kind="notUnderstood"
-                  description={m.ui_filter_not_understood_desc()}
-                />
-              )}
-            </div>
-          )}
-          {text === '' && zoom !== null && activeFilter !== null && (
-            <ActionTile
-              layout="row"
-              look="accent"
-              icon={ZoomOut}
-              title={zoom.title}
-              description={zoom.description}
-              buttonProps={{
-                'aria-label': m.ui_filter_zoom_clear({ name: filterName(activeFilter) }),
-                'aria-pressed': true,
-                title: filterName(activeFilter),
-              }}
-              onClick={() => useFiltersStore.getState().clearActiveFilter()}
-            />
-          )}
-          {text === '' && showZoomHint && (
-            <ActionTile
-              layout="row"
-              look="hint"
-              icon={ZoomOut}
-              title={m.ui_filter_zoom_hint_title()}
-              description={m.ui_filter_zoom_hint_desc()}
-            />
-          )}
-          {text === '' &&
-            savedFilters.map((filter) => {
-              const tile = filterTile(filter.criteria);
-              const name = filterName(filter.criteria);
-              const selected = filterKey(filter.criteria) === activeKey;
+        {text !== '' && (
+          <div
+            ref={builder.tilesRef}
+            role="group"
+            aria-live="polite"
+            data-testid="filter-builder-tiles"
+            className="flex shrink-0 flex-col gap-1.5"
+          >
+            {builder.interpretations.map((criteria) => {
+              const tile = filterTile(criteria);
+              const name = filterName(criteria);
               return (
                 <ActionTile
-                  key={filter.id}
+                  key={filterKey(criteria)}
                   layout="row"
-                  icon={filterIcon(filter.criteria)}
+                  look="dashed"
+                  icon={filterIcon(criteria)}
                   title={tile.title}
                   description={tile.description}
-                  selected={selected}
-                  buttonProps={{ 'aria-label': name, 'aria-pressed': selected, title: name }}
-                  onClick={() => useFiltersStore.getState().toggleSavedFilter(filter.id)}
+                  selected={filterKey(criteria) === activeKey}
+                  buttonProps={{ 'aria-label': m.ui_filter_apply({ name }), title: name }}
+                  onClick={() => builder.select(criteria)}
                 />
               );
             })}
-        </div>
+            {builder.interpretations.length === 0 && understood !== null && (
+              <FilterEmptyState kind="noMatch" description={filterName(understood)} />
+            )}
+            {builder.showNotUnderstood && (
+              <FilterEmptyState
+                kind="notUnderstood"
+                description={m.ui_filter_not_understood_desc()}
+              />
+            )}
+          </div>
+        )}
+        {text === '' && zoom !== null && activeFilter !== null && (
+          <ActionTile
+            layout="row"
+            look="accent"
+            icon={ZoomOut}
+            title={zoom.title}
+            description={zoom.description}
+            buttonProps={{
+              'aria-label': m.ui_filter_zoom_clear({ name: filterName(activeFilter) }),
+              'aria-pressed': true,
+              title: filterName(activeFilter),
+            }}
+            onClick={() => useFiltersStore.getState().clearActiveFilter()}
+          />
+        )}
+        {text === '' && showZoomHint && (
+          <ActionTile
+            layout="row"
+            look="hint"
+            icon={ZoomOut}
+            title={m.ui_filter_zoom_hint_title()}
+            description={m.ui_filter_zoom_hint_desc()}
+          />
+        )}
+        {text === '' &&
+          savedFilters.map((filter) => {
+            const tile = filterTile(filter.criteria);
+            const name = filterName(filter.criteria);
+            const selected = filterKey(filter.criteria) === activeKey;
+            return (
+              <ActionTile
+                key={filter.id}
+                layout="row"
+                icon={filterIcon(filter.criteria)}
+                title={tile.title}
+                description={tile.description}
+                selected={selected}
+                buttonProps={{ 'aria-label': name, 'aria-pressed': selected, title: name }}
+                onClick={() => useFiltersStore.getState().toggleSavedFilter(filter.id)}
+              />
+            );
+          })}
       </div>
     </div>
   );

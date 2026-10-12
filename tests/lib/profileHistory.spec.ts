@@ -92,13 +92,24 @@ describe('profileHistoryRows', () => {
       [today - 30 * DAY, today],
     );
     expect(rows).toHaveLength(31);
-    expect(rows.find((row) => row.date === today - 10 * DAY)).toEqual({
-      date: today - 10 * DAY,
-      value: null,
-    });
-    expect(rows.filter((row) => row.value !== null)).toEqual([
-      { date: today - 20 * DAY, value: 250 },
-      { date: today - 2 * DAY, value: 270 },
+    expect(rows.find((row) => row.date === today - 10 * DAY)?.value).toBeNull();
+    expect(rows.filter((row) => row.value !== null && !row.carried)).toEqual([
+      { date: today - 20 * DAY, value: 250, carried: false },
+      { date: today - 2 * DAY, value: 270, carried: false },
     ]);
+  });
+
+  it('carries the last value forward to today, also for a single entry', () => {
+    const rows = profileHistoryRows(
+      [{ date: today - 20 * DAY, value: 250 }],
+      [today - 30 * DAY, today],
+    );
+    expect(rows.at(-1)).toEqual({ date: today, value: 250, carried: true });
+    expect(rows.filter((row) => row.value !== null)).toHaveLength(2);
+  });
+
+  it('adds no carried row when the last entry is today', () => {
+    const rows = profileHistoryRows([{ date: today, value: 250 }], [today - 30 * DAY, today]);
+    expect(rows.filter((row) => row.carried)).toEqual([]);
   });
 });

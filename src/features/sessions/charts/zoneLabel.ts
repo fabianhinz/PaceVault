@@ -14,8 +14,11 @@ const ZONE_NAME_LABELS: Record<string, () => string> = {
   neuromuscular: m.ui_zone_neuromuscular,
 };
 
-export const zoneLabel = (band: ZoneBand): string => {
-  const translate = ZONE_NAME_LABELS[band.name];
-  if (!translate) return band.zone;
-  return `${band.zone} ${translate()}`;
+export const zoneName = (band: Pick<ZoneBand, 'name'>): string | undefined =>
+  ZONE_NAME_LABELS[band.name]?.();
+
+export const zoneLabel = (band: Pick<ZoneBand, 'zone' | 'name'>): string => {
+  const name = zoneName(band);
+  if (name === undefined) return band.zone;
+  return `${band.zone} ${name}`;
 };

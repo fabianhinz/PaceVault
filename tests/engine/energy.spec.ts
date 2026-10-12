@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { estimateSessionEnergy, sessionWorkKj, type EnergyBody } from '@/packages/engine/energy.ts';
+import { estimateSessionEnergy, type EnergyBody } from '@/packages/engine/energy.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 const MALE: EnergyBody = { weightKg: 70, age: 35, gender: 'male' };
@@ -24,8 +24,7 @@ describe('estimateSessionEnergy — power', () => {
     if (result === undefined || 'blockedBy' in result) throw new Error('no estimate');
     expect(result.method).toBe('power');
     expect(result.kcal).toBeCloseTo(860.4, 1);
-    expect(result.lowKcal).toBeCloseTo(731.4, 1);
-    expect(result.highKcal).toBeCloseTo(989.5, 1);
+    expect(result.uncertainty).toBe(0.15);
   });
 
   it('covers 0 W records at 0 J', () => {
@@ -136,19 +135,5 @@ describe('estimateSessionEnergy — method choice', () => {
 
   it('is undefined without power and heart rate', () => {
     expect(estimateSessionEnergy(steadyRide(1001, undefined), 'cycling', MALE)).toBeUndefined();
-  });
-});
-
-describe('sessionWorkKj', () => {
-  it('sums power over time', () => {
-    expect(sessionWorkKj(steadyRide(3601, 210))).toBeCloseTo(756, 6);
-  });
-
-  it('counts a 0 W ride as 0 kJ', () => {
-    expect(sessionWorkKj(steadyRide(60, 0))).toBe(0);
-  });
-
-  it('is undefined without power', () => {
-    expect(sessionWorkKj(steadyRide(60, undefined))).toBeUndefined();
   });
 });

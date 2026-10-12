@@ -147,6 +147,36 @@ export const bulkSaveSessionData = async (
   }
 };
 
+export const bulkReplaceSessionData = async (
+  entries: Omit<SessionDataEntry, 'fit'>[],
+): Promise<void> => {
+  const encoded = await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.records.length === 0) return null;
+      return encodeRecords(entry.records);
+    }),
+  );
+  const db = await getDB();
+  const tx = db.transaction(['session-records', 'session-laps', 'session-gps'], 'readwrite');
+  const recordStore = tx.objectStore('session-records');
+  const lapStore = tx.objectStore('session-laps');
+  const gpsIndex = tx.objectStore('session-gps').index('sessionId');
+
+  const writes = entries.map(async (entry, i) => {
+    const records = encoded[i];
+    if (records) await recordStore.put({ sessionId: entry.sessionId, ...records });
+    else await recordStore.delete(entry.sessionId);
+    if (entry.laps.length > 0) await lapStore.put({ sessionId: entry.sessionId, laps: entry.laps });
+    else await lapStore.delete(entry.sessionId);
+    let cursor = await gpsIndex.openCursor(entry.sessionId);
+    while (cursor) {
+      await cursor.delete();
+      cursor = await cursor.continue();
+    }
+  });
+  await Promise.all([...writes, tx.done]);
+};
+
 export const getFitFile = async (
   sessionId: string,
 ): Promise<{ sessionId: string; fileName: string; data: ArrayBuffer } | undefined> => {

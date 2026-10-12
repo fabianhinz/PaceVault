@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ChartNoAxesColumn } from 'lucide-react';
+import { ChartNoAxesColumn, Pause, Wind, type LucideIcon } from 'lucide-react';
 import { CollapsibleListItem } from '@/components/ui/Collapsible.tsx';
-import { SegmentBar } from '@/components/ui/SegmentBar.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
-import { formatPace, formatRaceTime } from '@/lib/formatters.ts';
 import {
-  DECOUPLING_RATIO_LABELS,
   moreStatsTopics,
+  pickPeak,
+  pickZone,
   type MoreStats,
   type MoreStatsTopic,
 } from '@/lib/moreStats.ts';
@@ -18,10 +17,11 @@ import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import { useMoreStats } from './hooks/useMoreStats.ts';
 import { MeterBar } from './MeterBar.tsx';
-import { PeakAxis, PeakBars } from './PeakBars.tsx';
-import { StatCell, StatLine } from './StatCell.tsx';
+import { HrZonesCell } from './HrZonesCell.tsx';
+import { PeakPowerCell } from './PeakPowerCell.tsx';
+import { StatCaption, StatCell, StatPair, StatValue } from './StatCell.tsx';
+import { duration, integerFmt, percent, watts } from './statFormat.ts';
 
-const integerFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });
 const twoDecimalFmt = new Intl.NumberFormat(getLocale(), {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -33,6 +33,7 @@ const decouplingFmt = new Intl.NumberFormat(getLocale(), {
 });
 
 const RANGE_TRACK_SPAN = 0.3;
+const INTENSITY_SCALE = 1.2;
 
 const TOPIC_LABELS: Record<MoreStatsTopic, () => string> = {
   calories: m.ui_more_stats_topic_calories,
@@ -49,10 +50,16 @@ const BLOCKER_LABELS: Record<EnergyBlocker, () => string> = {
 };
 
 const roundToTen = (value: number): number => Math.round(value / 10) * 10;
-const watts = (value: number): string => integerFmt.format(value);
-const duration = (seconds: number): string => formatRaceTime(Math.round(seconds));
 const rangeFraction = (factor: number): number =>
   (factor - (1 - RANGE_TRACK_SPAN)) / (2 * RANGE_TRACK_SPAN);
+
+const IconFact = (props: { icon: LucideIcon; label: string; time: string }) => (
+  <span title={props.label} className="inline-flex items-center gap-1">
+    <props.icon size={12} strokeWidth={2} aria-hidden className="shrink-0" />
+    <span className="sr-only">{props.label}</span>
+    {props.time}
+  </span>
+);
 
 const caloriesCell = (stats: MoreStats): ReactNode => {
   const calories = stats.calories;
@@ -65,16 +72,14 @@ const caloriesCell = (stats: MoreStats): ReactNode => {
         stat="calories"
         label={label}
         metricId="calories"
-        value="--"
-        unit="kcal"
-        lines={[
-          <Typography key="link" variant="caption" as="p" noWrap className="h-4">
+        info1={<StatValue value="--" unit="kcal" />}
+        chart={
+          <Typography variant="caption" as="p" noWrap zeroMinWidth>
             <Link to="/settings" className="text-accent hover:underline">
               {BLOCKER_LABELS[calories.blockedBy]()}
             </Link>
-          </Typography>,
-          <StatLine key="empty" />,
-        ]}
+          </Typography>
+        }
       />
     );
   }
@@ -84,9 +89,9 @@ const caloriesCell = (stats: MoreStats): ReactNode => {
       stat="calories"
       label={label}
       metricId="calories"
-      value={integerFmt.format(roundToTen(calories.kcal))}
-      unit="kcal"
-      visual={
+      info1={<StatValue value={integerFmt.format(roundToTen(calories.kcal))} unit="kcal" />}
+      info2={<StatCaption>±{percent(calories.uncertainty)} %</StatCaption>}
+      chart={
         <MeterBar
           sport={stats.sport}
           alpha={50}
@@ -97,13 +102,6 @@ const caloriesCell = (stats: MoreStats): ReactNode => {
           tick={rangeFraction(1)}
         />
       }
-      lines={[
-        <StatLine key="range">
-          {integerFmt.format(roundToTen(calories.lowKcal))}–
-          {integerFmt.format(roundToTen(calories.highKcal))} kcal
-        </StatLine>,
-        <StatLine key="empty" />,
-      ]}
     />
   );
 };
@@ -111,185 +109,113 @@ const caloriesCell = (stats: MoreStats): ReactNode => {
 const movingTimeCell = (stats: MoreStats): ReactNode => {
   const moving = stats.movingTime;
   if (moving === undefined) return null;
+  const stopped = duration(moving.stoppedS);
+  let chart: ReactNode = <StatCaption>{m.ui_more_stats_stopped({ time: stopped })}</StatCaption>;
+  if (moving.coastingS !== undefined) {
+    chart = (
+      <StatPair
+        start={
+          <IconFact
+            icon={Wind}
+            label={m.ui_more_stats_coasting()}
+            time={duration(moving.coastingS)}
+          />
+        }
+        end={<IconFact icon={Pause} label={m.ui_more_stats_stopped_label()} time={stopped} />}
+      />
+    );
+  }
   return (
     <StatCell
       key="moving"
       stat="moving"
       label={m.ui_more_stats_moving()}
       metricId="movingTime"
-      value={duration(moving.movingS)}
-      lines={[
-        <StatLine key="elapsed">
-          {m.ui_more_stats_elapsed({ time: duration(moving.elapsedS) })}
-        </StatLine>,
-        <StatLine key="stopped">
-          {m.ui_more_stats_stopped({ time: duration(moving.stoppedS) })}
-        </StatLine>,
-      ]}
-    />
-  );
-};
-
-const workCell = (stats: MoreStats): ReactNode => {
-  const work = stats.work;
-  if (work === undefined) return null;
-  let avg = '';
-  if (work.avgPower !== undefined) avg = m.ui_more_stats_avg_power({ watts: watts(work.avgPower) });
-  return (
-    <StatCell
-      key="work"
-      stat="work"
-      label={m.ui_more_stats_work()}
-      metricId="work"
-      value={integerFmt.format(work.kj)}
-      unit="kJ"
-      lines={[<StatLine key="avg">{avg}</StatLine>, <StatLine key="empty" />]}
+      info1={duration(moving.movingS)}
+      info2={
+        <StatCaption>{m.ui_more_stats_of_total({ time: duration(moving.elapsedS) })}</StatCaption>
+      }
+      chart={chart}
     />
   );
 };
 
 const intensityCell = (stats: MoreStats): ReactNode => {
   const intensity = stats.intensity;
-  if (intensity === undefined) return null;
+  const variability = stats.variability;
+  const label = m.ui_more_stats_intensity();
+  if (intensity !== undefined) {
+    let info2: ReactNode = null;
+    if (variability !== undefined) {
+      info2 = (
+        <Typography variant="h3" as="p" tabularNums noWrap>
+          <StatValue value={twoDecimalFmt.format(variability.index)} lead="VI" />
+        </Typography>
+      );
+    }
+    return (
+      <StatCell
+        key="intensity"
+        stat="intensity"
+        label={label}
+        metricId="intensityFactor"
+        relatedMetricIds={['variabilityIndex']}
+        info1={<StatValue value={twoDecimalFmt.format(intensity.factor)} lead="IF" />}
+        info2={info2}
+        chart={
+          <MeterBar
+            sport={stats.sport}
+            alpha={75}
+            fill={{ to: intensity.factor / INTENSITY_SCALE }}
+            mark={1 / INTENSITY_SCALE}
+          />
+        }
+      />
+    );
+  }
+  if (variability === undefined) return null;
   return (
     <StatCell
       key="intensity"
       stat="intensity"
-      label={m.ui_more_stats_intensity()}
-      metricId="intensityFactor"
-      value={twoDecimalFmt.format(intensity.factor)}
-      lines={[
-        <StatLine key="np">{m.ui_more_stats_np({ watts: watts(intensity.np) })}</StatLine>,
-        <StatLine key="ftp">{m.ui_more_stats_ftp({ watts: watts(intensity.ftp) })}</StatLine>,
-      ]}
-    />
-  );
-};
-
-const variabilityCell = (stats: MoreStats): ReactNode => {
-  const variability = stats.variability;
-  if (variability === undefined) return null;
-  return (
-    <StatCell
-      key="variability"
-      stat="variability"
-      label={m.ui_more_stats_variability()}
+      label={label}
       metricId="variabilityIndex"
-      value={twoDecimalFmt.format(variability.index)}
-      lines={[
-        <StatLine key="np">{m.ui_more_stats_np({ watts: watts(variability.np) })}</StatLine>,
-        <StatLine key="avg">
-          {m.ui_more_stats_avg_power({ watts: watts(variability.avgPower) })}
-        </StatLine>,
-      ]}
+      info1={<StatValue value={twoDecimalFmt.format(variability.index)} lead="VI" />}
+      chart={
+        <StatPair
+          start={m.ui_more_stats_np({ watts: watts(variability.np) })}
+          end={m.ui_more_stats_avg_power({ watts: watts(variability.avgPower) })}
+        />
+      }
     />
   );
 };
 
 const peaksCell = (stats: MoreStats): ReactNode => {
   const peaks = stats.peaks;
-  if (peaks === undefined) return null;
-  const highlighted = peaks.slots[peaks.highlight];
-  if (highlighted?.watts === undefined) return null;
-  let scaleLine = m.ui_more_stats_scaled_to_best();
-  if (peaks.ftp !== undefined) scaleLine = m.ui_more_stats_ftp_line({ watts: watts(peaks.ftp) });
-  return (
-    <StatCell
-      key="peaks"
-      stat="peaks"
-      label={m.ui_more_stats_peaks()}
-      metricId="peakPower"
-      value={watts(highlighted.watts)}
-      unit={`W · ${highlighted.label}`}
-      visual={
-        <PeakBars
-          sport={stats.sport}
-          watts={peaks.slots.map((slot) => slot.watts)}
-          highlight={peaks.highlight}
-          ftp={peaks.ftp}
-        />
-      }
-      lines={[<PeakAxis key="axis" />, <StatLine key="scale">{scaleLine}</StatLine>]}
-    />
-  );
-};
-
-const coastingCell = (stats: MoreStats): ReactNode => {
-  const coasting = stats.coasting;
-  if (coasting === undefined) return null;
-  return (
-    <StatCell
-      key="coasting"
-      stat="coasting"
-      label={m.ui_more_stats_coasting()}
-      metricId="coasting"
-      value={duration(coasting.seconds)}
-      visual={<MeterBar sport={stats.sport} alpha={75} fill={{ to: coasting.share }} />}
-      lines={[
-        <StatLine key="share">
-          {m.ui_more_stats_coast_share({ percent: integerFmt.format(coasting.share * 100) })}
-        </StatLine>,
-        <StatLine key="rule">{m.ui_more_stats_coast_rule()}</StatLine>,
-      ]}
-    />
-  );
+  if (peaks === undefined || !pickPeak(peaks, null)) return null;
+  return <PeakPowerCell key="peaks" sport={stats.sport} peaks={peaks} />;
 };
 
 const stepLengthCell = (stats: MoreStats): ReactNode => {
   const step = stats.stepLength;
   if (step === undefined) return null;
-  let pace = '';
-  if (step.paceSecPerKm !== undefined) {
-    pace = m.ui_more_stats_pace({ pace: formatPace(step.paceSecPerKm) });
-  }
   return (
     <StatCell
       key="step"
       stat="step"
       label={m.ui_more_stats_step()}
       metricId="stepLength"
-      value={twoDecimalFmt.format(step.metres)}
-      unit="m"
-      lines={[
-        <StatLine key="spm">{integerFmt.format(step.stepsPerMinute)} spm</StatLine>,
-        <StatLine key="pace">{pace}</StatLine>,
-      ]}
+      info1={<StatValue value={twoDecimalFmt.format(step.metres)} unit="m" />}
+      info2={<StatCaption>{integerFmt.format(step.stepsPerMinute)} spm</StatCaption>}
     />
   );
 };
 
 const hrZonesCell = (stats: MoreStats): ReactNode => {
   const zones = stats.hrZones;
-  if (zones === undefined) return null;
-  const dominant = zones.zones[zones.dominant];
-  if (dominant === undefined) return null;
-  return (
-    <StatCell
-      key="zones"
-      stat="zones"
-      label={m.ui_more_stats_zones()}
-      metricId="trainingZones"
-      value={dominant.zone}
-      unit={`${integerFmt.format((dominant.seconds / zones.totalSeconds) * 100)} %`}
-      visual={
-        <SegmentBar
-          segments={zones.zones.map((zone) => ({
-            key: zone.zone,
-            value: zone.seconds,
-            color: zone.color,
-          }))}
-        />
-      }
-      lines={[
-        <StatLine key="hard">
-          {m.ui_more_stats_zones_hard({ time: duration(zones.hardSeconds) })}
-        </StatLine>,
-        <StatLine key="easy">
-          {m.ui_more_stats_zones_easy({ time: duration(zones.easySeconds) })}
-        </StatLine>,
-      ]}
-    />
-  );
+  if (zones === undefined || !pickZone(zones, null)) return null;
+  return <HrZonesCell key="zones" zones={zones} />;
 };
 
 const decouplingCell = (stats: MoreStats): ReactNode => {
@@ -303,9 +229,9 @@ const decouplingCell = (stats: MoreStats): ReactNode => {
       stat="decoupling"
       label={m.ui_more_stats_decoupling()}
       metricId="decoupling"
-      value={decouplingFmt.format(decoupling.pct)}
-      unit="%"
-      visual={
+      info1={<StatValue value={decouplingFmt.format(decoupling.pct)} unit="%" />}
+      info2={<StatCaption>{verdict}</StatCaption>}
+      chart={
         <MeterBar
           sport={stats.sport}
           alpha={75}
@@ -313,13 +239,6 @@ const decouplingCell = (stats: MoreStats): ReactNode => {
           mark={DECOUPLING_WELL_PACED_PCT / DECOUPLING_SCALE_PCT}
         />
       }
-      lines={[
-        <StatLine key="ratio">
-          {DECOUPLING_RATIO_LABELS[decoupling.ratio]} {twoDecimalFmt.format(decoupling.firstHalf)}→
-          {twoDecimalFmt.format(decoupling.secondHalf)}
-        </StatLine>,
-        <StatLine key="verdict">{verdict}</StatLine>,
-      ]}
     />
   );
 };
@@ -327,11 +246,8 @@ const decouplingCell = (stats: MoreStats): ReactNode => {
 const CELLS = [
   caloriesCell,
   movingTimeCell,
-  workCell,
   intensityCell,
-  variabilityCell,
   peaksCell,
-  coastingCell,
   stepLengthCell,
   hrZonesCell,
   decouplingCell,

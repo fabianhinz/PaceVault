@@ -19,6 +19,7 @@ interface ProfileHistoryPoint {
 interface ProfileHistoryRow {
   date: number;
   value: number | null;
+  carried: boolean;
 }
 
 interface ProfileHistorySeries {
@@ -60,8 +61,16 @@ export const profileHistoryRows = (
   points: ProfileHistoryPoint[],
   domain: [number, number],
 ): ProfileHistoryRow[] => {
-  const rows = new Map<number, number | null>();
-  for (let date = domain[0]; date <= domain[1]; date += DAY_MS) rows.set(date, null);
-  for (const point of points) rows.set(point.date, point.value);
-  return [...rows].map(([date, value]) => ({ date, value })).sort((a, b) => a.date - b.date);
+  const rows = new Map<number, ProfileHistoryRow>();
+  for (let date = domain[0]; date <= domain[1]; date += DAY_MS) {
+    rows.set(date, { date, value: null, carried: false });
+  }
+  for (const point of points) {
+    rows.set(point.date, { date: point.date, value: point.value, carried: false });
+  }
+  const last = points.at(-1);
+  if (last && last.date < domain[1]) {
+    rows.set(domain[1], { date: domain[1], value: last.value, carried: true });
+  }
+  return [...rows.values()].sort((a, b) => a.date - b.date);
 };

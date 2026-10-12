@@ -11,14 +11,11 @@ import {
   EXACT_ONLY_UNITS,
   EXACT_UNIT_ORDER,
   KEYWORDS,
-  KNOWN_WORDS,
   MONTH_NAMES,
   PREFIX_UNIT_ORDER,
   type QuantityUnit,
   STOPWORDS,
-  SUGGESTION_WORDS,
   type Unit,
-  editDistance,
   normalizeText,
 } from '@/lib/filterVocabulary.ts';
 
@@ -27,26 +24,18 @@ type GrammarSession = Pick<
   'sport' | 'date' | 'duration' | 'distance' | 'elevationGain' | 'isPlanned' | 'name'
 >;
 
-export interface FilterSuggestion {
-  word: string;
-  replacement: string;
-}
-
 export interface FilterReading {
   interpretations: FilterCriteria[];
   understood: FilterCriteria | null;
-  unknown: string[];
-  suggestions: FilterSuggestion[];
 }
 
 interface Token {
-  raw: string;
   word: string;
+  quoted: boolean;
 }
 
 const MAX_INTERPRETATIONS = 3;
 const MILE_KM = 1.609;
-const MIN_TYPO_LENGTH = 4;
 const MIN_NAME_LENGTH = 2;
 
 const GUESS_LIMITS: Record<QuantityUnit, (n: number) => boolean> = {
@@ -88,9 +77,67 @@ const CLOCK_PATTERN = /^(\d{1,2}):([0-5]\d)$/;
 
 const toNumber = (word: string): number => Number(word.replace(',', '.'));
 
-const tokenize = (text: string): Token[] =>
+interface QuotePair {
+  open: string;
+  close: string;
+  bounded: boolean;
+}
+
+const QUOTES: QuotePair[] = [
+  { open: '"', close: '"', bounded: false },
+  { open: "'", close: "'", bounded: true },
+];
+
+const TYPOGRAPHIC_QUOTES: QuotePair[] = [
+  { open: '„', close: '“', bounded: false },
+  { open: '“', close: '”', bounded: false },
+  { open: '‘', close: '’', bounded: true },
+  { open: '»', close: '«', bounded: false },
+];
+
+const QUOTE_PAIRS = [...QUOTES, ...TYPOGRAPHIC_QUOTES];
+
+interface Segment {
+  text: string;
+  quoted: boolean;
+}
+
+const isBoundary = (char: string | undefined): boolean => char === undefined || /\s/.test(char);
+
+const closingIndex = (text: string, from: number, pair: QuotePair): number => {
+  for (let i = from; i < text.length; i++) {
+    if (text[i] === pair.close && (!pair.bounded || isBoundary(text[i + 1]))) {
+      return i;
+    }
+  }
+  return text.length;
+};
+
+const splitQuoted = (text: string): Segment[] => {
+  const segments: Segment[] = [];
+  let plain = '';
+  let i = 0;
+  while (i < text.length) {
+    const char = text[i] ?? '';
+    const pair = QUOTE_PAIRS.find((candidate) => candidate.open === char);
+    if (pair === undefined || (pair.bounded && !isBoundary(text[i - 1]))) {
+      plain += char;
+      i++;
+      continue;
+    }
+    const end = closingIndex(text, i + 1, pair);
+    segments.push({ text: plain, quoted: false });
+    segments.push({ text: text.slice(i + 1, end), quoted: true });
+    plain = '';
+    i = end + 1;
+  }
+  segments.push({ text: plain, quoted: false });
+  return segments;
+};
+
+const tokenizePlain = (text: string): Token[] =>
   text
-    .replace(/["“”„']/g, ' ')
+    .replace(/["“”„‘»«]|(?<!\p{L})['’]|['’](?!\p{L})/gu, ' ')
     .replace(/[–—]/g, '-')
     .replace(/·/g, ' ')
     .replace(/\.(?!\d)/g, ' ')
@@ -101,7 +148,19 @@ const tokenize = (text: string): Token[] =>
     .replace(/([~≈-])/g, ' $1 ')
     .split(/\s+/)
     .filter((raw) => raw.length > 0)
-    .map((raw) => ({ raw, word: raw.toLowerCase() }));
+    .map((raw) => ({ word: raw.toLowerCase(), quoted: false }));
+
+const tokenize = (text: string): Token[] =>
+  splitQuoted(text).flatMap((segment) => {
+    if (!segment.quoted) {
+      return tokenizePlain(segment.text);
+    }
+    const phrase = segment.text.trim().split(/\s+/).join(' ');
+    if (phrase === '') {
+      return [];
+    }
+    return [{ word: phrase.toLowerCase(), quoted: true }];
+  });
 
 const unitOf = (word: string | undefined): Unit | null => {
   if (word === undefined || isNumberWord(word)) {
@@ -237,7 +296,6 @@ const explicitQuantity = (unit: QuantityUnit, n: number, unitWord: string): Quan
 
 interface Ambiguous {
   n: number;
-  raw: string;
   relative: boolean;
 }
 
@@ -311,42 +369,34 @@ const compoundMinutes = (
 interface ParseResult {
   combos: FilterCriteria[];
   leftover: Token[];
-  unknown: string[];
 }
-
-const phraseOf = (tokens: Token[], from: number, to: number): string =>
-  tokens
-    .slice(from, to + 1)
-    .map((token) => token.raw)
-    .join(' ');
 
 const parse = (text: string, now: number): ParseResult => {
   const tokens = tokenize(text);
-  const words = tokens.map((token) => token.word);
+  const words = tokens.map((token) => {
+    if (token.quoted) {
+      return '';
+    }
+    return token.word;
+  });
   const fixed = emptyCriteria();
   const ambiguous: Ambiguous[] = [];
   const months: number[] = [];
-  const monthPhrases: string[] = [];
   const years: Token[] = [];
   const leftover: Token[] = [];
-  const unknown: string[] = [];
   const currentYear = new Date(now).getFullYear();
   const currentMonth = new Date(now).getMonth();
 
-  const setTime = (time: FilterTime | null, phrase: string) => {
-    if (time === null || fixed.time !== null) {
-      unknown.push(phrase);
-      return;
+  const setTime = (time: FilterTime | null) => {
+    if (time !== null && fixed.time === null) {
+      fixed.time = time;
     }
-    fixed.time = time;
   };
 
-  const setQuantity = (parsed: Quantity | null, phrase: string) => {
-    if (parsed === null || fixed[parsed.kind] !== null) {
-      unknown.push(phrase);
-      return;
+  const setQuantity = (parsed: Quantity | null) => {
+    if (parsed !== null && fixed[parsed.kind] === null) {
+      fixed[parsed.kind] = parsed.target;
     }
-    fixed[parsed.kind] = parsed.target;
   };
 
   const inferYear = (month: number): number => {
@@ -369,6 +419,10 @@ const parse = (text: string, now: number): ParseResult => {
     if (token === undefined) {
       continue;
     }
+    if (token.quoted) {
+      leftover.push(token);
+      continue;
+    }
     const word = token.word;
     if (KEYWORDS.approx.includes(word) || word === '-') {
       continue;
@@ -376,7 +430,6 @@ const parse = (text: string, now: number): ParseResult => {
 
     const clock = CLOCK_PATTERN.exec(word);
     if (clock !== null) {
-      const start = i;
       if (unitOf(words[i + 1]) === 'h') {
         i++;
       }
@@ -385,7 +438,7 @@ const parse = (text: string, now: number): ParseResult => {
       if (seconds > 0) {
         parsed = { kind: 'duration', target: seconds };
       }
-      setQuantity(parsed, phraseOf(tokens, start, i));
+      setQuantity(parsed);
       continue;
     }
 
@@ -394,28 +447,21 @@ const parse = (text: string, now: number): ParseResult => {
       const unitWord = words[i + 1];
       const unit = unitOf(unitWord);
       if (unit !== null && unitWord !== undefined) {
-        const start = i;
         i++;
         if (isRelativeUnit(unit)) {
-          setTime(
-            relativeTime(n, RELATIVE_UNITS[unit], EXPLICIT_RELATIVE_LIMITS),
-            phraseOf(tokens, start, i),
-          );
+          setTime(relativeTime(n, RELATIVE_UNITS[unit], EXPLICIT_RELATIVE_LIMITS));
           continue;
         }
         if (unit === 'h' && Number.isInteger(n) && n > 0) {
           const minutes = compoundMinutes(words, i + 1);
           if (minutes !== null) {
             i += minutes.consumed;
-            setQuantity(
-              { kind: 'duration', target: n * 3600 + minutes.value * 60 },
-              phraseOf(tokens, start, i),
-            );
+            setQuantity({ kind: 'duration', target: n * 3600 + minutes.value * 60 });
             continue;
           }
         }
         if (isQuantityUnit(unit)) {
-          setQuantity(explicitQuantity(unit, n, unitWord), phraseOf(tokens, start, i));
+          setQuantity(explicitQuantity(unit, n, unitWord));
         }
         continue;
       }
@@ -425,18 +471,17 @@ const parse = (text: string, now: number): ParseResult => {
       }
       ambiguous.push({
         n,
-        raw: token.raw,
         relative: KEYWORDS.relative.includes(words[i - 1] ?? ''),
       });
       continue;
     }
 
     if (KEYWORDS.today.includes(word)) {
-      setTime({ kind: 'calendar', unit: 'day', ago: 0 }, token.raw);
+      setTime({ kind: 'calendar', unit: 'day', ago: 0 });
       continue;
     }
     if (KEYWORDS.yesterday.includes(word)) {
-      setTime({ kind: 'calendar', unit: 'day', ago: 1 }, token.raw);
+      setTime({ kind: 'calendar', unit: 'day', ago: 1 });
       continue;
     }
 
@@ -445,7 +490,7 @@ const parse = (text: string, now: number): ParseResult => {
       const unit = unitOf(next);
       if (isYearWord(next)) {
         i++;
-        setTime({ kind: 'calendarYear', yearsAgo: 0 }, phraseOf(tokens, i - 1, i));
+        setTime({ kind: 'calendarYear', yearsAgo: 0 });
         continue;
       }
       if (unit === 'w' || unit === 'm') {
@@ -454,7 +499,7 @@ const parse = (text: string, now: number): ParseResult => {
         if (unit === 'w') {
           calendarUnit = 'week';
         }
-        setTime({ kind: 'calendar', unit: calendarUnit, ago: 0 }, phraseOf(tokens, i - 1, i));
+        setTime({ kind: 'calendar', unit: calendarUnit, ago: 0 });
         continue;
       }
       leftover.push(token);
@@ -465,15 +510,12 @@ const parse = (text: string, now: number): ParseResult => {
       const unit = unitOf(next);
       if (isYearWord(next)) {
         i++;
-        setTime({ kind: 'relative', amount: 365, unit: 'day' }, phraseOf(tokens, i - 1, i));
+        setTime({ kind: 'relative', amount: 365, unit: 'day' });
         continue;
       }
       if (isRelativeUnit(unit)) {
         i++;
-        setTime(
-          { kind: 'relative', amount: ROLLING_DAYS[unit], unit: 'day' },
-          phraseOf(tokens, i - 1, i),
-        );
+        setTime({ kind: 'relative', amount: ROLLING_DAYS[unit], unit: 'day' });
         continue;
       }
       if (next === undefined || !isNumberWord(next)) {
@@ -485,7 +527,6 @@ const parse = (text: string, now: number): ParseResult => {
     if (KEYWORDS.since.includes(word)) {
       const month = monthOf(next);
       if (month >= 0) {
-        const start = i;
         i++;
         let year = inferYear(month);
         const yearWord = words[i + 1];
@@ -493,12 +534,12 @@ const parse = (text: string, now: number): ParseResult => {
           year = Number(yearWord);
           i++;
         }
-        setTime({ kind: 'since', from: toDayKey(year, month, 1) }, phraseOf(tokens, start, i));
+        setTime({ kind: 'since', from: toDayKey(year, month, 1) });
         continue;
       }
       if (isPastYear(next)) {
         i++;
-        setTime({ kind: 'since', from: toDayKey(Number(next), 0, 1) }, phraseOf(tokens, i - 1, i));
+        setTime({ kind: 'since', from: toDayKey(Number(next), 0, 1) });
         continue;
       }
       leftover.push(token);
@@ -508,14 +549,11 @@ const parse = (text: string, now: number): ParseResult => {
     const month = monthOf(word);
     if (month >= 0) {
       months.push(month);
-      monthPhrases.push(token.raw);
       continue;
     }
     const sport = sportOf(word);
     if (sport !== null) {
-      if (fixed.sport !== null && fixed.sport !== sport) {
-        unknown.push(token.raw);
-      } else {
+      if (fixed.sport === null) {
         fixed.sport = sport;
       }
       continue;
@@ -535,13 +573,10 @@ const parse = (text: string, now: number): ParseResult => {
     if (months.length >= 2) {
       time = monthsRange(year, firstMonth, lastMonth);
     }
-    setTime(time, [...monthPhrases, ...years.map((token) => token.raw)].join(' '));
+    setTime(time);
   } else if (lastYear !== undefined) {
-    for (const extra of years.slice(1)) {
-      unknown.push(extra.raw);
-    }
     const firstYear = years[0] ?? lastYear;
-    setTime(yearRange(Number(firstYear.word)), firstYear.raw);
+    setTime(yearRange(Number(firstYear.word)));
   }
 
   let combos: FilterCriteria[] = [fixed];
@@ -551,42 +586,18 @@ const parse = (text: string, now: number): ParseResult => {
     );
     if (next.length > 0) {
       combos = next;
-    } else {
-      unknown.push(entry.raw);
     }
   }
-  return { combos, leftover, unknown };
+  return { combos, leftover };
 };
 
-const typoTarget = (word: string): string | null => {
-  if (word.length < MIN_TYPO_LENGTH) {
-    return null;
-  }
-  let allowed = 1;
-  if (word.length >= 6) {
-    allowed = 2;
-  }
-  let best: string | null = null;
-  let bestDistance = allowed + 1;
-  for (const candidate of SUGGESTION_WORDS) {
-    const distance = editDistance(word, candidate);
-    if (distance < bestDistance) {
-      best = candidate;
-      bestDistance = distance;
-    }
-  }
-  return best;
-};
-
-interface Leftovers {
-  names: string[];
-  suggestions: FilterSuggestion[];
-  unknown: string[];
-}
-
-const classifyLeftovers = (leftover: Token[], sessionNames: string[]): Leftovers => {
-  const result: Leftovers = { names: [], suggestions: [], unknown: [] };
+const nameWords = (leftover: Token[], sessionNames: string[]): string[] => {
+  const names: string[] = [];
   for (const token of leftover) {
+    if (token.quoted) {
+      names.push(token.word);
+      continue;
+    }
     if (STOPWORDS.includes(token.word)) {
       continue;
     }
@@ -595,20 +606,10 @@ const classifyLeftovers = (leftover: Token[], sessionNames: string[]): Leftovers
       normalized.length >= MIN_NAME_LENGTH &&
       sessionNames.some((name) => name.includes(normalized))
     ) {
-      result.names.push(token.word);
-      continue;
+      names.push(token.word);
     }
-    if (KNOWN_WORDS.has(token.word)) {
-      continue;
-    }
-    const target = typoTarget(token.word);
-    if (target !== null) {
-      result.suggestions.push({ word: token.raw, replacement: target });
-      continue;
-    }
-    result.unknown.push(token.raw);
   }
-  return result;
+  return names;
 };
 
 export const interpretFilterText = (
@@ -624,10 +625,10 @@ export const interpretFilterText = (
     }
   }
   const parsed = parse(text, now);
-  const leftovers = classifyLeftovers(parsed.leftover, sessionNames);
+  const names = nameWords(parsed.leftover, sessionNames);
   let name: string | null = null;
-  if (leftovers.names.length > 0) {
-    name = leftovers.names.join(' ');
+  if (names.length > 0) {
+    name = names.join(' ');
   }
 
   const seen = new Set<string>();
@@ -654,10 +655,5 @@ export const interpretFilterText = (
       break;
     }
   }
-  return {
-    interpretations,
-    understood,
-    unknown: [...parsed.unknown, ...leftovers.unknown],
-    suggestions: leftovers.suggestions,
-  };
+  return { interpretations, understood };
 };

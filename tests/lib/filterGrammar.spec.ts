@@ -95,22 +95,11 @@ describe('interpretFilterText', () => {
   });
 
   it('tells text it cannot read apart from text that matches no session', () => {
-    expect(read('')).toEqual({
-      interpretations: [],
-      understood: null,
-      unknown: [],
-      suggestions: [],
-    });
-    expect(read('xyz')).toEqual({
-      interpretations: [],
-      understood: null,
-      unknown: ['xyz'],
-      suggestions: [],
-    });
+    expect(read('')).toEqual({ interpretations: [], understood: null });
+    expect(read('xyz')).toEqual({ interpretations: [], understood: null });
     const noMatch = read('bike 2 km');
     expect(noMatch.interpretations).toEqual([]);
     expect(noMatch.understood).toEqual(criteria({ sport: 'cycling', distance: 2000 }));
-    expect(noMatch.unknown).toEqual([]);
   });
 
   it('only counts recorded sessions as matches', () => {
@@ -118,21 +107,12 @@ describe('interpretFilterText', () => {
     expect(interpretFilterText('laufen', planned, NOW).interpretations).toEqual([]);
   });
 
-  it('suggests the sport for a typo and never applies it', () => {
-    for (const [typo, replacement] of [
-      ['runing', 'running'],
-      ['cyclng', 'cycling'],
-      ['laufn', 'laufen'],
-      ['radfaren', 'radfahren'],
-    ]) {
+  it('never reads a typo as a sport', () => {
+    for (const typo of ['runing', 'cyclng', 'laufn', 'radfaren']) {
       const reading = read(typo);
-      expect(reading.suggestions, typo).toEqual([{ word: typo, replacement }]);
       expect(reading.understood, typo).toBeNull();
       expect(reading.interpretations, typo).toEqual([]);
     }
-    expect(read('Runing 30 days').suggestions).toEqual([
-      { word: 'Runing', replacement: 'running' },
-    ]);
   });
 
   it('reads synonyms', () => {
@@ -220,9 +200,7 @@ describe('interpretFilterText', () => {
       expect(understood(text), text).toEqual(criteria({ duration: 5400 }));
     }
     expect(understood('2 h 30 min')).toEqual(criteria({ duration: 9000 }));
-    const conflict = read('1 h 90 min');
-    expect(conflict.understood).toEqual(criteria({ duration: 3600 }));
-    expect(conflict.unknown).toEqual(['90 min']);
+    expect(understood('1 h 90 min')).toEqual(criteria({ duration: 3600 }));
     expect(understood('1 h 30 km')).toEqual(criteria({ duration: 3600, distance: 30000 }));
     expect(understood('500 m')).toEqual(criteria({ elevationGain: 500 }));
   });
@@ -241,11 +219,85 @@ describe('interpretFilterText', () => {
     expect(interpret('herrenalb')).toEqual([criteria({ name: 'herrenalb' })]);
     expect(interpret('Isar run')).toEqual([criteria({ sport: 'running', name: 'isar' })]);
     expect(interpret('herrenalb isar')).toEqual([]);
-    expect(read('herrenalb').suggestions).toEqual([]);
-    expect(read('in herrenalb').unknown).toEqual([]);
-    const unknown = read('xyzzy');
-    expect(unknown.unknown).toEqual(['xyzzy']);
-    expect(unknown.understood).toBeNull();
+    expect(interpret('in herrenalb')).toEqual([criteria({ name: 'herrenalb' })]);
+    expect(understood('xyzzy')).toBeNull();
+  });
+
+  describe('quoted text', () => {
+    const NAMED = [
+      session('cycling', NOW - 2 * DAY_MS, 50000, 7200, 400, 'Isar Loop'),
+      session('running', NOW - 4 * DAY_MS, 8000, 2700, 40, 'Ride to work today 50'),
+      session('running', NOW - 6 * DAY_MS, 9000, 3000, 30, '6×800 m on the track'),
+      session('running', NOW - 8 * DAY_MS, 10000, 3600, 60, "Fabian's long run"),
+    ];
+    const readNamed = (text: string) => interpretFilterText(text, NAMED, NOW);
+
+    it('searches the session name with single, double and typographic quotes', () => {
+      for (const text of [
+        '"isar loop"',
+        "'isar loop'",
+        '„isar loop“',
+        '“isar loop”',
+        '‘isar loop’',
+        '»isar loop«',
+      ]) {
+        expect(readNamed(text).interpretations, text).toEqual([criteria({ name: 'isar loop' })]);
+      }
+    });
+
+    it('never reads a quoted sport, date or number', () => {
+      expect(readNamed('"ride"').interpretations).toEqual([criteria({ name: 'ride' })]);
+      expect(readNamed("'today'").interpretations).toEqual([criteria({ name: 'today' })]);
+      expect(readNamed('"50"').interpretations).toEqual([criteria({ name: '50' })]);
+      expect(readNamed('"6×800 m"').interpretations).toEqual([criteria({ name: '6×800 m' })]);
+    });
+
+    it('combines quoted phrases with the rest of the query', () => {
+      expect(readNamed('ride "isar" 50').interpretations).toEqual([
+        criteria({ sport: 'cycling', name: 'isar', distance: 50000 }),
+        criteria({
+          sport: 'cycling',
+          name: 'isar',
+          time: { kind: 'relative', amount: 50, unit: 'day' },
+        }),
+      ]);
+      expect(readNamed('"isar" \'loop\'').interpretations).toEqual([
+        criteria({ name: 'isar loop' }),
+      ]);
+      expect(readNamed('"isar" "track"').interpretations).toEqual([]);
+    });
+
+    it('reads quoted words it does not know as a name', () => {
+      const reading = readNamed('"runing xyzzy"');
+      expect(reading.understood).toEqual(criteria({ name: 'runing xyzzy' }));
+      expect(reading.interpretations).toEqual([]);
+    });
+
+    it('reads an unclosed quote as a name while typing', () => {
+      expect(readNamed('run "6×800').interpretations).toEqual([
+        criteria({ sport: 'running', name: '6×800' }),
+      ]);
+      expect(readNamed("ride 'isar lo").interpretations).toEqual([
+        criteria({ sport: 'cycling', name: 'isar lo' }),
+      ]);
+    });
+
+    it('ignores empty quotes', () => {
+      expect(readNamed('run ""').interpretations).toEqual(readNamed('run').interpretations);
+      expect(readNamed("'' ride").interpretations).toEqual(readNamed('ride').interpretations);
+      expect(readNamed('"  "').understood).toBeNull();
+      expect(readNamed('"').understood).toBeNull();
+    });
+
+    it('does not open a quote at an apostrophe inside a word', () => {
+      expect(readNamed("Fabian's run").interpretations).toEqual([
+        criteria({ sport: 'running', name: "fabian's" }),
+      ]);
+      expect(readNamed("'Fabian's long run'").interpretations).toEqual([
+        criteria({ name: "fabian's long run" }),
+      ]);
+      expect(readNamed("don't 50").understood).toEqual(criteria({ distance: 50000 }));
+    });
   });
 
   describe('round trip of generated names', () => {
@@ -278,6 +330,7 @@ describe('interpretFilterText', () => {
       criteria({ time: { kind: 'relative', amount: 2, unit: 'year' } }),
       criteria({ sport: 'running', distance: 16100 }),
       criteria({ sport: 'running', name: 'herrenalb' }),
+      criteria({ name: 'isar run' }),
     ];
 
     for (const locale of ['de', 'en'] as const) {

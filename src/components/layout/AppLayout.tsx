@@ -14,6 +14,7 @@ import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { useIntervalsSync } from '@/features/intervals/hooks/useIntervalsSync.ts';
 import { ImportProgressOverlay } from '@/components/ui/ImportProgressOverlay.tsx';
 import { useSessionReprocessingEffect } from '@/features/sessions/hooks/useSessionReprocessingEffect.ts';
+import { useSessionReprocessingActive } from '@/features/sessions/hooks/useSessionReprocessingActive.ts';
 import { NewerVersionOverlay } from './NewerVersionOverlay.tsx';
 
 const RouteContent = () => {
@@ -54,7 +55,9 @@ const MobileSheet = () => {
 
 export const AppLayout = () => {
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
+  const reprocessing = useSessionReprocessingActive();
   const device = useDevice();
+  const appMounted = onboardingComplete && !reprocessing;
 
   useSessionReprocessingEffect();
   useIntervalsSync();
@@ -65,7 +68,7 @@ export const AppLayout = () => {
         <DebugCrashTrigger target="map" />
         <MapBackground />
       </ErrorBoundary>
-      {onboardingComplete && device.isDesktop && (
+      {appMounted && device.isDesktop && (
         <>
           <main
             data-layout="main"
@@ -81,7 +84,7 @@ export const AppLayout = () => {
           <Dock />
         </>
       )}
-      {onboardingComplete && !device.isDesktop && (
+      {appMounted && !device.isDesktop && (
         <BottomSheetProvider>
           <MobileSheet />
           <Dock />

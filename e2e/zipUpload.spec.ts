@@ -6,7 +6,7 @@ import {
   CYCLING_ONLY_ZIP,
   ACTIVITIES_ZIP,
 } from './helpers/seed';
-import { uploadFiles, dropFiles } from './helpers/upload';
+import { uploadFilesWithButton, dropFiles } from './helpers/upload';
 
 test.describe('ZIP archive upload', () => {
   test.describe('onboarding (file picker only)', () => {
@@ -16,12 +16,10 @@ test.describe('ZIP archive upload', () => {
       await page.getByText('FIT files', { exact: true }).click();
       await page.fill('#thresh-restHr', '50');
       await page.fill('#thresh-maxHr', '185');
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
-
       const uploadButton = page.getByRole('button', { name: /upload fit files/i });
-      await expect(uploadButton).toBeEnabled({ timeout: 3000 });
+      await expect(uploadButton).toBeEnabled();
 
-      const summary = await uploadFiles(page, [CYCLING_ONLY_ZIP]);
+      const summary = await uploadFilesWithButton(page, uploadButton, [CYCLING_ONLY_ZIP]);
       expect(summary).toContain('1 new session');
 
       await expect(page.locator('[data-layout="dock"]')).toBeVisible();
@@ -33,12 +31,10 @@ test.describe('ZIP archive upload', () => {
       await page.getByText('FIT files', { exact: true }).click();
       await page.fill('#thresh-restHr', '50');
       await page.fill('#thresh-maxHr', '185');
-      await page.getByRole('button', { name: 'Save', exact: true }).click();
-
       const uploadButton = page.getByRole('button', { name: /upload fit files/i });
-      await expect(uploadButton).toBeEnabled({ timeout: 3000 });
+      await expect(uploadButton).toBeEnabled();
 
-      const summary = await uploadFiles(page, [ACTIVITIES_ZIP]);
+      const summary = await uploadFilesWithButton(page, uploadButton, [ACTIVITIES_ZIP]);
       expect(summary).toContain('2 new sessions');
 
       await expect(page.locator('[data-layout="dock"]')).toBeVisible();

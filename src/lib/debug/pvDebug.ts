@@ -1,12 +1,15 @@
 import { tokens } from '@/lib/tokens.ts';
 import { crashCommandDocs, crashCommands, throwIfBootCrashRequested } from './crashCommands.ts';
+import { migrationCommandDocs, migrationCommands } from './migrationCommands.ts';
 
 const commands = {
   ...crashCommands,
+  ...migrationCommands,
 };
 
 const commandDocs: Record<keyof typeof commands, string> = {
   ...crashCommandDocs,
+  ...migrationCommandDocs,
 };
 
 type PvDebug = typeof commands & { help: () => void };

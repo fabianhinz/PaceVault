@@ -1,15 +1,26 @@
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { reprocessOutdatedSessions } from '@/features/sessions/reprocessSessions.ts';
+import {
+  REPROCESS_BATCH_SIZE,
+  reprocessOutdatedSessions,
+} from '@/features/sessions/reprocessSessions.ts';
 import { parseFitFile } from '@/parsers/fit.ts';
 import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
-import { bulkSaveSessionData, getSessionRecords } from '@/lib/indexeddb.ts';
+import {
+  bulkSaveSessionData,
+  getSessionGPS,
+  getSessionRecords,
+  saveSessionGPS,
+} from '@/lib/indexeddb.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { calculateGAP } from '@/packages/engine/normalize.ts';
-import { SESSION_DERIVATION_VERSION } from '@/packages/engine/sessionDerivation.ts';
+import {
+  SESSION_DERIVATION_VERSION,
+  isSessionOutdated,
+} from '@/packages/engine/sessionDerivation.ts';
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
@@ -17,6 +28,7 @@ import { makeUserProfile } from '@tests/factories/profiles.ts';
 import { makeLaps, makeRunningRecords } from '@tests/factories/records.ts';
 
 const hang = vi.hoisted(() => ({ sessionId: null as string | null }));
+const broken = vi.hoisted(() => ({ sessionId: null as string | null }));
 
 vi.mock('@/lib/indexeddb.ts', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/lib/indexeddb.ts')>();
@@ -24,6 +36,7 @@ vi.mock('@/lib/indexeddb.ts', async (importOriginal) => {
     ...original,
     getSessionRecords: (sessionId: string) => {
       if (sessionId === hang.sessionId) return new Promise<never>(() => undefined);
+      if (sessionId === broken.sessionId) throw new Error('IndexedDB read failed');
       return original.getSessionRecords(sessionId);
     },
     getFitFile: async (sessionId: string) => {
@@ -78,6 +91,12 @@ describe('reprocessOutdatedSessions', () => {
     await bulkSaveSessionData([
       { sessionId: 'fit', records: [], laps: [], fit: { fileName: 'run.fit', data: fit } },
     ]);
+    await saveSessionGPS({
+      sessionId: 'fit',
+      encodedPolyline: 'stale',
+      pointCount: 1,
+      bounds: { minLat: 0, maxLat: 0, minLng: 0, maxLng: 0 },
+    });
     await storeSessions([
       outdatedSession({
         id: 'fit',
@@ -105,6 +124,7 @@ describe('reprocessOutdatedSessions', () => {
       derivationVersion: SESSION_DERIVATION_VERSION,
     });
     expect(await getSessionRecords('fit')).toHaveLength(fresh.records.length);
+    expect(await getSessionGPS('fit')).toBeUndefined();
   });
 
   it('reprocessing resets a renamed session to its source name', async () => {
@@ -166,25 +186,84 @@ describe('reprocessOutdatedSessions', () => {
     });
   });
 
-  it('an interrupted run resumes with the remaining sessions', async () => {
-    const ids = ['a', 'b', 'c'];
+  it('a session whose FIT fails to parse is recomputed from its records', async () => {
+    useUserStore.setState({ profile: makeUserProfile() });
+    const records = makeRunningRecords(600);
+    await bulkSaveSessionData([
+      {
+        sessionId: 'corrupt',
+        records,
+        laps: [],
+        fit: { fileName: 'corrupt.fit', data: new Uint8Array([1, 2, 3, 4]).buffer },
+      },
+    ]);
+    await storeSessions([outdatedSession({ id: 'corrupt', gap: 999, distance: 1 })]);
+
+    await reprocessOutdatedSessions();
+
+    expect(sessionById('corrupt')).toMatchObject({
+      gap: calculateGAP(records),
+      distance: records.at(-1)?.distance,
+      derivationVersion: SESSION_DERIVATION_VERSION,
+    });
+  });
+
+  it('a session that fails to reprocess is kept and not retried', async () => {
     const records = makeRunningRecords(300);
+    await bulkSaveSessionData([
+      { sessionId: 'ok', records, laps: [] },
+      { sessionId: 'failing', records, laps: [] },
+    ]);
+    await storeSessions([
+      outdatedSession({ id: 'ok', gap: 999 }),
+      outdatedSession({ id: 'failing', gap: 999 }),
+    ]);
+
+    broken.sessionId = 'failing';
+    await reprocessOutdatedSessions();
+    broken.sessionId = null;
+
+    expect(sessionById('ok')?.gap).toBe(calculateGAP(records));
+    expect(sessionById('failing')).toMatchObject({
+      gap: 999,
+      derivationVersion: SESSION_DERIVATION_VERSION,
+    });
+  });
+
+  it('commits reprocessed sessions to the store once per batch', async () => {
+    const ids = Array.from({ length: REPROCESS_BATCH_SIZE + 2 }, (_, i) => `s${i}`);
+    const records = makeRunningRecords(60);
+    await bulkSaveSessionData(ids.map((id) => ({ sessionId: id, records, laps: [] })));
+    await storeSessions(ids.map((id) => outdatedSession({ id })));
+
+    const currentCounts: number[] = [];
+    const unsubscribe = useSessionsStore.subscribe((state) => {
+      currentCounts.push(state.sessions.filter((s) => !isSessionOutdated(s)).length);
+    });
+    await reprocessOutdatedSessions();
+    unsubscribe();
+
+    expect(currentCounts.filter((count) => count > 0)).toEqual([REPROCESS_BATCH_SIZE, ids.length]);
+  });
+
+  it('an interrupted run resumes after the last committed batch', async () => {
+    const ids = Array.from({ length: REPROCESS_BATCH_SIZE + 2 }, (_, i) => `s${i}`);
+    const records = makeRunningRecords(60);
     await bulkSaveSessionData(ids.map((id) => ({ sessionId: id, records, laps: [] })));
     await storeSessions(ids.map((id) => outdatedSession({ id, gap: 999 })));
 
-    hang.sessionId = 'b';
+    hang.sessionId = ids.at(-1) ?? null;
     void reprocessOutdatedSessions();
-    await vi.waitFor(() => expect(sessionById('a')?.gap).not.toBe(999));
+    await vi.waitFor(() => expect(sessionById('s0')?.gap).not.toBe(999));
     await guardedSessionsStorage.flush();
 
     hang.sessionId = null;
     useSessionReprocessingStore.setState({ phase: 'pending' });
     await useSessionsStore.persist.rehydrate();
-    expect(useSessionsStore.getState().sessions.map((s) => s.derivationVersion)).toEqual([
-      SESSION_DERIVATION_VERSION,
-      0,
-      0,
-    ]);
+    const versions = useSessionsStore.getState().sessions.map((s) => s.derivationVersion);
+    expect(versions.filter((v) => v === SESSION_DERIVATION_VERSION)).toHaveLength(
+      REPROCESS_BATCH_SIZE,
+    );
 
     await reprocessOutdatedSessions();
 

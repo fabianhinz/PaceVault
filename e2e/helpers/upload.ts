@@ -1,4 +1,4 @@
-import { type Page, expect } from '@playwright/test';
+import { type Locator, type Page, expect } from '@playwright/test';
 import { UPLOAD_EXTENSIONS } from '../../src/lib/archive';
 
 export const closeImportSummary = async (page: Page): Promise<string> => {
@@ -18,6 +18,14 @@ export const uploadFiles = async (page: Page, filePaths: string[]) => {
   const fileInput = page.locator(`input[type="file"][accept="${UPLOAD_EXTENSIONS.join(',')}"]`);
   if ((await fileInput.count()) === 0) await page.goto('/settings?tab=data');
   await fileInput.setInputFiles(filePaths);
+
+  return closeImportSummary(page);
+};
+
+export const uploadFilesWithButton = async (page: Page, button: Locator, filePaths: string[]) => {
+  const chooser = page.waitForEvent('filechooser');
+  await button.click();
+  await (await chooser).setFiles(filePaths);
 
   return closeImportSummary(page);
 };

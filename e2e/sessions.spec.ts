@@ -260,6 +260,34 @@ test.describe('Session browsing', () => {
 
     await toggle.click();
     await expect(row.locator('[data-stat="step"]')).toContainText('spm');
+    await expect(row.locator('[data-stat="step"]')).not.toContainText('Pace');
+    const moving = row.locator('[data-stat="moving"]');
+    await expect(moving).toContainText(/\/ \d/);
+    await expect(moving).toContainText('Stopped');
+    await expect(moving).not.toContainText('Coasting');
+    await expect(row.locator('[data-stat="coasting"]')).toHaveCount(0);
+
+    const zones = row.locator('[data-stat="zones"]');
+    await expect(zones).toContainText('HR zones');
+    const segment = zones.getByRole('img', { name: /^Z\d.*: [\d:]+ · [1-9]\d* %$/ }).first();
+    const label = (await segment.getAttribute('aria-label')) ?? '';
+    const time = label.split(': ')[1]?.split(' · ')[0] ?? '';
+    const share = label.split(' · ')[1] ?? '';
+    await expect(zones).not.toContainText(time);
+
+    await segment.hover();
+    await expect(zones).toContainText(time);
+    await page.mouse.move(0, 0);
+    await expect(zones).not.toContainText(time);
+
+    await segment.click();
+    await page.mouse.move(0, 0);
+    await expect(zones).toContainText(time);
+    await expect(zones).not.toContainText(share);
+
+    await segment.click();
+    await page.mouse.move(0, 0);
+    await expect(zones).not.toContainText(time);
     await expect(
       page.getByRole('region', { name: 'Cadence' }).getByTestId('stat-rail'),
     ).toContainText('spm');

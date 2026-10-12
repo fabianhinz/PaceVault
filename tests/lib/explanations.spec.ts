@@ -27,11 +27,9 @@ const ALL_METRIC_IDS: MetricId[] = [
   'calories',
   'movingTime',
   'decoupling',
-  'work',
   'intensityFactor',
   'variabilityIndex',
   'peakPower',
-  'coasting',
   'stepLength',
 ];
 

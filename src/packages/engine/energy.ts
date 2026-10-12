@@ -15,8 +15,6 @@ export interface EnergyBody {
 export interface EnergyEstimate {
   method: EnergyMethod;
   kcal: number;
-  lowKcal: number;
-  highKcal: number;
   uncertainty: number;
 }
 
@@ -171,21 +169,6 @@ const sumJoules = (joules: Array<number | null>): number =>
     return sum + value;
   }, 0);
 
-const recordWorkSeries = (records: SessionRecord[]): Array<number | null> =>
-  records.map((current, i) => {
-    const previous = records[i - 1];
-    if (!previous || current.power === undefined) return null;
-    const dt = activeSeconds(previous, current);
-    if (dt === 0) return null;
-    return current.power * dt;
-  });
-
-export const sessionWorkKj = (records: SessionRecord[]): number | undefined => {
-  const work = recordWorkSeries(records);
-  if (work.every((value) => value === null)) return undefined;
-  return sumJoules(work) / 1000;
-};
-
 export const estimateSessionEnergy = (
   records: SessionRecord[],
   sport: Sport,
@@ -195,12 +178,5 @@ export const estimateSessionEnergy = (
   const pick = pickMethod(records, sport, body, gradients);
   if (pick === undefined || 'blockedBy' in pick) return pick;
   const kcal = sumJoules(methodSeries(pick.method, records, body, gradients)) / JOULES_PER_KCAL;
-  const uncertainty = ENERGY_UNCERTAINTY[pick.method];
-  return {
-    method: pick.method,
-    kcal,
-    lowKcal: kcal * (1 - uncertainty),
-    highKcal: kcal * (1 + uncertainty),
-    uncertainty,
-  };
+  return { method: pick.method, kcal, uncertainty: ENERGY_UNCERTAINTY[pick.method] };
 };

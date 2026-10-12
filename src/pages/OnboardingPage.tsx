@@ -10,7 +10,11 @@ import { loadDemoData } from '@/features/demo/loadDemoData.ts';
 import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/Button.tsx';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
-import { ThresholdsSection } from '@/features/settings/ThresholdsSection.tsx';
+import { OnboardingThresholds } from '@/features/settings/ThresholdsSection.tsx';
+import {
+  useThresholdsForm,
+  type ProfileGate,
+} from '@/features/settings/hooks/useThresholdsForm.ts';
 import { ActionPromptCard } from '@/components/ui/ActionPromptCard.tsx';
 import { IntervalsConnectionForm } from '@/features/intervals/IntervalsConnectionForm.tsx';
 
@@ -21,6 +25,8 @@ export const OnboardingPage = () => {
   const queryClient = useQueryClient();
 
   const [path, setPath] = useState<OnboardingPath>(null);
+  const thresholds = useThresholdsForm('create');
+  const profileGate: ProfileGate = { ready: thresholds.valid, save: thresholds.save };
 
   const handleGenerate = async () => {
     try {
@@ -69,18 +75,19 @@ export const OnboardingPage = () => {
 
       {path === 'your-data' && (
         <div className="w-full">
-          <ThresholdsSection variant="embedded" />
+          <OnboardingThresholds thresholds={thresholds} />
         </div>
       )}
 
       {path === 'intervals' && (
         <div className="w-full">
           <IntervalsConnectionForm
+            profileGate={profileGate}
             onSynced={() => {
               useLayoutStore.getState().completeOnboarding();
             }}
           >
-            <ThresholdsSection variant="embedded" />
+            <OnboardingThresholds thresholds={thresholds} />
           </IntervalsConnectionForm>
         </div>
       )}
@@ -89,6 +96,7 @@ export const OnboardingPage = () => {
         <div className="flex justify-end w-full">
           {path === 'your-data' ? (
             <FitUploadButton
+              profileGate={profileGate}
               onUploaded={() => {
                 if (useSessionsStore.getState().sessions.length > 0) {
                   useLayoutStore.getState().completeOnboarding();

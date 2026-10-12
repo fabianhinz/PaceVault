@@ -26,11 +26,9 @@ export type MetricId =
   | 'calories'
   | 'movingTime'
   | 'decoupling'
-  | 'work'
   | 'intensityFactor'
   | 'variabilityIndex'
   | 'peakPower'
-  | 'coasting'
   | 'stepLength';
 
 export interface MetricExplanation {
@@ -265,15 +263,6 @@ const decoupling: MetricExplanation = {
   sports: ['all'],
 };
 
-const work: MetricExplanation = {
-  id: 'work',
-  shortLabel: m.exp_work_shortLabel(),
-  friendlyName: m.exp_work_friendlyName(),
-  oneLiner: m.exp_work_oneLiner(),
-  range: m.exp_work_range(),
-  sports: ['cycling'],
-};
-
 const intensityFactor: MetricExplanation = {
   id: 'intensityFactor',
   shortLabel: m.exp_intensityFactor_shortLabel(),
@@ -298,15 +287,6 @@ const peakPower: MetricExplanation = {
   friendlyName: m.exp_peakPower_friendlyName(),
   oneLiner: m.exp_peakPower_oneLiner(),
   range: m.exp_peakPower_range(),
-  sports: ['cycling'],
-};
-
-const coasting: MetricExplanation = {
-  id: 'coasting',
-  shortLabel: m.exp_coasting_shortLabel(),
-  friendlyName: m.exp_coasting_friendlyName(),
-  oneLiner: m.exp_coasting_oneLiner(),
-  range: m.exp_coasting_range(),
   sports: ['cycling'],
 };
 
@@ -345,10 +325,8 @@ export const METRIC_EXPLANATIONS: Record<MetricId, MetricExplanation> = {
   calories,
   movingTime,
   decoupling,
-  work,
   intensityFactor,
   variabilityIndex,
   peakPower,
-  coasting,
   stepLength,
 };
