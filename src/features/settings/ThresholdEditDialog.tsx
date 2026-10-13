@@ -83,6 +83,7 @@ const ThresholdEditForm = (props: {
               onChange={(e) => setDraft(e.target.value)}
               helperText={helperText}
               error={visibleError !== ''}
+              reserveHelper
             />
           </div>
         </DialogBody>
