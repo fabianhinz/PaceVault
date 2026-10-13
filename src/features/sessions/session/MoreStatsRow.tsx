@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ChartNoAxesColumn, Pause, Wind, type LucideIcon } from 'lucide-react';
+import { ChartNoAxesColumn, Pause, Timer, Wind } from 'lucide-react';
 import { CollapsibleListItem } from '@/components/ui/Collapsible.tsx';
-import { Typography } from '@/components/ui/Typography.tsx';
+import { Crumbs, IconFact, StatTile } from '@/components/ui/StatTile.tsx';
 import {
   moreStatsTopics,
   pickPeak,
@@ -19,7 +19,6 @@ import { useMoreStats } from './hooks/useMoreStats.ts';
 import { MeterBar } from './MeterBar.tsx';
 import { HrZonesCell } from './HrZonesCell.tsx';
 import { PeakPowerCell } from './PeakPowerCell.tsx';
-import { StatCaption, StatCell, StatPair, StatValue } from './StatCell.tsx';
 import { duration, integerFmt, percent, watts } from './statFormat.ts';
 
 const twoDecimalFmt = new Intl.NumberFormat(getLocale(), {
@@ -53,89 +52,78 @@ const roundToTen = (value: number): number => Math.round(value / 10) * 10;
 const rangeFraction = (factor: number): number =>
   (factor - (1 - RANGE_TRACK_SPAN)) / (2 * RANGE_TRACK_SPAN);
 
-const IconFact = (props: { icon: LucideIcon; label: string; time: string }) => (
-  <span title={props.label} className="inline-flex items-center gap-1">
-    <props.icon size={12} strokeWidth={2} aria-hidden className="shrink-0" />
-    <span className="sr-only">{props.label}</span>
-    {props.time}
-  </span>
-);
-
 const caloriesCell = (stats: MoreStats): ReactNode => {
   const calories = stats.calories;
   if (calories === undefined) return null;
-  const label = m.ui_more_stats_calories();
+  const title = m.ui_more_stats_calories();
   if ('blockedBy' in calories) {
     return (
-      <StatCell
+      <StatTile
         key="calories"
-        stat="calories"
-        label={label}
+        title={title}
         metricId="calories"
-        info1={<StatValue value="--" unit="kcal" />}
-        chart={
-          <Typography variant="caption" as="p" noWrap zeroMinWidth>
-            <Link to="/settings" className="text-accent hover:underline">
-              {BLOCKER_LABELS[calories.blockedBy]()}
-            </Link>
-          </Typography>
+        value="--"
+        unit="kcal"
+        note={
+          <Link to="/settings" className="text-accent hover:underline">
+            {BLOCKER_LABELS[calories.blockedBy]()}
+          </Link>
         }
       />
     );
   }
   return (
-    <StatCell
+    <StatTile
       key="calories"
-      stat="calories"
-      label={label}
+      title={title}
       metricId="calories"
-      info1={<StatValue value={integerFmt.format(roundToTen(calories.kcal))} unit="kcal" />}
-      info2={<StatCaption>±{percent(calories.uncertainty)} %</StatCaption>}
-      chart={
-        <MeterBar
-          sport={stats.sport}
-          alpha={50}
-          fill={{
-            from: rangeFraction(1 - calories.uncertainty),
-            to: rangeFraction(1 + calories.uncertainty),
-          }}
-          tick={rangeFraction(1)}
-        />
-      }
-    />
+      value={integerFmt.format(roundToTen(calories.kcal))}
+      unit="kcal"
+      note={`±${percent(calories.uncertainty)} %`}
+    >
+      <MeterBar
+        sport={stats.sport}
+        alpha={50}
+        fill={{
+          from: rangeFraction(1 - calories.uncertainty),
+          to: rangeFraction(1 + calories.uncertainty),
+        }}
+        tick={rangeFraction(1)}
+      />
+    </StatTile>
   );
 };
 
 const movingTimeCell = (stats: MoreStats): ReactNode => {
   const moving = stats.movingTime;
   if (moving === undefined) return null;
-  const stopped = duration(moving.stoppedS);
-  let chart: ReactNode = <StatCaption>{m.ui_more_stats_stopped({ time: stopped })}</StatCaption>;
+  const crumbs: ReactNode[] = [
+    <IconFact
+      key="elapsed"
+      icon={Timer}
+      label={m.ui_more_stats_elapsed_label()}
+      time={duration(moving.elapsedS)}
+    />,
+  ];
   if (moving.coastingS !== undefined) {
-    chart = (
-      <StatPair
-        start={
-          <IconFact
-            icon={Wind}
-            label={m.ui_more_stats_coasting()}
-            time={duration(moving.coastingS)}
-          />
-        }
-        end={<IconFact icon={Pause} label={m.ui_more_stats_stopped_label()} time={stopped} />}
-      />
+    crumbs.push(
+      <IconFact icon={Wind} label={m.ui_more_stats_coasting()} time={duration(moving.coastingS)} />,
     );
   }
+  crumbs.push(
+    <IconFact
+      icon={Pause}
+      label={m.ui_more_stats_stopped_label()}
+      time={duration(moving.stoppedS)}
+    />,
+  );
   return (
-    <StatCell
+    <StatTile
       key="moving"
-      stat="moving"
-      label={m.ui_more_stats_moving()}
+      title={m.ui_more_stats_moving()}
       metricId="movingTime"
-      info1={duration(moving.movingS)}
-      info2={
-        <StatCaption>{m.ui_more_stats_of_total({ time: duration(moving.elapsedS) })}</StatCaption>
-      }
-      chart={chart}
+      value={duration(moving.movingS)}
+      note={<Crumbs items={crumbs} />}
     />
   );
 };
@@ -143,48 +131,45 @@ const movingTimeCell = (stats: MoreStats): ReactNode => {
 const intensityCell = (stats: MoreStats): ReactNode => {
   const intensity = stats.intensity;
   const variability = stats.variability;
-  const label = m.ui_more_stats_intensity();
+  const title = m.ui_more_stats_intensity();
   if (intensity !== undefined) {
-    let info2: ReactNode = null;
+    let secondary: { value: string; lead: string } | undefined = undefined;
     if (variability !== undefined) {
-      info2 = (
-        <Typography variant="h3" as="p" tabularNums noWrap>
-          <StatValue value={twoDecimalFmt.format(variability.index)} lead="VI" />
-        </Typography>
-      );
+      secondary = { lead: 'VI', value: twoDecimalFmt.format(variability.index) };
     }
     return (
-      <StatCell
+      <StatTile
         key="intensity"
-        stat="intensity"
-        label={label}
+        title={title}
         metricId="intensityFactor"
         relatedMetricIds={['variabilityIndex']}
-        info1={<StatValue value={twoDecimalFmt.format(intensity.factor)} lead="IF" />}
-        info2={info2}
-        chart={
-          <MeterBar
-            sport={stats.sport}
-            alpha={75}
-            fill={{ to: intensity.factor / INTENSITY_SCALE }}
-            mark={1 / INTENSITY_SCALE}
-          />
-        }
-      />
+        lead="IF"
+        value={twoDecimalFmt.format(intensity.factor)}
+        secondary={secondary}
+      >
+        <MeterBar
+          sport={stats.sport}
+          alpha={75}
+          fill={{ to: intensity.factor / INTENSITY_SCALE }}
+          mark={1 / INTENSITY_SCALE}
+        />
+      </StatTile>
     );
   }
   if (variability === undefined) return null;
   return (
-    <StatCell
+    <StatTile
       key="intensity"
-      stat="intensity"
-      label={label}
+      title={title}
       metricId="variabilityIndex"
-      info1={<StatValue value={twoDecimalFmt.format(variability.index)} lead="VI" />}
-      chart={
-        <StatPair
-          start={m.ui_more_stats_np({ watts: watts(variability.np) })}
-          end={m.ui_more_stats_avg_power({ watts: watts(variability.avgPower) })}
+      lead="VI"
+      value={twoDecimalFmt.format(variability.index)}
+      note={
+        <Crumbs
+          items={[
+            m.ui_more_stats_np({ watts: watts(variability.np) }),
+            m.ui_more_stats_avg_power({ watts: watts(variability.avgPower) }),
+          ]}
         />
       }
     />
@@ -201,13 +186,13 @@ const stepLengthCell = (stats: MoreStats): ReactNode => {
   const step = stats.stepLength;
   if (step === undefined) return null;
   return (
-    <StatCell
+    <StatTile
       key="step"
-      stat="step"
-      label={m.ui_more_stats_step()}
+      title={m.ui_more_stats_step()}
       metricId="stepLength"
-      info1={<StatValue value={twoDecimalFmt.format(step.metres)} unit="m" />}
-      info2={<StatCaption>{integerFmt.format(step.stepsPerMinute)} spm</StatCaption>}
+      value={twoDecimalFmt.format(step.metres)}
+      unit="m"
+      note={`${integerFmt.format(step.stepsPerMinute)} spm`}
     />
   );
 };
@@ -224,22 +209,21 @@ const decouplingCell = (stats: MoreStats): ReactNode => {
   let verdict = m.ui_more_stats_drifting();
   if (decoupling.pct < DECOUPLING_WELL_PACED_PCT) verdict = m.ui_more_stats_well_paced();
   return (
-    <StatCell
+    <StatTile
       key="decoupling"
-      stat="decoupling"
-      label={m.ui_more_stats_decoupling()}
+      title={m.ui_more_stats_decoupling()}
       metricId="decoupling"
-      info1={<StatValue value={decouplingFmt.format(decoupling.pct)} unit="%" />}
-      info2={<StatCaption>{verdict}</StatCaption>}
-      chart={
-        <MeterBar
-          sport={stats.sport}
-          alpha={75}
-          fill={{ to: decoupling.pct / DECOUPLING_SCALE_PCT }}
-          mark={DECOUPLING_WELL_PACED_PCT / DECOUPLING_SCALE_PCT}
-        />
-      }
-    />
+      value={decouplingFmt.format(decoupling.pct)}
+      unit="%"
+      note={verdict}
+    >
+      <MeterBar
+        sport={stats.sport}
+        alpha={75}
+        fill={{ to: decoupling.pct / DECOUPLING_SCALE_PCT }}
+        mark={DECOUPLING_WELL_PACED_PCT / DECOUPLING_SCALE_PCT}
+      />
+    </StatTile>
   );
 };
 

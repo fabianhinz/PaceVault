@@ -6,7 +6,7 @@ import { MapPickPopup } from '@/features/map/MapPickPopup.tsx';
 import { toKm } from '@/lib/formatters.ts';
 import { AddMarkerButton } from './AddMarkerButton.tsx';
 import { segmentAtDistance } from './routeSegments.ts';
-import { useStudioSegmentExport } from '@/features/studio/hooks/useStudioSegmentExport.ts';
+import { useStudioRouteExport } from '@/features/studio/hooks/useStudioRouteExport.ts';
 import { useStudioRoutePoints } from '@/features/studio/hooks/useStudioRoutePoints.ts';
 import { sliceRoute } from '@/packages/gpx/routeCut.ts';
 
@@ -19,7 +19,7 @@ export interface StudioTrackPickInfo {
 
 export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose: () => void }) => {
   const route = useStudioStore((s) => s.routes.find((r) => r.id === props.info.routeId));
-  const segmentExport = useStudioSegmentExport();
+  const routeExport = useStudioRouteExport();
   const routePoints = useStudioRoutePoints(props.info.routeId);
 
   const splitDistances = (route?.markers ?? [])
@@ -38,7 +38,7 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
   const segmentTooShort = routePoints.points !== null && segmentPointCount < 2;
 
   let exportLabel = m.ui_studio_export_segment();
-  if (!hasSplits) exportLabel = m.ui_studio_export_needs_split();
+  if (!hasSplits) exportLabel = m.ui_studio_export_route();
   else if (segmentTooShort) exportLabel = m.ui_studio_export_segment_too_short();
 
   const subtitleParts = [m.ui_studio_pick_from_start({ km: toKm(props.info.distanceM) })];
@@ -73,9 +73,13 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
         <Button
           variant="secondary"
           className="w-full"
-          disabled={!hasSplits || segmentPointCount < 2 || segmentExport.exporting}
+          disabled={segmentPointCount < 2 || routeExport.exporting}
           onClick={() => {
-            segmentExport.exportSegment(route, segment.startM, segment.endM, segment.index);
+            if (hasSplits) {
+              routeExport.exportSegment(route, segment.startM, segment.endM, segment.index);
+            } else {
+              routeExport.exportRoute(route);
+            }
             props.onClose();
           }}
         >

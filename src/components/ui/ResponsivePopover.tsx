@@ -1,16 +1,19 @@
 import { useMemo } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { PopoverRoot, PopoverTrigger, PopoverContent, PopoverAnchor } from './Popover.tsx';
-import { DialogRoot, DialogTrigger, DialogContent, DialogTitle } from './Dialog.tsx';
-import { cn } from '@/lib/utils.ts';
+import { DialogRoot, DialogTrigger, DialogContent, DialogHeader, DialogBody } from './Dialog.tsx';
 import type { ReactNode } from 'react';
 import type { PopoverContentProps } from '@radix-ui/react-popover';
 
 interface ResponsivePopoverProps {
   trigger?: ReactNode;
-  /** Viewport point the desktop popover is anchored to, in place of a trigger. */
   anchor?: { x: number; y: number };
   title: string;
+  subtitle?: string;
+  icon?: LucideIcon;
+  chip?: string;
+  bleed?: boolean;
   side?: PopoverContentProps['side'];
   align?: PopoverContentProps['align'];
   collisionPadding?: PopoverContentProps['collisionPadding'];
@@ -56,9 +59,16 @@ export const ResponsivePopover = (props: ResponsivePopoverProps) => {
   return (
     <DialogRoot open={props.open} onOpenChange={props.onOpenChange}>
       {props.trigger !== undefined && <DialogTrigger asChild>{props.trigger}</DialogTrigger>}
-      <DialogContent aria-describedby={undefined} className={cn('p-4', props.className)}>
-        <DialogTitle className="sr-only">{props.title}</DialogTitle>
-        {props.children}
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader
+          title={props.title}
+          subtitle={props.subtitle}
+          icon={props.icon}
+          chip={props.chip}
+        />
+        <DialogBody className={props.bleed ? 'flex flex-col overflow-hidden p-0' : undefined}>
+          {props.children}
+        </DialogBody>
       </DialogContent>
     </DialogRoot>
   );

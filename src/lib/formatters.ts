@@ -2,10 +2,6 @@ import { getLocale } from '@/paraglide/runtime.js';
 import { m } from '@/paraglide/messages.js';
 import type { PersonalBest } from '@/packages/engine/types.ts';
 
-// ---------------------------------------------------------------------------
-// Intl instances (private)
-// ---------------------------------------------------------------------------
-
 const dateFmt = new Intl.DateTimeFormat(getLocale(), {
   month: 'short',
   day: 'numeric',
@@ -20,15 +16,13 @@ const dateTimeFmt = new Intl.DateTimeFormat(getLocale(), {
   minute: '2-digit',
 });
 
+const shortDateFmt = new Intl.DateTimeFormat(getLocale(), { dateStyle: 'short' });
+
 const localDateFmt = new Intl.DateTimeFormat('en', {
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
 });
-
-// ---------------------------------------------------------------------------
-// Date / time formatters
-// ---------------------------------------------------------------------------
 
 interface FormatDateOptions {
   includeTime?: boolean;
@@ -40,6 +34,8 @@ export const formatDate = (timestamp: number, options?: FormatDateOptions): stri
   }
   return dateFmt.format(timestamp);
 };
+
+export const formatShortDate = (timestamp: number): string => shortDateFmt.format(timestamp);
 
 export const formatBytes = (bytes: number): string => {
   const kb = bytes / 1024;
@@ -54,10 +50,6 @@ export const toDateString = (timestamp: number): string => {
   const d = parts.find((p) => p.type === 'day')?.value ?? '01';
   return `${y}-${mo}-${d}`;
 };
-
-// ---------------------------------------------------------------------------
-// Duration / lap / race-time formatters
-// ---------------------------------------------------------------------------
 
 export const formatDuration = (seconds: number): string => {
   const h = Math.floor(seconds / 3600);
@@ -77,17 +69,12 @@ export const formatRaceTime = (seconds: number): string => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-/** Always shows hours: `H:MM:SS`. */
 export const formatTimeHMS = (seconds: number): string => {
   const h = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const s = Math.round(seconds % 60);
   return `${h}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
-
-// ---------------------------------------------------------------------------
-// Distance / pace / speed formatters
-// ---------------------------------------------------------------------------
 
 export const formatDistance = (meters: number | undefined): string => {
   if (meters === undefined) return '--';
@@ -114,10 +101,6 @@ export const formatPaceTick = (minPerKm: number): string => formatMinSec(minPerK
 
 export const formatPaceInput = (seconds: number): string => formatMinSec(seconds);
 
-// ---------------------------------------------------------------------------
-// Parsers
-// ---------------------------------------------------------------------------
-
 export const parsePaceInput = (input: string): number | undefined => {
   const match = input.match(/^(\d{1,2}):(\d{2})$/);
   if (!match || !match[1] || !match[2]) return undefined;
@@ -129,7 +112,6 @@ export const parsePaceInput = (input: string): number | undefined => {
   return totalSec;
 };
 
-/** Parses `H:MM:SS` string → total seconds. */
 export const parseTimeHMS = (input: string): number | undefined => {
   const match = input.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
   if (!match || !match[1] || !match[2] || !match[3]) return undefined;
@@ -143,10 +125,6 @@ export const parseTimeHMS = (input: string): number | undefined => {
   }
   return undefined;
 };
-
-// ---------------------------------------------------------------------------
-// Personal-best labels & values
-// ---------------------------------------------------------------------------
 
 const POWER_WINDOW_LABELS: Record<number, string> = {
   5: '5 sec',
@@ -181,10 +159,6 @@ export const formatPBValue = (pb: PersonalBest): string => {
   if (pb.category === 'longest') return formatDistance(pb.value);
   return `${formatDistance(pb.value)} \u2191`;
 };
-
-// ---------------------------------------------------------------------------
-// Sub-sport labels
-// ---------------------------------------------------------------------------
 
 const SUB_SPORT_LABELS: Record<string, string> = {
   road: m.ui_sub_sport_road(),

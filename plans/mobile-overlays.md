@@ -14,7 +14,7 @@ Four variants were compared in `mockups/mobile-overlays/index.html`: 1 today, 2 
 
 - **Phone only.** The breakpoint is `lg`, the same as `DESKTOP_MEDIA_QUERY` (`src/lib/hooks/useDevice.ts:3`). Desktop popovers and the centred desktop dialog keep today's look.
 - **Card shape:** `floatingClass` stays unchanged, plus `rounded-3xl flex flex-col overflow-hidden`. No safe-area padding inside, because the card's position already keeps it clear of the notch and the home indicator.
-- **One central sizing rule.** `DialogContent` owns placement and size for every phone overlay. No overlay passes a height. The old `h-[50dvh]` / `landscape:h-[75dvh]` (`src/features/map/MapPickPopup.tsx:35`) and the filter's fixed `h-[252px]` (`src/features/filters/FilterList.tsx:60`) both go.
+- **One central sizing rule.** `DialogContent` owns placement and size for every phone overlay. No overlay passes a height. The old `h-[50dvh]` / `landscape:h-[75dvh]` (`src/features/map/MapPickPopup.tsx:35`) and the filter's fixed `h-[252px]` (`src/features/filters/FilterList.tsx:59`) both go.
   - **Height hugs the content**, up to a cap. There is no fixed height and no minimum.
   - **Bottom edge** sits on the dock line: `DOCK_ROW_BOTTOM_CSS` (`src/lib/dockGeometry.ts:6`). That is `max(12px, safe-bottom − 6px)`, the same line the dock row sits on (`src/components/layout/Dock.tsx:81`).
   - **Top cap** is the top gap of the `BottomSheet` at its full position: `max(safe-top + 12px, 8 % of the viewport height)` (`src/lib/sheetPosition.ts:21-22`, `sheetPosition.ts:26-29`). The card never reaches higher than the app's own sheet can.
@@ -43,8 +43,8 @@ Four variants were compared in `mockups/mobile-overlays/index.html`: 1 today, 2 
   - The card reuses both lines (top gap, dock line), so in every orientation it covers exactly the range the sheet can occupy.
 - **Scrim:** the same `bg-black/40 backdrop-blur-sm` behind every phone overlay, Laps and Color by included. It replaces `backdrop-blur-xl` on phone only; desktop keeps `backdrop-blur-xl`. Tapping the scrim closes the overlay, as today. There is no per-overlay scrim prop.
 - **Layout top to bottom:**
-  - **Grabber:** `h-5` row with the `BottomSheet` handle (`src/components/ui/BottomSheet.tsx:133`). Tapping it closes the overlay. Dragging it moves the card down with the finger, and only downwards. On release, the card dismisses when it was pulled past 30 % of its height or flicked down faster than 500 px/s; otherwise it springs back. The drag starts on the grabber only, as on the `BottomSheet`, so scrolling the body never drags the card.
-  - **Header**, fixed: optional icon (16 px, `text-text-tertiary`), the title as Typography `title`, an optional caption subtitle, and ✕ on the right. The ✕ is a 44 px touch target (ghost `Button`, `size-11 p-0`, 16 px icon), matching the dock and lap-stepper controls (`e2e/mobile/map.spec.ts:422-427`). Padding `pl-5 pr-2 pb-1`; the 44 px row sets the height.
+  - **Grabber:** `h-5` row with the `BottomSheet` handle (`src/components/ui/BottomSheet.tsx:133`). Tapping it closes the overlay. Dragging it moves the card down with the finger, and only downwards. On release, the card dismisses when it was pulled past 30 % of its height or flicked down faster than 500 px/s; otherwise it springs back. The drag starts on the grabber only, as on the `BottomSheet`, so scrolling the body never drags the card. Its accessible name is its own, "Drag to close" / "Zum Schließen ziehen" (new key `ui_sheet_drag_close`, next to `ui_sheet_expand` / `ui_sheet_collapse` at `messages/en.json:98-99`). There is no ✕ on phone: the grabber, a scrim tap and Escape are the close paths.
+  - **Header**, fixed: optional icon (16 px, `text-text-tertiary`), the title as Typography `title` (truncated on phone), an optional chip (the ⓘ explanation's `shortLabel`), and an optional caption subtitle. No ✕ on phone. Padding `px-5 pb-1`, with a 44 px minimum row height.
   - **Body:** the only scroller (`min-h-0 shrink overflow-y-auto overscroll-contain px-5 pb-5`). Fade masks (24 px top, 32 px bottom) show only on an edge where more content is hidden.
   - **Footer**, optional, for dialog actions: `grid grid-cols-2 gap-2 px-5 pt-1 pb-5`, buttons `w-full`.
 - **Inner padding is 20 px everywhere.** The per-overlay overrides go away: `MapPickPopup.tsx:34-36` and `Dock.tsx:93`.
@@ -52,12 +52,12 @@ Four variants were compared in `mockups/mobile-overlays/index.html`: 1 today, 2 
   - the caption rows in `src/features/sessions/session/LapsControl.tsx:313-316` and `src/features/sessions/session/ColorByControl.tsx:143-146`;
   - map pick's `CardHeader` (`MapPickPopup.tsx:40-48`).
     On desktop they stay.
-- **Filter sheet:** "Filter" header (filter icon). The search input sits fixed under the header, full-bleed with its `border-b`. The list was a fixed `h-[252px]` (`src/features/filters/FilterList.tsx:60`); it now follows the central rule above, with fade masks.
-- **Session actions menu on phone** (`src/features/sessions/session/SessionActionsMenu.tsx:27-57`) becomes the floating card via `ResponsivePopover`, titled "Session actions":
-  - `h-12` rows with 18 px icons for Manage trip, Edit route in Studio and Export GPX;
-  - a divider, then Delete in `text-status-danger`;
+- **Filter sheet:** "Filter" header (filter icon). The search input sits fixed under the header, full-bleed with its `border-b`. The list was a fixed `h-[252px]` (`src/features/filters/FilterList.tsx:59`); it now follows the central rule above, with fade masks.
+- **Both ⋮ menus on phone** become the floating card via `ResponsivePopover`, through one shared `ActionsMenu` component (see Approach):
+  - the session menu (`src/features/sessions/session/SessionActionsMenu.tsx:27-58`), titled "Session actions": `h-12` rows with 18 px icons for Manage trip, Edit route in Studio and Export GPX, a divider, then Delete in `text-status-danger`;
+  - the studio route menu (`src/features/studio/StudioActionsMenu.tsx:23-39`), titled "Route actions": Edit, a divider, then Delete. `plans/studio-route-export.md` later adds an Export GPX row to it, between Edit and Delete;
   - picking a row closes the card, then runs the action or opens its dialog, as the dropdown does today;
-  - desktop stays the `DropdownMenu`.
+  - desktop stays the `DropdownMenu` for both.
 - **Icons from the mockup:** Laps uses `Flag`, Color by `Layers`, Filter `Funnel`. The other overlays have no icon.
 - **New surface role:** a "Scrim" bullet in CLAUDE.md §7. The card itself is still the Floating role.
 
@@ -66,6 +66,7 @@ Four variants were compared in `mockups/mobile-overlays/index.html`: 1 today, 2 
 ### `src/components/ui/Card.tsx`
 
 - Add `export const scrimClass = 'bg-black/40 backdrop-blur-sm';` next to `floatingClass` (`Card.tsx:9`).
+- `Card` destructures its props (`Card.tsx:23`); switch it to `props.x` (§2 "No object destructuring"), with `props.variant ?? 'default'` in place of the default value.
 
 ### `src/components/ui/SheetGrabber.tsx` (new)
 
@@ -99,6 +100,7 @@ The `BottomSheet` drag is spread over `BottomSheet.tsx:41-45` (spring, momentum)
 
 ### `src/components/ui/Dialog.tsx`
 
+- **No destructuring:** `DialogOverlay`, `DialogContent`, `DialogTitle` and `DialogDescription` destructure their props (`Dialog.tsx:8`, `Dialog.tsx:21`, `Dialog.tsx:50`, `Dialog.tsx:60`). The rewrite switches them to `props.x` (§2 "No object destructuring"). Where the rest spread is still needed for the Radix props, the component spreads `props` first and sets `className` after it, e.g. `<DialogPrimitive.Title {...props} className={cn('…', props.className)} />`. The new components follow the same rule.
 - **`DialogOverlay` (`Dialog.tsx:7-18`):** `cn(scrimClass, 'lg:bg-transparent lg:backdrop-blur-xl', …)`. The `fade-in` animation stays.
 - **`DialogContent` (`Dialog.tsx:20-47`), phone classes:**
   - replace `overflow-y-auto` (line 28), `inset-x-0 bottom-0 w-full max-h-[85dvh] rounded-t-2xl` (line 29) and the `max-lg:p*` safe-area paddings (lines 30-31);
@@ -112,14 +114,14 @@ The `BottomSheet` drag is spread over `BottomSheet.tsx:41-45` (spring, momentum)
 - **`DialogContent`, grabber and drag:**
   - `DialogPrimitive.Content asChild` wraps a `motion.div` with `useGrabberDrag().dragProps`, `dragConstraints={{ top: 0 }}` (downwards only) and `dragElastic={{ top: 0, bottom: 0.08 }}`;
   - drag is enabled only below `lg`, via `useDevice().isDesktop`;
-  - the grabber row is a `DialogPrimitive.Close` (`lg:hidden`, `aria-label` = `m.ui_btn_close()`) holding `SheetGrabber`. It handles `onPointerDown={onHandlePointerDown}`, and its `onClick` calls `event.preventDefault()` when `wasDragged()`, so a drag never also counts as a tap (the same rule as `BottomSheet.tsx:84-89`);
+  - the grabber row is a `DialogPrimitive.Close` (`lg:hidden`, `aria-label` = `m.ui_sheet_drag_close()`) holding `SheetGrabber`. It handles `onPointerDown={onHandlePointerDown}`, and its `onClick` calls `event.preventDefault()` when `wasDragged()`, so a drag never also counts as a tap (the same rule as `BottomSheet.tsx:84-89`);
   - `onDragEnd(_, info)`: if `shouldDismiss({ offset: info.offset.y, velocity: info.velocity.y, height })`, animate `y` to the card height plus its bottom offset with `SHEET_SPRING`, set `data-dismissed`, then close the dialog by calling `.click()` on the grabber's `Close` ref. This works for controlled and uncontrolled roots alike (`MetricLabel`'s `ResponsivePopover` is uncontrolled, `src/components/ui/MetricLabel.tsx:98`). Otherwise spring `y` back to 0;
   - `data-[dismissed]:animate-none` skips the CSS slide-out, because the card has already left the screen;
   - the CSS enter animation and motion's inline `transform` don't overlap, because drag can only start after the card is open.
-- **New `DialogHeader` component** (`title`, `subtitle?`, `icon?: LucideIcon`):
-  - renders `DialogTitle`, the caption subtitle and a ghost ✕ `Button` (`size-11 p-0`, 16 px icon) wrapped in `DialogPrimitive.Close` (`lg:hidden`);
-  - on phone: `flex shrink-0 items-center justify-between gap-2 pl-5 pr-2 pb-1`;
-  - on desktop: no padding and no ✕, so the title looks as today.
+- **New `DialogHeader` component** (`title`, `subtitle?`, `icon?: LucideIcon`, `chip?: string`):
+  - renders `DialogTitle`, the optional chip next to it and the caption subtitle. No ✕: on phone the grabber, scrim and Escape close the card;
+  - on phone: `flex min-h-11 shrink-0 items-center gap-2 px-5 pb-1`;
+  - on desktop: no padding, so the title looks as today. Desktop popovers that had a ✕ (map pick's `CardHeader`) keep it.
 - **New `DialogBody` component:**
   - on phone, the scroller with `scroll-fade` and `useScrollFadeEffect`;
   - from `lg`: `lg:contents`, so the desktop layout is unchanged;
@@ -128,6 +130,7 @@ The `BottomSheet` drag is spread over `BottomSheet.tsx:41-45` (spring, momentum)
   - on phone: `grid shrink-0 grid-cols-2 gap-2 px-5 pt-1 pb-5 [&>*]:w-full`;
   - on desktop: `lg:mt-4 lg:flex lg:justify-end lg:gap-2`;
   - takes `className`.
+- **A `<form>` around body and footer** (no dialog has one today; `plans/profile-history-mini.md` adds one so Enter confirms): the form sits between `DialogContent` and its children, so it must keep the card's column. It is `flex min-h-0 flex-col` (or `contents`), so `DialogBody` keeps `min-h-0 shrink overflow-y-auto` and stays the only scroller while `DialogHeader` and `DialogFooter` stay `shrink-0`. Without it the form becomes a block that grows to the content and the body never scrolls.
 - **`DialogTitle` (`Dialog.tsx:49-57`):** `text-base font-medium lg:text-lg lg:font-bold`, so the phone header uses the `title` style and desktop is unchanged.
 - **`DialogDescription` (`Dialog.tsx:59-67`):** `max-lg:mt-0`. On phone it is the first child of the body.
 
@@ -136,11 +139,12 @@ The `BottomSheet` drag is spread over `BottomSheet.tsx:41-45` (spring, momentum)
 - **New props** (`ResponsivePopover.tsx:9-21`):
   - `subtitle?: string` (map pick);
   - `icon?: LucideIcon` (Laps, Color by, Filter);
+  - `chip?: string` (the ⓘ explanation's `shortLabel`, shown next to the title);
   - `bleed?: boolean` (filter: the body drops its padding and its own scroll (`flex flex-col overflow-hidden`), so the child draws full-bleed rows and scrolls its own list).
 - **No size prop.** Sizing is central (see Decisions).
 - **`footer` is not added.** No overlay that goes through `ResponsivePopover` has actions; the actions menu is a list of rows, and dialogs use `DialogFooter` directly.
 - **Phone branch (`ResponsivePopover.tsx:56-64`):**
-  - `DialogContent` > `DialogHeader title subtitle icon` > `DialogBody` > children;
+  - `DialogContent` > `DialogHeader title subtitle icon chip` > `DialogBody` > children;
   - the `sr-only` title (line 60) and `cn('p-4', props.className)` (line 59) go away;
   - `className` now only reaches the desktop `PopoverContent` (line 48).
 
@@ -151,13 +155,13 @@ The `BottomSheet` drag is spread over `BottomSheet.tsx:41-45` (spring, momentum)
   - drop the `max-lg:*` classes (lines 35-36), including the `50dvh` / `75dvh` heights, keeping `flex flex-col overflow-hidden p-2` and the `lg:` classes for desktop;
   - render `CardHeader` (lines 40-48) only when `device.isDesktop`;
   - the list div (line 49) gets `min-h-0 overflow-y-auto` only on desktop, because on phone `DialogBody` scrolls.
-  - This changes all three pick popups: `src/features/sessions/SessionsPickPopup.tsx:25`, `src/features/studio/markers/StudioTrackPickPopup.tsx:52`, `src/features/studio/markers/StudioRoutesPickPopup.tsx:25`.
+  - This changes all three pick popups: `src/features/sessions/SessionsPickPopup.tsx:25`, `src/features/studio/markers/StudioTrackPickPopup.tsx:52`, `src/features/studio/markers/StudioRoutesPickPopup.tsx:15`.
 - **`src/components/layout/Dock.tsx:87-96`:**
   - replace `className` (line 93) with `bleed` and `icon={Funnel}`.
 - **`src/features/filters/FilterList.tsx`:** for `sizing === 'content'` (phone only, `Dock.tsx:95`):
-  - the root (line 37) gets `min-h-0` so it can shrink inside the card;
-  - the input row (line 38) gets `px-5`;
-  - the list (lines 53-61) drops `h-[252px]` (line 60) for `min-h-0 shrink basis-[252px]`, and gets `px-5 py-3`, `scroll-fade` and `useScrollFadeEffect(builder.listRef)`;
+  - the root (line 36) gets `min-h-0` so it can shrink inside the card;
+  - the input row (line 37) gets `px-5`;
+  - the list (lines 52-61) drops `h-[252px]` (line 59) for `min-h-0 shrink basis-[252px]`, and gets `px-5 py-3`, `scroll-fade` and `useScrollFadeEffect(builder.listRef)`;
   - `sizing === 'fill'` (desktop rail, `Dock.tsx:72`) stays as is.
 - **`src/features/sessions/session/LapsControl.tsx:297-326`:**
   - pass `icon={Flag}`;
@@ -165,15 +169,23 @@ The `BottomSheet` drag is spread over `BottomSheet.tsx:41-45` (spring, momentum)
 - **`src/features/sessions/session/ColorByControl.tsx:115-176`:**
   - pass `icon={Layers}`;
   - the caption row (lines 143-146) becomes `max-lg:hidden`.
-- **`src/features/sessions/session/SessionActionsMenu.tsx:18-73`:**
-  - branch on `useDevice().isDesktop`: desktop keeps the `DropdownMenu` (lines 27-58) unchanged;
-  - on phone, `ResponsivePopover` uses the same ghost ⋮ trigger (lines 29-31), `title={m.ui_session_actions()}` and controlled `open`;
-  - the body is a `role="menu"` list of `role="menuitem"` buttons (`flex h-12 items-center gap-3 rounded-lg px-3 text-sm hover:bg-white/10`, 18 px icons), with Delete after a `h-px bg-white/10` divider;
-  - keep the same `disabled` rules (lines 34, 40, 48);
-  - the rows are local to this file; extract them to `src/components/ui/` only when a second menu needs them (§2);
+- **`src/components/ui/ActionsMenu.tsx` (new):** the shared ⋮ menu for both callers (§2 "Extract new shared components when a pattern appears in 2+ places"). Nothing in `src/components/ui/` fits as is: `DropdownMenu.tsx` is desktop-only, `ListItem` (`src/components/ui/List.tsx:23-58`) renders `li` + ghost `Button` without menu roles, and `ActionTile` is a selectable tile.
+  - Props: `label: string` (the trigger's `aria-label` and the phone card's title) and `items: { icon: LucideIcon; label: string; onSelect: () => void; disabled?: boolean; danger?: boolean }[]`;
+  - branches on `useDevice().isDesktop`: desktop renders today's markup, `DropdownMenuRoot` > ghost ⋮ `Button` trigger > `DropdownMenuContent align="end"` > one `DropdownMenuItem` per item (14 px icon, `variant="danger"` for `danger`);
+  - on phone, `ResponsivePopover` with the same ghost ⋮ trigger, `title={props.label}` and controlled `open`. The body is a `role="menu"` list of `role="menuitem"` buttons (`flex h-12 items-center gap-3 rounded-lg px-3 text-sm hover:bg-white/10`, 18 px icons). `danger` items come after a `h-px bg-white/10` divider in `text-status-danger`;
+  - a phone row closes the card first, then calls `onSelect`;
   - `role="menuitem"` keeps the existing selectors working on both branches (`e2e/sessions.spec.ts:200-201`, `e2e/records.spec.ts:30-31`).
+- **`src/features/sessions/session/SessionActionsMenu.tsx:18-73`:**
+  - the `DropdownMenu` block (lines 27-58) becomes `<ActionsMenu label={m.ui_session_actions()} items={…} />`;
+  - Edit in Studio and Export GPX are only in `items` when `canEdit` / `canExport` (lines 38, 47), as today;
+  - keep the same `disabled` rules (lines 34, 40, 48) and the Manage trip label switch (line 36);
+  - the dialogs (lines 60-70) stay.
+- **`src/features/studio/StudioActionsMenu.tsx:16-56`:**
+  - the `DropdownMenu` block (lines 23-39) becomes `<ActionsMenu label={m.ui_studio_actions()} items={…} />` with Edit (`Pencil`) and Delete (`Trash2`, `danger`);
+  - the dialogs (lines 41-53) stay.
 - **`src/components/ui/MetricLabel.tsx:98-118`:**
   - drop `className="space-y-3"` (line 101) and wrap the explanation bodies (lines 114-117) in `<div className="space-y-3">`, so spacing works in both branches.
+  - pass `chip={explanation.shortLabel}`. On phone the header shows the name and chip, so the primary `ExplanationBody` hides its own name row (`max-lg:hidden`); related metrics (`relatedMetricIds`) keep their name as a section title. The desktop popover has no header, so it keeps the name row and looks as today.
 - **Standalone dialogs:** title → `DialogHeader`, description and content → `DialogBody`, button row → `DialogFooter`. `DialogContent` stays.
   - `src/features/sessions/session/DeleteSessionDialog.tsx:39-71` (row at line 47)
   - `src/features/trips/DeleteTripDialog.tsx:20-38` (row at line 23)
@@ -184,6 +196,19 @@ The `BottomSheet` drag is spread over `BottomSheet.tsx:41-45` (spring, momentum)
   - `src/features/trips/ManageTripDialog.tsx:36-65`: drop `flex flex-col overflow-y-hidden` (line 36) on phone. The inner scroller (line 40) becomes `lg:min-h-0 lg:flex-1 lg:overflow-y-auto`, because on phone `DialogBody` is the single scroller. Row at line 57.
   - `src/features/trips/TripFormDialog.tsx:84-152`: same treatment for the inner scroller (line 105). Row at line 144.
   - `src/features/studio/markers/StudioMarkerDialog.tsx:146-220`: the footer (lines 200-219) has Delete + Cancel + Save. On phone it becomes three columns for this dialog only: `DialogFooter className="max-lg:grid-cols-3"`, with Delete | Cancel | Save in one row. Without Delete (new marker, `isEdit` false at line 201), it falls back to the default two columns. Desktop keeps `justify-between` (Delete left, Cancel/Save right) through `lg:justify-between`.
+
+### `messages/en.json`, `messages/de.json`
+
+- New `ui_sheet_drag_close`: EN "Drag to close", DE "Zum Schließen ziehen", next to `ui_sheet_collapse` (`messages/en.json:99`, `messages/de.json:99`).
+
+### Existing comments in edited files
+
+The no-comments rule applies to every file this plan touches. The implementer decides case by case:
+
+- remove comments that restate the code;
+- for a comment that carries a non-obvious why, either make the code say it (naming, extraction) or keep it and list it in the hand-off report.
+
+Comments in files this plan edits: `src/components/ui/Card.tsx:11`, `src/components/ui/ResponsivePopover.tsx:11`, `src/features/studio/StudioRouteFormDialog.tsx:16`, `StudioRouteFormDialog.tsx:25`, `src/features/trips/TripFormDialog.tsx:20`, `TripFormDialog.tsx:37-38`, `TripFormDialog.tsx:43`, `src/features/studio/markers/StudioMarkerDialog.tsx:23-27`, `StudioMarkerDialog.tsx:32-34`, `StudioMarkerDialog.tsx:43-44`, `StudioMarkerDialog.tsx:47`, `StudioMarkerDialog.tsx:80-81`, `StudioMarkerDialog.tsx:87-88`.
 
 ### `CLAUDE.md` §7
 
@@ -201,8 +226,8 @@ The `BottomSheet` drag is spread over `BottomSheet.tsx:41-45` (spring, momentum)
 - **Unit** `tests/lib/scrollFade.spec.ts`: `scrollFadeEdges` at the top (bottom only), in the middle (both), at the end (top only), with no overflow (none), and at 1 px off the end (none). It branches and does arithmetic, so it qualifies under `tests/CLAUDE.md`.
 - **E2E**, extending `e2e/mobile/map.spec.ts:269-291` ("tapping a track … opens the session picker"):
   - the picker box has `x ≈ 8`, `x + width ≈ 382`, and its bottom is ≤ `844 - 12`;
-  - the ✕ (`getByRole('button', { name: /close/i })` inside the dialog) is at least 44×44 and closes it;
-  - reopen the picker, drag the grabber 40 px down and release slowly: the picker stays open and returns to its box;
+  - there is no ✕ (`getByRole('button', { name: 'Close', exact: true })` inside the dialog has count 0), and tapping the grabber (`getByRole('button', { name: 'Drag to close' })`) closes it;
+  - reopen the picker, drag the grabber (`getByRole('button', { name: 'Drag to close' })`) 40 px down and release slowly: the picker stays open and returns to its box;
   - drag it 60 % of the card height down: the picker is hidden.
     Drag with `page.mouse` down/move/up on the grabber. Generalise the `dragHandle` helper (`e2e/mobile/map.spec.ts:44-54`) to take a locator rather than copying it. This replaces nothing; it is one journey.
 - **E2E landscape**, same test or a `test.describe` with `viewport: { width: 844, height: 390 }` in `e2e/mobile/map.spec.ts`: the picker is ≤ 512 px wide, centred, and its top is ≥ the sheet top gap (31 px). Playwright cannot emulate `env(safe-area-inset-*)` reliably, so this checks the rule without insets.
@@ -227,22 +252,22 @@ vp build
 By hand:
 
 - **Phone 390×844** (DevTools, touch, iPhone safe area). Check each of:
-  - session actions menu: the card with `h-12` rows and Delete set apart;
+  - session actions menu and studio route actions menu: the card with `h-12` rows and Delete set apart;
   - Delete session dialog, with its footer in two columns;
   - Laps with the split slider expanded, which grows the body and should bring in the bottom fade;
   - Color by;
   - map pick with many sessions: the body scrolls, the header stays, fades appear only where content is hidden;
-  - a long ⓘ explanation (a stat with `relatedMetricIds`, `src/features/sessions/session/MoreStatsRow.tsx:162`);
+  - a long ⓘ explanation (the Intensity cell in More stats on a ride with power, whose ⓘ also shows the VI explanation through `MetricLabel`'s `relatedMetricIds`);
   - the filter sheet: typing moves nothing;
   - Manage trip and Trip form, each with a single scroller.
 
-  For each one: 8 px side gap, all four edges visible, card bottom on the dock line above the home indicator, scrim, grabber and a 44 px ✕ that closes. Also: a swipe down on the grabber dismisses, a short pull springs back, and scrolling the body never moves the card. StudioMarkerDialog in edit mode shows Delete | Cancel | Save in one row.
+  For each one: 8 px side gap, all four edges visible, card bottom on the dock line above the home indicator, scrim, a grabber that closes on tap, and no ✕. Also: a swipe down on the grabber dismisses, a short pull springs back, and scrolling the body never moves the card. StudioMarkerDialog in edit mode shows Delete | Cancel | Save in one row.
 
 - **Phone landscape 844×390:** map pick with many sessions, the filter while typing, a long ⓘ explanation and the Delete dialog. Check that the card is 512 px wide and centred, its top never above the sheet's full position, and the body scrolls while the header and footer stay.
 - **Safe areas and standalone.** Chrome DevTools can't emulate `env(safe-area-inset-*)`, and the rule doesn't read `display-mode`. Check these on the iOS Simulator (or a device) with the PWA installed to the home screen, which runs `display: standalone` from `vite.config.ts:129` with `viewport-fit=cover` from `index.html:8`:
   - portrait with the notch and home indicator;
   - landscape with the notch on the left and on the right: the card clears the notch side, with its bottom on the dock line.
-- **Desktop ≥1024:** popovers (Laps, Color by, map pick at the click point, ⓘ) and the centred dialogs look exactly as before. That means the blur overlay, no ✕ or grabber, and the same titles and button rows (apart from the 4 px footer deltas noted under Standalone dialogs).
+- **Desktop ≥1024:** popovers (Laps, Color by, map pick at the click point, ⓘ) and the centred dialogs look exactly as before. That means the blur overlay, no grabber, the ✕ only where it was before (map pick), and the same titles and button rows (apart from the 4 px footer deltas noted under Standalone dialogs).
 
 ## Known limitations
 

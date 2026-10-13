@@ -1,6 +1,7 @@
 import { test, expect } from './helpers/test';
 import { RUNNING_FIT, seedOnboardingComplete } from './helpers/seed';
 import { closeImportSummary, uploadFilesWithButton } from './helpers/upload';
+import { setThreshold, thresholdTile } from './helpers/thresholds';
 
 test.describe('Onboarding flow', () => {
   test('set thresholds → upload FIT → complete onboarding', async ({ page }) => {
@@ -8,13 +9,12 @@ test.describe('Onboarding flow', () => {
 
     await page.getByText('FIT files', { exact: true }).click();
 
-    const thresholdsCard = page.locator('#thresh-restHr');
-    await expect(thresholdsCard).toBeVisible();
+    await expect(thresholdTile(page, 'Rest HR')).toBeVisible();
 
     await expect(page.locator('[data-layout="dock"]')).not.toBeVisible();
 
-    await page.fill('#thresh-restHr', '50');
-    await page.fill('#thresh-maxHr', '185');
+    await setThreshold(page, 'Rest HR', '50');
+    await setThreshold(page, 'Max HR', '185');
     await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
 
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
@@ -24,7 +24,7 @@ test.describe('Onboarding flow', () => {
 
     await expect(page.locator('[data-layout="dock"]')).toBeVisible();
 
-    await expect(page.locator('#thresh-restHr')).not.toBeVisible();
+    await expect(thresholdTile(page, 'Rest HR')).not.toBeVisible();
 
     await expect(page.getByText(/test data/i)).not.toBeVisible();
   });
@@ -53,14 +53,19 @@ test.describe('Onboarding flow', () => {
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
     await expect(uploadButton).toBeDisabled();
 
-    await page.fill('#thresh-restHr', '50');
+    await setThreshold(page, 'Rest HR', '50');
     await expect(uploadButton).toBeDisabled();
 
-    await page.fill('#thresh-maxHr', '40');
-    await expect(page.getByText('Min 120 bpm')).toBeVisible();
+    await thresholdTile(page, 'Max HR').click();
+    const dialog = page.getByRole('dialog');
+    await dialog.locator('input').fill('40');
+    await expect(dialog.getByText('Min 120 bpm')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
     await expect(uploadButton).toBeDisabled();
 
-    await page.fill('#thresh-maxHr', '185');
+    await setThreshold(page, 'Max HR', '185');
     await expect(uploadButton).toBeEnabled();
   });
 
@@ -68,25 +73,60 @@ test.describe('Onboarding flow', () => {
     await seedOnboardingComplete(page);
     await page.goto('/settings');
 
-    const ftpField = page.getByLabel('FTP (watts)');
-    const saveButton = page.getByRole('button', { name: 'Save', exact: true });
-    await ftpField.fill('280');
-    await expect(saveButton).toBeEnabled();
-    await saveButton.click();
-    await expect(
-      page.getByRole('region', { name: /notifications/i }).getByText('Thresholds saved'),
-    ).toBeVisible();
+    await expect(thresholdTile(page, 'Rest HR')).toContainText('50');
 
-    const history = page.getByRole('region', { name: 'Profile history' });
-    await history.getByRole('tab', { name: 'FTP' }).click();
-    const rail = history.getByTestId('stat-rail');
-    await expect(rail).toContainText('latest');
-    await expect(rail).toContainText('280');
+    const ftpTile = thresholdTile(page, 'FTP');
+    await ftpTile.click();
+    const dialog = page.getByRole('dialog', { name: 'FTP (watts)' });
+    const input = dialog.getByLabel('FTP (watts)');
+    await expect(input).toBeFocused();
+    await input.fill('280');
+    await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+
+    await expect(ftpTile).toContainText('280');
+    const todayShort = new Intl.DateTimeFormat('en', { dateStyle: 'short' }).format(new Date());
+    await expect(ftpTile).not.toContainText(todayShort);
+    await expect(ftpTile).toHaveCSS('box-shadow', /rgba?\(/);
+    await expect(page.getByRole('region', { name: /notifications/i }).locator('li')).toHaveCount(0);
+
+    const wkgTile = page
+      .locator('div')
+      .filter({ hasText: /^W\/kg/ })
+      .first();
+    await expect(wkgTile).toContainText('--');
+    await expect(wkgTile).toContainText('Add weight');
+    await setThreshold(page, 'Weight', '75');
+    await expect(wkgTile).toContainText('3.73');
+
+    await setThreshold(page, 'Rest HR', '52');
+    await expect(thresholdTile(page, 'Rest HR')).toContainText(todayShort);
 
     await page.reload();
-    await expect(ftpField).toHaveValue('280');
+    await expect(ftpTile).toContainText('280');
 
-    await expect(saveButton).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
     await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
+  });
+});
+
+test.describe('Thresholds editor on phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test('a tile opens the floating card and the grabber closes it unchanged', async ({ page }) => {
+    await seedOnboardingComplete(page);
+    await page.goto('/settings');
+
+    const restTile = thresholdTile(page, 'Rest HR');
+    await restTile.click();
+    const dialog = page.getByRole('dialog');
+    const box = await dialog.boundingBox();
+    expect(box?.x).toBeCloseTo(8, 0);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeCloseTo(382, 0);
+
+    await dialog.locator('input').fill('55');
+    await dialog.getByRole('button', { name: 'Drag to close' }).tap();
+    await expect(dialog).toHaveCount(0);
+    await expect(restTile).toContainText('50');
   });
 });

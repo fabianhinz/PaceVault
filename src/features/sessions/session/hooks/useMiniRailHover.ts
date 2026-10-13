@@ -5,11 +5,15 @@ export interface MiniRailSegmentProps {
   onClick: () => void;
 }
 
+export interface MiniRailProps {
+  onPointerLeave: (event: PointerEvent<HTMLElement>) => void;
+}
+
 export const useMiniRailHover = () => {
   const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 
-  const railProps = {
+  const railProps: MiniRailProps = {
     onPointerLeave: (event: PointerEvent<HTMLElement>) => {
       if (event.pointerType === 'mouse') setHovered(null);
     },

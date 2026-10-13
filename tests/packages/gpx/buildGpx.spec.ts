@@ -56,6 +56,38 @@ describe('buildGpxString', () => {
     expect(gpx).toContain('<ele>222.6</ele>');
     expect(gpx).toContain('<ele>520.5</ele>');
   });
+
+  it('keeps a single track segment when points carry no seg', () => {
+    const gpx = buildGpxString(makePoints(3), metadata);
+    expect(gpx?.match(/<trkseg>/g)).toHaveLength(1);
+  });
+
+  it('opens a new track segment whenever seg changes', () => {
+    const points = makePoints(5).map((p, i) => ({ ...p, seg: [0, 0, 1, 1, 2][i] }));
+    const gpx = buildGpxString(points, metadata) ?? '';
+    const segments = gpx.match(/<trkseg>[\s\S]*?<\/trkseg>/g) ?? [];
+    expect(segments.map((seg) => (seg.match(/<trkpt/g) ?? []).length)).toEqual([2, 2, 1]);
+  });
+
+  it('writes waypoints before the track with escaped name and description', () => {
+    const gpx =
+      buildGpxString(makePoints(2), metadata, [
+        {
+          lat: 48.1371234,
+          lon: 11.5751234,
+          ele: 530.06,
+          name: 'Café & <Hut>',
+          desc: '"Fresh" water',
+        },
+        { lat: 48.138, lon: 11.576, name: 'Summit' },
+      ]) ?? '';
+
+    expect(gpx).toContain(
+      '<wpt lat="48.137123" lon="11.575123">\n<ele>530.1</ele>\n<name>Café &amp; &lt;Hut&gt;</name>\n<desc>&quot;Fresh&quot; water</desc>\n</wpt>',
+    );
+    expect(gpx).toContain('<wpt lat="48.138000" lon="11.576000">\n<name>Summit</name>\n</wpt>');
+    expect(gpx.lastIndexOf('<wpt')).toBeLessThan(gpx.indexOf('<trk>'));
+  });
 });
 
 it('formats filename with capitalized sport and ISO date', () => {

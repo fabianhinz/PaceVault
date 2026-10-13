@@ -1,9 +1,15 @@
 import { buildGpxString } from '@/packages/gpx/buildGpx.ts';
-import { sliceRoute } from '@/packages/gpx/routeCut.ts';
+import { pointAtRouteDistance, sliceRoute } from '@/packages/gpx/routeCut.ts';
 import { isValidCoordinate } from '@/packages/engine/gps.ts';
 import type { TrainingSession, SessionRecord } from '@/packages/engine/types.ts';
-import type { GpxPoint } from '@/packages/gpx/buildGpx.ts';
+import type { GpxPoint, GpxWaypoint } from '@/packages/gpx/buildGpx.ts';
 import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
+import type { StudioMarker } from '@/store/studio.ts';
+
+interface RouteGpxMetadata {
+  name: string;
+  time: Date;
+}
 
 export const buildSessionGpx = (
   session: TrainingSession,
@@ -28,14 +34,48 @@ export const buildSessionGpx = (
 };
 
 const toGpxPoint = (p: RoutePoint): GpxPoint => {
-  const point: GpxPoint = { lat: p.lat, lon: p.lng, ele: p.ele };
+  const point: GpxPoint = { lat: p.lat, lon: p.lng, ele: p.ele, seg: p.seg };
   if (p.time != null) point.time = new Date(p.time);
   return point;
 };
 
-export const buildRouteSegmentGpx = (
+const poiWaypoints = (
   points: RoutePoint[],
+  markers: StudioMarker[],
   startM: number,
   endM: number,
-  metadata: { name: string; time: Date },
-): string | null => buildGpxString(sliceRoute(points, startM, endM).map(toGpxPoint), metadata);
+): GpxWaypoint[] =>
+  markers.reduce<GpxWaypoint[]>((acc, marker) => {
+    if (marker.type !== 'point_of_interest') return acc;
+    if (marker.distanceM < startM || marker.distanceM > endM) return acc;
+    const at = pointAtRouteDistance(points, marker.distanceM);
+    if (!at) return acc;
+    const waypoint: GpxWaypoint = { lat: at.lat, lon: at.lng, ele: at.ele, name: marker.label };
+    if (marker.description) waypoint.desc = marker.description;
+    acc.push(waypoint);
+    return acc;
+  }, []);
+
+export const buildRouteGpx = (
+  points: RoutePoint[],
+  markers: StudioMarker[],
+  metadata: RouteGpxMetadata,
+): string | null =>
+  buildGpxString(
+    points.map(toGpxPoint),
+    metadata,
+    poiWaypoints(points, markers, -Infinity, Infinity),
+  );
+
+export const buildRouteSegmentGpx = (
+  points: RoutePoint[],
+  markers: StudioMarker[],
+  startM: number,
+  endM: number,
+  metadata: RouteGpxMetadata,
+): string | null =>
+  buildGpxString(
+    sliceRoute(points, startM, endM).map(toGpxPoint),
+    metadata,
+    poiWaypoints(points, markers, startM, endM),
+  );

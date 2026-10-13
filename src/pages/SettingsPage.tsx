@@ -17,7 +17,6 @@ import {
 import { PageGrid } from '@/components/ui/PageGrid.tsx';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs.tsx';
 import { ThresholdsSection } from '@/features/settings/ThresholdsSection.tsx';
-import { ProfileHistoryChart } from '@/features/settings/ProfileHistoryChart.tsx';
 import { DataManagementSection } from '@/features/settings/DataManagementSection.tsx';
 import { AboutSection } from '@/features/settings/AboutSection.tsx';
 import { IntegrationsCard } from '@/features/settings/IntegrationsCard.tsx';
@@ -55,7 +54,6 @@ export const SettingsPage = () => {
         <PageGrid>
           <div className="space-y-4 lg:col-span-2">
             <ThresholdsSection />
-            <ProfileHistoryChart />
           </div>
 
           <Card>

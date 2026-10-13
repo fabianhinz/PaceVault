@@ -5,12 +5,11 @@ import type { UserProfile } from '@/types/index.ts';
 import { useUserStore, type ThresholdKey } from '@/store/user.ts';
 import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 import { parsePaceInput, formatPaceInput } from '@/lib/formatters.ts';
-import { toast } from '@/components/ui/toastStore.ts';
 
 export type NumberField = 'restHr' | 'maxHr' | 'ftp' | 'weight' | 'birthYear';
 export type TextField = NumberField | 'thresholdPace';
 
-interface FormValues {
+export interface FormValues {
   gender: Gender;
   birthYear: string;
   restHr: string;
@@ -21,7 +20,7 @@ interface FormValues {
 }
 
 const TEXT_FIELDS: TextField[] = ['birthYear', 'restHr', 'maxHr', 'ftp', 'thresholdPace', 'weight'];
-const DATED_NUMBER_FIELDS = ['restHr', 'maxHr', 'ftp', 'weight'] as const;
+const PROFILE_FIELDS: TextField[] = ['birthYear'];
 const MIN_BIRTH_YEAR = 1920;
 const MIN_AGE_YEARS = 10;
 
@@ -148,6 +147,9 @@ const fieldError = (field: TextField, form: FormValues, stored: FormValues): str
   return numberError(field, form);
 };
 
+export const fieldErrorFor = (field: TextField, draft: string, values: FormValues): string =>
+  fieldError(field, { ...values, [field]: draft }, values);
+
 const formErrors = (form: FormValues, stored: FormValues): Record<TextField, string> => ({
   birthYear: fieldError('birthYear', form, stored),
   restHr: fieldError('restHr', form, stored),
@@ -159,22 +161,6 @@ const formErrors = (form: FormValues, stored: FormValues): Record<TextField, str
 
 const isGender = (value: string): value is Gender =>
   value === 'male' || value === 'female' || value === 'other';
-
-const datedChanges = (
-  form: FormValues,
-  stored: FormValues,
-): Partial<Record<ThresholdKey, number>> => {
-  const changes: Partial<Record<ThresholdKey, number>> = {};
-  for (const field of DATED_NUMBER_FIELDS) {
-    const next = optionalNumber(form[field]);
-    if (next !== undefined && next !== optionalNumber(stored[field])) changes[field] = next;
-  }
-  const pace = parsePaceInput(form.thresholdPace);
-  if (pace !== undefined && pace !== parsePaceInput(stored.thresholdPace)) {
-    changes.thresholdPace = pace;
-  }
-  return changes;
-};
 
 const epochHistory = (value: number | undefined) => {
   if (value === undefined) return undefined;
@@ -204,13 +190,16 @@ const createProfile = (form: FormValues) => {
   useUserStore.getState().setProfile(profile);
 };
 
+const parsedThreshold = (field: ThresholdKey, value: string): number | undefined => {
+  if (field === 'thresholdPace') return parsePaceInput(value);
+  return optionalNumber(value);
+};
+
 const saveChanges = (form: FormValues, stored: FormValues) => {
-  useUserStore.getState().saveTodaysThresholds(datedChanges(form, stored));
   if (form.gender !== stored.gender) useUserStore.getState().setProfileGender(form.gender);
   if (form.birthYear !== stored.birthYear) {
     useUserStore.getState().setProfileBirthYear(optionalNumber(form.birthYear));
   }
-  toast(m.ui_thresholds_saved_title(), m.ui_thresholds_saved_desc(), 'success');
 };
 
 export interface ProfileGate {
@@ -225,9 +214,15 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
 
   const stored = storedForm(profile);
   const errors = formErrors(form, stored);
+  let fields = TEXT_FIELDS;
+  let current = form;
+  if (mode === 'update') {
+    fields = PROFILE_FIELDS;
+    current = stored;
+  }
   const dirty =
-    form.gender !== stored.gender || TEXT_FIELDS.some((field) => form[field] !== stored[field]);
-  const valid = TEXT_FIELDS.every((field) => errors[field] === '');
+    form.gender !== stored.gender || fields.some((field) => form[field] !== stored[field]);
+  const valid = fields.every((field) => errors[field] === '');
 
   const visibleError = (field: TextField): string => {
     if (form[field] === stored[field]) return '';
@@ -236,6 +231,13 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
 
   const setField = (field: TextField, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const saveField = (field: ThresholdKey, value: string): ThresholdKey | undefined => {
+    const parsed = parsedThreshold(field, value);
+    if (parsed === undefined) return undefined;
+    useUserStore.getState().saveTodaysThresholds({ [field]: parsed });
+    return field;
   };
 
   const setGender = (value: string) => {
@@ -254,7 +256,7 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
     });
   };
 
-  return { form, dirty, valid, visibleError, setField, setGender, save };
+  return { form, current, dirty, valid, visibleError, setField, saveField, setGender, save };
 };
 
 export type ThresholdsForm = ReturnType<typeof useThresholdsForm>;

@@ -8,8 +8,9 @@ const floatingSurface = 'bg-surface/85 backdrop-blur-xl border border-white/10';
 
 export const floatingClass = `${floatingSurface} shadow-[0_8px_24px_rgb(0_0_0/0.4)]`;
 
-/** Surface that only floats from `lg` (e.g. sticky from `lg`), so it drops the shadow below. */
 export const floatingLgClass = `${floatingSurface} lg:shadow-[0_8px_24px_rgb(0_0_0/0.4)]`;
+
+export const scrimClass = 'bg-black/40 backdrop-blur-sm';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -20,20 +21,20 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Card = (props: CardProps) => {
-  const { className, children, variant = 'default', floating, footer, ref, ...rest } = props;
+  const { variant: _variant, floating: _floating, footer: _footer, ...domProps } = props;
+  const variant = props.variant ?? 'default';
   return (
     <div
-      ref={ref}
+      {...domProps}
       className={cn(
-        floating ? floatingClass : glassClass,
+        props.floating ? floatingClass : glassClass,
         'rounded-2xl flex flex-col',
         variant === 'compact' ? 'p-2' : 'p-4',
-        className,
+        props.className,
       )}
-      {...rest}
     >
-      {children}
-      {footer && <div className="border-t border-white/10 mt-4 pt-3">{footer}</div>}
+      {props.children}
+      {props.footer && <div className="border-t border-white/10 mt-4 pt-3">{props.footer}</div>}
     </div>
   );
 };

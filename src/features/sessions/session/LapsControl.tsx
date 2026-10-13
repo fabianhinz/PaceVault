@@ -298,6 +298,7 @@ export const LapsControl = (props: LapsControlProps) => {
       open={open}
       onOpenChange={setOpen}
       title={m.ui_laps()}
+      icon={Flag}
       side="top"
       align="center"
       className="lg:w-80"
@@ -310,7 +311,7 @@ export const LapsControl = (props: LapsControlProps) => {
         </FloatingPill>
       }
     >
-      <div className="mb-3 flex items-center gap-2 text-text-tertiary">
+      <div className="mb-3 flex items-center gap-2 text-text-tertiary max-lg:hidden">
         <Flag size={14} />
         <Typography variant="caption">{m.ui_laps()}</Typography>
       </div>

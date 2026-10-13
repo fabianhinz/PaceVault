@@ -27,7 +27,7 @@
 - **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never call an external API outside the three documented integrations above (Open-Meteo, CARTO, intervals.icu). Each is opt-in or lazily triggered — intervals.icu only once the user enters a key — and the app stays fully usable offline without any of them.
 - **Pure engine**: All business logic lives in `src/packages/engine/` as pure functions — absolutely no React or state imports in this directory.
 - **Headless UI**: Import Radix primitive → wrap in `src/components/ui/` → style with Tailwind.
-- **Reuse UI components**: Before inlining layout or UI patterns in feature code, check `src/components/ui/` for existing components (`CardHeader`, `StatItem`, `ValueSkeleton`, etc.). Extract new shared components when a pattern appears in 2+ places.
+- **Reuse UI components**: Before inlining layout or UI patterns in feature code, check `src/components/ui/` for existing components (`CardHeader`, `StatTile`, `ValueSkeleton`, etc.). Extract new shared components when a pattern appears in 2+ places.
 - **Named exports only**: Use named exports everywhere.
 - **Arrow functions only**: Never use the `function` keyword — use arrow functions (`const fn = () => {}`) everywhere.
 - **No object destructuring** for component props and hook return values — access via `props.x` and `result.x` instead.
@@ -105,4 +105,6 @@ Every surface takes its background from `src/components/ui/Card.tsx`; never hand
 - **Floating** (anything drawn over other content: portals, fixed/absolute/sticky overlays, popups, map markers, pills over charts or the map): `floatingClass`, or `<Card floating>`.
 - **Sticky only from `lg`** (floats on desktop, scrolls with the page below): `floatingLgClass`.
 - **Tile** (a bordered block inside a content surface: stat cells, grid tiles, selectable rows in dialogs): `tileClass`, padding at the call site.
+- **Scrim** (behind a modal overlay on phone): `scrimClass`.
 - Decide by placement, not by component: a `Card` over the map is floating, the bottom sheet is content.
+- On phone, modal overlays are an inset floating card built from `DialogContent` + `DialogHeader`/`DialogBody`/`DialogFooter`; never hand-build a sheet.

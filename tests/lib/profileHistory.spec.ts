@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  profileHistoryDomain,
-  profileHistoryRows,
-  profileHistorySeries,
-} from '@/lib/profileHistory.ts';
+import { profileHistoryDomain, profileHistorySeries, sparklinePath } from '@/lib/profileHistory.ts';
 
 const DAY = 86_400_000;
 const today = new Date(2026, 9, 12).getTime();
@@ -64,12 +60,12 @@ describe('profileHistorySeries', () => {
 });
 
 describe('profileHistoryDomain', () => {
-  it('runs from the earliest entry across all values to today', () => {
+  it('runs from the earliest entry across all values to 7 % past today', () => {
     const domain = profileHistoryDomain(
       [[{ date: 0, value: 50 }], [{ date: today - 900 * DAY, value: 70 }]],
       { firstSessionDate, createdAt, today },
     );
-    expect(domain).toEqual([today - 900 * DAY, today]);
+    expect(domain).toEqual([today - 900 * DAY, today + 63 * DAY]);
   });
 
   it('is at least 30 days wide', () => {
@@ -78,38 +74,51 @@ describe('profileHistoryDomain', () => {
       createdAt,
       today,
     });
-    expect(domain).toEqual([today - 30 * DAY, today]);
+    expect(domain).toEqual([today - 30 * DAY, today + 2.1 * DAY]);
   });
 });
 
-describe('profileHistoryRows', () => {
-  it('hovering between entries lands on that day, not on the nearest entry', () => {
-    const rows = profileHistoryRows(
+describe('sparklinePath', () => {
+  const domain: [number, number] = [today - 100 * DAY, today];
+  const box = { width: 104, height: 32 };
+
+  it('draws a single entry as a flat line to the right edge', () => {
+    const path = sparklinePath([{ date: today - 50 * DAY, value: 60 }], domain, box, today);
+    expect(path.line).toBe('M52.0 16.0 H102.0');
+    expect(path.lastDot).toEqual({ x: 52, y: 16 });
+    expect(path.todayX).toBe(102);
+  });
+
+  it('steps at the date of the second entry', () => {
+    const path = sparklinePath(
       [
-        { date: today - 20 * DAY, value: 250 },
-        { date: today - 2 * DAY, value: 270 },
+        { date: today - 100 * DAY, value: 250 },
+        { date: today - 50 * DAY, value: 270 },
       ],
-      [today - 30 * DAY, today],
+      domain,
+      box,
+      today,
     );
-    expect(rows).toHaveLength(31);
-    expect(rows.find((row) => row.date === today - 10 * DAY)?.value).toBeNull();
-    expect(rows.filter((row) => row.value !== null && !row.carried)).toEqual([
-      { date: today - 20 * DAY, value: 250, carried: false },
-      { date: today - 2 * DAY, value: 270, carried: false },
-    ]);
+    expect(path.line).toBe('M2.0 30.0 H52.0 V2.0 H102.0');
   });
 
-  it('carries the last value forward to today, also for a single entry', () => {
-    const rows = profileHistoryRows(
-      [{ date: today - 20 * DAY, value: 250 }],
-      [today - 30 * DAY, today],
+  it('keeps equal values inside the box', () => {
+    const path = sparklinePath(
+      [
+        { date: today - 100 * DAY, value: 0 },
+        { date: today - 50 * DAY, value: 0 },
+      ],
+      domain,
+      box,
+      today,
     );
-    expect(rows.at(-1)).toEqual({ date: today, value: 250, carried: true });
-    expect(rows.filter((row) => row.value !== null)).toHaveLength(2);
+    expect(path.lastDot?.y).toBeGreaterThan(0);
+    expect(path.lastDot?.y).toBeLessThan(box.height);
   });
 
-  it('adds no carried row when the last entry is today', () => {
-    const rows = profileHistoryRows([{ date: today, value: 250 }], [today - 30 * DAY, today]);
-    expect(rows.filter((row) => row.carried)).toEqual([]);
+  it('draws no line without entries', () => {
+    const path = sparklinePath([], domain, box, today);
+    expect(path.line).toBe('');
+    expect(path.lastDot).toBeUndefined();
   });
 });

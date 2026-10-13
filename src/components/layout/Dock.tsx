@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { Funnel } from 'lucide-react';
 import { useFileUpload } from '@/features/sessions/hooks/useFileUpload.ts';
 import { useFileDropEffect } from '@/features/sessions/hooks/useFileDropEffect.ts';
 import { FilterList } from '@/features/filters/FilterList.tsx';
@@ -90,7 +91,8 @@ const DockBar = (props: { list: DockList }) => (
         if (!open) props.list.close();
       }}
       title={m.ui_dock_filter()}
-      className="p-0 max-lg:pr-[env(safe-area-inset-right)] max-lg:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-lg:pl-[env(safe-area-inset-left)]"
+      icon={Funnel}
+      bleed
     >
       <FilterList open sizing="content" onClose={props.list.close} />
     </ResponsivePopover>

@@ -6,7 +6,9 @@ import { DISTANCE_OPTIONS, usesLongFormat, parseRaceTime } from '@/lib/raceTime.
 import {
   DialogRoot,
   DialogContent,
-  DialogTitle,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogDescription,
 } from '@/components/ui/Dialog.tsx';
 import { Button } from '@/components/ui/Button.tsx';
@@ -60,47 +62,51 @@ export const PaceEstimatorDialog = (props: PaceEstimatorDialogProps) => {
   return (
     <DialogRoot open={props.open} onOpenChange={handleOpenChange}>
       <DialogContent>
-        <DialogTitle>{m.ui_pace_est_title()}</DialogTitle>
-        <DialogDescription>{m.ui_pace_est_desc()}</DialogDescription>
+        <DialogHeader title={m.ui_pace_est_title()} />
+        <DialogBody>
+          <DialogDescription>{m.ui_pace_est_desc()}</DialogDescription>
 
-        <div className="mt-4 flex flex-col gap-3">
-          <div>
-            <Label>{m.ui_pace_est_distance()}</Label>
-            <SelectRoot value={distance} onValueChange={handleDistanceChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DISTANCE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </SelectRoot>
-          </div>
+          <div className="mt-4 flex flex-col gap-3">
+            <div>
+              <Label>{m.ui_pace_est_distance()}</Label>
+              <SelectRoot value={distance} onValueChange={handleDistanceChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DISTANCE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </SelectRoot>
+            </div>
 
-          <div>
-            <Label>
-              {m.ui_pace_est_race_time({ format: usesLongFormat(distance) ? 'h:mm:ss' : 'mm:ss' })}
-            </Label>
-            <Input
-              type="text"
-              placeholder={usesLongFormat(distance) ? '1:45:00' : '20:00'}
-              value={timeInput}
-              onChange={(e) => setTimeInput(e.target.value)}
-            />
+            <div>
+              <Label>
+                {m.ui_pace_est_race_time({
+                  format: usesLongFormat(distance) ? 'h:mm:ss' : 'mm:ss',
+                })}
+              </Label>
+              <Input
+                type="text"
+                placeholder={usesLongFormat(distance) ? '1:45:00' : '20:00'}
+                value={timeInput}
+                onChange={(e) => setTimeInput(e.target.value)}
+              />
+            </div>
           </div>
+        </DialogBody>
 
-          <div className="mt-2 flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => handleOpenChange(false)}>
-              {m.ui_btn_cancel()}
-            </Button>
-            <Button disabled={result === undefined} onClick={handleSave}>
-              {m.ui_btn_save()}
-            </Button>
-          </div>
-        </div>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => handleOpenChange(false)}>
+            {m.ui_btn_cancel()}
+          </Button>
+          <Button disabled={result === undefined} onClick={handleSave}>
+            {m.ui_btn_save()}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </DialogRoot>
   );

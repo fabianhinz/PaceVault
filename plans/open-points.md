@@ -4,14 +4,14 @@ Entry point for the next session: what is ready to build, what is still open, an
 
 ## Ready to build (no open questions, wait for the owner's "lets dev")
 
-| Plan                            | Depends on                                                                                                                                                  |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `plans/stat-tile.md`            | –                                                                                                                                                           |
-| `plans/mobile-overlays.md`      | –                                                                                                                                                           |
-| `plans/studio-route-export.md`  | – (can run in parallel)                                                                                                                                     |
-| `plans/profile-history-mini.md` | `mobile-overlays.md` and `stat-tile.md` (uses `DialogHeader`/`DialogBody`/`DialogFooter`, `SheetGrabber`, `StatTile`, adds a `required` prop to `StatTile`) |
+| Order | Plan                            | Depends on                                                                                                                                                        |
+| ----- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | `plans/mobile-overlays.md`      | –                                                                                                                                                                 |
+| 2     | `plans/stat-tile.md`            | –                                                                                                                                                                 |
+| 3     | `plans/studio-route-export.md`  | `mobile-overlays.md` (the Export row goes into the shared ⋮ `ActionsMenu`, which is the floating card on phone)                                                   |
+| 4     | `plans/profile-history-mini.md` | `mobile-overlays.md` and `stat-tile.md` (uses `DialogHeader`/`DialogBody`/`DialogFooter`, the built-in grabber, `StatTile`, adds a `required` prop to `StatTile`) |
 
-All four edit `messages/en.json` and `messages/de.json`; parallel agents must expect merges there.
+Built one after another in this order, not in parallel. All four edit `messages/en.json` and `messages/de.json`, so each re-reads both before editing.
 
 ## Open topics (owner)
 
@@ -22,7 +22,11 @@ All four edit `messages/en.json` and `messages/de.json`; parallel agents must ex
   - Worst cases: background data (intervals.icu sync, import, reprocess) moves the map on any page; opening a session first aims at the wrong session (`src/features/map/hooks/useMapCameraEffect.ts:37-50`); opening a trip zooms out to all activities first (`useMapCameraEffect.ts:56-57`); going back moves twice and doesn't restore the previous view (`useMapCameraEffect.ts:54-71`); a selected lap is re-fitted on colour mode, weather or sessions change and a sessions change drops the lap zoom (`src/features/map/hooks/useLapCameraEffect.ts:50`, `src/features/map/hooks/useSessionDetailPath.ts:85`); in Studio, session data changes re-fit the route (`useMapCameraEffect.ts:21-32`).
   - Next step: owner decides whether this becomes a plan.
 - **README banner revisit:** once the four ready plans are built, talk about the banner again (the UI it captures will have changed).
-- **Onboarding scroll at 1440×800:** 17 px too tall on the FIT path, about 967 px on the intervals path. Re-check after `profile-history-mini.md`, which replaces the onboarding profile fields with tiles.
+- **Onboarding scroll at 1440×800 (to discuss):** after `profile-history-mini.md` the page is 870 px tall on the FIT path and 1020 px on the intervals path (scrollHeight, viewport 800). Cause: the gender/birth-year row, the divider, the "Your values over time" group title and two 102 px tile rows are taller than the five input fields they replace. Options:
+  - hide the tile group title and subtitle on onboarding;
+  - drop the sparkline row on onboarding, where tiles have no history yet.
+- **Three footer buttons on phone (to discuss):** since mobile-overlays, the Studio marker dialog in edit mode puts Delete, Cancel and Save in one row on phone (`src/features/studio/markers/StudioMarkerDialog.tsx:200`, `max-lg:grid-cols-3`; Delete at `StudioMarkerDialog.tsx:202-204`). Owner wants to discuss the layout.
+- **Layout shift in the threshold edit dialog (to discuss):** while typing a new value, the field error appears and disappears under the input and the dialog's height jumps. The error goes in as `helperText` (`src/features/settings/ThresholdEditDialog.tsx:56`, passed at `ThresholdEditDialog.tsx:84-85`), and `Input` renders that line only while it is set (`src/components/ui/Input.tsx:43-47`). In the pace dialog the "Estimate from a race time" link takes the same slot, so the swap there changes the content without changing the height.
 
 ## Undecided (blank spots)
 

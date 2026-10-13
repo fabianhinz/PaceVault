@@ -1,9 +1,9 @@
 import type { DatedValue } from '@/packages/engine/datedValue.ts';
 
-export const PROFILE_HISTORY_HOVER_GROUP = 'profile-history';
-
 const DAY_MS = 86_400_000;
 const PROFILE_HISTORY_MIN_DAYS = 30;
+const PROFILE_HISTORY_RIGHT_PAD = 0.07;
+export const SPARKLINE_PAD = 2;
 
 interface ProfileHistoryContext {
   firstSessionDate: number | undefined;
@@ -16,21 +16,34 @@ interface ProfileHistoryPoint {
   value: number;
 }
 
-interface ProfileHistoryRow {
-  date: number;
-  value: number | null;
-  carried: boolean;
-}
-
 interface ProfileHistorySeries {
   points: ProfileHistoryPoint[];
   min: number | undefined;
   max: number | undefined;
 }
 
+interface SparklineBox {
+  width: number;
+  height: number;
+}
+
+interface SparklinePath {
+  line: string;
+  lastDot: { x: number; y: number } | undefined;
+  todayX: number;
+}
+
 const displayDate = (date: number, context: ProfileHistoryContext): number => {
   if (date !== 0) return date;
   return context.firstSessionDate ?? context.createdAt;
+};
+
+export const firstSessionDateOf = (sessions: { date: number }[]): number | undefined => {
+  let first: number | undefined = undefined;
+  for (const session of sessions) {
+    if (first === undefined || session.date < first) first = session.date;
+  }
+  return first;
 };
 
 export const profileHistorySeries = (
@@ -54,23 +67,50 @@ export const profileHistoryDomain = (
     for (const entry of history) from = Math.min(from, displayDate(entry.date, context));
   }
   const minFrom = context.today - PROFILE_HISTORY_MIN_DAYS * DAY_MS;
-  return [Math.min(from, minFrom), context.today];
+  const start = Math.min(from, minFrom);
+  return [start, context.today + (context.today - start) * PROFILE_HISTORY_RIGHT_PAD];
 };
 
-export const profileHistoryRows = (
+export const sparklinePath = (
   points: ProfileHistoryPoint[],
   domain: [number, number],
-): ProfileHistoryRow[] => {
-  const rows = new Map<number, ProfileHistoryRow>();
-  for (let date = domain[0]; date <= domain[1]; date += DAY_MS) {
-    rows.set(date, { date, value: null, carried: false });
-  }
-  for (const point of points) {
-    rows.set(point.date, { date: point.date, value: point.value, carried: false });
-  }
+  box: SparklineBox,
+  today: number,
+): SparklinePath => {
+  const right = box.width - SPARKLINE_PAD;
+  const xOf = (date: number) =>
+    SPARKLINE_PAD + ((date - domain[0]) / (domain[1] - domain[0])) * (right - SPARKLINE_PAD);
+  const todayX = xOf(today);
+  const first = points[0];
   const last = points.at(-1);
-  if (last && last.date < domain[1]) {
-    rows.set(domain[1], { date: domain[1], value: last.value, carried: true });
+  if (first === undefined || last === undefined) return { line: '', lastDot: undefined, todayX };
+  const values = points.map((point) => point.value);
+  let low = Math.min(...values);
+  let high = Math.max(...values);
+  if (low === high) {
+    const spread = Math.abs(low) * 0.05 || 1;
+    low -= spread;
+    high += spread;
   }
-  return [...rows.values()].sort((a, b) => a.date - b.date);
+  const yOf = (value: number) =>
+    box.height - SPARKLINE_PAD - ((value - low) / (high - low)) * (box.height - 2 * SPARKLINE_PAD);
+  let line = `M${xOf(first.date).toFixed(1)} ${yOf(first.value).toFixed(1)}`;
+  for (const point of points.slice(1)) {
+    line += ` H${xOf(point.date).toFixed(1)} V${yOf(point.value).toFixed(1)}`;
+  }
+  line += ` H${right.toFixed(1)}`;
+  return { line, lastDot: { x: xOf(last.date), y: yOf(last.value) }, todayX };
+};
+
+export const sparklineDateAt = (
+  x: number,
+  domain: [number, number],
+  width: number,
+  today: number,
+): number => {
+  const right = width - SPARKLINE_PAD;
+  const clamped = Math.max(SPARKLINE_PAD, Math.min(right, x));
+  const date =
+    domain[0] + ((clamped - SPARKLINE_PAD) / (right - SPARKLINE_PAD)) * (domain[1] - domain[0]);
+  return Math.min(today, date);
 };

@@ -20,6 +20,9 @@ const PEEK_HEIGHT = HANDLE_HEIGHT + PEEK_CONTENT_HEIGHT;
 const PEEK_FADE_RANGE = 0.15;
 const FULL_TOP_GAP_RATIO = 0.08;
 const FULL_TOP_GAP_MIN = 12;
+
+export const SHEET_TOP_GAP_CSS = `max(calc(env(safe-area-inset-top) + ${FULL_TOP_GAP_MIN}px), ${FULL_TOP_GAP_RATIO * 100}dvh)`;
+
 const MIDDLE_POSITION = 0.5;
 
 export const computeSheetLayout = (metrics: SheetMetrics): SheetLayout => {

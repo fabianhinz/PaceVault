@@ -18,7 +18,7 @@
 
 - The thresholds card holds gender and birth year as plain fields (`round2.html:321-325`), then six tiles in the order rest HR, max HR, FTP, pace, weight, W/kg (`round2.html:148`), 3 columns on desktop and 2 on phone (`round2.html:336`). The order is the same for everyone.
 - Each tile: icon + overline title, current value with unit, a caption, and a step sparkline that holds each value until the next entry (`round2.html:292-303`, `round2.html:505-512`).
-- Scrubbing a sparkline swaps the caption for the entry date in effect and its value (`round2.html:534-543`).
+- Scrubbing a sparkline shows the entry in effect at the pointer (`round2.html:534-543`, changed by the owner): the big tile value and its unit switch to the scrubbed value, and the note shows the date of that entry. Pointer leave restores the current value and the resting note.
 - W/kg is derived and not editable (`round2.html:298`). Without FTP or weight it shows `--` with "Add FTP" / "Add weight" / "Add FTP and weight" (`round2.html:228-234`, `round2.html:245`).
 - Colours are the existing chart tokens (`round2.html:174-181`): HR `chartHr`, FTP `chartPower`, pace `chartPace`, weight `chartGrade`, W/kg `sportCycling` (`src/lib/tokens.ts:23`, `tokens.ts:27-28`, `tokens.ts:30`, `tokens.ts:34`). These are off the map, so CLAUDE.md §6 doesn't restrict them.
 - **No toast at all.** Neither a tile save nor the card Save shows one. The outline that stays visible on the saved tile is the confirmation. The toast call (`useThresholdsForm.ts:213`), its import (`useThresholdsForm.ts:8`) and its two message keys go. `Toast.tsx` and `toastStore.ts` stay, because other features use them (`src/features/settings/DeleteAllDataDialog.tsx:13`, `src/features/sessions/hooks/useFileUpload.ts:6`).
@@ -27,11 +27,12 @@
 
 - **No save-row label.** The pending summary "Gewicht -- → 52 · Änderungen zählen ab heute" (`round2.html:327`, `round2.html:329-333`) and the idle hint "Click a value to change it" (`round2.html:337`) are both gone.
 - **Tile group title + subtitle instead of a hint.** The tile group gets its own title, "Your values over time" / "Deine Werte im Verlauf", and a short subtitle, "Tap a value to change it from today on." / "Tipp auf einen Wert, um ihn ab heute zu ändern."
-- **Editing uses the overlay pattern from `plans/mobile-overlays.md`.** Clicking a tile opens a dialog: `DialogContent` + `DialogHeader` / `DialogBody` / `DialogFooter`, with `SheetGrabber` and the central sizing on phone. On desktop it is the centred dialog, not a popover. The inline input in the tile (`round2.html:295-296`) is dropped.
+- **Editing uses the overlay pattern from `plans/mobile-overlays.md`.** Clicking a tile opens a dialog: `DialogContent` + `DialogHeader` / `DialogBody` / `DialogFooter`, with the grabber and the central sizing on phone, both built into `DialogContent` by mobile-overlays; this plan adds no `SheetGrabber` by hand. On desktop it is the centred dialog, not a popover. The inline input in the tile (`round2.html:295-296`) is dropped.
 - **Confirm saves immediately.** In Settings, the dialog's Save writes today's entry for that one value, the dialog closes and the tile keeps its outline. The card's Save button moves up next to gender and birth year, the only fields it still covers. On phone it sits right-aligned under the stacked fields. A divider separates that group from the tiles.
-- **Onboarding tiles:** the date note stays empty until a value has history (the profile exists). Rest HR and Max HR are required, so their tile titles get the same asterisk as the old required label (`src/components/ui/Label.tsx:19-23`).
+- **Onboarding tiles:** no date notes, since every value has only its first entry. Rest HR and Max HR are required, so their tile titles get the same asterisk as the old required label (`src/components/ui/Label.tsx:19-23`).
 - **Sparkline height:** 32 px, the `StatTile` chart row.
-- **Caption = relative date only:** `Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto', style: 'short' })`, output used as-is. Examples: `today`, `3 wk. ago` / `heute`, `vor 3 Wo.`. No delta.
+- **One date format for every note** (owner, after an overflow repro at 390 px: relative captions and long scrub dates truncated): at rest and while scrubbing, `Intl.DateTimeFormat(getLocale(), { dateStyle: 'short' })`, output used as-is, e.g. `9/22/25` / `22.09.25`. No relative dates, no delta.
+- **A date note only for an actual change:** a value with a single entry (entered once, in onboarding or first saved in Settings) shows no date; from its second entry on, the note is the date of the latest entry. Scrubbing still shows the date of the entry in effect.
 - **Date-`0` values:** dated at the first session's date, else the profile's `createdAt` (the existing `displayDate`, `profileHistory.ts:31-34`).
 - **W/kg has no back-fill:** it starts at the first date where both FTP and weight really have an entry.
 - **The outline after a save stays** (as in the mockup, `round2.html:290`). It clears on the next edit or when the card unmounts.
@@ -43,15 +44,15 @@
 ### Settled earlier, by variant A
 
 - Step line, not smooth (`round2.html:507`).
-- "Updated today": `numeric: 'auto'` says "today" / "heute" on its own, also after a second save the same day.
 
 ## Dependencies and implementation order
 
 1. **`plans/mobile-overlays.md`** builds `DialogHeader`, `DialogBody`, `DialogFooter`, `SheetGrabber`, the phone sizing rule and the grabber drag. None exist yet: `src/components/ui/Dialog.tsx:5-67` exports only Root, Trigger, Overlay, Content, Title and Description. It also migrates `PaceEstimatorDialog` (`src/features/settings/PaceEstimatorDialog.tsx:62-104`).
 2. **`plans/stat-tile.md`** builds `StatTile`, which doesn't exist yet (`src/components/ui/StatItem.tsx` is still there).
-3. **This plan.** It extends `StatTile` with four optional props (see below).
+3. **`plans/studio-route-export.md`** (studio export; no shared code with this plan, but it comes before it in the build order).
+4. **This plan.** It extends `StatTile` with four optional props (see below).
 
-All three plans edit `messages/en.json` and `messages/de.json`, so re-read both right before editing.
+The four plans run one after another in this order. All four edit `messages/en.json` and `messages/de.json` (mobile-overlays adds the grabber key `ui_sheet_drag_close`), so re-read both right before editing.
 
 ## Approach
 
@@ -64,14 +65,9 @@ All three plans edit `messages/en.json` and `messages/de.json`, so re-read both 
 - It works on raw dates, so two date-`0` entries start at `0`. FTP at `0` with weight first entered on 2026-03-08 starts on 2026-03-08.
 - It is business logic, so it lives in the engine (CLAUDE.md §2 "Pure engine").
 
-### Relative date: `src/lib/relativeDate.ts` (new)
+### Date note: `src/lib/formatters.ts`
 
-- `relativeDayParts(date: number, today: number) => { value: number; unit: Intl.RelativeTimeFormatUnit }`:
-  - counts whole calendar days between the two local midnights;
-  - unit: day under 7, week under 30, month under 365, otherwise year;
-  - `value` is negative for the past;
-  - written with `if`, no ternaries (§2). Pure.
-- `formatRelativeDate(date: number, today: number) => string`: a module-level `new Intl.RelativeTimeFormat(getLocale(), { numeric: 'auto', style: 'short' })`, output used as-is (memory rule "Format with Intl").
+- `formatShortDate(timestamp: number) => string`: a module-level `Intl.DateTimeFormat(getLocale(), { dateStyle: 'short' })` next to the other date formatters, output used as-is (memory rule "Format with Intl"). A thin wrapper, so no unit test (`tests/CLAUDE.md`).
 
 ### `src/lib/profileHistory.ts`
 
@@ -79,7 +75,6 @@ All three plans edit `messages/en.json` and `messages/de.json`, so re-read both 
   - The domain is shared by all six sparklines (`round2.html:221-226`) and is at least 30 days wide.
   - Add the mockup's 7 % right pad past today (`round2.html:225`) as a second value in the return, so the "today" mark and the last dot sit inside the box.
 - Move `firstSessionDateOf` here from `ProfileHistoryChart.tsx:119-125`, unchanged.
-- Add `latestChange(history, context) => { value: number; date: number } | undefined`: the newest entry, with `displayDate` applied. The caption uses it.
 - Add `sparklinePath(points, domain, box) => { line: string; lastDot: { x: number; y: number } | undefined; todayX: number }`:
   - the step path from `round2.html:496-512`: `M x y`, then `H x V y` per entry, then `H` to the right edge;
   - min = max pads the y-range so the line stays inside the box (`round2.html:501`);
@@ -90,7 +85,7 @@ All three plans edit `messages/en.json` and `messages/de.json`, so re-read both 
 
 - Add four optional props:
   - `icon?: { icon: LucideIcon; color: string }`: a 12 px icon before the row-1 title, in that colour (`round2.html:288`);
-  - `onClick?: () => void`: the root renders as a `button type="button"` with `text-left hover:bg-white/10 cursor-pointer` (`round2.html:298-299`); without it, the root stays a `div`.
+  - `onClick?: () => void`: the root renders as a `button type="button"` with `text-left hover:bg-white/10 cursor-pointer` (`round2.html:298-299`); without it, the root stays a `div`. `onClick` and `metricId` never go together: the ⓘ from `metricId` is a button itself (`MetricLabel`), and a button inside the root button is invalid HTML. `StatTileProps` enforces it as a discriminated union, `{ metricId?: MetricId; relatedMetricIds?: MetricId[]; onClick?: never } | { onClick: () => void; metricId?: never; relatedMetricIds?: never }`, so passing both is a type error. The threshold tiles have no `metricId`;
   - `style?: React.CSSProperties` for the after-save outline (`box-shadow: 0 0 0 1px <color>aa`, `round2.html:290`);
   - `required?: boolean`: appends `<span aria-hidden className="ml-0.5">*</span>` to the title, the same markup as `src/components/ui/Label.tsx:19-23`.
 - Nothing else changes. The chart row stays 32 px (stat-tile "Chart height lives in one place"), so the sparkline is 32 px tall instead of the mockup's 24 px. With `children` set, `note` sits inline after the value on its baseline, as the owner chose.
@@ -113,19 +108,19 @@ All three plans edit `messages/en.json` and `messages/de.json`, so re-read both 
   - `histories: Record<ThresholdTileKey, DatedValue<number>[]>`;
   - `fresh: ThresholdTileKey[]`;
   - `onEdit(key)`;
-  - `mode: 'create' | 'update'`. In `create` the date note stays empty and Rest HR / Max HR pass `required`.
+  - `mode: 'create' | 'update'`. In `create` scrubbing is off and Rest HR / Max HR pass `required`.
 - `ThresholdTileKey` = `restHr | maxHr | ftp | thresholdPace | weight | wkg`.
 - It reads `firstSessionDate` itself via `useSessionsStore` (as `ProfileHistoryChart.tsx:134` does); `src/features/CLAUDE.md` says to colocate store subscriptions.
 - Per tile (`StatTile` props):
   - `title`: the tile title keys (i18n);
   - `icon`: per the colour list in Decisions; lucide `HeartPulse`, `Heart`, `Zap`, `Timer`, `Weight` as today (`ProfileHistoryChart.tsx:13`), plus `Gauge` for W/kg (`round2.html:180`);
-  - `value` / `unit`: from `valueAt(history, today)`; `--` and no unit without history;
-  - `note`: while scrubbing, `ui_thresholds_tile_scrub` with `Intl.DateTimeFormat(getLocale(), { day: 'numeric', month: 'numeric', year: 'numeric' })` and the value. Otherwise `formatRelativeDate(latestChange.date, today)` in `update` mode, and empty in `create` mode. Without history, the "Add …" caption for FTP, weight and W/kg, and nothing for the others (`round2.html:244-248`);
+  - `value` / `unit`: from `valueAt(history, today)`; `--` and no unit without history. While scrubbing, the value and unit of the entry in effect at the scrubbed date;
+  - `note`: while scrubbing, `formatShortDate` of the entry in effect at the scrubbed date. Otherwise, with two or more entries, `formatShortDate` of the latest entry (with `displayDate` applied); with a single entry, nothing. Without history, the "Add …" caption on every tile (`round2.html:244-248`; Rest HR, Max HR and pace added by the owner), shown in onboarding next to the Rest HR / Max HR asterisk;
   - `children`: `ThresholdSparkline`;
   - `onClick`: `onEdit(key)` for every key except `wkg`;
   - `style`: the outline while `fresh` includes the key.
 - Formatting: two `Intl.NumberFormat(getLocale(), …)` instances move from `ProfileHistoryChart.tsx:50-52`. A third has 2 decimals for W/kg (`round2.html:180`). Pace uses `formatPaceInput` (`src/lib/formatters.ts:115`).
-- Grid: `grid grid-cols-2 lg:grid-cols-3 gap-2`, preceded by the group title (`Typography title`) and subtitle (`Typography caption`), as `CardHeader` lays them out.
+- Grid: `grid grid-cols-2 lg:grid-cols-3 gap-2`, preceded by `<CardHeader title={m.ui_thresholds_tiles_title()} subtitle={m.ui_thresholds_tiles_subtitle()} />` (`src/components/ui/CardHeader.tsx:11-22`). It already renders a `title` heading over a `caption` subtitle with `mb-4` below (`CardHeader.tsx:37-42`), so it needs no new prop.
 
 ### `src/features/settings/ThresholdEditDialog.tsx` (new)
 
@@ -140,7 +135,7 @@ All three plans edit `messages/en.json` and `messages/de.json`, so re-read both 
   - **`DialogBody`** holds the `Input`, labelled by the title, with a local draft starting at today's value. `type="number"` for the HR, FTP and weight dialogs; the pace dialog uses `type="text"`. `helperText` shows the field's error, computed with the same rules as `fieldError` (`useThresholdsForm.ts:139-149`), including rest < max HR against the other stored value (`useThresholdsForm.ts:130-135`).
   - **Pace dialog:** also shows the "Estimate from a race time" link, moved from `ThresholdsSection.tsx:93-106`. It opens `PaceEstimatorDialog` stacked on top (a second `DialogRoot` rendered inside the pace dialog's content). `onSave` writes `formatPaceInput(sec)` into the draft (`ThresholdsSection.tsx:119-125`), and the pace dialog stays open.
   - **`DialogFooter`**: `ui_btn_cancel` and `ui_btn_save` (`en.json:6-7`). Save is disabled while the draft is empty or has an error.
-- It is a `<form>`, so Enter confirms. Escape, the scrim, ✕ and the grabber close without changes.
+- It is a `<form>`, so Enter confirms. The form wraps `DialogBody` and `DialogFooter` and follows the mobile-overlays form rule: `flex min-h-0 flex-col`, so the body stays the only scroller. Escape, the scrim and the grabber close without changes (there is no ✕ on phone).
 
 ### `src/features/settings/hooks/useThresholdsForm.ts`
 
@@ -162,7 +157,7 @@ All three plans edit `messages/en.json` and `messages/de.json`, so re-read both 
 - **`OnboardingThresholds`** (`ThresholdsSection.tsx:130-135`):
   - the gender and birth-year fields without Save (`e2e/onboarding.spec.ts:18` expects no Save button), the divider, `ThresholdTiles` and the dialog, then the onboarding note (`ThresholdsSection.tsx:133`);
   - the histories come from the staged form, one entry each at `0` per filled field (the same shape `createProfile` writes), so the value line, W/kg and the "Add …" captions work before a profile exists;
-  - `ThresholdTiles mode="create"`: no date notes, and an asterisk on Rest HR and Max HR;
+  - `ThresholdTiles mode="create"`: no scrubbing, and an asterisk on Rest HR and Max HR;
   - the dialog confirms through `setField`; `fresh` stays empty.
 - **`ThresholdsFields`** (`ThresholdsSection.tsx:24-128`) shrinks to the gender and birth-year fields. The rest/max/FTP/pace/weight inputs (`ThresholdsSection.tsx:67-116`) and `numberInput` for them go.
 
@@ -208,10 +203,12 @@ All three plans edit `messages/en.json` and `messages/de.json`, so re-read both 
 | `ui_thresholds_tiles_title`    | Your values over time                   | Deine Werte im Verlauf                          |
 | `ui_thresholds_tiles_subtitle` | Tap a value to change it from today on. | Tipp auf einen Wert, um ihn ab heute zu ändern. |
 | `ui_thresholds_tile_wkg`       | W/kg                                    | W/kg                                            |
+| `ui_thresholds_add_rest_hr`    | Add resting HR                          | Ruhepuls eintragen                              |
+| `ui_thresholds_add_max_hr`     | Add max HR                              | Max. Puls eintragen                             |
 | `ui_thresholds_add_ftp`        | Add FTP                                 | FTP eintragen                                   |
+| `ui_thresholds_add_pace`       | Add pace                                | Tempo eintragen                                 |
 | `ui_thresholds_add_weight`     | Add weight                              | Gewicht eintragen                               |
 | `ui_thresholds_add_ftp_weight` | Add FTP and weight                      | FTP und Gewicht eintragen                       |
-| `ui_thresholds_tile_scrub`     | `{date} · {value} {unit}`               | `{date} · {value} {unit}`                       |
 
 **Removed:** `ui_thresholds_saved_title` / `ui_thresholds_saved_desc` (`messages/en.json:45-46`, `messages/de.json:45-46`). Grep shows their only user is `src/features/settings/hooks/useThresholdsForm.ts:213`, and the only check for the text is `e2e/onboarding.spec.ts:77`; both go.
 
@@ -224,25 +221,25 @@ All three plans edit `messages/en.json` and `messages/de.json`, so re-read both 
   - an FTP-only change, a weight-only change, and both on one day each give one entry;
   - **no back-fill**: FTP since 2024 and weight first on 2026-03-08 give a first entry on 2026-03-08;
   - both at date `0` start at `0`.
-- **Unit, new `tests/lib/relativeDate.spec.ts`:** `relativeDayParts` for 0, 6, 7, 29, 30, 364 and 365 days, and across a DST change (calendar days, not 24 h blocks). Assert the parts, not localized strings.
 - **Unit, `tests/lib/profileHistory.spec.ts`:**
   - delete the `profileHistoryRows` block (`profileHistory.spec.ts:85-115`);
-  - add `latestChange`: the newest entry; a date-`0` entry dated at the first session, else `createdAt`;
+  - update the two `profileHistoryDomain` cases to the changed return: `tests/lib/profileHistory.spec.ts:72` and `profileHistory.spec.ts:81` assert `toEqual([from, today])` and gain the right pad;
   - add `sparklinePath`: a single entry is a flat line to the right edge; two entries step at the second date; min = max stays inside the box; empty gives no line.
 - **No new store test:** the same-day replace is covered (`tests/store/userStore.integration.test.ts:34`) and the persisted shape doesn't change.
 - **E2E helper, `e2e/helpers/thresholds.ts` (new):** `setThreshold(page, tileTitle, value)` clicks the tile, fills the dialog input and confirms. It replaces the `page.fill('#thresh-…')` calls in:
   - `e2e/onboarding.spec.ts:16-17`, `onboarding.spec.ts:56` and `onboarding.spec.ts:63`;
-  - `e2e/zipUpload.spec.ts:16-17` and `zipUpload.spec.ts:31-32`;
+  - `e2e/zipUpload.spec.ts:17-18` and `zipUpload.spec.ts:32-33`;
   - `e2e/intervals.spec.ts:54-55`.
     The "thresholds gone" checks (`e2e/onboarding.spec.ts:11-12`, `onboarding.spec.ts:27`, `e2e/intervals.spec.ts:64`) switch to the Rest HR tile.
 - **E2E, `e2e/onboarding.spec.ts:48-64`** ("upload button is disabled until thresholds are valid"): the invalid max HR at `onboarding.spec.ts:59-60` now happens inside the Max HR dialog. Typing `40` shows "Min 120 bpm" there and disables the dialog's Save; Cancel closes it, and the upload button stays disabled.
 - **E2E, rewrite `e2e/onboarding.spec.ts:67-91`** ("changing FTP in settings saves it as today's entry"). It is the existing Settings journey, so it is updated rather than given a sibling:
   - seed and go to `/settings` as today (`onboarding.spec.ts:68-69`); Rest HR shows `50`;
-  - click the FTP tile: a dialog titled "FTP (watts)" opens with the input focused. Type `280` and Save: the dialog closes, the FTP tile shows `280` with the note "today" and carries the outline. No toast appears; the toast assertion at `onboarding.spec.ts:75-77` goes;
-  - the Profile history checks (`onboarding.spec.ts:79-83`) go with the chart;
+  - click the FTP tile: a dialog titled "FTP (watts)" opens with the input focused. Type `280` and Save: the dialog closes, the FTP tile shows `280` with no date note (its first entry) and carries the outline. No toast appears; the toast assertion at `onboarding.spec.ts:76-78` goes;
+  - the Profile history checks (`onboarding.spec.ts:80-84`) go with the chart;
   - W/kg shows `--` and "Add weight". Set Weight to `75`: W/kg shows `3.73`;
-  - reload: the FTP tile still shows `280`, and the card Save is disabled. The `Cancel` count check (`onboarding.spec.ts:89`) stays.
-- **E2E phone:** a `test.describe` in the same spec at 390×844. Opening a tile shows the floating card (x ≈ 8, right ≈ 382). ✕ closes it without changing the value. The card's geometry is already guarded by the mobile-overlays e2e; this only proves the editor uses it.
+  - set Rest HR to `52`: its second entry, so the tile shows today's short date;
+  - reload: the FTP tile still shows `280`, and the card Save is disabled. The `Cancel` count check (`onboarding.spec.ts:90`) stays.
+- **E2E phone:** a `test.describe` in the same spec at 390×844. Opening a tile shows the floating card (x ≈ 8, right ≈ 382). Tapping the grabber ("Drag to close") closes it without changing the value. The card's geometry is already guarded by the mobile-overlays e2e; this only proves the editor uses it.
 
 ## Verification
 
@@ -258,11 +255,11 @@ By hand: use a temporary Playwright script with its own `webServer` on a free po
 - **1440×800, EN and DE:**
   - the whole thresholds card is visible without scrolling;
   - the tiles have equal height;
-  - no note has `scrollWidth > clientWidth`, including the scrub text next to a value.
+  - no note has `scrollWidth > clientWidth`, including the scrub date next to a scrubbed value.
 - **390×844:**
   - two tile columns; the profile row stacks, with Save right-aligned under it;
   - tapping a tile opens the floating card; scrubbing a sparkline doesn't open it;
   - from the pace dialog, the estimator opens on top and its result lands in the pace input.
 - **Onboarding, FIT path and intervals path:** the tiles start at `--`; after Rest and Max HR are set, the upload or import button enables.
 - **Mockup scenarios** (`round2.html:97-102`): a new user without weight, one entry each, two years of changes, no FTP. Compare against variant A.
-- **Captions** for an entry from today, last week, three months and two years ago, in EN and DE.
+- **Date notes** for a value with one entry (none) and for changes from today, last week, three months and two years ago, in EN and DE.

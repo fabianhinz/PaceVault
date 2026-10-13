@@ -1,9 +1,9 @@
+import { StatTile } from '@/components/ui/StatTile.tsx';
 import { pickPeak, type MoreStats } from '@/lib/moreStats.ts';
 import type { Sport } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
 import { useMiniRailHover } from './hooks/useMiniRailHover.ts';
 import { PeakBars } from './PeakBars.tsx';
-import { StatCaption, StatCell, StatValue } from './StatCell.tsx';
 import { peakWindow, watts } from './statFormat.ts';
 
 interface PeakPowerCellProps {
@@ -17,23 +17,21 @@ export const PeakPowerCell = (props: PeakPowerCellProps) => {
   if (!pick) return null;
 
   return (
-    <StatCell
-      stat="peaks"
-      label={m.ui_more_stats_peaks()}
+    <StatTile
+      title={m.ui_more_stats_peaks()}
       metricId="peakPower"
       active={pick.active}
-      info1={<StatValue value={watts(pick.watts)} unit="W" />}
-      info2={<StatCaption>{peakWindow(pick.seconds)}</StatCaption>}
-      chart={
-        <div className="flex h-8 w-full" {...rail.railProps}>
-          <PeakBars
-            sport={props.sport}
-            watts={props.peaks.slots.map((slot) => slot.watts)}
-            highlight={pick.index}
-            segmentProps={rail.segmentProps}
-          />
-        </div>
-      }
-    />
+      value={watts(pick.watts)}
+      unit="W"
+      note={peakWindow(pick.seconds)}
+    >
+      <PeakBars
+        sport={props.sport}
+        watts={props.peaks.slots.map((slot) => slot.watts)}
+        highlight={pick.index}
+        railProps={rail.railProps}
+        segmentProps={rail.segmentProps}
+      />
+    </StatTile>
   );
 };

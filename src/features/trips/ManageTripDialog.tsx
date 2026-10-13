@@ -6,7 +6,9 @@ import { cn } from '@/lib/utils.ts';
 import {
   DialogRoot,
   DialogContent,
-  DialogTitle,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogDescription,
 } from '@/components/ui/Dialog.tsx';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup.tsx';
@@ -33,35 +35,37 @@ export const ManageTripDialog = (props: {
 
   return (
     <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
-      <DialogContent className="flex flex-col overflow-y-hidden">
-        <DialogTitle className="shrink-0">{m.ui_trips_dialog_title()}</DialogTitle>
-        <DialogDescription className="shrink-0">{m.ui_trips_dialog_desc()}</DialogDescription>
+      <DialogContent className="lg:flex lg:flex-col lg:overflow-y-hidden">
+        <DialogHeader title={m.ui_trips_dialog_title()} />
+        <DialogBody>
+          <DialogDescription className="shrink-0">{m.ui_trips_dialog_desc()}</DialogDescription>
 
-        <div className="mt-4 min-h-0 flex-1 overflow-y-auto border-t border-white/10 pt-4">
-          <RadioGroup value={currentTrip?.id} onValueChange={handleSelect}>
-            {trips.map((trip) => (
-              <RadioGroupItem
-                key={trip.id}
-                value={trip.id}
-                className={cn(
-                  tileClass,
-                  'cursor-pointer p-3 transition-colors hover:bg-white/10 data-[state=checked]:bg-white/10',
-                )}
-              >
-                <TripHeader trip={trip} />
-              </RadioGroupItem>
-            ))}
-          </RadioGroup>
-        </div>
+          <div className="mt-4 border-t border-white/10 pt-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+            <RadioGroup value={currentTrip?.id} onValueChange={handleSelect}>
+              {trips.map((trip) => (
+                <RadioGroupItem
+                  key={trip.id}
+                  value={trip.id}
+                  className={cn(
+                    tileClass,
+                    'cursor-pointer p-3 transition-colors hover:bg-white/10 data-[state=checked]:bg-white/10',
+                  )}
+                >
+                  <TripHeader trip={trip} />
+                </RadioGroupItem>
+              ))}
+            </RadioGroup>
+          </div>
+        </DialogBody>
 
-        <div className="mt-4 flex shrink-0 justify-end gap-2">
+        <DialogFooter>
           <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
             {m.ui_btn_cancel()}
           </Button>
           <Button variant="danger" disabled={!currentTrip} onClick={handleRemove}>
             {m.ui_trips_remove()}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </DialogRoot>
   );

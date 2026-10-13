@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../helpers/test';
+import { test, expect, type Locator, type Page } from '../helpers/test';
 import { DB_NAME } from '../../src/lib/db.ts';
 import {
   seedOnboardingComplete,
@@ -41,8 +41,8 @@ const handle = (page: Page) => sheet(page).locator('[data-sheet-handle]');
 
 const sheetScroller = (page: Page) => page.locator('[data-layout="main"]').locator('..');
 
-const dragHandle = async (page: Page, target: { by?: number; toY?: number }) => {
-  const box = await handle(page).boundingBox();
+const dragHandle = async (page: Page, grip: Locator, target: { by?: number; toY?: number }) => {
+  const box = await grip.boundingBox();
   if (!box) throw new Error('handle not rendered');
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
@@ -92,7 +92,7 @@ test.describe('mobile bottom sheet', () => {
     test('dragging leaves the sheet where it is released and survives a reload', async ({
       page,
     }) => {
-      await dragHandle(page, { by: 120 });
+      await dragHandle(page, handle(page), { by: 120 });
 
       await expect
         .poll(async () => {
@@ -107,21 +107,21 @@ test.describe('mobile bottom sheet', () => {
     });
 
     test('dragging past either end stops at full or peek', async ({ page }) => {
-      await dragHandle(page, { toY: 0 });
+      await dragHandle(page, handle(page), { toY: 0 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '1.00');
 
-      await dragHandle(page, { toY: 840 });
+      await dragHandle(page, handle(page), { toY: 840 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.00');
     });
 
     test('a release inside the fade zone settles on the more visible layer', async ({ page }) => {
-      await dragHandle(page, { toY: 840 });
+      await dragHandle(page, handle(page), { toY: 840 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.00');
 
-      await dragHandle(page, { by: -20 });
+      await dragHandle(page, handle(page), { by: -20 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.00');
 
-      await dragHandle(page, { by: -70 });
+      await dragHandle(page, handle(page), { by: -70 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.15');
     });
   });
@@ -141,7 +141,7 @@ test.describe('mobile bottom sheet', () => {
 
     test('swaps the content for a summary at peek and back when dragged up', async ({ page }) => {
       const peek = page.locator('[data-sheet-peek]');
-      await dragHandle(page, { toY: 840 });
+      await dragHandle(page, handle(page), { toY: 840 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.00');
 
       await expect(peek).toContainText('Dashboard');
@@ -149,7 +149,7 @@ test.describe('mobile bottom sheet', () => {
       await expect(peek).toHaveCSS('opacity', '1');
       await expect(sheetScroller(page)).toHaveCSS('opacity', '0');
 
-      await dragHandle(page, { toY: 0 });
+      await dragHandle(page, handle(page), { toY: 0 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '1.00');
       await expect(peek).toHaveCSS('opacity', '0');
       await expect(sheetScroller(page)).toHaveCSS('opacity', '1');
@@ -288,6 +288,46 @@ test.describe('mobile map', () => {
     await expect(picker).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(picker).toBeHidden();
+
+    await page.touchscreen.tap(track.x, track.y);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(500);
+    const card = await picker.boundingBox();
+    if (!card) throw new Error('picker not rendered');
+    expect(card.x).toBeCloseTo(8, 0);
+    expect(card.x + card.width).toBeCloseTo(382, 0);
+    expect(card.y + card.height).toBeLessThanOrEqual(844 - 12);
+
+    await expect(picker.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
+    const grabber = picker.getByRole('button', { name: 'Drag to close' });
+    await grabber.tap();
+    await expect(picker).toBeHidden();
+
+    await page.touchscreen.tap(track.x, track.y);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(500);
+    await dragHandle(page, grabber, { by: 40 });
+    await page.waitForTimeout(500);
+    await expect(picker).toBeVisible();
+    const settled = await picker.boundingBox();
+    if (!settled) throw new Error('picker not rendered');
+    expect(settled.y).toBeCloseTo(card.y, 0);
+
+    await dragHandle(page, grabber, { by: card.height * 0.6 });
+    await expect(picker).toBeHidden();
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.waitForTimeout(1500);
+    const landscapeTrack = await findTrackPoint(page);
+    await page.mouse.move(2, 2);
+    await page.touchscreen.tap(landscapeTrack.x, landscapeTrack.y);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(500);
+    const landscape = await picker.boundingBox();
+    if (!landscape) throw new Error('picker not rendered');
+    expect(landscape.width).toBeLessThanOrEqual(512);
+    expect(landscape.x).toBeCloseTo((844 - landscape.width) / 2, 0);
+    expect(landscape.y).toBeGreaterThanOrEqual(390 * 0.08);
   });
 
   test('chart scrub on touch shows no map circle', async ({ page }) => {

@@ -18,4 +18,4 @@ export const test = base.extend<{ hideQueryDevtools: void }>({
   ],
 });
 
-export { expect, type Page } from '@playwright/test';
+export { expect, type Download, type Locator, type Page } from '@playwright/test';

@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/Button.tsx';
 import {
   DialogRoot,
   DialogContent,
-  DialogTitle,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogDescription,
 } from '@/components/ui/Dialog.tsx';
 
@@ -18,9 +20,11 @@ export const DeleteTripDialog = (props: {
   return (
     <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
       <DialogContent>
-        <DialogTitle>{m.ui_trips_delete_title()}</DialogTitle>
-        <DialogDescription>{m.ui_trips_delete_desc({ name: props.tripName })}</DialogDescription>
-        <div className="mt-4 flex justify-end gap-2">
+        <DialogHeader title={m.ui_trips_delete_title()} />
+        <DialogBody>
+          <DialogDescription>{m.ui_trips_delete_desc({ name: props.tripName })}</DialogDescription>
+        </DialogBody>
+        <DialogFooter>
           <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
             {m.ui_btn_cancel()}
           </Button>
@@ -34,7 +38,7 @@ export const DeleteTripDialog = (props: {
           >
             {m.ui_btn_delete()}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </DialogRoot>
   );

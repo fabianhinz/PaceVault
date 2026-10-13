@@ -7,6 +7,7 @@ import {
   ACTIVITIES_ZIP,
 } from './helpers/seed';
 import { uploadFilesWithButton, dropFiles } from './helpers/upload';
+import { setThreshold } from './helpers/thresholds';
 
 test.describe('ZIP archive upload', () => {
   test.describe('onboarding (file picker only)', () => {
@@ -14,8 +15,8 @@ test.describe('ZIP archive upload', () => {
       await page.goto('/');
 
       await page.getByText('FIT files', { exact: true }).click();
-      await page.fill('#thresh-restHr', '50');
-      await page.fill('#thresh-maxHr', '185');
+      await setThreshold(page, 'Rest HR', '50');
+      await setThreshold(page, 'Max HR', '185');
       const uploadButton = page.getByRole('button', { name: /upload fit files/i });
       await expect(uploadButton).toBeEnabled();
 
@@ -29,8 +30,8 @@ test.describe('ZIP archive upload', () => {
       await page.goto('/');
 
       await page.getByText('FIT files', { exact: true }).click();
-      await page.fill('#thresh-restHr', '50');
-      await page.fill('#thresh-maxHr', '185');
+      await setThreshold(page, 'Rest HR', '50');
+      await setThreshold(page, 'Max HR', '185');
       const uploadButton = page.getByRole('button', { name: /upload fit files/i });
       await expect(uploadButton).toBeEnabled();
 

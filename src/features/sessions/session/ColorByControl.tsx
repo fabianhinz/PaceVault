@@ -116,6 +116,7 @@ export const ColorByControl = (props: ColorByControlProps) => {
       open={open}
       onOpenChange={setOpen}
       title={m.ui_color_by()}
+      icon={Layers}
       side="top"
       align="center"
       className="lg:w-80"
@@ -140,7 +141,7 @@ export const ColorByControl = (props: ColorByControlProps) => {
         )
       }
     >
-      <div className="mb-3 flex items-center gap-2 text-text-tertiary">
+      <div className="mb-3 flex items-center gap-2 text-text-tertiary max-lg:hidden">
         <Layers size={14} />
         <Typography variant="caption">{m.ui_color_by()}</Typography>
       </div>

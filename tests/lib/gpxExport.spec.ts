@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { buildSessionGpx, buildRouteSegmentGpx } from '@/lib/gpxExport.ts';
+import { buildSessionGpx, buildRouteGpx, buildRouteSegmentGpx } from '@/lib/gpxExport.ts';
 import { buildGpxFilename } from '@/packages/gpx/buildGpx.ts';
 import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';
+import type { StudioMarker } from '@/store/studio.ts';
 import { makeGPSRunningRecords, makeIndoorRecords } from '../factories/gps.ts';
 import { makeSession } from '../factories/sessions.ts';
 
@@ -76,11 +77,56 @@ describe('buildSessionGpx', () => {
   });
 });
 
+const markers: StudioMarker[] = [
+  { id: 'split', type: 'track_modifier', distanceM: 5000 },
+  { id: 'poi-a', type: 'point_of_interest', distanceM: 1500, label: 'Fountain' },
+  {
+    id: 'poi-b',
+    type: 'point_of_interest',
+    distanceM: 4000,
+    label: 'Hut',
+    description: 'Closed Mondays',
+  },
+];
+
+describe('buildRouteGpx', () => {
+  const meta = { name: 'Alpine Loop', time: new Date(1700000000000) };
+
+  it('exports every point', () => {
+    const gpx = buildRouteGpx(routePoints(10), [], meta);
+    expect(gpx?.match(/<trkpt/g)).toHaveLength(10);
+    expect(gpx).toContain('<name>Alpine Loop</name>');
+  });
+
+  it('places POIs at their route distance and ignores split markers', () => {
+    const gpx = buildRouteGpx(routePoints(10), markers, meta);
+    const wpts = gpx?.match(/<wpt[\s\S]*?<\/wpt>/g) ?? [];
+    expect(wpts).toEqual([
+      '<wpt lat="47.001500" lon="11.001500">\n<ele>601.5</ele>\n<name>Fountain</name>\n</wpt>',
+      '<wpt lat="47.004000" lon="11.004000">\n<ele>604.0</ele>\n<name>Hut</name>\n<desc>Closed Mondays</desc>\n</wpt>',
+    ]);
+  });
+
+  it('keeps one track segment per source segment', () => {
+    const points = routePoints(6).map((p, i) => ({ ...p, seg: Math.floor(i / 3) }));
+    const gpx = buildRouteGpx(points, [], meta);
+    expect(gpx?.match(/<trkseg>/g)).toHaveLength(2);
+  });
+});
+
 describe('buildRouteSegmentGpx', () => {
   const meta = { name: 'Alpine Loop - segment 2', time: new Date(1700000000000) };
 
+  it('keeps only the POIs inside the segment', () => {
+    const gpx = buildRouteSegmentGpx(routePoints(10), markers, 3500, 6000, meta);
+    const names = gpx
+      ?.match(/<wpt[\s\S]*?<\/wpt>/g)
+      ?.map((w) => w.match(/<name>(.*)<\/name>/)?.[1]);
+    expect(names).toEqual(['Hut']);
+  });
+
   it('export filters points instead of cutting at the split', () => {
-    const gpx = buildRouteSegmentGpx(routePoints(10), 3500, 6000, meta);
+    const gpx = buildRouteSegmentGpx(routePoints(10), [], 3500, 6000, meta);
     const trkpts = gpx?.match(/<trkpt[\s\S]*?<\/trkpt>/g) ?? [];
     expect(trkpts).toHaveLength(4);
     expect(trkpts[0]).toContain('lat="47.003500" lon="11.003500"');
@@ -92,14 +138,14 @@ describe('buildRouteSegmentGpx', () => {
 
   it('exports no <time> for points that never had one', () => {
     const points = routePoints(10).map((p) => ({ ...p, time: undefined }));
-    const gpx = buildRouteSegmentGpx(points, 3500, 6000, meta);
+    const gpx = buildRouteSegmentGpx(points, [], 3500, 6000, meta);
     expect(gpx).not.toBeNull();
     expect(gpx).not.toContain('<trkpt lat="47.003500" lon="11.003500">\n<ele>603.5</ele>\n<time>');
     expect((gpx?.match(/<time>/g) ?? []).length).toBe(1);
   });
 
   it('returns null when the slice has fewer than two points', () => {
-    expect(buildRouteSegmentGpx(routePoints(10), 3000, 3000, meta)).toBeNull();
+    expect(buildRouteSegmentGpx(routePoints(10), [], 3000, 3000, meta)).toBeNull();
   });
 });
 

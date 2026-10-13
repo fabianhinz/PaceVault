@@ -9,10 +9,13 @@ import { Label } from '@/components/ui/Label.tsx';
 import {
   DialogRoot,
   DialogContent,
-  DialogTitle,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogDescription,
 } from '@/components/ui/Dialog.tsx';
 import { toKm } from '@/lib/formatters.ts';
+import { cn } from '@/lib/utils.ts';
 
 const clampKm = (km: number, maxKm: number): number => {
   if (Number.isNaN(km) || km < 0) return 0;
@@ -40,11 +43,8 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
   const [kmFromSplitText, setKmFromSplitText] = useState('');
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
-  // The split just before this marker (fixed while the dialog is open). `null`
-  // when there is none — then the "distance from last split" input is disabled.
   const [prevSplitM, setPrevSplitM] = useState<number | null>(null);
 
-  // Seed the form each time the dialog opens.
   useEffect(() => {
     if (!active) return;
 
@@ -84,8 +84,6 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
   const trimmedLabel = label.trim();
   const canSave = !isPoi || trimmedLabel.length > 0;
 
-  // "Distance from start" and "distance from last split" are two views of the
-  // same position — editing one keeps the other in sync.
   const handleKmStartChange = (value: string) => {
     setKmText(value);
     if (prevSplitM !== null) {
@@ -144,79 +142,74 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
   return (
     <DialogRoot open={active} onOpenChange={() => useStudioMarkerEditorStore.getState().close()}>
       <DialogContent>
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{m.ui_studio_marker_position_desc()}</DialogDescription>
+        <DialogHeader title={title} />
+        <DialogBody>
+          <DialogDescription>{m.ui_studio_marker_position_desc()}</DialogDescription>
 
-        <div className="mt-4 flex flex-col gap-4">
-          {isPoi && (
+          <div className="mt-4 flex flex-col gap-4">
+            {isPoi && (
+              <div>
+                <Label>{m.ui_studio_marker_label()}</Label>
+                <Input
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder={m.ui_studio_marker_label_placeholder()}
+                />
+              </div>
+            )}
+
             <div>
-              <Label>{m.ui_studio_marker_label()}</Label>
-              <Input
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder={m.ui_studio_marker_label_placeholder()}
-              />
-            </div>
-          )}
-
-          <div>
-            <Label>{m.ui_studio_marker_km_label()}</Label>
-            <Input
-              type="number"
-              min={0}
-              max={maxKm}
-              step={0.01}
-              value={kmText}
-              onChange={(e) => handleKmStartChange(e.target.value)}
-            />
-          </div>
-
-          {!isPoi && prevSplitM !== null && (
-            <div>
-              <Label>{m.ui_studio_marker_from_split_label()}</Label>
+              <Label>{m.ui_studio_marker_km_label()}</Label>
               <Input
                 type="number"
                 min={0}
                 max={maxKm}
                 step={0.01}
-                value={kmFromSplitText}
-                onChange={(e) => handleKmFromSplitChange(e.target.value)}
+                value={kmText}
+                onChange={(e) => handleKmStartChange(e.target.value)}
               />
             </div>
-          )}
 
-          {isPoi && (
-            <div>
-              <Label>{m.ui_studio_marker_description()}</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={m.ui_studio_marker_description_placeholder()}
-              />
-            </div>
-          )}
-        </div>
+            {!isPoi && prevSplitM !== null && (
+              <div>
+                <Label>{m.ui_studio_marker_from_split_label()}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={maxKm}
+                  step={0.01}
+                  value={kmFromSplitText}
+                  onChange={(e) => handleKmFromSplitChange(e.target.value)}
+                />
+              </div>
+            )}
 
-        <div className="mt-4 flex items-center justify-between gap-2">
-          {isEdit ? (
-            <Button variant="danger" onClick={handleDelete}>
+            {isPoi && (
+              <div>
+                <Label>{m.ui_studio_marker_description()}</Label>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={m.ui_studio_marker_description_placeholder()}
+                />
+              </div>
+            )}
+          </div>
+        </DialogBody>
+
+        <DialogFooter className={cn(isEdit && 'max-lg:grid-cols-3')}>
+          {isEdit && (
+            <Button variant="danger" className="lg:mr-auto" onClick={handleDelete}>
               {m.ui_btn_delete()}
             </Button>
-          ) : (
-            <span />
           )}
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => useStudioMarkerEditorStore.getState().close()}
-            >
-              {m.ui_btn_cancel()}
-            </Button>
-            <Button disabled={!canSave} onClick={handleSave}>
-              {m.ui_btn_save()}
-            </Button>
-          </div>
-        </div>
+          <Button variant="secondary" onClick={() => useStudioMarkerEditorStore.getState().close()}>
+            {m.ui_btn_cancel()}
+          </Button>
+          <Button disabled={!canSave} onClick={handleSave}>
+            {m.ui_btn_save()}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </DialogRoot>
   );

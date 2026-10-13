@@ -1,8 +1,6 @@
 import { Children, useState, type ReactNode } from 'react';
 import { CollapsibleHeader } from './Collapsible.tsx';
 import { Typography } from './Typography.tsx';
-import { tileClass } from './Card.tsx';
-import { cn } from '@/lib/utils.ts';
 
 interface CardGridProps {
   children: ReactNode;
@@ -43,11 +41,7 @@ export const CardGrid = (props: CardGridProps) => {
           </Typography>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3">
-        {Children.map(visibleChildren, (child) =>
-          child != null ? <div className={cn(tileClass, 'p-3')}>{child}</div> : null,
-        )}
-      </div>
+      <div className="grid grid-cols-2 gap-3">{visibleChildren}</div>
     </>
   );
 };

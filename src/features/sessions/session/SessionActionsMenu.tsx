@@ -1,14 +1,8 @@
 import { useState } from 'react';
-import { Compass, EllipsisVertical, FileDown, Route, Trash2 } from 'lucide-react';
+import { Compass, FileDown, Route, Trash2 } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { useTripsStore } from '@/store/trips.ts';
-import { Button } from '@/components/ui/Button.tsx';
-import {
-  DropdownMenuRoot,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from '@/components/ui/DropdownMenu.tsx';
+import { ActionsMenu } from '@/components/ui/ActionsMenu.tsx';
 import { DeleteSessionDialog } from '@/features/sessions/session/DeleteSessionDialog.tsx';
 import { ManageTripDialog } from '@/features/trips/ManageTripDialog.tsx';
 import { useSessionExport } from '@/features/sessions/session/hooks/useSessionExport.ts';
@@ -22,40 +16,45 @@ export const SessionActionsMenu = (props: { session: TrainingSession }) => {
   const gpxExport = useSessionExport(props.session);
   const editInStudio = useEditInStudio(props.session);
 
+  const items = [
+    {
+      icon: Compass,
+      label: hasTrips ? m.ui_trips_manage() : m.ui_trips_manage_empty(),
+      disabled: !hasTrips,
+      onSelect: () => setShowManageTripDialog(true),
+    },
+  ];
+  if (editInStudio.canEdit) {
+    items.push({
+      icon: Route,
+      label: m.ui_session_edit_in_studio(),
+      disabled: editInStudio.preparing,
+      onSelect: () => editInStudio.editInStudio(),
+    });
+  }
+  if (gpxExport.canExport) {
+    items.push({
+      icon: FileDown,
+      label: m.ui_btn_export_gpx(),
+      disabled: gpxExport.exporting,
+      onSelect: () => gpxExport.exportGpx(),
+    });
+  }
+
   return (
     <>
-      <DropdownMenuRoot>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label={m.ui_session_actions()}>
-            <EllipsisVertical size={18} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem disabled={!hasTrips} onSelect={() => setShowManageTripDialog(true)}>
-            <Compass size={14} />
-            {hasTrips ? m.ui_trips_manage() : m.ui_trips_manage_empty()}
-          </DropdownMenuItem>
-          {editInStudio.canEdit ? (
-            <DropdownMenuItem
-              disabled={editInStudio.preparing}
-              onSelect={() => editInStudio.editInStudio()}
-            >
-              <Route size={14} />
-              {m.ui_session_edit_in_studio()}
-            </DropdownMenuItem>
-          ) : null}
-          {gpxExport.canExport ? (
-            <DropdownMenuItem disabled={gpxExport.exporting} onSelect={() => gpxExport.exportGpx()}>
-              <FileDown size={14} />
-              {m.ui_btn_export_gpx()}
-            </DropdownMenuItem>
-          ) : null}
-          <DropdownMenuItem variant="danger" onSelect={() => setShowDeleteDialog(true)}>
-            <Trash2 size={14} />
-            {m.ui_btn_delete()}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenuRoot>
+      <ActionsMenu
+        label={m.ui_session_actions()}
+        items={[
+          ...items,
+          {
+            icon: Trash2,
+            label: m.ui_btn_delete(),
+            danger: true,
+            onSelect: () => setShowDeleteDialog(true),
+          },
+        ]}
+      />
 
       <DeleteSessionDialog
         session={props.session}

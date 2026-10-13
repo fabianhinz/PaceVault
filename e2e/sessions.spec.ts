@@ -259,15 +259,14 @@ test.describe('Session browsing', () => {
     });
 
     await toggle.click();
-    await expect(row.locator('[data-stat="step"]')).toContainText('spm');
-    await expect(row.locator('[data-stat="step"]')).not.toContainText('Pace');
-    const moving = row.locator('[data-stat="moving"]');
-    await expect(moving).toContainText(/\/ \d/);
+    await expect(row.locator('[data-stat="stepLength"]')).toContainText('spm');
+    await expect(row.locator('[data-stat="stepLength"]')).not.toContainText('Pace');
+    const moving = row.locator('[data-stat="movingTime"]');
+    await expect(moving).toContainText(/Elapsed time\d/);
     await expect(moving).toContainText('Stopped');
     await expect(moving).not.toContainText('Coasting');
-    await expect(row.locator('[data-stat="coasting"]')).toHaveCount(0);
 
-    const zones = row.locator('[data-stat="zones"]');
+    const zones = row.locator('[data-stat="trainingZones"]');
     await expect(zones).toContainText('HR zones');
     const segment = zones.getByRole('img', { name: /^Z\d.*: [\d:]+ · [1-9]\d* %$/ }).first();
     const label = (await segment.getAttribute('aria-label')) ?? '';

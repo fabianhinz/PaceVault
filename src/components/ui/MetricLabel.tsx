@@ -19,9 +19,9 @@ interface MetricLabelProps {
   alwaysShowLabel?: boolean;
 }
 
-const ExplanationBody = (props: { explanation: MetricExplanation; separated: boolean }) => (
-  <div className={cn('space-y-2', props.separated && 'border-t border-white/10 pt-3')}>
-    <div className="flex items-baseline gap-2">
+const ExplanationBody = (props: { explanation: MetricExplanation; primary: boolean }) => (
+  <div className={cn('space-y-2', !props.primary && 'border-t border-white/10 pt-3')}>
+    <div className={cn('flex items-baseline gap-2', props.primary && 'max-lg:hidden')}>
       <Typography variant="subtitle1" className="font-semibold">
         {props.explanation.friendlyName}
       </Typography>
@@ -97,8 +97,8 @@ export const MetricLabel = (props: MetricLabelProps) => {
       {showHelp && (
         <ResponsivePopover
           title={explanation.friendlyName}
+          chip={explanation.shortLabel}
           side="top"
-          className="space-y-3"
           trigger={
             <Button
               variant="ghost"
@@ -111,10 +111,12 @@ export const MetricLabel = (props: MetricLabelProps) => {
             </Button>
           }
         >
-          <ExplanationBody explanation={explanation} separated={false} />
-          {related.map((entry) => (
-            <ExplanationBody key={entry.id} explanation={entry} separated />
-          ))}
+          <div className="space-y-3">
+            <ExplanationBody explanation={explanation} primary />
+            {related.map((entry) => (
+              <ExplanationBody key={entry.id} explanation={entry} primary={false} />
+            ))}
+          </div>
         </ResponsivePopover>
       )}
     </span>

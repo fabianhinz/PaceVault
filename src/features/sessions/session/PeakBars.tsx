@@ -2,10 +2,8 @@ import { PEAK_WINDOW_SECONDS, peakScale } from '@/lib/moreStats.ts';
 import { cn } from '@/lib/utils.ts';
 import type { Sport } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
-import type { MiniRailSegmentProps } from './hooks/useMiniRailHover.ts';
+import type { MiniRailProps, MiniRailSegmentProps } from './hooks/useMiniRailHover.ts';
 import { peakWindow, watts } from './statFormat.ts';
-
-const BAR_HEIGHT_PX = 32;
 
 const BAR_CLASS: Record<Sport, { soft: string; strong: string }> = {
   running: { soft: 'bg-sport-running/35', strong: 'bg-sport-running/95' },
@@ -16,14 +14,15 @@ interface PeakBarsProps {
   sport: Sport;
   watts: Array<number | undefined>;
   highlight: number;
+  railProps: MiniRailProps;
   segmentProps: (segment: number) => MiniRailSegmentProps;
 }
 
 export const PeakBars = (props: PeakBarsProps) => {
-  const heights = peakScale(props.watts, BAR_HEIGHT_PX);
+  const heights = peakScale(props.watts, 100);
   const colors = BAR_CLASS[props.sport];
   return (
-    <div className="flex h-8 w-full items-end gap-1">
+    <div className="flex h-full w-full items-end gap-1" {...props.railProps}>
       {heights.map((height, i) => {
         const seconds = PEAK_WINDOW_SECONDS[i] ?? i;
         const value = props.watts[i];
@@ -47,7 +46,7 @@ export const PeakBars = (props: PeakBarsProps) => {
                 i === props.highlight && colors.strong,
                 i !== props.highlight && colors.soft,
               )}
-              style={{ height: `${height}px` }}
+              style={{ height: `${height}%` }}
             />
           </span>
         );

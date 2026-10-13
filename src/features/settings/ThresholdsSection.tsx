@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { Info } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { m } from '@/paraglide/messages.js';
-import { formatPaceInput } from '@/lib/formatters.ts';
+import type { DatedValue } from '@/packages/engine/datedValue.ts';
+import { wattsPerKgHistory } from '@/packages/engine/wattsPerKg.ts';
+import type { UserProfile } from '@/types/index.ts';
+import { useUserStore, type ThresholdKey } from '@/store/user.ts';
+import { parsePaceInput } from '@/lib/formatters.ts';
 import { Input } from '@/components/ui/Input.tsx';
 import { Label } from '@/components/ui/Label.tsx';
 import { Card } from '@/components/ui/Card.tsx';
@@ -14,138 +17,168 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/Select.tsx';
-import { PaceEstimatorDialog } from './PaceEstimatorDialog.tsx';
+import { ThresholdEditDialog } from './ThresholdEditDialog.tsx';
+import { ThresholdTiles } from './ThresholdTiles.tsx';
+import type { ThresholdTileKey } from './thresholdIcons.ts';
 import {
   useThresholdsForm,
-  type NumberField,
+  type FormValues,
   type ThresholdsForm,
 } from './hooks/useThresholdsForm.ts';
 
-const ThresholdsFields = (props: { thresholds: ThresholdsForm }) => {
+type Histories = Record<ThresholdTileKey, DatedValue<number>[]>;
+
+const ProfileFields = (props: { thresholds: ThresholdsForm }) => {
   const thresholds = props.thresholds;
-  const form = thresholds.form;
-  const [estimatorOpen, setEstimatorOpen] = useState(false);
-
-  const numberInput = (field: NumberField, id: string) => {
-    const error = thresholds.visibleError(field);
-    return (
-      <Input
-        id={id}
-        type="number"
-        value={form[field]}
-        onChange={(e) => thresholds.setField(field, e.target.value)}
-        helperText={error || undefined}
-        error={!!error}
-      />
-    );
-  };
-
-  const paceError = thresholds.visibleError('thresholdPace');
-
+  const birthYearError = thresholds.visibleError('birthYear');
   return (
     <>
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label>{m.ui_thresholds_gender()}</Label>
-            <SelectRoot value={form.gender} onValueChange={thresholds.setGender}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">{m.ui_thresholds_male()}</SelectItem>
-                <SelectItem value="female">{m.ui_thresholds_female()}</SelectItem>
-                <SelectItem value="other">{m.ui_thresholds_other()}</SelectItem>
-              </SelectContent>
-            </SelectRoot>
-          </div>
-          <div>
-            <Label htmlFor="thresh-birthYear">{m.ui_thresholds_birth_year()}</Label>
-            {numberInput('birthYear', 'thresh-birthYear')}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="thresh-restHr" required>
-              {m.ui_thresholds_resting_hr()}
-            </Label>
-            {numberInput('restHr', 'thresh-restHr')}
-          </div>
-          <div>
-            <Label htmlFor="thresh-maxHr" required>
-              {m.ui_thresholds_max_hr()}
-            </Label>
-            {numberInput('maxHr', 'thresh-maxHr')}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="thresh-ftp">{m.ui_thresholds_ftp()}</Label>
-            {numberInput('ftp', 'thresh-ftp')}
-          </div>
-          <div>
-            <Label htmlFor="thresh-pace">{m.ui_thresholds_threshold_pace()}</Label>
-            <Input
-              id="thresh-pace"
-              type="text"
-              value={form.thresholdPace}
-              onChange={(e) => thresholds.setField('thresholdPace', e.target.value)}
-              helperText={
-                paceError || (
-                  <span className="flex gap-1 align-center text-accent">
-                    <Info size={16} strokeWidth={1.5} className="shrink-0" />
-                    <button
-                      type="button"
-                      className="cursor-pointer hover:underline"
-                      onClick={() => setEstimatorOpen(true)}
-                    >
-                      {m.ui_thresholds_estimate_from_race()}
-                    </button>
-                  </span>
-                )
-              }
-              error={!!paceError}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="thresh-weight">{m.ui_thresholds_weight()}</Label>
-            {numberInput('weight', 'thresh-weight')}
-          </div>
-        </div>
+      <div>
+        <Label>{m.ui_thresholds_gender()}</Label>
+        <SelectRoot value={thresholds.form.gender} onValueChange={thresholds.setGender}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="male">{m.ui_thresholds_male()}</SelectItem>
+            <SelectItem value="female">{m.ui_thresholds_female()}</SelectItem>
+            <SelectItem value="other">{m.ui_thresholds_other()}</SelectItem>
+          </SelectContent>
+        </SelectRoot>
       </div>
-
-      <PaceEstimatorDialog
-        open={estimatorOpen}
-        onOpenChange={setEstimatorOpen}
-        onSave={(paceSecPerKm) =>
-          thresholds.setField('thresholdPace', formatPaceInput(paceSecPerKm))
-        }
-      />
+      <div>
+        <Label htmlFor="thresh-birthYear">{m.ui_thresholds_birth_year()}</Label>
+        <Input
+          id="thresh-birthYear"
+          type="number"
+          value={thresholds.form.birthYear}
+          onChange={(e) => thresholds.setField('birthYear', e.target.value)}
+          helperText={birthYearError || undefined}
+          error={!!birthYearError}
+        />
+      </div>
     </>
   );
 };
 
-export const OnboardingThresholds = (props: { thresholds: ThresholdsForm }) => (
-  <div>
-    <ThresholdsFields thresholds={props.thresholds} />
-    <p className="mt-3 text-xs text-text-quaternary">{m.ui_thresholds_onboarding_note()}</p>
-  </div>
-);
+const Divider = () => <hr className="my-4 border-white/10" />;
+
+const stagedHistory = (value: number | undefined): DatedValue<number>[] => {
+  if (value === undefined || Number.isNaN(value)) return [];
+  return [{ date: 0, value }];
+};
+
+const stagedNumber = (value: string): number | undefined => {
+  if (value.trim() === '') return undefined;
+  return Number(value);
+};
+
+const stagedHistories = (form: FormValues): Histories => {
+  const ftp = stagedHistory(stagedNumber(form.ftp));
+  const weight = stagedHistory(stagedNumber(form.weight));
+  return {
+    restHr: stagedHistory(stagedNumber(form.restHr)),
+    maxHr: stagedHistory(stagedNumber(form.maxHr)),
+    ftp,
+    thresholdPace: stagedHistory(parsePaceInput(form.thresholdPace)),
+    weight,
+    wkg: wattsPerKgHistory(ftp, weight),
+  };
+};
+
+export const OnboardingThresholds = (props: { thresholds: ThresholdsForm }) => {
+  const [editing, setEditing] = useState<ThresholdKey | null>(null);
+  return (
+    <div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ProfileFields thresholds={props.thresholds} />
+      </div>
+      <Divider />
+      <ThresholdTiles
+        histories={stagedHistories(props.thresholds.form)}
+        fresh={[]}
+        onEdit={setEditing}
+        mode="create"
+      />
+      <ThresholdEditDialog
+        field={editing}
+        thresholds={props.thresholds}
+        onConfirm={(field, value) => {
+          props.thresholds.setField(field, value);
+          setEditing(null);
+        }}
+        onClose={() => setEditing(null)}
+      />
+      <p className="mt-3 text-xs text-text-quaternary">{m.ui_thresholds_onboarding_note()}</p>
+    </div>
+  );
+};
+
+const wattsPerKgOf = (profile: UserProfile) =>
+  wattsPerKgHistory(profile.thresholds.ftp ?? [], profile.weight ?? []);
 
 export const ThresholdsSection = () => {
   const thresholds = useThresholdsForm('update');
+  const profile = useUserStore((s) => s.profile);
+  const [editing, setEditing] = useState<ThresholdKey | null>(null);
+  const [fresh, setFresh] = useState<ThresholdTileKey[]>([]);
+
+  let tiles: ReactNode = null;
+  if (profile) {
+    const histories: Histories = {
+      restHr: profile.thresholds.restHr,
+      maxHr: profile.thresholds.maxHr,
+      ftp: profile.thresholds.ftp ?? [],
+      thresholdPace: profile.thresholds.thresholdPace ?? [],
+      weight: profile.weight ?? [],
+      wkg: wattsPerKgOf(profile),
+    };
+    tiles = (
+      <ThresholdTiles
+        histories={histories}
+        fresh={fresh}
+        onEdit={(key) => {
+          setFresh([]);
+          setEditing(key);
+        }}
+        mode="update"
+      />
+    );
+  }
+
+  const handleConfirm = (field: ThresholdKey, value: string) => {
+    const saved = thresholds.saveField(field, value);
+    setEditing(null);
+    if (saved === undefined) return;
+    const next: ThresholdTileKey[] = [saved];
+    const updated = useUserStore.getState().profile;
+    if ((saved === 'ftp' || saved === 'weight') && updated && wattsPerKgOf(updated).length > 0) {
+      next.push('wkg');
+    }
+    setFresh(next);
+  };
 
   return (
     <Card>
       <CardHeader title={m.ui_thresholds_title()} subtitle={m.ui_thresholds_subtitle()} />
-      <ThresholdsFields thresholds={thresholds} />
-      <div className="mt-4 flex justify-end">
-        <Button disabled={!thresholds.dirty || !thresholds.valid} onClick={thresholds.save}>
+      <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
+        <ProfileFields thresholds={thresholds} />
+        <Button
+          className="justify-self-end"
+          disabled={!thresholds.dirty || !thresholds.valid}
+          onClick={thresholds.save}
+        >
           {m.ui_thresholds_save()}
         </Button>
       </div>
+      <Divider />
+      {tiles}
+      <ThresholdEditDialog
+        field={editing}
+        thresholds={thresholds}
+        onConfirm={handleConfirm}
+        onClose={() => setEditing(null)}
+      />
     </Card>
   );
 };

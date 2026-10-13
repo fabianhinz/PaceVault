@@ -113,3 +113,23 @@ html {
 *:focus {
   outline: none;
 }
+
+@utility scroll-fade {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--fade-top),
+    black calc(100% - var(--fade-bottom)),
+    transparent
+  );
+
+  &[data-fade-top] {
+    --fade-top: 24px;
+  }
+
+  &[data-fade-bottom] {
+    --fade-bottom: 32px;
+  }
+}

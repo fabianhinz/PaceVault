@@ -1,7 +1,8 @@
-import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { animate, motion, useDragControls, useMotionValue, useTransform } from 'motion/react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
+import { animate, motion, useMotionValue, useTransform } from 'motion/react';
 import { cn } from '@/lib/utils.ts';
 import { glassClass } from './Card.tsx';
+import { SheetGrabber } from './SheetGrabber.tsx';
 import {
   offsetToPosition,
   peekFadeOffsets,
@@ -10,6 +11,8 @@ import {
   settlePosition,
   sheetTapTarget,
 } from '@/lib/sheetPosition.ts';
+import { SHEET_SPRING } from '@/lib/sheetDrag.ts';
+import { useGrabberDrag } from '@/lib/hooks/useGrabberDrag.ts';
 import { m } from '@/paraglide/messages.js';
 import { SheetScrollContext } from '@/lib/hooks/useSheetScrollElement.ts';
 import { SheetPeekContext } from './sheetPeekContext.ts';
@@ -38,11 +41,7 @@ export const BottomSheetProvider = (props: { children: ReactNode }) => {
   );
 };
 
-const spring = { type: 'spring', stiffness: 400, damping: 40 } as const;
-
 const DIVIDER_SCROLL_THRESHOLD = 12;
-
-const momentum = { power: 0.3, timeConstant: 200, bounceStiffness: 400, bounceDamping: 40 };
 
 interface BottomSheetProps {
   position: number;
@@ -56,8 +55,7 @@ export const BottomSheet = (props: BottomSheetProps) => {
   const registerAbove = useContext(SheetAboveContext).registerMotion;
   const [layout, setLayout] = useState(readSheetLayout);
   const y = useMotionValue(positionToOffset(layout, props.position));
-  const dragControls = useDragControls();
-  const draggedRef = useRef(false);
+  const grabber = useGrabberDrag();
 
   const fade = peekFadeOffsets(layout);
   const peekOpacity = useTransform(y, fade, [0, 1]);
@@ -77,12 +75,12 @@ export const BottomSheet = (props: BottomSheetProps) => {
   }, []);
 
   useEffect(() => {
-    const controls = animate(y, positionToOffset(layout, props.position), spring);
+    const controls = animate(y, positionToOffset(layout, props.position), SHEET_SPRING);
     return () => controls.stop();
   }, [y, layout, props.position]);
 
   const handleTap = () => {
-    if (draggedRef.current) {
+    if (grabber.wasDragged()) {
       return;
     }
     props.onPositionChange(sheetTapTarget(props.position));
@@ -93,22 +91,15 @@ export const BottomSheet = (props: BottomSheetProps) => {
     if (peek.active) {
       next = settlePosition(next);
     }
-    animate(y, positionToOffset(layout, next), spring);
+    animate(y, positionToOffset(layout, next), SHEET_SPRING);
     props.onPositionChange(next);
   };
 
   return (
     <motion.div
       data-sheet-position={props.position.toFixed(2)}
-      drag="y"
-      dragListener={false}
-      dragControls={dragControls}
+      {...grabber.dragProps}
       dragConstraints={{ top: 0, bottom: layout.peekOffset }}
-      dragElastic={0.08}
-      dragTransition={momentum}
-      onDragStart={() => {
-        draggedRef.current = true;
-      }}
       onDragTransitionEnd={handleDragSettled}
       style={{ y, height: layout.sheetHeight }}
       className={cn(
@@ -122,15 +113,12 @@ export const BottomSheet = (props: BottomSheetProps) => {
         aria-label={
           sheetTapTarget(props.position) === 1 ? m.ui_sheet_expand() : m.ui_sheet_collapse()
         }
-        onPointerDown={(event) => {
-          draggedRef.current = false;
-          dragControls.start(event);
-        }}
+        onPointerDown={grabber.onHandlePointerDown}
         onClick={handleTap}
         style={{ height: layout.handleHeight }}
         className="flex w-full shrink-0 cursor-grab touch-none items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing"
       >
-        <span className="h-1 w-10 rounded-full bg-white/30" />
+        <SheetGrabber />
       </button>
       <div className="relative flex min-h-0 flex-1 flex-col">
         <motion.div
