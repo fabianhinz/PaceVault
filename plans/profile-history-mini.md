@@ -29,10 +29,10 @@
 - **Tile group title + subtitle instead of a hint.** The tile group gets its own title, "Your values over time" / "Deine Werte im Verlauf", and a short subtitle, "Tap a value to change it from today on." / "Tipp auf einen Wert, um ihn ab heute zu ändern."
 - **Editing uses the overlay pattern from `plans/mobile-overlays.md`.** Clicking a tile opens a dialog: `DialogContent` + `DialogHeader` / `DialogBody` / `DialogFooter`, with the grabber and the central sizing on phone, both built into `DialogContent` by mobile-overlays; this plan adds no `SheetGrabber` by hand. On desktop it is the centred dialog, not a popover. The inline input in the tile (`round2.html:295-296`) is dropped.
 - **Confirm saves immediately.** In Settings, the dialog's Save writes today's entry for that one value, the dialog closes and the tile keeps its outline. The card's Save button moves up next to gender and birth year, the only fields it still covers. On phone it sits right-aligned under the stacked fields. A divider separates that group from the tiles.
-- **Onboarding tiles:** no date notes, since every value has only its first entry. Rest HR and Max HR are required, so their tile titles get the same asterisk as the old required label (`src/components/ui/Label.tsx:19-23`).
+- **Onboarding tiles:** no date notes. Rest HR and Max HR are required, so their tile titles get the same asterisk as the old required label (`src/components/ui/Label.tsx:19-23`).
 - **Sparkline height:** 32 px, the `StatTile` chart row.
 - **One date format for every note** (owner, after an overflow repro at 390 px: relative captions and long scrub dates truncated): at rest and while scrubbing, `Intl.DateTimeFormat(getLocale(), { dateStyle: 'short' })`, output used as-is, e.g. `9/22/25` / `22.09.25`. No relative dates, no delta.
-- **A date note only for an actual change:** a value with a single entry (entered once, in onboarding or first saved in Settings) shows no date; from its second entry on, the note is the date of the latest entry. Scrubbing still shows the date of the entry in effect.
+- **A date note on every tile with a value (Settings):** the note is the date of the latest entry, including values from the profile start (their display date) and a first-time entry. Onboarding (`create`) shows no date. Scrubbing still shows the date of the entry in effect.
 - **Date-`0` values:** dated at the first session's date, else the profile's `createdAt` (the existing `displayDate`, `profileHistory.ts:31-34`).
 - **W/kg has no back-fill:** it starts at the first date where both FTP and weight really have an entry.
 - **The outline after a save stays** (as in the mockup, `round2.html:290`). It clears on the next edit or when the card unmounts.
@@ -115,7 +115,7 @@ The four plans run one after another in this order. All four edit `messages/en.j
   - `title`: the tile title keys (i18n);
   - `icon`: per the colour list in Decisions; lucide `HeartPulse`, `Heart`, `Zap`, `Timer`, `Weight` as today (`ProfileHistoryChart.tsx:13`), plus `Gauge` for W/kg (`round2.html:180`);
   - `value` / `unit`: from `valueAt(history, today)`; `--` and no unit without history. While scrubbing, the value and unit of the entry in effect at the scrubbed date;
-  - `note`: while scrubbing, `formatShortDate` of the entry in effect at the scrubbed date. Otherwise, with two or more entries, `formatShortDate` of the latest entry (with `displayDate` applied); with a single entry, nothing. Without history, the "Add …" caption on every tile (`round2.html:244-248`; Rest HR, Max HR and pace added by the owner), shown in onboarding next to the Rest HR / Max HR asterisk;
+  - `note`: while scrubbing, `formatShortDate` of the entry in effect at the scrubbed date. Otherwise, in `update` mode, `formatShortDate` of the latest entry (with `displayDate` applied); in `create` mode, nothing. Without history, the "Add …" caption on every tile (`round2.html:244-248`; Rest HR, Max HR and pace added by the owner), shown in onboarding next to the Rest HR / Max HR asterisk;
   - `children`: `ThresholdSparkline`;
   - `onClick`: `onEdit(key)` for every key except `wkg`;
   - `style`: the outline while `fresh` includes the key.
@@ -234,10 +234,10 @@ The four plans run one after another in this order. All four edit `messages/en.j
 - **E2E, `e2e/onboarding.spec.ts:48-64`** ("upload button is disabled until thresholds are valid"): the invalid max HR at `onboarding.spec.ts:59-60` now happens inside the Max HR dialog. Typing `40` shows "Min 120 bpm" there and disables the dialog's Save; Cancel closes it, and the upload button stays disabled.
 - **E2E, rewrite `e2e/onboarding.spec.ts:67-91`** ("changing FTP in settings saves it as today's entry"). It is the existing Settings journey, so it is updated rather than given a sibling:
   - seed and go to `/settings` as today (`onboarding.spec.ts:68-69`); Rest HR shows `50`;
-  - click the FTP tile: a dialog titled "FTP (watts)" opens with the input focused. Type `280` and Save: the dialog closes, the FTP tile shows `280` with no date note (its first entry) and carries the outline. No toast appears; the toast assertion at `onboarding.spec.ts:76-78` goes;
+  - click the FTP tile: a dialog titled "FTP (watts)" opens with the input focused. Type `280` and Save: the dialog closes, the FTP tile shows `280` with today's short date and carries the outline. No toast appears; the toast assertion at `onboarding.spec.ts:76-78` goes;
   - the Profile history checks (`onboarding.spec.ts:80-84`) go with the chart;
   - W/kg shows `--` and "Add weight". Set Weight to `75`: W/kg shows `3.73`;
-  - set Rest HR to `52`: its second entry, so the tile shows today's short date;
+  - set Rest HR to `52`: the tile shows today's short date;
   - reload: the FTP tile still shows `280`, and the card Save is disabled. The `Cancel` count check (`onboarding.spec.ts:90`) stays.
 - **E2E phone:** a `test.describe` in the same spec at 390×844. Opening a tile shows the floating card (x ≈ 8, right ≈ 382). Tapping the grabber ("Drag to close") closes it without changing the value. The card's geometry is already guarded by the mobile-overlays e2e; this only proves the editor uses it.
 

@@ -86,7 +86,7 @@ test.describe('Onboarding flow', () => {
 
     await expect(ftpTile).toContainText('280');
     const todayShort = new Intl.DateTimeFormat('en', { dateStyle: 'short' }).format(new Date());
-    await expect(ftpTile).not.toContainText(todayShort);
+    await expect(ftpTile).toContainText(todayShort);
     await expect(ftpTile).toHaveCSS('box-shadow', /rgba?\(/);
     await expect(page.getByRole('region', { name: /notifications/i }).locator('li')).toHaveCount(0);
 

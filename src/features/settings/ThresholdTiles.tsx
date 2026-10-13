@@ -133,7 +133,7 @@ export const ThresholdTiles = (props: ThresholdTilesProps) => {
               scrubDate,
             );
             if (entryDate !== undefined) note = formatShortDate(entryDate);
-          } else if (points.length > 1) {
+          } else if (props.mode === 'update') {
             const latest = points.at(-1);
             if (latest !== undefined) note = formatShortDate(latest.date);
           }
