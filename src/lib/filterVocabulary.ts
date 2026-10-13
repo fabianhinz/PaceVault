@@ -15,7 +15,7 @@ export const KEYWORDS = {
     '~',
     '≈',
   ],
-  km: ['km', 'kilometer'],
+  km: ['km', 'k', 'kilometer'],
   mi: ['mi', 'mile', 'miles', 'meile', 'meilen'],
   h: ['h', 'std', 'stunde', 'stunden', 'hour', 'hours', 'hr'],
   min: ['min', 'minute', 'minuten', 'minutes', 'mins'],
@@ -59,8 +59,6 @@ export const KEYWORDS = {
     'cycling',
   ],
 } satisfies Record<string, string[]>;
-
-export const STOPWORDS = ['in', 'im', 'the', 'and', 'und', 'mit', 'with', 'von', 'for'];
 
 /** Units that only match their exact spelling, never as a prefix. */
 export const EXACT_ONLY_UNITS: Unit[] = ['mi', 'y'];

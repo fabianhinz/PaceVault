@@ -31,7 +31,6 @@ export const FilterList = (props: FilterListProps) => {
   }
   const zoom = zoomTile(activeFilter);
   const showZoomHint = zoom === null && device.pointerFine && location.pathname === '/';
-  const understood = builder.reading.understood;
 
   return (
     <div className={cn('flex w-full flex-col', props.sizing === 'fill' && 'h-full')}>
@@ -85,15 +84,7 @@ export const FilterList = (props: FilterListProps) => {
                 />
               );
             })}
-            {builder.interpretations.length === 0 && understood !== null && (
-              <FilterEmptyState kind="noMatch" description={filterName(understood)} />
-            )}
-            {builder.showNotUnderstood && (
-              <FilterEmptyState
-                kind="notUnderstood"
-                description={m.ui_filter_not_understood_desc()}
-              />
-            )}
+            {builder.showNotUnderstood && <FilterEmptyState />}
           </div>
         )}
         {text === '' && zoom !== null && activeFilter !== null && (

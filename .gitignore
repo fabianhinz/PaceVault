@@ -27,7 +27,6 @@ data
 coverage
 src/paraglide
 
-mockups
 scripts/readme/out/
 
 # Playwright

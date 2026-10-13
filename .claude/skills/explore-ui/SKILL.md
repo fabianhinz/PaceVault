@@ -13,7 +13,7 @@ The owner decides; you research, mock up, relay and ask. This skill ends in a re
 - Implementation starts only on an explicit go-ahead from the owner ("lets go"). Answered questions update the plan and nothing else.
 - Subagents read the repo and write only inside `mockups/<topic>/`. They have no git write access and start no dev or preview servers. The owner commits, including `plans/<feature-name>.md`.
 - Every code reference you relay or write is a `path:line` verified against the current file.
-- Mockups live at `mockups/<topic>/index.html` (gitignored). Plans live at `plans/<feature-name>.md` (committed by the owner).
+- Mockups live at `mockups/<topic>/index.html`. Plans live at `plans/<feature-name>.md` (committed by the owner).
 
 ## Progress
 

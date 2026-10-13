@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stat Cell Text</title>
+<style>
+:root {
+  --bg: #030712;
+  --panel: #111318;
+  --line: #ffffff1a;
+  --t1: #e5e7eb;
+  --t2: #b0b4be;
+  --t3: #8b8f9a;
+  --t4: #5c616e;
+  --accent: #3b82f6;
+  --good: #4ade80;
+  --bad: #f87171;
+  --sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--t1); font: 12px/1.35 var(--sans); }
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 8px 16px; border-bottom: 1px solid var(--line); }
+header h1 { margin: 0; font-size: 14px; font-weight: 600; }
+.seg { display: flex; align-items: center; gap: 3px; }
+.seg > span { color: var(--t3); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; margin-right: 3px; }
+.seg button { background: transparent; color: var(--t3); border: 1px solid #ffffff1f; border-radius: 6px; padding: 3px 8px; font: inherit; cursor: pointer; }
+.seg button.on { background: #ffffff17; color: var(--t1); border-color: #ffffff38; }
+.seg button .rec { color: var(--good); }
+main { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 20px; padding: 12px 16px; min-height: 0; }
+.frame { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.frame > .cap { color: var(--t3); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.cells { display: grid; gap: 12px; align-content: start; }
+.cells.desktop { grid-template-columns: repeat(3, 167px); }
+.cells.phone { grid-template-columns: repeat(2, 152px); }
+.tile { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; padding: 12px; border: 1px solid var(--line); background: #ffffff0d; border-radius: 12px; min-width: 0; }
+.tile.r3 { grid-template-rows: 16px 28px 32px; grid-template-areas: "title info" "value value" "chart chart"; }
+.tile.r3w { grid-template-rows: 16px 28px 48px; grid-template-areas: "title info" "value value" "chart chart"; }
+.tile.r4 { grid-template-rows: 16px 28px 16px 32px; grid-template-areas: "title info" "value value" "crumbs crumbs" "chart chart"; }
+.ti { grid-area: title; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; color: var(--t2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 16px; }
+.ti.active { color: var(--t1); }
+.in { grid-area: info; width: 16px; height: 16px; display: grid; place-items: center; color: var(--t4); }
+.in::before { content: ''; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid currentColor; box-sizing: border-box; }
+.va { grid-area: value; display: flex; align-items: baseline; gap: 6px; min-width: 0; line-height: 28px; }
+.v { font-size: 18px; font-weight: 700; white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.v small { font-size: 12px; font-weight: 400; color: var(--t2); }
+.v small.lead { margin-right: 4px; }
+.v small.unit { margin-left: 4px; }
+.c { color: var(--t3); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; line-height: 16px; }
+.cr { grid-area: crumbs; }
+.ch { grid-area: chart; display: flex; align-items: center; min-width: 0; }
+.blk { grid-area: chart; color: var(--t3); font-size: 12px; font-variant-numeric: tabular-nums; line-height: 16px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; align-self: start; min-width: 0; }
+a.link { color: var(--accent); text-decoration: none; }
+.meter { position: relative; height: 6px; width: 100%; background: #ffffff0d; border-radius: 9px; }
+.meter > i { position: absolute; top: 0; bottom: 0; background: #ffffff59; border-radius: 9px; }
+.meter > b { position: absolute; top: -2px; width: 1px; height: 10px; background: #ffffff66; transform: translateX(-50%); }
+.meter > b.tick { width: 2px; background: var(--t1); }
+.bars { display: flex; align-items: flex-end; gap: 4px; height: 32px; width: 100%; }
+.bars > span { flex: 1; background: #ffffff33; border-radius: 3px; }
+.bars > span.hl { background: #ffffffb3; }
+.zones { display: flex; height: 16px; width: 100%; border-radius: 6px; overflow: hidden; background: #ffffff0d; }
+.zones > span { height: 100%; }
+.zones > span.dim { opacity: .3; }
+.side { display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); gap: 10px; min-height: 0; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.card h2 { margin: 0 0 6px; font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .06em; display: flex; justify-content: space-between; gap: 8px; }
+.card p { margin: 0; color: var(--t2); font-size: 11px; line-height: 1.3; }
+.card p + p { margin-top: 4px; }
+.card code { font: 11px ui-monospace, Menlo, monospace; color: #cbd5e1; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 11px; }
+th, td { text-align: left; padding: 2px 4px; border-bottom: 1px solid #ffffff10; vertical-align: top; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+th { color: var(--t3); font-weight: 500; }
+td.ok { color: var(--good); }
+td.cut { color: var(--bad); white-space: normal; }
+table.where td { white-space: normal; }
+.new { color: #fbbf24; }
+.probe { position: absolute; left: -10000px; top: 0; visibility: hidden; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header id="toolbar"></header>
+  <main>
+    <section class="frame"><div class="cap" id="capD"></div><div class="cells desktop" id="desktop"></div></section>
+    <section class="frame"><div class="cap" id="capP"></div><div class="cells phone" id="phone"></div></section>
+    <aside class="side" id="side"></aside>
+  </main>
+</div>
+<div class="probe" id="probe"></div>
+<script>
+const REAL = {"ride":{"name":"Starnberger See long ride","sport":"cycling","stats":{"sport":"cycling","calories":{"method":"power","kcal":1590.9155057816022,"uncertainty":0.15},"movingTime":{"movingS":11724,"elapsedS":11849,"stoppedS":125,"coastingS":776},"intensity":{"factor":0.5904761904761905},"variability":{"index":1.0508474576271187,"np":124,"avgPower":118},"peaks":{"slots":[{"seconds":5,"watts":172.8},{"seconds":60,"watts":168},{"seconds":300,"watts":151.6},{"seconds":1200,"watts":127.8},{"seconds":3600,"watts":123}],"highlight":3},"hrZones":{"dominant":1,"totalSeconds":11849,"zones":[{"zone":"Z1","name":"recovery","seconds":901,"color":"#60a5fa"},{"zone":"Z2","name":"aerobic","seconds":6708,"color":"#34d399"},{"zone":"Z3","name":"tempo","seconds":3923,"color":"#fbbf24"},{"zone":"Z4","name":"threshold","seconds":317,"color":"#f97316"},{"zone":"Z5","name":"vo2max","seconds":0,"color":"#ef4444"}]},"decoupling":{"ratio":"powerHr","firstHalf":0.9029583320110438,"secondHalf":0.8370100878080659,"pct":7.303575576527418}}},"run":{"name":"Olympiapark long run","sport":"running","stats":{"sport":"running","calories":{"method":"running","kcal":984.1417533795899,"uncertainty":0.15},"movingTime":{"movingS":5544,"elapsedS":5544,"stoppedS":0},"stepLength":{"metres":1.0114958568370498,"stepsPerMinute":158.75951650730096},"hrZones":{"dominant":1,"totalSeconds":5544,"zones":[{"zone":"Z1","name":"recovery","seconds":45,"color":"#60a5fa"},{"zone":"Z2","name":"aerobic","seconds":4956,"color":"#34d399"},{"zone":"Z3","name":"tempo","seconds":543,"color":"#fbbf24"},{"zone":"Z4","name":"threshold","seconds":0,"color":"#f97316"},{"zone":"Z5","name":"vo2max","seconds":0,"color":"#ef4444"}]},"decoupling":{"ratio":"gapHr","firstHalf":1.2038968680436466,"secondHalf":1.1733995639604926,"pct":2.5332156676105186}}}};
+const MSG = {"en":{"ui_more_stats_calories":"Calories","ui_more_stats_moving":"Moving time","ui_more_stats_intensity":"Intensity","ui_more_stats_peaks":"Peak power","ui_more_stats_step":"Step length","ui_more_stats_zones":"HR zones","ui_more_stats_decoupling":"Decoupling","ui_more_stats_well_paced":"Well paced","ui_more_stats_drifting":"Drifting","ui_more_stats_np":"NP {watts} W","ui_more_stats_avg_power":"Avg {watts} W","ui_more_stats_add_weight":"Add your weight","ui_zone_recovery":"Recovery","ui_zone_aerobic":"Aerobic","ui_zone_tempo":"Tempo","ui_zone_threshold":"Threshold","ui_zone_vo2max":"VO2max"},"de":{"ui_more_stats_calories":"Kalorien","ui_more_stats_moving":"In Bewegung","ui_more_stats_intensity":"Intensität","ui_more_stats_peaks":"Spitzen","ui_more_stats_step":"Schritt","ui_more_stats_zones":"HF-Zonen","ui_more_stats_decoupling":"Drift","ui_more_stats_well_paced":"Gleichmäßig","ui_more_stats_drifting":"Driftet","ui_more_stats_np":"NP {watts} W","ui_more_stats_avg_power":"Ø {watts} W","ui_more_stats_add_weight":"Gewicht eintragen","ui_zone_recovery":"Erholung","ui_zone_aerobic":"Aerob","ui_zone_tempo":"Tempo","ui_zone_threshold":"Schwelle","ui_zone_vo2max":"VO2max"}};
+const CRUMB_MSG = {
+  en: { of: 'of {time}', coast: 'coast {time}', stop: 'stop {time}' },
+  de: { of: 'von {time}', coast: 'Rollen {time}', stop: 'Stand {time}' },
+};
+
+const clone = (value) => JSON.parse(JSON.stringify(value));
+const SCENARIOS = {
+  ride: { label: 'Ride', session: REAL.ride },
+  run: { label: 'Run', session: REAL.run },
+  bare: {
+    label: 'Ride · no FTP, no weight',
+    session: (() => {
+      const s = clone(REAL.ride);
+      delete s.stats.intensity;
+      s.stats.calories = { blockedBy: 'weight' };
+      return s;
+    })(),
+  },
+  stress: {
+    label: 'Stress 10 h+ (synthetic)',
+    session: (() => {
+      const s = clone(REAL.ride);
+      s.stats.movingTime = { movingS: 36924, elapsedS: 44249, stoppedS: 4520, coastingS: 3733 };
+      s.stats.calories.kcal = 10236;
+      return s;
+    })(),
+  },
+};
+
+const state = { variant: 'C', lang: 'en', scenario: 'ride', selected: false };
+
+const fmt = (lang) => {
+  const loc = lang;
+  const int = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 });
+  const two = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const dec = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: 'negative' });
+  const secs = new Intl.NumberFormat(loc, { style: 'unit', unit: 'second' });
+  const mins = new Intl.NumberFormat(loc, { style: 'unit', unit: 'minute' });
+  const raceTime = (seconds) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.round(seconds % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+  return {
+    int: (v) => int.format(v),
+    two: (v) => two.format(v),
+    dec: (v) => dec.format(v),
+    dur: (v) => raceTime(Math.round(v)),
+    pct: (share) => int.format(share * 100),
+    win: (s) => (s < 60 ? secs.format(s) : mins.format(s / 60)),
+  };
+};
+
+const fill = (template, values) => Object.entries(values).reduce((text, [k, v]) => text.replace(`{${k}}`, v), template);
+
+const peakScale = (watts, heightPx) => {
+  const known = watts.filter((w) => w !== undefined);
+  const hi = Math.max(0, ...known);
+  const lo = Math.min(...known.filter((w) => w > 0)) / 2;
+  return watts.map((w) => {
+    if (w === undefined) return undefined;
+    if (w <= 0) return 0;
+    return Math.max(0, Math.min(heightPx, (heightPx * Math.log(w / lo)) / Math.log(hi / lo)));
+  });
+};
+
+const buildCells = (lang, session, selected) => {
+  const t = MSG[lang];
+  const k = CRUMB_MSG[lang];
+  const f = fmt(lang);
+  const s = session.stats;
+  const out = [];
+  if (s.calories) {
+    if ('blockedBy' in s.calories) {
+      out.push({ id: 'calories', title: t.ui_more_stats_calories, value: '--', unit: 'kcal', link: t.ui_more_stats_add_weight });
+    } else {
+      out.push({ id: 'calories', title: t.ui_more_stats_calories, value: f.int(Math.round(s.calories.kcal / 10) * 10), unit: 'kcal', crumbs: [`±${f.pct(s.calories.uncertainty)} %`], chart: { kind: 'range', u: s.calories.uncertainty } });
+    }
+  }
+  if (s.movingTime) {
+    const m = s.movingTime;
+    const crumbs = [fill(k.of, { time: f.dur(m.elapsedS) })];
+    if (m.coastingS !== undefined) crumbs.push(fill(k.coast, { time: f.dur(m.coastingS) }));
+    crumbs.push(fill(k.stop, { time: f.dur(m.stoppedS) }));
+    out.push({ id: 'moving', title: t.ui_more_stats_moving, value: f.dur(m.movingS), crumbs });
+  }
+  if (s.intensity) {
+    const crumbs = [];
+    if (s.variability) crumbs.push(`VI ${f.two(s.variability.index)}`);
+    out.push({ id: 'intensity', title: t.ui_more_stats_intensity, lead: 'IF', value: f.two(s.intensity.factor), crumbs, chart: { kind: 'meter', fill: s.intensity.factor / 1.2, mark: 1 / 1.2 } });
+  } else if (s.variability) {
+    out.push({ id: 'intensity', title: t.ui_more_stats_intensity, lead: 'VI', value: f.two(s.variability.index), crumbs: [fill(t.ui_more_stats_np, { watts: f.int(s.variability.np) }), fill(t.ui_more_stats_avg_power, { watts: f.int(s.variability.avgPower) })] });
+  }
+  if (s.peaks) {
+    const watts = s.peaks.slots.map((slot) => slot.watts);
+    const idx = selected ? 1 : s.peaks.highlight;
+    const slot = s.peaks.slots[idx];
+    out.push({ id: 'peaks', title: t.ui_more_stats_peaks, value: f.int(slot.watts), unit: 'W', crumbs: [f.win(slot.seconds)], active: selected, chart: { kind: 'bars', heights: peakScale(watts, 32), hl: idx } });
+  }
+  if (s.stepLength) {
+    out.push({ id: 'step', title: t.ui_more_stats_step, value: f.two(s.stepLength.metres), unit: 'm', crumbs: [`${f.int(s.stepLength.stepsPerMinute)} spm`] });
+  }
+  if (s.hrZones) {
+    const z = s.hrZones;
+    const idx = selected ? 2 : z.dominant;
+    const zone = z.zones[idx];
+    const share = `${f.pct(zone.seconds / z.totalSeconds)} %`;
+    let crumbs = [share];
+    if (selected) crumbs = [t[`ui_zone_${zone.name}`], f.dur(zone.seconds)];
+    out.push({ id: 'zones', title: t.ui_more_stats_zones, value: zone.zone, crumbs, active: selected, chart: { kind: 'zones', zones: z.zones, total: z.totalSeconds, hl: selected ? idx : null } });
+  }
+  if (s.decoupling) {
+    const verdict = s.decoupling.pct < 5 ? t.ui_more_stats_well_paced : t.ui_more_stats_drifting;
+    out.push({ id: 'decoupling', title: t.ui_more_stats_decoupling, value: f.dec(s.decoupling.pct), unit: '%', crumbs: [verdict], chart: { kind: 'meter', fill: s.decoupling.pct / 10, mark: 0.5 } });
+  }
+  return out;
+};
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+const chartHtml = (chart) => {
+  if (chart.kind === 'range') {
+    const pos = (x) => clamp01((x - 0.7) / 0.6) * 100;
+    return `<div class="meter"><i style="left:${pos(1 - chart.u)}%;width:${pos(1 + chart.u) - pos(1 - chart.u)}%"></i><b class="tick" style="left:${pos(1)}%"></b></div>`;
+  }
+  if (chart.kind === 'meter') return `<div class="meter"><i style="left:0;width:${clamp01(chart.fill) * 100}%"></i><b style="left:${chart.mark * 100}%"></b></div>`;
+  if (chart.kind === 'bars') return `<div class="bars">${chart.heights.map((h, i) => (h === undefined ? '<span style="background:none"></span>' : `<span class="${i === chart.hl ? 'hl' : ''}" style="height:${h}px"></span>`)).join('')}</div>`;
+  return `<div class="zones">${chart.zones.map((z, i) => `<span class="${chart.hl !== null && i !== chart.hl ? 'dim' : ''}" style="width:${(z.seconds / chart.total) * 100}%;background:${z.color}"></span>`).join('')}</div>`;
+};
+
+const nb = (text) => text.replace(/ /g, ' ');
+const crumbText = (cell) => (cell.crumbs ?? []).map(nb).join('\u00a0· ');
+const valueHtml = (cell) => `<span class="v">${cell.lead ? `<small class="lead">${cell.lead}</small>` : ''}${cell.value}${cell.unit ? `<small class="unit">${cell.unit}</small>` : ''}</span>`;
+const crumbHtml = (cell, cls) => {
+  if (cell.link) return `<span class="${cls}" data-crumb><a class="link" href="#settings">${cell.link}</a></span>`;
+  return `<span class="${cls}" data-crumb>${crumbText(cell)}</span>`;
+};
+
+const VARIANTS = {
+  A: {
+    tab: 'A · value + crumb row',
+    rows: 'r4',
+    note: [
+      '<b>4 fixed rows:</b> title | ⓘ · value (h3 + unit, left) · one crumb line (left, " · ", truncates at the end) · chart.',
+      'Every cell is 104 px of content (today 84). Text cells leave the chart row empty, so crumbs and charts line up across a row.',
+    ],
+    render: (cell) => `${valueWrap(cell)}${crumbHtml(cell, 'c cr')}${cell.chart ? `<div class="ch">${chartHtml(cell.chart)}</div>` : ''}`,
+  },
+  B: {
+    tab: 'B · one left column, crumbs after value',
+    rows: 'r3',
+    note: [
+      '<b>3 rows, nothing right-aligned:</b> title | ⓘ · value followed by its crumbs on the same baseline (crumbs truncate) · chart.',
+      'Height stays 84 px. Text cells leave row 3 empty; long crumbs (Moving time) run out of room next to a wide value.',
+    ],
+    render: (cell) => `<div class="va">${valueHtml(cell)}${crumbHtml(cell, 'c')}</div>${cell.chart ? `<div class="ch">${chartHtml(cell.chart)}</div>` : ''}`,
+  },
+  C: {
+    tab: 'C · crumbs fill the free slot',
+    rec: true,
+    rows: 'r3w',
+    note: [
+      '<b>3 rows, left-aligned:</b> chart cells put their one short crumb after the value and keep the chart on row 3; text cells (no chart) put all crumbs on row 3, wrapping at " · " up to 3 lines.',
+      'Row 3 is 48 px (3 caption lines), so the tile is 100 px (today 84). Charts sit in the same 48 px row, centred, so text and chart cells still line up.',
+    ],
+    render: (cell) => {
+      if (cell.chart) return `<div class="va">${valueHtml(cell)}${crumbHtml(cell, 'c')}</div><div class="ch">${chartHtml(cell.chart)}</div>`;
+      return `${valueWrap(cell)}${crumbHtml(cell, 'blk')}`;
+    },
+  },
+};
+
+const valueWrap = (cell) => `<div class="va">${valueHtml(cell)}</div>`;
+
+const tileHtml = (variant, cell) => `<div class="tile ${VARIANTS[variant].rows}" data-cell="${cell.id}">
+  <span class="ti ${cell.active ? 'active' : ''}">${cell.title}</span><span class="in"></span>
+  ${VARIANTS[variant].render(cell)}
+</div>`;
+
+const placement = (variant, cell) => {
+  const crumbs = cell.link ? `link "${cell.link}"` : crumbText(cell).replace(/ /g, ' ');
+  const value = `${cell.lead ? `${cell.lead} ` : ''}${cell.value}${cell.unit ? ` ${cell.unit}` : ''}`;
+  if (variant === 'A') return [value, crumbs, cell.chart ? 'chart' : '—'];
+  if (variant === 'B') return [`${value}  ${crumbs}`, '—', cell.chart ? 'chart' : '—'];
+  if (cell.chart) return [`${value}  ${crumbs}`, '—', 'chart'];
+  return [value, '—', crumbs];
+};
+
+const measure = (variant, lang, device, scenario, selected) => {
+  const probe = document.getElementById('probe');
+  probe.innerHTML = `<div class="cells ${device}">${buildCells(lang, SCENARIOS[scenario].session, selected).map((c) => tileHtml(variant, c)).join('')}</div>`;
+  const cuts = [];
+  probe.querySelectorAll('.tile').forEach((tile) => {
+    const box = tile.getBoundingClientRect();
+    const right = box.right - 12 - 1;
+    const v = tile.querySelector('.v');
+    if (v.getBoundingClientRect().right > right + 0.5) cuts.push(`value ${v.textContent}`);
+    const crumb = tile.querySelector('[data-crumb]');
+    if (crumb && crumb.textContent) {
+      const overW = crumb.scrollWidth > crumb.clientWidth + 1;
+      const overH = crumb.scrollHeight > crumb.clientHeight + 1;
+      if (overW || overH) cuts.push(crumb.textContent.replace(/ /g, ' '));
+    }
+  });
+  return cuts;
+};
+
+const fitMatrix = () => {
+  const result = {};
+  for (const variant of Object.keys(VARIANTS)) {
+    result[variant] = {};
+    for (const lang of ['en', 'de']) {
+      for (const device of ['desktop', 'phone']) {
+        const cuts = new Set();
+        for (const scenario of Object.keys(SCENARIOS)) {
+          for (const selected of [false, true]) {
+            measure(variant, lang, device, scenario, selected).forEach((c) => cuts.add(`${scenario === 'stress' ? '[10 h+] ' : ''}${c}`));
+          }
+        }
+        result[variant][`${lang} ${device}`] = [...cuts];
+      }
+    }
+  }
+  document.getElementById('probe').innerHTML = '';
+  return result;
+};
+
+const seg = (key, label, options) => `<div class="seg"><span>${label}</span>${options.map((o) => `<button type="button" data-set="${key}" data-value="${o[0]}" class="${String(state[key]) === String(o[0]) ? 'on' : ''}">${o[1]}</button>`).join('')}</div>`;
+
+let FIT = null;
+
+const render = () => {
+  document.getElementById('toolbar').innerHTML = [
+    '<h1>Stat tile · text layout · real demo data</h1>',
+    seg('variant', 'Variant', Object.entries(VARIANTS).map(([key, v]) => [key, `${v.tab}${v.rec ? ' <span class="rec">· recommended</span>' : ''}`])),
+    seg('scenario', 'Data', Object.entries(SCENARIOS).map(([key, s]) => [key, s.label])),
+    seg('selected', 'Chart state', [[false, 'Default'], [true, 'Segment selected']]),
+    seg('lang', 'Copy', [['en', 'EN'], ['de', 'DE']]),
+  ].join('');
+  const cells = buildCells(state.lang, SCENARIOS[state.scenario].session, state.selected);
+  document.getElementById('capD').textContent = 'Desktop · 3 columns · tile 167 px (141 usable)';
+  document.getElementById('capP').textContent = 'Phone · 2 columns · tile 152 px (126 usable)';
+  document.getElementById('desktop').innerHTML = cells.map((c) => tileHtml(state.variant, c)).join('');
+  document.getElementById('phone').innerHTML = cells.map((c) => tileHtml(state.variant, c)).join('');
+  if (!FIT) FIT = fitMatrix();
+  window.FIT = FIT;
+  const v = VARIANTS[state.variant];
+  const fitRow = (key) => {
+    const row = FIT[key];
+    return `<tr><td>${key}</td>${['en desktop', 'en phone', 'de desktop', 'de phone'].map((col) => (row[col].length === 0 ? '<td class="ok">fits</td>' : `<td class="cut">${row[col].length} cut</td>`)).join('')}</tr>`;
+  };
+  const cutList = Object.entries(FIT[state.variant]).filter(([, cuts]) => cuts.length > 0).map(([col, cuts]) => `<p><b>${col}:</b> ${cuts.join(' | ')}</p>`).join('') || '<p>Nothing is cut in any scenario.</p>';
+  document.getElementById('side').innerHTML = `
+    <div class="card"><h2><span>${v.tab}</span><span>grid areas tile</span></h2>${v.note.map((n) => `<p>${n}</p>`).join('')}
+      <p><span class="new">New copy:</span> crumbs <code>${CRUMB_MSG[state.lang].of}</code>, <code>${CRUMB_MSG[state.lang].coast}</code>, <code>${CRUMB_MSG[state.lang].stop}</code>; everything else is today’s <code>messages/${state.lang}.json</code>.</p></div>
+    <div class="card"><h2><span>What goes where · ${SCENARIOS[state.scenario].label} · ${state.lang.toUpperCase()}</span></h2>
+      <table class="where"><colgroup><col style="width:20%"><col style="width:38%"><col style="width:22%"><col style="width:20%"></colgroup>
+      <tr><th>Cell</th><th>value row</th><th>crumb row</th><th>row 3</th></tr>
+      ${cells.map((c) => { const p = placement(state.variant, c); return `<tr><td>${c.title}</td><td>${p[0]}</td><td>${p[1]}</td><td>${p[2]}</td></tr>`; }).join('')}
+      </table></div>
+    <div class="card"><h2><span>Fit · all data sets · default + selected</span><span>measured live</span></h2>
+      <table><tr><th></th><th>EN desktop</th><th>EN phone</th><th>DE desktop</th><th>DE phone</th></tr>${Object.keys(VARIANTS).map(fitRow).join('')}</table></div>
+    <div class="card" style="overflow:hidden"><h2><span>Cut strings · variant ${state.variant}</span></h2>${cutList}</div>`;
+};
+
+document.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-set]');
+  if (!btn) return;
+  const key = btn.dataset.set;
+  let value = btn.dataset.value;
+  if (key === 'selected') value = value === 'true';
+  state[key] = value;
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

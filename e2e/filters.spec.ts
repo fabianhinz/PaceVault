@@ -75,18 +75,29 @@ test.describe('Dock filters', () => {
     await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('shows not understood once typing stops, apart from no match, with the input in place', async ({
-    page,
-  }) => {
+  test('shows not understood once typing stops, with the input in place', async ({ page }) => {
     await openFilterList(page);
     await expectFilterInputStaysPut(page, 'isar');
-    await page.getByLabel(/describe a filter/i).fill('isar');
+    await page.getByLabel(/describe a filter/i).fill('"isar"');
     await page
       .getByTestId('filter-builder-tiles')
       .getByRole('button', { name: 'Apply filter: “isar”' })
       .click();
     await expect(sessionItems(page)).toHaveCount(1);
     await expect(sessionItems(page).first()).toContainText('Isar Loop');
+  });
+
+  test('suggests an understood filter even when no session matches it', async ({ page }) => {
+    await openFilterList(page);
+    const input = page.getByLabel(/describe a filter/i);
+    await input.fill('3km');
+    const tile = page
+      .getByTestId('filter-builder-tiles')
+      .getByRole('button', { name: 'Apply filter: about 3 km', exact: true });
+    await expect(tile).toBeVisible();
+    await tile.click();
+    await expect(input).toHaveValue('');
+    await expect(sessionItems(page)).toHaveCount(0);
   });
 
   test('searches quoted text only in session names', async ({ page }) => {
@@ -98,6 +109,15 @@ test.describe('Dock filters', () => {
       .click();
     await expect(sessionItems(page)).toHaveCount(1);
     await expect(sessionItems(page).first()).toContainText('Mid Ride');
+
+    const input = page.getByLabel(/describe a filter/i);
+    await input.fill('"LOOP isar"');
+    await page
+      .getByTestId('filter-builder-tiles')
+      .getByRole('button', { name: 'Apply filter: “loop isar”', exact: true })
+      .click();
+    await expect(sessionItems(page)).toHaveCount(1);
+    await expect(sessionItems(page).first()).toContainText('Isar Loop');
   });
 
   test('shows a chart zoom as a row that clears the whole filter', async ({ page }) => {

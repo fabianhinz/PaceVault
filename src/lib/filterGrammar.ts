@@ -1,11 +1,10 @@
-import type { Sport, TrainingSession } from '@/packages/engine/types.ts';
+import type { Sport } from '@/packages/engine/types.ts';
 import { type FilterTime, type FilterTimeUnit, toDayKey } from '@/lib/timeRange.ts';
 import {
   type FilterCriteria,
   emptyCriteria,
   filterKey,
   isEmptyCriteria,
-  matchesFilters,
 } from '@/lib/savedFilters.ts';
 import {
   EXACT_ONLY_UNITS,
@@ -14,29 +13,15 @@ import {
   MONTH_NAMES,
   PREFIX_UNIT_ORDER,
   type QuantityUnit,
-  STOPWORDS,
   type Unit,
-  normalizeText,
 } from '@/lib/filterVocabulary.ts';
-
-type GrammarSession = Pick<
-  TrainingSession,
-  'sport' | 'date' | 'duration' | 'distance' | 'elevationGain' | 'isPlanned' | 'name'
->;
-
-export interface FilterReading {
-  interpretations: FilterCriteria[];
-  understood: FilterCriteria | null;
-}
 
 interface Token {
   word: string;
   quoted: boolean;
 }
 
-const MAX_INTERPRETATIONS = 3;
 const MILE_KM = 1.609;
-const MIN_NAME_LENGTH = 2;
 
 const GUESS_LIMITS: Record<QuantityUnit, (n: number) => boolean> = {
   km: (n) => n > 0 && n <= 400,
@@ -74,6 +59,8 @@ const SPORT_ORDER: Sport[] = ['running', 'cycling'];
 const isNumberWord = (word: string): boolean => /^\d+(?:[.,]\d+)?$/.test(word);
 
 const CLOCK_PATTERN = /^(\d{1,2}):([0-5]\d)$/;
+
+const REPEATS_PATTERN = /(?<![\d.,])\d+(?:[.,]\d+)?\s*[x×]\s*\d+(?:[.,]\d+)?(?!\d)/giu;
 
 const toNumber = (word: string): number => Number(word.replace(',', '.'));
 
@@ -137,6 +124,7 @@ const splitQuoted = (text: string): Segment[] => {
 
 const tokenizePlain = (text: string): Token[] =>
   text
+    .replace(REPEATS_PATTERN, ' ')
     .replace(/["“”„‘»«]|(?<!\p{L})['’]|['’](?!\p{L})/gu, ' ')
     .replace(/[–—]/g, '-')
     .replace(/·/g, ' ')
@@ -368,7 +356,7 @@ const compoundMinutes = (
 
 interface ParseResult {
   combos: FilterCriteria[];
-  leftover: Token[];
+  names: string[];
 }
 
 const parse = (text: string, now: number): ParseResult => {
@@ -383,7 +371,7 @@ const parse = (text: string, now: number): ParseResult => {
   const ambiguous: Ambiguous[] = [];
   const months: number[] = [];
   const years: Token[] = [];
-  const leftover: Token[] = [];
+  const names: string[] = [];
   const currentYear = new Date(now).getFullYear();
   const currentMonth = new Date(now).getMonth();
 
@@ -420,7 +408,7 @@ const parse = (text: string, now: number): ParseResult => {
       continue;
     }
     if (token.quoted) {
-      leftover.push(token);
+      names.push(token.word);
       continue;
     }
     const word = token.word;
@@ -500,9 +488,7 @@ const parse = (text: string, now: number): ParseResult => {
           calendarUnit = 'week';
         }
         setTime({ kind: 'calendar', unit: calendarUnit, ago: 0 });
-        continue;
       }
-      leftover.push(token);
       continue;
     }
 
@@ -516,10 +502,6 @@ const parse = (text: string, now: number): ParseResult => {
       if (isRelativeUnit(unit)) {
         i++;
         setTime({ kind: 'relative', amount: ROLLING_DAYS[unit], unit: 'day' });
-        continue;
-      }
-      if (next === undefined || !isNumberWord(next)) {
-        leftover.push(token);
       }
       continue;
     }
@@ -540,9 +522,7 @@ const parse = (text: string, now: number): ParseResult => {
       if (isPastYear(next)) {
         i++;
         setTime({ kind: 'since', from: toDayKey(Number(next), 0, 1) });
-        continue;
       }
-      leftover.push(token);
       continue;
     }
 
@@ -552,13 +532,9 @@ const parse = (text: string, now: number): ParseResult => {
       continue;
     }
     const sport = sportOf(word);
-    if (sport !== null) {
-      if (fixed.sport === null) {
-        fixed.sport = sport;
-      }
-      continue;
+    if (sport !== null && fixed.sport === null) {
+      fixed.sport = sport;
     }
-    leftover.push(token);
   }
 
   const firstMonth = months[0];
@@ -588,72 +564,26 @@ const parse = (text: string, now: number): ParseResult => {
       combos = next;
     }
   }
-  return { combos, leftover };
+  return { combos, names };
 };
 
-const nameWords = (leftover: Token[], sessionNames: string[]): string[] => {
-  const names: string[] = [];
-  for (const token of leftover) {
-    if (token.quoted) {
-      names.push(token.word);
-      continue;
-    }
-    if (STOPWORDS.includes(token.word)) {
-      continue;
-    }
-    const normalized = normalizeText(token.word);
-    if (
-      normalized.length >= MIN_NAME_LENGTH &&
-      sessionNames.some((name) => name.includes(normalized))
-    ) {
-      names.push(token.word);
-    }
-  }
-  return names;
-};
-
-export const interpretFilterText = (
-  text: string,
-  sessions: GrammarSession[],
-  now: number,
-): FilterReading => {
-  const recorded = sessions.filter((session) => !session.isPlanned);
-  const sessionNames: string[] = [];
-  for (const session of recorded) {
-    if (session.name !== undefined) {
-      sessionNames.push(normalizeText(session.name));
-    }
-  }
+export const interpretFilterText = (text: string, now: number): FilterCriteria[] => {
   const parsed = parse(text, now);
-  const names = nameWords(parsed.leftover, sessionNames);
   let name: string | null = null;
-  if (names.length > 0) {
-    name = names.join(' ');
+  if (parsed.names.length > 0) {
+    name = parsed.names.join(' ');
   }
 
   const seen = new Set<string>();
   const interpretations: FilterCriteria[] = [];
-  let understood: FilterCriteria | null = null;
   for (const combo of parsed.combos) {
     const criteria = { ...combo, name };
-    if (isEmptyCriteria(criteria)) {
-      continue;
-    }
-    if (understood === null) {
-      understood = criteria;
-    }
     const key = filterKey(criteria);
-    if (seen.has(key)) {
+    if (isEmptyCriteria(criteria) || seen.has(key)) {
       continue;
     }
     seen.add(key);
-    if (!recorded.some((session) => matchesFilters(session, criteria, now))) {
-      continue;
-    }
     interpretations.push(criteria);
-    if (interpretations.length === MAX_INTERPRETATIONS) {
-      break;
-    }
   }
-  return { interpretations, understood };
+  return interpretations;
 };

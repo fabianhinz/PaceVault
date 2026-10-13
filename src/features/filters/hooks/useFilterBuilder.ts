@@ -3,19 +3,16 @@ import { interpretFilterText } from '@/lib/filterGrammar.ts';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
 import type { FilterCriteria } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-import { useSessionsStore } from '@/store/sessions.ts';
 
 const NOT_UNDERSTOOD_DEBOUNCE_MS = 600;
 
 export const useFilterBuilder = (open: boolean, onClose: () => void) => {
-  const sessions = useSessionsStore((s) => s.sessions);
   const [text, setText] = useState('');
   const tilesRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const reading = useMemo(() => interpretFilterText(text, sessions, Date.now()), [text, sessions]);
-  const interpretations = reading.interpretations;
-  const notUnderstood = text !== '' && reading.understood === null;
+  const interpretations = useMemo(() => interpretFilterText(text, Date.now()), [text]);
+  const notUnderstood = text !== '' && interpretations.length === 0;
   let notUnderstoodText = '';
   if (notUnderstood) {
     notUnderstoodText = text;
@@ -75,7 +72,6 @@ export const useFilterBuilder = (open: boolean, onClose: () => void) => {
   return {
     text,
     setText,
-    reading,
     interpretations,
     showNotUnderstood,
     select,

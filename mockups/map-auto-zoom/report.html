@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map Auto-Zoom Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0d12;--surface:rgba(255,255,255,.04);--surface-2:rgba(255,255,255,.07);--border:rgba(255,255,255,.09);
+  --text:#e7e9ee;--text-2:#a3a9b6;--text-3:#6b7280;--accent:#60a5fa;
+  --good:#4ade80;--good-bg:rgba(74,222,128,.12);--bad:#f87171;--bad-bg:rgba(248,113,113,.13);--deb:#facc15;--deb-bg:rgba(250,204,21,.12);
+  --info:#94a3b8;--info-bg:rgba(148,163,184,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 Inter,system-ui,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:32px 16px 80px}
+h1{font-size:26px;margin:0 0 4px;font-weight:700}
+h2{font-size:18px;margin:40px 0 12px;font-weight:600;border-bottom:1px solid var(--border);padding-bottom:8px}
+.sub{color:var(--text-2);margin:0 0 24px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px}
+.counts{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0 16px}
+.count{flex:1 1 140px;border-radius:12px;padding:12px 14px;border:1px solid var(--border)}
+.count b{display:block;font-size:26px}
+.count.good{background:var(--good-bg);color:var(--good)}
+.count.bad{background:var(--bad-bg);color:var(--bad)}
+.count.deb{background:var(--deb-bg);color:var(--deb)}
+.count.info{background:var(--info-bg);color:var(--info)}
+.count span{color:var(--text-2);font-size:12px}
+ol.top{margin:6px 0 0;padding-left:20px}
+ol.top li{margin:6px 0}
+code,.loc a{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px}
+code{background:var(--surface-2);padding:1px 5px;border-radius:5px}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.filters{position:sticky;top:0;z-index:5;background:rgba(11,13,18,.92);backdrop-filter:blur(8px);padding:10px 0;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.filters button{background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:999px;padding:6px 14px;font:500 13px Inter,sans-serif;cursor:pointer}
+.filters button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.grid{display:grid;gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.card-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.card h3{margin:0;font-size:15px;font-weight:600;flex:1 1 300px}
+.badge{font:600 11px Inter,sans-serif;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.badge.GOOD{background:var(--good-bg);color:var(--good)}
+.badge.JARRING{background:var(--bad-bg);color:var(--bad)}
+.badge.DEBATABLE{background:var(--deb-bg);color:var(--deb)}
+.badge.NOMOVE{background:var(--info-bg);color:var(--info)}
+.meta{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.chip{font-size:11.5px;color:var(--text-2);background:var(--surface-2);border-radius:6px;padding:2px 8px}
+dl{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;margin:0}
+dt{color:var(--text-3);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+dd{margin:0;color:var(--text)}
+.loc a{display:inline-block;margin:0 10px 2px 0;word-break:break-all}
+.direction{color:var(--text-2);font-style:italic}
+.hidden{display:none}
+@media (max-width:600px){dl{grid-template-columns:1fr}dt{padding-top:6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Map auto-zoom audit</h1>
+<p class="sub">PaceVault, branch <code>chore/housekeeping</code>, 2026-10-13. Every place the map camera moves without the user panning or zooming it directly. All entries are <b>inferred from code</b> (static analysis); nothing was observed in a running browser.</p>
+
+<div class="panel">
+  <div class="counts" id="counts"></div>
+  <p><b>Root cause behind most jarring entries:</b> there are only three camera hooks
+  (<a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useMapCameraEffect.ts:18">useMapCameraEffect.ts:18-72</a>,
+  <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useLapCameraEffect.ts:34">useLapCameraEffect.ts:34-50</a>,
+  <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useGeolocationCameraEffect.ts:11">useGeolocationCameraEffect.ts:11-27</a>).
+  The first two re-fit whenever an <i>array or object reference</i> changes, not when the user asks for a new view. <code>tracks</code> is rebuilt on every change to the sessions store, GPS data, filter, opened session or trip focus
+  (<a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useMapTracks.ts:86">useMapTracks.ts:86</a>), and GPS data is re-read after every sessions change
+  (<a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useGpsBackfill.ts:61">useGpsBackfill.ts:61</a>). So one data change usually means <b>two fits</b>. No fit checks whether the user has moved the map: every re-fit throws away a manual pan or zoom. Every fit is animated (800–1200 ms), and a second call in the middle of an animation starts the easing again, which shows as a stutter.</p>
+  <p><b>Worst offenders</b></p>
+  <ol class="top">
+    <li><b>Background data changes re-fit the map.</b> An intervals.icu poll, an import batch, a reprocess or opening an unseen session all change the sessions store, which leads to a re-fit and then a second one after the GPS reload. It happens on any page and undoes manual pans. <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useMapTracks.ts:86">useMapTracks.ts:86</a>, <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useGpsBackfill.ts:61">useGpsBackfill.ts:61</a></li>
+    <li><b>Opening a session first aims at the wrong track.</b> <code>openedSessionId</code> changes before the tracks reload, so the first fit goes to <code>tracks[0]</code> of the overview list. A second fit corrects it a few ms later. <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useMapCameraEffect.ts:37">useMapCameraEffect.ts:37-50</a></li>
+    <li><b>Opening a trip zooms out to all tracks, then back in.</b> <code>fitAll</code> flips before the trip tracks load, so the first fit covers the union of every filtered track. <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useMapCameraEffect.ts:56">useMapCameraEffect.ts:56-57</a>, <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/pages/TripDetailPage.tsx:22">TripDetailPage.tsx:22-27</a></li>
+    <li><b>Going back from a session or trip moves twice and forgets the earlier view.</b> The first fit uses the stale single-track list, the second jumps to the densest cluster. <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useMapCameraEffect.ts:54">useMapCameraEffect.ts:54-71</a></li>
+    <li><b>A selected lap gets re-fitted, or lost, on unrelated changes.</b> Changing the colour mode, weather arriving or any sessions change rebuilds the detail path, so the lap is fitted again. A sessions change also triggers a whole-session fit, which wins the race. <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useSessionDetailPath.ts:85">useSessionDetailPath.ts:85</a>, <a href="vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/src/features/map/hooks/useLapCameraEffect.ts:50">useLapCameraEffect.ts:50</a></li>
+  </ol>
+</div>
+
+<div class="filters" role="group" aria-label="Filter by verdict">
+  <button data-f="ALL" aria-pressed="true">All</button>
+  <button data-f="JARRING" aria-pressed="false">Jarring</button>
+  <button data-f="DEBATABLE" aria-pressed="false">Debatable</button>
+  <button data-f="GOOD" aria-pressed="false">Good</button>
+  <button data-f="NOMOVE" aria-pressed="false">Checked: no move</button>
+</div>
+
+<div id="groups"></div>
+</div>
+
+<script>
+const ROOT = 'vscode://file/Users/fabianhinz/Documents/dev/private/PaceVault/';
+const G = {
+  dash: 'Dashboard / map overview',
+  session: 'Session detail',
+  trips: 'Trips',
+  studio: 'Studio',
+  filters: 'Filters',
+  mobile: 'Mobile sheet / dock',
+  global: 'Global: data, resize, navigation',
+};
+const E = [
+  /* ---------- Dashboard ---------- */
+  {g:'dash',v:'DEBATABLE',t:'App start: the map flies from all of Europe to your area',
+   when:'Open or reload the app on the dashboard, sessions list or trips list.',
+   cam:'fitBounds to the densest cluster of the filtered tracks, 1000 ms, margin 50 plus dock and panel insets. Starts from a hard-coded view (lng 10, lat 50, zoom 4), so every start animates across a continent. Runs once both the map has loaded and the tracks are there.',
+   loc:['src/features/map/MapBackground.tsx:86','src/features/map/MapBackground.tsx:88-92','src/features/map/hooks/useMapCameraEffect.ts:54-71'],
+   p:'both',why:'Getting to your area is right, but a long fly-in on every start feels like the app is busy; a jump would be calmer.',
+   dir:'Jump without animation on the first fit, or start from the last known view.'},
+  {g:'dash',v:'JARRING',t:'GPS data finishing in the background re-fits the overview',
+   when:'Nothing. Happens right after start, after an import, or after any change to sessions, once the GPS worker or IndexedDB read finishes.',
+   cam:'setGpsData creates a new array, tracks are rebuilt, and the map does another 1000 ms fitBounds to the densest cluster. Usually the same bounds, so if you have panned or zoomed in the meantime it snaps you back.',
+   loc:['src/features/map/hooks/useGpsBackfill.ts:29','src/features/map/hooks/useGpsBackfill.ts:39','src/features/map/hooks/useGpsBackfill.ts:61','src/features/map/hooks/useMapTracks.ts:86'],
+   p:'both',why:'The map moves on its own a moment after you started exploring.',
+   dir:'Re-fit only when the set of visible track ids changes, not on new array identity.'},
+  {g:'dash',v:'JARRING',t:'Coming back from a session: two moves, and your earlier view is gone',
+   when:'Zoom into an area on the overview, open a session, then press back or a dock item.',
+   cam:'Move 1: openedSessionId becomes null while tracks still holds the single session, so the map fits that one track with the overview margin of 50. Move 2: the overview tracks reload, then fitBounds to the densest cluster. The view you had before opening the session is not restored.',
+   loc:['src/features/map/MapBackground.tsx:47-50','src/features/map/hooks/useMapCameraEffect.ts:54-71','src/features/map/hooks/useMapTracks.ts:45-79'],
+   p:'both',why:'Back should take you to where you were; instead the map makes a small jump and then flies somewhere else.',
+   dir:'Remember the overview camera when a session opens and restore it on return.'},
+  {g:'dash',v:'GOOD',t:'Locate me (dock button)',
+   when:'Tap the location button in the dock.',
+   cam:'flyTo your position, zoom 15, 800 ms, padding for the sheet and safe area. Only once per switch-on; it does not keep following you.',
+   loc:['src/components/layout/DockItems.tsx:154','src/features/map/hooks/useGeolocationCameraEffect.ts:11-27'],
+   p:'both',why:'You asked for it, and it does not keep chasing your position. Note: any later data-driven re-fit (see the global entries) still pulls the map away from your position.',dir:''},
+
+  /* ---------- Session detail ---------- */
+  {g:'session',v:'GOOD',t:'Open a session',
+   when:'Click a session in the list, in a map pick popup, on a trip page, or open a deep link.',
+   cam:'fitBounds to the session track bounds, 1200 ms, margin 80 (24 on a phone), padding leaves out the dock, the side panel or sheet, and the map controls.',
+   loc:['src/features/map/hooks/useMapCameraEffect.ts:37-50','src/features/map/mapPadding.ts:57-67'],
+   p:'both',why:'Exactly what you expect when you open an activity.',dir:''},
+  {g:'session',v:'JARRING',t:'Opening a session first aims at a different session',
+   when:'Click a session from the overview, the list or a trip.',
+   cam:'openedSessionId changes right away (MapBackground effect), but tracks still holds the overview or trip list. The effect runs and calls fitBounds(tracks[0]), the first session in store order, not the one you clicked. A few ms later the right track loads from IndexedDB and a second 1200 ms fitBounds replaces the first. The easing starts again, which shows as a jerk.',
+   loc:['src/features/map/MapBackground.tsx:47-50','src/features/map/hooks/useMapCameraEffect.ts:37-50','src/features/map/hooks/useMapTracks.ts:31-43'],
+   p:'both',why:'Two camera commands for one click; the first one targets a random activity.',
+   dir:'Only fit once the tracks belong to the opened session id.'},
+  {g:'session',v:'JARRING',t:'Opening a "new" session moves the camera two more times',
+   when:'Open a session that still shows the "new" badge (for example from a background intervals.icu sync).',
+   cam:'markSessionSeen changes the sessions store, so tracks are rebuilt and a 1200 ms fit runs again. The GPS backfill then re-reads GPS, so tracks are rebuilt again and a third fit runs. Together with the previous entry that is up to four fitBounds calls for one click, all to the same bounds; each one starts the easing again.',
+   loc:['src/pages/SessionDetailPage.tsx:23-27','src/store/sessions.ts:86-92','src/features/map/hooks/useMapTracks.ts:86','src/features/map/hooks/useGpsBackfill.ts:61'],
+   p:'both',why:'The opening animation stutters, and panning in the first second gets undone.',
+   dir:'Ignore sessions changes that leave the opened track unchanged.'},
+  {g:'session',v:'JARRING',t:'Reload or deep link on a session page fits twice',
+   when:'Reload the browser on /sessions/:id, or open a shared link.',
+   cam:'The first fit runs once the map has loaded and the single track is read. When the global GPS list arrives later, the opened-session branch runs again (gpsData is a dependency even though this branch does not use it), so tracks get a new identity and a second 1200 ms fit runs.',
+   loc:['src/features/map/hooks/useMapTracks.ts:31-43','src/features/map/hooks/useMapTracks.ts:86'],
+   p:'both',why:'If you start zooming right away, the map pulls you back.',
+   dir:'Drop gpsData from the opened-session path or compare track ids before fitting.'},
+  {g:'session',v:'GOOD',t:'Select a lap',
+   when:'Click a lap in the lap strip, a lap band in a chart, the track on the map, or the prev/next arrows in the laps control.',
+   cam:'fitBounds to the lap sub-path, 800 ms, maxZoom 16, sheet coverage capped at 85% on a phone.',
+   loc:['src/features/sessions/session/LapStrip.tsx:273','src/features/sessions/charts/SessionChartsExplorer.tsx:181-185','src/features/map/DeckGLOverlay.tsx:112','src/features/sessions/session/LapsControl.tsx:236','src/features/sessions/session/LapsControl.tsx:255','src/features/map/hooks/useLapCameraEffect.ts:45-49'],
+   p:'both',why:'A clear request to focus on that lap.',dir:''},
+  {g:'session',v:'GOOD',t:'Close the lap selection explicitly',
+   when:'Click the X in the laps control, press Escape, or click the selected lap again.',
+   cam:'fitBounds back to the whole session path, 800 ms. It uses the lap padding (85% sheet cap, maxZoom 16), not the padding of the initial open, so the framing can differ slightly from when the session was opened.',
+   loc:['src/features/sessions/session/LapsControl.tsx:212','src/features/sessions/session/LapsControl.tsx:265','src/features/map/hooks/useLapCameraEffect.ts:36-41'],
+   p:'both',why:'Returning to the full activity after closing a lap is expected.',dir:''},
+  {g:'session',v:'DEBATABLE',t:'Tapping empty map with a lap selected zooms out',
+   when:'With a lap selected, click or tap on the map next to the track, for example to dismiss something or by accident while trying to pan.',
+   cam:'clearSelectedLap, then fitBounds to the whole session, 800 ms.',
+   loc:['src/features/map/DeckGLOverlay.tsx:420','src/features/map/hooks/useLapCameraEffect.ts:36-41'],
+   p:'both',why:'A light tap throws away the lap zoom; on a phone a short tap is easy to trigger.',
+   dir:'Deselect without moving the camera on a map tap.'},
+  {g:'session',v:'JARRING',t:'Selected lap re-fits when unrelated things change',
+   when:'With a lap selected (and possibly zoomed or panned by hand): change "Colour by", weather finishes loading, your profile or thresholds change, or anything changes in the sessions store.',
+   cam:'The detail path memo rebuilds (it depends on trackColorMode, weather, profile and sessions), so selectedLapPath gets a new identity and the lap is fitted again with 800 ms, snapping back from any manual pan or zoom.',
+   loc:['src/features/map/hooks/useSessionDetailPath.ts:60-85','src/features/map/DeckGLOverlay.tsx:84-97','src/features/map/hooks/useLapCameraEffect.ts:50','src/features/sessions/session/SessionMapControls.tsx:23-25'],
+   p:'both',why:'Changing the track colour should not move the map.',
+   dir:'Key the lap fit on (session id, lap index), not on the path array.'},
+  {g:'session',v:'JARRING',t:'Lap zoom lost when session data changes in the background',
+   when:'With a lap selected, a background intervals.icu sync, an import or a reprocess changes the sessions store.',
+   cam:'Two hooks compete: the lap effect fits the lap (800 ms), then the async track reload calls the whole-session fit (1200 ms), which wins. Your lap focus is replaced by the full activity although the lap is still highlighted.',
+   loc:['src/features/map/hooks/useLapCameraEffect.ts:34-50','src/features/map/hooks/useMapCameraEffect.ts:37-50','src/features/map/hooks/useMapTracks.ts:86'],
+   p:'both',why:'The map stops matching the selection it shows, with no action from you.',
+   dir:'Let one owner decide the session camera; skip the session fit while a lap is selected.'},
+  {g:'session',v:'DEBATABLE',t:'Changing the lap grouping zooms back out',
+   when:'With a lap selected, switch the lap source (device laps / splits) or the split distance.',
+   cam:'The store clears selectedLapIndex, so the map fits back to the whole session (800 ms).',
+   loc:['src/features/sessions/session/LapsControl.tsx:74','src/features/sessions/session/LapsControl.tsx:151','src/features/sessions/session/LapsControl.tsx:155','src/store/mapFocus.ts:83-92'],
+   p:'both',why:'Logical because the lap no longer exists, but it moves the map while you are tuning a control.',
+   dir:'Leave the camera as is when the selection is cleared indirectly.'},
+  {g:'session',v:'DEBATABLE',t:'Deleting a session: several moves in a row',
+   when:'Delete the open session via its actions menu.',
+   cam:'deleteSession and navigate("/sessions") run together. Move 1: stale single-track list, fit with the overview margin. Move 2: overview tracks are rebuilt (sessions changed), fit to the densest cluster. Move 3: GPS backfill re-reads, same fit again.',
+   loc:['src/features/sessions/session/DeleteSessionDialog.tsx:54-58','src/features/map/hooks/useMapCameraEffect.ts:54-71'],
+   p:'both',why:'Going back to the overview is fine; three animations in a row are not.',
+   dir:'Same fix as the double fit when going back.'},
+
+  /* ---------- Trips ---------- */
+  {g:'trips',v:'GOOD',t:'Open a trip (end state)',
+   when:'Open a trip from the trips list.',
+   cam:'fitBounds to the union of all trip tracks, 1000 ms, margin 50.',
+   loc:['src/pages/TripDetailPage.tsx:22-27','src/features/map/hooks/useMapCameraEffect.ts:54-71','src/features/map/hooks/useMapTracks.ts:52-65'],
+   p:'both',why:'Showing the whole trip is the right frame.',dir:''},
+  {g:'trips',v:'JARRING',t:'Opening a trip first zooms out to all activities',
+   when:'Open a trip from the trips list.',
+   cam:'setFocusedTripSessions flips fitAll to true right away, while tracks still holds the full filtered overview. Move 1: fitBounds to the union of all your tracks (can be continent-wide). Move 2: the trip tracks arrive and the map fits the trip. Two 1000 ms animations, the first in the wrong direction.',
+   loc:['src/pages/TripDetailPage.tsx:22-27','src/features/map/MapBackground.tsx:57','src/features/map/hooks/useMapCameraEffect.ts:56-57'],
+   p:'both',why:'Zooms out before zooming in; very visible when your activities span several regions.',
+   dir:'Fit only once tracks match the focused trip ids.'},
+  {g:'trips',v:'JARRING',t:'Leaving a trip: two moves',
+   when:'Go back from a trip to the trips list, or to any overview page.',
+   cam:'The cleanup sets focusedTripSessionIds to [], so fitAll becomes false while tracks still holds the trip, and the map fits the densest cluster of the trip tracks. Then the overview tracks reload and the map fits the overall densest cluster.',
+   loc:['src/pages/TripDetailPage.tsx:24-26','src/features/map/hooks/useMapCameraEffect.ts:54-71'],
+   p:'both',why:'A small jump followed by a big fly.',
+   dir:'Same id-match guard as above.'},
+  {g:'trips',v:'JARRING',t:'Session to trip and back: double moves both ways',
+   when:'On a trip, open one of its sessions, then press back.',
+   cam:'Opening: the trip unmounts and the session opens in the same commit, then fit tracks[0] of the trip (wrong session), then the right session. Back: fitAll is true with a single-session list, so the map fits that session as a "union", then the trip tracks arrive and it fits the trip.',
+   loc:['src/pages/TripDetailPage.tsx:22-27','src/features/map/MapBackground.tsx:47-50','src/features/map/hooks/useMapCameraEffect.ts:37-71'],
+   p:'both',why:'Each step through a trip makes the camera move twice.',
+   dir:'Same id-match guard; optionally restore the trip camera on back.'},
+  {g:'trips',v:'GOOD',t:'Adding or removing sessions of the open trip',
+   when:'Edit which sessions belong to the trip you are viewing.',
+   cam:'The sessionIds reference changes, so the map fits the new trip union (with the same double move as above).',
+   loc:['src/pages/TripDetailPage.tsx:20-27'],
+   p:'both',why:'The frame follows the content you changed.',dir:''},
+  {g:'trips',v:'DEBATABLE',t:'StrictMode (dev only): trip focus set, cleared, set',
+   when:'Opening a trip in the dev server.',
+   cam:'React StrictMode runs the effect, the cleanup and the effect again: ids, then [], then ids. Can add extra fits in dev; does not affect production.',
+   loc:['src/main.tsx:38','src/pages/TripDetailPage.tsx:22-27'],
+   p:'both',why:'Can make dev feel worse than production; worth knowing when judging by eye.',dir:''},
+
+  /* ---------- Studio ---------- */
+  {g:'studio',v:'GOOD',t:'Open the Studio tab',
+   when:'Labs, then the Studio tab.',
+   cam:'fitBounds to the union of all imported routes, 1200 ms, margin 80.',
+   loc:['src/features/map/hooks/useStudioMapTracks.ts:64-71','src/features/map/hooks/useMapCameraEffect.ts:21-32'],
+   p:'both',why:'Shows what you have in Studio.',dir:''},
+  {g:'studio',v:'GOOD',t:'Open a route detail',
+   when:'Click a route in Studio, or use "Edit in Studio" from a session.',
+   cam:'fitBounds to that route bounds, 1200 ms.',
+   loc:['src/features/map/hooks/useStudioMapTracks.ts:51-62','src/features/map/hooks/useMapCameraEffect.ts:21-32'],
+   p:'both',why:'Focus on the route you opened.',dir:''},
+  {g:'studio',v:'GOOD',t:'Leave Studio',
+   when:'Go from Studio to any other page.',
+   cam:'overrideBounds becomes null, so the map fits the session overview (densest cluster, 1000 ms).',
+   loc:['src/features/map/hooks/useMapCameraEffect.ts:54-71'],
+   p:'both',why:'The map content changes completely, so a new frame makes sense.',dir:''},
+  {g:'studio',v:'DEBATABLE',t:'Back from a route to the Studio tab zooms out to all routes',
+   when:'Press back on a route detail page.',
+   cam:'fitBounds to the union of all routes, 1200 ms. A fresh unionBounds object is created each time.',
+   loc:['src/features/map/hooks/useStudioMapTracks.ts:64-71'],
+   p:'both',why:'Consistent, but you lose the area you were just working in.',dir:'Restore the previous Studio tab camera.'},
+  {g:'studio',v:'DEBATABLE',t:'Adding or deleting a route on the Studio tab re-fits all routes',
+   when:'Import a GPX or delete a route while on the Studio tab.',
+   cam:'allRoutes changes, so a new unionBounds object is created and a 1200 ms fit runs.',
+   loc:['src/features/map/hooks/useStudioMapTracks.ts:50-74','src/features/studio/DeleteStudioRouteDialog.tsx:20'],
+   p:'both',why:'Fine for an import, unnecessary for a delete.',dir:''},
+  {g:'studio',v:'JARRING',t:'Session data changes re-fit the Studio view',
+   when:'While on Studio: a background intervals.icu sync, a finished GPS backfill or a reprocess.',
+   cam:'The effect still depends on session tracks even though Studio does not draw them. A new tracks identity runs the effect, which takes the override branch, so the map fits the Studio bounds again (1200 ms).',
+   loc:['src/features/map/hooks/useMapCameraEffect.ts:21-32','src/features/map/hooks/useMapCameraEffect.ts:72'],
+   p:'both',why:'Session data you cannot even see moves your route view.',
+   dir:'Do not depend on session tracks while the Studio context owns the map.'},
+
+  /* ---------- Filters ---------- */
+  {g:'filters',v:'GOOD',t:'Pick, toggle or clear a filter',
+   when:'Click a saved filter, the clear button, or confirm a builder interpretation (Enter or click).',
+   cam:'The filtered tracks change, so the map fits the densest cluster, 1000 ms.',
+   loc:['src/store/filters.ts:153-164','src/store/filters.ts:183-185','src/features/filters/FilterList.tsx:102','src/features/filters/FilterList.tsx:128','src/features/filters/hooks/useFilterBuilder.ts:48-53'],
+   p:'both',why:'Shows where the matching activities are. Typing in the builder does not move the map; only confirming does.',dir:''},
+  {g:'filters',v:'JARRING',t:'Filter change that leaves the visible tracks the same still re-fits',
+   when:'Change a filter that does not change which tracks are drawn, for example a time range that still covers the same tracks, a sport filter when all your GPS activities are that sport, or confirming the same criteria again in the builder (saveBuilderFilter always stores a fresh clone).',
+   cam:'activeFilter gets a new reference, so tracks are rebuilt and the map fits again, snapping back from a manual pan or zoom.',
+   loc:['src/store/filters.ts:165-175','src/features/map/hooks/useMapTracks.ts:67-79','src/features/map/hooks/useMapTracks.ts:86'],
+   p:'both',why:'Nothing on the map changed, but your view did.',
+   dir:'Compare visible track ids before fitting.'},
+  {g:'filters',v:'JARRING',t:'Changing the filter on a session, trip or Studio page re-fits that page',
+   when:'Open the dock filter while viewing a session, a trip or Studio, and change it.',
+   cam:'useMapTracks depends on activeFilter even in the opened-session and trip paths, which ignore it. A new tracks array means the session, trip or Studio frame is fitted again.',
+   loc:['src/components/layout/DockItems.tsx:118-134','src/features/map/hooks/useMapTracks.ts:31-65','src/features/map/hooks/useMapTracks.ts:86'],
+   p:'desktop (dock filter); phone where the filter is reachable',why:'The filter has no visible effect there, but the map moves.',
+   dir:'Leave activeFilter out of the session and trip paths.'},
+  {g:'filters',v:'DEBATABLE',t:'Zooming a dashboard chart moves the map',
+   when:'Drag-select a range on the load or volume chart, or press the zoom-reset button.',
+   cam:'setDashboardChartRange writes a time filter, so the map fits the densest cluster of that range (1000 ms). Every zoom step moves the map; reset moves it again.',
+   loc:['src/features/dashboard/hooks/useDashboardChartZoom.ts:23-25','src/store/filters.ts:176-182','src/features/dashboard/LoadChart.tsx:143-150','src/features/dashboard/DashboardZoomReset.tsx:10'],
+   p:'both',why:'Your attention is on the chart; the map moving behind it can help or distract.',dir:''},
+
+  /* ---------- Mobile ---------- */
+  {g:'mobile',v:'NOMOVE',t:'Dragging the bottom sheet',
+   when:'Drag the sheet up or down, or snap it.',
+   cam:'No camera move. mapPadding reads the sheet position only when a fit runs, so after dragging the sheet up a fitted track can sit under the sheet until the next fit.',
+   loc:['src/components/layout/AppLayout.tsx:45-48','src/features/map/mapPadding.ts:36-51'],
+   p:'phone',why:'No auto-zoom here.',dir:''},
+  {g:'mobile',v:'NOMOVE',t:'Phone padding details (context)',
+   when:'Any fit on a phone.',
+   cam:'Margin is capped at 24 px; the bottom padding is the sheet height (capped at 85% for laps) plus the map control pills on a session page. Fits always use the sheet position at the moment of the call.',
+   loc:['src/features/map/mapPadding.ts:36-67','src/features/map/fitPadding.ts:17-26','src/features/map/hooks/useLapCameraEffect.ts:5-6'],
+   p:'phone',why:'Context only.',dir:''},
+
+  /* ---------- Global ---------- */
+  {g:'global',v:'JARRING',t:'intervals.icu background sync moves the map on any page',
+   when:'Nothing. Polls every 15 minutes (and on window focus, the React Query default) once a key is connected; only when new activities arrive.',
+   cam:'Import begins, then addSessions, then a re-fit of whatever you are viewing (overview, session, trip, Studio). When the import finishes, the GPS backfill builds the new tracks and a second re-fit runs, now possibly with different bounds.',
+   loc:['src/features/intervals/hooks/useIntervalsSync.ts:9','src/features/intervals/hooks/useIntervalsSync.ts:19-25','src/features/intervals/runIntervalsSync.ts:67-68','src/features/intervals/runIntervalsSync.ts:102','src/store/sessions.ts:63-72'],
+   p:'both',why:'The map moves while you are looking at it, with no action from you.',
+   dir:'Do not re-fit on background imports; at most when the overview is untouched.'},
+  {g:'global',v:'JARRING',t:'FIT import: re-fit after every ingest batch',
+   when:'Import files or a ZIP (or load demo data) and look at or pan the map during the import.',
+   cam:'Each flushed batch calls addSessions, so tracks are rebuilt and a fit runs. GPS backfill is paused while importing, so the drawn tracks barely change but the fit still fires. After the import a final fit with the new tracks runs (that one is useful).',
+   loc:['src/features/sessions/createIngestBatcher.ts:86-89','src/features/map/hooks/useGpsBackfill.ts:17','src/features/map/hooks/useMapTracks.ts:86'],
+   p:'both',why:'Repeated snaps back during a long import; only the final fit carries information.',
+   dir:'Suppress fits while runningImports is above 0 and fit once afterwards.'},
+  {g:'global',v:'JARRING',t:'Reprocess after an app update re-fits late',
+   when:'Nothing. Open the app after an update that needs session reprocessing, and pan around while it runs.',
+   cam:'While reprocessing, tracks are a constant empty list and no fit runs. When it finishes, the old tracks come back (new identity), then a fit runs; the committed sessions and the GPS re-read trigger up to two more.',
+   loc:['src/features/map/MapBackground.tsx:34-36','src/store/sessions.ts:77-85','src/features/map/hooks/useGpsBackfill.ts:16-61'],
+   p:'both',why:'Several moves seconds after start, after you may already have started exploring.',
+   dir:'Treat reprocess completion like the first load: one fit at most.'},
+  {g:'global',v:'NOMOVE',t:'Window resize / orientation change',
+   when:'Resize the browser, rotate the phone.',
+   cam:'No app-driven camera move. MapLibre keeps centre and zoom; nothing re-fits. The BottomSheet resize listener only recomputes the sheet.',
+   loc:['src/components/ui/BottomSheet.tsx:75'],
+   p:'both',why:'No auto-zoom here.',dir:''},
+  {g:'global',v:'NOMOVE',t:'Switching between overview pages',
+   when:'Go between Dashboard, Sessions list, Trips list and non-Studio Labs tabs.',
+   cam:'None of the camera effect dependencies change, so the map stays put.',
+   loc:['src/features/map/hooks/useMapCameraEffect.ts:72'],
+   p:'both',why:'No auto-zoom here.',dir:''},
+  {g:'global',v:'NOMOVE',t:'Hover anywhere (list, map tracks, charts, laps)',
+   when:'Hover a session row, a track on the map, a chart, or a lap.',
+   cam:'Only highlight layers and points change; no camera call.',
+   loc:['src/lib/hooks/useMapHover.ts:6-7','src/features/sessions/charts/SessionChartsExplorer.tsx:163-179','src/features/sessions/session/LapStrip.tsx:270'],
+   p:'both',why:'No auto-zoom here.',dir:''},
+  {g:'global',v:'NOMOVE',t:'Adding or moving Studio markers, renaming or recolouring a route',
+   when:'Edit markers or route properties on a route detail page.',
+   cam:'route.bounds keeps the same reference (immer structural sharing), so overrideBounds does not change and no fit runs.',
+   loc:['src/features/map/hooks/useStudioMapTracks.ts:57-62','src/store/studio.ts:93-127'],
+   p:'both',why:'No auto-zoom here.',dir:''},
+];
+
+const LABEL = {GOOD:'Good',JARRING:'Jarring',DEBATABLE:'Debatable',NOMOVE:'No move'};
+const esc = (s) => s.replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const locLink = (l) => {
+  const m = l.match(/^(.*?):(\d+)/);
+  const href = m ? ROOT + m[1] + ':' + m[2] : ROOT + l;
+  return '<a href="' + href + '">' + esc(l) + '</a>';
+};
+
+const counts = {GOOD:0,JARRING:0,DEBATABLE:0,NOMOVE:0};
+E.forEach((e) => { counts[e.v] += 1; });
+document.getElementById('counts').innerHTML =
+  '<div class="count bad"><b>' + counts.JARRING + '</b><span>Jarring</span></div>' +
+  '<div class="count deb"><b>' + counts.DEBATABLE + '</b><span>Debatable</span></div>' +
+  '<div class="count good"><b>' + counts.GOOD + '</b><span>Good</span></div>' +
+  '<div class="count info"><b>' + counts.NOMOVE + '</b><span>Checked, no camera move</span></div>';
+
+const root = document.getElementById('groups');
+Object.keys(G).forEach((key) => {
+  const items = E.filter((e) => e.g === key);
+  if (items.length === 0) return;
+  const sec = document.createElement('section');
+  sec.dataset.group = key;
+  sec.innerHTML = '<h2>' + G[key] + '</h2><div class="grid"></div>';
+  const grid = sec.querySelector('.grid');
+  items.forEach((e) => {
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.dataset.v = e.v;
+    card.innerHTML =
+      '<div class="card-head"><h3>' + esc(e.t) + '</h3><span class="badge ' + e.v + '">' + LABEL[e.v] + '</span></div>' +
+      '<div class="meta"><span class="chip">Platform: ' + esc(e.p) + '</span><span class="chip">Inferred from code</span></div>' +
+      '<dl>' +
+      '<dt>User action</dt><dd>' + esc(e.when) + '</dd>' +
+      '<dt>Camera</dt><dd>' + esc(e.cam) + '</dd>' +
+      '<dt>Code</dt><dd class="loc">' + e.loc.map(locLink).join('') + '</dd>' +
+      '<dt>Verdict</dt><dd>' + esc(e.why) + '</dd>' +
+      (e.dir ? '<dt>Possible direction</dt><dd class="direction">' + esc(e.dir) + '</dd>' : '') +
+      '</dl>';
+    grid.appendChild(card);
+  });
+  root.appendChild(sec);
+});
+
+document.querySelectorAll('.filters button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const f = btn.dataset.f;
+    document.querySelectorAll('.filters button').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+    document.querySelectorAll('.card').forEach((c) => c.classList.toggle('hidden', f !== 'ALL' && c.dataset.v !== f));
+    document.querySelectorAll('section[data-group]').forEach((s) => {
+      s.classList.toggle('hidden', s.querySelectorAll('.card:not(.hidden)').length === 0);
+    });
+  });
+});
+</script>
+</body>
+</html>

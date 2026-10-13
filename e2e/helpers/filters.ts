@@ -69,12 +69,20 @@ export const expectFilterInputStaysPut = async (page: Page, nameWord: string) =>
   await expect(notUnderstood).toBeVisible();
   await expectInPlace();
 
-  await input.fill('ride 5 km');
-  await expect(tiles).toContainText('No sessions match');
+  await input.fill('last 3 10');
+  await expect(tiles.getByRole('button')).toHaveCount(6);
   await expect(notUnderstood).toHaveCount(0);
+  await expectInPlace();
+  await tiles.getByRole('button').last().scrollIntoViewIfNeeded();
+  await expect(tiles.getByRole('button').last()).toBeInViewport();
   await expectInPlace();
 
   await input.fill(nameWord);
+  await expect(notUnderstood).toBeVisible();
+  await expectInPlace();
+
+  await input.fill(`"${nameWord}"`);
+  await expect(notUnderstood).toHaveCount(0);
   await expect(tiles.getByRole('button', { name: `Apply filter: “${nameWord}”` })).toBeVisible();
   await expectInPlace();
 

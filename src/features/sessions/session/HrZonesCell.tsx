@@ -31,8 +31,8 @@ export const HrZonesCell = (props: HrZonesCellProps) => {
       info1={<StatValue value={pick.zone.zone} unit={unit} />}
       info2={<StatCaption>{info2}</StatCaption>}
       chart={
-        <div className="flex h-8 w-full items-center" {...rail.railProps}>
-          <div className="flex h-6 w-full overflow-hidden rounded-md bg-white/5">
+        <div className="flex h-4 w-full items-center" {...rail.railProps}>
+          <div className="flex h-4 w-full overflow-hidden rounded-md bg-white/5">
             {props.zones.zones.map((zone, i) => (
               <span
                 key={zone.zone}
