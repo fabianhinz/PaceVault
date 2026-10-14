@@ -56,3 +56,13 @@ export const movingSeconds = (records: SessionRecord[]): number[] => {
   });
   return result;
 };
+
+export const sessionMovingTime = (
+  records: SessionRecord[],
+): { movingS: number; elapsedS: number } | undefined => {
+  const first = records[0];
+  const last = records[records.length - 1];
+  if (records.length < 2 || !first || !last) return undefined;
+  const moving = movingSeconds(records);
+  return { movingS: moving[moving.length - 1] ?? 0, elapsedS: last.timestamp - first.timestamp };
+};

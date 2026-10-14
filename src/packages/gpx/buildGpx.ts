@@ -3,6 +3,15 @@ export interface GpxPoint {
   lon: number;
   ele?: number;
   time?: Date;
+  seg?: number;
+}
+
+export interface GpxWaypoint {
+  lat: number;
+  lon: number;
+  ele?: number;
+  name: string;
+  desc?: string;
 }
 
 export interface GpxMetadata {
@@ -18,7 +27,11 @@ const escapeXml = (s: string): string =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 
-export const buildGpxString = (points: GpxPoint[], metadata: GpxMetadata): string | null => {
+export const buildGpxString = (
+  points: GpxPoint[],
+  metadata: GpxMetadata,
+  waypoints: GpxWaypoint[] = [],
+): string | null => {
   if (points.length < 2) return null;
 
   const parts: string[] = [];
@@ -44,13 +57,31 @@ export const buildGpxString = (points: GpxPoint[], metadata: GpxMetadata): strin
   }
   parts.push('</metadata>');
 
+  for (const w of waypoints) {
+    parts.push(`<wpt lat="${w.lat.toFixed(6)}" lon="${w.lon.toFixed(6)}">`);
+    if (w.ele != null) {
+      parts.push(`<ele>${w.ele.toFixed(1)}</ele>`);
+    }
+    parts.push(`<name>${escapeXml(w.name)}</name>`);
+    if (w.desc) {
+      parts.push(`<desc>${escapeXml(w.desc)}</desc>`);
+    }
+    parts.push('</wpt>');
+  }
+
   parts.push('<trk>');
   if (escapedName) {
     parts.push(`<name>${escapedName}</name>`);
   }
   parts.push('<trkseg>');
 
+  let currentSeg = points[0]?.seg;
   for (const p of points) {
+    if (p.seg !== currentSeg) {
+      parts.push('</trkseg>');
+      parts.push('<trkseg>');
+      currentSeg = p.seg;
+    }
     const lat = p.lat.toFixed(6);
     const lon = p.lon.toFixed(6);
     parts.push(`<trkpt lat="${lat}" lon="${lon}">`);

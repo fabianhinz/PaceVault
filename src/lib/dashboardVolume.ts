@@ -34,17 +34,17 @@ const metricValue = (session: VolumeSession, metric: VolumeMetric): number | und
   return session.duration;
 };
 
-export interface BeforeVolumeWindow {
+interface BeforeVolumeWindow {
   from: string;
   through: string[];
 }
 
-export interface VolumeRange {
+interface VolumeRange {
   from: string;
   count: number;
 }
 
-export interface VolumeTotals {
+interface VolumeTotals {
   current: VolumeTotal[];
   before: VolumeTotal[] | null;
   beforeWindow: BeforeVolumeWindow | null;
@@ -64,7 +64,9 @@ const sameDateLastYear = (key: string): string => {
 
 const isCalendarTime = (time: FilterTime | null): boolean => {
   if (time === null) return false;
-  if (time.kind === 'calendarYear') return true;
+  if (time.kind === 'calendarYear' || time.kind === 'calendar' || time.kind === 'since') {
+    return true;
+  }
   return time.kind === 'range' && time.source !== 'zoom';
 };
 

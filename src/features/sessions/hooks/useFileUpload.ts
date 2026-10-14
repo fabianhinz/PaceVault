@@ -101,6 +101,7 @@ export const useFileUpload = () => {
 
   const handleFiles = useCallback(
     async (files: FileList) => {
+      const profile = useUserStore.getState().profile;
       if (!profile) return;
 
       const fileArray = Array.from(files);
@@ -118,7 +119,7 @@ export const useFileUpload = () => {
           .finishImport({ kind: 'failed', message: m.ui_import_failed_generic() });
       }
     },
-    [profile, queryClient],
+    [queryClient],
   );
 
   return { uploading, profile, handleFiles };

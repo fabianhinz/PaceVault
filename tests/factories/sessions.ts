@@ -16,7 +16,6 @@ export function makeSession(overrides?: Partial<TrainingSession>): TrainingSessi
     normalizedPower: 215,
     avgCadence: 88,
     avgPace: undefined,
-    calories: 800,
     elevationGain: 300,
     tss: 80,
     stressMethod: 'tss',

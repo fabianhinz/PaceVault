@@ -13,10 +13,10 @@ import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@/lib/tokens.ts';
 import type { CadencePoint } from '@/lib/chartData.ts';
-import { m } from '@/paraglide/messages.js';
 
 interface CadenceChartProps {
   data: CadencePoint[];
+  seriesName: string;
   onActiveTimeChange?: (time: number | null) => void;
   onZoomComplete?: (from: string | number, to: string | number) => void;
   onSelectTime?: (time: number) => void;
@@ -75,7 +75,7 @@ export const CadenceChart = (props: CadenceChartProps) => {
           stroke={tokens.chartCadence}
           strokeWidth={1.5}
           dot={false}
-          name={m.ui_chart_series_cadence()}
+          name={props.seriesName}
         />
         {zoom.refAreaLeft !== null && zoom.refAreaRight !== null && (
           <ReferenceArea

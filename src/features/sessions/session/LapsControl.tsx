@@ -16,7 +16,8 @@ import {
   type LapSet,
   type LapSource,
 } from '@/lib/lapSet.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import type { SessionLap, SessionRecord, Sport } from '@/packages/engine/types.ts';
 import { LapSwatch } from './LapStrip.tsx';
 import { lapCountLabel, lapName, splitDistanceLabel, splitKm } from './lapLabels.ts';
@@ -71,7 +72,8 @@ const SplitSlider = (props: { records: SessionRecord[]; sport: Sport; value: num
         aria-label={m.ui_laps_split_distance()}
         onValueChange={(next) => {
           const metres = next[0];
-          if (metres !== undefined) useMapFocusStore.getState().setSplitDistance(metres);
+          if (metres !== undefined)
+            useMapPreferencesStore.getState().setSessionSplitDistance(props.sport, metres);
         }}
       />
       <div className="flex justify-between text-xs text-text-tertiary tabular-nums">
@@ -148,11 +150,12 @@ const LapsPicker = (props: LapsPickerProps) => {
       value={source}
       onValueChange={(value) => {
         if (value === 'off' || value === 'device') {
-          useMapFocusStore.getState().setLapSource(value);
+          useMapPreferencesStore.getState().setSessionLapSource(props.sport, value);
           props.onDone();
           return;
         }
-        if (value === 'splits') useMapFocusStore.getState().setLapSource('splits');
+        if (value === 'splits')
+          useMapPreferencesStore.getState().setSessionLapSource(props.sport, 'splits');
       }}
       className="gap-1"
     >
@@ -196,20 +199,27 @@ const StepButton = (props: {
     disabled={props.disabled}
     onClick={props.onClick}
     className={cn(
-      'inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full',
-      'text-text-secondary transition-colors hover:bg-white/10 hover:text-text-primary',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-      'disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent',
+      'group -my-px inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full',
+      'text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-none',
+      'disabled:cursor-default disabled:opacity-30',
     )}
   >
-    {props.children}
+    <span
+      className={cn(
+        'inline-flex size-9 items-center justify-center rounded-full transition-colors',
+        'group-hover:bg-white/10 group-disabled:bg-transparent',
+        'group-focus-visible:ring-2 group-focus-visible:ring-accent',
+      )}
+    >
+      {props.children}
+    </span>
   </button>
 );
 
 const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource }) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') useMapFocusStore.getState().clearSelectedLap();
+      if (event.key === 'Escape') useMapControlsStore.getState().closeSelectedLap();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -220,60 +230,62 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
   const next = stepLap(props.set.bands, props.lapIndex, 1);
 
   return (
-    <div
-      role="group"
-      aria-label={m.ui_laps()}
-      data-testid="lap-stepper"
-      className={cn(floatingPillClass, 'gap-0.5 py-1 pr-1 pl-3')}
-    >
-      <Flag size={16} className="mr-1 shrink-0" />
-      <StepButton
-        label={m.ui_lap_prev()}
-        testId="lap-stepper-prev"
-        disabled={previous === undefined}
-        onClick={() => {
-          if (previous !== undefined) useMapFocusStore.getState().selectLap(previous);
-        }}
+    <>
+      <div
+        role="group"
+        aria-label={m.ui_laps()}
+        data-testid="lap-stepper"
+        className={cn(floatingPillClass, 'h-11 gap-0 pr-0 pl-3')}
       >
-        <ChevronLeft size={16} />
-      </StepButton>
-      <span
-        data-testid="lap-stepper-name"
-        className={cn(
-          'w-[72px] text-center tabular-nums',
-          lap && lap.intensity !== 'active' && 'text-text-tertiary',
-        )}
-      >
-        {lapName(props.lapIndex, props.source)}
-      </span>
-      <StepButton
-        label={m.ui_lap_next()}
-        testId="lap-stepper-next"
-        disabled={next === undefined}
-        onClick={() => {
-          if (next !== undefined) useMapFocusStore.getState().selectLap(next);
-        }}
-      >
-        <ChevronRight size={16} />
-      </StepButton>
-      <span aria-hidden className="h-5 w-px shrink-0 bg-white/10" />
-      <StepButton
-        label={m.ui_lap_clear()}
-        testId="lap-stepper-clear"
-        onClick={() => useMapFocusStore.getState().clearSelectedLap()}
+        <Flag size={16} className="mr-1 shrink-0" />
+        <StepButton
+          label={m.ui_lap_prev()}
+          testId="lap-stepper-prev"
+          disabled={previous === undefined}
+          onClick={() => {
+            if (previous !== undefined) useMapControlsStore.getState().selectLap(previous);
+          }}
+        >
+          <ChevronLeft size={16} />
+        </StepButton>
+        <span
+          data-testid="lap-stepper-name"
+          className={cn(
+            'w-[72px] text-center tabular-nums',
+            lap && lap.intensity !== 'active' && 'text-text-tertiary',
+          )}
+        >
+          {lapName(props.lapIndex, props.source)}
+        </span>
+        <StepButton
+          label={m.ui_lap_next()}
+          testId="lap-stepper-next"
+          disabled={next === undefined}
+          onClick={() => {
+            if (next !== undefined) useMapControlsStore.getState().selectLap(next);
+          }}
+        >
+          <ChevronRight size={16} />
+        </StepButton>
+      </div>
+      <FloatingPill
+        aria-label={m.ui_lap_clear()}
+        data-testid="lap-stepper-clear"
+        className="ml-1 size-11 justify-center p-0 text-text-secondary"
+        onClick={() => useMapControlsStore.getState().closeSelectedLap()}
       >
         <X size={16} />
-      </StepButton>
-    </div>
+      </FloatingPill>
+    </>
   );
 };
 
 export const LapsControl = (props: LapsControlProps) => {
   const [open, setOpen] = useState(false);
-  const lapSource = useMapFocusStore((s) => s.lapSource);
-  const storedSplitDistance = useMapFocusStore((s) => s.splitDistance);
-  const sessionLaps = useMapFocusStore((s) => s.sessionLaps);
-  const selected = useMapFocusStore((s) => s.selectedLapIndex);
+  const lapSource = useMapPreferencesStore((s) => s.bySport[props.sport].lapSource);
+  const storedSplitDistance = useMapPreferencesStore((s) => s.bySport[props.sport].splitDistance);
+  const sessionLaps = useMapControlsStore((s) => s.sessionLaps);
+  const selected = useMapControlsStore((s) => s.selectedLapIndex);
   const records = props.records;
   const sessionMetres = useMemo(() => recordedDistance(records), [records]);
   const splitDistance = effectiveSplitDistance(storedSplitDistance, props.sport, sessionMetres);
@@ -296,11 +308,12 @@ export const LapsControl = (props: LapsControlProps) => {
       open={open}
       onOpenChange={setOpen}
       title={m.ui_laps()}
+      icon={Flag}
       side="top"
       align="center"
       className="lg:w-80"
       trigger={
-        <FloatingPill data-testid="laps-pill">
+        <FloatingPill data-testid="laps-pill" className="h-11">
           <Flag size={16} />
           <span>{pillLabel(source, sessionLaps, splitDistance)}</span>
           {source !== 'off' && sessionLaps && <LapSwatch set={sessionLaps} />}
@@ -308,7 +321,7 @@ export const LapsControl = (props: LapsControlProps) => {
         </FloatingPill>
       }
     >
-      <div className="mb-3 flex items-center gap-2 text-text-tertiary">
+      <div className="mb-3 flex items-center gap-2 text-text-tertiary max-lg:hidden">
         <Flag size={14} />
         <Typography variant="caption">{m.ui_laps()}</Typography>
       </div>

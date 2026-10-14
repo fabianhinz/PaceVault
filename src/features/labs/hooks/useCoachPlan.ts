@@ -4,6 +4,7 @@ import { useUserStore } from '@/store/user.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { computeMetrics } from '@/packages/engine/metrics.ts';
 import { computeRunningZones } from '@/packages/engine/zones.ts';
+import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 import { generateWeeklyPlan } from '@/lib/prescription.ts';
 import { getMondayOfWeek, buildPlanCacheKey } from '@/lib/weekKey.ts';
 import { toDateString } from '@/lib/formatters.ts';
@@ -31,7 +32,8 @@ export const useCoachPlan = (): {
   }, [today]);
 
   const result = useMemo(() => {
-    const thresholdPace = profile?.thresholds.thresholdPace;
+    let thresholdPace: number | undefined = undefined;
+    if (profile) thresholdPace = thresholdsAt(profile, Date.now()).thresholdPace;
 
     if (!thresholdPace) {
       return { plan: null, zones: [], hasThresholdPace: false, freshPlan: null, freshKey: null };

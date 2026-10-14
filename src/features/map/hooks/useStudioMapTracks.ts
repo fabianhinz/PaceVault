@@ -8,17 +8,15 @@ import { resolveLabsTab } from '@/lib/labsTab.ts';
 
 interface StudioMapRoute {
   id: string;
-  /** One encoded polyline per GPX segment — disconnected segments stay disconnected. */
   encodedPolylines: string[];
   color: [number, number, number];
   bounds: GPSBounds;
 }
 
 interface StudioMapTracks {
-  /** True while the studio context (tab or route detail) owns the map. */
   active: boolean;
-  /** Set on a route detail page — that route draws wider. */
   focusedRouteId: string | null;
+  routeId: string | null;
   routes: StudioMapRoute[];
   bounds: GPSBounds | null;
 }
@@ -30,15 +28,6 @@ const toMapRoute = (route: StudioRoute): StudioMapRoute => ({
   bounds: route.bounds,
 });
 
-/**
- * Sessions are the app's primary map object — only in the studio context does
- * the map switch to routes: all imported routes on the studio tab, just the
- * selected one on a route detail page.
- *
- * Both contexts are derived synchronously from the URL (not from an
- * effect-written store field), so session tracks never flash in during the
- * tab → detail navigation.
- */
 export const useStudioMapTracks = (): StudioMapTracks => {
   const allRoutes = useStudioStore((s) => s.routes);
   const detailMatch = useMatch('/studio/:id');
@@ -50,13 +39,19 @@ export const useStudioMapTracks = (): StudioMapTracks => {
   return useMemo(() => {
     if (detailRouteId) {
       const route = allRoutes.find((r) => r.id === detailRouteId);
-      // Unknown id still keeps the studio context: not-found page, empty map.
       if (!route) {
-        return { active: true, focusedRouteId: null, routes: [], bounds: null };
+        return {
+          active: true,
+          focusedRouteId: null,
+          routeId: detailRouteId,
+          routes: [],
+          bounds: null,
+        };
       }
       return {
         active: true,
         focusedRouteId: route.id,
+        routeId: detailRouteId,
         routes: [toMapRoute(route)],
         bounds: route.bounds,
       };
@@ -66,10 +61,11 @@ export const useStudioMapTracks = (): StudioMapTracks => {
       return {
         active: true,
         focusedRouteId: null,
+        routeId: null,
         routes,
         bounds: unionBounds(routes.map((r) => r.bounds)),
       };
     }
-    return { active: false, focusedRouteId: null, routes: [], bounds: null };
+    return { active: false, focusedRouteId: null, routeId: null, routes: [], bounds: null };
   }, [detailRouteId, onStudioTab, allRoutes]);
 };

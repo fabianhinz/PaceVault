@@ -11,7 +11,7 @@ export interface LoadBucket extends SportTss {
   to: string;
 }
 
-export interface LoadDay extends SportTss {
+interface LoadDay extends SportTss {
   date: string;
   bucket: string;
 }

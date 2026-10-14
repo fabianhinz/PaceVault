@@ -1,11 +1,5 @@
 import type { SessionLap, SessionRecord, Sport } from '@/packages/engine/types.ts';
-import {
-  analyzeLaps,
-  detectIntervals,
-  enrichAllLaps,
-  type LapAnalysis,
-  type LapRecordEnrichment,
-} from './laps.ts';
+import { analyzeLaps, detectIntervals, type LapAnalysis } from './laps.ts';
 import { computeDynamicLaps, splitDistanceRange } from './dynamicLaps.ts';
 import { deviceLapSpans, lapBands, type LapBand, type LapSpan } from './lapRanges.ts';
 
@@ -29,7 +23,6 @@ export const effectiveSplitDistance = (
 
 export interface LapSet {
   analysis: LapAnalysis[];
-  enrichments: LapRecordEnrichment[];
   spans: LapSpan[];
   bands: LapBand[];
   hrRecoveries: number[];
@@ -46,7 +39,6 @@ export const buildDeviceLapSet = (records: SessionRecord[], laps: SessionLap[]):
   }
   return {
     analysis: analyzeLaps(laps),
-    enrichments: enrichAllLaps(laps, records),
     spans,
     bands: lapBands(records, spans),
     hrRecoveries,
@@ -65,7 +57,6 @@ export const buildLapSet = (
   if (result.analysis.length === 0) return null;
   return {
     analysis: result.analysis,
-    enrichments: result.enrichments,
     spans: result.spans,
     bands: lapBands(records, result.spans),
     hrRecoveries: [],

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { pickBoundsFromCorners, filterTracksByPickBounds } from '@/features/map/trackPicking.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import type { MapTrack } from './useMapTracks.ts';
@@ -66,7 +67,7 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
     (info: PickingInfo, event?: unknown) => {
       const stopPropagation = false;
       const isLapPick =
-        info.layer?.id === 'session-detail' && useMapFocusStore.getState().sessionLaps !== null;
+        info.layer?.id === 'session-detail' && useMapControlsStore.getState().sessionLaps !== null;
       const pickable = !!info.object && (!openedSessionId || isLapPick);
       setHoveringTrack(pickable);
       if (!popup) {

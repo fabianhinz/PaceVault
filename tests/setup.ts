@@ -5,6 +5,7 @@ import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
 import { resetDBInstance } from '@/lib/db.ts';
@@ -33,7 +34,19 @@ beforeEach(() => {
     keyInvalid: false,
     backlogPending: false,
   });
-  resetStateKeepingActions(useImportProgressStore, { runningImports: 0, foreground: null });
+  resetStateKeepingActions(useMapPreferencesStore, {
+    trackIntensity: 'warm',
+    bySport: {
+      running: { colorMode: 'sport', lapSource: 'splits', splitDistance: null },
+      cycling: { colorMode: 'sport', lapSource: 'splits', splitDistance: null },
+    },
+  });
+  resetStateKeepingActions(useImportProgressStore, {
+    runningImports: 0,
+    foreground: null,
+    awaitingTrackBuild: false,
+    mapCrashed: false,
+  });
   resetStateKeepingActions(useSessionReprocessingStore, {
     phase: 'pending',
     newerVersionInOtherTab: false,

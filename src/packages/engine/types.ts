@@ -43,23 +43,14 @@ export interface TrainingSession {
   avgHr?: number;
   maxHr?: number;
   avgPower?: number;
-  maxPower?: number;
   normalizedPower?: number;
   avgCadence?: number;
   avgPace?: number;
-  calories?: number;
   elevationGain?: number;
   elevationLoss?: number;
-  movingTime?: number;
   subSport?: string;
-  deviceTss?: number;
-  deviceIf?: number;
-  deviceFtp?: number;
   avgSpeed?: number;
   maxSpeed?: number;
-  minAltitude?: number;
-  maxAltitude?: number;
-  avgAltitude?: number;
   gap?: number;
   tss: number;
   stressMethod: 'tss' | 'trimp' | 'duration';
@@ -91,23 +82,12 @@ export interface SessionLap {
   lapIndex: number;
   startTime: number;
   endTime: number;
-  totalElapsedTime: number;
   totalTimerTime: number;
   totalMovingTime?: number;
   distance?: number;
-  avgSpeed?: number;
-  maxSpeed?: number;
-  totalAscent?: number;
-  minAltitude?: number;
-  maxAltitude?: number;
-  avgAltitude?: number;
-  avgHr?: number;
   minHr?: number;
   maxHr?: number;
-  avgCadence?: number;
-  maxCadence?: number;
   intensity?: string;
-  repetitionNum?: number;
 }
 
 export interface DailyMetrics {

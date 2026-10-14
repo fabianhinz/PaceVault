@@ -16,6 +16,7 @@ import { SeriesRail } from '@/components/charts/ChartRail.tsx';
 import { buildRouteChartRows, gpsByX } from '@/lib/chartData.ts';
 import { routeDistanceXAxis } from '@/lib/chartTheme.ts';
 import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { m } from '@/paraglide/messages.js';
 
@@ -59,6 +60,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
     [rows, compactRows],
   );
 
+  const pointerFine = useDevice().pointerFine;
   const onHover = useCallback(
     (dist: number | null) => {
       if (dist == null) {
@@ -68,11 +70,11 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       }
       useChartHoverStore.getState().setChartHover(HOVER_GROUP, dist);
       const point = gpsLookup.get(dist);
-      if (point) {
+      if (point && pointerFine) {
         useMapFocusStore.getState().setHoveredPoint(point);
       }
     },
-    [gpsLookup],
+    [gpsLookup, pointerFine],
   );
 
   useEffect(

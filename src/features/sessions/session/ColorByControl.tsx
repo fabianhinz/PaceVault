@@ -15,7 +15,8 @@ import type {
   ColorModeStatus,
   ColorModeUnavailableReason,
 } from '@/lib/colorModes.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { speedRangeLabel } from './lapLabels.ts';
 import type { Sport } from '@/packages/engine/types.ts';
 
@@ -43,6 +44,11 @@ const PILL_LABEL: Record<ColorMode, () => string> = {
   pace: m.ui_color_by_pill_pace,
   speed: m.ui_color_by_pill_speed,
   wind: m.ui_color_by_pill_wind,
+};
+
+const COMPACT_MODE_LABEL: Record<ColorMode, () => string> = {
+  ...PILL_LABEL,
+  sport: m.ui_color_by_sport,
 };
 
 const REASON: Record<ColorModeUnavailableReason, () => string> = {
@@ -104,25 +110,39 @@ interface ColorByControlProps {
 
 export const ColorByControl = (props: ColorByControlProps) => {
   const [open, setOpen] = useState(false);
+  const hasSelectedLap = useMapControlsStore((s) => s.selectedLapIndex !== null);
 
   return (
     <ResponsivePopover
       open={open}
       onOpenChange={setOpen}
       title={m.ui_color_by()}
+      icon={Layers}
       side="top"
       align="center"
       className="lg:w-80"
       trigger={
-        <FloatingPill data-testid="color-by-pill">
-          <Layers size={16} />
-          <span>{PILL_LABEL[props.effective]()}</span>
-          {props.effective !== 'sport' && <Swatch mode={props.effective} sport={props.sport} />}
-          <ChevronDown size={14} className="text-text-tertiary" />
-        </FloatingPill>
+        hasSelectedLap ? (
+          <FloatingPill
+            data-testid="color-by-pill"
+            aria-label={m.ui_color_by_compact_label({
+              mode: COMPACT_MODE_LABEL[props.effective](),
+            })}
+            className="size-11 justify-center p-0"
+          >
+            <Layers size={16} />
+          </FloatingPill>
+        ) : (
+          <FloatingPill data-testid="color-by-pill" className="h-11">
+            <Layers size={16} />
+            <span>{PILL_LABEL[props.effective]()}</span>
+            {props.effective !== 'sport' && <Swatch mode={props.effective} sport={props.sport} />}
+            <ChevronDown size={14} className="text-text-tertiary" />
+          </FloatingPill>
+        )
       }
     >
-      <div className="mb-3 flex items-center gap-2 text-text-tertiary">
+      <div className="mb-3 flex items-center gap-2 text-text-tertiary max-lg:hidden">
         <Layers size={14} />
         <Typography variant="caption">{m.ui_color_by()}</Typography>
       </div>
@@ -131,7 +151,7 @@ export const ColorByControl = (props: ColorByControlProps) => {
         onValueChange={(value) => {
           const option = props.options.find((candidate) => candidate.mode === value);
           if (option === undefined) return;
-          useMapFocusStore.getState().setSessionColorMode(option.mode);
+          useMapPreferencesStore.getState().setSessionColorMode(props.sport, option.mode);
           setOpen(false);
         }}
         className="gap-1"

@@ -7,7 +7,7 @@ import { bulkSaveSessionData } from '@/lib/indexeddb.ts';
 import { requestPersistentStorage } from '@/lib/persistentStorage.ts';
 import type { ParsedFitResultWithMeta } from '@/parsers/fit.ts';
 
-const CHUNK_SIZE = 10;
+export const INGEST_CHUNK_SIZE = 10;
 export const INGEST_BATCH_SIZE = 50;
 
 interface IngestOutcome {
@@ -71,9 +71,9 @@ const ingestBatch = async (
   let saveFailed = false;
   try {
     await bulkSaveSessionData(idbEntries, {
-      chunkSize: CHUNK_SIZE,
+      chunkSize: INGEST_CHUNK_SIZE,
       onChunkDone: (chunkIndex) => {
-        savedCount = Math.min((chunkIndex + 1) * CHUNK_SIZE, withIds.length);
+        savedCount = Math.min((chunkIndex + 1) * INGEST_CHUNK_SIZE, withIds.length);
       },
     });
   } catch (err) {

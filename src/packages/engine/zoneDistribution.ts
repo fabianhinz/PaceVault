@@ -1,5 +1,8 @@
 // Sources: [Karvonen1957], [CogganAllen2010]
-// See src/engine/SOURCES.md for full citations.
+// See src/packages/engine/SOURCES.md for full citations.
+
+import type { SessionRecord } from './types.ts';
+import { activeSeconds } from './normalize.ts';
 
 export const HR_ZONE_DEFS = [
   { zone: 'Z1', name: 'recovery', label: 'Recovery', minPct: 0.5, maxPct: 0.6, color: '#60a5fa' },
@@ -46,3 +49,23 @@ export const POWER_ZONE_DEFS = [
     color: '#dc2626',
   },
 ];
+
+export const secondsInZones = (
+  records: SessionRecord[],
+  zoneIndexAt: (hr: number) => number,
+  zoneCount: number,
+): number[] => {
+  const seconds = Array.from({ length: zoneCount }, () => 0);
+  for (let i = 1; i < records.length; i++) {
+    const previous = records[i - 1];
+    const current = records[i];
+    if (!previous || current?.hr === undefined) continue;
+    const dt = activeSeconds(previous, current);
+    if (dt === 0) continue;
+    const zone = zoneIndexAt(current.hr);
+    const total = seconds[zone];
+    if (total === undefined) continue;
+    seconds[zone] = total + dt;
+  }
+  return seconds;
+};

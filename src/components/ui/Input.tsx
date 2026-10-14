@@ -10,6 +10,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: LucideIcon;
   helperText?: ReactNode;
   error?: boolean;
+  reserveHelper?: boolean;
 }
 
 const variantClasses: Record<InputVariant, string> = {
@@ -18,13 +19,21 @@ const variantClasses: Record<InputVariant, string> = {
 };
 
 export const Input = (props: InputProps) => {
-  const { className, variant = 'field', icon: _i, helperText, error, ...rest } = props;
+  const {
+    className,
+    variant = 'field',
+    icon: _i,
+    helperText,
+    error,
+    reserveHelper: _r,
+    ...rest
+  } = props;
   const input = (
     <input
       className={cn(
         'flex w-full min-w-0 text-base text-text-primary placeholder:text-text-tertiary focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
         variantClasses[variant],
-        error ? 'border-status-danger-strong' : 'border-white/10',
+        error ? 'border-status-danger-strong focus:ring-status-danger-strong' : 'border-white/10',
         className,
       )}
       {...rest}
@@ -40,8 +49,13 @@ export const Input = (props: InputProps) => {
           {input}
         </div>
       )}
-      {helperText && (
-        <p className={cn('mt-1 text-xs', error ? 'text-status-danger' : 'text-text-quaternary')}>
+      {(helperText || props.reserveHelper) && (
+        <p
+          className={cn(
+            'mt-1 min-h-4 text-xs',
+            error ? 'text-status-danger' : 'text-text-quaternary',
+          )}
+        >
           {helperText}
         </p>
       )}

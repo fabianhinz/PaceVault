@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { interpretFilterText } from '@/lib/filterGrammar.ts';
+import { INPUT_DEBOUNCE_MS, useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
 import type { FilterCriteria } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-import { useSessionsStore } from '@/store/sessions.ts';
 
 export const useFilterBuilder = (open: boolean, onClose: () => void) => {
-  const sessions = useSessionsStore((s) => s.sessions);
   const [text, setText] = useState('');
   const tilesRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const interpretations = useMemo(
-    () => interpretFilterText(text, sessions, Date.now()),
-    [text, sessions],
-  );
+  const interpretations = useMemo(() => interpretFilterText(text, Date.now()), [text]);
+  const notUnderstood = text !== '' && interpretations.length === 0;
+  let notUnderstoodText = '';
+  if (notUnderstood) {
+    notUnderstoodText = text;
+  }
+  const pausedNotUnderstoodText = useDebouncedValue(notUnderstoodText, INPUT_DEBOUNCE_MS);
+  const showNotUnderstood = notUnderstood && pausedNotUnderstoodText !== '';
 
   useEffect(() => {
     if (!open) {
@@ -64,5 +67,14 @@ export const useFilterBuilder = (open: boolean, onClose: () => void) => {
     }
   };
 
-  return { text, setText, interpretations, select, handleKeyDown, tilesRef, listRef };
+  return {
+    text,
+    setText,
+    interpretations,
+    showNotUnderstood,
+    select,
+    handleKeyDown,
+    tilesRef,
+    listRef,
+  };
 };

@@ -47,10 +47,17 @@ describe('sheet position', () => {
     expect(sheetTapTarget(1)).toBe(0);
   });
 
-  it('fits the map above the middle snap point while the sheet is dragged higher', () => {
+  it('caps the fit at the given sheet position', () => {
     const middle = sheetFitHeight(layout, 0.5);
     expect(sheetFitHeight(layout, 0.8)).toBe(middle);
     expect(sheetFitHeight(layout, 1)).toBe(middle);
+    expect(sheetFitHeight(layout, 1, 0.85)).toBe(sheetFitHeight(layout, 0.85, 0.85));
+    expect(sheetFitHeight(layout, 1, 0.85)).toBeGreaterThan(middle);
+  });
+
+  it('keeps the peek content at 66 px under the taller handle', () => {
+    expect(layout.peekContentHeight).toBe(66);
+    expect(layout.handleHeight).toBe(48);
   });
 
   it('keeps the peek above the floating dock row, with and without a home indicator', () => {

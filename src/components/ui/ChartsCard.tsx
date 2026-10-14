@@ -40,6 +40,7 @@ interface ChartRowProps {
   metricId?: MetricId;
   height?: string;
   rail?: ReactNode;
+  above?: ReactNode;
   footer?: ReactNode;
   children: ReactNode;
 }
@@ -60,6 +61,7 @@ export const ChartRow = (props: ChartRowProps) => {
         />
       </div>
       <div className="px-3 pt-1 pb-3">
+        {props.above}
         <div
           className={cn(
             props.height ?? 'h-[140px]',

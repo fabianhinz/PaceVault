@@ -2,6 +2,7 @@ import { glassClass } from '@/components/ui/Card.tsx';
 import { cn } from '@/lib/utils.ts';
 import type { SessionLap, SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import { LapsRow } from './LapsRow.tsx';
+import { MoreStatsRow } from './MoreStatsRow.tsx';
 import { TrainingEffectCard } from './TrainingEffectCard.tsx';
 import { WeatherCard } from './WeatherCard.tsx';
 
@@ -19,5 +20,6 @@ export const SessionSummaryCard = (props: SessionSummaryCardProps) => (
     <WeatherCard session={props.session} records={props.records} />
     <TrainingEffectCard session={props.session} records={props.records} />
     <LapsRow laps={props.laps} sport={props.session.sport} />
+    <MoreStatsRow session={props.session} records={props.records} />
   </div>
 );

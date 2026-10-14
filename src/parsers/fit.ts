@@ -12,7 +12,6 @@ import {
 import { calculateSessionStress } from '@/packages/engine/stress.ts';
 import {
   SESSION_DERIVATION_VERSION,
-  deriveMovingTimeFromLaps,
   deriveSessionFieldsFromRecords,
 } from '@/packages/engine/sessionDerivation.ts';
 import { extractSessionName } from '@/lib/filename.ts';
@@ -25,17 +24,10 @@ import {
   type FitRecordInput,
 } from './fitSchemas.ts';
 
-interface FitUserProfile {
-  weight?: number;
-  gender?: 'male' | 'female';
-  restingHeartRate?: number;
-}
-
 export interface ParsedFitResult {
   session: SessionFields;
   records: SessionRecord[];
   laps: SessionLap[];
-  fitUserProfile?: FitUserProfile;
   fingerprint: string;
 }
 
@@ -44,16 +36,6 @@ export type ParsedFitResultWithMeta = ParsedFitResult & {
   rawData: ArrayBuffer;
   source: SessionSource;
 };
-
-export class UnsupportedSportError extends Error {
-  readonly fitSport: string | undefined;
-
-  constructor(fileName: string, fitSport: string | undefined) {
-    super(`Failed to parse FIT file "${fileName}": sport is not supported`);
-    this.name = 'UnsupportedSportError';
-    this.fitSport = fitSport;
-  }
-}
 
 const FIT_SPORT_BY_SPORT: Record<Sport, string> = {
   running: 'running',
@@ -110,36 +92,27 @@ export const mapFitLaps = (fitLaps: FitLapInput[]): SessionLap[] => {
       lapIndex: lap.message_index?.value ?? index,
       startTime,
       endTime,
-      totalElapsedTime: lap.total_elapsed_time,
       totalTimerTime: lap.total_timer_time,
       totalMovingTime: lap.total_moving_time,
       distance: lap.total_distance,
-      avgSpeed: lap.enhanced_avg_speed ?? lap.avg_speed,
-      maxSpeed: lap.enhanced_max_speed ?? lap.max_speed,
-      totalAscent: lap.total_ascent,
-      minAltitude: lap.enhanced_min_altitude ?? lap.min_altitude,
-      maxAltitude: lap.enhanced_max_altitude ?? lap.max_altitude,
-      avgAltitude: lap.enhanced_avg_altitude ?? lap.avg_altitude,
-      avgHr: lap.avg_heart_rate,
       minHr: lap.min_heart_rate,
       maxHr: lap.max_heart_rate,
-      avgCadence: lap.avg_cadence,
-      maxCadence: lap.max_cadence,
       intensity: lap.intensity,
-      repetitionNum: lap.repetition_num,
     };
   });
 };
 
+export interface FitParseProfile {
+  restHr: number;
+  maxHr: number;
+  gender: Gender;
+  ftp?: number;
+}
+
 export const parseFitFile = async (
   arrayBuffer: ArrayBuffer,
   fileName: string,
-  userProfile: {
-    restHr: number;
-    maxHr: number;
-    gender: Gender;
-    ftp?: number;
-  },
+  profileAt: (date: number) => FitParseProfile,
   meta?: { name?: string },
 ): Promise<ParsedFitResult> => {
   const parser = new FitParser({
@@ -169,7 +142,7 @@ export const parseFitFile = async (
 
   const sport = mapFitSportToAppSport(fitSession.sport);
   if (!sport) {
-    throw new UnsupportedSportError(fileName, fitSession.sport);
+    throw new Error(`Failed to parse FIT file "${fileName}": sport is not supported`);
   }
 
   if (!fitSession.start_time) {
@@ -198,8 +171,7 @@ export const parseFitFile = async (
   }
   const laps = mapFitLaps(lapsResult.data);
 
-  const movingTime = deriveMovingTimeFromLaps(laps);
-
+  const userProfile = profileAt(sessionDate);
   const hasPowerRecords = records.some((r) => r.power !== undefined);
   let stressFtp: number | undefined = undefined;
   if (hasPowerRecords) {
@@ -248,23 +220,14 @@ export const parseFitFile = async (
     avgHr: fitSession.avg_heart_rate,
     maxHr: fitSession.max_heart_rate,
     avgPower: derived.avgPower ?? fitSession.avg_power,
-    maxPower: derived.maxPower ?? fitSession.max_power,
     normalizedPower: stressResult.normalizedPower ?? fitSession.normalized_power,
     avgCadence: derived.avgCadence ?? fitSession.avg_cadence,
     avgSpeed,
     avgPace,
-    calories: fitSession.total_calories,
     elevationGain: fitSession.total_ascent,
     elevationLoss: fitSession.total_descent,
-    movingTime,
     subSport: fitSession.sub_sport,
-    deviceTss: fitSession.training_stress_score,
-    deviceIf: fitSession.intensity_factor,
-    deviceFtp: fitSession.threshold_power,
     maxSpeed: fitSession.enhanced_max_speed ?? fitSession.max_speed ?? derived.maxSpeed,
-    minAltitude: fitSession.enhanced_min_altitude ?? fitSession.min_altitude,
-    maxAltitude: fitSession.enhanced_max_altitude ?? fitSession.max_altitude,
-    avgAltitude: fitSession.enhanced_avg_altitude ?? fitSession.avg_altitude,
     ...(derived.gap !== undefined && { gap: derived.gap }),
     tss: stressResult.tss,
     stressMethod: stressResult.stressMethod,

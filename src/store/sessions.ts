@@ -40,7 +40,7 @@ interface SessionsState {
     options?: { markNew?: boolean },
   ) => void;
   deleteSession: (id: string) => void;
-  commitReprocessedSession: (session: TrainingSession) => void;
+  commitReprocessedSessions: (sessions: TrainingSession[]) => void;
   markSessionSeen: (id: string) => void;
   clearAll: () => void;
 }
@@ -74,12 +74,15 @@ export const useSessionsStore = create<SessionsState>()(
           set((draft) => {
             draft.sessions = draft.sessions.filter((s) => s.id !== id);
           }),
-        commitReprocessedSession: (session) =>
+        commitReprocessedSessions: (sessions) => {
+          const reprocessedById = new Map(sessions.map((s) => [s.id, s]));
           set((draft) => {
-            const index = draft.sessions.findIndex((s) => s.id === session.id);
-            if (index === -1) return;
-            draft.sessions[index] = session;
-          }),
+            draft.sessions.forEach((stored, index) => {
+              const reprocessed = reprocessedById.get(stored.id);
+              if (reprocessed) draft.sessions[index] = reprocessed;
+            });
+          });
+        },
         markSessionSeen: (id) =>
           set((draft) => {
             const session = draft.sessions.find((s) => s.id === id);

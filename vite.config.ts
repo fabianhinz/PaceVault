@@ -25,6 +25,7 @@ export default defineConfig({
     tabWidth: 2,
     arrowParens: 'always',
     endOfLine: 'lf',
+    ignorePatterns: ['mockups'],
   },
   lint: {
     plugins: ['oxc', 'typescript', 'unicorn', 'react'],

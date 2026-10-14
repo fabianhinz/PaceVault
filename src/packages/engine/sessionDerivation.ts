@@ -1,16 +1,15 @@
-import type { SessionLap, SessionRecord, Sport } from './types.ts';
-import { calculateGAP } from './normalize.ts';
+import type { SessionRecord, Sport } from './types.ts';
+import { activeSeconds, calculateGAP } from './normalize.ts';
 
 export interface RecordDerivedFields {
   distance?: number;
   avgPower?: number;
-  maxPower?: number;
   avgCadence?: number;
   maxSpeed?: number;
   gap?: number;
 }
 
-export const SESSION_DERIVATION_VERSION = 2;
+export const SESSION_DERIVATION_VERSION = 3;
 
 export const isSessionOutdated = (session: { derivationVersion: number }): boolean => {
   return session.derivationVersion < SESSION_DERIVATION_VERSION;
@@ -27,13 +26,33 @@ export const deriveDistanceFromRecords = (records: SessionRecord[]): number | un
   return undefined;
 };
 
+export const timeWeightedMean = (
+  records: SessionRecord[],
+  field: 'power' | 'cadence',
+): number | undefined => {
+  let weighted = 0;
+  let seconds = 0;
+  for (let i = 1; i < records.length; i++) {
+    const previous = records[i - 1];
+    const current = records[i];
+    const value = current?.[field];
+    if (!previous || !current || value === undefined) continue;
+    const dt = activeSeconds(previous, current);
+    if (dt === 0) continue;
+    weighted += value * dt;
+    seconds += dt;
+  }
+  if (seconds === 0) return undefined;
+  return weighted / seconds;
+};
+
 export const deriveAvgFromRecords = (
   records: SessionRecord[],
   field: 'power' | 'cadence',
 ): number | undefined => {
-  const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined);
-  if (values.length === 0) return undefined;
-  return Math.round(values.reduce((sum, v) => sum + v, 0) / values.length);
+  const mean = timeWeightedMean(records, field);
+  if (mean === undefined) return undefined;
+  return Math.round(mean);
 };
 
 export const deriveMaxFromRecords = (
@@ -43,11 +62,6 @@ export const deriveMaxFromRecords = (
   const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined);
   if (values.length === 0) return undefined;
   return Math.max(...values);
-};
-
-export const deriveMovingTimeFromLaps = (laps: SessionLap[]): number | undefined => {
-  if (laps.length === 0) return undefined;
-  return laps.reduce((sum, lap) => sum + (lap.totalMovingTime ?? lap.totalTimerTime), 0);
 };
 
 export const deriveSessionFieldsFromRecords = (
@@ -61,7 +75,6 @@ export const deriveSessionFieldsFromRecords = (
   return {
     distance: deriveDistanceFromRecords(records),
     avgPower: deriveAvgFromRecords(records, 'power'),
-    maxPower: deriveMaxFromRecords(records, 'power'),
     avgCadence: deriveAvgFromRecords(records, 'cadence'),
     maxSpeed: deriveMaxFromRecords(records, 'speed'),
     gap,

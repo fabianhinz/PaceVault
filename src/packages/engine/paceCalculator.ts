@@ -1,5 +1,5 @@
 // App-specific logic — no published formula.
-// See src/engine/SOURCES.md (App-Specific Logic section).
+// See src/packages/engine/SOURCES.md (App-Specific Logic section).
 
 /**
  * Computes total time from pace and distance.

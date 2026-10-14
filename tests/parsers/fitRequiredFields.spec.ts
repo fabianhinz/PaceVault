@@ -10,7 +10,7 @@ vi.mock('fit-file-parser', () => ({
 
 import { parseFitFile } from '@/parsers/fit.ts';
 
-const profile = { restHr: 50, maxHr: 190, gender: 'male' as const };
+const profile = () => ({ restHr: 50, maxHr: 190, gender: 'male' as const });
 
 const session = {
   start_time: '2026-01-01T09:00:00.000Z',
@@ -95,18 +95,18 @@ describe('parseFitFile optional data', () => {
     expect(result.session.distance).toBe(0);
   });
 
-  it('leaves lap distance and avg speed undefined when missing', async () => {
+  it('lap distance undefined when missing', async () => {
     const result = await parse({ sessions: [session], laps: [lap] });
     expect(result.laps[0]?.distance).toBeUndefined();
-    expect(result.laps[0]?.avgSpeed).toBeUndefined();
   });
 
   it('counts recorded zeros in avg power and cadence', async () => {
     const result = await parse({
       sessions: [session],
       records: [
-        { elapsed_time: 0, power: 0, cadence: 0 },
-        { elapsed_time: 1, power: 200, cadence: 90 },
+        { elapsed_time: 0, power: 200, cadence: 90 },
+        { elapsed_time: 1, power: 0, cadence: 0 },
+        { elapsed_time: 2, power: 200, cadence: 90 },
       ],
     });
     expect(result.session.avgPower).toBe(100);

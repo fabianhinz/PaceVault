@@ -1,28 +1,7 @@
 import { test, expect } from './helpers/test';
 import { seedOnboardingComplete, CYCLING_FIT, RUNNING_FIT } from './helpers/seed';
 import { uploadFitFiles } from './helpers/upload';
-
-const HOUR_SEC = 3600;
-
-const openMeteoFixture = (url: URL) => {
-  const startSec = Date.parse(`${url.searchParams.get('start_date')}T00:00:00Z`) / 1000;
-  const endSec = Date.parse(`${url.searchParams.get('end_date')}T23:00:00Z`) / 1000;
-  const time: number[] = [];
-  for (let t = startSec; t <= endSec; t += HOUR_SEC) time.push(t);
-  const hourOf = (t: number) => Math.floor(t / HOUR_SEC);
-  return {
-    hourly: {
-      time,
-      temperature_2m: time.map((t) => 10 + (hourOf(t) % 5)),
-      apparent_temperature: time.map((t) => 8 + (hourOf(t) % 5)),
-      relative_humidity_2m: time.map(() => 70),
-      wind_speed_10m: time.map(() => 18),
-      wind_gusts_10m: time.map(() => 30),
-      wind_direction_10m: time.map(() => 240),
-      weather_code: time.map((t) => (hourOf(t) % 2 === 0 ? 3 : 61)),
-    },
-  };
-};
+import { openMeteoFixture } from './helpers/openMeteo';
 
 test.describe('Session browsing', () => {
   test.beforeEach(async ({ page }) => {
@@ -93,9 +72,7 @@ test.describe('Session browsing', () => {
     await expect(lapsRow.locator('[aria-disabled="true"]')).toContainText(/laps off/i);
   });
 
-  test('color by HR zones colours the HR chart and is not carried over to the next session', async ({
-    page,
-  }) => {
+  test('color by HR zones colours the HR chart and is remembered per sport', async ({ page }) => {
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');
     const sessionLinks = page.locator('[data-testid="session-item"]');
@@ -115,9 +92,15 @@ test.describe('Session browsing', () => {
     await sessionLinks.nth(1).click();
     await page.waitForURL(/\/sessions\/.+/);
     await expect(page.getByTestId('color-by-pill')).toHaveText(/color by/i, { timeout: 10_000 });
+
+    await page.goBack();
+    await page.waitForURL('/sessions');
+    await sessionLinks.first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+    await expect(page.getByTestId('color-by-pill')).toHaveText(/hr zones/i, { timeout: 10_000 });
   });
 
-  test('a lap picked on a chart turns the laps pill into a stepper, steps without moving and resets on the next session', async ({
+  test('a lap picked on a chart turns the laps pill into a stepper, steps without moving and keeps its settings per sport', async ({
     page,
   }) => {
     await page.getByRole('link', { name: /sessions/i }).click();
@@ -142,6 +125,7 @@ test.describe('Session browsing', () => {
     await expect(lapsPill).toHaveCount(0);
     await expect(chart.getByTestId('lap-band-selected')).toBeAttached();
     const firstName = await stepper.getByTestId('lap-stepper-name').textContent();
+    await expect(page.getByTestId('color-by-pill')).toHaveAccessibleName(/color by/i);
 
     const next = stepper.getByTestId('lap-stepper-next');
     const before = await next.boundingBox();
@@ -149,7 +133,11 @@ test.describe('Session browsing', () => {
     await expect(stepper.getByTestId('lap-stepper-name')).not.toHaveText(firstName ?? '');
     expect(await next.boundingBox()).toEqual(before);
 
-    await stepper.getByTestId('lap-stepper-clear').click();
+    await page.mouse.click(5, 5);
+    await page.waitForTimeout(300);
+    await expect(stepper).toBeVisible();
+
+    await page.getByTestId('lap-stepper-clear').click();
     await expect(stepper).toHaveCount(0);
     await expect(lapsPill).toBeVisible();
 
@@ -157,7 +145,7 @@ test.describe('Session browsing', () => {
     await page.getByTestId('lap-strip-bar').nth(1).click();
     await expect(stepper.getByTestId('lap-stepper-name')).toHaveText('Split 2');
     await expect(page.getByTestId('lap-strip-selected')).toBeAttached();
-    await stepper.getByTestId('lap-stepper-clear').click();
+    await page.getByTestId('lap-stepper-clear').click();
     await expect(lapsPill).toBeVisible();
 
     await lapsPill.click();
@@ -245,6 +233,9 @@ test.describe('Session browsing', () => {
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     const table = card.getByRole('table');
     await expect(table).toBeVisible();
+    const attribution = card.getByRole('link', { name: /open-meteo\.com/i });
+    await expect(attribution).toBeVisible();
+    await expect(attribution).toHaveAttribute('href', 'https://open-meteo.com/');
     const hours = table.locator('thead th[scope="col"]');
     expect(await hours.count()).toBeGreaterThanOrEqual(2);
     const weatherRow = table.getByRole('row', { name: /^weather/i });
@@ -259,6 +250,60 @@ test.describe('Session browsing', () => {
     await expect(
       weatherRow.getByRole('img', { name: 'Cloudy', exact: true }).first().locator('circle'),
     ).toHaveCount(0);
+  });
+
+  test('more stats row lists its topics and sends missing body data to settings', async ({
+    page,
+  }) => {
+    await page.getByRole('link', { name: /sessions/i }).click();
+    await page.waitForURL('/sessions');
+    await page.locator('[data-testid="session-item"]').filter({ hasText: /run/i }).click();
+    await page.waitForURL(/\/sessions\/.+/);
+
+    const row = page.getByTestId('session-stats-row');
+    const toggle = row.locator(':scope > button');
+    await expect(toggle).toContainText('Calories · Stride · Zones · Decoupling', {
+      timeout: 10_000,
+    });
+
+    await toggle.click();
+    await expect(row.locator('[data-stat="stepLength"]')).toContainText('spm');
+    await expect(row.locator('[data-stat="stepLength"]')).not.toContainText('Pace');
+    const moving = row.locator('[data-stat="movingTime"]');
+    await expect(moving).toContainText(/Elapsed time\d/);
+    await expect(moving).toContainText('Stopped');
+    await expect(moving).not.toContainText('Coasting');
+
+    const zones = row.locator('[data-stat="trainingZones"]');
+    await expect(zones).toContainText('HR zones');
+    const segment = zones.getByRole('img', { name: /^Z\d.*: [\d:]+ · [1-9]\d* %$/ }).first();
+    const label = (await segment.getAttribute('aria-label')) ?? '';
+    const time = label.split(': ')[1]?.split(' · ')[0] ?? '';
+    const share = label.split(' · ')[1] ?? '';
+    await expect(zones).not.toContainText(time);
+
+    await segment.hover();
+    await expect(zones).toContainText(time);
+    await page.mouse.move(0, 0);
+    await expect(zones).not.toContainText(time);
+
+    await segment.click();
+    await page.mouse.move(0, 0);
+    await expect(zones).toContainText(time);
+    await expect(zones).not.toContainText(share);
+
+    await segment.click();
+    await page.mouse.move(0, 0);
+    await expect(zones).not.toContainText(time);
+    await expect(
+      page.getByRole('region', { name: 'Cadence' }).getByTestId('stat-rail'),
+    ).toContainText('spm');
+
+    await row
+      .locator('[data-stat="calories"]')
+      .getByRole('link', { name: 'Add your weight' })
+      .click();
+    await page.waitForURL('/settings');
   });
 
   test('navigate back from detail to session list', async ({ page }) => {

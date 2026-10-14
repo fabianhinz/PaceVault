@@ -1,10 +1,14 @@
-export type FilterTimeUnit = 'day' | 'week' | 'month';
+export type FilterTimeUnit = 'day' | 'week' | 'month' | 'year';
+
+export type FilterCalendarUnit = 'day' | 'week' | 'month';
 
 type FilterRangeSource = 'year' | 'month' | 'months' | 'zoom';
 
 export type FilterTime =
   | { kind: 'relative'; amount: number; unit: FilterTimeUnit }
   | { kind: 'calendarYear'; yearsAgo: number }
+  | { kind: 'calendar'; unit: FilterCalendarUnit; ago: number }
+  | { kind: 'since'; from: string }
   | { kind: 'range'; from: string; to: string; source: FilterRangeSource };
 
 interface ResolvedRange {
@@ -35,6 +39,9 @@ const relativeStart = (amount: number, unit: FilterTimeUnit, now: number): numbe
   const year = today.getFullYear();
   const month = today.getMonth();
   const day = today.getDate();
+  if (unit === 'year') {
+    return new Date(year - amount, month, day + 1).getTime();
+  }
   if (unit === 'month') {
     return new Date(year, month - amount, day + 1).getTime();
   }
@@ -45,7 +52,37 @@ const relativeStart = (amount: number, unit: FilterTimeUnit, now: number): numbe
   return new Date(year, month, day - days + 1).getTime();
 };
 
+const calendarRange = (unit: FilterCalendarUnit, ago: number, now: number): ResolvedRange => {
+  const today = new Date(now);
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const day = today.getDate();
+  if (unit === 'month') {
+    return {
+      from: new Date(year, month - ago, 1).getTime(),
+      to: endOfDay(new Date(year, month - ago + 1, 0)),
+    };
+  }
+  if (unit === 'week') {
+    const monday = day - ((today.getDay() + 6) % 7) - ago * 7;
+    return {
+      from: new Date(year, month, monday).getTime(),
+      to: endOfDay(new Date(year, month, monday + 6)),
+    };
+  }
+  return {
+    from: new Date(year, month, day - ago).getTime(),
+    to: endOfDay(new Date(year, month, day - ago)),
+  };
+};
+
 const unclampedRange = (time: FilterTime, now: number): ResolvedRange => {
+  if (time.kind === 'calendar') {
+    return calendarRange(time.unit, time.ago, now);
+  }
+  if (time.kind === 'since') {
+    return { from: parseDayKey(time.from).getTime(), to: endOfDay(new Date(now)) };
+  }
   if (time.kind === 'relative') {
     return { from: relativeStart(time.amount, time.unit, now), to: endOfDay(new Date(now)) };
   }

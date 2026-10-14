@@ -4,7 +4,6 @@ export const tokens = {
   surfaceElevated: '#1a1d24',
   surfaceOverlay: '#252830',
   border: '#252830',
-  borderSubtle: '#1a1d24',
   textPrimary: '#e5e7eb',
   textSecondary: '#b0b4be',
   textTertiary: '#8b8f9a',

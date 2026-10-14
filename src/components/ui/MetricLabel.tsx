@@ -1,7 +1,7 @@
 import { Info } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { ResponsivePopover } from './ResponsivePopover.tsx';
-import { METRIC_EXPLANATIONS, type MetricId } from '@/lib/explanations.ts';
+import { METRIC_EXPLANATIONS, type MetricExplanation, type MetricId } from '@/lib/explanations.ts';
 import { useUserStore } from '@/store/user.ts';
 import { cn } from '@/lib/utils.ts';
 import { Button } from './Button.tsx';
@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 
 interface MetricLabelProps {
   metricId: MetricId;
+  relatedMetricIds?: MetricId[];
   size?: 'default' | 'sm';
   showValue?: ReactNode;
   className?: string;
@@ -18,8 +19,35 @@ interface MetricLabelProps {
   alwaysShowLabel?: boolean;
 }
 
+const ExplanationBody = (props: { explanation: MetricExplanation; primary: boolean }) => (
+  <div className={cn('space-y-2', !props.primary && 'border-t border-white/10 pt-3')}>
+    <div className={cn('flex items-baseline gap-2', props.primary && 'max-lg:hidden')}>
+      <Typography variant="subtitle1" className="font-semibold">
+        {props.explanation.friendlyName}
+      </Typography>
+      {props.explanation.shortLabel && (
+        <Typography variant="caption" className="rounded bg-white/10 px-1.5 py-0.5">
+          {props.explanation.shortLabel}
+        </Typography>
+      )}
+    </div>
+
+    <Typography>{props.explanation.oneLiner}</Typography>
+
+    <Typography
+      variant="caption"
+      as="p"
+      color="textTertiary"
+      className="border-t border-white/10 pt-2"
+    >
+      {props.explanation.range}
+    </Typography>
+  </div>
+);
+
 export const MetricLabel = (props: MetricLabelProps) => {
   const explanation = METRIC_EXPLANATIONS[props.metricId];
+  const related = (props.relatedMetricIds ?? []).map((id) => METRIC_EXPLANATIONS[id]);
   const showHelp = useUserStore((s) => s.profile?.showMetricHelp ?? true);
   const size = props.size ?? 'default';
 
@@ -69,8 +97,8 @@ export const MetricLabel = (props: MetricLabelProps) => {
       {showHelp && (
         <ResponsivePopover
           title={explanation.friendlyName}
+          chip={explanation.shortLabel}
           side="top"
-          className="space-y-2"
           trigger={
             <Button
               variant="ghost"
@@ -83,27 +111,12 @@ export const MetricLabel = (props: MetricLabelProps) => {
             </Button>
           }
         >
-          <div className="flex items-baseline gap-2">
-            <Typography variant="subtitle1" className="font-semibold">
-              {explanation.friendlyName}
-            </Typography>
-            {explanation.shortLabel && (
-              <Typography variant="caption" className="rounded bg-white/10 px-1.5 py-0.5">
-                {explanation.shortLabel}
-              </Typography>
-            )}
+          <div className="space-y-3">
+            <ExplanationBody explanation={explanation} primary />
+            {related.map((entry) => (
+              <ExplanationBody key={entry.id} explanation={entry} primary={false} />
+            ))}
           </div>
-
-          <Typography>{explanation.oneLiner}</Typography>
-
-          <Typography
-            variant="caption"
-            as="p"
-            color="textTertiary"
-            className="border-t border-white/10 pt-2"
-          >
-            {explanation.range}
-          </Typography>
         </ResponsivePopover>
       )}
     </span>

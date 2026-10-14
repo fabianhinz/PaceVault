@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { m } from '@/paraglide/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useTripsStore } from '@/store/trips.ts';
+import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { invalidatePersonalBestsOfSession } from '@/features/records/hooks/usePersonalBests.ts';
 import {
   deleteSessionRecords,
@@ -15,7 +16,9 @@ import { Button } from '@/components/ui/Button.tsx';
 import {
   DialogRoot,
   DialogContent,
-  DialogTitle,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogDescription,
 } from '@/components/ui/Dialog.tsx';
 import { formatDate } from '@/lib/formatters.ts';
@@ -37,14 +40,16 @@ export const DeleteSessionDialog = (props: {
       }}
     >
       <DialogContent>
-        <DialogTitle>{m.ui_session_delete_title()}</DialogTitle>
-        <DialogDescription>
-          {m.ui_session_delete_desc({
-            sport: props.session.sport,
-            date: formatDate(props.session.date),
-          })}
-        </DialogDescription>
-        <div className="mt-4 flex justify-end gap-2">
+        <DialogHeader title={m.ui_session_delete_title()} />
+        <DialogBody>
+          <DialogDescription>
+            {m.ui_session_delete_desc({
+              sport: props.session.sport,
+              date: formatDate(props.session.date),
+            })}
+          </DialogDescription>
+        </DialogBody>
+        <DialogFooter>
           <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
             {m.ui_btn_cancel()}
           </Button>
@@ -55,6 +60,7 @@ export const DeleteSessionDialog = (props: {
               useTripsStore.getState().removeSessionFromAllTrips(props.session.id);
               invalidatePersonalBestsOfSession(queryClient, props.session.id);
               props.onOpenChange(false);
+              useMapFocusStore.getState().requestMapRefitAfterDelete();
               navigate('/sessions');
               await Promise.all([
                 deleteSessionRecords(props.session.id),
@@ -67,7 +73,7 @@ export const DeleteSessionDialog = (props: {
           >
             {m.ui_btn_delete()}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </DialogRoot>
   );

@@ -37,4 +37,10 @@ describe('extractSessionName', () => {
   it('handles many underscores', () => {
     expect(extractSessionName('12345_Multiple_Word_Name.fit')).toBe('Multiple Word Name');
   });
+
+  it('intervals.icu file names keep their title', () => {
+    expect(extractSessionName('i183955644_Bad_Herrenalb_Trailrunning.fit')).toBe(
+      'Bad Herrenalb Trailrunning',
+    );
+  });
 });

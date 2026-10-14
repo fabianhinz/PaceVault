@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '../helpers/test';
+import { test, expect, type Locator, type Page } from '../helpers/test';
 import { DB_NAME } from '../../src/lib/db.ts';
 import {
   seedOnboardingComplete,
@@ -7,6 +7,8 @@ import {
   RUNNING_FIT,
 } from '../helpers/seed';
 import { uploadFitFiles } from '../helpers/upload';
+import { expectFilterInputStaysPut } from '../helpers/filters';
+import { exposeMap } from '../helpers/map';
 
 test.use({
   launchOptions: {
@@ -40,8 +42,8 @@ const handle = (page: Page) => sheet(page).locator('[data-sheet-handle]');
 
 const sheetScroller = (page: Page) => page.locator('[data-layout="main"]').locator('..');
 
-const dragHandle = async (page: Page, target: { by?: number; toY?: number }) => {
-  const box = await handle(page).boundingBox();
+const dragHandle = async (page: Page, grip: Locator, target: { by?: number; toY?: number }) => {
+  const box = await grip.boundingBox();
   if (!box) throw new Error('handle not rendered');
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;
@@ -91,7 +93,7 @@ test.describe('mobile bottom sheet', () => {
     test('dragging leaves the sheet where it is released and survives a reload', async ({
       page,
     }) => {
-      await dragHandle(page, { by: 120 });
+      await dragHandle(page, handle(page), { by: 120 });
 
       await expect
         .poll(async () => {
@@ -106,21 +108,21 @@ test.describe('mobile bottom sheet', () => {
     });
 
     test('dragging past either end stops at full or peek', async ({ page }) => {
-      await dragHandle(page, { toY: 0 });
+      await dragHandle(page, handle(page), { toY: 0 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '1.00');
 
-      await dragHandle(page, { toY: 840 });
+      await dragHandle(page, handle(page), { toY: 840 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.00');
     });
 
     test('a release inside the fade zone settles on the more visible layer', async ({ page }) => {
-      await dragHandle(page, { toY: 840 });
+      await dragHandle(page, handle(page), { toY: 840 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.00');
 
-      await dragHandle(page, { by: -20 });
+      await dragHandle(page, handle(page), { by: -20 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.00');
 
-      await dragHandle(page, { by: -70 });
+      await dragHandle(page, handle(page), { by: -70 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.15');
     });
   });
@@ -140,7 +142,7 @@ test.describe('mobile bottom sheet', () => {
 
     test('swaps the content for a summary at peek and back when dragged up', async ({ page }) => {
       const peek = page.locator('[data-sheet-peek]');
-      await dragHandle(page, { toY: 840 });
+      await dragHandle(page, handle(page), { toY: 840 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '0.00');
 
       await expect(peek).toContainText('Dashboard');
@@ -148,7 +150,7 @@ test.describe('mobile bottom sheet', () => {
       await expect(peek).toHaveCSS('opacity', '1');
       await expect(sheetScroller(page)).toHaveCSS('opacity', '0');
 
-      await dragHandle(page, { toY: 0 });
+      await dragHandle(page, handle(page), { toY: 0 });
       await expect(sheet(page)).toHaveAttribute('data-sheet-position', '1.00');
       await expect(peek).toHaveCSS('opacity', '0');
       await expect(sheetScroller(page)).toHaveCSS('opacity', '1');
@@ -192,15 +194,17 @@ test.describe('mobile dock', () => {
     ]);
   });
 
-  test('switches tabs and opens the filter card above the row without moving it', async ({
-    page,
-  }) => {
+  test('switches tabs and opens the filter sheet without moving the row', async ({ page }) => {
     const dock = page.locator('[data-layout="dock"]');
     const sessionsTab = dock.getByRole('link', { name: /sessions/i });
-    const filterButton = dock.getByRole('button', { name: 'Filter', exact: true });
-    const card = dock.locator('[data-dock-card]');
-    const field = card.getByLabel(/describe a filter/i);
-    const list = card.getByRole('group', { name: /choose filter/i });
+    const filterButton = dock.getByRole('button', {
+      name: 'Filter',
+      exact: true,
+      includeHidden: true,
+    });
+    const sheet = page.getByRole('dialog', { name: 'Filter' });
+    const field = sheet.getByLabel(/describe a filter/i);
+    const list = sheet.getByRole('group', { name: /choose filter/i });
 
     await sessionsTab.click();
     await page.waitForURL('/sessions');
@@ -210,7 +214,6 @@ test.describe('mobile dock', () => {
     await filterButton.click();
     await expect(field).toBeVisible();
     await expect(list).toBeVisible();
-    await expect(sessionsTab).toBeVisible();
     await expect(filterButton).toHaveAttribute('aria-expanded', 'true');
     expect(await dock.boundingBox()).toEqual(rowBefore);
 
@@ -220,21 +223,27 @@ test.describe('mobile dock', () => {
     await field.fill('ride');
     await expect(page.getByTestId('filter-builder-tiles')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(field).toHaveValue('');
-    await expect(list).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(list).toBeHidden();
+    await expect(sheet).toBeHidden();
     await expect(filterButton).toHaveAttribute('aria-expanded', 'false');
     await expect(filterButton.getByTestId('icon-badge')).toBeVisible();
 
     await filterButton.click();
+    await expect(field).toHaveValue('');
     await field.fill('run');
     await page.mouse.click(195, 20);
-    await expect(list).toBeHidden();
+    await expect(sheet).toBeHidden();
     await expect(filterButton).toHaveAttribute('aria-expanded', 'false');
 
     await filterButton.click();
     await expect(field).toHaveValue('');
+  });
+
+  test('filter input stays in place while typing', async ({ page }) => {
+    await page
+      .locator('[data-layout="dock"]')
+      .getByRole('button', { name: 'Filter', exact: true })
+      .click();
+    await expectFilterInputStaysPut(page, 'older');
   });
 
   test('toast does not cover the dock', async ({ page }) => {
@@ -267,13 +276,186 @@ test.describe('mobile map', () => {
     const track = await findTrackPoint(page);
     await page.mouse.move(2, 2);
 
-    const picker = page.getByText('Sessions recorded near this location');
+    const picker = page.getByRole('dialog');
     await page.touchscreen.tap(track.x, track.y);
-    await expect(picker).toBeVisible();
+    await expect(picker).toContainText('Sessions recorded near this location');
     await page.waitForTimeout(500);
     await expect(picker).toBeVisible();
 
     await page.touchscreen.tap(track.x, 40);
     await expect(picker).toBeHidden();
+
+    await page.touchscreen.tap(track.x, track.y);
+    await expect(picker).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(picker).toBeHidden();
+
+    await page.touchscreen.tap(track.x, track.y);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(500);
+    const card = await picker.boundingBox();
+    if (!card) throw new Error('picker not rendered');
+    expect(card.x).toBeCloseTo(8, 0);
+    expect(card.x + card.width).toBeCloseTo(382, 0);
+    expect(card.y + card.height).toBeLessThanOrEqual(844 - 12);
+
+    await expect(picker.getByRole('button', { name: 'Close', exact: true })).toHaveCount(0);
+    const grabber = picker.getByRole('button', { name: 'Drag to close' });
+    await grabber.tap();
+    await expect(picker).toBeHidden();
+
+    await page.touchscreen.tap(track.x, track.y);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(500);
+    await dragHandle(page, grabber, { by: 40 });
+    await page.waitForTimeout(500);
+    await expect(picker).toBeVisible();
+    const settled = await picker.boundingBox();
+    if (!settled) throw new Error('picker not rendered');
+    expect(settled.y).toBeCloseTo(card.y, 0);
+
+    await dragHandle(page, grabber, { by: card.height * 0.6 });
+    await expect(picker).toBeHidden();
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.waitForTimeout(1500);
+    const landscapeTrack = await findTrackPoint(page);
+    await page.mouse.move(2, 2);
+    await page.touchscreen.tap(landscapeTrack.x, landscapeTrack.y);
+    await expect(picker).toBeVisible();
+    await page.waitForTimeout(500);
+    const landscape = await picker.boundingBox();
+    if (!landscape) throw new Error('picker not rendered');
+    expect(landscape.width).toBeLessThanOrEqual(512);
+    expect(landscape.x).toBeCloseTo((844 - landscape.width) / 2, 0);
+    expect(landscape.y).toBeGreaterThanOrEqual(390 * 0.08);
+  });
+
+  test('chart scrub on touch shows no map circle', async ({ page }) => {
+    test.setTimeout(120_000);
+    await seedOnboardingComplete(page);
+    const finePointer = await page.evaluate(async () => {
+      const device = await import('/src/lib/hooks/useDevice.ts');
+      return window.matchMedia(device.FINE_POINTER_QUERY).matches;
+    });
+    expect(finePointer).toBe(false);
+
+    await uploadFitFiles(page, [RUNNING_FIT]);
+    await page.goto('/sessions');
+    await page.locator('[data-testid="session-item"]').first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+    const chart = page.locator('.recharts-wrapper').first();
+    await expect(chart.locator('.recharts-surface')).toBeVisible({ timeout: 20_000 });
+    await chart.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    await page.waitForTimeout(500);
+    const box = await chart.boundingBox();
+    if (!box) throw new Error('no chart');
+
+    const client = await page.context().newCDPSession(page);
+    const y = box.y + box.height / 2;
+    await client.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x: box.x + box.width * 0.3, y }],
+    });
+    for (let step = 1; step <= 10; step++) {
+      await client.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: box.x + box.width * (0.3 + step * 0.03), y }],
+      });
+    }
+
+    const hover = () =>
+      page.evaluate(async () => {
+        const chartHover = await import('/src/store/chartHover.ts');
+        const mapFocus = await import('/src/store/mapFocus.ts');
+        return {
+          crosshair:
+            (chartHover.useChartHoverStore.getState().hoveredX['session-detail'] ?? null) !== null,
+          mapPoint: mapFocus.useMapFocusStore.getState().hoveredPoint,
+        };
+      });
+    await expect.poll(hover).toEqual({ crosshair: true, mapPoint: null });
+
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  });
+});
+
+test.describe('mobile lap zoom', () => {
+  test.use({ viewport: { width: 390, height: 664 } });
+
+  test('tapping a lap zooms it into the visible box with 44 px controls that stay put', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await seedOnboardingComplete(page);
+    await uploadFitFiles(page, [RUNNING_FIT]);
+    await page.goto('/sessions');
+    await page.locator('[data-testid="session-item"]').first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+    const chart = page.locator('.recharts-wrapper').first();
+    await expect(chart.getByTestId('lap-band').first()).toBeAttached({ timeout: 20_000 });
+    await page.waitForTimeout(2000);
+
+    await exposeMap(page);
+    await page.evaluate(() => {
+      const target = Reflect.get(window, '__mapRef');
+      const original = target.fitBounds;
+      Reflect.set(window, '__lapFits', []);
+      target.fitBounds = (bounds: unknown, options: { maxZoom?: number }, data: unknown) => {
+        if (options?.maxZoom === 16) Reflect.get(window, '__lapFits').push(bounds);
+        return original(bounds, options, data);
+      };
+    });
+
+    const scroller = page.getByTestId('map-pills').locator('..');
+    const scrollBefore = await scroller.evaluate((element) => element.scrollLeft);
+
+    await chart.evaluate((element) => element.scrollIntoView({ block: 'start' }));
+    await page.waitForTimeout(300);
+    const chartBox = await chart.boundingBox();
+    const bandBox = await chart.getByTestId('lap-band').nth(3).locator('rect').last().boundingBox();
+    if (!chartBox || !bandBox) throw new Error('no lap band');
+    await page.touchscreen.tap(bandBox.x + bandBox.width / 2, chartBox.y + chartBox.height / 2);
+
+    await expect(page.getByTestId('lap-stepper')).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const fits = Reflect.get(window, '__lapFits');
+          const map = Reflect.get(window, '__map');
+          return fits.length > 0 && !map.isMoving();
+        }),
+      )
+      .toBe(true);
+    await page.waitForTimeout(200);
+
+    const pillsBox = await page.getByTestId('map-pills').boundingBox();
+    if (!pillsBox) throw new Error('no controls row');
+    const lapBox = await page.evaluate(() => {
+      const fits = Reflect.get(window, '__lapFits');
+      const map = Reflect.get(window, '__map');
+      const bounds = fits[fits.length - 1];
+      const a = map.project(bounds[0]);
+      const b = map.project(bounds[1]);
+      return {
+        top: Math.min(a.y, b.y),
+        bottom: Math.max(a.y, b.y),
+        left: Math.min(a.x, b.x),
+        right: Math.max(a.x, b.x),
+      };
+    });
+    expect(lapBox.top).toBeGreaterThanOrEqual(0);
+    expect(lapBox.bottom).toBeLessThanOrEqual(pillsBox.y);
+    expect(lapBox.left).toBeGreaterThanOrEqual(0);
+    expect(lapBox.right).toBeLessThanOrEqual(390);
+
+    for (const testId of ['lap-stepper-prev', 'lap-stepper-next', 'lap-stepper-clear']) {
+      const box = await page.getByTestId(testId).boundingBox();
+      if (!box) throw new Error(`${testId} not rendered`);
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+
+    expect(await scroller.evaluate((element) => element.scrollLeft)).toBe(scrollBefore);
   });
 });

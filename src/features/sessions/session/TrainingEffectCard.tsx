@@ -9,6 +9,7 @@ import { tokens } from '@/lib/tokens.ts';
 import { cn } from '@/lib/utils.ts';
 import { ctlOnDate } from '@/lib/sessionFitness.ts';
 import { useUserStore } from '@/store/user.ts';
+import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
 import { useMetrics } from '@/hooks/useMetrics.ts';
 import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
@@ -123,19 +124,20 @@ type TrainingEffectCardProps = {
 
 export const TrainingEffectCard = (props: TrainingEffectCardProps) => {
   const profile = useUserStore((s) => s.profile);
+  const thresholds = useThresholdsAt(props.session.date);
   const metrics = useMetrics();
   const ctl = ctlOnDate(metrics.history, props.session.date);
 
   const te = useMemo(() => {
-    if (!profile) return undefined;
+    if (!thresholds) return undefined;
     return calculateTrainingEffect(
       props.records,
-      profile.thresholds.maxHr,
-      profile.thresholds.restHr,
-      profile.gender,
+      thresholds.maxHr,
+      thresholds.restHr,
+      thresholds.gender,
       ctl,
     );
-  }, [props.records, profile, ctl]);
+  }, [props.records, thresholds, ctl]);
 
   const load = METRIC_EXPLANATIONS[props.session.stressMethod];
   const loadValue = loadFmt.format(props.session.tss);

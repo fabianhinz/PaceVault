@@ -23,6 +23,8 @@ export interface ForegroundImport {
 interface ImportProgressState {
   runningImports: number;
   foreground: ForegroundImport | null;
+  awaitingTrackBuild: boolean;
+  mapCrashed: boolean;
   beginImport: (options: { foreground: boolean }) => void;
   setImportTotal: (total: number) => void;
   advanceImport: () => void;
@@ -31,12 +33,16 @@ interface ImportProgressState {
   dismissImport: () => void;
   beginReprocessing: () => void;
   finishReprocessing: () => void;
+  finishTrackBuild: () => void;
+  abandonTrackBuildAfterMapCrash: () => void;
 }
 
 export const useImportProgressStore = create<ImportProgressState>()(
   immer((set) => ({
     runningImports: 0,
     foreground: null,
+    awaitingTrackBuild: false,
+    mapCrashed: false,
 
     beginImport: (options) =>
       set((draft) => {
@@ -77,6 +83,7 @@ export const useImportProgressStore = create<ImportProgressState>()(
         draft.runningImports -= 1;
         if (summary === null || draft.foreground === null) return;
         draft.foreground.summary = summary;
+        draft.awaitingTrackBuild = !draft.mapCrashed;
       }),
 
     dismissImport: () =>
@@ -100,7 +107,27 @@ export const useImportProgressStore = create<ImportProgressState>()(
     finishReprocessing: () =>
       set((draft) => {
         draft.runningImports -= 1;
-        draft.foreground = null;
+        if (draft.mapCrashed) {
+          draft.foreground = null;
+        } else {
+          draft.awaitingTrackBuild = true;
+        }
+      }),
+
+    finishTrackBuild: () =>
+      set((draft) => {
+        if (!draft.awaitingTrackBuild) return;
+        draft.awaitingTrackBuild = false;
+        if (draft.foreground?.task === 'reprocess') draft.foreground = null;
+      }),
+
+    abandonTrackBuildAfterMapCrash: () =>
+      set((draft) => {
+        draft.mapCrashed = true;
+        if (draft.awaitingTrackBuild && draft.foreground?.task === 'reprocess') {
+          draft.foreground = null;
+        }
+        draft.awaitingTrackBuild = false;
       }),
   })),
 );

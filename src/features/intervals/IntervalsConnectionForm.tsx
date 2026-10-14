@@ -3,13 +3,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { Button } from '@/components/ui/Button.tsx';
+import { ExternalLink } from '@/components/ui/ExternalLink.tsx';
 import { Input } from '@/components/ui/Input.tsx';
 import { Label } from '@/components/ui/Label.tsx';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { type IntervalsErrorCode } from '@/lib/intervals.ts';
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
+import { INPUT_DEBOUNCE_MS, useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
 import { runIntervalsSync } from './runIntervalsSync.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { INTERVALS_SYNC_KEY } from './hooks/useIntervalsSync.ts';
@@ -20,9 +21,9 @@ import {
   verifyIntervalsKeyOrThrow,
 } from './hooks/useIntervalsKeyCheck.ts';
 import { Typography } from '@/components/ui/Typography.tsx';
+import type { ProfileGate } from '@/features/settings/hooks/useThresholdsForm.ts';
 
 const SETTINGS_URL = 'https://intervals.icu/settings';
-const CHECK_DEBOUNCE_MS = 600;
 
 const errorMessage = (code: IntervalsErrorCode): string => {
   if (code === 'unauthorized') return m.ui_intervals_error_key();
@@ -33,12 +34,15 @@ const errorMessage = (code: IntervalsErrorCode): string => {
 
 interface IntervalsConnectionFormProps {
   onSynced?: () => void;
+  profileGate?: ProfileGate;
   children?: ReactNode;
 }
 
 export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => {
   const storedKey = useIntervalsStore((s) => s.apiKey);
   const hasProfile = useUserStore((s) => s.profile !== null);
+  let profileReady = hasProfile;
+  if (props.profileGate) profileReady = props.profileGate.ready;
 
   const [keyInput, setKeyInput] = useState(storedKey ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +52,7 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
   const queryClient = useQueryClient();
 
   const trimmedInput = keyInput.trim();
-  const debouncedKey = useDebouncedValue(trimmedInput, CHECK_DEBOUNCE_MS);
+  const debouncedKey = useDebouncedValue(trimmedInput, INPUT_DEBOUNCE_MS);
   let candidateKey = debouncedKey;
   if (pastedKey === trimmedInput) candidateKey = pastedKey;
   const keyCheck = useIntervalsKeyCheck(candidateKey, storedKey);
@@ -67,6 +71,8 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
   const handleImport = async () => {
     const trimmed = keyInput.trim();
     if (trimmed.length === 0) return;
+
+    props.profileGate?.save();
 
     setManual(true);
     setError(null);
@@ -150,17 +156,9 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
             pastingRef.current = false;
           }}
           helperText={
-            <div className="flex gap-1 align-center text-accent">
-              <Info size={16} strokeWidth={1.5} className="shrink-0" />
-              <a
-                href={SETTINGS_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="cursor-pointer hover:underline"
-              >
-                {m.ui_intervals_connect_help()}
-              </a>
-            </div>
+            <ExternalLink href={SETTINGS_URL} icon={Info}>
+              {m.ui_intervals_connect_help()}
+            </ExternalLink>
           }
         />
       </div>
@@ -174,7 +172,7 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
           disabled={
             manual ||
             trimmedInput === '' ||
-            !hasProfile ||
+            !profileReady ||
             check?.kind === 'checking' ||
             check?.kind === 'rejected'
           }

@@ -76,7 +76,11 @@
   --color-chart-power: var(--color-blue-500);
   --color-chart-speed: var(--color-green-500);
   --color-chart-grade: #a78bfa;
+  --color-chart-cadence: #f59e0b;
+  --color-chart-elevation: #8b5cf6;
   --color-chart-climb: #c4b5fd;
+  --color-chart-pace: #06b6d4;
+  --color-chart-gap: var(--color-pink-500);
 
   --color-precip-rain: var(--color-blue-400);
   --color-precip-freezing: #67e8f9;
@@ -108,4 +112,24 @@ html {
 
 *:focus {
   outline: none;
+}
+
+@utility scroll-fade {
+  --fade-top: 0px;
+  --fade-bottom: 0px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--fade-top),
+    black calc(100% - var(--fade-bottom)),
+    transparent
+  );
+
+  &[data-fade-top] {
+    --fade-top: 24px;
+  }
+
+  &[data-fade-bottom] {
+    --fade-bottom: 32px;
+  }
 }

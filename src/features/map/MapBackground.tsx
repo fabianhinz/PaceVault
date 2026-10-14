@@ -5,7 +5,6 @@ import type { PickingInfo } from '@deck.gl/core';
 import { styles } from './mapStyle.ts';
 import { useMapTracks } from './hooks/useMapTracks.ts';
 import { useGPSBackfill } from './hooks/useGpsBackfill.ts';
-import { useMapCameraEffect } from './hooks/useMapCameraEffect.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
 import { useMapPopupState } from './hooks/useMapPopupState.ts';
 import { DeckGLOverlay } from './DeckGLOverlay.tsx';
@@ -28,12 +27,10 @@ export const MapBackground = () => {
   const mapRef = useRef<MapRef>(null);
 
   const backfill = useGPSBackfill();
-  const mapTracks = useMapTracks(backfill.gpsData);
-  const popupState = useMapPopupState(mapRef, mapTracks.tracks);
+  const tracks = useMapTracks(backfill.gpsData);
+  const popupState = useMapPopupState(mapRef, tracks);
   const studioPopup = useStudioMapPopup();
   const studioRoutesPopup = useStudioRoutesPopup(mapRef);
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
   const studioTracks = useStudioMapTracks();
 
   useWatchPositionEffect();
@@ -43,15 +40,6 @@ export const MapBackground = () => {
   useEffect(() => {
     useMapFocusStore.getState().setOpenedSession(match?.params.id ?? null);
   }, [match?.params.id]);
-
-  useMapCameraEffect(
-    mapRef,
-    mapTracks.tracks,
-    openedSessionId,
-    mapLoaded,
-    focusedTripSessionIds.length > 0,
-    studioTracks.bounds,
-  );
 
   const sessionsOnClick = popupState.onClick;
   const studioOnClick = studioPopup.onClick;
@@ -97,10 +85,12 @@ export const MapBackground = () => {
         style={{ width: '100%', height: '100%' }}
       >
         <DeckGLOverlay
-          tracks={mapTracks.tracks}
+          tracks={tracks}
           onClick={onMapClick}
           onHover={popupState.onHover}
           hoveringTrack={popupState.hoveringTrack}
+          gpsData={backfill.gpsData}
+          mapLoaded={mapLoaded}
         />
         {studioTracks.focusedRouteId && <StudioMarkerPins routeId={studioTracks.focusedRouteId} />}
       </MapGL>

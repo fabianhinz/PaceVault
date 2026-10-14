@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { movingSeconds } from '@/lib/movingTime.ts';
+import { movingSeconds, sessionMovingTime } from '@/lib/movingTime.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 
 const ride = (steps: Array<[number, number]>): SessionRecord[] => {
@@ -47,5 +47,22 @@ describe('movingSeconds', () => {
       { timestamp: 303, timerTime: 4, distance: 123 },
     ];
     expect(movingSeconds(records)).toEqual([0, 1, 2, 3, 4]);
+  });
+});
+
+describe('sessionMovingTime', () => {
+  it('a timer pause keeps moving time below elapsed time', () => {
+    const records: SessionRecord[] = [
+      { timestamp: 0, timerTime: 0, distance: 0 },
+      { timestamp: 1, timerTime: 1, distance: 3 },
+      { timestamp: 2, timerTime: 2, distance: 6 },
+      { timestamp: 302, timerTime: 3, distance: 120 },
+      { timestamp: 303, timerTime: 4, distance: 123 },
+    ];
+    expect(sessionMovingTime(records)).toEqual({ movingS: 4, elapsedS: 303 });
+  });
+
+  it('gives nothing for a single record', () => {
+    expect(sessionMovingTime([{ timestamp: 0 }])).toBeUndefined();
   });
 });

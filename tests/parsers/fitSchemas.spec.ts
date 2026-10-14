@@ -104,19 +104,10 @@ describe('fitLapSchema', () => {
       total_timer_time: 737,
       total_moving_time: 739,
       total_distance: 4631.3,
-      avg_speed: 6.267,
-      max_speed: 8.35,
-      total_ascent: 27,
-      min_altitude: 116,
-      max_altitude: 126.8,
       avg_grade: 0,
-      avg_heart_rate: 113,
       min_heart_rate: 79,
       max_heart_rate: 130,
-      avg_cadence: 83,
-      max_cadence: 88,
       intensity: 'active',
-      repetition_num: 1,
     });
     expect(result.success).toBe(true);
   });
@@ -128,28 +119,6 @@ describe('fitLapSchema', () => {
       timestamp: new Date('2025-08-16T16:26:44.000Z'),
     });
     expect(result.success).toBe(true);
-  });
-
-  it('accepts enhanced fields (native Garmin)', () => {
-    const result = fitLapSchema.safeParse({
-      ...requiredLap,
-      enhanced_avg_speed: 3.26,
-      enhanced_max_speed: 4.1,
-      enhanced_min_altitude: 98.2,
-      enhanced_max_altitude: 134.6,
-      enhanced_avg_altitude: 116.4,
-    });
-    expect(result.success).toBe(true);
-    expect(result.data?.enhanced_avg_speed).toBe(3.26);
-    expect(result.data?.enhanced_max_speed).toBe(4.1);
-    expect(result.data?.enhanced_min_altitude).toBe(98.2);
-    expect(result.data?.enhanced_max_altitude).toBe(134.6);
-    expect(result.data?.enhanced_avg_altitude).toBe(116.4);
-    expect(result.data?.avg_speed).toBeUndefined();
-    expect(result.data?.max_speed).toBeUndefined();
-    expect(result.data?.min_altitude).toBeUndefined();
-    expect(result.data?.max_altitude).toBeUndefined();
-    expect(result.data?.avg_altitude).toBeUndefined();
   });
 
   it('accepts a lap with only the required fields', () => {
@@ -193,7 +162,10 @@ describe('fitLapsSchema', () => {
   });
 
   it('rejects array with invalid element', () => {
-    const result = fitLapsSchema.safeParse([requiredLap, { ...requiredLap, avg_speed: 'fast' }]);
+    const result = fitLapsSchema.safeParse([
+      requiredLap,
+      { ...requiredLap, total_distance: 'far' },
+    ]);
     expect(result.success).toBe(false);
   });
 });

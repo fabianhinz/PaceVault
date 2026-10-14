@@ -1,3 +1,4 @@
+import type { DatedValue } from '@/packages/engine/datedValue.ts';
 import type {
   Gender,
   FormStatus,
@@ -18,11 +19,13 @@ export interface UserProfile {
   id: string;
   gender: Gender;
   thresholds: {
-    ftp?: number;
-    maxHr: number;
-    restHr: number;
-    thresholdPace?: number;
+    restHr: DatedValue<number>[];
+    maxHr: DatedValue<number>[];
+    ftp?: DatedValue<number>[];
+    thresholdPace?: DatedValue<number>[];
   };
+  weight?: DatedValue<number>[];
+  birthYear?: number;
   showMetricHelp: boolean;
   createdAt: number;
 }

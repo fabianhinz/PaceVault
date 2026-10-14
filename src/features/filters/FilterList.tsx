@@ -3,14 +3,14 @@ import { Search, ZoomOut } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
 import { Input } from '@/components/ui/Input.tsx';
-import { useMediaQuery } from '@/lib/hooks/useMediaQuery.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { cn } from '@/lib/utils.ts';
 import { filterKey, filterName, filterTile, zoomTile } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
+import { FilterEmptyState } from './FilterEmptyState.tsx';
 import { filterIcon } from './filterIcon.ts';
 import { useFilterBuilder } from './hooks/useFilterBuilder.ts';
-
-const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+import { useScrollFadeEffect } from '@/lib/hooks/useScrollFadeEffect.ts';
 
 interface FilterListProps {
   open: boolean;
@@ -21,21 +21,34 @@ interface FilterListProps {
 export const FilterList = (props: FilterListProps) => {
   const savedFilters = useFiltersStore((s) => s.savedFilters);
   const activeFilter = useFiltersStore((s) => s.activeFilter);
-  const finePointer = useMediaQuery(FINE_POINTER_QUERY);
+  const device = useDevice();
   const location = useLocation();
   const builder = useFilterBuilder(props.open, props.onClose);
   const text = builder.text;
+  useScrollFadeEffect(builder.listRef);
 
   let activeKey: string | null = null;
   if (activeFilter) {
     activeKey = filterKey(activeFilter);
   }
   const zoom = zoomTile(activeFilter);
-  const showZoomHint = zoom === null && finePointer && location.pathname === '/';
+  const showZoomHint = zoom === null && device.pointerFine && location.pathname === '/';
 
   return (
-    <div className={cn('flex w-full flex-col', props.sizing === 'fill' && 'h-full')}>
-      <div className="shrink-0 border-b border-white/10 px-3 py-1">
+    <div
+      className={cn(
+        'flex w-full flex-col',
+        props.sizing === 'fill' && 'h-full',
+        props.sizing === 'content' && 'min-h-0',
+      )}
+    >
+      <div
+        className={cn(
+          'shrink-0 border-b border-white/10 py-1',
+          props.sizing === 'fill' && 'px-3',
+          props.sizing === 'content' && 'px-5',
+        )}
+      >
         <Input
           variant="bare"
           icon={Search}
@@ -55,9 +68,9 @@ export const FilterList = (props: FilterListProps) => {
         role="group"
         aria-label={m.ui_filter_list()}
         className={cn(
-          'flex flex-col gap-1.5 overflow-y-auto p-3 [scrollbar-width:none]',
-          props.sizing === 'fill' && 'min-h-0 flex-1',
-          props.sizing === 'content' && 'max-h-[252px]',
+          'flex flex-col gap-1.5 overflow-y-auto [scrollbar-width:none]',
+          props.sizing === 'fill' && 'min-h-0 flex-1 p-3',
+          props.sizing === 'content' && 'scroll-fade min-h-0 shrink basis-[252px] px-5 py-3',
         )}
       >
         {text !== '' && (
@@ -85,6 +98,7 @@ export const FilterList = (props: FilterListProps) => {
                 />
               );
             })}
+            {builder.showNotUnderstood && <FilterEmptyState />}
           </div>
         )}
         {text === '' && zoom !== null && activeFilter !== null && (

@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { getFormMessage, getFormMessageDetailed } from '@/lib/coachingMessages.ts';
-import { getLoadState, getInjuryRisk } from '@/packages/engine/coaching.ts';
+import {
+  getCoachingRecommendation,
+  getFormMessage,
+  getFormMessageDetailed,
+} from '@/lib/coachingMessages.ts';
 import type { FormStatus } from '@/packages/engine/types.ts';
 import type { CoachingRecommendation } from '@/types/index.ts';
 
@@ -155,115 +158,6 @@ describe('getFormMessageDetailed', () => {
   });
 });
 
-describe('getLoadState', () => {
-  it('returns immature when dataMaturityDays < 21', () => {
-    expect(getLoadState(1.0, 0)).toBe('immature');
-    expect(getLoadState(1.0, 20)).toBe('immature');
-    expect(getLoadState(2.0, 10)).toBe('immature'); // immature overrides high ACWR
-    expect(getLoadState(0.5, 10)).toBe('immature'); // immature overrides low ACWR
-  });
-
-  it('returns transitioning when dataMaturityDays 21-27', () => {
-    expect(getLoadState(1.0, 21)).toBe('transitioning');
-    expect(getLoadState(1.0, 27)).toBe('transitioning');
-    expect(getLoadState(0.5, 25)).toBe('transitioning'); // low ACWR still transitioning
-    expect(getLoadState(1.4, 25)).toBe('transitioning'); // moderate ACWR still transitioning
-  });
-
-  it('returns high-risk during transition when ACWR > 1.5', () => {
-    expect(getLoadState(1.51, 21)).toBe('high-risk');
-    expect(getLoadState(2.0, 25)).toBe('high-risk');
-    expect(getLoadState(1.6, 27)).toBe('high-risk');
-  });
-
-  it('boundary: 20 days is immature, 21 days is transitioning, 28 days is fully mature', () => {
-    expect(getLoadState(1.0, 20)).toBe('immature');
-    expect(getLoadState(1.0, 21)).toBe('transitioning');
-    expect(getLoadState(1.0, 27)).toBe('transitioning');
-    expect(getLoadState(1.0, 28)).toBe('sweet-spot');
-  });
-
-  it('returns high-risk when ACWR > 1.5 and data mature', () => {
-    expect(getLoadState(1.51, 42)).toBe('high-risk');
-    expect(getLoadState(2.0, 42)).toBe('high-risk');
-  });
-
-  it('returns moderate-risk when ACWR > 1.3 and <= 1.5', () => {
-    expect(getLoadState(1.31, 42)).toBe('moderate-risk');
-    expect(getLoadState(1.5, 42)).toBe('moderate-risk');
-  });
-
-  it('boundary: 1.3 is sweet-spot, 1.31 is moderate-risk', () => {
-    expect(getLoadState(1.3, 42)).toBe('sweet-spot');
-    expect(getLoadState(1.31, 42)).toBe('moderate-risk');
-  });
-
-  it('boundary: 1.5 is moderate-risk, 1.51 is high-risk', () => {
-    expect(getLoadState(1.5, 42)).toBe('moderate-risk');
-    expect(getLoadState(1.51, 42)).toBe('high-risk');
-  });
-
-  it('returns undertraining when ACWR < 0.8 and data mature', () => {
-    expect(getLoadState(0.79, 42)).toBe('undertraining');
-    expect(getLoadState(0.5, 42)).toBe('undertraining');
-    expect(getLoadState(0.0, 42)).toBe('undertraining');
-  });
-
-  it('boundary: 0.8 is sweet-spot, 0.79 is undertraining', () => {
-    expect(getLoadState(0.8, 42)).toBe('sweet-spot');
-    expect(getLoadState(0.79, 42)).toBe('undertraining');
-  });
-
-  it('returns sweet-spot when ACWR 0.8-1.3 and data mature', () => {
-    expect(getLoadState(0.8, 42)).toBe('sweet-spot');
-    expect(getLoadState(1.0, 42)).toBe('sweet-spot');
-    expect(getLoadState(1.3, 42)).toBe('sweet-spot');
-  });
-
-  it('dataMaturityDays=0 returns immature regardless of ACWR', () => {
-    expect(getLoadState(0.0, 0)).toBe('immature');
-    expect(getLoadState(1.0, 0)).toBe('immature');
-    expect(getLoadState(1.5, 0)).toBe('immature');
-    expect(getLoadState(2.0, 0)).toBe('immature');
-    expect(getLoadState(100, 0)).toBe('immature');
-  });
-});
-
-describe('threshold consistency: getLoadState and getInjuryRisk agree at boundaries', () => {
-  it('ACWR at 1.3 is low risk and sweet-spot', () => {
-    expect(getInjuryRisk(1.3)).toBe('low');
-    expect(getLoadState(1.3, 42)).toBe('sweet-spot');
-  });
-
-  it('ACWR just above 1.3 is moderate risk and moderate-risk state', () => {
-    const above = 1.3 + 0.01;
-    expect(getInjuryRisk(above)).toBe('moderate');
-    expect(getLoadState(above, 42)).toBe('moderate-risk');
-  });
-
-  it('ACWR at 1.5 is moderate risk and moderate-risk state', () => {
-    expect(getInjuryRisk(1.5)).toBe('moderate');
-    expect(getLoadState(1.5, 42)).toBe('moderate-risk');
-  });
-
-  it('ACWR just above 1.5 is high risk and high-risk state', () => {
-    const above = 1.5 + 0.01;
-    expect(getInjuryRisk(above)).toBe('high');
-    expect(getLoadState(above, 42)).toBe('high-risk');
-  });
-
-  it('ACWR below 0.8 is low risk and undertraining', () => {
-    const below = 0.8 - 0.01;
-    expect(getInjuryRisk(below)).toBe('low');
-    expect(getLoadState(below, 42)).toBe('undertraining');
-  });
-
-  it('ACWR at 0.8 is low risk and sweet-spot', () => {
-    expect(getInjuryRisk(0.8)).toBe('low');
-    expect(getLoadState(0.8, 42)).toBe('sweet-spot');
-  });
-});
-
 describe('message uniqueness', () => {
   it('all 25 status x load-state messages are unique and non-trivial', () => {
     const messages = new Set<string>();
@@ -289,5 +183,146 @@ describe('message uniqueness', () => {
     }
 
     expect(messages.size).toBe(25);
+  });
+});
+
+describe('getCoachingRecommendation', () => {
+  it('returns neutral recommendation for undefined metrics', () => {
+    const rec = getCoachingRecommendation(undefined, 0);
+    expect(rec.status).toBe('neutral');
+    expect(rec.tsb).toBe(0);
+    expect(rec.acwr).toBe(0);
+    expect(rec.injuryRisk).toBe('low');
+  });
+
+  it('maps high TSB to detraining', () => {
+    const rec = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 50,
+        atl: 20,
+        tsb: 30,
+        acwr: 0.4,
+      },
+      42,
+    );
+    expect(rec.status).toBe('detraining');
+  });
+
+  it('maps positive TSB (5-25) to fresh', () => {
+    const rec = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 60,
+        atl: 50,
+        tsb: 10,
+        acwr: 0.83,
+      },
+      42,
+    );
+    expect(rec.status).toBe('fresh');
+  });
+
+  it('maps TSB near zero (-10 to 5) to neutral', () => {
+    const rec = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 50,
+        atl: 52,
+        tsb: -2,
+        acwr: 1.04,
+      },
+      42,
+    );
+    expect(rec.status).toBe('neutral');
+  });
+
+  it('maps negative TSB (-30 to -10) to optimal', () => {
+    const rec = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 50,
+        atl: 70,
+        tsb: -20,
+        acwr: 1.4,
+      },
+      42,
+    );
+    expect(rec.status).toBe('optimal');
+  });
+
+  it('maps very negative TSB (< -30) to overload', () => {
+    const rec = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 40,
+        atl: 80,
+        tsb: -40,
+        acwr: 2.0,
+      },
+      42,
+    );
+    expect(rec.status).toBe('overload');
+  });
+
+  it('sets injury risk based on ACWR', () => {
+    const low = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 50,
+        atl: 55,
+        tsb: -5,
+        acwr: 1.1,
+      },
+      42,
+    );
+    expect(low.injuryRisk).toBe('low');
+
+    const moderate = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 50,
+        atl: 70,
+        tsb: -20,
+        acwr: 1.4,
+      },
+      42,
+    );
+    expect(moderate.injuryRisk).toBe('moderate');
+
+    const high = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 40,
+        atl: 80,
+        tsb: -40,
+        acwr: 2.0,
+      },
+      42,
+    );
+    expect(high.injuryRisk).toBe('high');
+  });
+
+  it('stores dataMaturityDays from historyDays argument', () => {
+    const rec = getCoachingRecommendation(
+      {
+        date: '2024-01-01',
+        tss: 0,
+        ctl: 50,
+        atl: 50,
+        tsb: 0,
+        acwr: 1.0,
+      },
+      15,
+    );
+    expect(rec.dataMaturityDays).toBe(15);
   });
 });

@@ -14,11 +14,15 @@ interface SheetLayout {
   peekContentHeight: number;
 }
 
-const PEEK_HEIGHT = 90;
-const HANDLE_HEIGHT = 24;
+const HANDLE_HEIGHT = 48;
+const PEEK_CONTENT_HEIGHT = 66;
+const PEEK_HEIGHT = HANDLE_HEIGHT + PEEK_CONTENT_HEIGHT;
 const PEEK_FADE_RANGE = 0.15;
 const FULL_TOP_GAP_RATIO = 0.08;
 const FULL_TOP_GAP_MIN = 12;
+
+export const SHEET_TOP_GAP_CSS = `max(calc(env(safe-area-inset-top) + ${FULL_TOP_GAP_MIN}px), ${FULL_TOP_GAP_RATIO * 100}dvh)`;
+
 const MIDDLE_POSITION = 0.5;
 
 export const computeSheetLayout = (metrics: SheetMetrics): SheetLayout => {
@@ -34,7 +38,7 @@ export const computeSheetLayout = (metrics: SheetMetrics): SheetLayout => {
     bottomInset,
     peekOffset,
     handleHeight: HANDLE_HEIGHT,
-    peekContentHeight: PEEK_HEIGHT - HANDLE_HEIGHT,
+    peekContentHeight: PEEK_CONTENT_HEIGHT,
   };
 };
 
@@ -76,8 +80,11 @@ export const sheetTapTarget = (position: number): number => {
 const sheetVisibleHeight = (layout: SheetLayout, position: number): number =>
   layout.sheetHeight - positionToOffset(layout, position);
 
-export const sheetFitHeight = (layout: SheetLayout, position: number): number =>
-  sheetVisibleHeight(layout, Math.min(position, MIDDLE_POSITION));
+export const sheetFitHeight = (
+  layout: SheetLayout,
+  position: number,
+  cap: number = MIDDLE_POSITION,
+): number => sheetVisibleHeight(layout, Math.min(position, cap));
 
 export const readSafeAreaInset = (side: 'top' | 'bottom'): number => {
   const probe = document.createElement('div');

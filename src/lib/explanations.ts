@@ -12,7 +12,6 @@ export type MetricId =
   | 'normalizedPower'
   | 'gradeAdjustedPace'
   | 'recovery'
-  | 'pacingTrend'
   | 'trainingZones'
   | 'aerobicTE'
   | 'anaerobicTE'
@@ -23,7 +22,14 @@ export type MetricId =
   | 'elevation'
   | 'vam'
   | 'cadence'
-  | 'vdot';
+  | 'vdot'
+  | 'calories'
+  | 'movingTime'
+  | 'decoupling'
+  | 'intensityFactor'
+  | 'variabilityIndex'
+  | 'peakPower'
+  | 'stepLength';
 
 export interface MetricExplanation {
   id: MetricId;
@@ -132,22 +138,13 @@ const recovery: MetricExplanation = {
   sports: ['all'],
 };
 
-const pacingTrend: MetricExplanation = {
-  id: 'pacingTrend',
-  shortLabel: m.exp_pacingTrend_shortLabel(),
-  friendlyName: m.exp_pacingTrend_friendlyName(),
-  oneLiner: m.exp_pacingTrend_oneLiner(),
-  range: m.exp_pacingTrend_range(),
-  sports: ['running', 'cycling'],
-};
-
 const trainingZones: MetricExplanation = {
   id: 'trainingZones',
   shortLabel: m.exp_trainingZones_shortLabel(),
   friendlyName: m.exp_trainingZones_friendlyName(),
   oneLiner: m.exp_trainingZones_oneLiner(),
   range: m.exp_trainingZones_range(),
-  sports: ['running'],
+  sports: ['all'],
 };
 
 const aerobicTE: MetricExplanation = {
@@ -239,6 +236,69 @@ const vdot: MetricExplanation = {
   sports: ['running'],
 };
 
+const calories: MetricExplanation = {
+  id: 'calories',
+  shortLabel: m.exp_calories_shortLabel(),
+  friendlyName: m.exp_calories_friendlyName(),
+  oneLiner: m.exp_calories_oneLiner(),
+  range: m.exp_calories_range(),
+  sports: ['all'],
+};
+
+const movingTime: MetricExplanation = {
+  id: 'movingTime',
+  shortLabel: m.exp_movingTime_shortLabel(),
+  friendlyName: m.exp_movingTime_friendlyName(),
+  oneLiner: m.exp_movingTime_oneLiner(),
+  range: m.exp_movingTime_range(),
+  sports: ['all'],
+};
+
+const decoupling: MetricExplanation = {
+  id: 'decoupling',
+  shortLabel: m.exp_decoupling_shortLabel(),
+  friendlyName: m.exp_decoupling_friendlyName(),
+  oneLiner: m.exp_decoupling_oneLiner(),
+  range: m.exp_decoupling_range(),
+  sports: ['all'],
+};
+
+const intensityFactor: MetricExplanation = {
+  id: 'intensityFactor',
+  shortLabel: m.exp_intensityFactor_shortLabel(),
+  friendlyName: m.exp_intensityFactor_friendlyName(),
+  oneLiner: m.exp_intensityFactor_oneLiner(),
+  range: m.exp_intensityFactor_range(),
+  sports: ['cycling'],
+};
+
+const variabilityIndex: MetricExplanation = {
+  id: 'variabilityIndex',
+  shortLabel: m.exp_variabilityIndex_shortLabel(),
+  friendlyName: m.exp_variabilityIndex_friendlyName(),
+  oneLiner: m.exp_variabilityIndex_oneLiner(),
+  range: m.exp_variabilityIndex_range(),
+  sports: ['cycling'],
+};
+
+const peakPower: MetricExplanation = {
+  id: 'peakPower',
+  shortLabel: m.exp_peakPower_shortLabel(),
+  friendlyName: m.exp_peakPower_friendlyName(),
+  oneLiner: m.exp_peakPower_oneLiner(),
+  range: m.exp_peakPower_range(),
+  sports: ['cycling'],
+};
+
+const stepLength: MetricExplanation = {
+  id: 'stepLength',
+  shortLabel: m.exp_stepLength_shortLabel(),
+  friendlyName: m.exp_stepLength_friendlyName(),
+  oneLiner: m.exp_stepLength_oneLiner(),
+  range: m.exp_stepLength_range(),
+  sports: ['running'],
+};
+
 export const METRIC_EXPLANATIONS: Record<MetricId, MetricExplanation> = {
   tss,
   trimp,
@@ -251,7 +311,6 @@ export const METRIC_EXPLANATIONS: Record<MetricId, MetricExplanation> = {
   normalizedPower,
   gradeAdjustedPace,
   recovery,
-  pacingTrend,
   trainingZones,
   aerobicTE,
   anaerobicTE,
@@ -263,4 +322,11 @@ export const METRIC_EXPLANATIONS: Record<MetricId, MetricExplanation> = {
   vam,
   cadence,
   vdot,
+  calories,
+  movingTime,
+  decoupling,
+  intensityFactor,
+  variabilityIndex,
+  peakPower,
+  stepLength,
 };

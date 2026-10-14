@@ -5,7 +5,9 @@ import { m } from '@/paraglide/messages.js';
 import {
   DialogRoot,
   DialogContent,
-  DialogTitle,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
   DialogDescription,
 } from '@/components/ui/Dialog.tsx';
 import { Button } from '@/components/ui/Button.tsx';
@@ -19,6 +21,7 @@ import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { resetPersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
 import { clearAllRecords } from '@/lib/indexeddb.ts';
 interface DeleteAllDataDialogProps {
@@ -44,6 +47,7 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
     useIntervalsStore.getState().disconnectIntervals();
     useLayoutStore.setState({ onboardingComplete: false, demoMode: false });
     useFiltersStore.getState().resetFilters();
+    useMapPreferencesStore.getState().resetMapPreferences();
     await clearAllRecords();
     setIsDeleting(false);
     props.onOpenChange(false);
@@ -66,22 +70,24 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
           if (isDeleting) e.preventDefault();
         }}
       >
-        <DialogTitle>{m.ui_delete_dialog_title()}</DialogTitle>
-        <DialogDescription>{m.ui_delete_dialog_desc()}</DialogDescription>
+        <DialogHeader title={m.ui_delete_dialog_title()} />
+        <DialogBody>
+          <DialogDescription>{m.ui_delete_dialog_desc()}</DialogDescription>
 
-        <div className="mt-4">
-          <Typography variant="body1" color="textSecondary">
-            {m.ui_delete_dialog_count({
-              summary:
-                (sessionCount === 1
-                  ? m.ui_count_sessions_one()
-                  : m.ui_count_sessions_other({ count: String(sessionCount) })) +
-                (hasProfile ? ` ${m.ui_delete_dialog_and_profile()}` : ''),
-            })}
-          </Typography>
-        </div>
+          <div className="mt-4">
+            <Typography variant="body1" color="textSecondary">
+              {m.ui_delete_dialog_count({
+                summary:
+                  (sessionCount === 1
+                    ? m.ui_count_sessions_one()
+                    : m.ui_count_sessions_other({ count: String(sessionCount) })) +
+                  (hasProfile ? ` ${m.ui_delete_dialog_and_profile()}` : ''),
+              })}
+            </Typography>
+          </div>
+        </DialogBody>
 
-        <div className="flex gap-3 justify-end pt-4">
+        <DialogFooter>
           <Button
             type="button"
             variant="secondary"
@@ -99,7 +105,7 @@ export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
           >
             {isDeleting ? m.ui_delete_dialog_deleting() : m.ui_delete_dialog_confirm()}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </DialogRoot>
   );

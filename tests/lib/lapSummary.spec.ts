@@ -6,16 +6,9 @@ import type { LapAnalysis } from '@/lib/laps.ts';
 const lap = (overrides: Partial<LapAnalysis>): LapAnalysis => ({
   lapIndex: 0,
   paceSecPerKm: 300,
-  avgHr: undefined,
-  minHr: undefined,
-  maxHr: undefined,
-  avgCadence: undefined,
   distance: 1000,
-  timerTime: 300,
   movingTime: 300,
-  elevationGain: undefined,
   intensity: 'active',
-  maxSpeed: undefined,
   isInterval: false,
   isPartial: false,
   ...overrides,
@@ -23,7 +16,6 @@ const lap = (overrides: Partial<LapAnalysis>): LapAnalysis => ({
 
 const setOf = (analysis: LapAnalysis[], hrRecoveries: number[] = []): LapSet => ({
   analysis,
-  enrichments: [],
   spans: [],
   bands: [],
   hrRecoveries,

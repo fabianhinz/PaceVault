@@ -1,9 +1,10 @@
-import { unzipSync } from 'fflate';
+import { gunzipSync, unzipSync } from 'fflate';
 
 const ARCHIVE_EXTENSIONS = ['.zip'] as const;
 const IGNORED_PREFIXES = ['__MACOSX/', '.'];
-// Supported activity file extensions to extract from archives.
-// .tcx extraction is ready — parsing support will be added in a future PR.
+// Strava's bulk export stores FIT activities gzipped inside the ZIP.
+const GZIP_SUFFIX = '.gz';
+const GZIPPED_FIT_EXTENSION = '.fit.gz';
 const ACTIVITY_EXTENSIONS = ['.fit', '.tcx'] as const;
 export const UPLOAD_EXTENSIONS = [...ACTIVITY_EXTENSIONS, '.zip'] as const;
 
@@ -24,6 +25,9 @@ const toActivityEntry = (path: string): ArchiveEntry | undefined => {
   if (IGNORED_PREFIXES.some((p) => path.startsWith(p))) return undefined;
   const fileName = path.split('/').pop() ?? path;
   const lower = fileName.toLowerCase();
+  if (lower.endsWith(GZIPPED_FIT_EXTENSION)) {
+    return { path, fileName: fileName.slice(0, -GZIP_SUFFIX.length), extension: '.fit' };
+  }
   const extension = ACTIVITY_EXTENSIONS.find((e) => lower.endsWith(e));
   if (!extension) return undefined;
   return { path, fileName, extension };
@@ -45,5 +49,8 @@ export const extractArchiveEntry = (archive: ArrayBuffer, path: string): ArrayBu
   const files = unzipSync(new Uint8Array(archive), { filter: (file) => file.name === path });
   const data = files[path];
   if (!data) throw new Error(`Archive entry "${path}" not found`);
+  if (path.toLowerCase().endsWith(GZIPPED_FIT_EXTENSION)) {
+    return gunzipSync(data).buffer as ArrayBuffer;
+  }
   return data.buffer as ArrayBuffer;
 };

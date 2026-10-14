@@ -1,18 +1,11 @@
-import type { SessionLap, SessionRecord } from '@/packages/engine/types.ts';
+import type { SessionLap } from '@/packages/engine/types.ts';
 
 export interface LapAnalysis {
   lapIndex: number;
   paceSecPerKm: number | undefined;
-  avgHr: number | undefined;
-  minHr: number | undefined;
-  maxHr: number | undefined;
-  avgCadence: number | undefined;
   distance: number | undefined;
-  timerTime: number;
   movingTime: number;
-  elevationGain: number | undefined;
   intensity: string;
-  maxSpeed: number | undefined;
   isInterval: boolean;
   isPartial: boolean;
 }
@@ -55,15 +48,8 @@ export const analyzeLaps = (laps: SessionLap[]): LapAnalysis[] => {
     return {
       lapIndex: lap.lapIndex,
       paceSecPerKm,
-      avgHr: lap.avgHr,
-      minHr: lap.minHr,
-      maxHr: lap.maxHr,
-      avgCadence: lap.avgCadence,
       distance: lap.distance,
-      timerTime: lap.totalTimerTime,
       movingTime,
-      elevationGain: lap.totalAscent,
-      maxSpeed: lap.maxSpeed,
       intensity: lap.intensity ?? 'active',
       isPartial: false,
       isInterval: isIntervalSession && lap.intensity === 'active',
@@ -104,88 +90,4 @@ export const detectIntervals = (laps: SessionLap[]): IntervalPair[] => {
   }
 
   return pairs;
-};
-
-export interface LapRecordEnrichment {
-  lapIndex: number;
-  minSpeed: number | undefined;
-  avgPower: number | undefined;
-  minPower: number | undefined;
-  maxPower: number | undefined;
-  minCadence: number | undefined;
-  minHr: number | undefined;
-}
-
-export const filterRecordsByLap = (
-  records: SessionRecord[],
-  lap: SessionLap,
-  sessionStartUnixMs: number,
-): SessionRecord[] => {
-  const lapStartUnixMs = lap.startTime;
-  const lapEndUnixMs = lap.endTime;
-  const lapStartSecSinceSessionStart = (lapStartUnixMs - sessionStartUnixMs) / 1000;
-  const lapEndSecSinceSessionStart = (lapEndUnixMs - sessionStartUnixMs) / 1000;
-  return records.filter((record) => {
-    const recordSecSinceSessionStart = record.timestamp;
-    return (
-      recordSecSinceSessionStart >= lapStartSecSinceSessionStart &&
-      recordSecSinceSessionStart < lapEndSecSinceSessionStart
-    );
-  });
-};
-
-export const enrichLapFromRecords = (
-  lapIndex: number,
-  records: SessionRecord[],
-): LapRecordEnrichment => {
-  const speeds = records.map((r) => r.speed).filter((s): s is number => s !== undefined);
-  const powers = records.map((r) => r.power).filter((p): p is number => p !== undefined);
-  const cadences = records.map((r) => r.cadence).filter((c): c is number => c !== undefined);
-  const hrs = records.map((r) => r.hr).filter((h): h is number => h !== undefined);
-
-  speeds.sort((a, b) => a - b);
-  powers.sort((a, b) => a - b);
-  cadences.sort((a, b) => a - b);
-  hrs.sort((a, b) => a - b);
-
-  let minSpeed: number | undefined = undefined;
-  if (speeds.length > 0) {
-    minSpeed = speeds[0];
-  }
-  let avgPower: number | undefined = undefined;
-  if (powers.length > 0) {
-    avgPower = Math.round(powers.reduce((a, b) => a + b, 0) / powers.length);
-  }
-  let minPower: number | undefined = undefined;
-  if (powers.length > 0) {
-    minPower = powers[0];
-  }
-  let maxPower: number | undefined = undefined;
-  if (powers.length > 0) {
-    maxPower = powers[powers.length - 1];
-  }
-  let minCadence: number | undefined = undefined;
-  if (cadences.length > 0) {
-    minCadence = cadences[0];
-  }
-  let minHr: number | undefined = undefined;
-  if (hrs.length > 0) {
-    minHr = hrs[0];
-  }
-
-  return { lapIndex, minSpeed, avgPower, minPower, maxPower, minCadence, minHr };
-};
-
-export const enrichAllLaps = (
-  laps: SessionLap[],
-  records: SessionRecord[],
-): LapRecordEnrichment[] => {
-  const firstLap = laps[0];
-  if (laps.length === 0 || records.length === 0 || !firstLap) return [];
-
-  const sessionStartUnixMs = firstLap.startTime;
-  return laps.map((lap) => {
-    const lapRecords = filterRecordsByLap(records, lap, sessionStartUnixMs);
-    return enrichLapFromRecords(lap.lapIndex, lapRecords);
-  });
 };

@@ -1,8 +1,7 @@
 import type { SessionRecord, Sport } from '@/packages/engine/types.ts';
 import { movingSeconds } from '@/lib/movingTime.ts';
 import type { LapSpan } from '@/lib/lapRanges.ts';
-import type { LapAnalysis, LapRecordEnrichment } from './laps.ts';
-import { enrichLapFromRecords } from './laps.ts';
+import type { LapAnalysis } from './laps.ts';
 
 interface SplitDistanceRange {
   min: number;
@@ -31,31 +30,8 @@ export const splitDistanceRange = (sport: Sport, sessionMetres: number): SplitDi
 
 interface DynamicLapResult {
   analysis: LapAnalysis[];
-  enrichments: LapRecordEnrichment[];
   spans: LapSpan[];
 }
-
-const roundedAverage = (values: number[]): number | undefined => {
-  if (values.length === 0) return undefined;
-  return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
-};
-
-const maxOf = (values: number[]): number | undefined => {
-  if (values.length === 0) return undefined;
-  return Math.max(...values);
-};
-
-const elevationGainOf = (slice: SessionRecord[]): number => {
-  let gain = 0;
-  for (let i = 1; i < slice.length; i++) {
-    const prev = slice[i - 1]?.elevation;
-    const curr = slice[i]?.elevation;
-    if (prev !== undefined && curr !== undefined && curr > prev) {
-      gain += curr - prev;
-    }
-  }
-  return gain;
-};
 
 export const computeDynamicLaps = (
   records: SessionRecord[],
@@ -65,7 +41,7 @@ export const computeDynamicLaps = (
   records.forEach((record, i) => {
     if (record.distance !== undefined) withDistance.push(i);
   });
-  const empty: DynamicLapResult = { analysis: [], enrichments: [], spans: [] };
+  const empty: DynamicLapResult = { analysis: [], spans: [] };
   const firstIndex = withDistance[0];
   if (withDistance.length < 2 || firstIndex === undefined) return empty;
   const firstDistance = records[firstIndex]?.distance;
@@ -73,7 +49,6 @@ export const computeDynamicLaps = (
 
   const moving = movingSeconds(records);
   const analysis: LapAnalysis[] = [];
-  const enrichments: LapRecordEnrichment[] = [];
   const spans: LapSpan[] = [];
   let lapIndex = 0;
 
@@ -92,7 +67,6 @@ export const computeDynamicLaps = (
     if (first.distance === undefined || last.distance === undefined) return;
 
     const distance = last.distance - first.distance;
-    const timerTime = last.timestamp - first.timestamp;
     const movingTime = movingEnd - movingStart;
 
     let paceSecPerKm: number | undefined = undefined;
@@ -100,27 +74,15 @@ export const computeDynamicLaps = (
       paceSecPerKm = (movingTime / distance) * 1000;
     }
 
-    const hrs = slice.map((r) => r.hr).filter((h): h is number => h !== undefined);
-    const cadences = slice.map((r) => r.cadence).filter((c): c is number => c !== undefined);
-    const speeds = slice.map((r) => r.speed).filter((s): s is number => s !== undefined);
-
     analysis.push({
       lapIndex,
       paceSecPerKm,
-      avgHr: roundedAverage(hrs),
-      minHr: undefined,
-      maxHr: maxOf(hrs),
-      avgCadence: roundedAverage(cadences),
       distance,
-      timerTime,
       movingTime,
-      elevationGain: elevationGainOf(slice),
       intensity: 'active',
-      maxSpeed: maxOf(speeds),
       isInterval: false,
       isPartial,
     });
-    enrichments.push(enrichLapFromRecords(lapIndex, slice));
     spans.push({ lapIndex, startRecord, endRecord });
     lapIndex++;
   };
@@ -140,5 +102,5 @@ export const computeDynamicLaps = (
     closeLap(lapStart, withDistance.length - 1, true);
   }
 
-  return { analysis, enrichments, spans };
+  return { analysis, spans };
 };

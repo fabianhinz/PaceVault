@@ -41,13 +41,7 @@ export const CardGrid = (props: CardGridProps) => {
           </Typography>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3">
-        {Children.map(visibleChildren, (child) =>
-          child != null ? (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3">{child}</div>
-          ) : null,
-        )}
-      </div>
+      <div className="grid grid-cols-2 gap-3">{visibleChildren}</div>
     </>
   );
 };

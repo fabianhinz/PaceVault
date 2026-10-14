@@ -1,6 +1,7 @@
 import type { SessionRecord } from '@/packages/engine/types.ts';
 import { calculateGAP, calculateNormalizedPower } from '@/packages/engine/normalize.ts';
 import { climbingRate } from '@/packages/engine/climbs.ts';
+import { timeWeightedMean } from '@/packages/engine/sessionDerivation.ts';
 import { movingSeconds } from './movingTime.ts';
 import { summarizeValues } from './seriesSummary.ts';
 import type { SessionTerrain } from './sessionTerrain.ts';
@@ -102,7 +103,6 @@ export const computeRangeStats = (
   }
 
   const hr = summarizeValues(inRange.map((r) => r.hr));
-  const power = summarizeValues(inRange.map((r) => r.power));
   const speed = summarizeValues(inRange.map((r) => r.speed));
   const cadence = summarizeValues(inRange.map((r) => r.cadence));
   const grade = summarizeValues(
@@ -117,11 +117,11 @@ export const computeRangeStats = (
   return {
     avgHr: hr.avg,
     maxHr: hr.max,
-    avgPower: power.avg,
+    avgPower: timeWeightedMean(inRange, 'power'),
     normalizedPower: calculateNormalizedPower(inRange),
     avgSpeed,
     maxSpeed: speed.max,
-    avgCadence: cadence.avg,
+    avgCadence: timeWeightedMean(inRange, 'cadence'),
     maxCadence: cadence.max,
     elevationGain: elevation.gain,
     elevationLoss: elevation.loss,

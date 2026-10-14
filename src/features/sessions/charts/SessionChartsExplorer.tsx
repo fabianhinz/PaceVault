@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import { ChartRow, ChartsCard, ZoomResetPill } from '@/components/ui/ChartsCard.tsx';
 import { buildSessionChartRows, gpsByX, hasSeriesValues } from '@/lib/chartData.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
 import { indexByX } from '@/lib/chartHover.ts';
 import { computeRecordExtremes } from '@/lib/recordExtremes.ts';
@@ -20,12 +21,14 @@ import {
 } from '@/lib/railFormat.ts';
 import { buildSessionTerrain, climbSpanAt, climbSpansInMinutes } from '@/lib/sessionTerrain.ts';
 import { climbingRate } from '@/packages/engine/climbs.ts';
+import { stepsPerMinute } from '@/packages/engine/cadence.ts';
 import type { MetricId } from '@/lib/explanations.ts';
 import { SeriesRail } from '@/components/charts/ChartRail.tsx';
 import type { StatRailNote } from '@/components/ui/StatRail.tsx';
 import { sportIcon } from '@/lib/sportIcons.ts';
 import { formatChartTime, sessionTimeXAxis } from '@/lib/chartTheme.ts';
 import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { lapIndexAtTime } from '@/lib/lapRanges.ts';
 import { HrChart } from './HrChart.tsx';
 import { PowerChart } from './PowerChart.tsx';
@@ -38,7 +41,7 @@ import { GradeAdjustedPaceChart } from './GradeAdjustedPaceChart.tsx';
 import { tokens } from '@/lib/tokens.ts';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import { m } from '@/paraglide/messages.js';
-import { useUserStore } from '@/store/user.ts';
+import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
 import {
   zoneScale,
   type ZoneMetric,
@@ -78,7 +81,12 @@ const scaleFor = (
   return zoneScale(metric, thresholds);
 };
 
-const currentLapBands = () => useMapFocusStore.getState().sessionLaps?.bands ?? [];
+const railCadence = (cadence: number | undefined, isRunning: boolean) => {
+  if (cadence === undefined || !isRunning) return cadence;
+  return stepsPerMinute(cadence);
+};
+
+const currentLapBands = () => useMapControlsStore.getState().sessionLaps?.bands ?? [];
 
 const vamNote = (
   vam: number | undefined,
@@ -109,8 +117,8 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     () => computeRecordExtremes(props.records, terrain.gradients),
     [props.records, terrain],
   );
-  const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
-  const thresholds = useUserStore((s) => s.profile?.thresholds);
+  const trackColorMode = useMapControlsStore((s) => s.trackColorMode);
+  const thresholds = useThresholdsAt(props.session.date);
   const hrScale = useMemo(
     () => scaleFor('hr', trackColorMode, thresholds),
     [trackColorMode, thresholds],
@@ -128,7 +136,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     [trackColorMode, props.records],
   );
 
-  const lapBands = useDeferredValue(useMapFocusStore((s) => s.sessionLaps?.bands));
+  const lapBands = useDeferredValue(useMapControlsStore((s) => s.sessionLaps?.bands));
   const zoom = useSyncedChartZoom();
   const zoomRange = zoom.zoomRange;
 
@@ -152,34 +160,35 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     [rows, compactRows],
   );
 
+  const pointerFine = useDevice().pointerFine;
   const onHover = useCallback(
     (time: number | null) => {
       if (time == null) {
         useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
         useMapFocusStore.getState().clearHoveredPoint();
-        useMapFocusStore.getState().setHoveredLap(null);
+        useMapControlsStore.getState().setHoveredLap(null);
         return;
       }
       useChartHoverStore.getState().setChartHover(HOVER_GROUP, time);
-      useMapFocusStore.getState().setHoveredLap(lapIndexAtTime(currentLapBands(), time) ?? null);
+      useMapControlsStore.getState().setHoveredLap(lapIndexAtTime(currentLapBands(), time) ?? null);
       const point = gpsLookup.get(time);
-      if (point) {
+      if (point && pointerFine) {
         useMapFocusStore.getState().setHoveredPoint(point);
       }
     },
-    [gpsLookup],
+    [gpsLookup, pointerFine],
   );
 
   const onSelectTime = useCallback((time: number) => {
     const lapIndex = lapIndexAtTime(currentLapBands(), time);
     if (lapIndex === undefined) return;
-    useMapFocusStore.getState().toggleSelectedLap(lapIndex);
+    useMapControlsStore.getState().toggleSelectedLap(lapIndex);
   }, []);
 
   useEffect(
     () => () => {
       useMapFocusStore.getState().clearHoveredPoint();
-      useMapFocusStore.getState().setHoveredLap(null);
+      useMapControlsStore.getState().setHoveredLap(null);
       useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
     },
     [],
@@ -188,7 +197,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   const session = props.session;
   const cadenceIcon = sportIcon[session.sport] ?? sportIcon.running;
 
-  const selectedLapIndex = useDeferredValue(useMapFocusStore((s) => s.selectedLapIndex));
+  const selectedLapIndex = useDeferredValue(useMapControlsStore((s) => s.selectedLapIndex));
   const selectedBand = lapBands?.find((band) => band.lapIndex === selectedLapIndex);
   const railRange = activeRailRange(zoomRange, selectedBand);
   const railFrom = railRange?.from;
@@ -283,6 +292,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       cadence: (
         <CadenceChart
           data={compactRows}
+          seriesName={isRunning ? m.ui_chart_series_cadence_running() : m.ui_chart_series_cadence()}
           onActiveTimeChange={onHover}
           onZoomComplete={onZoomComplete}
           onSelectTime={onSelectTime}
@@ -318,6 +328,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
     }),
     [
       compactRows,
+      isRunning,
       hrScale,
       powerScale,
       paceScale,
@@ -456,19 +467,19 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
-          unit="rpm"
+          unit={isRunning ? 'spm' : 'rpm'}
           formatX={formatHoverTime}
           rest={{
             header: m.ui_rail_avg(),
-            value: railInt(stats.avgCadence),
-            secondary: `${m.ui_rail_max()} ${railInt(stats.maxCadence)}`,
+            value: railInt(railCadence(stats.avgCadence, isRunning)),
+            secondary: `${m.ui_rail_max()} ${railInt(railCadence(stats.maxCadence, isRunning))}`,
           }}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.cadence),
-              secondary: `${m.ui_rail_avg()} ${railInt(stats.avgCadence)}`,
+              secondary: `${m.ui_rail_avg()} ${railInt(railCadence(stats.avgCadence, isRunning))}`,
             };
           }}
         />

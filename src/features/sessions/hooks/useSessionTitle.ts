@@ -1,7 +1,7 @@
 import type { TrainingSession } from '@/packages/engine/types.ts';
 import { formatDate, formatDistance, formatDuration, formatSubSport } from '@/lib/formatters.ts';
 import { formatSessionName, formatSessionZoneLabel } from '@/lib/sessionTitleFormatter.ts';
-import { useUserStore } from '@/store/user.ts';
+import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
 
 interface SessionTitle {
   title: string;
@@ -9,7 +9,7 @@ interface SessionTitle {
 }
 
 export const useSessionTitle = (session: TrainingSession | undefined): SessionTitle => {
-  const thresholds = useUserStore((s) => s.profile?.thresholds);
+  const thresholds = useThresholdsAt(session?.date ?? 0);
 
   if (!session) {
     return { title: '', subtitle: '' };

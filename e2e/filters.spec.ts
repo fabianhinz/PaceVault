@@ -1,6 +1,12 @@
 import { test, expect, type Page } from './helpers/test';
 import { seedWithSessions } from './helpers/seed';
-import { applyFilter, dockFilterButton, filterList, openFilterList } from './helpers/filters';
+import {
+  applyFilter,
+  dockFilterButton,
+  expectFilterInputStaysPut,
+  filterList,
+  openFilterList,
+} from './helpers/filters';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -14,7 +20,7 @@ test.describe('Dock filters', () => {
       { sport: 'running', date: now - 2 * DAY_MS, name: 'Recent Run', distance: 10000 },
       { sport: 'cycling', date: now - 15 * DAY_MS, name: 'Mid Ride', distance: 40000 },
       { sport: 'running', date: now - 20 * DAY_MS, name: 'Long Run', distance: 21000 },
-      { sport: 'cycling', date: now - 120 * DAY_MS, name: 'Old Ride', distance: 60000 },
+      { sport: 'cycling', date: now - 120 * DAY_MS, name: 'Isar Loop', distance: 60000 },
     ]);
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');
@@ -67,6 +73,51 @@ test.describe('Dock filters', () => {
     await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'true');
     await input.press('Escape');
     await expect(dockFilterButton(page)).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('shows not understood once typing stops, with the input in place', async ({ page }) => {
+    await openFilterList(page);
+    await expectFilterInputStaysPut(page, 'isar');
+    await page.getByLabel(/describe a filter/i).fill('"isar"');
+    await page
+      .getByTestId('filter-builder-tiles')
+      .getByRole('button', { name: 'Apply filter: “isar”' })
+      .click();
+    await expect(sessionItems(page)).toHaveCount(1);
+    await expect(sessionItems(page).first()).toContainText('Isar Loop');
+  });
+
+  test('suggests an understood filter even when no session matches it', async ({ page }) => {
+    await openFilterList(page);
+    const input = page.getByLabel(/describe a filter/i);
+    await input.fill('3km');
+    const tile = page
+      .getByTestId('filter-builder-tiles')
+      .getByRole('button', { name: 'Apply filter: about 3 km', exact: true });
+    await expect(tile).toBeVisible();
+    await tile.click();
+    await expect(input).toHaveValue('');
+    await expect(sessionItems(page)).toHaveCount(0);
+  });
+
+  test('searches quoted text only in session names', async ({ page }) => {
+    await openFilterList(page);
+    await page.getByLabel(/describe a filter/i).fill('"ride"');
+    await page
+      .getByTestId('filter-builder-tiles')
+      .getByRole('button', { name: 'Apply filter: “ride”', exact: true })
+      .click();
+    await expect(sessionItems(page)).toHaveCount(1);
+    await expect(sessionItems(page).first()).toContainText('Mid Ride');
+
+    const input = page.getByLabel(/describe a filter/i);
+    await input.fill('"LOOP isar"');
+    await page
+      .getByTestId('filter-builder-tiles')
+      .getByRole('button', { name: 'Apply filter: “loop isar”', exact: true })
+      .click();
+    await expect(sessionItems(page)).toHaveCount(1);
+    await expect(sessionItems(page).first()).toContainText('Isar Loop');
   });
 
   test('shows a chart zoom as a row that clears the whole filter', async ({ page }) => {

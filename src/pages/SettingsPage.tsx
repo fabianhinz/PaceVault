@@ -52,7 +52,7 @@ export const SettingsPage = () => {
 
       <TabsContent value="general">
         <PageGrid>
-          <div className="lg:col-span-2">
+          <div className="space-y-4 lg:col-span-2">
             <ThresholdsSection />
           </div>
 

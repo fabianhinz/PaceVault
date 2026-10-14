@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { getSessionGPS } from '@/lib/indexeddb.ts';
 import { matchesFilters } from '@/lib/savedFilters.ts';
 import type { SessionGPS, Sport, TrainingSession } from '@/packages/engine/types.ts';
+import { useSessionReprocessingActive } from '@/features/sessions/hooks/useSessionReprocessingActive.ts';
+import { useStudioMapTracks } from './useStudioMapTracks.ts';
 
 export interface MapTrack {
   sessionId: string;
@@ -13,77 +14,52 @@ export interface MapTrack {
   session: TrainingSession;
 }
 
-export const useMapTracks = (gpsData: SessionGPS[] | null) => {
+const NO_TRACKS: MapTrack[] = [];
+
+export const useMapTracks = (gpsData: SessionGPS[] | null): MapTrack[] => {
   const sessions = useSessionsStore((s) => s.sessions);
   const activeFilter = useFiltersStore((s) => s.activeFilter);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
+  const reprocessing = useSessionReprocessingActive();
+  const studioActive = useStudioMapTracks().active;
+  const tripActive = focusedTripSessionIds.length > 0;
+  let filter = activeFilter;
+  if (tripActive) filter = null;
 
-  const [tracks, setTracks] = useState<MapTrack[]>([]);
-  const [loading, setLoading] = useState(true);
+  return useMemo(() => {
+    if (studioActive || reprocessing || openedSessionId !== null || gpsData === null) {
+      return NO_TRACKS;
+    }
 
-  useEffect(() => {
-    let cancelled = false;
+    const gpsMap = new Map<string, SessionGPS>();
+    for (const g of gpsData) {
+      gpsMap.set(g.sessionId, g);
+    }
 
-    const load = async () => {
-      setLoading(true);
-
-      if (openedSessionId) {
-        const session = sessions.find((s) => s.id === openedSessionId);
-        const gps = await getSessionGPS(openedSessionId);
-        if (cancelled) return;
-
-        if (gps && session) {
-          setTracks([{ sessionId: openedSessionId, sport: session.sport, gps, session }]);
-        } else {
-          setTracks([]);
-        }
-        setLoading(false);
-        return;
-      }
-
-      if (!gpsData) return;
-
-      const gpsMap = new Map<string, SessionGPS>();
-      for (const g of gpsData) {
-        gpsMap.set(g.sessionId, g);
-      }
-
-      if (focusedTripSessionIds.length > 0) {
-        const tripIds = new Set(focusedTripSessionIds);
-        const result: MapTrack[] = [];
-        for (const s of sessions) {
-          if (!tripIds.has(s.id)) continue;
-          const gps = gpsMap.get(s.id);
-          if (gps) result.push({ sessionId: s.id, sport: s.sport, gps, session: s });
-        }
-        if (!cancelled) {
-          setTracks(result);
-          setLoading(false);
-        }
-        return;
-      }
-
+    let visible: TrainingSession[];
+    if (tripActive) {
+      const tripIds = new Set(focusedTripSessionIds);
+      visible = sessions.filter((s) => tripIds.has(s.id));
+    } else {
       const now = Date.now();
-      const filtered = sessions.filter((s) => matchesFilters(s, activeFilter, now));
+      visible = sessions.filter((s) => matchesFilters(s, filter, now));
+    }
 
-      const result: MapTrack[] = [];
-      for (const s of filtered) {
-        const gps = gpsMap.get(s.id);
-        if (gps) result.push({ sessionId: s.id, sport: s.sport, gps, session: s });
-      }
-
-      if (!cancelled) {
-        setTracks(result);
-        setLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [sessions, activeFilter, gpsData, openedSessionId, focusedTripSessionIds]);
-
-  return { tracks, loading };
+    const result: MapTrack[] = [];
+    for (const s of visible) {
+      const gps = gpsMap.get(s.id);
+      if (gps) result.push({ sessionId: s.id, sport: s.sport, gps, session: s });
+    }
+    return result;
+  }, [
+    studioActive,
+    reprocessing,
+    openedSessionId,
+    gpsData,
+    tripActive,
+    focusedTripSessionIds,
+    sessions,
+    filter,
+  ]);
 };
