@@ -32,8 +32,8 @@ interface MapPreferencesState {
   bySport: Record<Sport, SportMapPreferences>;
   setTrackIntensity: (intensity: TrackIntensity) => void;
   setSessionColorMode: (sport: Sport, mode: ColorMode) => void;
-  setLapSource: (sport: Sport, source: LapSource) => void;
-  setSplitDistance: (sport: Sport, metres: number) => void;
+  setSessionLapSource: (sport: Sport, source: LapSource) => void;
+  setSessionSplitDistance: (sport: Sport, metres: number) => void;
   resetMapPreferences: () => void;
 }
 
@@ -104,13 +104,13 @@ export const useMapPreferencesStore = create<MapPreferencesState>()(
           set((draft) => {
             draft.bySport[sport].colorMode = mode;
           }),
-        setLapSource: (sport, source) => {
+        setSessionLapSource: (sport, source) => {
           set((draft) => {
             draft.bySport[sport].lapSource = source;
           });
           useMapControlsStore.getState().clearLapFocusOnLapSetChange();
         },
-        setSplitDistance: (sport, metres) => {
+        setSessionSplitDistance: (sport, metres) => {
           set((draft) => {
             draft.bySport[sport].lapSource = 'splits';
             draft.bySport[sport].splitDistance = metres;

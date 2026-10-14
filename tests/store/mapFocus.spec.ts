@@ -73,7 +73,7 @@ describe('useMapFocusStore', () => {
   it('opening another session keeps color by and laps preferences but clears the lap selection', () => {
     useMapFocusStore.getState().setOpenedSession('first');
     useMapPreferencesStore.getState().setSessionColorMode('running', 'hr');
-    useMapPreferencesStore.getState().setSplitDistance('running', 2500);
+    useMapPreferencesStore.getState().setSessionSplitDistance('running', 2500);
     useMapControlsStore.getState().selectLap(3);
     useMapFocusStore.getState().setOpenedSession('first');
     expect(useMapControlsStore.getState().selectedLapIndex).toBe(3);

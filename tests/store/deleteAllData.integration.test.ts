@@ -10,11 +10,10 @@ import { makeSession } from '@tests/factories/sessions.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
 import { makeCyclingRecords, makeLaps } from '@tests/factories/records.ts';
 import {
-  saveSessionRecords,
   getSessionRecords,
   clearAllRecords,
-  saveSessionLaps,
   getSessionLaps,
+  bulkSaveSessionData,
 } from '@/lib/indexeddb.ts';
 import { idbStorage } from '@/lib/idbStorage.ts';
 
@@ -30,10 +29,8 @@ describe('delete all data', () => {
     useLayoutStore.getState().completeOnboarding();
 
     const records = makeCyclingRecords(60, { basePower: 200 });
-    await saveSessionRecords(sessionId, records);
-
     const laps = makeLaps(2);
-    await saveSessionLaps(sessionId, laps);
+    await bulkSaveSessionData([{ sessionId, records, laps }]);
 
     await idbStorage.setItem('store-user', '{"state":{"profile":{}}}');
 
@@ -58,7 +55,7 @@ describe('delete all data', () => {
 
     useMapPreferencesStore.getState().setTrackIntensity('hot');
     useMapPreferencesStore.getState().setSessionColorMode('running', 'hr');
-    useMapPreferencesStore.getState().setSplitDistance('cycling', 5000);
+    useMapPreferencesStore.getState().setSessionSplitDistance('cycling', 5000);
 
     expect(useFiltersStore.getState().activeFilter).not.toBeNull();
     expect(useIntervalsStore.getState().apiKey).not.toBeNull();

@@ -1,5 +1,5 @@
 // Sources: [Banister1991], [CogganAllen2010], [Fellrnr]
-// See src/engine/SOURCES.md for full citations.
+// See src/packages/engine/SOURCES.md for full citations.
 
 import type { SessionRecord, Gender } from './types.ts';
 import { calculateNormalizedPower } from './normalize.ts';

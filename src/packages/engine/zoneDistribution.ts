@@ -1,5 +1,5 @@
 // Sources: [Karvonen1957], [CogganAllen2010]
-// See src/engine/SOURCES.md for full citations.
+// See src/packages/engine/SOURCES.md for full citations.
 
 import type { SessionRecord } from './types.ts';
 import { activeSeconds } from './normalize.ts';

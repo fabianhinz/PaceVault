@@ -1,5 +1,5 @@
 // Sources: [Banister1991], [Karvonen1957], [Swain1998], [Billat1999], [Wenger1986]
-// See src/engine/SOURCES.md for full citations.
+// See src/packages/engine/SOURCES.md for full citations.
 
 // ---------------------------------------------------------------------------
 // Training Effect — Reference-Anchored TRIMP Approximation

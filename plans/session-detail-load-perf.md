@@ -161,7 +161,7 @@ Terrain, climbs, extremes, stats (`SessionChartsExplorer.tsx:107-118`, `:205-233
 
 ## Tests
 
-- `tests/lib/sessionChartRows.integration.test.ts` (fake-indexeddb as in `tests/lib/indexeddb.integration.test.ts`): full and range requests equal `buildSessionChartRows(records, { isRunning, terrain })`; after overwriting the records, a `reset` makes the next request return the new rows; `sport` is read from a seeded `store-sessions` kv entry.
+- `tests/lib/sessionChartRows.integration.test.ts` (fake-indexeddb; seed records with `bulkSaveSessionData([{ sessionId, records, laps: [] }])` from `src/lib/indexeddb.ts`): full and range requests equal `buildSessionChartRows(records, { isRunning, terrain })`; after overwriting the records with a second `bulkSaveSessionData` call, a `reset` makes the next request return the new rows; `sport` is read from a seeded `store-sessions` kv entry.
 - E2E: extend `e2e/sessions.spec.ts:99` with drag-zoom → `zoom-reset-chip` visible → reset → gone. Existing chart assertions (`:90`, `:113`, `:295`) auto-wait for rows.
 - No tests for the thin query hook or stale-response dropping (would need a mocked `Worker`).
 

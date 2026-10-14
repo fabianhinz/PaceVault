@@ -101,7 +101,7 @@ export const wmoToDescription = (code: number): WeatherDescription => {
   return wmoToCondition(code);
 };
 
-export type PrecipitationIntensity = 'none' | 'light' | 'moderate' | 'heavy';
+type PrecipitationIntensity = 'none' | 'light' | 'moderate' | 'heavy';
 
 const INTENSITY_BY_CODE: Partial<Record<number, PrecipitationIntensity>> = {
   51: 'light',

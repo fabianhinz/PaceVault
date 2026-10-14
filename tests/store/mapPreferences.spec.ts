@@ -12,8 +12,8 @@ const rehydrateFrom = async (state: unknown) => {
 describe('useMapPreferencesStore', () => {
   it('keeps color by and laps per sport', () => {
     useMapPreferencesStore.getState().setSessionColorMode('running', 'hr');
-    useMapPreferencesStore.getState().setLapSource('running', 'device');
-    useMapPreferencesStore.getState().setSplitDistance('cycling', 5000);
+    useMapPreferencesStore.getState().setSessionLapSource('running', 'device');
+    useMapPreferencesStore.getState().setSessionSplitDistance('cycling', 5000);
 
     expect(useMapPreferencesStore.getState().bySport).toEqual({
       running: { colorMode: 'hr', lapSource: 'device', splitDistance: null },

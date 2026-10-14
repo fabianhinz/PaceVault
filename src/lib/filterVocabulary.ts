@@ -60,7 +60,6 @@ export const KEYWORDS = {
   ],
 } satisfies Record<string, string[]>;
 
-/** Units that only match their exact spelling, never as a prefix. */
 export const EXACT_ONLY_UNITS: Unit[] = ['mi', 'y'];
 export const EXACT_UNIT_ORDER: Unit[] = ['km', 'mi', 'h', 'min', 'hm', 'd', 'w', 'm', 'y'];
 export const PREFIX_UNIT_ORDER: Unit[] = ['d', 'w', 'm', 'km', 'min', 'h', 'hm'];

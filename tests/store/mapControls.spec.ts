@@ -18,11 +18,11 @@ describe('useMapControlsStore', () => {
   it('changing the lap source or split distance clears the selected and hovered lap', () => {
     useMapControlsStore.getState().selectLap(2);
     useMapControlsStore.getState().setHoveredLap(1);
-    useMapPreferencesStore.getState().setLapSource('running', 'device');
+    useMapPreferencesStore.getState().setSessionLapSource('running', 'device');
     expect(useMapControlsStore.getState().selectedLapIndex).toBeNull();
     expect(useMapControlsStore.getState().hoveredLapIndex).toBeNull();
     useMapControlsStore.getState().selectLap(2);
-    useMapPreferencesStore.getState().setSplitDistance('running', 1500);
+    useMapPreferencesStore.getState().setSessionSplitDistance('running', 1500);
     expect(useMapControlsStore.getState().selectedLapIndex).toBeNull();
     expect(useMapPreferencesStore.getState().bySport.running.lapSource).toBe('splits');
   });

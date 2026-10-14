@@ -1,5 +1,5 @@
 // Sources: [Veness2019]
-// See src/engine/SOURCES.md for full citations.
+// See src/packages/engine/SOURCES.md for full citations.
 
 import type { SessionRecord } from './types.ts';
 import { isValidCoordinate, bearingDeg, toRad, EARTH_RADIUS_M } from './gps.ts';

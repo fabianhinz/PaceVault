@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computePBsForSessions } from '@/lib/records.ts';
-import { makeCyclingRecords, makeRunningRecords } from '../factories/records.ts';
+import { makeCyclingRecords, makeRunningRecords } from '@tests/factories/records.ts';
 import type { PersonalBest } from '@/packages/engine/types.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;

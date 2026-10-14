@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  saveSessionRecords,
   getSessionRecords,
   deleteSessionRecords,
   clearAllRecords,
-  saveSessionLaps,
   getSessionLaps,
   deleteSessionLaps,
   saveSessionGPS,
@@ -17,15 +15,13 @@ import { makeCyclingRecords, makeRunningRecords, makeLaps } from '@tests/factori
 import type { SessionGPS } from '@/packages/engine/types.ts';
 
 describe('IndexedDB session records', () => {
-  // Clear records between tests instead of deleting the database
-  // (deleteDatabase blocks if a connection is still open)
   beforeEach(async () => {
     await clearAllRecords();
   });
 
   it('saves 100 records and retrieves all by sessionId', async () => {
     const records = makeCyclingRecords(100);
-    await saveSessionRecords('session-a', records);
+    await bulkSaveSessionData([{ sessionId: 'session-a', records, laps: [] }]);
 
     const retrieved = await getSessionRecords('session-a');
     expect(retrieved).toHaveLength(100);
@@ -35,8 +31,8 @@ describe('IndexedDB session records', () => {
   it('retrieves only records for specific session (multi-session isolation)', async () => {
     const recordsA = makeCyclingRecords(50);
     const recordsB = makeRunningRecords(30);
-    await saveSessionRecords('session-a', recordsA);
-    await saveSessionRecords('session-b', recordsB);
+    await bulkSaveSessionData([{ sessionId: 'session-a', records: recordsA, laps: [] }]);
+    await bulkSaveSessionData([{ sessionId: 'session-b', records: recordsB, laps: [] }]);
 
     const retrievedA = await getSessionRecords('session-a');
     const retrievedB = await getSessionRecords('session-b');
@@ -48,8 +44,8 @@ describe('IndexedDB session records', () => {
   it('deletes records for one session, others remain', async () => {
     const recordsA = makeCyclingRecords(40);
     const recordsB = makeCyclingRecords(60);
-    await saveSessionRecords('session-a', recordsA);
-    await saveSessionRecords('session-b', recordsB);
+    await bulkSaveSessionData([{ sessionId: 'session-a', records: recordsA, laps: [] }]);
+    await bulkSaveSessionData([{ sessionId: 'session-b', records: recordsB, laps: [] }]);
 
     await deleteSessionRecords('session-a');
 
@@ -61,8 +57,12 @@ describe('IndexedDB session records', () => {
   });
 
   it('clearAllRecords wipes everything', async () => {
-    await saveSessionRecords('session-a', makeCyclingRecords(20));
-    await saveSessionRecords('session-b', makeCyclingRecords(30));
+    await bulkSaveSessionData([
+      { sessionId: 'session-a', records: makeCyclingRecords(20), laps: [] },
+    ]);
+    await bulkSaveSessionData([
+      { sessionId: 'session-b', records: makeCyclingRecords(30), laps: [] },
+    ]);
 
     await clearAllRecords();
 
@@ -80,7 +80,7 @@ describe('IndexedDB session laps', () => {
 
   it('saves laps and retrieves all by sessionId', async () => {
     const laps = makeLaps(5);
-    await saveSessionLaps('session-a', laps);
+    await bulkSaveSessionData([{ sessionId: 'session-a', records: [], laps }]);
 
     const retrieved = await getSessionLaps('session-a');
     expect(retrieved).toHaveLength(5);
@@ -93,8 +93,8 @@ describe('IndexedDB session laps', () => {
   });
 
   it('retrieves only laps for specific session (multi-session isolation)', async () => {
-    await saveSessionLaps('session-a', makeLaps(3));
-    await saveSessionLaps('session-b', makeLaps(5));
+    await bulkSaveSessionData([{ sessionId: 'session-a', records: [], laps: makeLaps(3) }]);
+    await bulkSaveSessionData([{ sessionId: 'session-b', records: [], laps: makeLaps(5) }]);
 
     const retrievedA = await getSessionLaps('session-a');
     const retrievedB = await getSessionLaps('session-b');
@@ -104,8 +104,8 @@ describe('IndexedDB session laps', () => {
   });
 
   it('deletes laps for one session, others remain', async () => {
-    await saveSessionLaps('session-a', makeLaps(4));
-    await saveSessionLaps('session-b', makeLaps(6));
+    await bulkSaveSessionData([{ sessionId: 'session-a', records: [], laps: makeLaps(4) }]);
+    await bulkSaveSessionData([{ sessionId: 'session-b', records: [], laps: makeLaps(6) }]);
 
     await deleteSessionLaps('session-a');
 
@@ -117,8 +117,9 @@ describe('IndexedDB session laps', () => {
   });
 
   it('clearAllRecords also clears laps', async () => {
-    await saveSessionLaps('session-a', makeLaps(3));
-    await saveSessionRecords('session-a', makeCyclingRecords(10));
+    await bulkSaveSessionData([
+      { sessionId: 'session-a', records: makeCyclingRecords(10), laps: makeLaps(3) },
+    ]);
 
     await clearAllRecords();
 
@@ -182,7 +183,9 @@ describe('IndexedDB session GPS', () => {
 
   it('clearAllRecords also clears GPS data', async () => {
     await saveSessionGPS(makeTestGPS('session-a'));
-    await saveSessionRecords('session-a', makeCyclingRecords(5));
+    await bulkSaveSessionData([
+      { sessionId: 'session-a', records: makeCyclingRecords(5), laps: [] },
+    ]);
 
     await clearAllRecords();
 

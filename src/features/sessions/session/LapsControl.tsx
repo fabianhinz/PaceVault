@@ -73,7 +73,7 @@ const SplitSlider = (props: { records: SessionRecord[]; sport: Sport; value: num
         onValueChange={(next) => {
           const metres = next[0];
           if (metres !== undefined)
-            useMapPreferencesStore.getState().setSplitDistance(props.sport, metres);
+            useMapPreferencesStore.getState().setSessionSplitDistance(props.sport, metres);
         }}
       />
       <div className="flex justify-between text-xs text-text-tertiary tabular-nums">
@@ -150,12 +150,12 @@ const LapsPicker = (props: LapsPickerProps) => {
       value={source}
       onValueChange={(value) => {
         if (value === 'off' || value === 'device') {
-          useMapPreferencesStore.getState().setLapSource(props.sport, value);
+          useMapPreferencesStore.getState().setSessionLapSource(props.sport, value);
           props.onDone();
           return;
         }
         if (value === 'splits')
-          useMapPreferencesStore.getState().setLapSource(props.sport, 'splits');
+          useMapPreferencesStore.getState().setSessionLapSource(props.sport, 'splits');
       }}
       className="gap-1"
     >

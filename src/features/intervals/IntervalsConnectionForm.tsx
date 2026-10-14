@@ -10,7 +10,7 @@ import { useIntervalsStore } from '@/store/intervals.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { type IntervalsErrorCode } from '@/lib/intervals.ts';
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
+import { INPUT_DEBOUNCE_MS, useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
 import { runIntervalsSync } from './runIntervalsSync.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { INTERVALS_SYNC_KEY } from './hooks/useIntervalsSync.ts';
@@ -24,7 +24,6 @@ import { Typography } from '@/components/ui/Typography.tsx';
 import type { ProfileGate } from '@/features/settings/hooks/useThresholdsForm.ts';
 
 const SETTINGS_URL = 'https://intervals.icu/settings';
-const CHECK_DEBOUNCE_MS = 600;
 
 const errorMessage = (code: IntervalsErrorCode): string => {
   if (code === 'unauthorized') return m.ui_intervals_error_key();
@@ -53,7 +52,7 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
   const queryClient = useQueryClient();
 
   const trimmedInput = keyInput.trim();
-  const debouncedKey = useDebouncedValue(trimmedInput, CHECK_DEBOUNCE_MS);
+  const debouncedKey = useDebouncedValue(trimmedInput, INPUT_DEBOUNCE_MS);
   let candidateKey = debouncedKey;
   if (pastedKey === trimmedInput) candidateKey = pastedKey;
   const keyCheck = useIntervalsKeyCheck(candidateKey, storedKey);

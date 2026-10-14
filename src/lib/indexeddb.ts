@@ -4,16 +4,6 @@ import type { StoreNames } from 'idb';
 import { getDB, type EnduranceTrackerDB } from './db.ts';
 import { decodeRecords, encodeRecords } from './recordCodec.ts';
 
-export const saveSessionRecords = async (
-  sessionId: string,
-  records: SessionRecord[],
-): Promise<void> => {
-  if (records.length === 0) return;
-  const encoded = await encodeRecords(records);
-  const db = await getDB();
-  await db.put('session-records', { sessionId, ...encoded });
-};
-
 export const getSessionRecords = async (sessionId: string): Promise<SessionRecord[]> => {
   const db = await getDB();
   const records = decodeRecords(await db.get('session-records', sessionId));
@@ -53,12 +43,6 @@ export const getStudioRoutePoints = async (routeId: string): Promise<RoutePoint[
 export const deleteStudioRoutePoints = async (routeId: string): Promise<void> => {
   const db = await getDB();
   await db.delete('studio-route-points', routeId);
-};
-
-export const saveSessionLaps = async (sessionId: string, laps: SessionLap[]): Promise<void> => {
-  if (laps.length === 0) return;
-  const db = await getDB();
-  await db.put('session-laps', { sessionId, laps });
 };
 
 export const getSessionLaps = async (sessionId: string): Promise<SessionLap[]> => {

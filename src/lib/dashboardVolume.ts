@@ -34,17 +34,17 @@ const metricValue = (session: VolumeSession, metric: VolumeMetric): number | und
   return session.duration;
 };
 
-export interface BeforeVolumeWindow {
+interface BeforeVolumeWindow {
   from: string;
   through: string[];
 }
 
-export interface VolumeRange {
+interface VolumeRange {
   from: string;
   count: number;
 }
 
-export interface VolumeTotals {
+interface VolumeTotals {
   current: VolumeTotal[];
   before: VolumeTotal[] | null;
   beforeWindow: BeforeVolumeWindow | null;

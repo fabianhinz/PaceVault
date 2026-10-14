@@ -20,22 +20,7 @@ Map auto-zoom (one camera owner, `src/lib/mapCamera.ts`, one unit test per decis
 
 ## Undecided (blank spots)
 
-- **Sparkline minimum span** (`PROFILE_HISTORY_MIN_DAYS = 30`, `src/lib/profileHistory.ts:4`): survived the chart and now sets the sparklines' minimum time span. Keep 30 days?
-- **DE decoupling verdict "Driftet"** (`messages/de.json:484`), was "Spürbare Drift".
-- **Peak power explanation** still mentions FTP ("around 95 % of your best 20 minutes", `exp_peakPower_range` in `messages/en.json`), although FTP is gone from the cell.
-- **Debounce delays:** two local 600 ms constants (`src/features/filters/hooks/useFilterBuilder.ts:7`, `src/features/intervals/IntervalsConnectionForm.tsx:27`). Keep local or share one?
-- **Existing comments (no-comments rule):**
-  - doc comments at `src/lib/filterGrammar.ts:270`, `src/lib/filterGrammar.ts:334`, `src/lib/filterVocabulary.ts:63`;
-  - `// Sources:` headers at `src/packages/engine/stress.ts:1` and `src/packages/engine/zoneDistribution.ts:1`. `SOURCES.md` treats these as a convention.
-- **Dead-code candidates:**
-  - `saveSessionRecords` and `saveSessionLaps` (`src/lib/indexeddb.ts`) are only used by tests (`tests/lib/indexeddb.integration.test.ts`, `tests/store/deleteAllData.integration.test.ts`);
-  - exported types only used in their own file in `src/lib/` (`dashboardVolume.ts`, `filterGrammar.ts`, `slidingHighlight.ts`, `weather.ts`). The owner chose "keep exported" for engine constants and in-file engine types; unclear whether that covers `src/lib/`.
-- **Test location:** `src/packages/CLAUDE.md:8` says `tests/packages/`. The gpx tests follow it, but the engine tests live in `tests/engine/`. Move them or fix the doc.
-- **Map store action names:** `setLapSource` / `setSplitDistance` in `src/store/mapPreferences.ts` take a sport but aren't scope-named (`setSessionLapSource` / `setSessionSplitDistance` would follow `src/store/CLAUDE.md`); `clearLapFocusOnLapSetChange` in `src/store/mapControls.ts` was named by an agent.
-- **Track intensity captions:** EN/DE drafts in `messages/en.json` / `messages/de.json` (`ui_track_intensity_*_desc`) still need the owner's wording review.
-- **`.nvmrc`:** says 24, CI runs Node 22 (`.github/workflows/ci.yml:22`), nvm has no Node 24 installed, and Vite+ brings its own runtime. Delete it (and adjust the global "use nvm" rule for Vite+ projects) or align local and CI.
-- **JSDoc in `src/lib/hooks/useMapHover.ts:12-16`:** no-comments rule; remove or keep.
-- **Filter quotes:** the typographic list (`TYPOGRAPHIC_QUOTES`, `src/lib/filterGrammar.ts:78`) is „…“ “…” ‘…’ »…«. Mixed pairs such as „…” are not accepted.
+None.
 
 ## Decided by agents without the owner
 

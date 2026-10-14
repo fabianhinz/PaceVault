@@ -1,5 +1,5 @@
 // Sources: [Ramer1972], [DouglasPeucker1973], [LiangBarsky1984], [Veness2019]
-// See src/engine/SOURCES.md for full citations.
+// See src/packages/engine/SOURCES.md for full citations.
 
 import { encode, decode } from '@googlemaps/polyline-codec';
 import { Simplify as simplify } from 'simplify-ts';

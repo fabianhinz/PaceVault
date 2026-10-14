@@ -213,12 +213,12 @@ interface RailPick {
   active: boolean;
 }
 
-export interface PeakPick extends RailPick {
+interface PeakPick extends RailPick {
   seconds: number;
   watts: number;
 }
 
-export interface ZonePick extends RailPick {
+interface ZonePick extends RailPick {
   zone: ZoneShare;
   share: number;
 }

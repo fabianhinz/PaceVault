@@ -1,5 +1,5 @@
 // Sources: [CogganAllen2010], [TP-PMC]
-// See src/engine/SOURCES.md for full citations.
+// See src/packages/engine/SOURCES.md for full citations.
 
 import type { TrainingSession, DailyMetrics } from './types.ts';
 import type { EngineFormatter } from './formatter.ts';

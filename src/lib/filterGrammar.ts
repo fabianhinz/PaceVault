@@ -267,7 +267,6 @@ const guessQuantity = (unit: QuantityUnit, n: number): Quantity | null => {
   return toQuantity(unit, n);
 };
 
-/** An explicit unit takes any value above 0; a bare `m` keeps the climb floor. */
 const explicitQuantity = (unit: QuantityUnit, n: number, unitWord: string): Quantity | null => {
   if (n <= 0) {
     return null;
@@ -331,7 +330,6 @@ const alternativesFor = (ambiguous: Ambiguous, criteria: FilterCriteria): Altern
   return out;
 };
 
-/** Minutes after an hour value: `1 h 30`, `1h30m`, `2 h 30 min`. */
 const compoundMinutes = (
   words: string[],
   index: number,

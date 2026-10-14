@@ -5,7 +5,7 @@ export interface HighlightTrack {
   itemSize: number | 'share';
 }
 
-export interface TrackLength {
+interface TrackLength {
   px: number;
   percent: number;
 }

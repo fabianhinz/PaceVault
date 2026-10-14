@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { interpretFilterText } from '@/lib/filterGrammar.ts';
-import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
+import { INPUT_DEBOUNCE_MS, useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
 import type { FilterCriteria } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-
-const NOT_UNDERSTOOD_DEBOUNCE_MS = 600;
 
 export const useFilterBuilder = (open: boolean, onClose: () => void) => {
   const [text, setText] = useState('');
@@ -17,7 +15,7 @@ export const useFilterBuilder = (open: boolean, onClose: () => void) => {
   if (notUnderstood) {
     notUnderstoodText = text;
   }
-  const pausedNotUnderstoodText = useDebouncedValue(notUnderstoodText, NOT_UNDERSTOOD_DEBOUNCE_MS);
+  const pausedNotUnderstoodText = useDebouncedValue(notUnderstoodText, INPUT_DEBOUNCE_MS);
   const showNotUnderstood = notUnderstood && pausedNotUnderstoodText !== '';
 
   useEffect(() => {
