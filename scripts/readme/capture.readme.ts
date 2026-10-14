@@ -11,8 +11,8 @@ import {
   STARNBERGER_LONG_RIDE,
   TEGERNSEE_LOOP,
 } from '../../src/features/demo/demoSchedule.ts';
-import { readmeLocale } from './env.ts';
-import { BANNER_TEXT } from './tiles.ts';
+import { README_ORIGIN, readmeLocale } from './env.ts';
+import { BANNER_TEXT, FILTER_READINGS } from './tiles.ts';
 
 const LOCALE = readmeLocale();
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -48,7 +48,6 @@ const LAPS_SESSION = ISAR_800S;
 const STATS_SHEET_POSITION = 0.8;
 const WEATHER_SESSION = 'Dachau loop';
 const LOCATE_POSITION = { latitude: 48.10131, longitude: 11.54654, accuracy: 5 };
-const DEV_ORIGIN = 'http://localhost:5173';
 const GEO_DOT_RGB: [number, number, number] = [80, 140, 255];
 
 const out = (file: string) => resolve(OUT_DIR, file);
@@ -329,7 +328,7 @@ test.describe('flow 1', () => {
 
   test('1 interactive heatmap', async ({ page }) => {
     await prepareContext(page);
-    await page.context().grantPermissions(['geolocation'], { origin: DEV_ORIGIN });
+    await page.context().grantPermissions(['geolocation'], { origin: README_ORIGIN });
     await page.context().setGeolocation(LOCATE_POSITION);
     await loadDemoData(page);
     await page.goto('/');
@@ -533,7 +532,7 @@ test.describe('desktop tiles', () => {
     await page.getByRole('button', { name: t('ui_dock_filter') }).click();
     await page.getByRole('textbox').fill(BANNER_TEXT[LOCALE].typedFilter);
     const tiles = page.getByTestId('filter-builder-tiles');
-    await expect(tiles.getByRole('button')).toHaveCount(3);
+    await expect(tiles.getByRole('button')).toHaveCount(FILTER_READINGS);
     await parkMouse(page);
     await waitForStill(page);
     const card = await boxOf(page.locator('[data-dock-card]'));

@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-import { readmeLocale } from './env.ts';
+import { README_ORIGIN, README_PORT, readmeLocale } from './env.ts';
 
 const repoRoot = resolve(import.meta.dirname, '../..');
 const BROWSER_LOCALES = { de: 'de-DE', en: 'en-US' } as const;
@@ -16,7 +16,7 @@ export default defineConfig({
 
   use: {
     ...devices['Desktop Chrome'],
-    baseURL: 'http://localhost:5173',
+    baseURL: README_ORIGIN,
     locale: BROWSER_LOCALES[readmeLocale()],
     timezoneId: 'Europe/Berlin',
     contextOptions: { reducedMotion: 'reduce' },
@@ -30,9 +30,9 @@ export default defineConfig({
   projects: [{ name: 'readme' }],
 
   webServer: {
-    command: 'vp dev',
+    command: `vp dev --port ${README_PORT} --strictPort`,
     cwd: repoRoot,
-    url: 'http://localhost:5173',
-    reuseExistingServer: true,
+    url: README_ORIGIN,
+    reuseExistingServer: false,
   },
 });

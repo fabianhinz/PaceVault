@@ -25,9 +25,11 @@ interface BannerText {
   tiles: Record<TileKey, TileText>;
 }
 
+export const FILTER_READINGS = 4;
+
 const filterReadings = (locale: BannerLocale, text: string) => {
-  if (locale === 'de') return `„${text}“ → 3 Lesarten`;
-  return `“${text}” → 3 readings`;
+  if (locale === 'de') return `„${text}“ → ${FILTER_READINGS} Lesarten`;
+  return `“${text}” → ${FILTER_READINGS} readings`;
 };
 
 const EN_FILTER = 'ride 50';

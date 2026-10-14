@@ -2,7 +2,7 @@
 
 A local-first training log for runners and cyclists, right in your browser.
 
-![PaceVault features](./docs/readme/de_banner.png)
+![PaceVault features](./docs/readme/en_banner.png)
 
 **Try it: <https://pacevault.web.app>** — no sign-up. Install it as an app (PWA) and it works offline.
 

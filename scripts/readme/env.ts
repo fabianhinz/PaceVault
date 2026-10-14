@@ -9,3 +9,6 @@ export const readmeLocale = (): BannerLocale => {
   if (!isBannerLocale(value)) throw new Error(`Unknown README banner locale "${value}"`);
   return value;
 };
+
+export const README_PORT = 5175;
+export const README_ORIGIN = `http://localhost:${README_PORT}`;
