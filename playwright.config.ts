@@ -19,7 +19,7 @@ export default defineConfig({
   reporter: 'html',
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5174',
     trace: 'on-first-retry',
   },
 
@@ -42,8 +42,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    command: 'pnpm dev --port 5174 --strictPort',
+    url: 'http://localhost:5174',
+    reuseExistingServer: false,
   },
 });

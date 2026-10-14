@@ -16,7 +16,7 @@ import {
   type LapSet,
   type LapSource,
 } from '@/lib/lapSet.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import type { SessionLap, SessionRecord, Sport } from '@/packages/engine/types.ts';
 import { LapSwatch } from './LapStrip.tsx';
 import { lapCountLabel, lapName, splitDistanceLabel, splitKm } from './lapLabels.ts';
@@ -71,7 +71,7 @@ const SplitSlider = (props: { records: SessionRecord[]; sport: Sport; value: num
         aria-label={m.ui_laps_split_distance()}
         onValueChange={(next) => {
           const metres = next[0];
-          if (metres !== undefined) useMapFocusStore.getState().setSplitDistance(metres);
+          if (metres !== undefined) useMapControlsStore.getState().setSplitDistance(metres);
         }}
       />
       <div className="flex justify-between text-xs text-text-tertiary tabular-nums">
@@ -148,11 +148,11 @@ const LapsPicker = (props: LapsPickerProps) => {
       value={source}
       onValueChange={(value) => {
         if (value === 'off' || value === 'device') {
-          useMapFocusStore.getState().setLapSource(value);
+          useMapControlsStore.getState().setLapSource(value);
           props.onDone();
           return;
         }
-        if (value === 'splits') useMapFocusStore.getState().setLapSource('splits');
+        if (value === 'splits') useMapControlsStore.getState().setLapSource('splits');
       }}
       className="gap-1"
     >
@@ -209,7 +209,7 @@ const StepButton = (props: {
 const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource }) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') useMapFocusStore.getState().clearSelectedLap();
+      if (event.key === 'Escape') useMapControlsStore.getState().closeSelectedLap();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -233,7 +233,7 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
           testId="lap-stepper-prev"
           disabled={previous === undefined}
           onClick={() => {
-            if (previous !== undefined) useMapFocusStore.getState().selectLap(previous);
+            if (previous !== undefined) useMapControlsStore.getState().selectLap(previous);
           }}
         >
           <ChevronLeft size={16} />
@@ -252,7 +252,7 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
           testId="lap-stepper-next"
           disabled={next === undefined}
           onClick={() => {
-            if (next !== undefined) useMapFocusStore.getState().selectLap(next);
+            if (next !== undefined) useMapControlsStore.getState().selectLap(next);
           }}
         >
           <ChevronRight size={16} />
@@ -262,7 +262,7 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
         aria-label={m.ui_lap_clear()}
         data-testid="lap-stepper-clear"
         className="ml-1 size-11 justify-center p-0 text-text-secondary"
-        onClick={() => useMapFocusStore.getState().clearSelectedLap()}
+        onClick={() => useMapControlsStore.getState().closeSelectedLap()}
       >
         <X size={16} />
       </FloatingPill>
@@ -272,10 +272,10 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
 
 export const LapsControl = (props: LapsControlProps) => {
   const [open, setOpen] = useState(false);
-  const lapSource = useMapFocusStore((s) => s.lapSource);
-  const storedSplitDistance = useMapFocusStore((s) => s.splitDistance);
-  const sessionLaps = useMapFocusStore((s) => s.sessionLaps);
-  const selected = useMapFocusStore((s) => s.selectedLapIndex);
+  const lapSource = useMapControlsStore((s) => s.lapSource);
+  const storedSplitDistance = useMapControlsStore((s) => s.splitDistance);
+  const sessionLaps = useMapControlsStore((s) => s.sessionLaps);
+  const selected = useMapControlsStore((s) => s.selectedLapIndex);
   const records = props.records;
   const sessionMetres = useMemo(() => recordedDistance(records), [records]);
   const splitDistance = effectiveSplitDistance(storedSplitDistance, props.sport, sessionMetres);

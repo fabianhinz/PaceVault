@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
 import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { colorModeOptions, effectiveColorMode, type WindInput } from '@/lib/colorModes.ts';
 import { speedScale } from '@/lib/speedScale.ts';
 import { toWindSamples } from '@/lib/weather.ts';
@@ -9,7 +9,7 @@ import { useSessionWeather } from './useSessionWeather.ts';
 
 export const useSessionColorModes = (session: TrainingSession, records: SessionRecord[]) => {
   const thresholds = useThresholdsAt(session.date);
-  const chosen = useMapFocusStore((s) => s.sessionColorMode);
+  const chosen = useMapControlsStore((s) => s.sessionColorMode);
   const weather = useSessionWeather(session.id, session.date, session.duration);
   const isWeatherLoading = weather.isLoading;
   const weatherData = weather.data;

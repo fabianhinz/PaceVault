@@ -15,7 +15,7 @@ import type {
   ColorModeStatus,
   ColorModeUnavailableReason,
 } from '@/lib/colorModes.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { speedRangeLabel } from './lapLabels.ts';
 import type { Sport } from '@/packages/engine/types.ts';
 
@@ -109,7 +109,7 @@ interface ColorByControlProps {
 
 export const ColorByControl = (props: ColorByControlProps) => {
   const [open, setOpen] = useState(false);
-  const hasSelectedLap = useMapFocusStore((s) => s.selectedLapIndex !== null);
+  const hasSelectedLap = useMapControlsStore((s) => s.selectedLapIndex !== null);
 
   return (
     <ResponsivePopover
@@ -150,7 +150,7 @@ export const ColorByControl = (props: ColorByControlProps) => {
         onValueChange={(value) => {
           const option = props.options.find((candidate) => candidate.mode === value);
           if (option === undefined) return;
-          useMapFocusStore.getState().setSessionColorMode(option.mode);
+          useMapControlsStore.getState().setSessionColorMode(option.mode);
           setOpen(false);
         }}
         className="gap-1"

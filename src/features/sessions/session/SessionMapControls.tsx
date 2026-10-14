@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { SheetAbove } from '@/components/ui/SheetAbove.tsx';
 import { useDevice } from '@/lib/hooks/useDevice.ts';
 import { cn } from '@/lib/utils.ts';
@@ -21,7 +21,7 @@ export const SessionMapControls = (props: SessionMapControlsProps) => {
   const effective = coloring.effective;
 
   useEffect(() => {
-    useMapFocusStore.getState().setTrackColorMode(effective);
+    useMapControlsStore.getState().setTrackColorMode(effective);
   }, [effective]);
 
   const pills = (

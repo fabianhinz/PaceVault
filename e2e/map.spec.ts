@@ -1,5 +1,10 @@
 import { test, expect, type Page } from './helpers/test';
-import { SWIFTSHADER_LAUNCH_OPTIONS, findPickableTrack, pointerState } from './helpers/map';
+import {
+  SWIFTSHADER_LAUNCH_OPTIONS,
+  exposeMap,
+  findPickableTrack,
+  pointerState,
+} from './helpers/map';
 import { seedOnboardingComplete, CYCLING_FIT, RUNNING_FIT } from './helpers/seed';
 import { uploadFitFiles } from './helpers/upload';
 
@@ -57,5 +62,70 @@ test.describe('map hover', () => {
 
     await page.keyboard.press('Escape');
     await expect(popover).toBeHidden();
+  });
+});
+
+const cameraOf = (page: Page) =>
+  page.evaluate(() => {
+    const map = Reflect.get(window, '__map');
+    const center = map.getCenter();
+    return {
+      lng: Number(center.lng.toFixed(6)),
+      lat: Number(center.lat.toFixed(6)),
+      zoom: Number(map.getZoom().toFixed(4)),
+      moving: map.isMoving(),
+    };
+  });
+
+test.describe('map camera', () => {
+  test.beforeEach(async ({ page }) => {
+    test.setTimeout(120_000);
+    await seedOnboardingComplete(page);
+    await uploadFitFiles(page, [CYCLING_FIT, RUNNING_FIT]);
+  });
+
+  test('back from a session keeps the overview camera', async ({ page }) => {
+    await page.goto('/sessions');
+    await page.waitForTimeout(3000);
+    await exposeMap(page);
+    await page.evaluate(() => {
+      Reflect.get(window, '__map').jumpTo({ center: [8.4, 49.0], zoom: 6 });
+    });
+
+    await page.locator('[data-testid="session-item"]').first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+    await expect(page.getByTestId('laps-pill')).toBeVisible({ timeout: 10_000 });
+    await expect.poll(async () => (await cameraOf(page)).moving, { timeout: 5000 }).toBe(false);
+    await page.waitForTimeout(500);
+
+    await page.goBack();
+    await page.waitForURL('/sessions');
+    await expect(page.locator('[data-testid="session-item"]').first()).toBeVisible();
+    const before = await cameraOf(page);
+    await page.waitForTimeout(2000);
+    expect(await cameraOf(page)).toEqual({ ...before, moving: false });
+  });
+});
+
+test.describe('overview map controls', () => {
+  test.beforeEach(async ({ page }) => {
+    test.setTimeout(120_000);
+    await seedOnboardingComplete(page);
+    await uploadFitFiles(page, [CYCLING_FIT, RUNNING_FIT]);
+  });
+
+  test('track intensity pill switches presets and hides on a session page', async ({ page }) => {
+    await page.goto('/sessions');
+    const pill = page.getByTestId('track-intensity-pill');
+    await expect(pill).toHaveAccessibleName('Warm', { timeout: 10_000 });
+
+    await pill.click();
+    await page.getByRole('radio', { name: /^Hot/ }).click();
+    await expect(pill).toHaveAccessibleName('Hot');
+
+    await page.locator('[data-testid="session-item"]').first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+    await expect(page.getByTestId('laps-pill')).toBeVisible({ timeout: 10_000 });
+    await expect(pill).toBeHidden();
   });
 });

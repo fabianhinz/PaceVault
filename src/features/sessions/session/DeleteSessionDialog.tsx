@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { m } from '@/paraglide/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useTripsStore } from '@/store/trips.ts';
+import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { invalidatePersonalBestsOfSession } from '@/features/records/hooks/usePersonalBests.ts';
 import {
   deleteSessionRecords,
@@ -59,6 +60,7 @@ export const DeleteSessionDialog = (props: {
               useTripsStore.getState().removeSessionFromAllTrips(props.session.id);
               invalidatePersonalBestsOfSession(queryClient, props.session.id);
               props.onOpenChange(false);
+              useMapFocusStore.getState().requestMapRefitAfterDelete();
               navigate('/sessions');
               await Promise.all([
                 deleteSessionRecords(props.session.id),

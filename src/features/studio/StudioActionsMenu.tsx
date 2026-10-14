@@ -4,6 +4,7 @@ import { FileDown, Pencil, Trash2 } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { ActionsMenu } from '@/components/ui/ActionsMenu.tsx';
 import type { StudioRoute } from '@/store/studio.ts';
+import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { StudioRouteFormDialog } from './StudioRouteFormDialog.tsx';
 import { DeleteStudioRouteDialog } from './DeleteStudioRouteDialog.tsx';
 import { useStudioRouteExport } from './hooks/useStudioRouteExport.ts';
@@ -46,7 +47,10 @@ export const StudioActionsMenu = (props: { route: StudioRoute }) => {
         routeName={props.route.name}
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        onDeleted={() => navigate('/labs?tab=studio')}
+        onDeleted={() => {
+          useMapFocusStore.getState().requestMapRefitAfterDelete();
+          navigate('/labs?tab=studio');
+        }}
       />
     </>
   );

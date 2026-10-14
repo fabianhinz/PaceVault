@@ -1,5 +1,6 @@
 import type { LapSpan } from '@/lib/lapRanges.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
+import type { GPSBounds } from '@/packages/engine/types.ts';
 
 type Color = [number, number, number, number];
 
@@ -53,4 +54,20 @@ export const lapSubPath = (detail: DetailPath, span: LapSpan): DetailPath | null
     recordIndices: detail.recordIndices.slice(first, end),
     color,
   };
+};
+
+export const pathBounds = (path: [number, number][]): GPSBounds | null => {
+  const first = path[0];
+  if (!first) return null;
+  let minLng = first[0];
+  let maxLng = first[0];
+  let minLat = first[1];
+  let maxLat = first[1];
+  for (const point of path) {
+    minLng = Math.min(minLng, point[0]);
+    maxLng = Math.max(maxLng, point[0]);
+    minLat = Math.min(minLat, point[1]);
+    maxLat = Math.max(maxLat, point[1]);
+  }
+  return { minLng, maxLng, minLat, maxLat };
 };

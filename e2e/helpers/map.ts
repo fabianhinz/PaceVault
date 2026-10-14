@@ -28,3 +28,20 @@ export const findPickableTrack = async (page: Page) => {
   }
   throw new Error('no pickable track under any scanned point');
 };
+
+export const exposeMap = (page: Page) =>
+  page.evaluate(() => {
+    const element = document.querySelector('.maplibregl-map');
+    if (!element) throw new Error('no map');
+    const fiberKey = Object.keys(element).find((key) => key.startsWith('__reactFiber'));
+    let fiber = fiberKey ? Reflect.get(element, fiberKey) : null;
+    let mapRef = null;
+    while (fiber && !mapRef) {
+      const ref = fiber.memoizedProps?.ref ?? fiber.ref;
+      if (ref?.current?.getMap) mapRef = ref.current;
+      fiber = fiber.return;
+    }
+    if (!mapRef) throw new Error('no map ref');
+    Reflect.set(window, '__mapRef', mapRef);
+    Reflect.set(window, '__map', mapRef.getMap());
+  });

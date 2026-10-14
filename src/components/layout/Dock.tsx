@@ -13,9 +13,9 @@ import { ResponsivePopover } from '@/components/ui/ResponsivePopover.tsx';
 import { m } from '@/paraglide/messages.js';
 import { DockFilterButton, DockLocateButton, DockSegment, DockTabs } from './DockItems.tsx';
 
-const fadeClass = 'transition-[opacity,visibility] duration-150';
+const fadeClass = 'origin-left transition-[opacity,scale,visibility] duration-150';
 
-const hiddenClass = 'invisible opacity-0 pointer-events-none';
+const hiddenClass = 'invisible scale-95 opacity-0 pointer-events-none';
 
 const useDockList = () => {
   const [open, setOpen] = useState(false);

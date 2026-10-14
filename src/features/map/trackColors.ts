@@ -1,4 +1,5 @@
 import type { Sport } from '@/packages/engine/types.ts';
+import type { TrackIntensity } from '@/store/mapControls.ts';
 
 export const ADDITIVE_BLEND = {
   blendColorSrcFactor: 'src-alpha',
@@ -14,14 +15,22 @@ export const trackModifiers = {
   alpha: { default: 80, highlighted: 255 },
 };
 
+export const TRACK_INTENSITIES: TrackIntensity[] = ['faint', 'warm', 'hot'];
+
+export const trackIntensityAlpha: Record<TrackIntensity, number> = {
+  faint: trackModifiers.alpha.default,
+  warm: 160,
+  hot: 255,
+};
+
 export const studioRouteModifiers = {
   width: { default: 8, highlighted: 12 },
   alpha: { default: 255, hidden: 0 },
 };
 
-export const sportTrackColor: Record<Sport, [number, number, number, number]> = {
-  running: [74, 222, 128, trackModifiers.alpha.default],
-  cycling: [249, 115, 22, trackModifiers.alpha.default],
+export const sportTrackColor: Record<Sport, [number, number, number]> = {
+  running: [74, 222, 128],
+  cycling: [249, 115, 22],
 };
 
 // Live "you are here" position. The accuracy disc mirrors the glass surface

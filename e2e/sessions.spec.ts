@@ -129,6 +129,10 @@ test.describe('Session browsing', () => {
     await expect(stepper.getByTestId('lap-stepper-name')).not.toHaveText(firstName ?? '');
     expect(await next.boundingBox()).toEqual(before);
 
+    await page.mouse.click(5, 5);
+    await page.waitForTimeout(300);
+    await expect(stepper).toBeVisible();
+
     await page.getByTestId('lap-stepper-clear').click();
     await expect(stepper).toHaveCount(0);
     await expect(lapsPill).toBeVisible();

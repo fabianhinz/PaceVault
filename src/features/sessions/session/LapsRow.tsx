@@ -9,7 +9,7 @@ import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { summarizeLaps } from '@/lib/lapSummary.ts';
 import type { LapAnalysis } from '@/lib/laps.ts';
 import type { LapSet, LapSource } from '@/lib/lapSet.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import type { SessionLap, Sport } from '@/packages/engine/types.ts';
 import { LapStrip } from './LapStrip.tsx';
 import { lapName, lapPaceLabel, lapsRowLabels } from './lapLabels.ts';
@@ -108,8 +108,8 @@ interface LapsRowProps {
 }
 
 export const LapsRow = (props: LapsRowProps) => {
-  const lapSource = useMapFocusStore((s) => s.lapSource);
-  const sessionLaps = useDeferredValue(useMapFocusStore((s) => s.sessionLaps));
+  const lapSource = useMapControlsStore((s) => s.lapSource);
+  const sessionLaps = useDeferredValue(useMapControlsStore((s) => s.sessionLaps));
 
   let source = lapSource;
   if (source === 'device' && props.laps.length === 0) source = 'off';

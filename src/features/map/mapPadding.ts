@@ -1,5 +1,6 @@
 import { useLayoutStore } from '@/store/layout.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { readSafeAreaInset, readSheetLayout, sheetFitHeight } from '@/lib/sheetPosition.ts';
 import { DESKTOP_MEDIA_QUERY } from '@/lib/hooks/useDevice.ts';
 import { SHEET_ABOVE_GAP } from '@/components/ui/sheetAboveContext.ts';
@@ -9,7 +10,9 @@ export const MAP_FIT_MARGIN = 80;
 export const MAP_CONTROLS_HEIGHT = 44;
 export const MAP_CONTROLS_BOTTOM = 40;
 
-const hasMapControls = (): boolean => useMapFocusStore.getState().openedSessionId !== null;
+const hasMapControls = (): boolean =>
+  useMapFocusStore.getState().openedSessionId !== null ||
+  useMapControlsStore.getState().overviewMapControlsShown;
 
 const desktopInsets = (): MapPadding => {
   const insets: MapPadding = {

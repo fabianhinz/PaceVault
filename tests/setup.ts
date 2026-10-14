@@ -33,7 +33,12 @@ beforeEach(() => {
     keyInvalid: false,
     backlogPending: false,
   });
-  resetStateKeepingActions(useImportProgressStore, { runningImports: 0, foreground: null });
+  resetStateKeepingActions(useImportProgressStore, {
+    runningImports: 0,
+    foreground: null,
+    awaitingTrackBuild: false,
+    mapCrashed: false,
+  });
   resetStateKeepingActions(useSessionReprocessingStore, {
     phase: 'pending',
     newerVersionInOtherTab: false,

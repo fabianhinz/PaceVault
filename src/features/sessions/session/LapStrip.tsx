@@ -6,7 +6,7 @@ import { MIN_SUMMARY_LAPS, summarizeLaps } from '@/lib/lapSummary.ts';
 import type { LapSet } from '@/lib/lapSet.ts';
 import type { LapAnalysis } from '@/lib/laps.ts';
 import type { LapBand } from '@/lib/lapRanges.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useDevice } from '@/lib/hooks/useDevice.ts';
 
 const MANY_LAPS = 20;
@@ -196,8 +196,8 @@ const LegendDot = (props: { color: string; opacity?: number; label: string }) =>
 );
 
 const LapStripDetail = (props: { set: LapSet }) => {
-  const hovered = useMapFocusStore((s) => s.hoveredLapIndex);
-  const selected = useMapFocusStore((s) => s.selectedLapIndex);
+  const hovered = useMapControlsStore((s) => s.hoveredLapIndex);
+  const selected = useMapControlsStore((s) => s.selectedLapIndex);
   const device = useDevice();
   const set = props.set;
   const layout = useMemo(() => layoutStrip(set, DETAIL_WIDTH, DETAIL_HEIGHT, 2), [set]);
@@ -217,7 +217,9 @@ const LapStripDetail = (props: { set: LapSet }) => {
           aria-hidden="true"
           className="block h-16 w-full"
           onPointerLeave={
-            device.pointerFine ? () => useMapFocusStore.getState().setHoveredLap(null) : undefined
+            device.pointerFine
+              ? () => useMapControlsStore.getState().setHoveredLap(null)
+              : undefined
           }
         >
           <line
@@ -267,10 +269,10 @@ const LapStripDetail = (props: { set: LapSet }) => {
               className="cursor-pointer"
               onPointerEnter={
                 device.pointerFine
-                  ? () => useMapFocusStore.getState().setHoveredLap(span.lapIndex)
+                  ? () => useMapControlsStore.getState().setHoveredLap(span.lapIndex)
                   : undefined
               }
-              onClick={() => useMapFocusStore.getState().toggleSelectedLap(span.lapIndex)}
+              onClick={() => useMapControlsStore.getState().toggleSelectedLap(span.lapIndex)}
             />
           ))}
         </svg>

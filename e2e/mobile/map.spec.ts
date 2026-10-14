@@ -8,6 +8,7 @@ import {
 } from '../helpers/seed';
 import { uploadFitFiles } from '../helpers/upload';
 import { expectFilterInputStaysPut } from '../helpers/filters';
+import { exposeMap } from '../helpers/map';
 
 test.use({
   launchOptions: {
@@ -395,22 +396,11 @@ test.describe('mobile lap zoom', () => {
     await expect(chart.getByTestId('lap-band').first()).toBeAttached({ timeout: 20_000 });
     await page.waitForTimeout(2000);
 
+    await exposeMap(page);
     await page.evaluate(() => {
-      const element = document.querySelector('.maplibregl-map');
-      if (!element) throw new Error('no map');
-      const fiberKey = Object.keys(element).find((key) => key.startsWith('__reactFiber'));
-      let fiber = fiberKey ? Reflect.get(element, fiberKey) : null;
-      let mapRef = null;
-      while (fiber && !mapRef) {
-        const ref = fiber.memoizedProps?.ref ?? fiber.ref;
-        if (ref?.current?.getMap) mapRef = ref.current;
-        fiber = fiber.return;
-      }
-      if (!mapRef) throw new Error('no map ref');
-      const target = mapRef;
+      const target = Reflect.get(window, '__mapRef');
       const original = target.fitBounds;
       Reflect.set(window, '__lapFits', []);
-      Reflect.set(window, '__map', target.getMap());
       target.fitBounds = (bounds: unknown, options: { maxZoom?: number }, data: unknown) => {
         if (options?.maxZoom === 16) Reflect.get(window, '__lapFits').push(bounds);
         return original(bounds, options, data);

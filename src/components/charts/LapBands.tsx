@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo } from 'react';
 import { ReferenceArea } from 'recharts';
 import { bandsOnRows } from '@/lib/lapRanges.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 
 export const LAP_STRIP_TICK_MARGIN = 12;
 
@@ -36,8 +36,8 @@ const stripFill = (state: StripFillState): string => {
 };
 
 const LapBandShape = (props: LapBandShapeProps) => {
-  const isHovered = useMapFocusStore((s) => s.hoveredLapIndex === props.lapIndex);
-  const isSelected = useMapFocusStore((s) => s.selectedLapIndex === props.lapIndex);
+  const isHovered = useMapControlsStore((s) => s.hoveredLapIndex === props.lapIndex);
+  const isSelected = useMapControlsStore((s) => s.selectedLapIndex === props.lapIndex);
   if (props.x === undefined || props.y === undefined) return null;
   if (props.width === undefined || props.height === undefined) return null;
   const x = props.x;
@@ -91,7 +91,7 @@ interface LapBandsProps<K extends string, T extends Record<K, number>> {
 export const LapBands = <K extends string, T extends Record<K, number>>(
   props: LapBandsProps<K, T>,
 ) => {
-  const sessionLaps = useDeferredValue(useMapFocusStore((s) => s.sessionLaps));
+  const sessionLaps = useDeferredValue(useMapControlsStore((s) => s.sessionLaps));
   const rows = props.rows;
   const xKey = props.xKey;
   const yAxisId = props.yAxisId;

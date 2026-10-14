@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { getSessionRecords } from '@/lib/indexeddb.ts';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useUserStore } from '@/store/user.ts';
 import { windAngles } from '@/packages/engine/windExposure.ts';
 import { zoneScale } from '@/lib/zoneColors.ts';
@@ -22,7 +22,7 @@ export const useSessionDetailPath = (
   openedSessionId: string | null,
   sessions: TrainingSession[],
 ): DetailPath | null => {
-  const trackColorMode = useMapFocusStore((s) => s.trackColorMode);
+  const trackColorMode = useMapControlsStore((s) => s.trackColorMode);
   const profile = useUserStore((s) => s.profile);
 
   const [loaded, setLoaded] = useState<{ id: string; records: SessionRecord[] } | null>(null);

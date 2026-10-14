@@ -115,7 +115,8 @@ const OverlayContent = (props: { foreground: ForegroundImport }) => {
   const [minTimeReached, setMinTimeReached] = useState(false);
   const openedAt = props.foreground.openedAt;
   const summary = props.foreground.summary;
-  const showSummary = summary !== null && minTimeReached;
+  const awaitingTrackBuild = useImportProgressStore((s) => s.awaitingTrackBuild);
+  const showSummary = summary !== null && minTimeReached && !awaitingTrackBuild;
 
   useEffect(() => {
     const remaining = Math.max(0, openedAt + MIN_OPEN_MS - Date.now());

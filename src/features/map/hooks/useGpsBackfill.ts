@@ -26,7 +26,9 @@ export const useGPSBackfill = () => {
 
     const loadGps = async () => {
       const gps = await getAllSessionGPS();
-      if (!cancelled) setGpsData(gps);
+      if (cancelled) return;
+      setGpsData(gps);
+      useImportProgressStore.getState().finishTrackBuild();
     };
 
     const run = async () => {
@@ -37,6 +39,7 @@ export const useGPSBackfill = () => {
 
       if (missing.length === 0) {
         setGpsData(existingGPS);
+        useImportProgressStore.getState().finishTrackBuild();
         return;
       }
 
@@ -45,7 +48,10 @@ export const useGPSBackfill = () => {
         stopWorker();
         void loadGps();
       };
-      worker.onerror = stopWorker;
+      worker.onerror = () => {
+        stopWorker();
+        useImportProgressStore.getState().finishTrackBuild();
+      };
       worker.postMessage({
         type: 'build',
         sessionIds: missing.map((s) => s.id),
