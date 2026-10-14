@@ -1,18 +1,15 @@
-# Open points (as of 2026-10-13)
+# Open points (as of 2026-10-14)
 
 Entry point for the next session: what is ready to build, what is still open, and what agents decided without the owner.
 
 ## Ready to build
 
-None. Mobile overlays, stat tile, studio route export and the profile history tiles are built; their plans and mockups are deleted.
+- **Session detail reload performance:** `plans/session-detail-load-perf.md` is complete (React Query decode-once with gcTime 0, long-lived worker for chart rows incl. zoom, loading states, id-only worker requests). Blocked only on the owner's baseline DevTools trace (reload `/sessions/:id`, 4x CPU, same session, dev and prod preview) before anything changes.
+
+Map auto-zoom (one camera owner, `src/lib/mapCamera.ts`, one unit test per decision in `tests/lib/mapCamera.spec.ts`), overview track intensity and persisted map preferences (`src/store/mapPreferences.ts`) are built; their plans and mockups are deleted.
 
 ## Open topics (owner)
 
-- **Session detail reload performance:** decisions taken 2026-10-14 (React Query decode-once with gcTime 0, long-lived worker for chart rows incl. zoom, manual trace before/after), recorded in `plans/session-detail-load-perf.md`. Still a DRAFT: needs files to modify and steps before it is ready to build.
-- **Map auto-zoom:** becomes a plan. All 24 jarring/debatable entries decided 2026-10-14 in `plans/map-auto-zoom.md`; approach, files and verification still to write. The HTML report is at `mockups/map-auto-zoom/report.html`. Summary, from code reading only (nothing observed in a browser):
-  - 17 jarring, 8 debatable, 11 good. Sheet drag, resize/rotation, hover, switching overview pages and Studio marker edits do not move the camera.
-  - Root cause: `useMapCameraEffect` fits again whenever the `tracks` array is replaced (`src/features/map/hooks/useMapCameraEffect.ts:72`). It is rebuilt on every change to sessions, GPS, filter or trip focus (`src/features/map/hooks/useMapTracks.ts:86`), and GPS is re-read after every sessions change (`src/features/map/hooks/useGpsBackfill.ts:61`), so one data change usually means two fits. No fit checks whether the user moved the map.
-  - Worst cases: background data (intervals.icu sync, import, reprocess) moves the map on any page; opening a session first aims at the wrong session (`src/features/map/hooks/useMapCameraEffect.ts:37-50`); opening a trip zooms out to all activities first (`useMapCameraEffect.ts:56-57`); going back moves twice and doesn't restore the previous view (`useMapCameraEffect.ts:54-71`); a selected lap is re-fitted on colour mode, weather or sessions change and a sessions change drops the lap zoom (`src/features/map/hooks/useLapCameraEffect.ts:50`, `src/features/map/hooks/useSessionDetailPath.ts:85`); in Studio, session data changes re-fit the route (`useMapCameraEffect.ts:21-32`).
 - **README banner revisit:** due now. The UI it captures changed (phone overlays, stat tiles, settings tiles).
 - **Onboarding scroll at 1440×800 (to discuss):** with the threshold tiles the page is 870 px tall on the FIT path and 1020 px on the intervals path (scrollHeight, viewport 800). Cause: the gender/birth-year row, the divider, the "Your values over time" group title and two 102 px tile rows are taller than the five input fields they replace. Options:
   - hide the tile group title and subtitle on onboarding;
@@ -34,6 +31,10 @@ None. Mobile overlays, stat tile, studio route export and the profile history ti
   - `saveSessionRecords` and `saveSessionLaps` (`src/lib/indexeddb.ts`) are only used by tests (`tests/lib/indexeddb.integration.test.ts`, `tests/store/deleteAllData.integration.test.ts`);
   - exported types only used in their own file in `src/lib/` (`dashboardVolume.ts`, `filterGrammar.ts`, `slidingHighlight.ts`, `weather.ts`). The owner chose "keep exported" for engine constants and in-file engine types; unclear whether that covers `src/lib/`.
 - **Test location:** `src/packages/CLAUDE.md:8` says `tests/packages/`. The gpx tests follow it, but the engine tests live in `tests/engine/`. Move them or fix the doc.
+- **Map store action names:** `setLapSource` / `setSplitDistance` in `src/store/mapPreferences.ts` take a sport but aren't scope-named (`setSessionLapSource` / `setSessionSplitDistance` would follow `src/store/CLAUDE.md`); `clearLapFocusOnLapSetChange` in `src/store/mapControls.ts` was named by an agent.
+- **Track intensity captions:** EN/DE drafts in `messages/en.json` / `messages/de.json` (`ui_track_intensity_*_desc`) still need the owner's wording review.
+- **`.nvmrc`:** says 24, CI runs Node 22 (`.github/workflows/ci.yml:22`), nvm has no Node 24 installed, and Vite+ brings its own runtime. Delete it (and adjust the global "use nvm" rule for Vite+ projects) or align local and CI.
+- **JSDoc in `src/lib/hooks/useMapHover.ts:12-16`:** no-comments rule; remove or keep.
 - **Filter quotes:** the typographic list (`TYPOGRAPHIC_QUOTES`, `src/lib/filterGrammar.ts:78`) is „…“ “…” ‘…’ »…«. Mixed pairs such as „…” are not accepted.
 
 ## Decided by agents without the owner
