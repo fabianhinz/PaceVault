@@ -114,7 +114,9 @@ test.describe('overview map controls', () => {
     await uploadFitFiles(page, [CYCLING_FIT, RUNNING_FIT]);
   });
 
-  test('track intensity pill switches presets and hides on a session page', async ({ page }) => {
+  test('track intensity pill switches presets, survives a reload and hides on a session page', async ({
+    page,
+  }) => {
     await page.goto('/sessions');
     const pill = page.getByTestId('track-intensity-pill');
     await expect(pill).toHaveAccessibleName('Warm', { timeout: 10_000 });
@@ -122,6 +124,9 @@ test.describe('overview map controls', () => {
     await pill.click();
     await page.getByRole('radio', { name: /^Hot/ }).click();
     await expect(pill).toHaveAccessibleName('Hot');
+
+    await page.reload();
+    await expect(pill).toHaveAccessibleName('Hot', { timeout: 10_000 });
 
     await page.locator('[data-testid="session-item"]').first().click();
     await page.waitForURL(/\/sessions\/.+/);

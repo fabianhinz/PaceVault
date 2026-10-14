@@ -16,6 +16,7 @@ import type {
   ColorModeUnavailableReason,
 } from '@/lib/colorModes.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { speedRangeLabel } from './lapLabels.ts';
 import type { Sport } from '@/packages/engine/types.ts';
 
@@ -150,7 +151,7 @@ export const ColorByControl = (props: ColorByControlProps) => {
         onValueChange={(value) => {
           const option = props.options.find((candidate) => candidate.mode === value);
           if (option === undefined) return;
-          useMapControlsStore.getState().setSessionColorMode(option.mode);
+          useMapPreferencesStore.getState().setSessionColorMode(props.sport, option.mode);
           setOpen(false);
         }}
         className="gap-1"

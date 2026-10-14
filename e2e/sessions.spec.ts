@@ -72,9 +72,7 @@ test.describe('Session browsing', () => {
     await expect(lapsRow.locator('[aria-disabled="true"]')).toContainText(/laps off/i);
   });
 
-  test('color by HR zones colours the HR chart and is not carried over to the next session', async ({
-    page,
-  }) => {
+  test('color by HR zones colours the HR chart and is remembered per sport', async ({ page }) => {
     await page.getByRole('link', { name: /sessions/i }).click();
     await page.waitForURL('/sessions');
     const sessionLinks = page.locator('[data-testid="session-item"]');
@@ -94,9 +92,15 @@ test.describe('Session browsing', () => {
     await sessionLinks.nth(1).click();
     await page.waitForURL(/\/sessions\/.+/);
     await expect(page.getByTestId('color-by-pill')).toHaveText(/color by/i, { timeout: 10_000 });
+
+    await page.goBack();
+    await page.waitForURL('/sessions');
+    await sessionLinks.first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+    await expect(page.getByTestId('color-by-pill')).toHaveText(/hr zones/i, { timeout: 10_000 });
   });
 
-  test('a lap picked on a chart turns the laps pill into a stepper, steps without moving and resets on the next session', async ({
+  test('a lap picked on a chart turns the laps pill into a stepper, steps without moving and keeps its settings per sport', async ({
     page,
   }) => {
     await page.getByRole('link', { name: /sessions/i }).click();

@@ -5,6 +5,7 @@ import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
 import { makeCyclingRecords, makeLaps } from '@tests/factories/records.ts';
@@ -55,6 +56,10 @@ describe('delete all data', () => {
       name: null,
     });
 
+    useMapPreferencesStore.getState().setTrackIntensity('hot');
+    useMapPreferencesStore.getState().setSessionColorMode('running', 'hr');
+    useMapPreferencesStore.getState().setSplitDistance('cycling', 5000);
+
     expect(useFiltersStore.getState().activeFilter).not.toBeNull();
     expect(useIntervalsStore.getState().apiKey).not.toBeNull();
     expect(useCoachPlanStore.getState().cachedPlan).not.toBeNull();
@@ -71,6 +76,7 @@ describe('delete all data', () => {
     useIntervalsStore.getState().disconnectIntervals();
     useLayoutStore.setState({ onboardingComplete: false });
     useFiltersStore.getState().resetFilters();
+    useMapPreferencesStore.getState().resetMapPreferences();
     await clearAllRecords();
 
     expect(useCoachPlanStore.getState().cachedPlan).toBeNull();
@@ -86,5 +92,10 @@ describe('delete all data', () => {
     expect(useLayoutStore.getState().onboardingComplete).toBe(false);
     expect(useFiltersStore.getState().activeFilter).toBeNull();
     expect(useFiltersStore.getState().savedFilters).toHaveLength(3);
+    expect(useMapPreferencesStore.getState().trackIntensity).toBe('warm');
+    expect(useMapPreferencesStore.getState().bySport).toEqual({
+      running: { colorMode: 'sport', lapSource: 'splits', splitDistance: null },
+      cycling: { colorMode: 'sport', lapSource: 'splits', splitDistance: null },
+    });
   });
 });

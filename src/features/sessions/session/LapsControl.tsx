@@ -17,6 +17,7 @@ import {
   type LapSource,
 } from '@/lib/lapSet.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import type { SessionLap, SessionRecord, Sport } from '@/packages/engine/types.ts';
 import { LapSwatch } from './LapStrip.tsx';
 import { lapCountLabel, lapName, splitDistanceLabel, splitKm } from './lapLabels.ts';
@@ -71,7 +72,8 @@ const SplitSlider = (props: { records: SessionRecord[]; sport: Sport; value: num
         aria-label={m.ui_laps_split_distance()}
         onValueChange={(next) => {
           const metres = next[0];
-          if (metres !== undefined) useMapControlsStore.getState().setSplitDistance(metres);
+          if (metres !== undefined)
+            useMapPreferencesStore.getState().setSplitDistance(props.sport, metres);
         }}
       />
       <div className="flex justify-between text-xs text-text-tertiary tabular-nums">
@@ -148,11 +150,12 @@ const LapsPicker = (props: LapsPickerProps) => {
       value={source}
       onValueChange={(value) => {
         if (value === 'off' || value === 'device') {
-          useMapControlsStore.getState().setLapSource(value);
+          useMapPreferencesStore.getState().setLapSource(props.sport, value);
           props.onDone();
           return;
         }
-        if (value === 'splits') useMapControlsStore.getState().setLapSource('splits');
+        if (value === 'splits')
+          useMapPreferencesStore.getState().setLapSource(props.sport, 'splits');
       }}
       className="gap-1"
     >
@@ -272,8 +275,8 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
 
 export const LapsControl = (props: LapsControlProps) => {
   const [open, setOpen] = useState(false);
-  const lapSource = useMapControlsStore((s) => s.lapSource);
-  const storedSplitDistance = useMapControlsStore((s) => s.splitDistance);
+  const lapSource = useMapPreferencesStore((s) => s.bySport[props.sport].lapSource);
+  const storedSplitDistance = useMapPreferencesStore((s) => s.bySport[props.sport].splitDistance);
   const sessionLaps = useMapControlsStore((s) => s.sessionLaps);
   const selected = useMapControlsStore((s) => s.selectedLapIndex);
   const records = props.records;

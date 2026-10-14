@@ -23,6 +23,7 @@ import {
 import { lapIndexAtRecord, type LapSpan } from '@/lib/lapRanges.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { useGeolocationStore } from '@/store/geolocation.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
@@ -73,7 +74,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const studioTracks = useStudioMapTracks();
   const sessions = useSessionsStore((s) => s.sessions);
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
-  const trackIntensity = useMapControlsStore((s) => s.trackIntensity);
+  const trackIntensity = useMapPreferencesStore((s) => s.trackIntensity);
 
   const detailPath = useSessionDetailPath(hoveredSessionId, openedSessionId, sessions);
 

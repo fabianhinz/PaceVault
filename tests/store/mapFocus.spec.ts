@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 
 describe('useMapFocusStore', () => {
   beforeEach(() => {
@@ -12,9 +13,6 @@ describe('useMapFocusStore', () => {
     });
     useMapControlsStore.setState({
       trackColorMode: 'sport',
-      sessionColorMode: 'sport',
-      lapSource: 'splits',
-      splitDistance: null,
       selectedLapIndex: null,
       hoveredLapIndex: null,
     });
@@ -72,35 +70,21 @@ describe('useMapFocusStore', () => {
     expect(useMapControlsStore.getState().trackColorMode).toBe('sport');
   });
 
-  it('color by starts at sport and is not carried over to the next session', () => {
-    expect(useMapControlsStore.getState().sessionColorMode).toBe('sport');
+  it('opening another session keeps color by and laps preferences but clears the lap selection', () => {
     useMapFocusStore.getState().setOpenedSession('first');
-    useMapControlsStore.getState().setSessionColorMode('hr');
-    useMapFocusStore.getState().setOpenedSession('first');
-    expect(useMapControlsStore.getState().sessionColorMode).toBe('hr');
-    useMapFocusStore.getState().setOpenedSession('second');
-    expect(useMapControlsStore.getState().sessionColorMode).toBe('sport');
-    useMapControlsStore.getState().setSessionColorMode('power');
-    useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapControlsStore.getState().sessionColorMode).toBe('sport');
-  });
-
-  it('laps start on the sport default splits and neither source, distance nor selection carries over to the next session', () => {
-    expect(useMapControlsStore.getState().lapSource).toBe('splits');
-    expect(useMapControlsStore.getState().splitDistance).toBeNull();
-    useMapFocusStore.getState().setOpenedSession('first');
-    useMapControlsStore.getState().setSplitDistance(2500);
+    useMapPreferencesStore.getState().setSessionColorMode('running', 'hr');
+    useMapPreferencesStore.getState().setSplitDistance('running', 2500);
     useMapControlsStore.getState().selectLap(3);
     useMapFocusStore.getState().setOpenedSession('first');
-    expect(useMapControlsStore.getState().splitDistance).toBe(2500);
     expect(useMapControlsStore.getState().selectedLapIndex).toBe(3);
     useMapFocusStore.getState().setOpenedSession('second');
-    expect(useMapControlsStore.getState().lapSource).toBe('splits');
-    expect(useMapControlsStore.getState().splitDistance).toBeNull();
     expect(useMapControlsStore.getState().selectedLapIndex).toBeNull();
-    useMapControlsStore.getState().setLapSource('device');
     useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapControlsStore.getState().lapSource).toBe('splits');
+    expect(useMapPreferencesStore.getState().bySport.running).toEqual({
+      colorMode: 'hr',
+      lapSource: 'splits',
+      splitDistance: 2500,
+    });
   });
 
   it('defaults hoveredStudioRouteId to null', () => {

@@ -5,8 +5,12 @@ import { ResponsivePopover } from '@/components/ui/ResponsivePopover.tsx';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { FloatingPill } from '@/components/ui/FloatingPill.tsx';
-import { useMapControlsStore, type TrackIntensity } from '@/store/mapControls.ts';
-import { TRACK_INTENSITIES, sportTrackColor, trackIntensityAlpha } from './trackColors.ts';
+import {
+  TRACK_INTENSITIES,
+  useMapPreferencesStore,
+  type TrackIntensity,
+} from '@/store/mapPreferences.ts';
+import { sportTrackColor, trackIntensityAlpha } from './trackColors.ts';
 
 const INTENSITY_LABEL: Record<TrackIntensity, () => string> = {
   faint: m.ui_track_intensity_faint,
@@ -52,7 +56,7 @@ const RampSwatch = (props: { intensity: TrackIntensity }) => (
 
 export const TrackIntensityControl = () => {
   const [open, setOpen] = useState(false);
-  const intensity = useMapControlsStore((s) => s.trackIntensity);
+  const intensity = useMapPreferencesStore((s) => s.trackIntensity);
 
   return (
     <ResponsivePopover
@@ -87,7 +91,7 @@ export const TrackIntensityControl = () => {
         onValueChange={(value) => {
           const next = TRACK_INTENSITIES.find((candidate) => candidate === value);
           if (next === undefined) return;
-          useMapControlsStore.getState().setTrackIntensity(next);
+          useMapPreferencesStore.getState().setTrackIntensity(next);
           setOpen(false);
         }}
         className="gap-1"

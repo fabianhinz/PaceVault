@@ -10,15 +10,15 @@ Overview tracks are drawn by the `gps-tracks` PathLayer (`src/features/map/DeckG
 
 1. **Control:** V1 pill + popover, mirroring Color by (`src/features/sessions/session/ColorByControl.tsx:110-179`). The pill shows the `Contrast` icon, the current value and a chevron, with no title. The popover has the caption header "Intensity" and three radio rows, each with a title, a caption and a ramp swatch.
 2. **Presets:** Faint 80, Warm 160 (default), Hot 255. Nothing below 80. Labels: EN Faint / Warm / Hot, DE Schwach / Warm / Heiß.
-3. **Transient:** not persisted. Warm is selected again on reload.
+3. **Persisted:** stored globally in `store-map-preferences` (`src/store/mapPreferences.ts`), so the chosen preset survives a reload. Warm is the default. Color by and laps (source and split distance) are remembered there too, per sport.
 4. **Where:** every view that draws the overview `gps-tracks` layer (dashboard, `/sessions` tabs, Labs outside Studio, trip pages). Hidden when there are no tracks, on a session page and in Studio.
 5. **Map padding:** while the overview controls are shown, the bottom controls strip is reserved, the same as for an open session.
 6. **Highlight:** hover is unchanged: the hovered track is drawn at 255 and all others at 0. No non-hover highlight exists on overview views, because `highlightedSessionId` comes either from hover (`src/lib/hooks/useMapHover.ts:5-8`) or from `/sessions/:id`, where the layer isn't drawn. So there is no extra branch for it.
 
 ## Approach
 
-- **State:** `src/store/mapControls.ts:6` adds `TrackIntensity`. `:27-30` and `:73-76` add `trackIntensity` with `setTrackIntensity`, and `overviewMapControlsShown` with `setOverviewMapControlsShown`. The store is not persisted.
-- **Mapping:** `src/features/map/trackColors.ts:18-24` holds `TRACK_INTENSITIES` and `trackIntensityAlpha` next to `trackModifiers`. `sportTrackColor` is now an RGB tuple (`:31-34`), because its alpha was no longer read.
+- **State:** `TrackIntensity`, `trackIntensity` and `setTrackIntensity` live in the persisted `src/store/mapPreferences.ts`. `overviewMapControlsShown` with `setOverviewMapControlsShown` stays in the transient `src/store/mapControls.ts`.
+- **Mapping:** `TRACK_INTENSITIES` lives in `src/store/mapPreferences.ts`; `src/features/map/trackColors.ts` holds `trackIntensityAlpha` next to `trackModifiers`. `sportTrackColor` is now an RGB tuple (`:31-34`), because its alpha was no longer read.
 - **Layer:** `src/features/map/DeckGLOverlay.tsx:75` reads the preset. `:152` maps it to alpha, `:170` adds it to `updateTriggers.getColor`, and `:188` adds it to the `useMemo` deps.
 - **Visibility:**
   - `src/features/map/hooks/useOverviewMapControlsEffect.ts:5-10` sets `overviewMapControlsShown` to `tracks.length > 0`. `useMapTracks` already returns no tracks for an open session, Studio and reprocessing.
@@ -33,7 +33,7 @@ Overview tracks are drawn by the `gps-tracks` PathLayer (`src/features/map/DeckG
 
 ## Tests
 
-- **e2e:** `e2e/map.spec.ts:110-132`. The pill shows Warm on `/sessions`, choosing Hot updates it, and it is hidden on a session page.
+- **e2e:** `e2e/map.spec.ts:110-132`. The pill shows Warm on `/sessions`, choosing Hot updates it and survives a reload, and it is hidden on a session page.
 - **No unit test:** the preset-to-alpha mapping is a pass-through (`tests/CLAUDE.md`).
 
 ## Verification

@@ -1,5 +1,5 @@
 import type { Sport } from '@/packages/engine/types.ts';
-import type { TrackIntensity } from '@/store/mapControls.ts';
+import type { TrackIntensity } from '@/store/mapPreferences.ts';
 
 export const ADDITIVE_BLEND = {
   blendColorSrcFactor: 'src-alpha',
@@ -14,8 +14,6 @@ export const trackModifiers = {
   width: { default: 8, highlighted: 12 },
   alpha: { default: 80, highlighted: 255 },
 };
-
-export const TRACK_INTENSITIES: TrackIntensity[] = ['faint', 'warm', 'hot'];
 
 export const trackIntensityAlpha: Record<TrackIntensity, number> = {
   faint: trackModifiers.alpha.default,

@@ -17,6 +17,7 @@ import { useCoachPlanStore } from './store/coachPlan.ts';
 import { useLayoutStore } from './store/layout.ts';
 import { useFiltersStore } from './store/filters.ts';
 import { useIntervalsStore } from './store/intervals.ts';
+import { useMapPreferencesStore } from './store/mapPreferences.ts';
 import './index.css';
 
 const boot = async (rootEl: HTMLElement) => {
@@ -30,6 +31,7 @@ const boot = async (rootEl: HTMLElement) => {
     useLayoutStore.persist.rehydrate(),
     useFiltersStore.persist.rehydrate(),
     useIntervalsStore.persist.rehydrate(),
+    useMapPreferencesStore.persist.rehydrate(),
   ]);
 
   const queryClient = new QueryClient();

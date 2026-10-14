@@ -1,19 +1,11 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { ColorMode } from '@/lib/colorModes.ts';
-import type { LapSet, LapSource } from '@/lib/lapSet.ts';
-
-export type TrackIntensity = 'faint' | 'warm' | 'hot';
+import type { LapSet } from '@/lib/lapSet.ts';
 
 interface MapControlsState {
   trackColorMode: ColorMode;
   setTrackColorMode: (mode: ColorMode) => void;
-  sessionColorMode: ColorMode;
-  setSessionColorMode: (mode: ColorMode) => void;
-  lapSource: LapSource;
-  setLapSource: (source: LapSource) => void;
-  splitDistance: number | null;
-  setSplitDistance: (metres: number) => void;
   sessionLaps: LapSet | null;
   setSessionLaps: (laps: LapSet | null) => void;
   selectedLapIndex: number | null;
@@ -24,8 +16,7 @@ interface MapControlsState {
   closeSelectedLap: () => void;
   hoveredLapIndex: number | null;
   setHoveredLap: (lapIndex: number | null) => void;
-  trackIntensity: TrackIntensity;
-  setTrackIntensity: (intensity: TrackIntensity) => void;
+  clearLapFocusOnLapSetChange: () => void;
   overviewMapControlsShown: boolean;
   setOverviewMapControlsShown: (shown: boolean) => void;
   resetSessionControlsOnSessionOpen: () => void;
@@ -36,19 +27,6 @@ export const useMapControlsStore = create<MapControlsState>()(
   immer((set, get) => ({
     trackColorMode: 'sport',
     setTrackColorMode: (mode) => set({ trackColorMode: mode }),
-    sessionColorMode: 'sport',
-    setSessionColorMode: (mode) => set({ sessionColorMode: mode }),
-    lapSource: 'splits',
-    setLapSource: (source) =>
-      set({ lapSource: source, selectedLapIndex: null, hoveredLapIndex: null }),
-    splitDistance: null,
-    setSplitDistance: (metres) =>
-      set({
-        lapSource: 'splits',
-        splitDistance: metres,
-        selectedLapIndex: null,
-        hoveredLapIndex: null,
-      }),
     sessionLaps: null,
     setSessionLaps: (laps) => set({ sessionLaps: laps }),
     selectedLapIndex: null,
@@ -70,24 +48,17 @@ export const useMapControlsStore = create<MapControlsState>()(
     setHoveredLap: (lapIndex) => {
       if (get().hoveredLapIndex !== lapIndex) set({ hoveredLapIndex: lapIndex });
     },
-    trackIntensity: 'warm',
-    setTrackIntensity: (intensity) => set({ trackIntensity: intensity }),
+    clearLapFocusOnLapSetChange: () => set({ selectedLapIndex: null, hoveredLapIndex: null }),
     overviewMapControlsShown: false,
     setOverviewMapControlsShown: (shown) => set({ overviewMapControlsShown: shown }),
     resetSessionControlsOnSessionOpen: () =>
       set({
-        sessionColorMode: 'sport',
-        lapSource: 'splits',
-        splitDistance: null,
         selectedLapIndex: null,
         hoveredLapIndex: null,
       }),
     resetSessionControlsOnSessionClose: () =>
       set({
         trackColorMode: 'sport',
-        sessionColorMode: 'sport',
-        lapSource: 'splits',
-        splitDistance: null,
         sessionLaps: null,
         selectedLapIndex: null,
         hoveredLapIndex: null,
