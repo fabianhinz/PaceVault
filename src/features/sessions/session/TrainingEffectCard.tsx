@@ -4,7 +4,7 @@ import { CollapsibleListItem } from '@/components/ui/Collapsible.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { GaugeArcs, GaugeDial } from '@/components/ui/GaugeDial.tsx';
 import { MetricLabel } from '@/components/ui/MetricLabel.tsx';
-import { METRIC_EXPLANATIONS, type MetricId } from '@/lib/explanations.ts';
+import type { MetricId } from '@/lib/explanations.ts';
 import { tokens } from '@/lib/tokens.ts';
 import { cn } from '@/lib/utils.ts';
 import { ctlOnDate } from '@/lib/sessionFitness.ts';
@@ -51,7 +51,6 @@ const teFmt = new Intl.NumberFormat(getLocale(), {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
-const loadFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });
 
 const fillOf = (value: number) => TE_FILL[getTrainingEffectLabel(value).color] ?? '';
 
@@ -139,16 +138,13 @@ export const TrainingEffectCard = (props: TrainingEffectCardProps) => {
     );
   }, [props.records, thresholds, ctl]);
 
-  const load = METRIC_EXPLANATIONS[props.session.stressMethod];
-  const loadValue = loadFmt.format(props.session.tss);
-
   if (!profile) {
     return (
       <CollapsibleListItem
         testId="training-effect-row"
         disabled
         avatar={<Gauge size={24} aria-hidden className="text-text-tertiary" />}
-        primary={`${load.friendlyName} ${loadValue}`}
+        primary={m.ui_te_title()}
         secondary={m.ui_te_no_profile()}
       />
     );
@@ -174,8 +170,6 @@ export const TrainingEffectCard = (props: TrainingEffectCardProps) => {
       secondary={m.ui_te_values({
         aerobic: teFmt.format(te.aerobic),
         anaerobic: teFmt.format(te.anaerobic),
-        method: load.shortLabel ?? load.friendlyName,
-        load: loadValue,
       })}
     >
       <div className="flex items-start justify-center gap-6">

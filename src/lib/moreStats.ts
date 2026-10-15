@@ -15,7 +15,7 @@ import { sessionMovingTime } from './movingTime.ts';
 import { zoneScale } from './zoneColors.ts';
 import type { ResolvedThresholds } from './thresholdsAt.ts';
 
-export type MoreStatsTopic = 'calories' | 'power' | 'stride' | 'zones' | 'decoupling';
+export type MoreStatsTopic = 'load' | 'calories' | 'power' | 'stride' | 'zones';
 
 export const PEAK_WINDOW_SECONDS = [5, 60, 300, 1200, 3600] as const;
 
@@ -177,16 +177,16 @@ export const buildMoreStats = (
   return stats;
 };
 
-const TOPIC_ORDER: MoreStatsTopic[] = ['calories', 'power', 'stride', 'zones', 'decoupling'];
+const TOPIC_ORDER: MoreStatsTopic[] = ['load', 'calories', 'power', 'stride', 'zones'];
 
 const topicPresent = (stats: MoreStats, topic: MoreStatsTopic): boolean => {
+  if (topic === 'load') return true;
   if (topic === 'calories') return stats.calories !== undefined;
   if (topic === 'power') {
     return [stats.intensity, stats.variability, stats.peaks].some((cell) => cell !== undefined);
   }
   if (topic === 'stride') return stats.stepLength !== undefined;
-  if (topic === 'zones') return stats.hrZones !== undefined;
-  return stats.decoupling !== undefined;
+  return stats.hrZones !== undefined;
 };
 
 export const moreStatsTopics = (stats: MoreStats): MoreStatsTopic[] =>

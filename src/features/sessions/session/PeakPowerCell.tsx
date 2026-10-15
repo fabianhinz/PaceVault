@@ -20,7 +20,6 @@ export const PeakPowerCell = (props: PeakPowerCellProps) => {
     <StatTile
       title={m.ui_more_stats_peaks()}
       metricId="peakPower"
-      active={pick.active}
       value={watts(pick.watts)}
       unit="W"
       note={peakWindow(pick.seconds)}
