@@ -8,7 +8,7 @@ import { useGrabberDrag } from '@/lib/hooks/useGrabberDrag.ts';
 import { useScrollFadeEffect } from '@/lib/hooks/useScrollFadeEffect.ts';
 import { SHEET_SPRING, shouldDismiss } from '@/lib/sheetDrag.ts';
 import { DOCK_ROW_BOTTOM_CSS } from '@/lib/dockGeometry.ts';
-import { SHEET_TOP_GAP_CSS } from '@/lib/sheetPosition.ts';
+import { SHEET_HANDLE_HEIGHT, SHEET_TOP_GAP_CSS } from '@/lib/sheetPosition.ts';
 import { m } from '@/paraglide/messages.js';
 import { floatingClass, scrimClass } from './Card.tsx';
 import { SheetGrabber } from './SheetGrabber.tsx';
@@ -102,7 +102,8 @@ const DialogCard = (props: HTMLMotionProps<'div'>) => {
             event.preventDefault();
           }
         }}
-        className="flex h-5 w-full shrink-0 cursor-grab touch-none items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing lg:hidden"
+        style={{ height: SHEET_HANDLE_HEIGHT }}
+        className="flex w-full shrink-0 cursor-grab touch-none items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing lg:hidden"
       >
         <SheetGrabber />
       </DialogPrimitive.Close>
@@ -123,7 +124,7 @@ export const DialogContent = (props: DialogPrimitive.DialogContentProps) => (
         'fixed z-50 flex flex-col overflow-hidden rounded-3xl focus:outline-none',
         'bottom-(--sheet-bottom) mx-auto max-w-lg',
         'left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))]',
-        'max-h-[calc(100dvh-var(--sheet-top)-var(--sheet-bottom))]',
+        'max-h-[min(75dvh,calc(100dvh-var(--sheet-top)-var(--sheet-bottom)))]',
         'data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
         'lg:block lg:p-6 lg:overflow-y-auto lg:rounded-xl',
         'lg:inset-x-auto lg:right-auto lg:bottom-auto lg:mx-0 lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2',
