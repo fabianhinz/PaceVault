@@ -10,6 +10,7 @@ Each point stands on its own: what, where, next step.
 
 - **Onboarding scrolls at 1440×800:** 870 px tall on the FIT path, 1020 px on the intervals path. Options: hide the "Your values over time" title and subtitle on onboarding, or drop the sparkline row there (no history yet).
 - **Studio marker dialog on phone:** in edit mode Delete, Cancel and Save share one row (`src/features/studio/markers/StudioMarkerDialog.tsx:200`). Decide the layout.
+- **Average HR missing from the FIT summary:** some files have HR records but no session `avg_heart_rate`/`max_heart_rate`. Avg and max then show "--", and the load falls back to the duration estimate instead of TRIMP (`src/parsers/fit.ts:183`, `src/parsers/fit.ts:220-221`; power and cadence already fall back to records at `src/parsers/fit.ts:189`). Decide: derive avg/max HR from records when the summary lacks them, and whether stored sessions get reprocessed.
 
 ## To investigate
 
