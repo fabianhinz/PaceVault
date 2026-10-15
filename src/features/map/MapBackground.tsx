@@ -7,6 +7,7 @@ import { useMapTracks } from './hooks/useMapTracks.ts';
 import { useGPSBackfill } from './hooks/useGpsBackfill.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
 import { useMapPopupState } from './hooks/useMapPopupState.ts';
+import { useSuppressTapMouseEffect } from './hooks/useSuppressTapMouseEffect.ts';
 import { DeckGLOverlay } from './DeckGLOverlay.tsx';
 import { StudioMarkerPins } from '../studio/markers/StudioMarkerPins.tsx';
 import { StudioTrackPickPopup } from '../studio/markers/StudioTrackPickPopup.tsx';
@@ -35,6 +36,7 @@ export const MapBackground = () => {
 
   useWatchPositionEffect();
   useGeolocationCameraEffect(mapRef);
+  useSuppressTapMouseEffect(mapRef, mapLoaded);
 
   const match = useMatch('/sessions/:id');
   useEffect(() => {

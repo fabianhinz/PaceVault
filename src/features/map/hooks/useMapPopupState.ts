@@ -7,15 +7,11 @@ import type { MapTrack } from './useMapTracks.ts';
 import type { PopupInfo } from '@/features/sessions/SessionsPickPopup.tsx';
 import { decodeCached, PICK_RADIUS } from './types.ts';
 import type { PickingInfo } from '@deck.gl/core';
-
-const isMouseEvent = (event: unknown): boolean =>
-  typeof event === 'object' &&
-  event !== null &&
-  'pointerType' in event &&
-  event.pointerType === 'mouse';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 
 export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks: MapTrack[]) => {
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
+  const pointerFine = useDevice().pointerFine;
 
   const [popup, setPopup] = useState<PopupInfo | null>(null);
   const [hoveringTrack, setHoveringTrack] = useState(false);
@@ -50,12 +46,12 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
       const hitSet = new Set(hitIds);
       const sessions = tracks.filter((t) => hitSet.has(t.sessionId)).map((t) => t.session);
 
-      useMapFocusStore.getState().setPickCircle([center.lng, center.lat]);
+      if (pointerFine) useMapFocusStore.getState().setPickCircle([center.lng, center.lat]);
       setPopup({ x: info.x, y: info.y, sessions });
 
       return stopPropagation;
     },
-    [tracks, openedSessionId, mapRef],
+    [tracks, openedSessionId, mapRef, pointerFine],
   );
 
   const closePopup = useCallback(() => {
@@ -64,7 +60,7 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
   }, []);
 
   const onHover = useCallback(
-    (info: PickingInfo, event?: unknown) => {
+    (info: PickingInfo) => {
       const stopPropagation = false;
       const isLapPick =
         info.layer?.id === 'session-detail' && useMapControlsStore.getState().sessionLaps !== null;
@@ -73,7 +69,7 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
       if (!popup) {
         if (
           pickable &&
-          isMouseEvent(event) &&
+          pointerFine &&
           info.coordinate &&
           info.coordinate[0] != null &&
           info.coordinate[1] != null
@@ -86,7 +82,7 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
 
       return stopPropagation;
     },
-    [popup, openedSessionId],
+    [popup, openedSessionId, pointerFine],
   );
 
   const onPointerLeave = useCallback(() => {

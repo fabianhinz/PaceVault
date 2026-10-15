@@ -27,6 +27,7 @@ import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { useGeolocationStore } from '@/store/geolocation.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import type { MapTrack } from './hooks/useMapTracks.ts';
 import { decodeCached, PICK_RADIUS, type TrackPickData } from './hooks/types.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
@@ -75,6 +76,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const sessions = useSessionsStore((s) => s.sessions);
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
   const trackIntensity = useMapPreferencesStore((s) => s.trackIntensity);
+  const pointerFine = useDevice().pointerFine;
 
   const detailPath = useSessionDetailPath(hoveredSessionId, openedSessionId, sessions);
 
@@ -123,7 +125,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     };
     const onHover: PickHandler = (info, event) => {
       let lapIndex: number | null = null;
-      if (info.object) {
+      if (pointerFine && info.object) {
         lapIndex = lapAt(info) ?? null;
       }
       useMapControlsStore.getState().setHoveredLap(lapIndex);
@@ -131,7 +133,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     };
     if (!eventHandlers.onClick) return {};
     return { onClick, onHover };
-  }, [detailPath, lapSpans, eventHandlers]);
+  }, [detailPath, lapSpans, eventHandlers, pointerFine]);
 
   const trackData = useMemo<TrackPickData[]>(
     () =>
