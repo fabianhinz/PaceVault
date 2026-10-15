@@ -292,6 +292,11 @@ test.describe('mobile map', () => {
     await expect(picker).toContainText('Sessions recorded near this location');
     await page.waitForTimeout(500);
     await expect(picker).toBeVisible();
+    const pickCircle = await page.evaluate(async () => {
+      const mapFocus = await import('/src/store/mapFocus.ts');
+      return mapFocus.useMapFocusStore.getState().pickCircle;
+    });
+    expect(pickCircle).toBeNull();
 
     await page.touchscreen.tap(track.x, 40);
     await expect(picker).toBeHidden();
@@ -342,7 +347,7 @@ test.describe('mobile map', () => {
     expect(landscape.y).toBeGreaterThanOrEqual(390 * 0.08);
   });
 
-  test('chart scrub on touch shows no map circle', async ({ page }) => {
+  test('chart scrub on touch moves the map circle', async ({ page }) => {
     test.setTimeout(120_000);
     await seedOnboardingComplete(page);
     const finePointer = await page.evaluate(async () => {
@@ -385,7 +390,9 @@ test.describe('mobile map', () => {
           mapPoint: mapFocus.useMapFocusStore.getState().hoveredPoint,
         };
       });
-    await expect.poll(hover).toEqual({ crosshair: true, mapPoint: null });
+    await expect
+      .poll(hover)
+      .toEqual({ crosshair: true, mapPoint: [expect.any(Number), expect.any(Number)] });
 
     await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   });

@@ -46,7 +46,7 @@ const lapPathFor = (
   return lapSubPath(detailPath, span);
 };
 
-const DIMMED_BRIGHTNESS = 0.3;
+const DIMMED_BRIGHTNESS = 0.8;
 const LAP_CASING_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const LAP_HOVER_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const LAP_CASING_SCALE = 1.6;
