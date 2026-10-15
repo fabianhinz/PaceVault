@@ -14,9 +14,9 @@ interface SheetLayout {
   peekContentHeight: number;
 }
 
-const HANDLE_HEIGHT = 48;
+export const SHEET_HANDLE_HEIGHT = 48;
 const PEEK_CONTENT_HEIGHT = 66;
-const PEEK_HEIGHT = HANDLE_HEIGHT + PEEK_CONTENT_HEIGHT;
+const PEEK_HEIGHT = SHEET_HANDLE_HEIGHT + PEEK_CONTENT_HEIGHT;
 const PEEK_FADE_RANGE = 0.15;
 const FULL_TOP_GAP_RATIO = 0.08;
 const FULL_TOP_GAP_MIN = 12;
@@ -37,7 +37,7 @@ export const computeSheetLayout = (metrics: SheetMetrics): SheetLayout => {
     sheetHeight,
     bottomInset,
     peekOffset,
-    handleHeight: HANDLE_HEIGHT,
+    handleHeight: SHEET_HANDLE_HEIGHT,
     peekContentHeight: PEEK_CONTENT_HEIGHT,
   };
 };

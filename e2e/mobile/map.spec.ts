@@ -22,14 +22,25 @@ const SCAN_BOTTOM = 400;
 const findTrackPoint = async (page: Page) => {
   const viewport = page.viewportSize();
   if (!viewport) throw new Error('no viewport');
+  await exposeMap(page);
   for (let y = SCAN_STEP; y < SCAN_BOTTOM; y += SCAN_STEP) {
     for (let x = SCAN_STEP; x < viewport.width; x += SCAN_STEP) {
-      await page.mouse.move(x, y);
-      await page.waitForTimeout(30);
-      const picked = await page.evaluate(async () => {
-        const mapFocus = await import('/src/store/mapFocus.ts');
-        return mapFocus.useMapFocusStore.getState().pickCircle !== null;
-      });
+      const picked = await page.evaluate(
+        (p) => {
+          const map = Reflect.get(window, '__map');
+          const canvas = map.getCanvas().getBoundingClientRect();
+          const hit = map.__deck.pickObject({
+            x: p.x - canvas.left,
+            y: p.y - canvas.top,
+            radius: 4,
+          });
+          const onMap = !!document
+            .elementFromPoint(p.x, p.y)
+            ?.closest('.maplibregl-canvas-container');
+          return !!hit?.object && onMap;
+        },
+        { x, y },
+      );
       if (picked) return { x, y };
     }
   }
@@ -457,5 +468,66 @@ test.describe('mobile lap zoom', () => {
     }
 
     expect(await scroller.evaluate((element) => element.scrollLeft)).toBe(scrollBefore);
+  });
+
+  test('tapping a lap on the map track zooms to it instead of the emulated mouse aborting the fit', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await seedOnboardingComplete(page);
+    await uploadFitFiles(page, [CYCLING_FIT]);
+    await page.goto('/sessions');
+    await page.locator('[data-testid="session-item"]').first().click();
+    await page.waitForURL(/\/sessions\/.+/);
+    await expect(page.getByTestId('laps-pill')).toBeVisible({ timeout: 20_000 });
+    await page.waitForTimeout(2500);
+    await exposeMap(page);
+
+    const lapPoints = await page.evaluate(async () => {
+      const mapControls = await import('/src/store/mapControls.ts');
+      const map = Reflect.get(window, '__map');
+      const layer = map.__deck.layerManager
+        .getLayers()
+        .find((candidate: { id: string }) => candidate.id === 'session-detail');
+      const detail = layer.props.data[0];
+      const spans = mapControls.useMapControlsStore.getState().sessionLaps?.spans ?? [];
+      const canvas = map.getCanvas().getBoundingClientRect();
+      return spans.map((span: { lapIndex: number; startRecord: number; endRecord: number }) => {
+        const vertices = detail.recordIndices.flatMap((record: number, vertex: number) => {
+          if (record >= span.startRecord && record <= span.endRecord) return [vertex];
+          return [];
+        });
+        const point = map.project(detail.path[vertices[Math.floor(vertices.length / 2)]]);
+        const x = Math.round(point.x + canvas.left);
+        const y = Math.round(point.y + canvas.top);
+        const onMap = !!document.elementFromPoint(x, y)?.closest('.maplibregl-canvas-container');
+        return { lapIndex: span.lapIndex, x, y, onMap };
+      });
+    });
+    const target = lapPoints.find((point: { onMap: boolean }) => point.onMap);
+    if (!target) throw new Error('no lap on the visible map');
+
+    const mapState = () =>
+      page.evaluate(async () => {
+        const mapControls = await import('/src/store/mapControls.ts');
+        const mapFocus = await import('/src/store/mapFocus.ts');
+        const map = Reflect.get(window, '__map');
+        return {
+          selectedLapIndex: mapControls.useMapControlsStore.getState().selectedLapIndex,
+          pickCircle: mapFocus.useMapFocusStore.getState().pickCircle,
+          zoom: map.getZoom(),
+          moving: map.isMoving(),
+        };
+      });
+    const sessionZoom = (await mapState()).zoom;
+
+    await page.touchscreen.tap(target.x, target.y);
+
+    await expect.poll(async () => (await mapState()).selectedLapIndex).toBe(target.lapIndex);
+    await expect.poll(async () => (await mapState()).moving).toBe(false);
+    await page.waitForTimeout(300);
+    const settled = await mapState();
+    expect(settled.zoom).toBeGreaterThan(sessionZoom + 1);
+    expect(settled.pickCircle).toBeNull();
   });
 });

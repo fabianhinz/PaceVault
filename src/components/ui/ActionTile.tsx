@@ -89,7 +89,7 @@ const RowTile = (props: ActionTileProps) => {
   const look = props.look ?? 'solid';
   if (props.onClick === undefined) {
     return (
-      <div className={cn(rowClass, 'select-none', rowLookClasses[look], props.className)}>
+      <div className={cn(rowClass, rowLookClasses[look], props.className)}>
         <RowContent {...props} look={look} />
       </div>
     );
@@ -100,7 +100,7 @@ const RowTile = (props: ActionTileProps) => {
       {...props.buttonProps}
       className={cn(
         rowClass,
-        'transition-all cursor-pointer select-none [-webkit-touch-callout:none]',
+        'transition-all cursor-pointer [-webkit-touch-callout:none]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
         props.selected ? 'bg-white border-white/20' : rowLookClasses[look],
         props.className,

@@ -28,7 +28,6 @@ export const HrZonesCell = (props: HrZonesCellProps) => {
     <StatTile
       title={m.ui_more_stats_zones()}
       metricId="trainingZones"
-      active={pick.active}
       value={pick.zone.zone}
       note={note}
     >

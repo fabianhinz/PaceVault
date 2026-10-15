@@ -8,7 +8,6 @@ import { Typography } from './Typography.tsx';
 
 interface StatReadingProps {
   value: string;
-  lead?: string;
   unit?: string;
 }
 
@@ -21,7 +20,6 @@ type StatTileProps = StatReadingProps &
     title: string;
     icon?: { icon: LucideIcon; color: string };
     required?: boolean;
-    active?: boolean;
     secondary?: StatReadingProps;
     note?: ReactNode;
     style?: CSSProperties;
@@ -30,11 +28,6 @@ type StatTileProps = StatReadingProps &
 
 const StatReading = (props: StatReadingProps) => (
   <Typography variant="h3" as="p" tabularNums noWrap>
-    {props.lead !== undefined && (
-      <Typography variant="caption" className="mr-0.5 font-normal">
-        {props.lead}
-      </Typography>
-    )}
     {props.value}
     {props.unit !== undefined && (
       <Typography variant="caption" className="ml-0.5 font-normal">
@@ -83,7 +76,7 @@ export const StatTile = (props: StatTileProps) => {
         {TitleIcon !== undefined && (
           <TitleIcon size={12} aria-hidden className="shrink-0" color={props.icon?.color} />
         )}
-        <Typography variant="overline" noWrap className={cn(props.active && 'text-text-primary')}>
+        <Typography variant="overline" noWrap>
           {props.title}
           {props.required && (
             <span aria-hidden className="ml-0.5">
@@ -102,13 +95,9 @@ export const StatTile = (props: StatTileProps) => {
         />
       )}
       <div className="col-span-2 col-start-1 row-start-2 flex min-w-0 items-baseline gap-1">
-        <StatReading value={props.value} lead={props.lead} unit={props.unit} />
+        <StatReading value={props.value} unit={props.unit} />
         {props.secondary !== undefined && (
-          <StatReading
-            value={props.secondary.value}
-            lead={props.secondary.lead}
-            unit={props.secondary.unit}
-          />
+          <StatReading value={props.secondary.value} unit={props.secondary.unit} />
         )}
         {hasChart && props.secondary === undefined && props.note !== undefined && (
           <Typography

@@ -27,6 +27,7 @@ import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { useGeolocationStore } from '@/store/geolocation.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useLayoutStore } from '@/store/layout.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import type { MapTrack } from './hooks/useMapTracks.ts';
 import { decodeCached, PICK_RADIUS, type TrackPickData } from './hooks/types.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
@@ -49,6 +50,7 @@ const DIMMED_BRIGHTNESS = 0.3;
 const LAP_CASING_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const LAP_HOVER_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const LAP_CASING_SCALE = 1.6;
+const HIGHLIGHT_TRANSITIONS = { getWidth: 300, getColor: 300 };
 
 interface DeckGLOverlayProps {
   tracks: MapTrack[];
@@ -75,6 +77,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const sessions = useSessionsStore((s) => s.sessions);
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
   const trackIntensity = useMapPreferencesStore((s) => s.trackIntensity);
+  const pointerFine = useDevice().pointerFine;
 
   const detailPath = useSessionDetailPath(hoveredSessionId, openedSessionId, sessions);
 
@@ -123,7 +126,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     };
     const onHover: PickHandler = (info, event) => {
       let lapIndex: number | null = null;
-      if (info.object) {
+      if (pointerFine && info.object) {
         lapIndex = lapAt(info) ?? null;
       }
       useMapControlsStore.getState().setHoveredLap(lapIndex);
@@ -131,7 +134,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     };
     if (!eventHandlers.onClick) return {};
     return { onClick, onHover };
-  }, [detailPath, lapSpans, eventHandlers]);
+  }, [detailPath, lapSpans, eventHandlers, pointerFine]);
 
   const trackData = useMemo<TrackPickData[]>(
     () =>
@@ -176,10 +179,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
           getColor: [highlightedSessionId, hoveredSessionId, trackIntensity],
           getWidth: [highlightedSessionId],
         },
-        transitions: {
-          getWidth: 300,
-          getColor: 300,
-        },
+        transitions: pointerFine ? HIGHLIGHT_TRANSITIONS : undefined,
         parameters: ADDITIVE_BLEND,
         ...eventHandlers,
       }),
@@ -192,6 +192,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     hoveredSessionId,
     eventHandlers,
     trackIntensity,
+    pointerFine,
   ]);
 
   const detailLayer = useMemo(() => {
@@ -311,10 +312,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
         getColor: [highlightedRouteId, hoveredStudioRouteId],
         getWidth: [highlightedRouteId],
       },
-      transitions: {
-        getWidth: 300,
-        getColor: 300,
-      },
+      transitions: pointerFine ? HIGHLIGHT_TRANSITIONS : undefined,
       ...eventHandlers,
     });
   }, [
@@ -323,6 +321,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     studioTracks.focusedRouteId,
     hoveredStudioRouteId,
     eventHandlers,
+    pointerFine,
   ]);
 
   const pickCircleLayer = useMemo(() => {
@@ -414,7 +413,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   }, [geoPosition, geoAccuracy]);
 
   const overlay = useControl<MapboxOverlay>(
-    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS, interleaved: true }),
+    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS, interleaved: !pointerFine }),
   );
 
   overlay.setProps({

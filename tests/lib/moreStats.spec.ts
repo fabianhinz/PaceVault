@@ -95,10 +95,10 @@ describe('buildMoreStats', () => {
     expect(stats.movingTime?.coastingS).toBe(1800);
   });
 
-  it('lists the topics in the fixed order', () => {
+  it('lists the topics in the fixed order with load first', () => {
     const records = ride(3700, 200);
     const stats = buildMoreStats(makeSession(), records, THRESHOLDS);
-    expect(moreStatsTopics(stats)).toEqual(['calories', 'power', 'zones', 'decoupling']);
+    expect(moreStatsTopics(stats)).toEqual(['load', 'calories', 'power', 'zones']);
   });
 });
 

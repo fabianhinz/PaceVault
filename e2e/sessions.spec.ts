@@ -262,7 +262,7 @@ test.describe('Session browsing', () => {
 
     const row = page.getByTestId('session-stats-row');
     const toggle = row.locator(':scope > button');
-    await expect(toggle).toContainText('Calories · Stride · Zones · Decoupling', {
+    await expect(toggle).toContainText('Load · Calories · Stride · Zones', {
       timeout: 10_000,
     });
 

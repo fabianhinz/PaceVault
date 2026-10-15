@@ -22,7 +22,7 @@ export const Slider = (props: SliderProps) => {
       step={props.step}
       disabled={props.disabled}
       className={cn(
-        'cursor-pointer relative flex w-full touch-none select-none items-center',
+        'cursor-pointer relative flex w-full touch-none items-center',
         props.disabled && 'opacity-40 pointer-events-none',
         props.className,
       )}

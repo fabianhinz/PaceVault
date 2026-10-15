@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { MouseHandlerDataParam } from 'recharts/types/synchronisation/types';
 
 interface UseChartZoomOptions<T> {
@@ -38,15 +38,6 @@ export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomRe
     setRefAreaLeft(null);
     setRefAreaRight(null);
   }
-
-  useEffect(() => {
-    if (refAreaLeft === null) return;
-    const prev = document.body.style.userSelect;
-    document.body.style.userSelect = 'none';
-    return () => {
-      document.body.style.userSelect = prev;
-    };
-  }, [refAreaLeft]);
 
   const onMouseDown = useCallback((e: MouseHandlerDataParam) => {
     if (e.activeLabel == null) return;

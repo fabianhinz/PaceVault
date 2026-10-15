@@ -10,6 +10,7 @@ import {
   type MoreStats,
   type MoreStatsTopic,
 } from '@/lib/moreStats.ts';
+import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { DECOUPLING_SCALE_PCT, DECOUPLING_WELL_PACED_PCT } from '@/packages/engine/decoupling.ts';
 import type { EnergyBlocker } from '@/packages/engine/energy.ts';
 import type { SessionRecord, TrainingSession } from '@/packages/engine/types.ts';
@@ -35,11 +36,17 @@ const RANGE_TRACK_SPAN = 0.3;
 const INTENSITY_SCALE = 1.2;
 
 const TOPIC_LABELS: Record<MoreStatsTopic, () => string> = {
+  load: m.ui_more_stats_topic_load,
   calories: m.ui_more_stats_topic_calories,
   power: m.ui_more_stats_topic_power,
   stride: m.ui_more_stats_topic_stride,
   zones: m.ui_more_stats_topic_zones,
-  decoupling: m.ui_more_stats_topic_decoupling,
+};
+
+const LOAD_SOURCES: Record<TrainingSession['stressMethod'], () => string> = {
+  tss: m.ui_more_stats_load_from_power,
+  trimp: m.ui_more_stats_load_from_hr,
+  duration: m.ui_more_stats_load_from_duration,
 };
 
 const BLOCKER_LABELS: Record<EnergyBlocker, () => string> = {
@@ -51,6 +58,17 @@ const BLOCKER_LABELS: Record<EnergyBlocker, () => string> = {
 const roundToTen = (value: number): number => Math.round(value / 10) * 10;
 const rangeFraction = (factor: number): number =>
   (factor - (1 - RANGE_TRACK_SPAN)) / (2 * RANGE_TRACK_SPAN);
+
+const loadCell = (_stats: MoreStats, session: TrainingSession): ReactNode => (
+  <StatTile
+    key="load"
+    title={m.ui_more_stats_load()}
+    metricId={session.stressMethod}
+    unit={METRIC_EXPLANATIONS[session.stressMethod].shortLabel}
+    value={integerFmt.format(session.tss)}
+    note={LOAD_SOURCES[session.stressMethod]()}
+  />
+);
 
 const caloriesCell = (stats: MoreStats): ReactNode => {
   const calories = stats.calories;
@@ -133,9 +151,9 @@ const intensityCell = (stats: MoreStats): ReactNode => {
   const variability = stats.variability;
   const title = m.ui_more_stats_intensity();
   if (intensity !== undefined) {
-    let secondary: { value: string; lead: string } | undefined = undefined;
+    let secondary: { value: string; unit: string } | undefined = undefined;
     if (variability !== undefined) {
-      secondary = { lead: 'VI', value: twoDecimalFmt.format(variability.index) };
+      secondary = { unit: 'VI', value: twoDecimalFmt.format(variability.index) };
     }
     return (
       <StatTile
@@ -143,7 +161,7 @@ const intensityCell = (stats: MoreStats): ReactNode => {
         title={title}
         metricId="intensityFactor"
         relatedMetricIds={['variabilityIndex']}
-        lead="IF"
+        unit="IF"
         value={twoDecimalFmt.format(intensity.factor)}
         secondary={secondary}
       >
@@ -162,7 +180,7 @@ const intensityCell = (stats: MoreStats): ReactNode => {
       key="intensity"
       title={title}
       metricId="variabilityIndex"
-      lead="VI"
+      unit="VI"
       value={twoDecimalFmt.format(variability.index)}
       note={
         <Crumbs
@@ -228,6 +246,7 @@ const decouplingCell = (stats: MoreStats): ReactNode => {
 };
 
 const CELLS = [
+  loadCell,
   caloriesCell,
   movingTimeCell,
   intensityCell,
@@ -244,8 +263,7 @@ interface MoreStatsRowProps {
 
 export const MoreStatsRow = (props: MoreStatsRowProps) => {
   const stats = useMoreStats(props.session, props.records);
-  const cells = CELLS.map((cell) => cell(stats)).filter((cell) => cell !== null);
-  if (cells.length === 0) return null;
+  const cells = CELLS.map((cell) => cell(stats, props.session)).filter((cell) => cell !== null);
   const topics = moreStatsTopics(stats).map((topic) => TOPIC_LABELS[topic]());
 
   return (
@@ -253,7 +271,7 @@ export const MoreStatsRow = (props: MoreStatsRowProps) => {
       testId="session-stats-row"
       avatar={<ChartNoAxesColumn size={20} aria-hidden className="shrink-0 text-text-secondary" />}
       primary={m.ui_more_stats_title()}
-      secondary={topics.length > 0 ? topics.join(' · ') : undefined}
+      secondary={topics.join(' · ')}
     >
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">{cells}</div>
     </CollapsibleListItem>
