@@ -18,6 +18,7 @@ import { SessionsPickPopup } from '../sessions/SessionsPickPopup.tsx';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useWatchPositionEffect } from '@/lib/hooks/useWatchPositionEffect.ts';
 import { useGeolocationCameraEffect } from './hooks/useGeolocationCameraEffect.ts';
+import { useDevice } from '@/lib/hooks/useDevice.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './map-attribution.css';
@@ -26,6 +27,7 @@ export const MapBackground = () => {
   const [mapLoaded, setMapLoaded] = useState(false);
 
   const mapRef = useRef<MapRef>(null);
+  const pointerFine = useDevice().pointerFine;
 
   const backfill = useGPSBackfill();
   const tracks = useMapTracks(backfill.gpsData);
@@ -85,8 +87,10 @@ export const MapBackground = () => {
         touchPitch={false}
         attributionControl={{ compact: true }}
         style={{ width: '100%', height: '100%' }}
+        cursor={popupState.hoveringTrack ? 'pointer' : undefined}
       >
         <DeckGLOverlay
+          key={pointerFine ? 'overlaid' : 'interleaved'}
           tracks={tracks}
           onClick={onMapClick}
           onHover={popupState.onHover}

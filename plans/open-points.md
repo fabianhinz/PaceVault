@@ -13,7 +13,6 @@ Each point stands on its own: what, where, next step.
 
 ## To investigate
 
-- **Map flashes on track hover:** sometimes the whole map flashes. Suspects: the tracks' additive blend (`src/features/map/trackColors.ts:4`) leaking into a basemap frame, or the hover pick pass redrawing in interleaved mode (`src/features/map/DeckGLOverlay.tsx:417`). Keep `interleaved: true`, it fixes track/tile drift in the iOS standalone PWA. Test in a real browser; headless SwiftShader may not reproduce it.
 - **iOS keyboard over bottom dialogs:** `100dvh` doesn't shrink when the keyboard opens, so it may cover the bottom card. Needs a real device.
 
 ## Check with real data
