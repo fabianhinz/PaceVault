@@ -173,6 +173,333 @@
         Everything is in the working tree; nothing is committed.
       </p>
 
+      <h2>Review round 3 fixes</h2>
+
+      <div class="card">
+        <h3>
+          <span class="label">R10</span>Efforts chip names its source by unit, not by a signal word
+        </h3>
+        <p>
+          Following the detected-interval label of intervals.icu (<code>30x 18s 485W</code>), the
+          chip now ends in the average of the detection signal over the work blocks, in that
+          signal&#39;s unit, instead of &ldquo;power / pace / heart rate&rdquo;. The &asymp; marker
+          is gone, for HR too. The pattern rule (all work blocks within &plusmn;10 % of their mean
+          moving time) is unchanged.
+        </p>
+        <table>
+          <tr>
+            <th>Token</th>
+            <th>Meaning</th>
+            <th>Source</th>
+          </tr>
+          <tr>
+            <td><code>5 &times;</code></td>
+            <td>
+              Pattern form: number of work blocks (recoveries, steady, warm-up and cool-down are not
+              counted)
+            </td>
+            <td><code>src/lib/effortLaps.ts:114</code> (<code>effortPattern</code>)</td>
+          </tr>
+          <tr>
+            <td><code>4:01</code></td>
+            <td>Pattern form: mean moving time per work block</td>
+            <td><code>src/features/sessions/session/lapLabels.ts:139-142</code></td>
+          </tr>
+          <tr>
+            <td><code>7 efforts</code> / <code>7 Belastungen</code></td>
+            <td>
+              Count form, when a block is off by more than 10 %: work-block count with the efforts
+              word
+            </td>
+            <td><code>src/features/sessions/session/lapLabels.ts:137</code></td>
+          </tr>
+          <tr>
+            <td><code>&middot;</code></td>
+            <td>
+              Separator; the value part is dropped when no work block has samples of the signal
+              (never <code>--</code>)
+            </td>
+            <td>
+              <code>src/features/sessions/session/lapLabels.ts:144-148</code>,
+              <code>ui_laps_efforts_chip</code>
+            </td>
+          </tr>
+          <tr>
+            <td><code>290 W</code></td>
+            <td>
+              Power: average W over the work blocks, weighted by moving time; a recorded 0 W reads
+              <code>0 W</code>; locale digits (<code>1,234 W</code> / <code>1.234 W</code>)
+            </td>
+            <td rowspan="3">
+              per block: <code>src/packages/engine/effortDetection.ts:695</code>
+              (<code>signalMean</code>, same 1 s grid and series as detection); weighted average:
+              <code>src/lib/effortLaps.ts:33-49</code> (<code>effortWorkAverage</code>); label:
+              <code>src/features/sessions/session/lapLabels.ts:129-133</code>
+            </td>
+          </tr>
+          <tr>
+            <td><code>3:58 /km</code></td>
+            <td>
+              Pace: grade-adjusted. The moving-time-weighted GAP speed, turned into sec/km and
+              formatted like the lap paces (<code>railPaceFromSecPerKm</code> +
+              <code>ui_laps_pace</code>)
+            </td>
+          </tr>
+          <tr>
+            <td><code>168 bpm</code></td>
+            <td>
+              HR: average bpm of the detection series, which reads HR 30 s ahead, so the lag is out
+            </td>
+          </tr>
+        </table>
+        <p class="meta">
+          Engine
+          <code>EffortBlock.signalMean</code>
+          (<code>src/packages/engine/effortDetection.ts:27-31</code>, <code>:246-250</code>) is the
+          block&#39;s mean over its moving seconds (break seconds are already missing, a short stop
+          counts as recorded 0). The lib turns it into the work average and stores it on the set as
+          <code>LapSet.efforts.workAverage</code> (<code>src/lib/lapSet.ts:27-32</code>,
+          <code>src/lib/effortLaps.ts:97-101</code>). <code>LapAnalysis</code> is unchanged.
+          <code>LapsControl.tsx:135</code> passes <code>set.efforts</code> to the label. Messages:
+          <code>messages/en.json:739-741</code>.
+        </p>
+        <p class="meta">
+          Fit check (rendered chip, worst cases injected): the chip line is 178 px on the
+          <code>w-80</code> desktop popover and 224 px at 390 px.
+          <code>12 &times; 10:15 &middot; 3:58 /km</code> needs 129 px,
+          <code>20 Belastungen &middot; 1.234 W</code> 157 px,
+          <code>20 efforts &middot; 1,234 W</code> 124 px. Everything fits in EN and DE;
+          <code>truncate</code> stays as the safety net.
+        </p>
+        <p class="meta">
+          Shots: a temporary <code>e2e/zzEffortsChipCapture.spec.ts</code> (deleted) seeding three
+          synthetic 1 Hz sessions (profile rest 50, max 190, FTP 250, threshold pace 255 s/km)
+          through the dev server&#39;s <code>bulkSaveSessionData</code> /
+          <code>saveSessionGPS</code>. &ldquo;Before&rdquo; ran with the touched source files reset
+          to <code>HEAD</code>, then restored.
+        </p>
+        <h3 style="margin-top: 16px">Power ride (FTP 250)</h3>
+        <p class="meta">
+          Before EN <code>5 × 4:01 · power</code>, DE <code>5 × 4:01 · Leistung</code> · after (EN
+          and DE) <code>5 × 4:01 · 289 W</code>
+        </p>
+        <div class="shots">
+          <figure class="crop">
+            <img
+              src="r3-before-d-en-chip-power.png"
+              alt="R10 before · Desktop · EN · Power ride"
+              loading="lazy"
+            />
+            <figcaption>R10 before · Desktop · EN · Power ride</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-after-d-en-chip-power.png"
+              alt="R10 after · Desktop · EN · Power ride"
+              loading="lazy"
+            />
+            <figcaption>R10 after · Desktop · EN · Power ride</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-before-d-de-chip-power.png"
+              alt="R10 before · Desktop · DE · Power ride"
+              loading="lazy"
+            />
+            <figcaption>R10 before · Desktop · DE · Power ride</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-after-d-de-chip-power.png"
+              alt="R10 after · Desktop · DE · Power ride"
+              loading="lazy"
+            />
+            <figcaption>R10 after · Desktop · DE · Power ride</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-before-p-en-chip-power.png"
+              alt="R10 before · 390 px · EN · Power ride"
+              loading="lazy"
+            />
+            <figcaption>R10 before · 390 px · EN · Power ride</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-chip-power.png"
+              alt="R10 after · 390 px · EN · Power ride"
+              loading="lazy"
+            />
+            <figcaption>R10 after · 390 px · EN · Power ride</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-before-p-de-chip-power.png"
+              alt="R10 before · 390 px · DE · Power ride"
+              loading="lazy"
+            />
+            <figcaption>R10 before · 390 px · DE · Power ride</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-de-chip-power.png"
+              alt="R10 after · 390 px · DE · Power ride"
+              loading="lazy"
+            />
+            <figcaption>R10 after · 390 px · DE · Power ride</figcaption>
+          </figure>
+        </div>
+        <h3 style="margin-top: 16px">Pace run (threshold pace 4:15/km)</h3>
+        <p class="meta">
+          Before EN <code>8 × 1:34 · pace</code>, DE <code>8 × 1:34 · Pace</code> · after (EN and
+          DE) <code>8 × 1:34 · 3:58 /km</code>
+        </p>
+        <div class="shots">
+          <figure class="crop">
+            <img
+              src="r3-before-d-en-chip-pace.png"
+              alt="R10 before · Desktop · EN · Pace run"
+              loading="lazy"
+            />
+            <figcaption>R10 before · Desktop · EN · Pace run</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-after-d-en-chip-pace.png"
+              alt="R10 after · Desktop · EN · Pace run"
+              loading="lazy"
+            />
+            <figcaption>R10 after · Desktop · EN · Pace run</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-before-d-de-chip-pace.png"
+              alt="R10 before · Desktop · DE · Pace run"
+              loading="lazy"
+            />
+            <figcaption>R10 before · Desktop · DE · Pace run</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-after-d-de-chip-pace.png"
+              alt="R10 after · Desktop · DE · Pace run"
+              loading="lazy"
+            />
+            <figcaption>R10 after · Desktop · DE · Pace run</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-before-p-en-chip-pace.png"
+              alt="R10 before · 390 px · EN · Pace run"
+              loading="lazy"
+            />
+            <figcaption>R10 before · 390 px · EN · Pace run</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-chip-pace.png"
+              alt="R10 after · 390 px · EN · Pace run"
+              loading="lazy"
+            />
+            <figcaption>R10 after · 390 px · EN · Pace run</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-before-p-de-chip-pace.png"
+              alt="R10 before · 390 px · DE · Pace run"
+              loading="lazy"
+            />
+            <figcaption>R10 before · 390 px · DE · Pace run</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-de-chip-pace.png"
+              alt="R10 after · 390 px · DE · Pace run"
+              loading="lazy"
+            />
+            <figcaption>R10 after · 390 px · DE · Pace run</figcaption>
+          </figure>
+        </div>
+        <h3 style="margin-top: 16px">HR-only ride (no power stream)</h3>
+        <p class="meta">
+          Before EN <code>6 × 2:47 · heart rate ≈</code>, DE
+          <code>6 × 2:47 · Herzfrequenz ≈</code> · after (EN and DE) <code>6 × 2:47 · 179 bpm</code>
+        </p>
+        <div class="shots">
+          <figure class="crop">
+            <img
+              src="r3-before-d-en-chip-hr.png"
+              alt="R10 before · Desktop · EN · HR-only ride"
+              loading="lazy"
+            />
+            <figcaption>R10 before · Desktop · EN · HR-only ride</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-after-d-en-chip-hr.png"
+              alt="R10 after · Desktop · EN · HR-only ride"
+              loading="lazy"
+            />
+            <figcaption>R10 after · Desktop · EN · HR-only ride</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-before-d-de-chip-hr.png"
+              alt="R10 before · Desktop · DE · HR-only ride"
+              loading="lazy"
+            />
+            <figcaption>R10 before · Desktop · DE · HR-only ride</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="r3-after-d-de-chip-hr.png"
+              alt="R10 after · Desktop · DE · HR-only ride"
+              loading="lazy"
+            />
+            <figcaption>R10 after · Desktop · DE · HR-only ride</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-before-p-en-chip-hr.png"
+              alt="R10 before · 390 px · EN · HR-only ride"
+              loading="lazy"
+            />
+            <figcaption>R10 before · 390 px · EN · HR-only ride</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-chip-hr.png"
+              alt="R10 after · 390 px · EN · HR-only ride"
+              loading="lazy"
+            />
+            <figcaption>R10 after · 390 px · EN · HR-only ride</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-before-p-de-chip-hr.png"
+              alt="R10 before · 390 px · DE · HR-only ride"
+              loading="lazy"
+            />
+            <figcaption>R10 before · 390 px · DE · HR-only ride</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-de-chip-hr.png"
+              alt="R10 after · 390 px · DE · HR-only ride"
+              loading="lazy"
+            />
+            <figcaption>R10 after · 390 px · DE · HR-only ride</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <p class="meta">
+        R10 verification: <code>vp build</code> pass · <code>vp check</code> pass (621 files
+        formatted, 562 linted/typed) · <code>vp test -- --run</code> 133 files / 1320 tests pass (6
+        new: 5 for <code>effortWorkAverage</code> incl. 0 W, 1 engine power mean; HR test extended)
+        · <code>vp exec playwright test</code> 83/83 · <code>vp build</code> pass.
+      </p>
+
       <h2>Review round 1 fixes</h2>
 
       <div class="card">
@@ -794,6 +1121,20 @@
       <h2>Open points for your review</h2>
       <ol>
         <li>
+          <b>O6 · Where the R10 average lives.</b> The engine now gives each block a
+          <code>signalMean</code> (<code>EffortBlock</code>), and the lib weights the work blocks by
+          moving time. That is a per-block W/bpm in the engine already, but nothing shows it, and
+          <code>LapAnalysis</code> stays pace-only, so the follow-up can pick it up. A block-level
+          field was chosen over a whole-detection field so the 0 W case is testable without a
+          synthetic 0 W &ldquo;effort&rdquo;.
+        </li>
+        <li>
+          <b>O7 · R10 value semantics.</b> HR is the 30 s-shifted detection series (the HR during
+          the effort, lag out), not the raw HR inside the block edges. Pace is the GAP speed
+          averaged and then inverted (time-weighted); an average GAP speed of 0 drops the value
+          part, as pace is undefined at speed 0. A 0 W average reads <code>0 W</code>.
+        </li>
+        <li>
           <b>O1 · DE detect nudge truncates on desktop.</b> "FTP eintragen, um Belastungen zu
           erkennen" needs ~245 px, the line has 240 px in <code>w-80</code>; it ends in "erke…"
           (C3). Phone fits. Options: keep (plan: <code>truncate</code> is the safety net), shorten
@@ -811,7 +1152,7 @@
         <li>
           <b>O3 · HR edges stay late on slow HR.</b> On the synthetic run without threshold pace the
           HR blocks read 2:29 against 3:00 true (min work 120 s, fixed 30 s shift). This is expected
-          and why the chip says "≈".
+          and why the chip said "≈" (dropped in R10).
         </li>
         <li>
           <b>O4 · Whole-tree <code>vp check</code> fails outside this feature.</b> Oxfmt can't parse
@@ -883,14 +1224,14 @@
       <ol>
         <li>
           Open an interval ride with power and FTP set: Laps pill → the Efforts row shows "N × m:ss
-          · power"; pick it, the pill reads "N efforts", chart bands match the reps.
+          · 290 W"; pick it, the pill reads "N efforts", chart bands match the reps.
         </li>
         <li>
           Device laps / Splits in the pill read "12 device laps" / "6 splits" (DE "12 Geräterunden"
           / "6 Splits"); Off reads "Laps".
         </li>
         <li>
-          Settings → remove FTP: the row falls back to "… · heart rate ≈" with "Add FTP for precise
+          Settings → remove FTP: the row falls back to "… · 168 bpm" with "Add FTP for precise
           efforts", which opens Settings.
         </li>
         <li>

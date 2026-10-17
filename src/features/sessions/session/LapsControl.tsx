@@ -120,20 +120,19 @@ const LapsPicker = (props: LapsPickerProps) => {
   }, [source, current, records, laps, splitDistance, sport]);
   const effortResult = useMemo(() => {
     if (source === 'efforts' && current?.efforts) {
-      return { set: current, signal: current.efforts.signal, limitedBy: current.efforts.limitedBy };
+      return { set: current, limitedBy: current.efforts.limitedBy };
     }
     return buildEffortLapSet(records, sport, thresholds);
   }, [source, current, records, sport, thresholds]);
   const effortSet = effortResult.set;
-  const effortSignal = effortResult.signal;
   const limitedBy = effortResult.limitedBy;
   let effortCaption = (
     <Typography variant="caption" as="span" color="textTertiary" className="block truncate">
       {m.ui_laps_efforts_none()}
     </Typography>
   );
-  if (effortSet && effortSignal) {
-    const label = effortChipLabel(effortSet, effortSignal);
+  if (effortSet?.efforts) {
+    const label = effortChipLabel(effortSet, effortSet.efforts);
     effortCaption = (
       <Chip title={label} className="min-w-0 truncate">
         {label}

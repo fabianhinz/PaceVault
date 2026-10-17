@@ -40,6 +40,7 @@ Compared in `mockups/onboarding/index.html`: A glass over glow, B one thing at a
   - Screen 3 becomes "Your thresholds", with optional FTP and optional threshold pace. Threshold pace includes the existing race-time estimator (`PaceEstimatorDialog.tsx`).
   - Still 4 screens.
   - Every optional field states in its helper line what it unlocks (calories, zones, training load, efforts). The line is factual, and an error replaces it in the same reserved line. "Add later in Settings" appears once per screen.
+  - **Review round 3:** the Source step has no Back and no Continue; tapping a source tile advances directly. The gender error goes in a reserved line under the tiles, consistent with the inputs.
   - Continue is always enabled; pressing it with invalid fields reveals their errors and focuses the first one.
 - **Flow (4 screens, original decision):**
   1. Source

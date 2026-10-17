@@ -29,6 +29,11 @@ Compared in `mockups/dynamic-efforts/index.html`: threshold hysteresis (V1), cha
     - Off is unchanged.
     - No signal chip or pattern in the pill.
   - **Popover row:** one summary chip, then the nudge link. Lines are reserved, and the popover stays `w-80`.
+  - **Review round 3 (2026-10-17), replacing the chip copy below.** The chip names its source by unit, following the intervals.icu convention:
+    - Pattern form: `<count> × <avg moving time> · <value><unit>`.
+    - Count form: `<count> <efforts> · <value><unit>`.
+    - The value is the moving-time-weighted average of the detection signal over the work blocks: `290 W`, `3:58 /km` (grade-adjusted pace) or `168 bpm`.
+    - No signal word and no `≈`.
     - The chip reads `4 × 4:01 · power` when the work blocks match within ±10 %, otherwise `5 efforts · heart rate ≈`.
     - DE: `4 × 4:01 · Leistung`, `5 Belastungen · Herzfrequenz ≈`.
   - **KISS: no per-effort details.** No detail line, no per-block W/bpm, and `LapAnalysis` stays pace-only. Tooltips stay as they are for laps today.

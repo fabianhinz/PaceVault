@@ -1,5 +1,6 @@
 import {
   detectEfforts,
+  type EffortBlock,
   type EffortKind,
   type EffortLimiter,
   type EffortSignal,
@@ -22,9 +23,30 @@ const KIND_INTENSITY: Record<EffortKind, string> = {
 
 interface EffortLapResult {
   set: LapSet | null;
-  signal: EffortSignal | null;
   limitedBy: EffortLimiter | undefined;
 }
+
+/**
+ * Detection signal averaged over the work blocks, weighted by moving time: power W, pace
+ * grade-adjusted sec/km, HR bpm. `undefined` when no work block has samples or the average speed is 0.
+ */
+export const effortWorkAverage = (
+  blocks: EffortBlock[],
+  signal: EffortSignal,
+): number | undefined => {
+  let weighted = 0;
+  let weight = 0;
+  for (const block of blocks) {
+    if (block.kind !== 'work' || block.signalMean === undefined) continue;
+    weighted += block.signalMean * block.movingTime;
+    weight += block.movingTime;
+  }
+  if (weight === 0) return undefined;
+  const mean = weighted / weight;
+  if (signal !== 'pace') return mean;
+  if (mean <= 0) return undefined;
+  return 1000 / mean;
+};
 
 const recordDistance = (
   records: SessionRecord[],
@@ -42,10 +64,10 @@ export const buildEffortLapSet = (
   sport: Sport,
   thresholds: ResolvedThresholds | undefined,
 ): EffortLapResult => {
-  if (thresholds === undefined) return { set: null, signal: null, limitedBy: undefined };
+  if (thresholds === undefined) return { set: null, limitedBy: undefined };
   const detection = detectEfforts(records, sport, thresholds);
   if (detection.blocks.length === 0 || detection.signal === null) {
-    return { set: null, signal: detection.signal, limitedBy: detection.limitedBy };
+    return { set: null, limitedBy: detection.limitedBy };
   }
   const spans: LapSpan[] = [];
   const analysis: LapAnalysis[] = [];
@@ -72,9 +94,12 @@ export const buildEffortLapSet = (
       spans,
       bands: lapBands(records, spans),
       hrRecoveries: [],
-      efforts: { signal: detection.signal, limitedBy: detection.limitedBy },
+      efforts: {
+        signal: detection.signal,
+        limitedBy: detection.limitedBy,
+        workAverage: effortWorkAverage(detection.blocks, detection.signal),
+      },
     },
-    signal: detection.signal,
     limitedBy: detection.limitedBy,
   };
 };

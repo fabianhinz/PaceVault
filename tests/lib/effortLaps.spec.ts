@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { effortPattern } from '@/lib/effortLaps.ts';
+import { effortPattern, effortWorkAverage } from '@/lib/effortLaps.ts';
+import type { EffortBlock, EffortKind } from '@/packages/engine/effortDetection.ts';
 import type { LapAnalysis } from '@/lib/laps.ts';
 import type { LapSet } from '@/lib/lapSet.ts';
 
@@ -28,7 +29,7 @@ const setOf = (workTimes: number[]): LapSet => {
     spans: [],
     bands: [],
     hrRecoveries: [],
-    efforts: { signal: 'power', limitedBy: undefined },
+    efforts: { signal: 'power', limitedBy: undefined, workAverage: 290 },
   };
 };
 
@@ -42,5 +43,53 @@ describe('effortPattern', () => {
 
   it('has no pattern when one work block is 20 % longer, so the chip falls back to the count', () => {
     expect(effortPattern(setOf([240, 240, 240, 240, 288]))).toBeUndefined();
+  });
+});
+
+const block = (
+  kind: EffortKind,
+  movingTime: number,
+  signalMean: number | undefined,
+): EffortBlock => ({
+  kind,
+  start: 0,
+  end: movingTime,
+  startIndex: 0,
+  endIndex: 0,
+  movingTime,
+  signalMean,
+});
+
+describe('effortWorkAverage', () => {
+  it('weights work-block power by moving time and ignores recoveries', () => {
+    const blocks = [
+      block('warmup', 900, 150),
+      block('work', 240, 300),
+      block('rest', 180, 120),
+      block('work', 120, 270),
+    ];
+
+    expect(effortWorkAverage(blocks, 'power')).toBeCloseTo(290, 6);
+  });
+
+  it('turns the averaged grade-adjusted speed into sec/km, time-weighted', () => {
+    // 2 × 100 s at 4 m/s and 1 × 200 s at 5 m/s: 4.5 m/s → 222.2 s/km
+    const blocks = [block('work', 100, 4), block('work', 100, 4), block('work', 200, 5)];
+
+    expect(effortWorkAverage(blocks, 'pace')).toBeCloseTo(1000 / 4.5, 6);
+  });
+
+  it('averages heart rate in bpm', () => {
+    expect(effortWorkAverage([block('work', 180, 165), block('work', 180, 171)], 'hr')).toBe(168);
+  });
+
+  it('keeps a recorded 0 W average as 0', () => {
+    expect(effortWorkAverage([block('work', 60, 0), block('work', 60, 0)], 'power')).toBe(0);
+  });
+
+  it('has no value when no work block has samples', () => {
+    const blocks = [block('work', 60, undefined), block('rest', 60, 120)];
+
+    expect(effortWorkAverage(blocks, 'power')).toBeUndefined();
   });
 });

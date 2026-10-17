@@ -24,12 +24,19 @@ export const effectiveSplitDistance = (
   return Math.min(defaultSplitDistance(sport), splitDistanceRange(sport, sessionMetres).max);
 };
 
+export interface LapSetEfforts {
+  signal: EffortSignal;
+  limitedBy: EffortLimiter | undefined;
+  /** see `effortWorkAverage` */
+  workAverage: number | undefined;
+}
+
 export interface LapSet {
   analysis: LapAnalysis[];
   spans: LapSpan[];
   bands: LapBand[];
   hrRecoveries: number[];
-  efforts?: { signal: EffortSignal; limitedBy: EffortLimiter | undefined };
+  efforts?: LapSetEfforts;
 }
 
 interface EffortContext {

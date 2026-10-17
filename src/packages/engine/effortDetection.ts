@@ -24,6 +24,11 @@ export interface EffortBlock {
   endIndex: number;
   /** seconds, break seconds (bridged stops) excluded */
   movingTime: number;
+  /**
+   * Mean of the detection signal over the block's moving seconds: power W, pace grade-adjusted
+   * speed m/s, HR bpm (read 30 s ahead). `undefined` when the block has no samples.
+   */
+  signalMean: number | undefined;
 }
 
 export interface EffortDetection {
@@ -236,6 +241,12 @@ const meanOf = (x: Float64Array, from: number, to: number): number => {
   }
   if (count === 0) return NaN;
   return sum / count;
+};
+
+const definedMean = (x: Float64Array, from: number, to: number): number | undefined => {
+  const mean = meanOf(x, from, to);
+  if (Number.isNaN(mean)) return undefined;
+  return mean;
 };
 
 const smooth = (x: Float64Array, isBreak: Uint8Array, window: number): Float64Array => {
@@ -681,6 +692,7 @@ export const detectEfforts = (
       startIndex: grid.record[piece.from] ?? 0,
       endIndex: grid.record[endSecond] ?? 0,
       movingTime: movingLength(grid, piece.from, piece.to),
+      signalMean: definedMean(x, piece.from, piece.to),
     });
   }
   return { blocks, signal: chosen, limitedBy };

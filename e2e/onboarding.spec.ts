@@ -57,6 +57,30 @@ test.describe('Onboarding flow', () => {
     await expect(page.getByText(/test data/i)).toBeVisible();
   });
 
+  test('a source tile advances on its own; Back returns to the source step without Back or Continue', async ({
+    page,
+  }) => {
+    await startOnboarding(page, 'FIT files');
+
+    const youHeading = page.getByRole('heading', { name: 'You and your heart rate' });
+    await expect(youHeading).toBeVisible();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+
+    const sourceHeading = page.getByRole('heading', { name: 'Where are your sessions?' });
+    await expect(sourceHeading).toBeVisible();
+    await expect(page.getByTestId('onboarding-progress')).toHaveText('1/4');
+    await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Continue', exact: true })).toHaveCount(0);
+    await expect(page.locator(':focus')).toContainText('Where are your sessions?');
+
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: /^intervals\.icu/ })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    await expect(youHeading).toBeVisible();
+    await expect(page.locator(':focus')).toContainText('You and your heart rate');
+  });
+
   test('Continue shows the step errors, focuses the first invalid field and stays; valid values advance', async ({
     page,
   }) => {
@@ -65,11 +89,19 @@ test.describe('Onboarding flow', () => {
     const heading = page.getByRole('heading', { name: 'You and your heart rate' });
     const next = page.getByRole('button', { name: 'Continue', exact: true });
     const required = page.getByText('Required', { exact: true });
+    const genderError = page.locator('#onboarding-gender-error');
+    const genderBox = await genderError.boundingBox();
     await expect(next).toBeEnabled();
     await next.click();
     await expect(heading).toBeVisible();
     await expect(required).toHaveCount(3);
     await expect(page.getByRole('radio', { name: 'Male', exact: true })).toBeFocused();
+
+    // The gender error fills the reserved line under the tiles: below Female, nothing moves.
+    await expect(genderError).toHaveText('Required');
+    const femaleBox = await page.getByRole('radio', { name: 'Female' }).boundingBox();
+    expect(await genderError.boundingBox()).toEqual(genderBox);
+    expect(genderBox?.y ?? 0).toBeGreaterThan((femaleBox?.y ?? 0) + (femaleBox?.height ?? 0));
 
     await page.getByRole('radio', { name: 'Female' }).click();
     await expect(required).toHaveCount(2);

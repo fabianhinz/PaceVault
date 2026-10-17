@@ -3,14 +3,13 @@ import { expect, type Page } from './test';
 // The logo loader runs at least one 3 s cycle before the intro shows.
 const LOADER_TIMEOUT_MS = 15_000;
 
-/** Intro → "Get started" → pick a source tile (by its title) → Continue. */
+/** Intro → "Get started" → tap a source tile (by its title), which advances on its own. */
 export const startOnboarding = async (page: Page, source: string | RegExp) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Get started' }).click({ timeout: LOADER_TIMEOUT_MS });
   let name = source;
   if (typeof source === 'string') name = new RegExp(`^${source}`);
-  await page.getByRole('radio', { name }).click();
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
+  await page.getByRole('button', { name }).click();
 };
 
 /** "You and your heart rate" with Male, 50 / 185 bpm, then skips the optional thresholds screen. */

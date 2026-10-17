@@ -2,11 +2,11 @@ import { m } from '@/paraglide/messages.js';
 import { getLocale } from '@/paraglide/runtime.js';
 import { railPaceFromSecPerKm } from '@/lib/railFormat.ts';
 import { MIN_SUMMARY_LAPS, summarizeLaps } from '@/lib/lapSummary.ts';
-import type { LapSet, LapSource } from '@/lib/lapSet.ts';
+import type { LapSet, LapSetEfforts, LapSource } from '@/lib/lapSet.ts';
 import { effortPattern, effortWorkCount, effortWorkSet } from '@/lib/effortLaps.ts';
 import type { EffortSignal } from '@/packages/engine/effortDetection.ts';
 import type { Sport } from '@/packages/engine/types.ts';
-import { duration } from './statFormat.ts';
+import { duration, watts } from './statFormat.ts';
 
 const kmUnitFmt = new Intl.NumberFormat(getLocale(), {
   style: 'unit',
@@ -126,13 +126,13 @@ export const lapsRowLabels = (
   return { disabled: false, primary, secondary };
 };
 
-const SIGNAL_LABELS: Record<EffortSignal, () => string> = {
-  power: m.ui_laps_effort_signal_power,
-  pace: m.ui_laps_effort_signal_pace,
-  hr: m.ui_laps_effort_signal_hr,
+const effortValueLabel = (signal: EffortSignal, value: number): string => {
+  if (signal === 'power') return m.ui_laps_efforts_watts({ watts: watts(value) });
+  if (signal === 'pace') return m.ui_laps_pace({ pace: railPaceFromSecPerKm(value) });
+  return m.ui_laps_efforts_bpm({ bpm: bpmFmt.format(value) });
 };
 
-export const effortChipLabel = (set: LapSet, signal: EffortSignal): string => {
+export const effortChipLabel = (set: LapSet, efforts: LapSetEfforts): string => {
   const pattern = effortPattern(set);
   let summary = lapCountLabel(effortWorkCount(set), 'efforts');
   if (pattern) {
@@ -141,9 +141,11 @@ export const effortChipLabel = (set: LapSet, signal: EffortSignal): string => {
       duration: duration(pattern.movingTime),
     });
   }
-  const signalLabel = SIGNAL_LABELS[signal]();
-  if (signal === 'hr') return m.ui_laps_efforts_chip_approx({ summary, signal: signalLabel });
-  return m.ui_laps_efforts_chip({ summary, signal: signalLabel });
+  if (efforts.workAverage === undefined) return summary;
+  return m.ui_laps_efforts_chip({
+    summary,
+    value: effortValueLabel(efforts.signal, efforts.workAverage),
+  });
 };
 
 const effortName = (set: LapSet, lapIndex: number, sport: Sport): string => {

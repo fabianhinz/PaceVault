@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
 export type OnboardingStep = 'intro' | 'source' | 'you' | 'thresholds' | 'import';
-export type OnboardingSource = 'intervals' | 'fit' | 'demo';
+/** Where the first activities come from; the demo leaves onboarding instead of picking one. */
+export type OnboardingSource = 'intervals' | 'fit';
 
 export const ONBOARDING_FLOW_STEPS: OnboardingStep[] = ['source', 'you', 'thresholds', 'import'];
 
@@ -12,7 +13,7 @@ interface OnboardingState {
   onboardingCardOpen: boolean;
   onboardingPreviewRevealed: boolean;
   startOnboardingSetup: () => void;
-  pickOnboardingSource: (source: OnboardingSource) => void;
+  chooseOnboardingSource: (source: OnboardingSource) => void;
   nextOnboardingStep: () => void;
   previousOnboardingStep: () => void;
   setOnboardingCardOpen: (open: boolean) => void;
@@ -45,13 +46,13 @@ export const useOnboardingStore = create<OnboardingState>()(
       set((state) => {
         state.step = 'source';
       }),
-    pickOnboardingSource: (source) =>
+    chooseOnboardingSource: (source) =>
       set((state) => {
         state.source = source;
+        state.step = NEXT_STEP.source;
       }),
     nextOnboardingStep: () =>
       set((state) => {
-        if (state.step === 'source' && (state.source === null || state.source === 'demo')) return;
         state.step = NEXT_STEP[state.step];
       }),
     previousOnboardingStep: () =>

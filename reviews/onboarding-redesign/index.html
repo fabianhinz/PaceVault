@@ -170,6 +170,160 @@
         recompute. Everything is in the working tree; nothing is committed.
       </p>
 
+      <h2>Review round 3 fixes</h2>
+
+      <div class="card">
+        <h3><span class="label">R11</span>Source step: no Back, no Continue (R-O5)</h3>
+        <p>
+          Step 1/4 has no footer. Tapping intervals.icu or FIT files stores the source and goes
+          straight to step 2; "Try demo data" starts the demo as Continue did before (import
+          overlay, then the app with the demo banner). Back on step 2 still returns to the source
+          step. The phone Dialog renders no <code>DialogFooter</code> on this step, so there is no
+          empty bar; the card is just shorter. The tiles are plain buttons now (Tab, Enter or
+          Space), no longer radios: nothing stays selected, so the white "picked" tile is gone, and
+          so are <code>pickOnboardingSource</code>, the disabled-Continue logic and the
+          <code>'demo'</code> value of <code>OnboardingSource</code>. When a step change removes the
+          focused control (a tile, or Back on the way to step 1), focus moves to the new step's
+          heading; Continue keeps its focus as before. The progress bar still shows 1/4.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:108</code> (<code>pickSource</code>),
+          <code>:116</code> (<code>SourcePicker</code>), <code>:317</code> (no primary),
+          <code>:383-387</code> (heading focus), <code>:402</code>, <code>:420</code> (footer only
+          with a primary); <code>src/features/onboarding/hooks/useStepFocusEffect.ts</code>;
+          <code>src/store/onboarding.ts:6</code>,
+          <code>:49</code> (<code>chooseOnboardingSource</code>), <code>:54</code>. Tests:
+          <code>e2e/onboarding.spec.ts:60</code> (no Back / Continue on 1/4, keyboard pick, focus),
+          <code>e2e/helpers/onboarding.ts:12</code> (tap the tile, no Continue).
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r1-after-d-en-source.png"
+              alt="R11 before · Desktop · source step with Back and Continue"
+              loading="lazy"
+            />
+            <figcaption>R11 before · Desktop · source step with Back and Continue</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r3-after-d-en-source.png"
+              alt="R11 after · Desktop · source step, tiles only"
+              loading="lazy"
+            />
+            <figcaption>R11 after · Desktop · source step, tiles only</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r3-after-d-en-advanced.png"
+              alt="R11 after · Desktop · FIT files tapped, step 2"
+              loading="lazy"
+            />
+            <figcaption>R11 after · Desktop · FIT files tapped, step 2</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-after-p-en-source.png"
+              alt="R11 before · 390 px · source step with Back and Continue"
+              loading="lazy"
+            />
+            <figcaption>R11 before · 390 px · source step with Back and Continue</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-source.png"
+              alt="R11 after · 390 px · no footer bar"
+              loading="lazy"
+            />
+            <figcaption>R11 after · 390 px · no footer bar</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-advanced.png"
+              alt="R11 after · 390 px · FIT files tapped, step 2"
+              loading="lazy"
+            />
+            <figcaption>R11 after · 390 px · FIT files tapped, step 2</figcaption>
+          </figure>
+        </div>
+        <p class="meta">
+          Round 2 took no source-step shots and did not change that step, so the "before" shots are
+          the round-1 "after" ones.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span class="label">R12</span>Gender error in a reserved line under the tiles (R-O6)
+        </h3>
+        <p>
+          "Required" moved from the right end of the label line to a helper line directly under Male
+          / Female. The line is always reserved (16 px plus 4 px margin), so nothing moves when the
+          error appears. The line is a new shared <code>HelperText</code>, which
+          <code>Input</code> now uses for its own helper line too, so both look the same by
+          construction. Red tile borders, <code>aria-describedby</code> and the R7 behaviour
+          (Continue reveals the error and focuses Male) are unchanged.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:170</code>, <code>:200</code>;
+          <code>src/components/ui/HelperText.tsx</code>;
+          <code>src/components/ui/Input.tsx:53</code>. Test:
+          <code>e2e/onboarding.spec.ts:101-104</code> (error text in the reserved line, below
+          Female, same box before and after Continue).
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r2-after-d-en-continue.png"
+              alt="R12 before · Desktop · error on the label line"
+              loading="lazy"
+            />
+            <figcaption>R12 before · Desktop · error on the label line</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r3-after-d-en-gender-error.png"
+              alt="R12 after · Desktop · error under the tiles"
+              loading="lazy"
+            />
+            <figcaption>R12 after · Desktop · error under the tiles</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r3-after-d-de-gender-error.png"
+              alt="R12 after · Desktop · DE"
+              loading="lazy"
+            />
+            <figcaption>R12 after · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-after-p-en-continue.png"
+              alt="R12 before · 390 px · error on the label line"
+              loading="lazy"
+            />
+            <figcaption>R12 before · 390 px · error on the label line</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-gender-error.png"
+              alt="R12 after · 390 px · error under the tiles"
+              loading="lazy"
+            />
+            <figcaption>R12 after · 390 px · error under the tiles</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-de-gender-error.png"
+              alt="R12 after · 390 px · DE"
+              loading="lazy"
+            />
+            <figcaption>R12 after · 390 px · DE</figcaption>
+          </figure>
+        </div>
+        <p class="meta">There is no DE "before" shot of the gender error from round 2.</p>
+      </div>
+
       <h2>Review round 2 fixes</h2>
 
       <div class="card">
@@ -1253,24 +1407,28 @@
         </li>
         <li><strong>R-O4 · Settled: keep</strong> the 20 px taller Settings row.</li>
         <li>
-          <strong>R-O5 · Source step Continue stays disabled</strong> until a source is picked. R7
-          covers steps with fields and errors; the source picker has no error line. Say if it should
-          also be always enabled (it would need an error message for "no source picked").
+          <strong>R-O5 · Settled: no Back, no Continue on the source step</strong>; a tile tap
+          advances (R11).
         </li>
         <li>
-          <strong>R-O6 · Gender error placement.</strong> "Required" sits at the right end of the
-          gender label line rather than below the tiles, so no line is reserved; the inputs show
-          theirs below. Say if it should move below the tiles (reserves 20 px).
+          <strong>R-O6 · Settled: reserved line under the tiles</strong>, like the inputs (R12).
         </li>
         <li>
           <strong>R-O7 · FTP "training load" scope.</strong> TSS uses FTP for any session with
           Normalized Power, so a run with a power meter also uses it. The hint says "for rides",
           which is the usual case.
         </li>
+        <li>
+          <strong>R-O8 · No "picked" tile on the way back.</strong> With R11 the source tiles are
+          plain buttons, so Back from step 2 shows all three tiles unselected; the chosen source is
+          still kept for step 4. Options: (a) keep; (b) highlight the last choice again (the tiles
+          would carry state without a Continue to confirm it). <em>Recommendation: (a).</em>
+          <strong>Settled: (a) keep.</strong>
+        </li>
       </ol>
 
       <h2>Verification</h2>
-      <p class="meta">Round 2 run, after R7–R9.</p>
+      <p class="meta">Round 3 run, after R11–R12.</p>
       <table>
         <tr>
           <th>Command</th>
@@ -1282,15 +1440,15 @@
         </tr>
         <tr>
           <td><code>vp check</code></td>
-          <td class="ok">pass (fmt, lint, types; 562 files)</td>
+          <td class="ok">pass (fmt, lint, types; 564 files)</td>
         </tr>
         <tr>
           <td><code>vp test -- --run</code></td>
-          <td class="ok">pass, 133 files / 1314 tests</td>
+          <td class="ok">pass, 133 files / 1320 tests</td>
         </tr>
         <tr>
           <td><code>vp exec playwright test</code></td>
-          <td class="ok">pass, 83/83 in the first full run (no flakes)</td>
+          <td class="ok">pass, 84/84 in the first full run (no flakes)</td>
         </tr>
         <tr>
           <td><code>vp build</code> (final)</td>
@@ -1298,7 +1456,7 @@
         </tr>
       </table>
       <p class="meta">
-        Screenshots: a temporary <code>e2e/zz-review-capture.spec.ts</code> (round 2:
+        Screenshots: a temporary <code>e2e/zz-review-capture.spec.ts</code> (rounds 2 and 3:
         <code>e2e/zzReviewCapture.spec.ts</code>) against the configured web server, with
         SwiftShader WebGL (headless Chromium has no GPU here) and a mocked intervals.icu API. Taken
         after the suite passed; the spec and its test results are deleted.
@@ -1320,8 +1478,9 @@
           GitHub in a new tab.
         </li>
         <li>
-          Get started → each step shows "n/4"; Back works on every step; Continue on step 1 needs a
-          pick, on step 2 a gender and both HR values.
+          Get started → each step shows "n/4"; step 1 has no Back or Continue and a tile tap
+          advances; Back works on steps 2–4; Continue on step 2 needs a gender and both HR values
+          (the gender error shows under the tiles).
         </li>
         <li>
           intervals.icu path: source → you → bike → key → import → the camera fits your tracks. FIT

@@ -19,6 +19,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/components/ui/Dialog.tsx';
+import { HelperText } from '@/components/ui/HelperText.tsx';
 import { Input } from '@/components/ui/Input.tsx';
 import { Label } from '@/components/ui/Label.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
@@ -33,6 +34,7 @@ import type {
   ThresholdsForm,
 } from '@/features/settings/hooks/useThresholdsForm.ts';
 import { OnboardingProgress } from './OnboardingProgress.tsx';
+import { useStepFocusEffect } from './hooks/useStepFocusEffect.ts';
 
 /** `card`: the desktop left-column card. `dialog`: the phone Dialog. */
 export type OnboardingShell = 'card' | 'dialog';
@@ -47,7 +49,8 @@ interface Screen {
   title: string;
   subtitle: string;
   body: ReactNode;
-  primary: ReactNode;
+  /** `null`: the step has no footer (the source step advances on a tile tap). */
+  primary: ReactNode | null;
 }
 
 export const OnboardingHeading = (props: {
@@ -74,7 +77,7 @@ export const OnboardingHeading = (props: {
 };
 
 interface SourceOption {
-  id: OnboardingSource;
+  id: OnboardingSource | 'demo';
   icon: LucideIcon;
   title: () => string;
   description: () => string;
@@ -101,24 +104,28 @@ const SOURCES: SourceOption[] = [
   },
 ];
 
-const SourcePicker = () => {
-  const source = useOnboardingStore((s) => s.source);
-  return (
-    <div role="radiogroup" className="flex flex-col gap-2">
-      {SOURCES.map((option) => (
-        <ActionTile
-          key={option.id}
-          icon={option.icon}
-          title={option.title()}
-          description={option.description()}
-          selected={source === option.id}
-          buttonProps={{ role: 'radio', 'aria-checked': source === option.id }}
-          onClick={() => useOnboardingStore.getState().pickOnboardingSource(option.id)}
-        />
-      ))}
-    </div>
-  );
+// A tile is the step's answer: it advances right away, the demo straight into the app.
+const pickSource = (id: SourceOption['id'], onDemo: () => void) => {
+  if (id === 'demo') {
+    onDemo();
+    return;
+  }
+  useOnboardingStore.getState().chooseOnboardingSource(id);
 };
+
+const SourcePicker = (props: { onDemo: () => void }) => (
+  <div className="flex flex-col gap-2">
+    {SOURCES.map((option) => (
+      <ActionTile
+        key={option.id}
+        icon={option.icon}
+        title={option.title()}
+        description={option.description()}
+        onClick={() => pickSource(option.id, props.onDemo)}
+      />
+    ))}
+  </div>
+);
 
 const GENDERS: { id: Gender; label: () => string }[] = [
   { id: 'male', label: m.ui_thresholds_male },
@@ -159,19 +166,14 @@ const FieldInput = (props: {
   );
 };
 
-// The error sits on the label line, so the pick reserves no extra line and nothing moves.
+// Like the inputs: the error goes in the reserved helper line under the tiles, so nothing moves.
 const GenderPick = (props: { thresholds: ThresholdsForm }) => {
   const error = props.thresholds.visibleError('gender');
   return (
     <div>
-      <div className="flex items-baseline justify-between gap-2">
-        <Label id="onboarding-gender-label" required>
-          {m.ui_thresholds_gender()}
-        </Label>
-        <span id="onboarding-gender-error" className="text-xs text-status-danger">
-          {error}
-        </span>
-      </div>
+      <Label id="onboarding-gender-label" required>
+        {m.ui_thresholds_gender()}
+      </Label>
       <div
         role="radiogroup"
         aria-labelledby="onboarding-gender-label"
@@ -195,6 +197,9 @@ const GenderPick = (props: { thresholds: ThresholdsForm }) => {
           />
         ))}
       </div>
+      <HelperText id="onboarding-gender-error" error={error !== ''}>
+        {error}
+      </HelperText>
     </div>
   );
 };
@@ -278,10 +283,8 @@ const ThresholdFields = (props: { thresholds: ThresholdsForm }) => {
   );
 };
 
-const ContinueButton = (props: { disabled?: boolean; onClick: () => void }) => (
-  <Button disabled={props.disabled} onClick={props.onClick}>
-    {m.ui_btn_continue()}
-  </Button>
+const ContinueButton = (props: { onClick: () => void }) => (
+  <Button onClick={props.onClick}>{m.ui_btn_continue()}</Button>
 );
 
 const nextStep = () => useOnboardingStore.getState().nextOnboardingStep();
@@ -310,13 +313,8 @@ const screenOf = (
     return {
       title: m.ui_onboarding_source_title(),
       subtitle: m.ui_onboarding_source_subtitle(),
-      body: <SourcePicker />,
-      primary: (
-        <ContinueButton
-          disabled={source === null}
-          onClick={source === 'demo' ? props.onDemo : nextStep}
-        />
-      ),
+      body: <SourcePicker onDemo={props.onDemo} />,
+      primary: null,
     };
   }
   if (step === 'you') {
@@ -381,10 +379,14 @@ const CardBody = (props: { children: ReactNode }) => {
 export const OnboardingStep = (props: StepProps) => {
   const step = useOnboardingStore((s) => s.step);
   const source = useOnboardingStore((s) => s.source);
+  const headingRef = useRef<HTMLDivElement>(null);
+  useStepFocusEffect(step, headingRef);
   const profileGate: ProfileGate = { ready: props.thresholds.valid, save: props.thresholds.save };
   const screen = screenOf(step, source, props, profileGate);
   const heading = (
-    <OnboardingHeading shell={props.shell} title={screen.title} subtitle={screen.subtitle} />
+    <div ref={headingRef} tabIndex={-1} className="outline-none">
+      <OnboardingHeading shell={props.shell} title={screen.title} subtitle={screen.subtitle} />
+    </div>
   );
 
   if (props.shell === 'dialog') {
@@ -397,10 +399,12 @@ export const OnboardingStep = (props: StepProps) => {
             {screen.body !== null && <div>{screen.body}</div>}
           </div>
         </DialogBody>
-        <DialogFooter className="grid-cols-[auto_1fr]">
-          <BackButton />
-          {screen.primary}
-        </DialogFooter>
+        {screen.primary !== null && (
+          <DialogFooter className="grid-cols-[auto_1fr]">
+            <BackButton />
+            {screen.primary}
+          </DialogFooter>
+        )}
       </>
     );
   }
@@ -413,10 +417,12 @@ export const OnboardingStep = (props: StepProps) => {
           {screen.body !== null && <div>{screen.body}</div>}
         </div>
       </CardBody>
-      <DialogFooter>
-        <BackButton />
-        {screen.primary}
-      </DialogFooter>
+      {screen.primary !== null && (
+        <DialogFooter>
+          <BackButton />
+          {screen.primary}
+        </DialogFooter>
+      )}
     </>
   );
 };

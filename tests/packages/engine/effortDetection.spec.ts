@@ -151,6 +151,15 @@ describe('detectEfforts', () => {
     expect(result.blocks[result.blocks.length - 1]?.kind).toBe('cooldown');
   });
 
+  it("reports each work block's mean power, around the 300 W the intervals were ridden at", () => {
+    const efforts = work(detectEfforts(intervalRide(), 'cycling', FULL).blocks);
+
+    efforts.forEach((block) => {
+      expect(block.signalMean).toBeGreaterThanOrEqual(290);
+      expect(block.signalMean).toBeLessThanOrEqual(310);
+    });
+  });
+
   it('finds nothing on a 3 h endurance ride over rolling hills with coasting at 0 W', () => {
     const r = rng(21);
     const grade = (i: number) =>
@@ -271,6 +280,9 @@ describe('detectEfforts', () => {
     expect(efforts).toHaveLength(6);
     efforts.forEach((block, k) => {
       expect(Math.abs(block.start - (720 + k * 360))).toBeLessThanOrEqual(20);
+      // bpm, at or above the work threshold 50 + 0.8 · (190 − 50) = 162
+      expect(block.signalMean).toBeGreaterThanOrEqual(162);
+      expect(block.signalMean).toBeLessThan(190);
     });
   });
 
