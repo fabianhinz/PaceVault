@@ -212,6 +212,7 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   const profile = useUserStore((s) => s.profile);
   const [, startTransition] = useTransition();
   const [form, setForm] = useState<FormValues>(() => storedForm(profile));
+  const [revealed, setRevealed] = useState<TextField[]>([]);
 
   const stored = storedForm(profile);
   const errors = formErrors(form, stored);
@@ -227,13 +228,22 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
 
   const fieldValid = (field: TextField): boolean => errors[field] === '';
 
+  // An error shows only once its field is left (blur) or a submit is tried while it is invalid,
+  // and hides as soon as the value is valid again, so typing never flags a half-entered value.
   const visibleError = (field: TextField): string => {
-    if (form[field] === stored[field]) return '';
+    if (!revealed.includes(field)) return '';
     return errors[field];
   };
 
+  const revealErrors = (targets: TextField[]) => {
+    const invalid = targets.filter((field) => errors[field] !== '');
+    setRevealed((current) => [...current, ...invalid.filter((field) => !current.includes(field))]);
+  };
+
   const setField = (field: TextField, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    const next = { ...form, [field]: value };
+    setForm(next);
+    setRevealed((current) => current.filter((shown) => fieldError(shown, next, stored) !== ''));
   };
 
   const saveField = (field: ThresholdKey, value: string): ThresholdKey | undefined => {
@@ -267,6 +277,7 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
     valid,
     fieldValid,
     visibleError,
+    revealErrors,
     setField,
     saveField,
     setGender,

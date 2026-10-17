@@ -224,12 +224,19 @@ const LapsPicker = (props: LapsPickerProps) => {
           )}
         </div>
       ))}
+      {/* The radio's `pb-8` reserves the nudge line, which sits over it as a sibling (a link can't
+          nest in the radio button): the row's hover box covers both lines, and the link stays
+          clickable on a disabled row without toggling the radio. */}
       <div
         data-checked={source === 'efforts' ? '' : undefined}
         data-testid="laps-efforts-row"
-        className="group/row rounded-lg data-[checked]:bg-white/5"
+        className="group/row relative rounded-lg hover:bg-white/5 data-[checked]:bg-white/5"
       >
-        <RadioGroupItem value="efforts" disabled={effortSet === null} className={rowClass}>
+        <RadioGroupItem
+          value="efforts"
+          disabled={effortSet === null}
+          className="rounded-lg px-2 pt-2 pb-8"
+        >
           <span className="min-w-0 flex-1">
             <Typography variant="subtitle1" as="span" className="block">
               {m.ui_laps_efforts()}
@@ -238,15 +245,14 @@ const LapsPicker = (props: LapsPickerProps) => {
           </span>
           <LapSwatch set={effortSet} muted={effortSet === null} />
         </RadioGroupItem>
-        <div className="pr-2 pb-2 pl-10">
-          <span className="block h-4 truncate text-xs text-text-tertiary">
-            {nudge !== '' && (
-              <Link to="/settings" className="text-accent hover:underline">
-                {nudge}
-              </Link>
-            )}
-          </span>
-        </div>
+        {nudge !== '' && (
+          <Link
+            to="/settings"
+            className="absolute bottom-2 left-10 max-w-[calc(100%-3rem)] truncate text-xs leading-4 text-accent hover:underline"
+          >
+            {nudge}
+          </Link>
+        )}
       </div>
     </RadioGroup>
   );

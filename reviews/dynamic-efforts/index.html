@@ -173,6 +173,60 @@
         Everything is in the working tree; nothing is committed.
       </p>
 
+      <h2>Review round 1 fixes</h2>
+
+      <div class="card">
+        <h3><span class="label">R6</span>Efforts row: the hover box covers the nudge line</h3>
+        <p>
+          The hover and checked background now sit on the row wrapper. The radio's
+          <code>pb-8</code> reserves the nudge line, and the link sits on top of it as an absolutely
+          placed sibling, because a link can't nest inside the radio button. Clicking the empty part
+          of that line selects Efforts. The link still opens Settings when the row is disabled, and
+          it never toggles the radio. The row height is unchanged (both 40 px of padding plus the
+          line).
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/LapsControl.tsx:227-256</code> (wrapper hover
+          <code>:233</code>, reserved line <code>:238</code>, link <code>:251</code>). Desktop only
+          (no hover on touch). Shots: running session without threshold pace, row disabled, pointer
+          on the title.
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r1-before-d-en-efforts-hover-row.png"
+              alt="R6 before · Desktop · hover stops above the link"
+              loading="lazy"
+            />
+            <figcaption>R6 before · hover stops above the link</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-after-d-en-efforts-hover-row.png"
+              alt="R6 after · Desktop · hover includes the link"
+              loading="lazy"
+            />
+            <figcaption>R6 after · hover includes the link</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-before-d-en-efforts-hover.png"
+              alt="R6 before · Desktop · full popover"
+              loading="lazy"
+            />
+            <figcaption>R6 before · Desktop</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-after-d-en-efforts-hover.png"
+              alt="R6 after · Desktop · full popover"
+              loading="lazy"
+            />
+            <figcaption>R6 after · Desktop</figcaption>
+          </figure>
+        </div>
+      </div>
+
       <h2>User-visible changes</h2>
 
       <div class="card">

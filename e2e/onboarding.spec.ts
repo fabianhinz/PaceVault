@@ -35,7 +35,9 @@ test.describe('Onboarding flow', () => {
     await expect(page.getByText(/test data/i)).toBeVisible();
   });
 
-  test('Continue is disabled until gender and valid HR', async ({ page }) => {
+  test('Continue is disabled until gender and valid HR; an HR error waits for blur, not typing', async ({
+    page,
+  }) => {
     await startOnboarding(page, 'FIT files');
 
     const next = page.getByRole('button', { name: 'Continue', exact: true });
@@ -49,10 +51,14 @@ test.describe('Onboarding flow', () => {
     await expect(next).toBeEnabled();
 
     await page.getByLabel(/^Max HR/).fill('40');
-    await expect(page.getByText('Min 120 bpm')).toBeVisible();
     await expect(next).toBeDisabled();
+    await expect(page.getByText('Min 120 bpm')).toHaveCount(0);
+
+    await page.getByLabel(/^Max HR/).blur();
+    await expect(page.getByText('Min 120 bpm')).toBeVisible();
 
     await page.getByLabel(/^Max HR/).fill('185');
+    await expect(page.getByText('Min 120 bpm')).toHaveCount(0);
     await expect(next).toBeEnabled();
   });
 

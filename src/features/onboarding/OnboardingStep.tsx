@@ -28,7 +28,6 @@ import type {
   ProfileGate,
   ThresholdsForm,
 } from '@/features/settings/hooks/useThresholdsForm.ts';
-import { OnboardingCrumbs } from './OnboardingCrumbs.tsx';
 import { OnboardingProgress } from './OnboardingProgress.tsx';
 
 /** `card`: the desktop left-column card. `dialog`: the phone Dialog. */
@@ -101,21 +100,18 @@ const SOURCES: SourceOption[] = [
 const SourcePicker = () => {
   const source = useOnboardingStore((s) => s.source);
   return (
-    <div className="flex flex-col gap-4">
-      <div role="radiogroup" className="flex flex-col gap-2">
-        {SOURCES.map((option) => (
-          <ActionTile
-            key={option.id}
-            icon={option.icon}
-            title={option.title()}
-            description={option.description()}
-            selected={source === option.id}
-            buttonProps={{ role: 'radio', 'aria-checked': source === option.id }}
-            onClick={() => useOnboardingStore.getState().pickOnboardingSource(option.id)}
-          />
-        ))}
-      </div>
-      <OnboardingCrumbs />
+    <div role="radiogroup" className="flex flex-col gap-2">
+      {SOURCES.map((option) => (
+        <ActionTile
+          key={option.id}
+          icon={option.icon}
+          title={option.title()}
+          description={option.description()}
+          selected={source === option.id}
+          buttonProps={{ role: 'radio', 'aria-checked': source === option.id }}
+          onClick={() => useOnboardingStore.getState().pickOnboardingSource(option.id)}
+        />
+      ))}
     </div>
   );
 };
@@ -147,6 +143,7 @@ const NumberInput = (props: {
         placeholder={props.placeholder}
         value={props.thresholds.form[props.field]}
         onChange={(e) => props.thresholds.setField(props.field, e.target.value)}
+        onBlur={() => props.thresholds.revealErrors([props.field])}
         helperText={error || props.hint}
         error={error !== ''}
         reserveHelper
@@ -196,10 +193,18 @@ const YouFields = (props: { thresholds: ThresholdsForm }) => (
   </div>
 );
 
-const ContinueButton = (props: { disabled: boolean; onClick: () => void }) => (
-  <Button disabled={props.disabled} onClick={props.onClick}>
-    {m.ui_btn_continue()}
-  </Button>
+// `onAttempt`: a press on the (disabled) button reveals the step's field errors. The disabled
+// button has no pointer events, so the press lands on this wrapper.
+const ContinueButton = (props: {
+  disabled: boolean;
+  onClick: () => void;
+  onAttempt?: () => void;
+}) => (
+  <div className="grid" onPointerDown={props.onAttempt}>
+    <Button disabled={props.disabled} onClick={props.onClick}>
+      {m.ui_btn_continue()}
+    </Button>
+  </div>
 );
 
 const nextStep = () => useOnboardingStore.getState().nextOnboardingStep();
@@ -239,6 +244,7 @@ const screenOf = (
             !thresholds.fieldValid('maxHr')
           }
           onClick={nextStep}
+          onAttempt={() => thresholds.revealErrors(['restHr', 'maxHr'])}
         />
       ),
     };
@@ -256,7 +262,13 @@ const screenOf = (
           placeholder="240"
         />
       ),
-      primary: <ContinueButton disabled={!thresholds.fieldValid('ftp')} onClick={nextStep} />,
+      primary: (
+        <ContinueButton
+          disabled={!thresholds.fieldValid('ftp')}
+          onClick={nextStep}
+          onAttempt={() => thresholds.revealErrors(['ftp'])}
+        />
+      ),
     };
   }
   if (source === 'intervals') {
@@ -270,7 +282,7 @@ const screenOf = (
   return {
     title: m.ui_onboarding_upload_title(),
     subtitle: m.ui_fit_files_desc(),
-    body: <OnboardingCrumbs />,
+    body: null,
     primary: (
       <FitUploadButton
         profileGate={profileGate}
@@ -318,7 +330,7 @@ export const OnboardingStep = (props: StepProps) => {
           <div className="flex flex-col gap-6">
             <OnboardingProgress />
             {heading}
-            <div>{screen.body}</div>
+            {screen.body !== null && <div>{screen.body}</div>}
           </div>
         </DialogBody>
         <DialogFooter className="grid-cols-[auto_1fr]">
@@ -334,7 +346,7 @@ export const OnboardingStep = (props: StepProps) => {
       <CardBody>
         <div className="flex flex-col gap-8">
           {heading}
-          <div>{screen.body}</div>
+          {screen.body !== null && <div>{screen.body}</div>}
         </div>
       </CardBody>
       <DialogFooter>

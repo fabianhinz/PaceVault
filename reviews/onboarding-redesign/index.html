@@ -170,6 +170,216 @@
         recompute. Everything is in the working tree; nothing is committed.
       </p>
 
+      <h2>Review round 1 fixes</h2>
+
+      <div class="card">
+        <h3><span class="label">R1</span>Crumbs: no "Interactive map", shared ExternalLink</h3>
+        <p>
+          The "Interactive map" crumb and its key <code>ui_onboarding_crumb_map</code> (EN + DE) are
+          gone. "Open source" now uses the shared <code>ExternalLink</code> (icon first,
+          <code>Code</code> icon as in Settings → About), so it looks like the Weather and
+          intervals.icu links. The component fits the crumb line as is, so it is unchanged.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingCrumbs.tsx:15</code>;
+          <code>src/components/ui/ExternalLink.tsx</code> (untouched).
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="r1-before-d-en-crumbs.png" alt="R1 before · Desktop · EN" loading="lazy" />
+            <figcaption>R1 before · Desktop · EN</figcaption>
+          </figure>
+          <figure>
+            <img src="r1-after-d-en-crumbs.png" alt="R1 after · Desktop · EN" loading="lazy" />
+            <figcaption>R1 after · Desktop · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-before-p-de-crumbs.png" alt="R1 before · 390 px · DE" loading="lazy" />
+            <figcaption>R1 before · 390 px · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-after-p-de-crumbs.png" alt="R1 after · 390 px · DE" loading="lazy" />
+            <figcaption>R1 after · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R2</span>Crumbs only on the intro</h3>
+        <p>
+          The source step and the FIT import step no longer show the crumb line. Only the intro does
+          (desktop card and phone dialog). The FIT import step now has no body, just the heading and
+          the upload button.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:101</code> (source picker),
+          <code>:285</code> (<code>body: null</code>), <code>:333</code>, <code>:349</code>; intro
+          keeps it at <code>src/features/onboarding/OnboardingIntro.tsx:42</code>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="r1-before-d-en-source.png" alt="R2 before · Desktop · EN" loading="lazy" />
+            <figcaption>R2 before · Desktop · EN</figcaption>
+          </figure>
+          <figure>
+            <img src="r1-after-d-en-source.png" alt="R2 after · Desktop · EN" loading="lazy" />
+            <figcaption>R2 after · Desktop · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-before-p-en-source.png" alt="R2 before · 390 px · EN" loading="lazy" />
+            <figcaption>R2 before · 390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-after-p-en-source.png" alt="R2 after · 390 px · EN" loading="lazy" />
+            <figcaption>R2 after · 390 px · EN</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R3</span>Bike title: "Powermeter"</h3>
+        <p>
+          DE now reads "Trainierst du mit einem Powermeter?". EN "Do you train with power?" is
+          cycling jargon and reads oddly to anyone else, so it now matches: "Do you train with a
+          power meter?".
+        </p>
+        <p class="meta"><code>messages/de.json:623</code>, <code>messages/en.json:623</code>.</p>
+        <div class="shots">
+          <figure>
+            <img src="r1-before-d-de-bike.png" alt="R3 before · Desktop · DE" loading="lazy" />
+            <figcaption>R3 before · Desktop · DE</figcaption>
+          </figure>
+          <figure>
+            <img src="r1-after-d-de-bike.png" alt="R3 after · Desktop · DE" loading="lazy" />
+            <figcaption>R3 after · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-before-p-de-bike.png" alt="R3 before · 390 px · DE" loading="lazy" />
+            <figcaption>R3 before · 390 px · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-after-p-de-bike.png" alt="R3 after · 390 px · DE" loading="lazy" />
+            <figcaption>R3 after · 390 px · DE</figcaption>
+          </figure>
+          <figure>
+            <img src="r1-after-d-en-bike.png" alt="R3 after · Desktop · EN" loading="lazy" />
+            <figcaption>R3 after · Desktop · EN</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R4</span>Field errors wait for blur or a Continue press</h3>
+        <p>
+          <code>useThresholdsForm</code> now tracks which errors are revealed. A field's error shows
+          once you leave it while it is invalid, or when you press the disabled Continue. It hides
+          as soon as the value is valid. Continue stays disabled, and a wrapper catches the press
+          because the disabled button has <code>pointer-events: none</code>. The helper line was
+          already reserved (<code>reserveHelper</code>), so nothing moves.
+        </p>
+        <p class="meta">
+          <code>src/features/settings/hooks/useThresholdsForm.ts:231-247</code>;
+          <code>src/features/onboarding/OnboardingStep.tsx:146</code> (blur), <code>:196-208</code>,
+          <code>:247</code>, <code>:269</code> (Continue press). Settings shares this logic (see
+          R5). Regression test: <code>e2e/onboarding.spec.ts:38</code>.
+        </p>
+        <div class="shots">
+          <figure class="phone">
+            <img
+              src="r1-before-p-en-typing.png"
+              alt="R4 before · 390 px · typing 1 in Max HR"
+              loading="lazy"
+            />
+            <figcaption>R4 before · 390 px · typing "1"</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-after-p-en-typing.png"
+              alt="R4 after · 390 px · typing 1 in Max HR"
+              loading="lazy"
+            />
+            <figcaption>R4 after · 390 px · typing "1"</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-after-p-en-blurred.png"
+              alt="R4 after · 390 px · after blur"
+              loading="lazy"
+            />
+            <figcaption>R4 after · 390 px · after blur</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-after-d-en-attempt.png"
+              alt="R4 after · Desktop · Continue pressed with empty fields"
+              loading="lazy"
+            />
+            <figcaption>R4 after · Desktop · Continue pressed, fields empty</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span class="label">R5</span>Settings → Thresholds: birth year error no longer shifts the
+          row
+        </h3>
+        <p>
+          This bug was already there before this work: <code>HEAD~1</code> had the same
+          <code>grid items-end</code> row and the same conditional helper line. The row is now
+          <code>items-start</code>, and the birth year always reserves its helper line, so an error
+          only fills space that is already there. Save is offset by <code>sm:mt-6</code> to sit on
+          the inputs' bottom edge, as before. The error also follows R4 now (blur, not typing). The
+          row is 20 px taller when there is no error.
+        </p>
+        <p class="meta">
+          <code>src/features/settings/ThresholdsSection.tsx:53-56</code>, <code>:113</code>,
+          <code>:116</code>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r1-before-d-en-birthyear-typing.png"
+              alt="R5 before · Desktop · 199 typed"
+              loading="lazy"
+            />
+            <figcaption>R5 before · Desktop · "199" (row shifted)</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-after-d-en-birthyear-typing.png"
+              alt="R5 after · Desktop · 199 typed"
+              loading="lazy"
+            />
+            <figcaption>R5 after · Desktop · "199" while typing</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-after-d-en-birthyear-blurred.png"
+              alt="R5 after · Desktop · after blur"
+              loading="lazy"
+            />
+            <figcaption>R5 after · Desktop · after blur, nothing moved</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-before-p-en-birthyear-typing.png"
+              alt="R5 before · 390 px · 199 typed"
+              loading="lazy"
+            />
+            <figcaption>R5 before · 390 px</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-after-p-en-birthyear-typing.png"
+              alt="R5 after · 390 px · 199 typed"
+              loading="lazy"
+            />
+            <figcaption>R5 after · 390 px</figcaption>
+          </figure>
+        </div>
+      </div>
+
       <h2>User-visible changes</h2>
 
       <div class="card">
@@ -808,6 +1018,29 @@
           <code>e2e/mobile/map.spec.ts:480</code> (known) and <code>:281</code> failed; both passed
           with <code>--workers 1</code>, and the second full run passed 83/83. <code>:281</code> is
           the same WebGL-picking class as <code>:480</code>.
+        </li>
+        <li>
+          <strong>R-O1 · Settings uses R4 as well.</strong> The eager logic was the shared
+          <code>visibleError</code> in <code>useThresholdsForm</code>, so the Settings birth year
+          now also waits for blur. The tile edit dialog (<code>ThresholdEditDialog.tsx:45</code>)
+          has its own draft logic and still checks as you type. Not changed: it has a reserved line,
+          so nothing shifts. Say if it should follow R4 too.
+        </li>
+        <li>
+          <strong>R-O2 · Continue stays disabled.</strong> The plan and the e2e test keep it
+          disabled, so "tries Continue" means a press on the disabled button, which a wrapper
+          catches (R4). Keyboard users can't focus a disabled button, so for them errors show on
+          blur only. The other option is an enabled Continue that reveals the errors and doesn't
+          advance.
+        </li>
+        <li>
+          <strong>R-O3 · Crumb icon.</strong> The shared <code>ExternalLink</code> needs an icon,
+          and it puts it first. I used <code>Code</code>, the icon on the GitHub row in Settings →
+          About, instead of the earlier trailing ↗.
+        </li>
+        <li>
+          <strong>R-O4 · Settings threshold row is 20 px taller</strong> with no error, because the
+          helper line is now reserved (R5).
         </li>
       </ol>
 

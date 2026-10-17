@@ -50,8 +50,10 @@ const ProfileFields = (props: { thresholds: ThresholdsForm }) => {
           type="number"
           value={thresholds.form.birthYear}
           onChange={(e) => thresholds.setField('birthYear', e.target.value)}
-          helperText={birthYearError || undefined}
-          error={!!birthYearError}
+          onBlur={() => thresholds.revealErrors(['birthYear'])}
+          helperText={birthYearError}
+          error={birthYearError !== ''}
+          reserveHelper
         />
       </div>
     </>
@@ -106,10 +108,12 @@ export const ThresholdsSection = () => {
   return (
     <Card>
       <CardHeader title={m.ui_thresholds_title()} subtitle={m.ui_thresholds_subtitle()} />
-      <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
+      {/* Top-aligned, so the birth year's helper line only grows downward. `sm:mt-6` = label
+          (20 px) + 4 px, which puts the 36 px Save on the 40 px inputs' bottom edge. */}
+      <div className="grid items-start gap-3 sm:grid-cols-[1fr_1fr_auto]">
         <ProfileFields thresholds={thresholds} />
         <Button
-          className="justify-self-end"
+          className="justify-self-end sm:mt-6"
           disabled={!thresholds.dirty || !thresholds.valid}
           onClick={thresholds.save}
         >
