@@ -5,7 +5,7 @@ import { CardHeader } from '@/components/ui/CardHeader.tsx';
 import { List, ListItem } from '@/components/ui/List.tsx';
 import { Typography } from '@/components/ui/Typography';
 
-const GITHUB_URL = 'https://github.com/fabianhinz/PaceVault';
+export const GITHUB_URL = 'https://github.com/fabianhinz/PaceVault';
 const SOURCES_URL =
   'https://github.com/fabianhinz/PaceVault/blob/main/src/packages/engine/SOURCES.md';
 

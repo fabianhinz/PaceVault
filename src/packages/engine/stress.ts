@@ -4,6 +4,25 @@
 import type { SessionRecord, Gender } from './types.ts';
 import { calculateNormalizedPower } from './normalize.ts';
 
+export interface StressSummary {
+  durationSec: number;
+  avgHr?: number;
+  normalizedPower?: number;
+}
+
+export interface StressThresholds {
+  restHr: number;
+  maxHr: number;
+  gender: Gender;
+  ftp?: number;
+}
+
+export interface SessionStress {
+  tss: number;
+  stressMethod: 'tss' | 'trimp' | 'duration';
+  normalizedPower?: number;
+}
+
 /**
  * Gender-specific Banister coefficients used in the TRIMP exponential weighting formula.
  * Male coefficients (a=0.64, b=1.92) are from Banister 1991 with strong consensus.
@@ -17,30 +36,20 @@ export const BANISTER = {
 } as const;
 
 /**
- * Calculate TSS (Training Stress Score) when power data is available.
+ * Calculate TSS (Training Stress Score) from Normalized Power.
  * TSS = (duration_sec * NP * IF) / (FTP * 3600) * 100
  * IF = NP / FTP
- * @param records - Array of session records containing power samples.
+ * @see [CogganAllen2010]
+ * @param np - Normalized Power in watts.
  * @param durationSec - Total session duration in seconds.
  * @param ftp - Functional Threshold Power in watts.
- * @returns Object with rounded `tss` and `normalizedPower`, or `undefined` when NP cannot be derived or FTP is invalid.
+ * @returns TSS rounded to one decimal, or `undefined` when FTP is invalid.
  */
-const calculateTSS = (
-  records: SessionRecord[],
-  durationSec: number,
-  ftp: number,
-): { tss: number; normalizedPower: number } | undefined => {
-  const np = calculateNormalizedPower(records);
-  if (np === undefined) return undefined;
+const calculateTSS = (np: number, durationSec: number, ftp: number): number | undefined => {
   const factor = intensityFactor(np, ftp);
   if (factor === undefined) return undefined;
-
   const tss = ((durationSec * np * factor) / (ftp * 3600)) * 100;
-
-  return {
-    tss: Math.round(tss * 10) / 10,
-    normalizedPower: np,
-  };
+  return Math.round(tss * 10) / 10;
 };
 
 /**
@@ -96,7 +105,45 @@ export const variabilityIndex = (np: number, avgPower: number): number | undefin
 };
 
 /**
- * Calculate stress for a session, preferring TSS (power) over TRIMP (HR).
+ * Calculate stress from stored summary fields, preferring TSS (power) over TRIMP (HR).
+ * TSS needs NP and an FTP above 0; NP 0 W gives TSS 0. TRIMP needs an average HR.
+ * Without either, a duration-based estimate is used.
+ * @see [CogganAllen2010] [Banister1991]
+ * @param summary - Duration, average HR and Normalized Power of the session.
+ * @param thresholds - Rest HR, max HR, gender and optional FTP valid at the session date.
+ * @returns The stress score (`tss`) and the method used (`stressMethod`).
+ */
+export const calculateSummaryStress = (
+  summary: StressSummary,
+  thresholds: StressThresholds,
+): SessionStress => {
+  const ftp = thresholds.ftp;
+  if (summary.normalizedPower !== undefined && ftp !== undefined && ftp > 0) {
+    const tss = calculateTSS(summary.normalizedPower, summary.durationSec, ftp);
+    if (tss !== undefined) return { tss, stressMethod: 'tss' };
+  }
+
+  if (summary.avgHr !== undefined) {
+    return {
+      tss: calculateTRIMP(
+        summary.avgHr,
+        summary.durationSec,
+        thresholds.restHr,
+        thresholds.maxHr,
+        thresholds.gender,
+      ),
+      stressMethod: 'trimp',
+    };
+  }
+
+  return {
+    tss: Math.round((summary.durationSec / 3600) * 30),
+    stressMethod: 'duration',
+  };
+};
+
+/**
+ * Calculate stress for a session from its records, preferring TSS (power) over TRIMP (HR).
  * @param records - Array of session records containing power and/or HR samples.
  * @param durationSec - Total session duration in seconds.
  * @param avgHr - Average heart rate in bpm, used as fallback when power data is absent.
@@ -104,7 +151,7 @@ export const variabilityIndex = (np: number, avgPower: number): number | undefin
  * @param maxHr - Maximum heart rate in bpm, required for TRIMP calculation.
  * @param gender - Athlete gender used to select Banister coefficients for TRIMP.
  * @param ftp - Optional Functional Threshold Power in watts; when provided and valid, TSS is attempted first.
- * @returns Object with the stress score (`tss`), the method used (`stressMethod`), and optionally `normalizedPower` when TSS was computed from power data.
+ * @returns Object with the stress score (`tss`), the method used (`stressMethod`), and `normalizedPower` whenever it can be derived from the records.
  */
 export const calculateSessionStress = (
   records: SessionRecord[],
@@ -114,31 +161,12 @@ export const calculateSessionStress = (
   maxHr: number,
   gender: Gender,
   ftp?: number,
-): { tss: number; stressMethod: 'tss' | 'trimp' | 'duration'; normalizedPower?: number } => {
-  // Try TSS first (requires power data + FTP)
-  if (ftp && ftp > 0) {
-    const tssResult = calculateTSS(records, durationSec, ftp);
-    if (tssResult) {
-      return {
-        tss: tssResult.tss,
-        stressMethod: 'tss',
-        normalizedPower: tssResult.normalizedPower,
-      };
-    }
-  }
-
-  // Fall back to TRIMP (requires HR data)
-  if (avgHr !== undefined) {
-    const trimp = calculateTRIMP(avgHr, durationSec, restHr, maxHr, gender);
-    return {
-      tss: trimp,
-      stressMethod: 'trimp',
-    };
-  }
-
-  // No usable data — assign minimal stress estimate based on duration
-  return {
-    tss: Math.round((durationSec / 3600) * 30),
-    stressMethod: 'duration',
-  };
+): SessionStress => {
+  const normalizedPower = calculateNormalizedPower(records);
+  const stress = calculateSummaryStress(
+    { durationSec, avgHr, normalizedPower },
+    { restHr, maxHr, gender, ftp },
+  );
+  if (normalizedPower === undefined) return stress;
+  return { ...stress, normalizedPower };
 };

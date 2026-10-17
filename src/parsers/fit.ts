@@ -9,7 +9,8 @@ import {
   type Sport,
   type Gender,
 } from '@/packages/engine/types.ts';
-import { calculateSessionStress } from '@/packages/engine/stress.ts';
+import { calculateSummaryStress } from '@/packages/engine/stress.ts';
+import { calculateNormalizedPower } from '@/packages/engine/normalize.ts';
 import {
   SESSION_DERIVATION_VERSION,
   deriveSessionFieldsFromRecords,
@@ -172,19 +173,10 @@ export const parseFitFile = async (
   const laps = mapFitLaps(lapsResult.data);
 
   const userProfile = profileAt(sessionDate);
-  const hasPowerRecords = records.some((r) => r.power !== undefined);
-  let stressFtp: number | undefined = undefined;
-  if (hasPowerRecords) {
-    stressFtp = userProfile.ftp;
-  }
-  const stressResult = calculateSessionStress(
-    records,
-    sessionDuration,
-    fitSession.avg_heart_rate,
-    userProfile.restHr,
-    userProfile.maxHr,
-    userProfile.gender,
-    stressFtp,
+  const normalizedPower = calculateNormalizedPower(records);
+  const stressResult = calculateSummaryStress(
+    { durationSec: sessionDuration, avgHr: fitSession.avg_heart_rate, normalizedPower },
+    userProfile,
   );
 
   const derived = deriveSessionFieldsFromRecords(sport, records);
@@ -220,7 +212,7 @@ export const parseFitFile = async (
     avgHr: fitSession.avg_heart_rate,
     maxHr: fitSession.max_heart_rate,
     avgPower: derived.avgPower ?? fitSession.avg_power,
-    normalizedPower: stressResult.normalizedPower ?? fitSession.normalized_power,
+    normalizedPower,
     avgCadence: derived.avgCadence ?? fitSession.avg_cadence,
     avgSpeed,
     avgPace,

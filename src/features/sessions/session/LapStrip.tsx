@@ -16,6 +16,7 @@ const SLOWER = tokens.chartCadence;
 const cellColor = (lap: LapAnalysis | undefined, position: number): string => {
   if (lap?.isPartial) return 'rgba(255,255,255,.3)';
   if (lap?.intensity === 'warmup' || lap?.intensity === 'cooldown') return 'rgba(255,255,255,.35)';
+  if (lap?.intensity === 'steady') return 'rgba(255,255,255,.45)';
   if (lap && lap.intensity !== 'active') return 'rgba(255,255,255,.18)';
   if (position % 2 === 0) return 'rgba(255,255,255,.75)';
   return 'rgba(255,255,255,.5)';

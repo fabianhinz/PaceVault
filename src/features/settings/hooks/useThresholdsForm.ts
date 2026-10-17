@@ -9,8 +9,8 @@ import { parsePaceInput, formatPaceInput } from '@/lib/formatters.ts';
 export type NumberField = 'restHr' | 'maxHr' | 'ftp' | 'weight' | 'birthYear';
 export type TextField = NumberField | 'thresholdPace';
 
-export interface FormValues {
-  gender: Gender;
+interface FormValues {
+  gender: Gender | null;
   birthYear: string;
   restHr: string;
   maxHr: string;
@@ -37,7 +37,7 @@ const paceText = (value: number | undefined): string => {
 const storedForm = (profile: UserProfile | null): FormValues => {
   if (!profile) {
     return {
-      gender: 'male',
+      gender: null,
       birthYear: '',
       restHr: '',
       maxHr: '',
@@ -159,15 +159,14 @@ const formErrors = (form: FormValues, stored: FormValues): Record<TextField, str
   weight: fieldError('weight', form, stored),
 });
 
-const isGender = (value: string): value is Gender =>
-  value === 'male' || value === 'female' || value === 'other';
+const isGender = (value: string): value is Gender => value === 'male' || value === 'female';
 
 const epochHistory = (value: number | undefined) => {
   if (value === undefined) return undefined;
   return [{ date: 0, value }];
 };
 
-const createProfile = (form: FormValues) => {
+const createProfile = (form: FormValues, gender: Gender) => {
   const restHr = Number(form.restHr);
   const maxHr = Number(form.maxHr);
   const thresholds: UserProfile['thresholds'] = {
@@ -179,7 +178,7 @@ const createProfile = (form: FormValues) => {
   const thresholdPace = epochHistory(parsePaceInput(form.thresholdPace));
   if (thresholdPace) thresholds.thresholdPace = thresholdPace;
   const profile: Omit<UserProfile, 'id' | 'createdAt'> = {
-    gender: form.gender,
+    gender,
     thresholds,
     showMetricHelp: true,
   };
@@ -196,7 +195,9 @@ const parsedThreshold = (field: ThresholdKey, value: string): number | undefined
 };
 
 const saveChanges = (form: FormValues, stored: FormValues) => {
-  if (form.gender !== stored.gender) useUserStore.getState().setProfileGender(form.gender);
+  if (form.gender !== null && form.gender !== stored.gender) {
+    useUserStore.getState().setProfileGender(form.gender);
+  }
   if (form.birthYear !== stored.birthYear) {
     useUserStore.getState().setProfileBirthYear(optionalNumber(form.birthYear));
   }
@@ -222,7 +223,9 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   }
   const dirty =
     form.gender !== stored.gender || fields.some((field) => form[field] !== stored[field]);
-  const valid = fields.every((field) => errors[field] === '');
+  const valid = form.gender !== null && fields.every((field) => errors[field] === '');
+
+  const fieldValid = (field: TextField): boolean => errors[field] === '';
 
   const visibleError = (field: TextField): string => {
     if (form[field] === stored[field]) return '';
@@ -245,10 +248,11 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   };
 
   const save = () => {
-    if (!valid) return;
+    const gender = form.gender;
+    if (!valid || gender === null) return;
     startTransition(() => {
       if (mode === 'create' || !profile) {
-        createProfile(form);
+        createProfile(form, gender);
       } else {
         saveChanges(form, stored);
       }
@@ -256,7 +260,18 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
     });
   };
 
-  return { form, current, dirty, valid, visibleError, setField, saveField, setGender, save };
+  return {
+    form,
+    current,
+    dirty,
+    valid,
+    fieldValid,
+    visibleError,
+    setField,
+    saveField,
+    setGender,
+    save,
+  };
 };
 
 export type ThresholdsForm = ReturnType<typeof useThresholdsForm>;

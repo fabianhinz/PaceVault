@@ -28,7 +28,12 @@ export const SessionMapControls = (props: SessionMapControlsProps) => {
         options={coloring.options}
         speedScale={coloring.speedScale}
       />
-      <LapsControl records={props.records} laps={props.laps} sport={props.session.sport} />
+      <LapsControl
+        records={props.records}
+        laps={props.laps}
+        sport={props.session.sport}
+        date={props.session.date}
+      />
     </MapControlsBar>
   );
 };

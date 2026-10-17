@@ -28,7 +28,6 @@ interface ThresholdTilesProps {
   histories: Record<ThresholdTileKey, DatedValue<number>[]>;
   fresh: ThresholdTileKey[];
   onEdit: (key: ThresholdKey) => void;
-  mode: 'create' | 'update';
 }
 
 const MISSING = '--';
@@ -133,7 +132,7 @@ export const ThresholdTiles = (props: ThresholdTilesProps) => {
               scrubDate,
             );
             if (entryDate !== undefined) note = formatShortDate(entryDate);
-          } else if (props.mode === 'update') {
+          } else {
             const latest = points.at(-1);
             if (latest !== undefined) note = formatShortDate(latest.date);
           }
@@ -154,7 +153,6 @@ export const ThresholdTiles = (props: ThresholdTilesProps) => {
               color={tile.color}
               fresh={fresh}
               onScrub={(date) => {
-                if (props.mode === 'create') return;
                 if (date === null) {
                   setScrub(null);
                 } else {
@@ -166,7 +164,6 @@ export const ThresholdTiles = (props: ThresholdTilesProps) => {
           const shared = {
             title: tile.title(),
             icon: { icon: THRESHOLD_TILE_ICONS[key], color: tile.color },
-            required: props.mode === 'create' && (key === 'restHr' || key === 'maxHr'),
             value,
             unit,
             note,

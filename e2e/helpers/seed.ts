@@ -4,10 +4,30 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { SESSION_DERIVATION_VERSION } from '../../src/packages/engine/sessionDerivation.ts';
 import { DB_NAME, DB_VERSION } from '../../src/lib/db.ts';
+import { calculateSummaryStress } from '../../src/packages/engine/stress.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DB = { name: DB_NAME, version: DB_VERSION };
+
+const SEED_THRESHOLDS = { restHr: 50, maxHr: 185, gender: 'male' as const };
+const COACH_FTP = 250;
+
+// The load the app's own startup recompute gives, so seeding never triggers a migration.
+const seededLoad = (durationSec: number) =>
+  calculateSummaryStress({ durationSec }, SEED_THRESHOLDS);
+
+// A one-hour session with TSS = (NP / FTP)² × 100, so a seeded TSS survives the recompute.
+const seededTssLoad = (tss: number) => {
+  const normalizedPower = COACH_FTP * Math.sqrt(tss / 100);
+  return {
+    ...calculateSummaryStress(
+      { durationSec: 3600, normalizedPower },
+      { ...SEED_THRESHOLDS, ftp: COACH_FTP },
+    ),
+    normalizedPower,
+  };
+};
 
 const blockBasemap = async (page: Page) => {
   await page.route('**/*.cartocdn.com/**', (route) => route.abort());
@@ -120,8 +140,7 @@ export const seedIntervalsConnected = async (
     date,
     duration: 3600,
     distance: 10000,
-    tss: 80,
-    stressMethod: 'trimp',
+    ...seededLoad(3600),
     isPlanned: false,
     hasDetailedRecords: false,
     derivationVersion: SESSION_DERIVATION_VERSION,
@@ -160,8 +179,7 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
     duration: s.duration ?? 3600,
     distance: s.distance ?? 10000,
     elevationGain: s.elevationGain,
-    tss: 80,
-    stressMethod: 'trimp',
+    ...seededLoad(s.duration ?? 3600),
     isPlanned: false,
     hasDetailedRecords: false,
     derivationVersion: SESSION_DERIVATION_VERSION,
@@ -229,8 +247,7 @@ export const seedCoachWithThresholdPace = async (
     date: s.date,
     duration: 3600,
     distance: 10000,
-    tss: s.tss ?? 80,
-    stressMethod: 'trimp',
+    ...seededTssLoad(s.tss ?? 80),
     isPlanned: false,
     hasDetailedRecords: false,
     derivationVersion: SESSION_DERIVATION_VERSION,
@@ -244,7 +261,7 @@ export const seedCoachWithThresholdPace = async (
 
   await writeKvEntries(page, {
     'store-layout': layoutState(),
-    'store-user': userState(v4(), { restHr: 50, maxHr: 185, thresholdPace }),
+    'store-user': userState(v4(), { restHr: 50, maxHr: 185, ftp: COACH_FTP, thresholdPace }),
     'store-sessions': sessionsState(builtSessions),
     'store-coach-plan': coachPlanState,
   });

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronLeft, ChevronRight, Flag, X } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { ResponsivePopover } from '@/components/ui/ResponsivePopover.tsx';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup.tsx';
 import { Slider } from '@/components/ui/Slider.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
+import { Chip } from '@/components/ui/Chip.tsx';
 import { FloatingPill, floatingPillClass } from '@/components/ui/FloatingPill.tsx';
 import { cn } from '@/lib/utils.ts';
 import { recordedDistance, splitDistanceRange } from '@/lib/dynamicLaps.ts';
@@ -16,22 +18,34 @@ import {
   type LapSet,
   type LapSource,
 } from '@/lib/lapSet.ts';
+import { buildEffortLapSet, effortWorkCount } from '@/lib/effortLaps.ts';
+import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
+import type { EffortLimiter } from '@/packages/engine/effortDetection.ts';
 import type { SessionLap, SessionRecord, Sport } from '@/packages/engine/types.ts';
 import { LapSwatch } from './LapStrip.tsx';
-import { lapCountLabel, lapName, splitDistanceLabel, splitKm } from './lapLabels.ts';
+import { effortChipLabel, lapCountLabel, lapName, splitDistanceLabel } from './lapLabels.ts';
 
-const pillLabel = (source: LapSource, set: LapSet | null, splitDistance: number): string => {
+const pillLabel = (source: LapSource, set: LapSet | null): string => {
   if (!set || source === 'off') return m.ui_laps();
-  if (source === 'device') return lapCountLabel(set.analysis.length, 'device');
-  return m.ui_laps_pill_splits({ distance: splitKm(splitDistance) });
+  if (source === 'efforts') return lapCountLabel(effortWorkCount(set), 'efforts');
+  return lapCountLabel(set.analysis.length, source);
+};
+
+const LIMITER_LABELS: Record<EffortLimiter, { precise: () => string; detect: () => string }> = {
+  ftp: { precise: m.ui_laps_efforts_precise_ftp, detect: m.ui_laps_efforts_detect_ftp },
+  thresholdPace: {
+    precise: m.ui_laps_efforts_precise_threshold_pace,
+    detect: m.ui_laps_efforts_detect_threshold_pace,
+  },
 };
 
 interface LapsControlProps {
   records: SessionRecord[];
   laps: SessionLap[];
   sport: Sport;
+  date: number;
 }
 
 interface LapsPickerProps extends LapsControlProps {
@@ -98,10 +112,39 @@ const LapsPicker = (props: LapsPickerProps) => {
   }, [isDeviceSource, records, laps]);
   let deviceSet = builtDeviceSet;
   if (isDeviceSource) deviceSet = current;
+  const sport = props.sport;
+  const thresholds = useThresholdsAt(props.date);
   const splitSet = useMemo(() => {
     if (source === 'splits') return current;
-    return buildLapSet(records, laps, 'splits', splitDistance);
-  }, [source, current, records, laps, splitDistance]);
+    return buildLapSet(records, laps, 'splits', splitDistance, { sport, thresholds: undefined });
+  }, [source, current, records, laps, splitDistance, sport]);
+  const effortResult = useMemo(() => {
+    if (source === 'efforts' && current?.efforts) {
+      return { set: current, signal: current.efforts.signal, limitedBy: current.efforts.limitedBy };
+    }
+    return buildEffortLapSet(records, sport, thresholds);
+  }, [source, current, records, sport, thresholds]);
+  const effortSet = effortResult.set;
+  const effortSignal = effortResult.signal;
+  const limitedBy = effortResult.limitedBy;
+  let effortCaption = (
+    <Typography variant="caption" as="span" color="textTertiary" className="block truncate">
+      {m.ui_laps_efforts_none()}
+    </Typography>
+  );
+  if (effortSet && effortSignal) {
+    const label = effortChipLabel(effortSet, effortSignal);
+    effortCaption = (
+      <Chip title={label} className="min-w-0 truncate">
+        {label}
+      </Chip>
+    );
+  }
+  let nudge = '';
+  if (limitedBy) {
+    nudge = LIMITER_LABELS[limitedBy].detect();
+    if (effortSet) nudge = LIMITER_LABELS[limitedBy].precise();
+  }
 
   const hasDeviceLaps = laps.length > 0;
   let deviceDesc: string = m.ui_laps_device_none();
@@ -149,7 +192,7 @@ const LapsPicker = (props: LapsPickerProps) => {
     <RadioGroup
       value={source}
       onValueChange={(value) => {
-        if (value === 'off' || value === 'device') {
+        if (value === 'off' || value === 'device' || value === 'efforts') {
           useMapPreferencesStore.getState().setSessionLapSource(props.sport, value);
           props.onDone();
           return;
@@ -181,6 +224,30 @@ const LapsPicker = (props: LapsPickerProps) => {
           )}
         </div>
       ))}
+      <div
+        data-checked={source === 'efforts' ? '' : undefined}
+        data-testid="laps-efforts-row"
+        className="group/row rounded-lg data-[checked]:bg-white/5"
+      >
+        <RadioGroupItem value="efforts" disabled={effortSet === null} className={rowClass}>
+          <span className="min-w-0 flex-1">
+            <Typography variant="subtitle1" as="span" className="block">
+              {m.ui_laps_efforts()}
+            </Typography>
+            <span className="flex h-5 min-w-0 items-center">{effortCaption}</span>
+          </span>
+          <LapSwatch set={effortSet} muted={effortSet === null} />
+        </RadioGroupItem>
+        <div className="pr-2 pb-2 pl-10">
+          <span className="block h-4 truncate text-xs text-text-tertiary">
+            {nudge !== '' && (
+              <Link to="/settings" className="text-accent hover:underline">
+                {nudge}
+              </Link>
+            )}
+          </span>
+        </div>
+      </div>
     </RadioGroup>
   );
 };
@@ -216,7 +283,7 @@ const StepButton = (props: {
   </button>
 );
 
-const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource }) => {
+const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource; sport: Sport }) => {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') useMapControlsStore.getState().closeSelectedLap();
@@ -251,11 +318,11 @@ const LapStepper = (props: { set: LapSet; lapIndex: number; source: LapSource })
         <span
           data-testid="lap-stepper-name"
           className={cn(
-            'w-[72px] text-center tabular-nums',
+            'w-[104px] text-center tabular-nums',
             lap && lap.intensity !== 'active' && 'text-text-tertiary',
           )}
         >
-          {lapName(props.lapIndex, props.source)}
+          {lapName(props.set, props.lapIndex, props.source, props.sport)}
         </span>
         <StepButton
           label={m.ui_lap_next()}
@@ -300,7 +367,7 @@ export const LapsControl = (props: LapsControlProps) => {
     sessionLaps !== null &&
     sessionLaps.bands.some((band) => band.lapIndex === selected);
   if (hasSelectedLap && sessionLaps) {
-    return <LapStepper set={sessionLaps} lapIndex={selected} source={source} />;
+    return <LapStepper set={sessionLaps} lapIndex={selected} source={source} sport={props.sport} />;
   }
 
   return (
@@ -315,7 +382,7 @@ export const LapsControl = (props: LapsControlProps) => {
       trigger={
         <FloatingPill data-testid="laps-pill" className="h-11">
           <Flag size={16} />
-          <span>{pillLabel(source, sessionLaps, splitDistance)}</span>
+          <span>{pillLabel(source, sessionLaps)}</span>
           {source !== 'off' && sessionLaps && <LapSwatch set={sessionLaps} />}
           <ChevronDown size={14} className="text-text-tertiary" />
         </FloatingPill>
@@ -329,6 +396,7 @@ export const LapsControl = (props: LapsControlProps) => {
         records={props.records}
         laps={props.laps}
         sport={props.sport}
+        date={props.date}
         source={source}
         splitDistance={splitDistance}
         current={sessionLaps}

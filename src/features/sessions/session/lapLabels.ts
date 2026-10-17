@@ -3,9 +3,11 @@ import { getLocale } from '@/paraglide/runtime.js';
 import { railPaceFromSecPerKm } from '@/lib/railFormat.ts';
 import { MIN_SUMMARY_LAPS, summarizeLaps } from '@/lib/lapSummary.ts';
 import type { LapSet, LapSource } from '@/lib/lapSet.ts';
+import { effortPattern, effortWorkCount, effortWorkSet } from '@/lib/effortLaps.ts';
+import type { EffortSignal } from '@/packages/engine/effortDetection.ts';
 import type { Sport } from '@/packages/engine/types.ts';
+import { duration } from './statFormat.ts';
 
-const kmFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1 });
 const kmUnitFmt = new Intl.NumberFormat(getLocale(), {
   style: 'unit',
   unit: 'kilometer',
@@ -24,14 +26,16 @@ export const speedRangeLabel = (slowKmh: number, fastKmh: number): string => {
   return speedFmt.formatRange(slowKmh, fastKmh);
 };
 
-export const splitKm = (metres: number): string => kmFmt.format(metres / 1000);
-
 export const splitDistanceLabel = (metres: number): string => kmUnitFmt.format(metres / 1000);
 
 export const lapCountLabel = (count: number, source: Exclude<LapSource, 'off'>): string => {
   if (source === 'splits') {
     if (count === 1) return m.ui_laps_splits_one();
     return m.ui_laps_splits_count({ count: String(count) });
+  }
+  if (source === 'efforts') {
+    if (count === 1) return m.ui_laps_efforts_one();
+    return m.ui_laps_efforts_count({ count: String(count) });
   }
   if (count === 1) return m.ui_laps_pill_one();
   return m.ui_laps_pill_count({ count: String(count) });
@@ -77,15 +81,24 @@ export const lapsRowLabels = (
       secondary: m.ui_laps_row_no_distance_hint(),
     };
   }
-  const count = set?.analysis.length ?? 0;
+  if (source === 'efforts' && !set) {
+    return {
+      disabled: true,
+      primary: m.ui_laps_efforts_none(),
+      secondary: m.ui_laps_row_device_hint(),
+    };
+  }
+  let summarySet = set;
+  if (source === 'efforts' && set) summarySet = effortWorkSet(set);
+  const count = summarySet?.analysis.length ?? 0;
   const countLabel = lapCountLabel(count, source);
-  if (!set || count < MIN_SUMMARY_LAPS) {
+  if (!summarySet || count < MIN_SUMMARY_LAPS) {
     let hint = m.ui_laps_row_shorter_hint();
     if (source === 'device') hint = m.ui_laps_row_device_hint();
     return { disabled: true, primary: countLabel, secondary: hint };
   }
 
-  const summary = summarizeLaps(set);
+  const summary = summarizeLaps(summarySet);
   let primary = countLabel;
   if (summary.avgSecPerKm !== undefined) {
     primary = m.ui_laps_row_primary({
@@ -113,7 +126,48 @@ export const lapsRowLabels = (
   return { disabled: false, primary, secondary };
 };
 
-export const lapName = (lapIndex: number, source: LapSource): string => {
+const SIGNAL_LABELS: Record<EffortSignal, () => string> = {
+  power: m.ui_laps_effort_signal_power,
+  pace: m.ui_laps_effort_signal_pace,
+  hr: m.ui_laps_effort_signal_hr,
+};
+
+export const effortChipLabel = (set: LapSet, signal: EffortSignal): string => {
+  const pattern = effortPattern(set);
+  let summary = lapCountLabel(effortWorkCount(set), 'efforts');
+  if (pattern) {
+    summary = m.ui_laps_efforts_pattern({
+      count: String(pattern.count),
+      duration: duration(pattern.movingTime),
+    });
+  }
+  const signalLabel = SIGNAL_LABELS[signal]();
+  if (signal === 'hr') return m.ui_laps_efforts_chip_approx({ summary, signal: signalLabel });
+  return m.ui_laps_efforts_chip({ summary, signal: signalLabel });
+};
+
+const effortName = (set: LapSet, lapIndex: number, sport: Sport): string => {
+  const lap = set.analysis.find((candidate) => candidate.lapIndex === lapIndex);
+  const intensity = lap?.intensity ?? 'active';
+  if (intensity === 'warmup') {
+    if (sport === 'running') return m.ui_effort_warmup_run();
+    return m.ui_effort_warmup_ride();
+  }
+  if (intensity === 'cooldown') {
+    if (sport === 'running') return m.ui_effort_cooldown_run();
+    return m.ui_effort_cooldown_ride();
+  }
+  const ordinal = set.analysis.filter(
+    (candidate) => candidate.intensity === intensity && candidate.lapIndex <= lapIndex,
+  ).length;
+  const number = String(Math.max(1, ordinal));
+  if (intensity === 'steady') return m.ui_effort_steady_label({ number });
+  if (intensity === 'rest') return m.ui_effort_rest_label({ number });
+  return m.ui_effort_work_label({ number });
+};
+
+export const lapName = (set: LapSet, lapIndex: number, source: LapSource, sport: Sport): string => {
+  if (source === 'efforts') return effortName(set, lapIndex, sport);
   const number = String(lapIndex + 1);
   if (source === 'splits') return m.ui_split_label({ number });
   return m.ui_lap_label({ number });

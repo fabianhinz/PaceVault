@@ -72,9 +72,9 @@ describe('estimateSessionEnergy — heart rate (Keytel)', () => {
     expect(kcalOf(estimateSessionEnergy(hrRide, 'cycling', body))).toBeCloseTo(597.8, 1);
   });
 
-  it('averages both equations for other', () => {
-    const body: EnergyBody = { weightKg: 60, age: 35, gender: 'other' };
-    expect(kcalOf(estimateSessionEnergy(hrRide, 'cycling', body))).toBeCloseTo(718.6, 1);
+  it('no heart-rate estimate without gender', () => {
+    const body: EnergyBody = { weightKg: 60, age: 35 };
+    expect(estimateSessionEnergy(hrRide, 'cycling', body)).toBeUndefined();
   });
 
   it('clamps at 1 kcal/kg/h', () => {

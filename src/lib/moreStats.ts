@@ -149,7 +149,7 @@ export const buildMoreStats = (
   stats.calories = estimateSessionEnergy(
     records,
     session.sport,
-    { weightKg: thresholds?.weightKg, age: thresholds?.age, gender: thresholds?.gender ?? 'other' },
+    { weightKg: thresholds?.weightKg, age: thresholds?.age, gender: thresholds?.gender },
     gradients,
   );
 

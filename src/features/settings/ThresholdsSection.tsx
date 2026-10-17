@@ -4,7 +4,6 @@ import type { DatedValue } from '@/packages/engine/datedValue.ts';
 import { wattsPerKgHistory } from '@/packages/engine/wattsPerKg.ts';
 import type { UserProfile } from '@/types/index.ts';
 import { useUserStore, type ThresholdKey } from '@/store/user.ts';
-import { parsePaceInput } from '@/lib/formatters.ts';
 import { Input } from '@/components/ui/Input.tsx';
 import { Label } from '@/components/ui/Label.tsx';
 import { Card } from '@/components/ui/Card.tsx';
@@ -20,11 +19,7 @@ import {
 import { ThresholdEditDialog } from './ThresholdEditDialog.tsx';
 import { ThresholdTiles } from './ThresholdTiles.tsx';
 import type { ThresholdTileKey } from './thresholdIcons.ts';
-import {
-  useThresholdsForm,
-  type FormValues,
-  type ThresholdsForm,
-} from './hooks/useThresholdsForm.ts';
+import { useThresholdsForm, type ThresholdsForm } from './hooks/useThresholdsForm.ts';
 
 type Histories = Record<ThresholdTileKey, DatedValue<number>[]>;
 
@@ -35,14 +30,16 @@ const ProfileFields = (props: { thresholds: ThresholdsForm }) => {
     <>
       <div>
         <Label>{m.ui_thresholds_gender()}</Label>
-        <SelectRoot value={thresholds.form.gender} onValueChange={thresholds.setGender}>
+        <SelectRoot
+          value={thresholds.form.gender ?? undefined}
+          onValueChange={thresholds.setGender}
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="male">{m.ui_thresholds_male()}</SelectItem>
             <SelectItem value="female">{m.ui_thresholds_female()}</SelectItem>
-            <SelectItem value="other">{m.ui_thresholds_other()}</SelectItem>
           </SelectContent>
         </SelectRoot>
       </div>
@@ -62,57 +59,6 @@ const ProfileFields = (props: { thresholds: ThresholdsForm }) => {
 };
 
 const Divider = () => <hr className="my-4 border-white/10" />;
-
-const stagedHistory = (value: number | undefined): DatedValue<number>[] => {
-  if (value === undefined || Number.isNaN(value)) return [];
-  return [{ date: 0, value }];
-};
-
-const stagedNumber = (value: string): number | undefined => {
-  if (value.trim() === '') return undefined;
-  return Number(value);
-};
-
-const stagedHistories = (form: FormValues): Histories => {
-  const ftp = stagedHistory(stagedNumber(form.ftp));
-  const weight = stagedHistory(stagedNumber(form.weight));
-  return {
-    restHr: stagedHistory(stagedNumber(form.restHr)),
-    maxHr: stagedHistory(stagedNumber(form.maxHr)),
-    ftp,
-    thresholdPace: stagedHistory(parsePaceInput(form.thresholdPace)),
-    weight,
-    wkg: wattsPerKgHistory(ftp, weight),
-  };
-};
-
-export const OnboardingThresholds = (props: { thresholds: ThresholdsForm }) => {
-  const [editing, setEditing] = useState<ThresholdKey | null>(null);
-  return (
-    <div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <ProfileFields thresholds={props.thresholds} />
-      </div>
-      <Divider />
-      <ThresholdTiles
-        histories={stagedHistories(props.thresholds.form)}
-        fresh={[]}
-        onEdit={setEditing}
-        mode="create"
-      />
-      <ThresholdEditDialog
-        field={editing}
-        thresholds={props.thresholds}
-        onConfirm={(field, value) => {
-          props.thresholds.setField(field, value);
-          setEditing(null);
-        }}
-        onClose={() => setEditing(null)}
-      />
-      <p className="mt-3 text-xs text-text-quaternary">{m.ui_thresholds_onboarding_note()}</p>
-    </div>
-  );
-};
 
 const wattsPerKgOf = (profile: UserProfile) =>
   wattsPerKgHistory(profile.thresholds.ftp ?? [], profile.weight ?? []);
@@ -141,7 +87,6 @@ export const ThresholdsSection = () => {
           setFresh([]);
           setEditing(key);
         }}
-        mode="update"
       />
     );
   }

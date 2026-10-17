@@ -111,7 +111,7 @@ test.describe('Session browsing', () => {
     await page.waitForURL(/\/sessions\/.+/);
 
     const lapsPill = page.getByTestId('laps-pill');
-    await expect(lapsPill).toHaveText(/^(1|5) km splits$/, { timeout: 10_000 });
+    await expect(lapsPill).toHaveText(/^\d+ splits$/, { timeout: 10_000 });
     const defaultLabel = await lapsPill.textContent();
 
     const chart = page.locator('.recharts-wrapper').first();
@@ -152,7 +152,7 @@ test.describe('Session browsing', () => {
     await page.getByRole('slider', { name: /split distance/i }).press('ArrowRight');
     await page.keyboard.press('Escape');
     await expect(lapsPill).not.toHaveText(defaultLabel ?? '');
-    await expect(lapsPill).toHaveText(/km splits/);
+    await expect(lapsPill).toHaveText(/^\d+ splits$/);
     await page.getByTestId('color-by-pill').click();
     await page.getByRole('radio', { name: /heart rate/i }).click();
     await expect(page.getByTestId('color-by-pill')).toHaveText(/hr zones/i);
@@ -161,7 +161,7 @@ test.describe('Session browsing', () => {
     await page.waitForURL('/sessions');
     await sessionLinks.nth(1).click();
     await page.waitForURL(/\/sessions\/.+/);
-    await expect(page.getByTestId('laps-pill')).toHaveText(/^(1|5) km splits$/, {
+    await expect(page.getByTestId('laps-pill')).toHaveText(/^\d+ splits$/, {
       timeout: 10_000,
     });
     await expect(page.getByTestId('color-by-pill')).toHaveText(/color by/i);

@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dynamic Efforts</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js"></script>
+<style type="text/tailwindcss">
+  @theme {
+    --color-gray-950: #0a0b0f; --color-gray-900: #111318; --color-gray-800: #1a1d24; --color-gray-700: #252830;
+    --color-gray-600: #3a3e48; --color-gray-500: #5c616e; --color-gray-400: #8b8f9a; --color-gray-300: #b0b4be;
+    --color-gray-200: #d1d5db; --color-gray-100: #e5e7eb;
+    --color-blue-500: #3b82f6; --color-blue-400: #60a5fa; --color-blue-600: #2563eb; --color-blue-700: #1d4ed8;
+    --color-surface-base: #030712; --color-surface-sunken: var(--color-gray-950); --color-surface: var(--color-gray-900);
+    --color-surface-elevated: var(--color-gray-800); --color-surface-overlay: var(--color-gray-700);
+    --color-border: var(--color-gray-700);
+    --color-text-primary: var(--color-gray-100); --color-text-secondary: var(--color-gray-300);
+    --color-text-tertiary: var(--color-gray-400); --color-text-quaternary: var(--color-gray-500);
+    --color-accent: var(--color-blue-500); --color-accent-hover: var(--color-blue-400); --color-accent-strong: var(--color-blue-600);
+    --color-accent-muted: #3b82f633;
+    --color-status-success: #4ade80; --color-status-warning: #facc15; --color-status-danger: #f87171; --color-status-danger-strong: #ef4444;
+    --color-sport-running: #4ade80; --color-sport-running-muted: #22c55e33; --color-sport-cycling: #f97316; --color-sport-cycling-muted: #f9731633;
+    --color-chart-hr: #ef4444; --color-chart-power: #3b82f6; --color-chart-pace: #06b6d4; --color-chart-cadence: #f59e0b;
+  }
+</style>
+<style>
+  html, body { height: 100%; overflow: hidden; margin: 0; }
+  body { -webkit-user-select: none; user-select: none; }
+  * { scrollbar-width: thin; scrollbar-color: #252830 transparent; }
+  select { appearance: none; -webkit-appearance: none; }
+  .frame-inner { transform-origin: 0 0; }
+  .hatch { fill: url(#hatch); }
+</style>
+</head>
+<body class="h-full bg-surface-base text-text-primary">
+<div id="app" class="flex h-full flex-col">
+  <header id="toolbar" class="shrink-0 border-b border-white/10 px-4 py-2"></header>
+  <div id="stage" class="flex min-h-0 flex-1 flex-col gap-3 p-3">
+    <div id="row1" class="flex min-h-0 flex-1 gap-3">
+      <div id="frames" class="flex shrink-0 gap-3"></div>
+      <section id="inspector" class="flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border border-white/10 bg-surface/55 p-4"></section>
+    </div>
+    <section id="explainer" class="flex h-[300px] shrink-0 flex-col rounded-2xl border border-white/10 bg-surface/55 p-4"></section>
+  </div>
+  <div id="qlayer" class="pointer-events-none fixed inset-0 z-[90]"></div>
+  <div id="qtip" class="pointer-events-none fixed z-[95] hidden max-w-[520px] rounded-lg border border-white/10 bg-surface/85 px-2 py-1 text-xs text-text-primary shadow-[0_8px_24px_rgb(0_0_0/0.4)] backdrop-blur-xl"></div>
+  <aside id="notes" class="fixed top-0 right-0 bottom-0 z-[100] hidden w-[460px] flex-col border-l border-white/10 bg-surface/85 shadow-[0_8px_24px_rgb(0_0_0/0.4)] backdrop-blur-xl"></aside>
+</div>
+
+<script>
+'use strict';
+// ───────────────────────────── utils ─────────────────────────────
+const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const gauss = (r) => { let u = 0; while (!u) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r()); };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const fmtDur = (sec) => { sec = Math.round(sec); const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60; if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; return `${m}:${String(s).padStart(2, '0')}`; };
+const fmtPace = (secPerKm) => { const s = Math.round(secPerKm); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+const median = (a) => { if (!a.length) return NaN; const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+const GAP_C = [1, 2.754, 15.69, 3.723, 7.218];
+const gapFactor = (g) => { const x = clamp(g, -0.3, 0.3); return GAP_C.reduce((s, c, k) => s + c * Math.pow(x, k), 0); };
+
+const ICON = {
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
+  down: '<path d="m6 9 6 6 6-6"/>', left: '<path d="m15 18-6-6 6-6"/>', right: '<path d="m9 18 6-6-6-6"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  dash: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  zap: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  flask: '<path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>',
+  funnel: '<path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/>',
+  locate: '<line x1="2" x2="5" y1="12" y2="12"/><line x1="19" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="5"/><line x1="12" x2="12" y1="19" y2="22"/><circle cx="12" cy="12" r="7"/>',
+  layers: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
+  heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
+  timer: '<line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>',
+  bike: '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+  run: '<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/>',
+  more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+  notes: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>',
+  loader: '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+};
+const icon = (name, size = 16, cls = '', sw = 2) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" class="${cls}" aria-hidden="true">${ICON[name]}</svg>`;
+
+// Surfaces & shared classes, copied from src/components/ui/*
+const glassClass = 'bg-surface/55 backdrop-blur-xl border border-white/10';
+const floatingSurface = 'bg-surface/85 backdrop-blur-xl border border-white/10';
+const floatingClass = `${floatingSurface} shadow-[0_8px_24px_rgb(0_0_0/0.4)]`;
+const tileClass = 'rounded-xl border border-white/10 bg-white/5';
+const scrimClass = 'bg-black/40 backdrop-blur-sm';
+const floatingPillClass = `${floatingClass} pointer-events-auto inline-flex shrink-0 items-center rounded-full text-sm whitespace-nowrap text-text-primary`;
+const floatingPillBtn = `${floatingPillClass} relative isolate cursor-pointer gap-2 px-3 py-2 before:pointer-events-none before:absolute before:inset-1 before:-z-10 before:rounded-full before:transition-colors hover:before:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent`;
+const TYPO = {
+  h2: 'text-xl font-bold text-text-primary', h3: 'text-lg font-bold text-text-primary', title: 'text-base font-medium text-text-primary',
+  body1: 'text-sm text-text-primary', subtitle1: 'text-sm font-medium text-text-primary', subtitle2: 'text-sm font-medium text-text-secondary',
+  caption: 'text-xs text-text-secondary', overline: 'text-xs font-medium uppercase tracking-wider text-text-secondary',
+};
+const COLOR = { textPrimary: 'text-text-primary', textSecondary: 'text-text-secondary', textTertiary: 'text-text-tertiary', error: 'text-status-danger', warning: 'text-status-warning' };
+const ty = (variant, text, opts = {}) => {
+  let cls = TYPO[variant];
+  if (opts.color) cls = cls.replace(/text-text-\w+/, COLOR[opts.color]);
+  const tag = opts.as || 'span';
+  return `<${tag} class="${cls} ${opts.cls || ''}">${text}</${tag}>`;
+};
+const btnClass = (variant, size) => {
+  const v = { primary: 'bg-accent text-white hover:bg-accent-strong active:bg-blue-700', secondary: 'bg-white/5 text-text-primary hover:bg-white/10 active:bg-white/15 border border-white/10', ghost: 'bg-transparent text-text-secondary hover:bg-white/10 hover:text-text-primary' }[variant];
+  const s = { sm: 'px-3 py-1.5 text-sm', md: 'px-4 py-2 text-sm', icon: 'p-1.5' }[size];
+  return `inline-flex items-center justify-center gap-1 rounded-lg font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50 ${v} ${s}`;
+};
+const TOK = { chartHr: '#ef4444', chartPower: '#3b82f6', chartPace: '#06b6d4', chartCadence: '#f59e0b', running: '#4ade80', cycling: '#f97316' };
+
+// ───────────────────────────── state ─────────────────────────────
+const S = {
+  viewport: 'both', lang: 'en', scenario: 'intervals', profile: 'both', labels: 'on', q8: 'wide', q9: 'swatch', worst: 'off', fit: 'degrade',
+  picker: 'closed', explainer: 'on', source: 'efforts', selected: null, hover: null, openDesk: false, openPhone: false, notes: false,
+};
+
+// ───────────────────────────── i18n ─────────────────────────────
+const I18N = {
+  en: {
+    laps: 'Laps', off: 'Off', offDesc: 'No lap bands on the charts', device: 'Device laps', deviceDesc: '{n} laps from your watch', deviceNone: 'No laps recorded',
+    splits: 'Splits', splitsDesc: 'Equal distance', count_device: '{n} device laps', one_device: '1 device lap', count_splits: '{n} splits', one_splits: '1 split', count_efforts: '{n} efforts', one_efforts: '1 effort', splitsNone: 'Splits unavailable',
+    detailHint: 'Select or hover a block to see its details', detailHintTap: 'Tap a block to see its details', warmCool: 'Warm-up · cool-down',
+    title: 'Efforts', none: 'No efforts found', detecting: 'Detecting…', pattern: '{n} × {d}',
+    sig_power: 'power', sig_pace: 'pace', sig_hr: 'heart rate',
+    precise_ftp: 'Add FTP for precise efforts', precise_thresholdPace: 'Add threshold pace for precise efforts',
+    detect_ftp: 'Add FTP to detect efforts', detect_thresholdPace: 'Add threshold pace to detect efforts',
+    short_ftp: 'Add FTP', short_thresholdPace: 'Add threshold pace',
+    work: 'Work {n}', rec: 'Rec {n}', steadyN: 'Steady {n}', warm: 'Warm-up', cool: 'Cool-down', warmRun: 'Warm-up', coolRun: 'Cool-down',
+    lap: 'Lap {n}', split: 'Split {n}', inclStop: 'incl. {d} stop',
+    colorBy: 'Sport color', power: 'Power', hr: 'Heart rate', pace: 'Pace', speed: 'Speed',
+    faster: 'faster than avg', slower: 'slower', rowPrimary: '{count} · avg {value}', lapsOffRow: 'Laps off', lapsOffHint: 'Choose device laps or splits in the Laps control',
+    noneHint: 'Nothing to split into blocks', prev: 'Previous lap', next: 'Next lap', clear: 'Clear lap',
+  },
+  de: {
+    laps: 'Runden', off: 'Aus', offDesc: 'Keine Rundenbänder in den Charts', device: 'Geräterunden', deviceDesc: '{n} Runden von deiner Uhr', deviceNone: 'Keine Runden aufgezeichnet',
+    splits: 'Splits', splitsDesc: 'Gleiche Distanz', count_device: '{n} Geräterunden', one_device: '1 Geräterunde', count_splits: '{n} Splits', one_splits: '1 Split', count_efforts: '{n} Belastungen', one_efforts: '1 Belastung', splitsNone: 'Splits nicht verfügbar',
+    detailHint: 'Block auswählen oder darauf zeigen für Details', detailHintTap: 'Block antippen für Details', warmCool: 'Einfahren · Ausfahren',
+    title: 'Belastungen', none: 'Keine Belastungen erkannt', detecting: 'Wird erkannt…', pattern: '{n} × {d}',
+    sig_power: 'Leistung', sig_pace: 'Pace', sig_hr: 'Herzfrequenz',
+    precise_ftp: 'FTP eintragen für genaue Belastungen', precise_thresholdPace: 'Schwellentempo eintragen für genaue Belastungen',
+    detect_ftp: 'FTP eintragen, um Belastungen zu erkennen', detect_thresholdPace: 'Schwellentempo eintragen, um Belastungen zu erkennen',
+    short_ftp: 'FTP eintragen', short_thresholdPace: 'Schwellentempo eintragen',
+    work: 'Belastung {n}', rec: 'Erholung {n}', steadyN: 'Gleichmäßig {n}', warm: 'Einfahren', cool: 'Ausfahren', warmRun: 'Einlaufen', coolRun: 'Auslaufen',
+    lap: 'Runde {n}', split: 'Split {n}', inclStop: 'inkl. {d} Stopp',
+    colorBy: 'Sportfarbe', power: 'Leistung', hr: 'Herzfrequenz', pace: 'Pace', speed: 'Geschwindigkeit',
+    faster: 'schneller als Ø', slower: 'langsamer', rowPrimary: '{count} · Ø {value}', lapsOffRow: 'Runden aus', lapsOffHint: 'Wähle Geräterunden oder Splits über „Runden“',
+    noneHint: 'Nichts in Blöcke zu teilen', prev: 'Vorherige Runde', next: 'Nächste Runde', clear: 'Runde abwählen',
+  },
+};
+const t = (key, p = {}) => { let s = I18N[S.lang][key] ?? key; for (const k in p) s = s.replace(`{${k}}`, p[k]); return s; };
+const withLang = (lang, fn) => { const o = S.lang; S.lang = lang; try { return fn(); } finally { S.lang = o; } };
+const nf = (d) => new Intl.NumberFormat(S.lang === 'de' ? 'de-DE' : 'en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const nameOf = (cls, n, sport) => {
+  if (cls === 'warmup') return t(sport === 'run' ? 'warmRun' : 'warm'); // Q6 settled: Einfahren / Einlaufen
+  if (cls === 'cooldown') return t(sport === 'run' ? 'coolRun' : 'cool');
+  if (cls === 'steady') return t('steadyN', { n });
+  return t(cls === 'work' ? 'work' : 'rec', { n });
+};
+
+// ───────────────────────────── profile ─────────────────────────────
+const PROFILE = { ftp: 250, thrPaceSecPerKm: 255, restHr: 50, maxHr: 190 };
+const profileNow = () => ({
+  ftp: S.profile === 'both' || S.profile === 'noPace' ? PROFILE.ftp : undefined,
+  thrSpeed: S.profile === 'both' || S.profile === 'noFtp' ? 1000 / PROFILE.thrPaceSecPerKm : undefined,
+  restHr: PROFILE.restHr, maxHr: PROFILE.maxHr,
+});
+
+
+// ───────────────────────────── synthetic data ─────────────────────────────
+const rideSpeed = (P, g) => {
+  if (P <= 5) { if (g < -0.005) return Math.min(16, 8 + 250 * -g); return 4; }
+  let v = 8;
+  for (let k = 0; k < 25; k++) { const f = 0.192 * v ** 3 + (3.1 + 785 * g) * v - P; const d = 0.576 * v * v + 3.1 + 785 * g; v = clamp(v - f / Math.max(d, 0.5), 1.5, 18); }
+  return v;
+};
+const hrFilter = (target, tauRise, tauFall, start = 95) => {
+  const out = new Float64Array(target.length); let h = start;
+  for (let i = 0; i < target.length; i++) { const tau = target[i] > h ? tauRise(i) : tauFall(i); h += (target[i] - h) * (1 - Math.exp(-1 / tau)); out[i] = h; }
+  return out;
+};
+const build = (segs, r) => { const P = [], cls = []; for (const sg of segs) for (let i = 0; i < sg.dur; i++) { P.push(Math.max(0, sg.p(i, sg.dur, r))); cls.push(sg.cls); } return { P, cls }; };
+const truthOf = (cls) => { const out = []; let s = 0; for (let i = 1; i <= cls.length; i++) if (i === cls.length || cls[i] !== cls[s]) { out.push({ from: s, to: i, cls: cls[s] }); s = i; } return out; };
+
+const finishRide = (o) => {
+  const r = rng(o.seed + 7); const N = o.P.length; const HRR = PROFILE.maxHr - PROFILE.restHr;
+  const grade = Array.from({ length: N }, (_, i) => o.gradeFn(i));
+  const stop = o.stop || (() => false);
+  const target = o.P.map((p, i) => stop(i) ? PROFILE.restHr + HRR * 0.42 : PROFILE.restHr + HRR * clamp(0.25 + 0.62 * p / PROFILE.ftp, 0.35, 0.95));
+  const hr = hrFilter(target, o.tauRise || (() => 25), o.tauFall || (() => 40));
+  const recs = []; let v = 7; let next = 0;
+  for (let i = 0; i < N; i++) {
+    const vt = stop(i) ? 0 : rideSpeed(o.P[i], grade[i]);
+    v = stop(i) ? 0 : v + (vt - v) * 0.12;
+    if (o.dropout && o.dropout(i)) continue;
+    if (o.smart && i < next && i !== N - 1) continue;
+    if (o.smart) next = i + 1 + Math.floor(r() * 8);
+    recs.push({ t: i, power: o.noPower || (o.powerMissing && o.powerMissing(i)) ? undefined : Math.round(o.P[i]), hr: o.noHr ? undefined : Math.round(hr[i] + gauss(r) * 0.6), speed: o.noSpeed ? undefined : Math.max(0, Math.round((v + (v > 0 ? gauss(r) * 0.08 : 0)) * 100) / 100), grade: grade[i] });
+  }
+  return recs;
+};
+
+const SCN = {
+  intervals: { label: '5×4 min cycling intervals (power + HR)', sport: 'ride', title: { en: 'Tuesday intervals', de: 'Intervalle am Dienstag' }, gen() {
+    const r = rng(11); const segs = [{ dur: 903, cls: 'warmup', p: (i, d) => 120 + 55 * i / d + gauss(r) * 15 }];
+    for (let k = 0; k < 5; k++) {
+      segs.push({ dur: 240, cls: 'work', p: (i) => 300 + (i < 4 ? 90 : 0) + 10 * Math.sin(i / 40 + k) + gauss(r) * 18 });
+      segs.push({ dur: 180, cls: k < 4 ? 'rest' : 'cooldown', p: (i) => (i % 47 > 40 ? 0 : 120 + gauss(r) * 15) });
+    }
+    segs.push({ dur: 600, cls: 'cooldown', p: () => 125 + gauss(r) * 15 });
+    const b = build(segs, r);
+    return { ...b, recs: finishRide({ seed: 11, P: b.P, gradeFn: (i) => 0.01 * Math.sin(i / 200) }), dev: 'truth' };
+  } },
+  endurance: { label: '3 h endurance, rolling hills + coasting zeros', sport: 'ride', title: { en: 'Long Sunday ride', de: 'Lange Sonntagsrunde' }, gen() {
+    const r = rng(21); const N = 10800; const gfn = (i) => 0.035 * Math.sin(2 * Math.PI * i / 900) + 0.015 * Math.sin(2 * Math.PI * i / 370 + 1) + 0.008 * Math.sin(2 * Math.PI * i / 2400);
+    const P = [], cls = [];
+    for (let i = 0; i < N; i++) { const g = gfn(i); let p = g < -0.025 ? 0 : Math.min(205, Math.max(70, 172 + 900 * g)) + gauss(r) * 22; P.push(Math.max(0, p)); cls.push('steady'); }
+    return { P, cls, recs: finishRide({ seed: 21, P, gradeFn: gfn }), dev: 'auto' };
+  } },
+  fartlek: { label: 'Fartlek run (pace + HR, no power)', sport: 'run', title: { en: 'Fartlek in the park', de: 'Fahrtspiel im Park' }, gen() {
+    const r = rng(31); const V = [], cls = [];
+    const push = (dur, v, c) => { for (let i = 0; i < dur; i++) { V.push(v); cls.push(c); } };
+    push(600, 2.78, 'warmup');
+    const hard = [[120, 4.1], [60, 4.35], [180, 3.95], [90, 4.25], [240, 3.9], [60, 4.4], [120, 4.05], [45, 4.5]];
+    const jog = [90, 120, 120, 90, 150, 90, 120];
+    hard.forEach((h, k) => { push(h[0], h[1], 'work'); if (k < jog.length) push(jog[k], 2.86, 'rest'); });
+    push(480, 2.7, 'cooldown');
+    const N = V.length; const gfn = (i) => 0.04 * Math.sin(2 * Math.PI * i / 420) + 0.02 * Math.sin(2 * Math.PI * i / 150);
+    const HRR = PROFILE.maxHr - PROFILE.restHr; const thr = 1000 / PROFILE.thrPaceSecPerKm;
+    let vs = 2.7; const sm = V.map((v) => (vs += (v - vs) * 0.25));
+    const hr = hrFilter(sm.map((v) => PROFILE.restHr + HRR * clamp(0.25 + 0.7 * (v / thr) ** 2, 0.35, 0.96)), () => 22, () => 35);
+    const recs = [];
+    for (let i = 0; i < N; i++) { const g = gfn(i); recs.push({ t: i, hr: Math.round(hr[i] + gauss(r) * 0.6), speed: Math.round(Math.max(0, sm[i] / gapFactor(g) + gauss(r) * 0.07) * 100) / 100, grade: g }); }
+    return { P: null, cls, recs, dev: 'none' };
+  } },
+  track: { label: 'Track 6×800 m (pace only, no HR)', sport: 'run', title: { en: 'Track Tuesday', de: 'Bahntraining' }, gen() {
+    const r = rng(91); const V = [], cls = [];
+    const push = (dur, v, c) => { for (let i = 0; i < dur; i++) { V.push(v); cls.push(c); } };
+    push(900, 2.9, 'warmup');
+    for (let k = 0; k < 6; k++) { push(170, 4.7, 'work'); push(90, 1.2, k < 5 ? 'rest' : 'cooldown'); }
+    push(600, 2.8, 'cooldown');
+    let vs = 2.8; const recs = V.map((v, i) => { vs += (v - vs) * 0.2; return { t: i, speed: Math.round(Math.max(0, vs + gauss(r) * 0.07) * 100) / 100, grade: 0 }; });
+    return { P: null, cls, recs, dev: 'truth' };
+  } },
+  hronly: { label: 'HR-only ride, no power meter (30–90 s lag)', sport: 'ride', title: { en: 'Commute with intervals', de: 'Pendeln mit Intervallen' }, gen() {
+    const r = rng(41); const segs = [{ dur: 720, cls: 'warmup', p: (i, d) => 130 + 30 * i / d + gauss(r) * 15 }];
+    for (let k = 0; k < 6; k++) { segs.push({ dur: 180, cls: 'work', p: () => 290 + gauss(r) * 18, k }); segs.push({ dur: 180, cls: k < 5 ? 'rest' : 'cooldown', p: () => 120 + gauss(r) * 15 }); }
+    segs.push({ dur: 480, cls: 'cooldown', p: () => 120 + gauss(r) * 15 });
+    const b = build(segs, r); const taus = [30, 45, 60, 75, 90, 60];
+    const tauAt = (i) => { const k = clamp(Math.floor((i - 720) / 360), 0, 5); return taus[k]; };
+    return { ...b, recs: finishRide({ seed: 41, P: b.P, gradeFn: (i) => 0.008 * Math.sin(i / 150), noPower: true, tauRise: tauAt, tauFall: (i) => tauAt(i) * 1.3 }), dev: 'truth' };
+  } },
+  race: { label: 'Race / TT, hard throughout', sport: 'ride', title: { en: 'Club time trial', de: 'Vereinszeitfahren' }, gen() {
+    const r = rng(51); const segs = [{ dur: 360, cls: 'warmup', p: (i, d) => 140 + 70 * i / d + gauss(r) * 15 }];
+    segs.push({ dur: 3600, cls: 'work', p: (i) => (([900, 2100, 3300].some((s) => i >= s && i < s + 30)) ? 380 : 245 + 10 * Math.sin(i / 300)) + gauss(r) * 20 });
+    segs.push({ dur: 120, cls: 'cooldown', p: () => 110 + gauss(r) * 12 });
+    const b = build(segs, r);
+    return { ...b, recs: finishRide({ seed: 51, P: b.P, gradeFn: (i) => 0.012 * Math.sin(i / 400) }), dev: 'auto' };
+  } },
+  traffic: { label: 'Smart recording + 2 min traffic-light stop in a work block', sport: 'ride', title: { en: 'City intervals', de: 'Intervalle in der Stadt' }, gen() {
+    const r = rng(61); const segs = [{ dur: 600, cls: 'warmup', p: () => 150 + gauss(r) * 15 }];
+    segs.push({ dur: 480, cls: 'work', p: () => 280 + gauss(r) * 18 }, { dur: 240, cls: 'rest', p: () => 130 + gauss(r) * 15 });
+    segs.push({ dur: 480, cls: 'work', p: (i) => (i >= 210 && i < 330 ? 0 : 280 + gauss(r) * 18) }, { dur: 240, cls: 'rest', p: () => 130 + gauss(r) * 15 });
+    segs.push({ dur: 480, cls: 'work', p: () => 280 + gauss(r) * 18 }, { dur: 480, cls: 'cooldown', p: () => 120 + gauss(r) * 15 });
+    const b = build(segs, r); const stopFrom = 600 + 480 + 240 + 210; const dropFrom = 600 + 480 + 240 + 480 + 240 + 120;
+    for (let i = stopFrom; i < stopFrom + 120; i++) b.cls[i] = 'break';
+    for (let i = dropFrom; i < dropFrom + 25; i++) b.cls[i] = 'break';
+    return { ...b, recs: finishRide({ seed: 61, P: b.P, gradeFn: (i) => 0.006 * Math.sin(i / 120), smart: true, stop: (i) => i >= stopFrom && i < stopFrom + 120, dropout: (i) => i >= dropFrom && i < dropFrom + 25 }), dev: 'auto' };
+  } },
+  missing: { label: 'Missing data (no HR, no power, no speed)', sport: 'ride', title: { en: 'Ride without sensors', de: 'Fahrt ohne Sensoren' }, gen() {
+    const r = rng(71); const b = build([{ dur: 3600, cls: 'steady', p: () => 180 + gauss(r) * 20 }], r);
+    return { ...b, recs: finishRide({ seed: 71, P: b.P, gradeFn: () => 0, noPower: true, noHr: true, noSpeed: true }), dev: 'none' };
+  } },
+  many: { label: 'Many blocks: 20×1 min (trainer, power, no HR)', sport: 'ride', title: { en: '20×1 on the trainer', de: '20×1 auf der Rolle' }, gen() {
+    const r = rng(81); const segs = [{ dur: 600, cls: 'warmup', p: () => 150 + gauss(r) * 15 }];
+    for (let k = 0; k < 20; k++) { segs.push({ dur: 60, cls: 'work', p: () => 340 + gauss(r) * 20 }); segs.push({ dur: 60, cls: k < 19 ? 'rest' : 'cooldown', p: () => 110 + gauss(r) * 15 }); }
+    segs.push({ dur: 600, cls: 'cooldown', p: () => 120 + gauss(r) * 15 });
+    const b = build(segs, r);
+    return { ...b, recs: finishRide({ seed: 81, P: b.P, gradeFn: () => 0, noHr: true }), dev: 'truth' };
+  } },
+  dropcoast: { label: 'Power ride: meter dropout in Rec 3 + coasting descent (0 W)', sport: 'ride', title: { en: 'Hill repeats', de: 'Bergintervalle' }, gen() {
+    const r = rng(101); const segs = [{ dur: 600, cls: 'warmup', p: () => 150 + gauss(r) * 15 }];
+    for (let k = 0; k < 5; k++) { segs.push({ dur: 240, cls: 'work', p: () => 300 + gauss(r) * 18 }); if (k < 4) segs.push({ dur: 180, cls: 'rest', p: () => 120 + gauss(r) * 15 }); }
+    segs.push({ dur: 240, cls: 'cooldown', p: () => 0 });
+    const b = build(segs, r); const N = b.P.length;
+    return { ...b, recs: finishRide({ seed: 101, P: b.P, gradeFn: (i) => (i >= N - 240 ? -0.045 : 0.01 * Math.sin(i / 200)), powerMissing: (i) => i >= 1680 && i < 1860 }), dev: 'truth' };
+  } },
+  loading: { label: 'Loading', sport: 'ride', alias: 'intervals' },
+  nudgeFtp: { label: 'Nudge · intervals, power but no FTP → HR', sport: 'ride', alias: 'intervals', profile: 'noFtp' },
+  nudgePace: { label: 'Nudge · fartlek, no threshold pace → HR', sport: 'run', alias: 'fartlek', profile: 'noPace' },
+  nudgeNonePace: { label: 'Nudge · track (no HR), no threshold pace → none', sport: 'run', alias: 'track', profile: 'noPace' },
+  nudgeNoneFtp: { label: 'Nudge · trainer (no HR), no FTP → none', sport: 'ride', alias: 'many', profile: 'noFtp' },
+};
+const SCN_ORDER = ['intervals', 'endurance', 'fartlek', 'track', 'hronly', 'race', 'traffic', 'dropcoast', 'missing', 'many', 'loading', 'nudgeFtp', 'nudgePace', 'nudgeNonePace', 'nudgeNoneFtp'];
+
+// 1 s grid: gaps ≤ 10 s hold the value of the closing record (powerPerSecond semantics), longer gaps and stops > 10 s are hard breaks
+const buildGrid = (recs, sport) => {
+  const N = recs[recs.length - 1].t + 1;
+  const mk = () => new Float64Array(N).fill(NaN);
+  const g = { N, sport, power: mk(), hr: mk(), speed: mk(), grade: mk(), gap: new Uint8Array(N), stop: new Uint8Array(N), br: new Uint8Array(N), dist: new Float64Array(N) };
+  const put = (i, r) => { g.power[i] = r.power ?? NaN; g.hr[i] = r.hr ?? NaN; g.speed[i] = r.speed ?? NaN; g.grade[i] = r.grade ?? NaN; };
+  for (let i = 0; i < recs[0].t; i++) g.gap[i] = 1;
+  put(recs[0].t, recs[0]);
+  for (let k = 1; k < recs.length; k++) {
+    const a = recs[k - 1], b = recs[k], dt = b.t - a.t;
+    if (dt <= 10) { for (let s = a.t + 1; s <= b.t; s++) put(s, b); }
+    else { for (let s = a.t + 1; s < b.t; s++) g.gap[s] = 1; put(b.t, b); }
+  }
+  let run = 0;
+  for (let i = 0; i <= N; i++) {
+    const stopped = i < N && g.speed[i] === 0 && !g.gap[i];
+    if (stopped) run++;
+    else { if (run > 10) for (let s = i - run; s < i; s++) g.stop[s] = 1; run = 0; }
+  }
+  let d = 0;
+  for (let i = 0; i < N; i++) { g.br[i] = g.gap[i] || g.stop[i] ? 1 : 0; if (!g.gap[i] && !isNaN(g.speed[i])) d += g.speed[i]; g.dist[i] = d; }
+  g.hasDistance = recs.some((r) => r.speed !== undefined);
+  g.hasPower = recs.some((r) => r.power !== undefined); g.hasHr = recs.some((r) => r.hr !== undefined);
+  return g;
+};
+
+const DATA = {};
+const dataFor = (id) => {
+  const key = SCN[id].alias || id;
+  if (!DATA[key]) { const raw = SCN[key].gen(); DATA[key] = { ...raw, grid: buildGrid(raw.recs, SCN[key].sport), truth: truthOf(raw.cls), sport: SCN[key].sport }; }
+  return DATA[key];
+};
+
+
+// ───────────────────────────── detection (V2: PELT edges, threshold labels) ─────────────────────────────
+const DEF = {
+  power: { cls: 30, edge: 5, minWork: 30, enter: 0.88, steady: 0.75 },
+  pace: { cls: 15, edge: 5, minWork: 60, enter: 0.88, steady: 0.82 },
+  hr: { cls: 10, edge: 5, minWork: 120, enter: 0.8, steady: 0.7 },
+  minRec: 20, minSteady: 300, minWarm: 180, hrShift: 30, bin: 5, minSegBins: 6, penaltyK: 4, maxBridge: 130,
+  contrast: 1.15, maxWorkShare: 0.8, minCoverage: 0.5, minWorkBlocks: 2,
+};
+
+const runsOf = (br, from = 0, to = br.length) => { const out = []; let s = -1; for (let i = from; i <= to; i++) { const b = i === to || br[i]; if (!b && s < 0) s = i; if (b && s >= 0) { out.push([s, i]); s = -1; } } return out; };
+const smooth = (x, br, w) => {
+  const n = x.length, out = new Float64Array(n).fill(NaN), half = Math.floor(w / 2), ps = new Float64Array(n + 1), pc = new Float64Array(n + 1);
+  for (let i = 0; i < n; i++) { const v = x[i]; ps[i + 1] = ps[i] + (isNaN(v) ? 0 : v); pc[i + 1] = pc[i] + (isNaN(v) ? 0 : 1); }
+  for (const [a, b] of runsOf(br)) for (let i = a; i < b; i++) { const lo = Math.max(a, i - half), hi = Math.min(b, i + half + 1), c = pc[hi] - pc[lo]; if (c > 0) out[i] = (ps[hi] - ps[lo]) / c; }
+  return out;
+};
+const meanOf = (x, a, b, br) => { let s = 0, c = 0; for (let i = a; i < b; i++) if ((!br || !br[i]) && !isNaN(x[i])) { s += x[i]; c++; } return c ? s / c : NaN; };
+const bridgedSec = (k) => (k.bridges || []).reduce((s, [a, b]) => s + b - a, 0);
+const movingLen = (k) => k.to - k.from - bridgedSec(k);
+const merge = (blocks) => {
+  const out = [];
+  for (const b of blocks) {
+    const l = out[out.length - 1];
+    if (l && l.cls === b.cls && l.to === b.from) { l.to = b.to; if (b.bridges) l.bridges = [...(l.bridges || []), ...b.bridges]; }
+    else out.push({ ...b, bridges: b.bridges ? [...b.bridges] : undefined });
+  }
+  return out;
+};
+
+const pelt = (v, beta, m) => {
+  const n = v.length; if (n < 2 * m) return [];
+  const cs = new Float64Array(n + 1), cs2 = new Float64Array(n + 1);
+  for (let i = 0; i < n; i++) { cs[i + 1] = cs[i] + v[i]; cs2[i + 1] = cs2[i] + v[i] * v[i]; }
+  const C = (s, e) => { const k = e - s, S2 = cs[e] - cs[s]; return cs2[e] - cs2[s] - S2 * S2 / k; };
+  const F = new Float64Array(n + 1).fill(Infinity); F[0] = -beta; const last = new Int32Array(n + 1); let R = [0];
+  for (let e = m; e <= n; e++) {
+    const cand = e - m; if (cand >= m && F[cand] < Infinity && !R.includes(cand)) R.push(cand);
+    let best = Infinity, arg = 0; for (const s of R) { if (e - s < m) continue; const val = F[s] + C(s, e) + beta; if (val < best) { best = val; arg = s; } }
+    F[e] = best; last[e] = arg;
+    if (best < Infinity) R = R.filter((s) => e - s < m || F[s] + C(s, e) <= F[e]);
+  }
+  const cps = []; let e = n; while (e > 0) { const s = last[e]; if (s > 0) cps.push(s); e = s; }
+  return cps.reverse();
+};
+const peltSegments = (x, br) => {
+  const bins = []; const runs = runsOf(br);
+  runs.forEach((run, ri) => { const [a, b] = run; const nb = Math.max(1, Math.floor((b - a) / DEF.bin)); for (let k = 0; k < nb; k++) { const f = a + k * DEF.bin, to = k === nb - 1 ? b : f + DEF.bin; bins.push({ ri, from: f, to, v: meanOf(x, f, to) }); } });
+  // sensor dropouts ≥ 3 bins (15 s) stay their own segment (mean NaN → recovery, metric “--”); shorter holes are held
+  bins.forEach((bn, k) => { bn.nan = isNaN(bn.v); bn.piece = 0; });
+  let piece = 0;
+  for (let k = 0; k < bins.length; k++) {
+    if (k > 0 && bins[k].ri !== bins[k - 1].ri) piece++;
+    if (bins[k].nan) { let e = k; while (e < bins.length && bins[e].nan && bins[e].ri === bins[k].ri) e++; if (e - k >= 3) { piece++; for (let j = k; j < e; j++) { bins[j].piece = piece; bins[j].hole = true; } piece++; k = e - 1; continue; } }
+    bins[k].piece = piece;
+  }
+  for (let k = 1; k < bins.length; k++) if (isNaN(bins[k].v) && !bins[k].hole && bins[k - 1].piece === bins[k].piece) bins[k].v = bins[k - 1].v;
+  for (let k = bins.length - 2; k >= 0; k--) if (isNaN(bins[k].v) && !bins[k].hole && bins[k + 1].piece === bins[k].piece) bins[k].v = bins[k + 1].v;
+  const diffs = []; for (let k = 1; k < bins.length; k++) if (bins[k].ri === bins[k - 1].ri && !isNaN(bins[k].v) && !isNaN(bins[k - 1].v)) diffs.push(Math.abs(bins[k].v - bins[k - 1].v));
+  const sigma = Math.max(1e-3, median(diffs) / (0.6745 * Math.SQRT2) || 1e-3);
+  const beta = DEF.penaltyK * sigma * sigma * Math.log(Math.max(2, bins.length));
+  const segs = [], cps = [];
+  const pieces = [...new Set(bins.map((b) => b.piece))];
+  pieces.forEach((pc, pi) => {
+    const rb = bins.filter((b) => b.piece === pc); if (!rb.length) return;
+    if (pi > 0 && bins.find((b) => b.piece === pieces[pi - 1]).ri === rb[0].ri) cps.push(rb[0].from);
+    if (rb.every((b) => isNaN(b.v))) { segs.push({ from: rb[0].from, to: rb[rb.length - 1].to, mean: NaN }); return; }
+    const idx = pelt(rb.map((b) => b.v), beta, DEF.minSegBins); const bounds = [0, ...idx, rb.length];
+    for (let k = 0; k < bounds.length - 1; k++) { const from = rb[bounds[k]].from, to = rb[bounds[k + 1] - 1].to; segs.push({ from, to, mean: meanOf(x, from, to) }); if (k > 0) cps.push(from); }
+  });
+  return { segs, cps, sigma, beta };
+};
+
+// A stop / dropout ≤ 2:00 (+10 s recording slack, same 10 s as the hold rule) with work on both sides joins the work block (recorded as a bridge); short (< 20 s) slow-down pieces next to it are absorbed.
+const maxBridge = () => DEF.maxBridge; // Q5 settled: 2:00 + 10 s slack
+const bridgeStops = (blocks) => {
+  const b = [...blocks];
+  for (let i = 1; i < b.length - 1; i++) {
+    const k = b[i]; if (k.cls !== 'break' || k.to - k.from > maxBridge()) continue;
+    let l = i - 1, r = i + 1;
+    if (b[l] && b[l].cls !== 'work' && b[l].cls !== 'break' && b[l].to - b[l].from < DEF.minRec) l--;
+    if (b[r] && b[r].cls !== 'work' && b[r].cls !== 'break' && b[r].to - b[r].from < DEF.minRec) r++;
+    if (!b[l] || !b[r] || b[l].cls !== 'work' || b[r].cls !== 'work') continue;
+    const merged = { from: b[l].from, to: b[r].to, cls: 'work', bridges: [...(b[l].bridges || []), [k.from, k.to], ...(b[r].bridges || [])] };
+    b.splice(l, r - l + 1, merged); i = l;
+  }
+  return b;
+};
+const refine = (blocks, x, s5, R) => {
+  for (let i = 1; i < blocks.length; i++) {
+    const p = blocks[i - 1], c = blocks[i];
+    if (p.cls === 'break' || c.cls === 'break' || (p.cls === 'work') === (c.cls === 'work')) continue;
+    const level = (meanOf(x, p.from, p.to) + meanOf(x, c.from, c.to)) / 2; if (isNaN(level)) continue;
+    const falling = p.cls === 'work'; let best = null;
+    for (let j = Math.max(p.from + 1, c.from - R); j <= Math.min(c.to - 1, c.from + R); j++) {
+      const a = s5[j - 1], b = s5[j]; if (isNaN(a) || isNaN(b)) continue;
+      const cross = falling ? a >= level && b < level : a < level && b >= level;
+      if (cross && (best === null || Math.abs(j - c.from) < Math.abs(best - c.from))) best = j;
+    }
+    if (best !== null) { p.to = best; c.from = best; }
+  }
+  return blocks.filter((b) => b.to > b.from);
+};
+const warmCool = (blocks) => {
+  const fw = blocks.findIndex((b) => b.cls === 'work'); if (fw < 0) return blocks;
+  let lw = -1; blocks.forEach((b, i) => { if (b.cls === 'work') lw = i; });
+  let s = fw; while (s > 0 && blocks[s - 1].cls !== 'break') s--;
+  let e = lw; while (e < blocks.length - 1 && blocks[e + 1].cls !== 'break') e++;
+  const out = [...blocks];
+  const tail = blocks.slice(lw + 1, e + 1);
+  if (tail.length && tail[tail.length - 1].to - tail[0].from >= DEF.minWarm) out.splice(lw + 1, tail.length, { from: tail[0].from, to: tail[tail.length - 1].to, cls: 'cooldown' });
+  const head = blocks.slice(s, fw);
+  if (head.length && head[head.length - 1].to - head[0].from >= DEF.minWarm) out.splice(s, head.length, { from: head[0].from, to: head[head.length - 1].to, cls: 'warmup' });
+  return out;
+};
+const postprocess = (blocks, x, s5, minWork) => {
+  let b = bridgeStops(merge(blocks));
+  b.forEach((k) => { if (k.cls === 'work' && movingLen(k) < minWork) k.cls = 'rest'; });
+  b = merge(b);
+  for (let i = 1; i < b.length - 1; i++) { const k = b[i]; if (k.cls !== 'work' && k.cls !== 'break' && k.to - k.from < DEF.minRec && b[i - 1].cls === 'work' && b[i + 1].cls === 'work' && b[i - 1].to === k.from && k.to === b[i + 1].from) k.cls = 'work'; }
+  b = merge(b);
+  b.forEach((k) => { if (k.cls === 'steady' && k.to - k.from < DEF.minSteady) k.cls = 'rest'; });
+  b = refine(merge(b), x, s5, 5);
+  return warmCool(b);
+};
+
+const series = (g, sig, shift) => {
+  const N = g.N, x = new Float64Array(N).fill(NaN);
+  for (let i = 0; i < N; i++) {
+    if (g.br[i]) continue;
+    if (sig === 'power') x[i] = g.power[i];
+    else if (sig === 'pace') x[i] = isNaN(g.speed[i]) ? NaN : g.speed[i] * gapFactor(isNaN(g.grade[i]) ? 0 : g.grade[i]);
+    else { const j = i + shift; x[i] = j < N && !g.br[j] ? g.hr[j] : NaN; }
+  }
+  return x;
+};
+const coverage = (g, x) => { let m = 0, v = 0; for (let i = 0; i < g.N; i++) if (!g.br[i]) { m++; if (!isNaN(x[i])) v++; } return m ? v / m : 0; };
+
+// Signal: rides power vs FTP → HR vs reserve; runs GAP vs threshold pace → HR vs reserve. Running power is ignored.
+const detect = (id, opt = {}) => {
+  const data = dataFor(id), g = data.grid, P = profileNow(), sport = data.sport;
+  const order = opt.forceSig ? [opt.forceSig] : (sport === 'run' ? ['pace', 'hr'] : ['power', 'hr']);
+  let limitedBy; let chosen = null; const skipped = [];
+  for (const sig of order) {
+    const shift = sig === 'hr' && !opt.noShift ? DEF.hrShift : 0;
+    const x = series(g, sig, shift); const cov = coverage(g, x);
+    if (cov < DEF.minCoverage) { skipped.push(`no ${sig}`); continue; }
+    if (sig === 'power' && P.ftp === undefined) { limitedBy = 'ftp'; skipped.push('power, no FTP'); continue; }
+    if (sig === 'pace' && P.thrSpeed === undefined) { limitedBy = 'thresholdPace'; skipped.push('pace, no threshold pace'); continue; }
+    chosen = { sig, x, cov, shift }; break;
+  }
+  const res = { sport, skipped, limitedBy, ok: false, blocks: [], raw: [], cps: [], grid: g };
+  if (!chosen) { res.reason = limitedBy ? 'nothreshold' : 'nosignal'; return res; }
+  const sig = chosen.sig, x = chosen.x, d = DEF[sig], br = g.br;
+  Object.assign(res, { sig, x, s: smooth(x, br, d.cls), s5: smooth(x, br, d.edge), cov: chosen.cov, shift: chosen.shift, approx: sig === 'hr' });
+  const HRR = P.maxHr - P.restHr;
+  if (sig === 'power') Object.assign(res, { enter: d.enter * P.ftp, steadyLow: d.steady * P.ftp });
+  else if (sig === 'pace') Object.assign(res, { enter: d.enter * P.thrSpeed, steadyLow: d.steady * P.thrSpeed });
+  else Object.assign(res, { enter: P.restHr + d.enter * HRR, steadyLow: P.restHr + d.steady * HRR });
+  const p = peltSegments(x, br); res.cps = p.cps; res.sigma = p.sigma; res.beta = p.beta;
+  const lab = []; let prevTo = 0;
+  for (const q of p.segs) {
+    if (q.from > prevTo) lab.push({ from: prevTo, to: q.from, cls: 'break' });
+    let cls = 'rest';
+    if (!isNaN(q.mean) && q.mean >= res.enter) cls = 'work';
+    else if (!isNaN(q.mean) && q.mean >= res.steadyLow) cls = 'steady';
+    lab.push({ from: q.from, to: q.to, cls }); prevTo = q.to;
+  }
+  if (prevTo < g.N) lab.push({ from: prevTo, to: g.N, cls: 'break' });
+  const blocks = postprocess(lab, x, res.s5, d.minWork);
+  let moving = 0, workSec = 0, ws = 0, wc = 0, rs = 0, rc = 0;
+  for (const b of blocks) {
+    if (b.cls === 'break') continue;
+    for (let i = b.from; i < b.to; i++) { if (br[i]) continue; moving++; if (b.cls === 'work') workSec++; if (isNaN(x[i])) continue; if (b.cls === 'work') { ws += x[i]; wc++; } else { rs += x[i]; rc++; } }
+  }
+  const nWork = blocks.filter((b) => b.cls === 'work').length;
+  res.stats = { moving, workSec, workShare: moving ? workSec / moving : 0, workMean: wc ? ws / wc : NaN, restMean: rc ? rs / rc : NaN, nWork };
+  res.raw = blocks;
+  if (res.stats.workShare > DEF.maxWorkShare) res.reason = 'hard';
+  else if (nWork < DEF.minWorkBlocks) res.reason = 'few';
+  else if (!(res.stats.workMean >= DEF.contrast * res.stats.restMean)) res.reason = 'contrast';
+  else res.ok = true;
+  if (res.ok) res.blocks = blocks;
+  if (res.ok && sig === 'hr' && !opt.noShift) {
+    const gh = detect(id, { forceSig: 'hr', noShift: true });
+    res.ghost = gh.raw.filter((b) => b.cls === 'work'); res.sGhost = gh.s;
+  }
+  return res;
+};
+
+const REASON = {
+  nosignal: 'no power, pace or heart rate with ≥ 50 % coverage', nothreshold: 'only signal needs a threshold that is missing (no HR to fall back to)',
+  few: 'fewer than 2 work blocks', hard: 'work > 80 % of moving time (hard throughout)', contrast: 'work mean < 15 % above recovery',
+};
+const SIG_UNIT = { power: 'W', pace: '/km', hr: 'bpm' };
+const sigFmt = (sig, v) => { if (isNaN(v)) return '--'; if (sig === 'pace') return v > 0 ? `${fmtPace(1000 / v)} /km` : '--'; return `${Math.round(v)} ${SIG_UNIT[sig]}`; };
+const refLabel = (det) => {
+  if (!det.sig) return '';
+  if (det.sig === 'power') return `≈ 88 % FTP · ${sigFmt('power', det.enter)}`;
+  if (det.sig === 'pace') return `≈ 88 % threshold pace · ${sigFmt('pace', det.enter)}`;
+  return `80 % HR reserve · ${sigFmt('hr', det.enter)}`;
+};
+const SIG_NAME = { power: 'power', pace: 'grade-adjusted pace', hr: 'heart rate' };
+const SIG_ICON = { power: 'zap', pace: 'timer', hr: 'heart' };
+
+// ───────────────────────────── app model ─────────────────────────────
+const metricsOf = (g, a, b) => ({ dur: b - a, power: meanOf(g.power, a, b, g.br), hr: meanOf(g.hr, a, b, g.br), speed: meanOf(g.speed, a, b, g.br) });
+const speedLabel = (sport, v) => {
+  if (isNaN(v)) return '--';
+  if (sport === 'run') return v > 0 ? `${fmtPace(1000 / v)} /km` : '--';
+  return `${nf(1).format(v * 3.6)} km/h`;
+};
+const wLabel = (v) => `${isNaN(v) ? '--' : Math.round(v)} W`;
+const bpmLabel = (v) => `${isNaN(v) ? '--' : Math.round(v)} bpm`;
+
+const effortSet = (det) => {
+  if (!det.ok) return null;
+  const g = det.grid; const counters = { work: 0, rest: 0, steady: 0 };
+  const bands = det.blocks.filter((b) => b.cls !== 'break').map((b, i) => {
+    let n = 0; if (counters[b.cls] !== undefined) n = ++counters[b.cls];
+    return { i, n, from: b.from, to: b.to, cls: b.cls, bridges: b.bridges || [], md: movingLen(b), name: nameOf(b.cls, n, det.sport), selectable: true, m: metricsOf(g, b.from, b.to) };
+  });
+  return { kind: 'efforts', bands };
+};
+const deviceSet = (data) => {
+  const g = data.grid;
+  if (data.dev === 'none') return null;
+  let segs;
+  if (data.dev === 'truth') segs = data.truth.filter((s) => s.cls !== 'break').map((s) => ({ from: s.from, to: s.to, cls: s.cls === 'work' ? 'work' : 'rest' }));
+  else { segs = []; let a = 0; for (let i = 0; i < g.N; i++) if (g.dist[i] - g.dist[a] >= 10000 || i === g.N - 1) { segs.push({ from: a, to: i + 1, cls: 'work' }); a = i + 1; } }
+  return { kind: 'device', bands: segs.map((s, i) => ({ i, n: i + 1, ...s, bridges: [], md: s.to - s.from, name: t('lap', { n: i + 1 }), selectable: true, m: metricsOf(g, s.from, s.to) })) };
+};
+const splitSet = (data) => {
+  const g = data.grid; if (!g.hasDistance) return null;
+  const step = data.sport === 'run' ? 1000 : 5000; const segs = []; let a = 0;
+  for (let i = 0; i < g.N; i++) if (g.dist[i] - (a ? g.dist[a - 1] : 0) >= step || i === g.N - 1) { segs.push({ from: a, to: i + 1, cls: 'work' }); a = i + 1; }
+  return { kind: 'splits', km: step / 1000, bands: segs.map((s, i) => ({ i, n: i + 1, ...s, bridges: [], md: s.to - s.from, name: t('split', { n: i + 1 }), selectable: true, m: metricsOf(g, s.from, s.to) })) };
+};
+
+let M = {};
+const compute = () => {
+  const data = dataFor(S.scenario);
+  const det = detect(S.scenario);
+  const loading = S.scenario === 'loading';
+  const eff = loading ? null : effortSet(det);
+  const sets = { off: null, device: deviceSet(data), splits: splitSet(data), efforts: eff };
+  let source = S.source;
+  if (source === 'device' && !sets.device) source = 'off';
+  if (source === 'splits' && !sets.splits) source = 'off';
+  if (source === 'efforts' && !eff && !loading) source = 'off';
+  M = { data, det, loading, sets, source, set: sets[source] || null, sport: data.sport };
+  if (S.selected !== null && (!M.set || !M.set.bands[S.selected])) S.selected = null;
+};
+
+// ───────────────────────────── labels ─────────────────────────────
+const workCount = (set) => set.bands.filter((b) => b.cls === 'work').length;
+// Q-pill: every source reads "<count> <source>"; Off stays "Laps"
+const pillCount = (n, src) => (n === 1 ? t(`one_${src}`) : t(`count_${src}`, { n }));
+const pillLabelFor = (source, set) => {
+  if (!set || source === 'off') return t('laps');
+  if (source === 'efforts') return pillCount(workCount(set), 'efforts');
+  return pillCount(set.bands.length, source);
+};
+// Q2: the count caption in the picker row may read "4 × 4:01" when all work blocks match within ±10 % (moving time)
+const effortCaption = (set) => {
+  const works = set.bands.filter((b) => b.cls === 'work'); const n = works.length;
+  if (n >= 2) { const durs = works.map((b) => b.md); const mean = durs.reduce((a, b) => a + b, 0) / n; if (durs.every((d) => Math.abs(d - mean) <= 0.1 * mean)) return t('pattern', { n, d: fmtDur(mean) }); }
+  return pillCount(n, 'efforts');
+};
+const bandName = (b) => (M.source === 'device' ? t('lap', { n: b.n }) : M.source === 'splits' ? t('split', { n: b.n }) : nameOf(b.cls, b.n, M.sport));
+// Q2: one summary chip in the efforts row: pattern or count + signal ("4 × 4:01 · power", "5 efforts · heart rate ≈")
+const summaryParts = (set, det) => ({ summary: effortCaption(set), word: t(`sig_${det.sig}`), approx: det.sig === 'hr', sigIcon: SIG_ICON[det.sig] });
+const chipText = (c) => `${c.summary} · ${c.word}${c.approx ? ' ≈' : ''}`;
+
+// Strings that must fit (current state, or the owner's worst cases)
+const spaceStrings = () => {
+  const colour = t('colorBy'); const de = S.lang === 'de';
+  const longest = (arr, size = 14) => arr.reduce((a, b) => (TW(b, size) > TW(a, size) ? b : a));
+  if (S.worst === 'on') {
+    return { colour, pill: longest(de ? ['20 Belastungen', '12 Geräterunden', '12 Splits'] : ['20 efforts', '12 device laps', '12 splits']),
+      chip: { summary: longest(de ? ['20 Belastungen', '12 × 10:15'] : ['20 efforts', '12 × 10:15'], 12), word: t('sig_hr'), approx: true, sigIcon: 'heart' },
+      empty: null, link: t('precise_thresholdPace'), linkShort: t('short_thresholdPace'),
+      stepName: longest(de ? ['Belastung 12', 'Gleichmäßig 12', 'Erholung 12', 'Einfahren', 'Ausfahren', 'Einlaufen', 'Auslaufen'] : ['Work 12', 'Steady 12', 'Rec 12', 'Warm-up', 'Cool-down']) };
+  }
+  const set = M.sets.efforts, det = M.det;
+  const names = M.set ? M.set.bands.map(bandName) : [];
+  return { colour, pill: M.loading && S.source === 'efforts' ? t('laps') : pillLabelFor(M.source, M.set),
+    chip: set ? summaryParts(set, det) : null, empty: set ? null : (M.loading ? t('detecting') : t('none')),
+    link: det.limitedBy ? t(`${set ? 'precise' : 'detect'}_${det.limitedBy}`) : null, linkShort: det.limitedBy ? t(`short_${det.limitedBy}`) : null,
+    stepName: names.length ? names.reduce((a, b) => (TW(b, 14) > TW(a, 14) ? b : a)) : null };
+};
+
+// ───────────────────────────── space check / degradation ─────────────────────────────
+let _ctx;
+const TW = (txt, size, weight = 400) => {
+  if (!_ctx) _ctx = document.createElement('canvas').getContext('2d');
+  _ctx.font = `${weight} ${size}px ${getComputedStyle(document.body).fontFamily}`;
+  return _ctx.measureText(txt).width;
+};
+// available widths in frame px, derived from the real layout:
+//  desk bar: MapControlsBar centred at 30 % + 38 px (=422); dock rail ends at 60, content column starts at 768; 12 px clearance → 2 × min(350, 334)
+//  phone bar: 390 − 2 × 16 (px-4 scroller)
+//  row text column: popover w-80 (320) − border − p-4 − row px-2 − radio 20 − 2 gaps 12 − swatch 48; phone: DialogContent (390 − 16) − px-5 − same
+//  nudge link line: row width − pl-10 − pr-2
+//  stepper name slot: today w-[72px] (LapsControl.tsx:254); Q8 option w-[104px]
+const VIEW = { desk: { bar: 668, textCol: 178, lineCol: 238 }, phone: { bar: 358, textCol: 224, lineCol: 284 } };
+const stepSlot = () => (S.q8 === 'wide' ? 104 : 72);
+const SAFE = 4;
+const CHIP_STEPS = ['full', 'signal icon', 'count only'];
+const chipW = (c, i) => {
+  if (i === 0) return TW(chipText(c), 12) + 12;
+  if (i === 1) return TW(`${c.summary} · `, 12) + 12 + 12 + (c.approx ? 2 + TW('≈', 12) : 0);
+  return TW(c.summary, 12) + 12;
+};
+const pillW = (s, swatch) => 2 + 24 + 16 + 8 + TW(s.pill, 14) + (swatch ? 8 + 48 : 0) + 8 + 14;
+const colourW = (s) => 2 + 24 + 16 + 8 + TW(s.colour, 14) + 8 + 14;
+// Q9 (open): what the phone bar gives up first when it is too narrow
+const pillSteps = () => ({ swatch: [[true, false], [false, false], [false, true]], colour: [[true, false], [true, true], [false, true]], scroll: [[true, false]] }[S.q9]);
+const PILL_STEP_NAMES = () => ({ swatch: ['full', 'no swatch', '+ colour pill icon-only'], colour: ['full', 'colour pill icon-only', '+ no swatch'], scroll: ['full (bar scrolls)'] }[S.q9]);
+const fitPlan = (view) => {
+  const s = spaceStrings(); const V = VIEW[view]; const before = S.fit === 'before'; const out = { s };
+  const steps = pillSteps();
+  const ws = steps.map(([sw, compact]) => (compact ? 44 : colourW(s)) + 8 + pillW(s, sw)); let i = 0;
+  if (!before) while (i < ws.length - 1 && ws[i] + SAFE > V.bar) i++;
+  out.pill = { i, swatch: steps[i][0], colourCompact: steps[i][1], w: ws[i], full: ws[0], avail: V.bar };
+  if (s.stepName) { const w = TW(s.stepName, 14); out.step = { i: 0, w, full: w, avail: stepSlot() }; }
+  if (s.chip) { const cw = [0, 1, 2].map((k) => chipW(s.chip, k)); let ci = 0; if (!before) while (ci < 2 && cw[ci] + SAFE > V.textCol) ci++; out.chip = { i: ci, w: cw[ci], full: cw[0], avail: V.textCol }; }
+  if (s.link) { const lf = TW(s.link, 12), ls = TW(s.linkShort, 12); const li = before || lf + SAFE <= V.lineCol ? 0 : 1; out.link = { i: li, text: li ? s.linkShort : s.link, w: li ? ls : lf, full: lf, avail: V.lineCol }; }
+  return out;
+};
+let PLAN = {};
+
+// ───────────────────────────── decision labels ─────────────────────────────
+const QDESC = () => ({
+  Q1: 'Q1 settled · a bridged block’s duration is its moving time (the “4 × 4:01” pattern uses moving time)',
+  Qpill: 'Q-pill settled · every lap source reads “<count> <source>” (12 device laps · 6 splits · 4 efforts); no pattern, no chip in the pill',
+  Q2: 'Q2 settled · one summary chip in the efforts row: pattern or count + signal (“4 × 4:01 · power”, “5 efforts · heart rate ≈”); it replaces the count caption',
+  Q3: 'Q3 settled · stepper exactly as today: ⚑ ‹ name › ✕, no per-block details anywhere',
+  Q5: 'Q5 settled · stops / gaps ≤ 2:00 + 10 s with work on both sides are bridged (hatched)',
+  Q6: 'Q6 settled · DE: Einfahren / Ausfahren (ride), Einlaufen / Auslaufen (run)',
+  Q8: `Q8 open · stepper name slot: ${S.q8 === 'wide' ? 'widen to w-[104px]' : 'keep w-[72px], ellipsis'}`,
+  Q9: `Q9 open · phone pill too wide: ${{ swatch: 'drop the swatch first', colour: 'colour pill icon-only first', scroll: 'keep everything, bar scrolls' }[S.q9]}`,
+});
+const Q = (ids) => (S.labels === 'on' ? ` data-q="${ids}"` : '');
+const placeBadges = () => {
+  const layer = document.getElementById('qlayer'); if (!layer) return;
+  if (S.labels !== 'on') { layer.innerHTML = ''; return; }
+  const out = []; const placed = []; layer.innerHTML = '';
+  document.querySelectorAll('[data-q]').forEach((el) => {
+    const r = el.getBoundingClientRect(); if (!r.width && !r.height) return;
+    // skip parts hidden behind an open popover / dialog / scrim
+    const hit = document.elementFromPoint(Math.min(innerWidth - 1, Math.max(0, r.left + r.width / 2)), Math.min(innerHeight - 1, Math.max(0, r.top + Math.min(r.height / 2, 6))));
+    if (!hit || !(el.contains(hit) || hit.contains(el))) return;
+    let clip = { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+    // clip only by the frame window and real vertical scroll areas (not by the pill bar's horizontal scroller)
+    const fb = el.closest('[data-frame-box]');
+    const clips = [fb && fb.parentElement, el.parentElement && el.parentElement.closest('[data-scroll], .overflow-y-auto')].filter(Boolean);
+    for (const c of clips) { const pr = c.getBoundingClientRect(); clip = { left: Math.max(clip.left, pr.left), top: Math.max(clip.top, pr.top), right: Math.min(clip.right, pr.right), bottom: Math.min(clip.bottom, pr.bottom) }; }
+    const ids = el.dataset.q.split(' ');
+    if (r.bottom < clip.top + 4 || r.top > clip.bottom - 4 || r.right < clip.left || r.left > clip.right) return;
+    const w = ids.reduce((sum, id) => sum + (id === 'Qpill' ? 46 : 24) + 2, 0);
+    // sit just above the element so the element itself stays clickable
+    let x = Math.max(clip.left, Math.min(r.right, clip.right) - w), y = Math.max(r.top - 17, clip.top);
+    if (y > r.top - 17 + 0.5) y = Math.max(clip.top, r.top - 17); // clipped at the top: overlap the element's top edge only
+    // keep badge groups from covering each other: move down until free
+    for (let guard = 0; guard < 8 && placed.some((q) => x < q.x + q.w && x + w > q.x && y < q.y + 17 && y + 17 > q.y); guard++) x -= w + 2;
+    placed.push({ x, y, w });
+    out.push(`<div class="pointer-events-none absolute flex gap-0.5" style="left:${Math.round(x)}px;top:${Math.round(y)}px">${ids.map((id) => `<button type="button" data-qid="${id}" class="pointer-events-auto rounded bg-status-warning px-1 text-xs font-medium text-surface-base shadow-[0_2px_6px_rgb(0_0_0/0.5)]">${id === 'Qpill' ? 'Q-pill' : id}</button>`).join('')}</div>`);
+  });
+  layer.innerHTML = out.join('');
+};
+const showQTip = (btn) => {
+  const tip = document.getElementById('qtip'); if (!btn) { tip.classList.add('hidden'); return; }
+  const r = btn.getBoundingClientRect(); tip.textContent = QDESC()[btn.dataset.qid];
+  tip.classList.remove('hidden');
+  const w = tip.offsetWidth; tip.style.left = `${Math.round(Math.max(8, Math.min(innerWidth - w - 8, r.left)))}px`;
+  tip.style.top = `${Math.round(r.bottom + 4 + 20 > innerHeight ? r.top - 24 : r.bottom + 4)}px`;
+};
+
+// ───────────────────────────── shared pieces ─────────────────────────────
+const cellColor = (b, pos) => {
+  if (b.cls === 'warmup' || b.cls === 'cooldown') return 'rgba(255,255,255,.35)';
+  if (b.cls === 'rest') return 'rgba(255,255,255,.18)';
+  if (b.cls === 'steady') return 'rgba(255,255,255,.45)';
+  return pos % 2 === 0 ? 'rgba(255,255,255,.75)' : 'rgba(255,255,255,.5)';
+};
+const swatch = (set, muted, loading) => {
+  const base = `flex h-2 w-12 shrink-0 overflow-hidden rounded-full ${muted ? 'opacity-30 grayscale' : ''}`;
+  if (loading) return `<span aria-hidden class="${base} animate-pulse bg-white/10"></span>`;
+  if (!set || !set.bands.length) return `<span aria-hidden class="${base} bg-white/12"></span>`;
+  return `<span aria-hidden class="${base} ${set.bands.length <= 20 ? 'gap-px' : ''}">${set.bands.map((b, p) => `<i class="block h-full" style="flex-grow:${b.to - b.from};flex-basis:0;background:${cellColor(b, p)}"></i>`).join('')}</span>`;
+};
+const chipBase = 'text-xs text-text-secondary shrink-0 rounded bg-white/10 px-1.5 py-0.5 whitespace-nowrap';
+
+const stepTargets = () => (M.set ? M.set.bands.filter((b) => b.selectable).map((b) => b.i) : []);
+const stepButton = (label, action, disabled, iconName) => `<button type="button" aria-label="${label}" data-action="${action}" ${disabled ? 'disabled' : ''} class="group -my-px inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:text-text-primary focus-visible:outline-none disabled:cursor-default disabled:opacity-30"><span class="inline-flex size-9 items-center justify-center rounded-full transition-colors group-hover:bg-white/10 group-disabled:bg-transparent">${icon(iconName)}</span></button>`;
+
+// Q3: LapStepper exactly as today (LapsControl.tsx:219-281): flag, ‹ name ›, clear; Q8 decides the name slot width
+const lapsControl = (frame) => {
+  const plan = PLAN[frame];
+  if (S.selected !== null && M.set) {
+    const b = M.set.bands[S.selected]; const tg = stepTargets(); const pos = tg.indexOf(S.selected);
+    const dim = M.source === 'efforts' && b.cls !== 'work';
+    const q = (b.cls === 'warmup' || b.cls === 'cooldown') ? 'Q3 Q6' : 'Q3';
+    const name = `<span data-stepper-label${Q('Q8')} class="${S.q8 === 'wide' ? 'w-[104px]' : 'w-[72px]'} truncate text-center tabular-nums ${dim ? 'text-text-tertiary' : ''}">${esc(bandName(b))}</span>`;
+    return `<div role="group" data-stepper${Q(q)} class="${floatingPillClass} h-11 gap-0 pr-0 pl-3">${icon('flag', 16, 'mr-1 shrink-0')}${stepButton(t('prev'), 'prev', pos <= 0, 'left')}${name}${stepButton(t('next'), 'next', pos < 0 || pos >= tg.length - 1, 'right')}</div><button type="button" aria-label="${t('clear')}" data-action="clear" data-clear class="${floatingPillBtn} ml-1 size-11 justify-center p-0 text-text-secondary">${icon('x')}</button>`;
+  }
+  const loadingEff = M.loading && S.source === 'efforts';
+  let sw = '';
+  if (!loadingEff && M.set && plan.pill.swatch) sw = swatch(M.set);
+  if (loadingEff) sw = swatch(null, false, true);
+  return `<button type="button" data-laps-pill${Q(frame === 'phone' ? 'Qpill Q9' : 'Qpill')} data-action="toggle-picker" data-frame="${frame}" class="${floatingPillBtn} h-11">${icon('flag')}<span>${esc(plan.s.pill)}</span>${sw}${icon('down', 14, 'text-text-tertiary')}</button>`;
+};
+// ColorByControl.tsx:125-142 — icon-only (size-11) while a lap is selected
+const colorByPill = (frame) => ((S.selected !== null && M.set) || (S.selected === null && PLAN[frame] && PLAN[frame].pill.colourCompact)
+  ? `<button type="button" data-colour class="${floatingPillBtn} size-11 justify-center p-0">${icon('layers')}</button>`
+  : `<button type="button" data-colour class="${floatingPillBtn} h-11">${icon('layers')}<span>${t('colorBy')}</span>${icon('down', 14, 'text-text-tertiary')}</button>`);
+
+const pickerRows = (frame) => {
+  const sets = M.sets, plan = PLAN[frame], s = plan.s, before = S.fit === 'before';
+  const rows = [
+    { v: 'off', title: t('off'), desc: t('offDesc'), set: null },
+    { v: 'device', title: t('device'), desc: sets.device ? t('deviceDesc', { n: sets.device.bands.length }) : t('deviceNone'), set: sets.device, disabled: !sets.device },
+    { v: 'splits', title: t('splits'), desc: M.source === 'splits' && sets.splits ? pillCount(sets.splits.bands.length, 'splits') : (sets.splits ? t('splitsDesc') : t('splitsNone')), set: sets.splits, disabled: !sets.splits },
+    { v: 'efforts', title: t('title'), set: sets.efforts, disabled: !sets.efforts, efforts: true },
+  ];
+  // Q2: the chip line replaces the count caption (one reserved h-5 line); no efforts / loading show a plain caption in the same slot
+  const effLines = () => {
+    if (!s.chip) return `<span data-chipline class="flex h-5 min-w-0 items-center"><span class="text-xs text-text-tertiary block truncate">${esc(s.empty || '')}</span></span>`;
+    const c = s.chip; const i = plan.chip.i;
+    let inner = esc(c.summary);
+    if (i === 0) inner = esc(chipText(c));
+    else if (i === 1) inner = `${esc(c.summary)} ·${icon(c.sigIcon, 12)}${c.approx ? '≈' : ''}`;
+    return `<span data-chipline${Q('Q2 Q1')} class="flex h-5 min-w-0 items-center"><span data-chip title="${esc(chipText(c))}" class="${chipBase} ${before ? '' : 'inline-flex items-center gap-0.5'}">${inner}</span></span>`;
+  };
+  const linkLine = () => {
+    // MoreStatsRow.tsx:79-83 pattern, outside the radio button so it stays clickable when the row is disabled
+    const inner = plan.link ? `<a href="#/settings" data-action="settings" class="text-accent hover:underline">${esc(plan.link.text)}</a>` : '';
+    return `<div class="pr-2 pb-2 pl-10"><span data-nudge class="text-xs text-text-tertiary block ${before ? '' : 'h-4 truncate'}">${inner}</span></div>`;
+  };
+  const list = rows.map((r) => {
+    const checked = M.source === r.v || (M.loading && r.v === 'efforts' && S.source === 'efforts');
+    const caption = r.efforts ? effLines() : `<span class="text-xs text-text-tertiary block truncate">${esc(r.desc)}</span>`;
+    return `<div ${checked ? 'data-checked' : ''} data-row="${r.v}" class="group/row rounded-lg ${checked ? 'bg-white/5' : ''}"><button type="button" role="radio" aria-checked="${checked}" ${r.disabled || (r.efforts && M.loading) ? 'data-disabled disabled' : ''} data-action="source" data-value="${r.v}" class="group flex w-full cursor-pointer items-center gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 rounded-lg px-2 py-2 ${checked ? '' : 'hover:bg-white/5'}"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/30 transition-colors">${checked ? '<span class="block h-2.5 w-2.5 rounded-full bg-accent"></span>' : ''}</span><span class="min-w-0 flex-1" data-textcol><span class="${TYPO.subtitle1} block">${esc(r.title)}</span>${caption}</span>${swatch(r.set, r.disabled && !(r.efforts && M.loading), r.efforts && M.loading)}</button>${r.efforts ? linkLine() : ''}</div>`;
+  }).join('');
+  return `<div role="radiogroup" class="flex flex-col gap-1">${list}</div>`;
+};
+
+// ───────────────────────────── map ─────────────────────────────
+const SHAPES = {
+  ride: (u) => [0.5 + 0.42 * Math.sin(2 * Math.PI * u) + 0.05 * Math.sin(10 * Math.PI * u), 0.5 + 0.36 * Math.sin(4 * Math.PI * u + 0.6) + 0.06 * Math.cos(14 * Math.PI * u)],
+  run: (u) => [0.5 + 0.32 * Math.cos(2 * Math.PI * u) + 0.1 * Math.cos(6 * Math.PI * u), 0.5 + 0.4 * Math.sin(2 * Math.PI * u) + 0.05 * Math.sin(8 * Math.PI * u)],
+};
+const trackPoints = (region) => {
+  const g = M.data.grid; const total = g.dist[g.N - 1] || 1; const shape = SHAPES[M.sport];
+  const pts = new Array(g.N);
+  for (let i = 0; i < g.N; i++) { const u = g.hasDistance ? g.dist[i] / total : i / g.N; const p = shape(u * 0.985); pts[i] = [region.x + p[0] * region.w, region.y + p[1] * region.h]; }
+  return pts;
+};
+const pathOf = (pts, a, b, step = 3) => { let d = ''; for (let i = a; i < b; i += step) d += `${d ? 'L' : 'M'}${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)}`; d += `L${pts[b - 1][0].toFixed(1)} ${pts[b - 1][1].toFixed(1)}`; return d; };
+const basemap = (w, h, seed) => {
+  const r = rng(seed); let roads = '';
+  for (let k = 0; k < 16; k++) { const x0 = r() * w, y0 = r() * h, x1 = r() * w, y1 = r() * h; roads += `<path d="M${x0} ${-20} Q${x1} ${y0} ${x0 + (r() - 0.5) * 200} ${h + 20}" stroke="rgba(65,71,88,1)" stroke-width="${k < 4 ? 2.2 : 1}" fill="none"/>`; roads += `<path d="M${-20} ${y1} Q${x0} ${y1 + (r() - 0.5) * 120} ${w + 20} ${y1 + (r() - 0.5) * 160}" stroke="#232323" stroke-width="${k < 3 ? 3 : 1.2}" fill="none"/>`; }
+  return `<rect width="${w}" height="${h}" fill="#0e0e0e"/><path d="M${w * 0.62} 0 C ${w * 0.5} ${h * 0.3}, ${w * 0.85} ${h * 0.55}, ${w * 0.7} ${h}" stroke="rgb(63,90,109)" stroke-width="5" fill="none"/><ellipse cx="${w * 0.12}" cy="${h * 0.82}" rx="${w * 0.12}" ry="${h * 0.07}" fill="#2C353C"/>${roads}`;
+};
+const mapSvg = (frame, w, h, region) => {
+  const pts = trackPoints(region); const g = M.data.grid; const col = M.sport === 'run' ? TOK.running : TOK.cycling;
+  const sel = S.selected !== null && M.set ? M.set.bands[S.selected] : null;
+  // gaps are drawn as separate runs so a recording gap shows as a jump, not a straight line
+  const runs = runsOf(g.gap);
+  const base = runs.map(([a, b]) => b - a > 1 ? `<path d="${pathOf(pts, a, b)}" stroke="${col}" stroke-opacity="${sel ? 0.45 : 1}" stroke-width="${frame === 'desk' ? 5 : 3.5}" fill="none" stroke-linejoin="round" stroke-linecap="round"/>` : '').join('');
+  let selHtml = '';
+  if (sel) selHtml = `<path d="${pathOf(pts, sel.from, sel.to, 2)}" stroke="#fff" stroke-width="${frame === 'desk' ? 9 : 6.5}" fill="none" stroke-linejoin="round" stroke-linecap="round"/><path d="${pathOf(pts, sel.from, sel.to, 2)}" stroke="${col}" stroke-width="${frame === 'desk' ? 5 : 3.5}" fill="none" stroke-linejoin="round" stroke-linecap="round"/>`;
+  const st = pts[0], en = pts[g.N - 1];
+  return `<svg class="absolute inset-0" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${basemap(w, h, frame === 'desk' ? 5 : 9)}${base}${selHtml}<g data-hover-layer="map-${frame}"></g><circle cx="${st[0]}" cy="${st[1]}" r="5" fill="#fff" stroke="#0e0e0e" stroke-width="2"/><circle cx="${en[0]}" cy="${en[1]}" r="5" fill="#0e0e0e" stroke="#fff" stroke-width="2"/></svg>`;
+};
+const MAP_PTS = {};
+
+
+// ───────────────────────────── content column ─────────────────────────────
+const scnMeta = () => SCN[SCN[S.scenario].alias || S.scenario];
+const sessionHeader = () => {
+  const g = M.data.grid; const km = g.hasDistance ? `${nf(1).format(g.dist[g.N - 1] / 1000)} km · ` : '';
+  return `<div class="flex items-center justify-between gap-3"><div class="flex min-w-0 items-center gap-2"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${M.sport === 'run' ? 'bg-sport-running-muted text-sport-running' : 'bg-sport-cycling-muted text-sport-cycling'}">${icon(M.sport === 'run' ? 'run' : 'bike', 18)}</div><div class="min-w-0">${ty('h2', esc(scnMeta().title[S.lang]), { as: 'h1', cls: 'block truncate' })}${ty('caption', `${S.lang === 'de' ? 'Di., 14. Okt.' : 'Tue, Oct 14'} · ${km}${fmtDur(g.N)}`, { as: 'p', cls: 'truncate' })}</div></div><button type="button" class="${btnClass('ghost', 'icon')}" aria-label="More">${icon('more', 20)}</button></div>`;
+};
+
+const STRIP_W = 400, STRIP_H = 64;
+const stripLayout = (set) => {
+  const bands = set.bands; const a = bands[0].from, total = bands[bands.length - 1].to - a;
+  const paces = bands.map((b) => (b.m.speed > 0 ? 1000 / b.m.speed : NaN));
+  const valid = paces.filter((p) => !isNaN(p)); const avg = valid.length ? valid.reduce((x, y) => x + y, 0) / valid.length : NaN;
+  let maxDev = 1; paces.forEach((p) => { if (!isNaN(p) && !isNaN(avg)) maxDev = Math.max(maxDev, Math.abs(avg - p)); });
+  const mid = STRIP_H / 2; const X = (s) => (s - a) / total * STRIP_W;
+  return bands.map((b, k) => {
+    const x = X(b.from), span = (b.to - b.from) / total * STRIP_W; const gap = span > 3 ? 2 : 0.3;
+    const dev = isNaN(paces[k]) || isNaN(avg) ? NaN : avg - paces[k];
+    let bar;
+    if (isNaN(dev)) bar = { y: mid - 0.6, h: 1.2, fill: 'rgba(255,255,255,.3)', op: 1 };
+    else { const bh = Math.max(1.2, Math.abs(dev) / maxDev * (mid - 1)); bar = dev >= 0 ? { y: mid - bh, h: bh, fill: TOK.chartPace, op: 0.9 } : { y: mid, h: bh, fill: TOK.chartCadence, op: 0.9 }; }
+    return { b, x, span, bx: x + gap / 2, bw: Math.max(0.6, span - gap), bridges: b.bridges.map(([p, q]) => [X(p), X(q) - X(p)]), ...bar };
+  });
+};
+const hatchDef = (id) => `<defs><pattern id="${id}" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,.35)" stroke-width="1.6"/></pattern></defs>`;
+const warmCoolLegend = () => { const w = M.set.bands.find((b) => b.cls === 'warmup'), c = M.set.bands.find((b) => b.cls === 'cooldown'); return [w && w.name, c && c.name].filter(Boolean).join(' · '); };
+const lapStripDetail = (frame) => {
+  if (!M.set) return '';
+  const L = stripLayout(M.set); const sel = L.find((l) => l.b.i === S.selected);
+  const bridges = L.flatMap((l) => l.bridges.map(([x, w]) => `<rect x="${x}" y="0" width="${Math.max(1, w)}" height="${STRIP_H}" fill="#0e0e0e" fill-opacity=".55"/><rect x="${x}" y="0" width="${Math.max(1, w)}" height="${STRIP_H}" fill="url(#hs-${frame})"/>`)).join('');
+  return `<div class="flex flex-col gap-2"><div class="flex flex-col gap-0.5"><svg viewBox="0 0 ${STRIP_W} ${STRIP_H}" preserveAspectRatio="none" class="block h-16 w-full" data-strip="${frame}"${Q('Q3')}>${hatchDef(`hs-${frame}`)}<line x1="0" x2="${STRIP_W}" y1="${STRIP_H / 2}" y2="${STRIP_H / 2}" stroke="rgba(255,255,255,.25)" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>${L.map((l) => `<rect x="${l.bx}" y="${l.y}" width="${l.bw}" height="${l.h}" fill="${l.fill}" fill-opacity="${l.op}"/>`).join('')}${bridges}<g data-hover-layer="strip-${frame}"></g>${sel ? `<rect x="${sel.x + 0.75}" y="0.75" width="${Math.max(0.5, sel.span - 1.5)}" height="${STRIP_H - 1.5}" rx="2" fill="#fff" fill-opacity="0.06" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke"/>` : ''}${L.map((l) => `<rect x="${l.x}" y="0" width="${l.span}" height="${STRIP_H}" fill="transparent" class="cursor-pointer" data-block="${l.b.i}" data-frame="${frame}"/>`).join('')}</svg><div class="flex justify-between text-xs text-text-quaternary tabular-nums"><span>1</span><span>${M.set.bands.length}</span></div></div><div class="flex h-4 flex-wrap gap-3 overflow-hidden text-xs text-text-tertiary"><span class="inline-flex items-center gap-1"><i class="inline-block size-2 rounded-[2px]" style="background:${TOK.chartPace}"></i>${t('faster')}</span><span class="inline-flex items-center gap-1"><i class="inline-block size-2 rounded-[2px]" style="background:${TOK.chartCadence}"></i>${t('slower')}</span>${L.some((l) => l.bridges.length) ? `<span class="inline-flex items-center gap-1"${Q('Q5')}><svg width="8" height="8"><rect width="8" height="8" fill="url(#hs-${frame})"/></svg>${S.lang === 'de' ? 'Stopp' : 'stop'}</span>` : ''}${M.source === 'efforts' && M.set.bands.some((b) => b.cls === 'warmup' || b.cls === 'cooldown') ? `<span class="inline-flex items-center gap-1"${Q('Q6')}><i class="inline-block size-2 rounded-[2px] bg-white/35"></i>${esc(warmCoolLegend())}</span>` : ''}</div></div>`;
+};
+const lapsRow = (frame) => {
+  let primary, secondary, disabled = false;
+  if (M.loading && S.source === 'efforts') { primary = t('detecting'); secondary = t('title'); disabled = true; }
+  else if (!M.set) { primary = S.source === 'efforts' ? t('none') : t('lapsOffRow'); secondary = S.source === 'efforts' ? t('noneHint') : t('lapsOffHint'); disabled = true; }
+  else {
+    const n = M.set.bands.length; const count = pillLabelFor(M.source, M.set);
+    const g = M.data.grid; const avg = metricsOf(g, 0, g.N);
+    primary = t('rowPrimary', { count, value: speedLabel(M.sport, avg.speed) });
+    const sp = M.set.bands.map((b) => b.m.speed).filter((v) => !isNaN(v) && v > 0);
+    secondary = sp.length ? `${speedLabel(M.sport, Math.min(...sp))} – ${speedLabel(M.sport, Math.max(...sp))}` : '--';
+  }
+  const avatar = `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="6" fill="rgba(255,255,255,.04)"/>${M.set ? stripLayout(M.set).map((l) => `<rect x="${2 + l.bx / STRIP_W * 26}" y="${3 + l.y / STRIP_H * 24}" width="${Math.max(0.4, l.bw / STRIP_W * 26)}" height="${l.h / STRIP_H * 24}" fill="${l.fill}" fill-opacity="${l.op}"/>`).join('') : '<line x1="4" x2="26" y1="15" y2="15" stroke="rgba(255,255,255,.3)" stroke-dasharray="2 2"/>'}</svg>`;
+  const header = `<span class="flex min-w-0 flex-1 items-center gap-3 ${disabled ? 'opacity-45' : ''}"><span class="grid size-[30px] shrink-0 place-items-center">${avatar}</span><span class="min-w-0"><span class="${TYPO.body1} block truncate text-left">${esc(primary)}</span><span class="${TYPO.caption} block truncate">${esc(secondary)}</span></span></span>`;
+  // mockup keeps the row expanded; a same-height placeholder avoids layout shift when there is no set
+  const placeholder = `<div class="flex flex-col gap-2 opacity-45" aria-hidden="true"><div class="flex flex-col gap-0.5"><svg viewBox="0 0 ${STRIP_W} ${STRIP_H}" preserveAspectRatio="none" class="block h-16 w-full" data-strip="none"><line x1="0" x2="${STRIP_W}" y1="${STRIP_H / 2}" y2="${STRIP_H / 2}" stroke="rgba(255,255,255,.25)" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/></svg><div class="h-4"></div></div><div class="h-4"></div></div>`;
+  if (disabled) return `<div class="${glassClass} rounded-2xl p-2"><div class="flex w-full cursor-default items-center py-2 pr-3 pl-3"><span class="flex min-w-0 flex-1 items-center">${header}</span><span class="size-7 shrink-0"></span></div><div class="px-3 pt-1 pb-3">${placeholder}</div></div>`;
+  return `<div class="${glassClass} rounded-2xl p-2"><button type="button" class="group flex w-full cursor-pointer items-center gap-2 text-left justify-between rounded-2xl py-2 pr-2 pl-3">${header}<span class="inline-flex shrink-0 items-center gap-1 rounded-lg p-1.5 text-text-secondary transition-colors group-hover:bg-white/10 group-hover:text-text-primary">${icon('right', 16, 'size-4 rotate-90')}</span></button><div class="px-3 pt-1 pb-3">${lapStripDetail(frame)}</div></div>`;
+};
+
+const CH_W = 1000, CH_H = 140, PLOT_H = 126;
+const chartRow = (frame, key, title, iconName, color, arr, fmt) => {
+  const g = M.data.grid; let mn = Infinity, mx = -Infinity, any = false;
+  for (let i = 0; i < g.N; i++) if (!isNaN(arr[i])) { any = true; mn = Math.min(mn, arr[i]); mx = Math.max(mx, arr[i]); }
+  if (!any) return '';
+  if (key === 'power') mn = 0; const pad = (mx - mn) * 0.08 || 1; if (key !== 'power') mn -= pad; mx += pad;
+  const sm = smooth(arr, g.br, 15); const cols = 500; let d = ''; let pen = false;
+  for (let c = 0; c < cols; c++) { const i = Math.floor(c / cols * g.N); const v = sm[i]; if (isNaN(v) || g.br[i]) { pen = false; continue; } d += `${pen ? 'L' : 'M'}${(c / cols * CH_W).toFixed(1)} ${(PLOT_H - (v - mn) / (mx - mn) * PLOT_H).toFixed(1)}`; pen = true; }
+  let bands = '';
+  if (M.set) bands = M.set.bands.map((b) => { const x = b.from / g.N * CH_W, w = Math.max(0.5, (b.to - b.from) / g.N * CH_W), gp = w > 3 ? 1 : 0.3; const isSel = S.selected === b.i; const active = b.cls === 'work' || M.source !== 'efforts'; const fill = isSel ? 'rgba(255,255,255,.95)' : !active ? 'rgba(255,255,255,.1)' : b.i % 2 ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.32)'; return `${isSel ? `<rect x="${x}" y="0.75" width="${w}" height="${PLOT_H - 1.5}" rx="2" fill="#fff" fill-opacity="0.06" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke"/>` : ''}<rect x="${x + gp / 2}" y="${PLOT_H + 3}" width="${Math.max(0.4, w - gp)}" height="4" rx="1" fill="${fill}"/><rect x="${x}" y="0" width="${w}" height="${CH_H}" fill="transparent" data-block="${b.i}" data-frame="${frame}" class="cursor-pointer"/>`; }).join('');
+  return `<section aria-label="${title}"><div class="flex min-h-[46px] items-center px-3 pt-2"><span class="flex min-w-0 flex-1 items-center gap-2"><span class="grid shrink-0 place-items-center" style="color:${color}">${icon(iconName)}</span><span class="min-w-0"><span class="${TYPO.title} block text-left">${title}</span><span class="${TYPO.caption} block">${fmt(meanOf(arr, 0, g.N, g.br))}</span></span></span></div><div class="px-3 pt-1 pb-3"><div class="h-[140px]"><svg viewBox="0 0 ${CH_W} ${CH_H}" preserveAspectRatio="none" class="block h-full w-full" data-chart="${frame}"><line x1="0" x2="${CH_W}" y1="${PLOT_H}" y2="${PLOT_H}" stroke="#252830" vector-effect="non-scaling-stroke"/><g data-hover-layer="chart-${frame}-${key}"></g><path d="${d}" stroke="${color}" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke"/>${bands}</svg></div></div></section>`;
+};
+const chartsCard = (frame) => {
+  const g = M.data.grid; const rows = [];
+  rows.push(chartRow(frame, 'power', t('power'), 'zap', TOK.chartPower, g.power, (v) => (isNaN(v) ? '--' : `Ø ${Math.round(v)} W`)));
+  if (M.sport === 'run') rows.push(chartRow(frame, 'pace', t('pace'), 'timer', TOK.chartPace, g.speed, (v) => `Ø ${speedLabel('run', v)}`));
+  else rows.push(chartRow(frame, 'speed', t('speed'), 'timer', '#22c55e', g.speed, (v) => `Ø ${speedLabel('ride', v)}`));
+  rows.push(chartRow(frame, 'hr', t('hr'), 'heart', TOK.chartHr, g.hr, (v) => (isNaN(v) ? '--' : `Ø ${Math.round(v)} bpm`)));
+  const body = rows.filter(Boolean);
+  if (!body.length) return '';
+  return `<div class="relative isolate overflow-clip rounded-2xl"><div aria-hidden class="${glassClass} absolute inset-0 -z-10 rounded-[inherit]"></div><div class="divide-y divide-white/10">${body.join('')}</div></div>`;
+};
+const content = (frame) => `<div class="space-y-4">${sessionHeader()}${lapsRow(frame)}${chartsCard(frame)}</div>`;
+
+// ───────────────────────────── frames ─────────────────────────────
+const DESK = { w: 1280, h: 800 }, PHONE = { w: 390, h: 800, sheetTop: 404 };
+const dockRail = () => {
+  const tabs = ['dash', 'zap', 'flask', 'gear'];
+  return `<div class="absolute top-1/2 left-3 z-50 flex -translate-y-1/2 flex-col gap-2"><nav class="${floatingClass} flex rounded-full relative flex-col gap-1 p-1"><span aria-hidden class="pointer-events-none absolute rounded-full bg-accent-muted" style="top:48px;height:40px;left:4px;right:4px"></span>${tabs.map((n, i) => `<a class="${btnClass('ghost', 'icon')} relative shrink-0 rounded-full text-text-tertiary size-10 ${i === 1 ? 'cursor-default text-accent-hover hover:bg-transparent hover:text-accent-hover' : ''}">${icon(n, 20, '', 1.5)}</a>`).join('')}</nav><div class="${floatingClass} flex rounded-full flex-col gap-1 p-1"><button class="${btnClass('ghost', 'icon')} relative shrink-0 rounded-full text-text-tertiary size-10">${icon('funnel', 20, '', 1.5)}</button><button class="${btnClass('ghost', 'icon')} relative shrink-0 rounded-full text-text-tertiary size-10">${icon('locate', 20, '', 1.5)}</button></div></div>`;
+};
+const dockBar = () => {
+  const tabs = ['dash', 'zap', 'flask', 'gear'];
+  const circle = (n) => `<div class="${floatingClass} shrink-0 rounded-full p-[3px]"><button class="${btnClass('ghost', 'icon')} relative shrink-0 rounded-full text-text-tertiary size-11">${icon(n, 20, '', 1.5)}</button></div>`;
+  return `<div class="absolute right-3 bottom-3 left-3 z-50 flex h-[52px] gap-2">${circle('locate')}<nav class="${floatingClass} flex rounded-full relative min-w-0 flex-1 gap-0.5 p-[3px]"><span aria-hidden class="pointer-events-none absolute rounded-full bg-accent-muted" style="left:calc(25% + 0.5px);width:calc(25% - 3px);top:3px;bottom:3px"></span>${tabs.map((n, i) => `<a class="${btnClass('ghost', 'icon')} relative shrink-0 rounded-full text-text-tertiary h-11 min-w-0 flex-1 ${i === 1 ? 'cursor-default text-accent-hover hover:bg-transparent hover:text-accent-hover' : ''}">${icon(n, 20, '', 1.5)}</a>`).join('')}</nav>${circle('funnel')}</div>`;
+};
+const desktopFrame = () => {
+  const region = { x: 110, y: 70, w: 600, h: 600 };
+  MAP_PTS.desk = trackPoints(region);
+  const popover = S.openDesk && S.selected === null ? `<div data-popover class="${floatingClass} absolute z-50 w-80 max-w-xs rounded-xl p-4" style="bottom:${40 + 44 + 4}px;left:0;visibility:hidden"><div class="mb-3 flex items-center gap-2 text-text-tertiary">${icon('flag', 14)}<span class="text-xs">${t('laps')}</span></div>${pickerRows('desk')}</div>` : '';
+  return `<div class="relative h-full w-full overflow-hidden" data-frame-root="desk">${mapSvg('desk', DESK.w, DESK.h, region)}<main class="absolute top-0 right-0 bottom-0 z-10 w-[40%] overflow-y-auto pt-6 pr-6 pb-28" data-scroll="desk">${content('desk')}</main>${dockRail()}<div class="pointer-events-none absolute z-20 -translate-x-1/2" style="bottom:40px;left:calc(30% + 2.375rem)" data-bar-anchor><div class="mx-auto flex w-max items-center gap-2" style="height:44px" data-map-pills>${colorByPill('desk')}${lapsControl('desk')}</div></div>${popover}</div>`;
+};
+const phoneFrame = () => {
+  const region = { x: 30, y: 60, w: 330, h: PHONE.sheetTop - 140 };
+  MAP_PTS.phone = trackPoints(region);
+  const dialog = S.openPhone && S.selected === null ? `<div class="${scrimClass} absolute inset-0 z-50" data-action="close-picker"></div><div data-dialog class="${floatingClass} absolute right-2 bottom-3 left-2 z-50 flex max-h-[75%] flex-col overflow-hidden rounded-3xl"><button type="button" data-action="close-picker" class="flex h-[48px] w-full shrink-0 cursor-grab items-center justify-center"><span class="h-1 w-10 rounded-full bg-white/30"></span></button><div class="flex min-h-11 shrink-0 items-center gap-2 px-5">${icon('flag', 16, 'size-4 shrink-0 text-text-tertiary')}<div class="min-w-0"><span class="text-base font-medium text-text-primary block truncate">${t('laps')}</span></div></div><div class="min-h-0 shrink overflow-y-auto overscroll-contain px-5 pt-1 pb-5">${pickerRows('phone')}</div></div>` : '';
+  return `<div class="relative h-full w-full overflow-hidden" data-frame-root="phone">${mapSvg('phone', PHONE.w, PHONE.h, region)}<div class="pointer-events-none absolute inset-x-0 z-10 flex justify-center" style="bottom:${PHONE.h - PHONE.sheetTop + 12}px"><div data-phone-scroller class="pointer-events-auto max-w-full overflow-x-auto px-4 [scrollbar-width:none]"><div class="mx-auto flex w-max items-center gap-2" style="height:44px" data-map-pills>${colorByPill('phone')}${lapsControl('phone')}</div></div></div><div class="${glassClass} absolute inset-x-0 bottom-0 z-10 flex flex-col rounded-t-2xl border-x-0 border-b-0" style="top:${PHONE.sheetTop}px"><button type="button" class="flex h-[48px] w-full shrink-0 items-center justify-center"><span class="h-1 w-10 rounded-full bg-white/30"></span></button><div class="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-[72px]" data-scroll="phone"><main class="relative pb-6">${content('phone')}</main></div></div>${dockBar()}${dialog}</div>`;
+};
+
+let SCALE = 0.5;
+const renderFrames = () => {
+  PLAN = { desk: fitPlan('desk'), phone: fitPlan('phone') };
+  const host = document.getElementById('frames');
+  const keepScroll = {}; host.querySelectorAll('[data-scroll]').forEach((el) => { keepScroll[el.dataset.scroll] = el.scrollTop; });
+  const parts = [];
+  const fr = (key, w, h, inner, label) => `<div class="flex shrink-0 flex-col gap-1"><span class="text-xs text-text-tertiary">${label}</span><div class="relative shrink-0 overflow-hidden rounded-xl border border-white/10" style="width:${Math.round(w * SCALE)}px;height:${Math.round(h * SCALE)}px"><div class="frame-inner absolute top-0 left-0" style="width:${w}px;height:${h}px;transform:scale(${SCALE})" data-frame-box="${key}">${inner}</div></div></div>`;
+  if (S.viewport !== 'phone') parts.push(fr('desk', DESK.w, DESK.h, desktopFrame(), 'Desktop · hover'));
+  if (S.viewport !== 'desktop') parts.push(fr('phone', PHONE.w, PHONE.h, phoneFrame(), 'Phone 390 · tap'));
+  host.innerHTML = parts.join('');
+  host.querySelectorAll('[data-scroll]').forEach((el) => { if (keepScroll[el.dataset.scroll] !== undefined) el.scrollTop = keepScroll[el.dataset.scroll]; });
+  const root = host.querySelector('[data-frame-root="desk"]'); const pop = root && root.querySelector('[data-popover]');
+  if (pop) { const pill = root.querySelector('[data-laps-pill]'); const fb = root.getBoundingClientRect(), pb = pill.getBoundingClientRect(); const cx = (pb.left + pb.width / 2 - fb.left) / SCALE; pop.style.left = `${Math.round(cx - 160)}px`; pop.style.visibility = 'visible'; }
+};
+
+// ───────────────────────────── hover layers ─────────────────────────────
+const updateHover = () => {
+  const g = M.data.grid; const hb = S.hover !== null && M.set ? M.set.bands[S.hover] : null;
+  const showHover = hb && S.hover !== S.selected;
+  document.querySelectorAll('[data-hover-layer]').forEach((el) => {
+    const id = el.dataset.hoverLayer;
+    if (!showHover) { el.innerHTML = ''; return; }
+    if (id.startsWith('map-')) { const f = id.slice(4); const pts = MAP_PTS[f]; if (!pts) return; el.innerHTML = `<path d="${pathOf(pts, hb.from, hb.to, 2)}" stroke="#fff" stroke-width="${f === 'desk' ? 3 : 2.5}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`; }
+    else if (id.startsWith('strip-')) { const L = stripLayout(M.set).find((l) => l.b.i === hb.i); el.innerHTML = `<rect x="${L.x}" y="0" width="${L.span}" height="${STRIP_H}" fill="#fff" fill-opacity="0.1"/>`; }
+    else if (id.startsWith('chart-')) el.innerHTML = `<rect x="${hb.from / g.N * CH_W}" y="0" width="${(hb.to - hb.from) / g.N * CH_W}" height="${PLOT_H}" fill="rgba(255,255,255,.1)"/>`;
+    else if (id === 'explainer') el.innerHTML = EXP.hoverRect ? EXP.hoverRect(hb) : '';
+  });
+  document.querySelectorAll('[data-insp-row]').forEach((el) => { el.classList.toggle('bg-white/5', Number(el.dataset.inspRow) === S.hover); });
+  placeBadges();
+};
+
+// ───────────────────────────── explainer ─────────────────────────────
+const EXP = {};
+const CLS_FILL = { work: 'rgba(255,255,255,.85)', steady: 'rgba(255,255,255,.5)', rest: 'rgba(255,255,255,.16)', warmup: 'rgba(139,143,154,.55)', cooldown: 'rgba(139,143,154,.55)', break: 'none' };
+const renderExplainer = () => {
+  const host = document.getElementById('explainer');
+  if (S.explainer === 'off') { host.classList.add('hidden'); return; }
+  host.classList.remove('hidden');
+  const det = M.det, g = M.data.grid;
+  const win = det.sig ? DEF[det.sig].cls : 0;
+  const head = `<div class="flex h-6 shrink-0 items-center gap-3"><span class="${TYPO.subtitle1} shrink-0">Detection</span><span class="text-xs text-text-tertiary truncate">${det.sig ? `${SIG_NAME[det.sig]}, ${win} s smoothed${det.shift ? ` · shifted −${det.shift} s (approx.)` : ''} · ${refLabel(det)} · PELT σ ${det.sig === 'pace' ? nf(2).format(det.sigma) : Math.round(det.sigma)}, β 4·σ²·ln n` : `no usable signal${det.limitedBy ? ` · limitedBy ${det.limitedBy}` : ''}`}${det.limitedBy && det.sig ? ` · limitedBy ${det.limitedBy}` : ''}</span><span class="ml-auto shrink-0 text-xs text-text-tertiary tabular-nums w-[300px] truncate text-right" data-readout></span></div>`;
+  const rowsList = ['V2', 'truth'];
+  const W = Math.max(400, host.clientWidth - 32), LBL = 92, R = 10, PW = W - LBL - R;
+  const ROWH = 16, TOP = 14, H = Math.max(160, host.clientHeight - 32 - 24 - 16 - 8);
+  const TH = H - TOP - 8 - rowsList.length * (ROWH + 4) - 20, rowsY = TOP + TH + 8, rowsEnd = rowsY + rowsList.length * (ROWH + 4);
+  const X = (i) => LBL + i / g.N * PW;
+  let svg = `<svg width="${W}" height="${H}" class="block" data-exp-svg>${hatchDef('hatch')}`;
+  if (M.loading) {
+    svg += `<rect x="${LBL}" y="${TOP}" width="${PW}" height="${TH}" rx="8" fill="rgba(255,255,255,.04)"/><text x="${LBL + PW / 2}" y="${TOP + TH / 2}" text-anchor="middle" class="text-xs" fill="#8b8f9a">Detecting… (records loaded, detection runs off the main thread in the real app)</text></svg>`;
+    host.innerHTML = head + `<div class="min-h-0 flex-1">${svg}</div>`; EXP.hoverRect = null; EXP.toIndex = null; return;
+  }
+  const disp = det.sig ? (det.sig === 'hr' ? series(g, 'hr', 0) : det.x) : null;
+  let mn = Infinity, mx = -Infinity;
+  if (disp) for (let i = 0; i < g.N; i++) if (!isNaN(disp[i])) { mn = Math.min(mn, disp[i]); mx = Math.max(mx, disp[i]); }
+  if (!isFinite(mn)) { mn = 0; mx = 1; }
+  if (det.sig === 'power') mn = 0; const pad = (mx - mn) * 0.06; mx += pad; if (det.sig !== 'power') mn -= pad;
+  const Y = (v) => TOP + TH - (v - mn) / (mx - mn) * TH;
+  const bridges = det.ok ? det.blocks.flatMap((b) => b.bridges || []) : [];
+  const isBridged = (a) => bridges.some(([p, q]) => p === a);
+  for (const [a, b] of runsOf(Uint8Array.from(g.br, (v) => (v ? 0 : 1)))) {
+    const kind = `${isBridged(a) ? 'bridged ' : ''}${g.stop[a] ? 'stop' : 'gap'} ${fmtDur(b - a)}`;
+    svg += `<rect x="${X(a)}" y="${TOP}" width="${Math.max(1.5, X(b) - X(a))}" height="${rowsEnd - TOP}" fill="url(#hatch)" opacity=".5"/>`;
+    svg += `<text x="${X(b - a > 0 ? b : a) + 3}" y="${TOP + 12}" class="text-xs" fill="#b0b4be">${kind}</text>`;
+  }
+  const color = det.sig === 'hr' ? TOK.chartHr : det.sig === 'pace' ? TOK.chartPace : TOK.chartPower;
+  if (disp) {
+    const cols = Math.floor(PW); let raw = '';
+    for (let c = 0; c < cols; c++) { const a = Math.floor(c / cols * g.N), b = Math.max(a + 1, Math.floor((c + 1) / cols * g.N)); let lo = Infinity, hi = -Infinity; for (let i = a; i < b; i++) { const v = disp[i]; if (!isNaN(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); } } if (isFinite(lo)) raw += `M${(LBL + c + 0.5).toFixed(1)} ${Y(hi).toFixed(1)}V${(Y(lo) + 0.5).toFixed(1)}`; }
+    svg += `<path d="${raw}" stroke="rgba(255,255,255,.16)" stroke-width="1" fill="none"/>`;
+    const line = (arr, extra) => { let d = '', pen = false; for (let c = 0; c < cols; c++) { const i = Math.floor((c + 0.5) / cols * g.N); const v = arr[i]; if (isNaN(v) || g.br[i]) { pen = false; continue; } d += `${pen ? 'L' : 'M'}${(LBL + c + 0.5).toFixed(1)} ${Y(v).toFixed(1)}`; pen = true; } return `<path d="${d}" fill="none" ${extra}/>`; };
+    if (det.sGhost) svg += line(det.sGhost, `stroke="${color}" stroke-opacity=".45" stroke-width="1.2" stroke-dasharray="3 3"`);
+    svg += line(det.s, `stroke="${color}" stroke-width="1.6"`);
+    if (det.sig === 'power') { let z = ''; for (let i = 0; i < g.N; i++) if (g.power[i] === 0 && !g.br[i]) z += `M${X(i).toFixed(1)} ${TOP + TH - 6}V${TOP + TH}`; if (z) svg += `<path d="${z}" stroke="${TOK.chartCadence}" stroke-width="1" stroke-opacity=".8"/>`; }
+    const cutY = Y(det.enter); svg += `<line x1="${LBL}" x2="${LBL + PW}" y1="${cutY}" y2="${cutY}" stroke="rgba(255,255,255,.6)" stroke-dasharray="5 4"/><text x="${LBL + PW - 4}" y="${cutY - 4}" text-anchor="end" class="text-xs" fill="#e5e7eb">${esc(refLabel(det))}</text>`;
+    const sy = Y(det.steadyLow); svg += `<line x1="${LBL}" x2="${LBL + PW}" y1="${sy}" y2="${sy}" stroke="rgba(255,255,255,.22)" stroke-dasharray="1 4"/><text x="${LBL + PW - 4}" y="${sy + 13}" text-anchor="end" class="text-xs" fill="#8b8f9a">steady ≥ ${sigFmt(det.sig, det.steadyLow)}</text>`;
+    [mn + (mx - mn) * 0.15, mn + (mx - mn) * 0.85].forEach((v) => { svg += `<text x="${LBL - 6}" y="${Y(v) + 4}" text-anchor="end" class="text-xs" fill="#8b8f9a">${sigFmt(det.sig, v)}</text>`; });
+    if (det.cps.length) svg += `<path d="${det.cps.map((c) => `M${X(c).toFixed(1)} 0V${TOP - 3}`).join('')}" stroke="rgba(255,255,255,.7)" stroke-width="1"/><text x="${LBL - 6}" y="${TOP - 3}" text-anchor="end" class="text-xs" fill="#8b8f9a">PELT</text>`;
+    if (det.ghost && det.ok) { let d1 = '', d2 = ''; det.ghost.forEach((b) => { d1 += `M${X(b.from)} ${TOP}V${rowsY + ROWH}M${X(b.to)} ${TOP}V${rowsY + ROWH}`; }); det.blocks.filter((b) => b.cls === 'work').forEach((b) => { d2 += `M${X(b.from)} ${TOP}V${rowsY + ROWH}M${X(b.to)} ${TOP}V${rowsY + ROWH}`; }); svg += `<path d="${d1}" stroke="${TOK.chartHr}" stroke-opacity=".55" stroke-dasharray="2 3"/><path d="${d2}" stroke="#fff" stroke-opacity=".55"/>`; }
+  } else {
+    svg += `<text x="${LBL + PW / 2}" y="${TOP + TH / 2}" text-anchor="middle" class="text-xs" fill="#8b8f9a">${det.limitedBy ? `Only ${det.limitedBy === 'ftp' ? 'power' : 'pace'} recorded and no ${det.limitedBy === 'ftp' ? 'FTP' : 'threshold pace'} in the profile; no HR to fall back to` : 'No power, pace or heart rate recorded: nothing to detect from'}</text>`;
+  }
+  // V2 band row + truth row
+  const yV = rowsY, yT = rowsY + ROWH + 4;
+  svg += `<text x="${LBL - 6}" y="${yV + 12}" text-anchor="end" class="text-xs" fill="#b0b4be">V2</text><text x="${LBL - 6}" y="${yT + 12}" text-anchor="end" class="text-xs" fill="#5c616e">truth</text>`;
+  if (!det.ok) svg += `<rect x="${LBL}" y="${yV}" width="${PW}" height="${ROWH}" rx="3" fill="rgba(255,255,255,.03)"/><text x="${LBL + 6}" y="${yV + 12}" class="text-xs" fill="#b0b4be">No efforts found · ${esc(REASON[det.reason])}</text>`;
+  else svg += M.sets.efforts.bands.map((b) => {
+    const x = X(b.from), w = Math.max(1, X(b.to) - X(b.from)); const sel = S.selected === b.i && M.source === 'efforts';
+    const hatch = b.bridges.map(([p, q]) => `<rect x="${X(p)}" y="${yV}" width="${Math.max(1, X(q) - X(p))}" height="${ROWH}" fill="#0e0e0e" fill-opacity=".6"/><rect x="${X(p)}" y="${yV}" width="${Math.max(1, X(q) - X(p))}" height="${ROWH}" fill="url(#hatch)"/>`).join('');
+    const nm = b.name.length * 6.5 < w - 6 ? b.name : b.name.replace(/\D+/g, '');
+    return `<rect x="${x + 0.5}" y="${yV}" width="${Math.max(0.5, w - 1)}" height="${ROWH}" rx="2" fill="${CLS_FILL[b.cls]}" ${sel ? 'stroke="#fff" stroke-width="1.5"' : ''}/>${hatch}${w > 30 ? `<text x="${x + 4}" y="${yV + 12}" class="text-xs" fill="${b.cls === 'work' || b.cls === 'steady' ? '#030712' : '#e5e7eb'}">${esc(nm)}</text>` : ''}<rect x="${x}" y="${yV - 2}" width="${w}" height="${ROWH + 4}" fill="transparent" data-block="${b.i}" data-frame="exp" class="cursor-pointer"/>`;
+  }).join('');
+  svg += M.data.truth.map((b) => (b.cls === 'break' ? '' : `<rect x="${X(b.from) + 0.5}" y="${yT + 4}" width="${Math.max(0.5, X(b.to) - X(b.from) - 1)}" height="${ROWH - 8}" rx="2" fill="${CLS_FILL[b.cls]}" fill-opacity=".7"/>`)).join('');
+  const yA = rowsEnd + 14; const step = g.N > 7200 ? 1800 : g.N > 3000 ? 600 : 300;
+  for (let s = 0; s <= g.N - step / 3; s += step) svg += `<text x="${X(s)}" y="${yA}" text-anchor="${s === 0 ? 'start' : 'middle'}" class="text-xs" fill="#5c616e">${fmtDur(s)}</text>`;
+  svg += `<g data-hover-layer="explainer"></g><line data-xhair x1="0" x2="0" y1="${TOP}" y2="${rowsEnd}" stroke="rgba(255,255,255,.5)" visibility="hidden"/></svg>`;
+  const leg = (sw, txt) => `<span class="inline-flex items-center gap-1">${sw}${txt}</span>`;
+  const legend = `<div class="flex h-4 shrink-0 flex-wrap items-center gap-3 overflow-hidden text-xs text-text-tertiary">${leg(`<i class="inline-block h-0.5 w-3" style="background:${color}"></i>`, `${win} s trace`)}${leg('<i class="inline-block h-2 w-3 bg-white/20"></i>', 'raw 1 s')}${leg(`<i class="inline-block h-2 w-3 rounded-[2px]" style="background:${CLS_FILL.work}"></i>`, 'work')}${leg(`<i class="inline-block h-2 w-3 rounded-[2px]" style="background:${CLS_FILL.steady}"></i>`, 'steady')}${leg(`<i class="inline-block h-2 w-3 rounded-[2px]" style="background:${CLS_FILL.rest}"></i>`, 'recovery')}${leg(`<i class="inline-block h-2 w-3 rounded-[2px]" style="background:${CLS_FILL.warmup}"></i>`, 'warm-up / cool-down')}${leg('<svg width="12" height="8"><rect width="12" height="8" fill="url(#hatch)"/></svg>', 'gap / stop (≤ 2:00 inside work = bridged)')}${det.sig === 'power' ? leg(`<i class="inline-block h-2 w-px" style="background:${TOK.chartCadence}"></i>`, 'recorded 0 W') : ''}${det.ghost ? leg(`<i class="inline-block h-2 w-px border-l border-dashed" style="border-color:${TOK.chartHr}"></i>`, 'HR ghost edge vs shifted −30 s') : ''}${leg('<i class="inline-block h-2 w-px bg-white/70"></i>', 'PELT change point')}</div>`;
+  const stops = runsOf(Uint8Array.from(g.br, (v) => (v ? 0 : 1))).filter(([a, b]) => b - a >= 60 && b - a <= 180);
+  const marks = stops.map(([a, b]) => `<span${Q('Q5')} class="absolute block h-4" style="left:${X(a)}px;top:${TOP + 16}px;width:${Math.max(4, X(b) - X(a))}px"></span>`).join('');
+  host.innerHTML = head + `<div class="relative min-h-0 flex-1 overflow-hidden">${svg}${marks}</div>` + legend;
+  EXP.hoverRect = (hb) => `<rect x="${X(hb.from)}" y="${TOP}" width="${Math.max(1, X(hb.to) - X(hb.from))}" height="${TH}" fill="rgba(255,255,255,.08)"/>`;
+  EXP.toIndex = (px) => Math.round(clamp((px - LBL) / PW, 0, 1) * (g.N - 1));
+  EXP.X = X; EXP.LBL = LBL;
+};
+
+// ───────────────────────────── inspector ─────────────────────────────
+const blockTable = (set) => {
+  if (M.loading) return `<div class="flex flex-col gap-2">${[0, 1, 2, 3].map(() => '<div class="flex h-5 items-center"><div class="h-3 w-full animate-pulse rounded bg-white/10"></div></div>').join('')}</div>`;
+  if (!set) return `<p class="${TYPO.body1}">${esc(t('none'))}</p><p class="text-xs text-text-tertiary">${esc(REASON[M.det.reason] || '')}</p>`;
+  return `<table class="w-full table-fixed whitespace-nowrap text-xs tabular-nums"><thead class="sticky top-0 bg-surface"><tr class="text-left text-text-tertiary"><th class="w-[28%] py-1 font-normal">Block</th><th class="font-normal">Start</th><th class="font-normal"><span${Q('Q1')}>Moving</span></th><th class="font-normal">${M.sport === 'run' ? 'Pace' : 'Speed'}</th><th class="font-normal">Power</th><th class="font-normal">HR</th></tr></thead><tbody>${set.bands.map((b) => `<tr data-insp-row="${b.i}" data-block="${b.i}" data-frame="insp" class="cursor-pointer ${S.selected === b.i && M.source === 'efforts' ? 'text-text-primary' : 'text-text-secondary'}"><td class="truncate py-0.5 pr-2"><i class="mr-1.5 inline-block h-2 w-2 rounded-[2px] align-middle" style="background:${CLS_FILL[b.cls]}"></i>${esc(b.name)}${b.bridges.length ? ' ⧄' : ''}</td><td>${fmtDur(b.from)}</td><td>${fmtDur(b.md)}</td><td>${speedLabel(M.sport, b.m.speed)}</td><td>${wLabel(b.m.power)}</td><td>${bpmLabel(b.m.hr)}</td></tr>`).join('')}</tbody></table>`;
+};
+const summaryOf = (d) => {
+  if (!d.ok) return `No efforts · ${REASON[d.reason]}${d.limitedBy ? ` · limitedBy ${d.limitedBy}` : ''}`;
+  const c = {}; d.blocks.forEach((b) => { if (b.cls !== 'break') c[b.cls] = (c[b.cls] || 0) + 1; });
+  const works = d.blocks.filter((b) => b.cls === 'work').map(movingLen);
+  const parts = [`${c.work} work (${fmtDur(Math.min(...works))}–${fmtDur(Math.max(...works))})`];
+  if (c.rest) parts.push(`${c.rest} rec`); if (c.steady) parts.push(`${c.steady} steady`); if (c.warmup) parts.push('WU'); if (c.cooldown) parts.push('CD');
+  const br = d.blocks.reduce((s, b) => s + (b.bridges || []).length, 0); if (br) parts.push(`${br} bridged`);
+  return `${parts.join(' · ')} · from ${d.sig}${d.limitedBy ? ` · limitedBy ${d.limitedBy}` : ''}`;
+};
+const spaceTable = () => {
+  const cells = {};
+  for (const lang of ['en', 'de']) for (const v of ['desk', 'phone']) cells[`${lang}-${v}`] = withLang(lang, () => fitPlan(v));
+  const fmt = (o, names, key) => {
+    if (!o) return '<span class="text-text-quaternary">n/a</span>';
+    const total = o.w;
+    const fits = o.w + SAFE <= o.avail;
+    const extra = key === 'step' ? ` · 72: ${o.w + SAFE <= 72 ? 'fits' : 'clips'} · 104: ${o.w + SAFE <= 104 ? 'fits' : 'clips'}` : '';
+    return `<span class="block ${fits ? 'text-text-secondary' : 'text-status-danger'}">${Math.round(o.full)}${o.i ? `→${Math.round(total)}` : ''}/${o.avail}</span><span class="block truncate text-text-tertiary">${names[o.i]}${extra}</span>`;
+  };
+  const rows = [['Pill bar', 'pill', PILL_STEP_NAMES()], ['Stepper name', 'step', [S.q8 === 'wide' ? 'w-[104px]' : 'w-[72px]']], ['Summary chip', 'chip', CHIP_STEPS], ['Nudge link', 'link', ['full', 'short']]];
+  return `<table class="w-full table-fixed whitespace-nowrap text-xs tabular-nums"><thead><tr class="text-left text-text-tertiary"><th class="w-[19%] py-0.5 font-normal">need→got/avail</th><th class="font-normal">EN desktop</th><th class="font-normal">EN phone</th><th class="font-normal">DE desktop</th><th class="font-normal">DE phone</th></tr></thead><tbody>${rows.map(([label, key, names]) => `<tr class="align-top"><td class="py-0.5 text-text-secondary">${label}</td>${['en-desk', 'en-phone', 'de-desk', 'de-phone'].map((k) => `<td class="truncate pr-1">${fmt(cells[k][key], names, key)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+};
+const spaceLine = () => {
+  const out = [];
+  for (const v of ['desk', 'phone']) { const pl = PLAN[v]; const bits = []; if (pl.pill && pl.pill.i) bits.push(`pill ${PILL_STEP_NAMES()[pl.pill.i]}`); if (pl.chip && pl.chip.i) bits.push(`chip ${CHIP_STEPS[pl.chip.i]}`); if (pl.step && pl.step.w + SAFE > pl.step.avail) bits.push('stepper name ellipsis'); if (pl.link && pl.link.i) bits.push('short link'); out.push(`${v === 'desk' ? 'desktop' : 'phone'} ${bits.length ? bits.join(', ') : 'all full'}`); }
+  return out.join(' · ');
+};
+const renderInspector = () => {
+  const det = M.det, s = det.stats;
+  const guardLine = s ? `moving ${fmtDur(s.moving)} · work ${Math.round(s.workShare * 100)} % · work Ø ${sigFmt(det.sig, s.workMean)} vs rest Ø ${sigFmt(det.sig, s.restMean)} · coverage ${Math.round(det.cov * 100)} %` : `skipped: ${det.skipped.join(', ') || '—'}`;
+  const sigLine = det.sig ? `${SIG_NAME[det.sig]} · ${refLabel(det)}` : 'no usable signal';
+  document.getElementById('inspector').innerHTML = `<div class="flex shrink-0 items-start justify-between gap-3"><div class="min-w-0"><span class="${TYPO.title} block">V2 · PELT edges, threshold labels</span><span class="text-xs text-text-secondary block truncate">${esc(SCN[S.scenario].label)}</span></div><button type="button" data-action="notes" class="${btnClass('secondary', 'sm')} shrink-0">${icon('notes')}Notes</button></div><div class="mt-3 grid shrink-0 grid-cols-2 gap-2"><div class="${tileClass} min-w-0 px-3 py-2"><span class="${TYPO.overline} block">Result</span><span class="${TYPO.body1} block truncate" title="${M.loading ? '' : esc(summaryOf(det))}">${M.loading ? 'Detecting…' : esc(summaryOf(det))}</span><span class="text-xs text-text-tertiary block truncate">${esc(guardLine)}</span></div><div class="${tileClass} min-w-0 px-3 py-2"><span class="${TYPO.overline} block">Signal</span><span class="${TYPO.body1} block truncate">${esc(sigLine)}</span><span class="text-xs text-text-tertiary block truncate">limitedBy: ${det.limitedBy || 'undefined'} · skipped: ${esc(det.skipped.join(', ') || '—')}</span></div></div>${S.worst === 'on' || S.fit === 'before' ? `<div class="mt-2 min-h-0 flex-1 overflow-y-auto ${tileClass} px-3 py-2"><span class="${TYPO.overline} block">Space check ${S.worst === 'on' ? '· worst-case strings' : '· current strings'} · ${S.fit === 'before' ? 'before (no degradation)' : 'after (degradation)'}</span>${spaceTable()}<span class="mt-1 text-xs text-text-tertiary block">Frame px. need = full strings, got = after degradation, avail = room in that viewport. Block table returns when worst-case is off.</span></div>` : `<span class="mt-2 shrink-0 text-xs text-text-tertiary block truncate">Space: ${esc(spaceLine())} · turn on “Worst-case strings” for the full measurement</span><div class="mt-2 min-h-0 flex-1 overflow-y-auto pr-1">${blockTable(M.loading ? null : M.sets.efforts)}</div>`}`;
+};
+
+
+// ───────────────────────────── notes ─────────────────────────────
+const matrix = () => {
+  const keep = S.profile; const out = [];
+  for (const id of SCN_ORDER.filter((x) => x !== 'loading')) {
+    if (SCN[id].profile) S.profile = SCN[id].profile;
+    out.push(`<tr class="align-top text-text-secondary"><td class="py-1 pr-2 text-text-primary">${esc(SCN[id].label)}</td><td class="py-1">${esc(summaryOf(detect(id)))}</td></tr>`);
+    S.profile = keep;
+  }
+  return `<table class="w-full text-xs"><tbody>${out.join('')}</tbody></table>`;
+};
+const li = (head, body) => `<li><b class="font-medium text-text-primary">${head}</b> ${body}</li>`;
+const qRow = (id, status, text, options) => `<li><span class="mr-1 rounded bg-status-warning px-1 text-xs font-medium text-surface-base">${id}</span><b class="font-medium ${status === 'settled' ? 'text-status-success' : 'text-status-warning'}">${status}</b> · ${text}<ul class="mt-0.5 list-[circle] pl-4">${options.map((o) => `<li>${o}</li>`).join('')}</ul></li>`;
+const NOTES_STATIC = () => `
+<h3 class="${TYPO.title}">Decisions</h3>
+<p class="text-xs text-text-tertiary">Each badge in the UI sits on the part it changes; hover or tap it for the one-line rule. Toolbar “Decision labels” hides them. Principle (round 4): keep it simple, no per-effort details.</p>
+<ul class="mt-2 space-y-2 text-xs text-text-secondary">
+${qRow('Q1', 'settled', 'Duration of a bridged block = moving time', ['used by the “4 × 4:01” pattern in the summary chip (±10 % check on moving time)', 'elapsed time (rejected)'])}
+${qRow('Q-pill', 'settled', 'Pill grammar “&lt;count&gt; &lt;source&gt;” for every source', ['12 device laps / 12 Geräterunden (today “12 laps / 12 Runden”, <code>ui_laps_pill_count</code>)', '6 splits / 6 Splits (today “1 km splits / 1-km-Splits”, <code>ui_laps_pill_splits</code>)', '4 efforts / 4 Belastungen; Off stays “Laps / Runden”; no pattern, no chip in the pill'])}
+${qRow('Q2', 'settled', 'One summary chip in the efforts row', ['“4 × 4:01 · power” when work blocks match ±10 %, else “5 efforts · heart rate ≈”; DE “4 × 4:01 · Leistung”, “5 Belastungen · Herzfrequenz ≈”', 'the chip <b class="font-medium text-text-primary">replaces</b> the count caption (the count would otherwise appear twice); row = title / chip / nudge link, every line reserved', 'too narrow: signal word → signal icon (+ ≈) → count only; nothing degrades with real strings, see space check', 'no efforts / loading: the same line shows the plain caption “No efforts found” / “Detecting…”'])}
+${qRow('Q3', 'settled', 'Stepper exactly as today: [⚑ ‹ Belastung 12 ›] [✕], name only', ['no detail line, no per-block W / bpm, no new tooltip; strip and chart bands only highlight on hover, as LapStrip.tsx / LapBands.tsx do today'])}
+${qRow('Q4', 'closed', 'Block details for sessions without power meter / HR strap', ['moot: there are no per-block details'])}
+${qRow('Q5', 'settled', 'Bridging tolerance', ['stops / gaps ≤ 2:00 + 10 s with work on both sides are bridged (the 2:00 light measures 2:01 in smart recording); longer ones split'])}
+${qRow('Q6', 'settled', 'DE warm-up / cool-down', ['Einfahren / Ausfahren (ride), Einlaufen / Auslaufen (run)'])}
+${qRow('Q7', 'closed', 'Average W / bpm per block', ['<code>LapAnalysis</code> stays pace-only (src/lib/laps.ts:3-11); the inspector table outside the frames keeps W / bpm only for this comparison'])}
+${qRow('Q8', 'open', 'Stepper name slot', ['widen w-[72px] → w-[104px] (“Gleichmäßig 12” 99 px, “Steady 12” 71 px; 72 px clips both)', 'keep w-[72px] and ellipsis (“Gleichmäßi…”)'])}
+${qRow('Q9', 'open', 'Phone pill too wide (“12 Geräterunden” next to “Sportfarbe”)', ['drop the swatch first (current)', 'colour pill icon-only first (its existing compact form)', 'keep everything, the bar scrolls (today’s behaviour)', 'turn on “Worst-case strings” + DE to see it'])}
+</ul>
+<h3 class="${TYPO.title} mt-4">Detection defaults (V2, unchanged)</h3>
+<ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-text-secondary">
+${li('Signal.', 'Ride: power vs FTP → else HR vs HR reserve. Run: grade-adjusted pace vs threshold pace → else HR. Running power ignored. Coverage ≥ 50 %. HR shifted 30 s, “approx.”.')}
+${li('Segmentation.', 'PELT on 5 s bins, β = 4 · σ² · ln(n), min segment 30 s, edges refined ±5 s on the 5 s trace. Sensor dropouts ≥ 15 s stay their own segment (recovery, metrics “--”) instead of being held.')}
+${li('Labels.', 'work ≥ 0.88 FTP / 0.88 threshold speed / rest + 0.80 HRR; steady ≥ 0.75 / 0.82 / 0.70 and ≥ 5 min; min work 30 s / 60 s / 120 s moving; recovery 20 s; warm-up / cool-down ≥ 3 min.')}
+${li('Bridging.', 'break ≤ Q5 limit with work on both sides joins the work block; pieces &lt; 20 s next to it are absorbed.')}
+${li('Guards.', 'work &gt; 80 % of moving time; &lt; 2 work blocks; work mean &lt; 1.15 × recovery mean → “No efforts found” (disabled row, nudge link if <code>limitedBy</code>).')}
+${li('limitedBy.', 'engine <code>effortDetection.ts</code> → <code>EffortLimiter</code> like <code>EnergyBlocker</code> (energy.ts:7, 138-152); lib <code>buildLapSet</code> (lapSet.ts:48-64) passes it on; UI <code>LIMITER_LABELS</code> + <code>&lt;Link to="/settings"&gt;</code> like MoreStatsRow.tsx:51-55 / 79-83.')}
+</ul>
+<h3 class="${TYPO.title} mt-4">Space check</h3>
+<ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-text-secondary">
+${li('Pill.', 'count + source + swatch; phone order set by Q9.')}
+${li('Summary chip.', 'full → signal icon → count only, against the row text column (desktop 178 px, phone 224 px).')}
+${li('Nudge link.', 'full → short (“Add threshold pace”).')}
+</ul>
+<h3 class="${TYPO.title} mt-4">Results per scenario (current switches; nudge scenarios set their own profile)</h3>
+<div class="mt-2">${matrix()}</div>
+<h3 class="${TYPO.title} mt-4">Component map</h3>
+<ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-text-secondary">
+<li>Pill <code>FloatingPill</code> LapsControl.tsx:316-321, label from <code>pillLabel</code> 25-29 → new message keys per source. Chip line reuses the <code>DialogHeader</code> chip classes (Dialog.tsx:159-163) → extract a shared Chip.</li>
+<li>Picker rows LapsControl.tsx:118-186 (RadioGroupItem, rowClass 44-45); the summary chip and the reserved nudge line are plain captions + the shared Chip, no new component.</li>
+<li>Stepper LapsControl.tsx:219-281, unchanged; only Q8 (name slot width) is open.</li>
+<li>Strip LapStrip.tsx:198-295 + hatched bridge overlay and a warm-up / cool-down legend entry (small additions); hover / select behaviour unchanged, no tooltip (none today). Chart bands LapBands.tsx:30-84 unchanged.</li>
+<li>Colour pill compact form ColorByControl.tsx:125-135; MapControlsBar.tsx:21-43; Dialog.tsx:115-189; Popover.tsx:12-33.</li>
+</ul>`;
+const renderNotes = () => {
+  const el = document.getElementById('notes');
+  el.classList.toggle('hidden', !S.notes); el.classList.toggle('flex', S.notes);
+  if (!S.notes) return;
+  el.innerHTML = `<div class="flex h-14 shrink-0 items-center justify-between border-b border-white/10 px-4"><span class="${TYPO.title}">Notes, decisions, open questions</span><button type="button" data-action="notes" class="${btnClass('ghost', 'icon')}" aria-label="Close">${icon('x', 20)}</button></div><div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">${NOTES_STATIC()}</div>`;
+};
+
+// ───────────────────────────── toolbar ─────────────────────────────
+const CONTROLS = [
+  ['viewport', 'View', [['both', 'both'], ['desktop', 'desktop'], ['phone', 'phone']]],
+  ['lang', 'Lang', [['en', 'EN'], ['de', 'DE']]],
+  ['scenario', 'Scenario', () => SCN_ORDER.map((id) => [id, SCN[id].label])],
+  ['profile', 'Profile', [['both', 'FTP + threshold pace'], ['noFtp', 'no FTP'], ['noPace', 'no threshold pace'], ['none', 'neither']]],
+  ['labels', 'Decision labels', [['on', 'on'], ['off', 'off']]],
+  ['q8', 'Q8 stepper name', [['wide', 'w-[104px]'], ['ellipsis', 'w-[72px] + ellipsis (today)']]],
+  ['q9', 'Q9 phone pill', [['swatch', 'drop swatch first'], ['colour', 'colour pill icon-only first'], ['scroll', 'keep all, bar scrolls']]],
+  ['worst', 'Worst-case strings', [['off', 'off'], ['on', 'on']]],
+  ['fit', 'Fit', [['degrade', 'after (degrade)'], ['before', 'before (full strings)']]],
+  ['picker', 'Picker', [['closed', 'closed'], ['open', 'open']]],
+  ['explainer', 'Explainer', [['on', 'on'], ['off', 'off']]],
+];
+const renderToolbar = () => {
+  document.getElementById('toolbar').innerHTML = `<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">${CONTROLS.map(([k, label, opts]) => `<label class="inline-flex items-center gap-1.5"><span class="text-xs text-text-tertiary">${label}</span><select data-ctl="${k}" class="h-7 ${k === 'scenario' ? 'w-[260px]' : 'max-w-[170px]'} cursor-pointer rounded-lg border border-white/10 bg-white/5 px-2 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-accent">${(typeof opts === 'function' ? opts() : opts).map(([v, l]) => `<option class="bg-gray-900" value="${v}" ${S[k] === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`).join('')}</div>`;
+};
+
+// ───────────────────────────── layout / render ─────────────────────────────
+const fitFrames = () => {
+  const row = document.getElementById('row1'); const H = row.clientHeight - 20; const W = row.clientWidth - 12 - 440;
+  let w = 0; if (S.viewport !== 'phone') w += DESK.w; if (S.viewport !== 'desktop') w += PHONE.w;
+  const gaps = S.viewport === 'both' ? 12 : 0;
+  SCALE = Math.max(0.2, Math.min(H / DESK.h, (W - gaps) / w));
+};
+const renderAll = () => {
+  compute();
+  document.getElementById('explainer').classList.toggle('hidden', S.explainer === 'off');
+  fitFrames(); renderFrames(); renderInspector(); renderExplainer(); renderNotes(); updateHover();
+};
+
+// ───────────────────────────── events ─────────────────────────────
+document.addEventListener('change', (e) => {
+  const k = e.target.dataset.ctl; if (!k) return;
+  const prevPreset = k === 'scenario' && SCN[S.scenario].profile;
+  S[k] = e.target.value;
+  if (k === 'scenario' && prevPreset && !SCN[S.scenario].profile) S.profile = 'both';
+  if (k === 'picker') { S.openDesk = S.picker === 'open'; S.openPhone = S.picker === 'open'; if (S.picker === 'open') S.selected = null; }
+  if (k === 'scenario') { if (SCN[S.scenario].profile) S.profile = SCN[S.scenario].profile; renderToolbar(); }
+  if (['scenario', 'profile'].includes(k)) { S.selected = null; S.hover = null; }
+  renderAll();
+});
+const selectBlock = (i) => {
+  if (!M.set || !M.set.bands[i] || !M.set.bands[i].selectable) return;
+  S.selected = S.selected === i ? null : i; S.openDesk = false; S.openPhone = false; S.picker = 'closed'; renderToolbar(); renderAll();
+};
+document.addEventListener('click', (e) => {
+  const qb = e.target.closest('[data-qid]'); if (qb) { S.qPinned = !S.qPinned || document.getElementById('qtip').textContent !== QDESC()[qb.dataset.qid]; showQTip(S.qPinned ? qb : null); return; }
+  if (S.qPinned) { S.qPinned = false; showQTip(null); }
+  const blk = e.target.closest('[data-block]');
+  if (blk) { const fr = blk.dataset.frame; if ((fr === 'exp' || fr === 'insp') && M.source !== 'efforts') { S.source = 'efforts'; compute(); } selectBlock(Number(blk.dataset.block)); return; }
+  const a = e.target.closest('[data-action]'); if (!a) return;
+  const act = a.dataset.action;
+  if (act === 'settings') { e.preventDefault(); return; }
+  if (act === 'toggle-picker') { if (a.dataset.frame === 'desk') S.openDesk = !S.openDesk; else S.openPhone = !S.openPhone; }
+  else if (act === 'close-picker') S.openPhone = false;
+  else if (act === 'source') { S.source = a.dataset.value; S.selected = null; if (S.source === 'off' || S.source === 'device') { S.openDesk = false; S.openPhone = false; } }
+  else if (act === 'prev' || act === 'next') { const tg = stepTargets(); const p = tg.indexOf(S.selected) + (act === 'next' ? 1 : -1); if (tg[p] !== undefined) S.selected = tg[p]; }
+  else if (act === 'clear') S.selected = null;
+  else if (act === 'notes') S.notes = !S.notes;
+  S.picker = S.openDesk || S.openPhone ? 'open' : 'closed'; renderToolbar();
+  renderAll();
+});
+document.addEventListener('mousedown', (e) => {
+  if (e.target.closest('[data-qid]')) return;
+  if (S.openDesk && !e.target.closest('[data-popover]') && !e.target.closest('[data-laps-pill]') && !e.target.closest('#toolbar')) { S.openDesk = false; S.picker = S.openPhone ? 'open' : 'closed'; renderToolbar(); renderAll(); }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { S.selected = null; S.openDesk = false; S.openPhone = false; renderAll(); } });
+document.addEventListener('mouseover', (e) => {
+  const qb = e.target.closest('[data-qid]'); if (qb) { showQTip(qb); return; }
+  if (!S.qPinned) showQTip(null);
+  const blk = e.target.closest('[data-block]'); const inPhone = e.target.closest('[data-frame-root="phone"]');
+  const next = blk && !inPhone ? Number(blk.dataset.block) : null;
+
+  if (next !== S.hover) { S.hover = next; updateHover(); }
+});
+document.addEventListener('mousemove', (e) => {
+  const svg = e.target.closest && e.target.closest('[data-exp-svg]'); const ro = document.querySelector('[data-readout]'); const xh = document.querySelector('[data-xhair]');
+  if (!svg || !EXP.toIndex || M.loading) { if (xh) xh.setAttribute('visibility', 'hidden'); if (ro) ro.textContent = ''; return; }
+  const bx = svg.getBoundingClientRect(); const px = e.clientX - bx.left; if (px < EXP.LBL) { xh.setAttribute('visibility', 'hidden'); ro.textContent = ''; return; }
+  const i = EXP.toIndex(px); const det = M.det; const g = M.data.grid;
+  xh.setAttribute('x1', EXP.X(i)); xh.setAttribute('x2', EXP.X(i)); xh.setAttribute('visibility', 'visible');
+  let txt = fmtDur(i);
+  if (g.br[i]) txt += g.stop[i] ? ' · stopped' : ' · no records';
+  else if (det.sig) txt += ` · raw ${sigFmt(det.sig, det.sig === 'hr' ? g.hr[i] : det.x[i])} · ${DEF[det.sig].cls} s ${sigFmt(det.sig, det.s[i])}`;
+  const b = M.sets.efforts && M.sets.efforts.bands.find((q) => i >= q.from && i < q.to); if (b) txt += ` · ${b.name}`;
+  ro.textContent = txt;
+});
+document.addEventListener('scroll', () => { requestAnimationFrame(placeBadges); }, true);
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(renderAll, 80); });
+
+renderToolbar();
+requestAnimationFrame(() => renderAll());
+window.__mock = { S, detect, dataFor, renderAll, renderToolbar, fitPlan, withLang, get M() { return M; }, SCN, SCN_ORDER, summaryOf, movingLen, TW, VIEW };
+</script>
+</body>
+</html>

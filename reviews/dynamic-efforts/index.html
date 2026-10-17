@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dynamic Efforts Review</title>
+    <style>
+      :root {
+        --bg: #05070d;
+        --surface: #0d111a;
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #e6e9ef;
+        --muted: #9aa3b2;
+        --accent: #3b82f6;
+        --tag: #f97316;
+        --code: #151b27;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.55 system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 19px;
+        margin: 40px 0 12px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 16px;
+      }
+      code {
+        background: var(--code);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+        font:
+          13px/1.4 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        margin: 0 0 16px;
+      }
+      .label {
+        display: inline-block;
+        min-width: 34px;
+        text-align: center;
+        background: var(--tag);
+        color: #111;
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 1px 7px;
+        margin-right: 8px;
+      }
+      .label.n {
+        background: var(--accent);
+        color: #fff;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+      .card p {
+        margin: 4px 0;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .shots {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 12px;
+        align-items: flex-start;
+      }
+      figure {
+        margin: 0;
+        flex: 1 1 260px;
+        max-width: 100%;
+      }
+      figure.phone {
+        flex: 0 1 220px;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #000;
+      }
+      figcaption {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      ul,
+      ol {
+        padding-left: 22px;
+      }
+      li {
+        margin: 4px 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .ok {
+        color: #4ade80;
+      }
+      .warn {
+        color: #fbbf24;
+      }
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+      figure.crop {
+        flex: 0 1 320px;
+      }
+      figure.tiny {
+        flex: 0 1 260px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Dynamic efforts</h1>
+      <p class="lead">
+        Review of <code>plans/dynamic-efforts.md</code> (round-4 mockup). A fourth lap source,
+        Efforts, detected from the record stream (V2: PELT edges on 5 s bins, labels against FTP /
+        threshold pace / HR reserve), with one summary chip, a profile nudge and the
+        <code>&lt;count&gt; &lt;source&gt;</code> pill grammar for every source. Built on top of the
+        uncommitted training-load recompute and onboarding redesign; their code is untouched.
+        Everything is in the working tree; nothing is committed.
+      </p>
+
+      <h2>User-visible changes</h2>
+
+      <div class="card">
+        <h3><span class="label">C1</span>Efforts row with one summary chip</h3>
+        <p>
+          A fourth row "Efforts" / "Belastungen" sits under Splits. Its caption line is one
+          <code>Chip</code>: the pattern <code>5 × 4:00 · power</code> when every work block is
+          within ±10 % of the mean moving time, otherwise the count <code>7 efforts · pace</code>.
+          DE <code>5 × 4:00 · Leistung</code>, <code>6 × 3:00 · Pace</code>. The swatch shows the
+          effort set. Picking the row closes the popover like Off / Device laps. The popover stays
+          <code>w-80</code> and both lines are reserved (<code>h-5</code>, <code>h-4</code>), so
+          nothing jumps between sessions.
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/LapsControl.tsx:121-141</code> (memo + chip),
+          <code>:226-251</code> (row), <code>:195</code> (closes);
+          <code>src/features/sessions/session/lapLabels.ts:135-147</code>
+          (<code>effortChipLabel</code>);
+          <code>src/lib/effortLaps.ts:89</code> (<code>effortPattern</code>). Decisions: "Popover
+          row: one summary chip, then the nudge link", "Block duration is moving time", "Name:
+          Efforts / Belastungen".
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="d-en-01-efforts-row.png"
+              alt="C1 · Desktop · EN, interval ride, whole page"
+              loading="lazy"
+            />
+            <figcaption>C1 · Desktop · EN, interval ride, whole page</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="d-en-01-efforts-row-crop.png"
+              alt="C1 · Desktop · EN, pattern chip"
+              loading="lazy"
+            />
+            <figcaption>C1 · Desktop · EN, pattern chip</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="d-de-01-efforts-row-crop.png"
+              alt="C1 · Desktop · DE, pattern chip"
+              loading="lazy"
+            />
+            <figcaption>C1 · Desktop · DE, pattern chip</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="d-en-01-efforts-row-count.png"
+              alt="C1 · Desktop · EN, count chip (fartlek, blocks differ &gt; 10 %)"
+              loading="lazy"
+            />
+            <figcaption>
+              C1 · Desktop · EN, count chip (fartlek, blocks differ &gt; 10 %)
+            </figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="d-de-01-efforts-row-count.png"
+              alt="C1 · Desktop · DE, count chip"
+              loading="lazy"
+            />
+            <figcaption>C1 · Desktop · DE, count chip</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="d-de-01-efforts-row-run.png"
+              alt="C1 · Desktop · DE, run with threshold pace (efforts selected)"
+              loading="lazy"
+            />
+            <figcaption>C1 · Desktop · DE, run with threshold pace (efforts selected)</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-01-efforts-row.png" alt="C1 · 390 px · EN" loading="lazy" />
+            <figcaption>C1 · 390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-01-efforts-row.png" alt="C1 · 390 px · DE" loading="lazy" />
+            <figcaption>C1 · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3>
+          <span class="label">C2</span>Nudge link when a fallback signal was used: "…for precise
+          efforts"
+        </h3>
+        <p>
+          Profile without FTP / threshold pace: the ride falls back to heart rate, the chip ends in
+          <code>· heart rate ≈</code>, and the reserved line below the row links to Settings with
+          "Add FTP for precise efforts" / "FTP eintragen für genaue Belastungen". Runs say "Add
+          threshold pace for precise efforts" / "Schwellentempo eintragen für genaue Belastungen".
+          The link sits outside the radio item, so it stays clickable.
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/LapsControl.tsx:36-42</code>
+          (<code>LIMITER_LABELS</code>), <code>:143-147</code>, <code>:240-249</code>; engine
+          <code>limitedBy</code> at <code>src/packages/engine/effortDetection.ts:629</code>.
+          Decisions: "Profile nudge", "Nudge wording, two variants", "HR: … labelled approx.".
+        </p>
+        <div class="shots">
+          <figure class="crop">
+            <img
+              src="d-en-02-nudge-precise-crop.png"
+              alt="C2 · Desktop · EN, ride, power but no FTP → HR"
+              loading="lazy"
+            />
+            <figcaption>C2 · Desktop · EN, ride, power but no FTP → HR</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="d-de-02-nudge-precise-crop.png"
+              alt="C2 · Desktop · DE, ride"
+              loading="lazy"
+            />
+            <figcaption>C2 · Desktop · DE, ride</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="d-en-02-nudge-pace.png"
+              alt="C2 · Desktop · EN, run without threshold pace → HR"
+              loading="lazy"
+            />
+            <figcaption>C2 · Desktop · EN, run without threshold pace → HR</figcaption>
+          </figure>
+          <figure class="crop">
+            <img src="d-de-02-nudge-pace.png" alt="C2 · Desktop · DE, run" loading="lazy" />
+            <figcaption>C2 · Desktop · DE, run</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-02-nudge-precise.png" alt="C2 · 390 px · EN" loading="lazy" />
+            <figcaption>C2 · 390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-02-nudge-precise.png" alt="C2 · 390 px · DE" loading="lazy" />
+            <figcaption>C2 · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3>
+          <span class="label">C3</span>Disabled "No efforts found" row with "…to detect efforts"
+        </h3>
+        <p>
+          Power-only trainer ride (no HR) and no FTP: no usable signal, so the row is disabled with
+          the plain caption "No efforts found" / "Keine Belastungen erkannt". The link "Add FTP to
+          detect efforts" / "FTP eintragen, um Belastungen zu erkennen" stays active. Without
+          <code>limitedBy</code> (e.g. an endurance ride) the line stays empty. A stored
+          <code>efforts</code> source on such a session stays checked and disabled, and the pill
+          reads "Laps".
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/LapsControl.tsx:131-135</code>,
+          <code>:232</code> (<code>disabled</code>); <code>messages/en.json:735</code>,
+          <code>:744-745</code>. Decisions: "Empty result", "No usable signal: disabled row, link
+          still active", 2026-10-17 "stored efforts stays efforts". The DE string truncates on
+          desktop, see open point O1.
+        </p>
+        <div class="shots">
+          <figure class="crop">
+            <img src="d-en-03-nudge-detect.png" alt="C3 · Desktop · EN" loading="lazy" />
+            <figcaption>C3 · Desktop · EN</figcaption>
+          </figure>
+          <figure class="crop">
+            <img
+              src="d-de-03-nudge-detect.png"
+              alt="C3 · Desktop · DE (truncated, O1)"
+              loading="lazy"
+            />
+            <figcaption>C3 · Desktop · DE (truncated, O1)</figcaption>
+          </figure>
+          <figure class="crop">
+            <img src="p-en-03-nudge-detect.png" alt="C3 · 390 px · EN" loading="lazy" />
+            <figcaption>C3 · 390 px · EN</figcaption>
+          </figure>
+          <figure class="crop">
+            <img src="p-de-03-nudge-detect.png" alt="C3 · 390 px · DE (fits)" loading="lazy" />
+            <figcaption>C3 · 390 px · DE (fits)</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C4</span>Pill grammar <code>&lt;count&gt; &lt;source&gt;</code></h3>
+        <p>
+          Every lap source now reads count + source: <code>11 device laps</code> /
+          <code>11 Geräterunden</code> (was "11 laps" / "11 Runden"), <code>7 splits</code> /
+          <code>7 Splits</code> (was "5 km splits" / "5-km-Splits"), <code>5 efforts</code> /
+          <code>5 Belastungen</code> (work blocks only). Off stays "Laps" / "Runden". No chip or
+          pattern in the pill. The new device wording also shows in the device row caption when
+          selected and in the summary row. On phone the bar scrolls as before.
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/LapsControl.tsx:30-34</code> (<code>pillLabel</code>);
+          <code>src/features/sessions/session/lapLabels.ts:31-42</code>
+          (<code>lapCountLabel</code>); <code>messages/en.json:720-721</code>,
+          <code>messages/de.json:720-721</code>. Decisions: "Pill grammar for every lap source",
+          "Phone pill overflow: no new logic".
+        </p>
+        <div class="shots">
+          <figure class="tiny">
+            <img
+              src="d-en-04-pill-device.png"
+              alt="C4 · Desktop · EN, device laps"
+              loading="lazy"
+            />
+            <figcaption>C4 · Desktop · EN, device laps</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img src="d-en-04-pill-splits.png" alt="C4 · Desktop · EN, splits" loading="lazy" />
+            <figcaption>C4 · Desktop · EN, splits</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img src="d-en-04-pill-efforts.png" alt="C4 · Desktop · EN, efforts" loading="lazy" />
+            <figcaption>C4 · Desktop · EN, efforts</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img
+              src="d-de-04-pill-device.png"
+              alt="C4 · Desktop · DE, Geräterunden"
+              loading="lazy"
+            />
+            <figcaption>C4 · Desktop · DE, Geräterunden</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img src="d-de-04-pill-splits.png" alt="C4 · Desktop · DE, Splits" loading="lazy" />
+            <figcaption>C4 · Desktop · DE, Splits</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img
+              src="d-de-04-pill-efforts.png"
+              alt="C4 · Desktop · DE, Belastungen"
+              loading="lazy"
+            />
+            <figcaption>C4 · Desktop · DE, Belastungen</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img src="p-en-04-pill-efforts.png" alt="C4 · 390 px · EN, efforts" loading="lazy" />
+            <figcaption>C4 · 390 px · EN, efforts</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img
+              src="p-de-04-pill-device.png"
+              alt="C4 · 390 px · DE, Geräterunden (bar scrolls)"
+              loading="lazy"
+            />
+            <figcaption>C4 · 390 px · DE, Geräterunden (bar scrolls)</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C5</span>Stepper name slot 104 px; effort names</h3>
+        <p>
+          The stepper is unchanged apart from the name slot, which grows from
+          <code>w-[72px]</code> to <code>w-[104px]</code> for every source, so "Gleichmäßig 12"
+          fits. Effort names come from the block kind plus an ordinal per kind: Work / Rec / Steady
+          n, DE Belastung / Erholung / Gleichmäßig n. Non-work names stay tertiary as before.
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/LapsControl.tsx:321</code>;
+          <code>src/features/sessions/session/lapLabels.ts:149-174</code> (<code>effortName</code>,
+          <code>lapName(set, lapIndex, source, sport)</code>);
+          <code>messages/en.json:746-748</code>. Decisions: "Stepper unchanged … name slot widens",
+          "KISS: no per-effort details".
+        </p>
+        <div class="shots">
+          <figure class="tiny">
+            <img
+              src="d-de-05-stepper-steady.png"
+              alt="C5 · Desktop · DE, Gleichmäßig 12"
+              loading="lazy"
+            />
+            <figcaption>C5 · Desktop · DE, Gleichmäßig 12</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img
+              src="d-en-05-stepper-steady.png"
+              alt="C5 · Desktop · EN, Steady 12"
+              loading="lazy"
+            />
+            <figcaption>C5 · Desktop · EN, Steady 12</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img src="p-de-05-stepper-steady.png" alt="C5 · 390 px · DE" loading="lazy" />
+            <figcaption>C5 · 390 px · DE</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="d-en-09-map-highlight.png"
+              alt="C5 · Desktop · EN, Work 2 in context"
+              loading="lazy"
+            />
+            <figcaption>C5 · Desktop · EN, Work 2 in context</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C6</span>Steady shade in the lap swatch</h3>
+        <p>
+          Steady blocks get their own shade <code>rgba(255,255,255,.45)</code> in the swatch (picker
+          row and pill), between work (.75 / .5), warm-up / cool-down (.35) and rest (.18). No
+          hatched bridge overlay and no legend.
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/LapStrip.tsx:19</code> (<code>cellColor</code>).
+          Decision 2026-10-17: "Strip: … <code>cellColor</code> is the only change". The capture
+          session is a synthetic over-under ride (13 × 1:15 work, 12 steady blocks of 5:30).
+        </p>
+        <div class="shots">
+          <figure class="crop">
+            <img
+              src="d-en-06-steady-swatch.png"
+              alt="C6 · Desktop · EN, picker swatch"
+              loading="lazy"
+            />
+            <figcaption>C6 · Desktop · EN, picker swatch</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img
+              src="d-de-06-steady-pill.png"
+              alt="C6 · Desktop · DE, pill swatch"
+              loading="lazy"
+            />
+            <figcaption>C6 · Desktop · DE, pill swatch</figcaption>
+          </figure>
+          <figure class="crop">
+            <img src="p-en-06-steady-swatch.png" alt="C6 · 390 px · EN" loading="lazy" />
+            <figcaption>C6 · 390 px · EN</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C7</span>Summary-card laps row counts work blocks</h3>
+        <p>
+          With efforts selected, the laps row in the summary card reads "5 efforts · avg 39.8 km/h".
+          Count, average, fastest and slowest are taken over work blocks only; the extremes are
+          named "Work 4" / "Work 2". The strip below still draws all blocks. A session without
+          efforts shows the disabled row "No efforts found" · "Choose splits in the Laps control".
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/lapLabels.ts:84-92</code>;
+          <code>src/features/sessions/session/LapsRow.tsx:71</code>;
+          <code>src/lib/effortLaps.ts:82</code> (<code>effortWorkSet</code>). Decision 2026-10-17:
+          "Summary-card laps row counts work blocks only".
+        </p>
+        <div class="shots">
+          <figure class="crop">
+            <img src="d-en-07-summary-row.png" alt="C7 · Desktop · EN" loading="lazy" />
+            <figcaption>C7 · Desktop · EN</figcaption>
+          </figure>
+          <figure class="crop">
+            <img src="d-de-07-summary-row.png" alt="C7 · Desktop · DE" loading="lazy" />
+            <figcaption>C7 · Desktop · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C8</span>Sport-specific DE warm-up / cool-down</h3>
+        <p>
+          Leading / trailing low blocks of at least 3 min become warm-up / cool-down. DE uses
+          Einfahren / Ausfahren on rides and Einlaufen / Auslaufen on runs; EN uses Warm-up /
+          Cool-down for both.
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/session/lapLabels.ts:152-159</code>;
+          <code>messages/de.json:749-752</code>. Decision: "DE wording: sport-specific".
+        </p>
+        <div class="shots">
+          <figure class="tiny">
+            <img
+              src="d-de-08-stepper-warmup-ride.png"
+              alt="C8 · Desktop · DE, ride: Einfahren"
+              loading="lazy"
+            />
+            <figcaption>C8 · Desktop · DE, ride: Einfahren</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img
+              src="d-de-08-stepper-warmup-run.png"
+              alt="C8 · Desktop · DE, run: Einlaufen"
+              loading="lazy"
+            />
+            <figcaption>C8 · Desktop · DE, run: Einlaufen</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img src="p-de-08-stepper-warmup-run.png" alt="C8 · 390 px · DE, run" loading="lazy" />
+            <figcaption>C8 · 390 px · DE, run</figcaption>
+          </figure>
+          <figure class="tiny">
+            <img
+              src="d-en-08-stepper-warmup-ride.png"
+              alt="C8 · Desktop · EN, Warm-up"
+              loading="lazy"
+            />
+            <figcaption>C8 · Desktop · EN, Warm-up</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C9</span>Map and chart highlight of a selected effort</h3>
+        <p>
+          No new map code: an effort set has the same <code>spans</code> / <code>bands</code> as
+          device laps, so selecting "Work 2" highlights that stretch of the track, frames the
+          charts, and outlines the block in the summary strip.
+        </p>
+        <p class="meta">
+          Spans and bands from <code>src/lib/effortLaps.ts:40-80</code> via <code>buildLapSet</code>
+          <code>src/lib/lapSet.ts:66-68</code>. Decision: "Chart bands line up with the efforts"
+          (Verification).
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="d-en-09-map-highlight.png"
+              alt="C9 · Desktop · EN, Work 2 selected"
+              loading="lazy"
+            />
+            <figcaption>C9 · Desktop · EN, Work 2 selected</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-09-map-highlight.png" alt="C9 · Desktop · DE" loading="lazy" />
+            <figcaption>C9 · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-09-map-highlight.png" alt="C9 · 390 px · EN" loading="lazy" />
+            <figcaption>C9 · 390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-09-map-highlight.png" alt="C9 · 390 px · DE" loading="lazy" />
+            <figcaption>C9 · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <h2>Changes without UI</h2>
+
+      <div class="card">
+        <h3><span class="label n">N1</span>Engine: <code>effortDetection.ts</code></h3>
+        <p>
+          Pure port of the mockup V2 <code>detect()</code>: 1 s grid (gaps ≤ 10 s hold the closing
+          record, longer gaps and stops &gt; 10 s are breaks), signal pick (ride power → HR, run GAP
+          → HR, ≥ 50 % coverage, <code>limitedBy</code> when a threshold is missing), PELT on 5 s
+          bins with real pruning, threshold labels, postprocess (merge, bridge ≤ 130 s, min work,
+          absorb &lt; 20 s, steady ≥ 5 min, edge refine ±5 s, warm-up / cool-down ≥ 3 min) and the
+          three guards. Never throws; recorded 0 W stays 0, missing values are NaN internally.
+          Observable: 1.6–3.5 ms per 2.7–3.3 h demo session in Node, including
+          <code>lapBands</code>. <code>src/packages/engine/effortDetection.ts:629</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N2</span><code>SOURCES.md</code></h3>
+        <p>
+          Three Validation Summary rows (Killick2012, Hampel1974, Karvonen1957), two bibliography
+          entries and one App-Specific Logic row with every default.
+          <code>src/packages/engine/SOURCES.md:37-39</code>, <code>:71-72</code>, <code>:85</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3>
+          <span class="label n">N3</span>Lib: <code>effortLaps.ts</code> and
+          <code>buildLapSet</code>
+        </h3>
+        <p>
+          <code>buildEffortLapSet</code> maps blocks to spans, bands and
+          <code>LapAnalysis</code> (engine moving time, record distance diff,
+          <code>KIND_INTENSITY</code>, <code>isInterval</code> = work), plus
+          <code>effortWorkSet</code> / <code>effortWorkCount</code> / <code>effortPattern</code>.
+          <code>LapSource</code> gains <code>efforts</code>, <code>LapSet.efforts</code> carries
+          signal + <code>limitedBy</code>, and <code>buildLapSet</code> takes a 5th
+          <code>effortContext</code>. <code>useSessionLapsEffect</code> resolves thresholds at the
+          session date. <code>src/lib/effortLaps.ts:40</code>,
+          <code>src/lib/lapSet.ts:9,32,62-68</code>,
+          <code>src/features/sessions/session/hooks/useSessionLapsEffect.ts:16-33</code>,
+          <code>SessionMapControls.tsx:35</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N4</span>Store enum</h3>
+        <p>
+          <code>LAP_SOURCES</code> gains <code>efforts</code>; no persist version bump (shape
+          unchanged, the enum only widens; unknown values still fall back per field).
+          <code>src/store/mapPreferences.ts:22</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N5</span>Shared <code>Chip</code></h3>
+        <p>
+          New <code>src/components/ui/Chip.tsx</code> (caption,
+          <code>rounded bg-white/10 px-1.5 py-0.5</code>).
+          <code>DialogHeader</code> (<code>Dialog.tsx:177</code>) and the metric help header
+          (<code>MetricLabel.tsx:29</code>) now use it; their look is unchanged.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N6</span>Dead code removed</h3>
+        <p>
+          <code>splitKm</code> and <code>kmFmt</code> (<code>lapLabels.ts</code>) and the message
+          key <code>ui_laps_pill_splits</code> (EN + DE) are deleted; the splits pill uses
+          <code>ui_laps_splits_count</code> / <code>_one</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N7</span>Tests</h3>
+        <p>
+          <code>tests/packages/engine/effortDetection.spec.ts</code> (8 cases: 5×4 min edges ±5 s
+          with warm-up / cool-down, 3 h endurance → none, TT → none, 2:00 stop bridged with moving
+          time = elapsed − 120 s ±5, 2:30 stop splits, HR-only starts ±20 s, no FTP → HR +
+          <code>limitedBy</code>, power-only no FTP → empty).
+          <code>tests/lib/effortLaps.spec.ts</code> (pattern ±10 %, 20 % outlier → none).
+          <code>e2e/sessions.spec.ts:114,155,164</code> now expect <code>/^\d+ splits$/</code>.
+        </p>
+      </div>
+
+      <h2>Deviations from the plan</h2>
+      <ol>
+        <li>
+          <b>Extra exported constants.</b> <code>EFFORT_EDGE_TRACE_S</code> (the 5 s trace the edge
+          refine searches, mockup <code>DEF.*.edge</code>), <code>EFFORT_MAD_SCALE</code> (0.6745,
+          Hampel) and <code>EFFORT_SIGNAL_LIMITERS</code> (power → ftp, pace → thresholdPace) are
+          named constants per engine CLAUDE.md. Values are the mockup's.
+          <code>effortDetection.ts:58-71</code>.
+        </li>
+        <li>
+          <b>Moving time from the break mask.</b> The mockup tracks bridge lists per block; the port
+          counts non-break seconds in each block instead. Same result, and it stays correct if an
+          edge refine moves a boundary next to a bridge. <code>effortDetection.ts:413</code>.
+        </li>
+        <li>
+          <b><code>endIndex</code></b> is the record at the next block's start when blocks touch
+          (shared boundary, like splits), else the last record before the break, so stop and gap
+          records belong to no block. <code>effortDetection.ts:675-676</code>.
+        </li>
+        <li>
+          <b>FTP or threshold pace ≤ 0</b> counts as missing (sets <code>limitedBy</code>), so the
+          engine never divides by zero.
+        </li>
+        <li>
+          <b><code>SIGNAL_LABELS</code></b> lives in <code>lapLabels.ts</code> (next to
+          <code>effortChipLabel</code>, its only user) instead of <code>LapsControl.tsx</code>.
+          <code>LIMITER_LABELS</code> is in <code>LapsControl.tsx</code> as planned.
+        </li>
+        <li>
+          <b><code>effortWorkSet</code></b> (exported from <code>effortLaps.ts</code>) is the
+          work-only view used for the summary row and its fastest / slowest (decision Q1);
+          <code>effortWorkCount</code> uses it.
+        </li>
+        <li>
+          <b>Picker memo.</b> The effort result reuses <code>current</code> only when
+          <code>current.efforts</code> is set, not on <code>source === 'efforts'</code> alone,
+          because the session set lags one render behind a source switch. The splits memo passes
+          <code>thresholds: undefined</code> (unused for splits) so a profile edit doesn't rebuild
+          it.
+        </li>
+        <li>
+          <b>Test id</b> <code>laps-efforts-row</code> on the efforts row (used for the captures;
+          harmless).
+        </li>
+        <li>
+          <b>Capture data.</b> The brief said the demo sessions have no structured intervals; they
+          do (see O2), but their warm-ups come out as work, so the captures use synthetic sessions
+          instead (see Verification).
+        </li>
+      </ol>
+
+      <h2>Open points for your review</h2>
+      <ol>
+        <li>
+          <b>O1 · DE detect nudge truncates on desktop.</b> "FTP eintragen, um Belastungen zu
+          erkennen" needs ~245 px, the line has 240 px in <code>w-80</code>; it ends in "erke…"
+          (C3). Phone fits. Options: keep (plan: <code>truncate</code> is the safety net), shorten
+          the DE string (e.g. "FTP eintragen zum Erkennen"), or drop the line's <code>pr-2</code>.
+          Nothing changed.
+        </li>
+        <li>
+          <b>O2 · Demo data with the plan defaults.</b> Run over all 233 demo sessions: 6×800 m
+          Isar, 5×1 km Isar, 3×2 km tempo and Sweet spot 3×12 find their reps, but the warm-up is
+          labelled work (demo warm-up pace is faster than 0.88 × threshold speed of 5:00/km =
+          5:41/km), so the chip shows a count, not the pattern. Hilly demo rides (Lago di Tenno
+          climb, Passo San Giovanni loop) give 10–20 climb "efforts". Easy runs, long runs and flat
+          rides find none. Follow-up: tune the demo persona or the defaults.
+        </li>
+        <li>
+          <b>O3 · HR edges stay late on slow HR.</b> On the synthetic run without threshold pace the
+          HR blocks read 2:29 against 3:00 true (min work 120 s, fixed 30 s shift). This is expected
+          and why the chip says "≈".
+        </li>
+        <li>
+          <b>O4 · Whole-tree <code>vp check</code> fails outside this feature.</b> Oxfmt can't parse
+          <code>reviews/onboarding-redesign/index.html:438</code> (double quotes inside an
+          <code>alt</code>), which stops the format step before it starts. I didn't touch it (out of
+          scope). Fix the alt text, or add <code>reviews</code> to
+          <code>fmt.ignorePatterns</code> next to
+          <code>mockups</code> (<code>vite.config.ts:28</code>).
+          <code>vp check src tests e2e messages</code> passes.
+        </li>
+        <li>
+          <b>O5 · Hot-path check.</b> Measured in Node, not in DevTools: 1.6–3.5 ms per 2.7–3.3 h
+          session including <code>lapBands</code>, far below the ~84 ms laps baseline.
+        </li>
+      </ol>
+
+      <h2>Verification</h2>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp build</code> (first)</td>
+          <td class="ok">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp check</code> (whole tree)</td>
+          <td class="warn">
+            fails before formatting starts: oxfmt cannot parse
+            <code>reviews/onboarding-redesign/index.html:438</code> (O4, not part of this feature).
+            <code>vp check --no-fmt</code>: pass (lint + types, 561 files). Format check of every
+            other path (<code>src tests e2e messages reviews/dynamic-efforts</code> and the
+            remaining root paths): pass
+          </td>
+        </tr>
+        <tr>
+          <td><code>vp test -- --run</code></td>
+          <td class="ok">pass, 133 files / 1314 tests (10 new)</td>
+        </tr>
+        <tr>
+          <td><code>vp exec playwright test</code></td>
+          <td class="ok">
+            first full run during development: 83/83. Final full run: 82 passed,
+            <code>mobile/map.spec.ts:480</code> failed ("no lap on the visible map", known
+            parallel-load flake); <code>:480</code> and <code>:281</code> pass with
+            <code>--workers 1</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>vp build</code> (final)</td>
+          <td class="ok">pass</td>
+        </tr>
+      </table>
+      <p class="meta">
+        Screenshots: a temporary <code>e2e/zzEffortsCapture.spec.ts</code> run against the
+        configured web server with SwiftShader WebGL (flags from
+        <code>e2e/mobile/map.spec.ts</code>). It seeds the profile (rest 50, max 190, FTP 250,
+        threshold pace 255 s/km, or without FTP / threshold pace) and five synthetic 1 Hz sessions
+        on a circular track near Munich, through the dev server's own modules
+        (<code>bulkSaveSessionData</code>, <code>saveSessionGPS</code>, <code>addSessions</code>).
+        The sessions: 5×4 min power + HR ride (the engine spec fixture, with device laps), the same
+        ride without HR (trainer), a 13 × 1:15 over-under ride with 12 steady blocks, a 6×3 min run
+        and a 7-rep fartlek run. Laps were selected via <code>useMapControlsStore.selectLap</code>.
+        The spec and its <code>test-results</code> are deleted.
+      </p>
+
+      <h2>How to check it yourself</h2>
+      <ol>
+        <li>
+          Open an interval ride with power and FTP set: Laps pill → the Efforts row shows "N × m:ss
+          · power"; pick it, the pill reads "N efforts", chart bands match the reps.
+        </li>
+        <li>
+          Device laps / Splits in the pill read "12 device laps" / "6 splits" (DE "12 Geräterunden"
+          / "6 Splits"); Off reads "Laps".
+        </li>
+        <li>
+          Settings → remove FTP: the row falls back to "… · heart rate ≈" with "Add FTP for precise
+          efforts", which opens Settings.
+        </li>
+        <li>
+          A power-only trainer ride without FTP: disabled "No efforts found" with an active "Add FTP
+          to detect efforts". An endurance ride: "No efforts found", no link.
+        </li>
+        <li>A run without threshold pace: the threshold-pace nudge.</li>
+        <li>
+          Pick a block on a chart: the stepper steps through Work / Rec / Steady and the warm-up
+          names (DE: Einfahren vs Einlaufen); "Gleichmäßig 12" fits.
+        </li>
+        <li>
+          Summary card: the laps row counts work blocks only and names fastest / slowest "Work n".
+        </li>
+        <li>
+          Engine only:
+          <code
+            >vp test -- --run tests/packages/engine/effortDetection.spec.ts
+            tests/lib/effortLaps.spec.ts</code
+          >.
+        </li>
+      </ol>
+    </main>
+  </body>
+</html>

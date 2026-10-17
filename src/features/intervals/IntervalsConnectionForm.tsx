@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
@@ -35,7 +35,6 @@ const errorMessage = (code: IntervalsErrorCode): string => {
 interface IntervalsConnectionFormProps {
   onSynced?: () => void;
   profileGate?: ProfileGate;
-  children?: ReactNode;
 }
 
 export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => {
@@ -134,7 +133,9 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col gap-0.5">
         <Typography variant="subtitle1">{m.ui_onboarding_intervals_title()}</Typography>
-        <IntervalsStatusLine error={error} check={check} />
+        <div className="h-8">
+          <IntervalsStatusLine error={error} check={check} />
+        </div>
       </div>
 
       <div>
@@ -162,8 +163,6 @@ export const IntervalsConnectionForm = (props: IntervalsConnectionFormProps) => 
           }
         />
       </div>
-
-      {props.children}
 
       <div className="flex justify-end">
         <Button

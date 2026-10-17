@@ -9,7 +9,7 @@ export type EnergyBlocker = 'weight' | 'age' | 'weightAndAge';
 export interface EnergyBody {
   weightKg?: number;
   age?: number;
-  gender: Gender;
+  gender?: Gender;
 }
 
 export interface EnergyEstimate {
@@ -44,7 +44,7 @@ export const ENERGY_UNCERTAINTY: Record<EnergyMethod, number> = {
   heartRate: 0.25,
 };
 /** @see [Keytel2005] */
-export const KEYTEL_COEFFICIENTS: Record<'male' | 'female', KeytelCoefficients> = {
+export const KEYTEL_COEFFICIENTS: Record<Gender, KeytelCoefficients> = {
   male: { intercept: -55.0969, hr: 0.6309, weight: 0.1988, age: 0.2017 },
   female: { intercept: -20.4022, hr: 0.4472, weight: -0.1263, age: 0.074 },
 };
@@ -77,13 +77,8 @@ const missingBody = (method: EnergyMethod, body: EnergyBody): EnergyBlocker | un
 };
 
 const keytelKjPerMin = (hr: number, weightKg: number, age: number, gender: Gender): number => {
-  const male = KEYTEL_COEFFICIENTS.male;
-  const female = KEYTEL_COEFFICIENTS.female;
-  const maleKj = male.intercept + male.hr * hr + male.weight * weightKg + male.age * age;
-  const femaleKj = female.intercept + female.hr * hr + female.weight * weightKg + female.age * age;
-  if (gender === 'male') return maleKj;
-  if (gender === 'female') return femaleKj;
-  return (maleKj + femaleKj) / 2;
+  const c = KEYTEL_COEFFICIENTS[gender];
+  return c.intercept + c.hr * hr + c.weight * weightKg + c.age * age;
 };
 
 const intervalJoules = (
@@ -109,7 +104,7 @@ const intervalJoules = (
     const factor = gradeAdjustedPaceFactor(gradient);
     return weightKg * (RUNNING_NET_COST_J_PER_KG_M * dx * factor + RESTING_J_PER_KG_S * dt);
   }
-  if (body.age === undefined || current.hr === undefined) return null;
+  if (body.age === undefined || body.gender === undefined || current.hr === undefined) return null;
   const keytel = (keytelKjPerMin(current.hr, weightKg, body.age, body.gender) * 1000 * dt) / 60;
   return Math.max(keytel, weightKg * RESTING_J_PER_KG_S * dt);
 };
@@ -144,8 +139,13 @@ const pickMethod = (
   for (const method of ENERGY_METHODS_BY_SPORT[sport]) {
     if (recordCoverage(method, records, gradients) < MIN_ENERGY_COVERAGE) continue;
     const missing = missingBody(method, body);
-    if (missing === undefined) return { method };
-    if (blockedBy === undefined) blockedBy = missing;
+    if (missing !== undefined) {
+      if (blockedBy === undefined) blockedBy = missing;
+      continue;
+    }
+    // Keytel has no equation without a gender: missing is missing, not an average.
+    if (method === 'heartRate' && body.gender === undefined) continue;
+    return { method };
   }
   if (blockedBy === undefined) return undefined;
   return { blockedBy };

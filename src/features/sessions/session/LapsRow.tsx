@@ -7,6 +7,7 @@ import { Typography } from '@/components/ui/Typography.tsx';
 import { cn } from '@/lib/utils.ts';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { summarizeLaps } from '@/lib/lapSummary.ts';
+import { effortWorkSet } from '@/lib/effortLaps.ts';
 import type { LapAnalysis } from '@/lib/laps.ts';
 import type { LapSet, LapSource } from '@/lib/lapSet.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
@@ -48,6 +49,7 @@ const KeyValue = (props: KeyValueProps) => (
 );
 
 const LapExtreme = (props: {
+  set: LapSet;
   label: string;
   lap: LapAnalysis | undefined;
   sport: Sport;
@@ -59,25 +61,29 @@ const LapExtreme = (props: {
     <KeyValue
       label={props.label}
       value={lapPaceLabel(pace, props.sport)}
-      detail={lapName(props.lap.lapIndex, props.source)}
+      detail={lapName(props.set, props.lap.lapIndex, props.source, props.sport)}
     />
   );
 };
 
 const LapsDetails = (props: { set: LapSet; sport: Sport; source: LapSource }) => {
-  const summary = summarizeLaps(props.set);
+  let summarySet = props.set;
+  if (props.source === 'efforts') summarySet = effortWorkSet(props.set);
+  const summary = summarizeLaps(summarySet);
   const recovery = METRIC_EXPLANATIONS.recovery;
   return (
     <div className="flex flex-col gap-3">
       <LapStrip set={props.set} size="detail" />
       <div className="flex flex-col gap-1 border-t border-white/10 pt-2.5">
         <LapExtreme
+          set={props.set}
           label={m.ui_laps_fastest()}
           lap={summary.fastest}
           sport={props.sport}
           source={props.source}
         />
         <LapExtreme
+          set={props.set}
           label={m.ui_laps_slowest()}
           lap={summary.slowest}
           sport={props.sport}

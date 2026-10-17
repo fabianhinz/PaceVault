@@ -7,7 +7,7 @@ import {
   seedOnboardingComplete,
 } from './helpers/seed';
 import { closeImportSummary } from './helpers/upload';
-import { setThreshold, thresholdTile } from './helpers/thresholds';
+import { fillOnboardingProfile, startOnboarding } from './helpers/onboarding';
 
 const LISTING = [
   { id: 'i100', name: 'Karlsruhe Laufen', type: 'Run', source: 'GARMIN_CONNECT', file_type: 'fit' },
@@ -44,16 +44,10 @@ const mockApi = async (page: import('@playwright/test').Page) => {
   });
 };
 
-test('intervals.icu onboarding: thresholds + key, then import', async ({ page }) => {
+test('intervals.icu onboarding: profile + key, then import', async ({ page }) => {
   await mockApi(page);
-  await page.goto('/');
-  await page
-    .getByText(/intervals\.icu/i)
-    .first()
-    .click();
-
-  await setThreshold(page, 'Rest HR', '50');
-  await setThreshold(page, 'Max HR', '185');
+  await startOnboarding(page, 'intervals.icu');
+  await fillOnboardingProfile(page);
 
   const keyInput = page.locator('input[type="password"]');
   await expect(keyInput).toBeVisible({ timeout: 5000 });
@@ -62,7 +56,6 @@ test('intervals.icu onboarding: thresholds + key, then import', async ({ page })
 
   expect(await closeImportSummary(page)).toContain('2 new sessions');
   await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30000 });
-  await expect(thresholdTile(page, 'Rest HR')).not.toBeVisible();
 });
 
 test('a connected account syncs new activities on load, without a click', async ({ page }) => {

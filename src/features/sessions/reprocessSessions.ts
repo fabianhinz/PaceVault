@@ -6,9 +6,9 @@ import {
   isSessionOutdated,
 } from '@/packages/engine/sessionDerivation.ts';
 import { parseFitFile, type ParsedFitResult } from '@/parsers/fit.ts';
-import { calculateSessionStress } from '@/packages/engine/stress.ts';
+import { calculateNormalizedPower } from '@/packages/engine/normalize.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
-import { thresholdsAt } from '@/lib/thresholdsAt.ts';
+import { sessionStressAt, type StoredSessionStress } from '@/lib/sessionStress.ts';
 import { bulkReplaceSessionData, getFitFile, getSessionRecords } from '@/lib/indexeddb.ts';
 import { claimSessionsDerivationVersion } from '@/lib/guardedSessionsStorage.ts';
 import { withExclusiveLock } from '@/lib/webLock.ts';
@@ -18,7 +18,7 @@ import { useImportProgressStore } from '@/store/importProgress.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
 import { INGEST_BATCH_SIZE, INGEST_CHUNK_SIZE } from './createIngestBatcher.ts';
 
-const SESSION_REPROCESSING_LOCK = 'pacevault-session-reprocessing';
+export const SESSION_REPROCESSING_LOCK = 'pacevault-session-reprocessing';
 
 export const REPROCESS_BATCH_SIZE = INGEST_BATCH_SIZE;
 
@@ -40,20 +40,12 @@ const mergeReparsedSession = (
   stored: TrainingSession,
   reparsed: SessionFields,
 ): TrainingSession => {
-  let tss = stored.tss;
-  let stressMethod = stored.stressMethod;
-  if (stored.stressMethod === 'tss' && reparsed.stressMethod === 'tss') {
-    tss = reparsed.tss;
-    stressMethod = reparsed.stressMethod;
-  }
   const merged: TrainingSession = {
     ...reparsed,
     id: stored.id,
     createdAt: stored.createdAt,
     isNew: stored.isNew,
     source: stored.source,
-    tss,
-    stressMethod,
     derivationVersion: SESSION_DERIVATION_VERSION,
   };
   if (stored.source.kind === 'intervals' && stored.name !== undefined) merged.name = stored.name;
@@ -80,30 +72,16 @@ const recomputedStress = (
   session: TrainingSession,
   records: SessionRecord[],
   profile: UserProfile | null,
-): Pick<TrainingSession, 'tss' | 'stressMethod' | 'normalizedPower'> => {
-  const stored = {
-    tss: session.tss,
-    stressMethod: session.stressMethod,
-    normalizedPower: session.normalizedPower,
-  };
-  if (profile === null || session.stressMethod !== 'tss') return stored;
-  const thresholds = thresholdsAt(profile, session.date);
-  if (thresholds.ftp === undefined || thresholds.ftp <= 0) return stored;
-  const result = calculateSessionStress(
-    records,
-    session.duration,
-    session.avgHr,
-    thresholds.restHr,
-    thresholds.maxHr,
-    thresholds.gender,
-    thresholds.ftp,
-  );
-  if (result.stressMethod !== 'tss') return stored;
-  return {
-    tss: result.tss,
-    stressMethod: result.stressMethod,
-    normalizedPower: result.normalizedPower,
-  };
+): StoredSessionStress => {
+  if (profile === null) {
+    return {
+      tss: session.tss,
+      stressMethod: session.stressMethod,
+      normalizedPower: session.normalizedPower,
+    };
+  }
+  const normalizedPower = calculateNormalizedPower(records) ?? session.normalizedPower;
+  return sessionStressAt({ ...session, normalizedPower }, profile);
 };
 
 const recomputeFromRecords = async (

@@ -82,7 +82,7 @@ const sessionById = (id: string): TrainingSession | undefined => {
 };
 
 describe('reprocessOutdatedSessions', () => {
-  it('updates an outdated session from its FIT file and keeps its TSS and intervals.icu name', async () => {
+  it("updates an outdated session from its FIT file, takes the profile's load and keeps its intervals.icu name", async () => {
     const profile = makeUserProfile();
     useUserStore.setState({ profile });
     const fit = runningFit();
@@ -117,8 +117,8 @@ describe('reprocessOutdatedSessions', () => {
       gap: fresh.session.gap,
       avgCadence: fresh.session.avgCadence,
       distance: fresh.session.distance,
-      tss: 42,
-      stressMethod: 'duration',
+      tss: fresh.session.tss,
+      stressMethod: fresh.session.stressMethod,
       isNew: false,
       source: { kind: 'intervals', activityId: 'i7' },
       derivationVersion: SESSION_DERIVATION_VERSION,
@@ -181,7 +181,9 @@ describe('reprocessOutdatedSessions', () => {
     expect(sessionById('demo')).toMatchObject({
       gap: calculateGAP(records),
       distance: records.at(-1)?.distance,
-      tss: 55,
+      // The profile's load from the stored NP: 3600 s × 215 W × 0.86 / (250 W × 3600) × 100
+      tss: 74,
+      stressMethod: 'tss',
       derivationVersion: SESSION_DERIVATION_VERSION,
     });
   });
@@ -350,32 +352,39 @@ describe('reprocessOutdatedSessions', () => {
     });
   });
 
-  it('a TSS ride keeps its stored TSS when the profile has no FTP', async () => {
+  it('a TSS ride falls back to TRIMP when the profile has no FTP', async () => {
     useUserStore.setState({
       profile: makeUserProfile({
         thresholds: { restHr: [{ date: 0, value: 50 }], maxHr: [{ date: 0, value: 190 }] },
       }),
     });
-    await bulkSaveSessionData([
-      { sessionId: 'ride', records: smartRecordingPowerRecords(), laps: [] },
-    ]);
-    await storeSessions([
-      outdatedSession({
-        id: 'ride',
-        sport: 'cycling',
-        tss: 80,
-        normalizedPower: 215,
-        stressMethod: 'tss',
-        source: { kind: 'demo' },
-      }),
-    ]);
-
-    await reprocessOutdatedSessions();
-
-    expect(sessionById('ride')).toMatchObject({
+    const records = smartRecordingPowerRecords();
+    await bulkSaveSessionData([{ sessionId: 'ride', records, laps: [] }]);
+    const stored = outdatedSession({
+      id: 'ride',
+      sport: 'cycling',
       tss: 80,
       normalizedPower: 215,
       stressMethod: 'tss',
+      source: { kind: 'demo' },
+    });
+    await storeSessions([stored]);
+    const expected = calculateSessionStress(
+      records,
+      stored.duration,
+      stored.avgHr,
+      50,
+      190,
+      'male',
+    );
+
+    await reprocessOutdatedSessions();
+
+    expect(expected.stressMethod).toBe('trimp');
+    expect(sessionById('ride')).toMatchObject({
+      tss: expected.tss,
+      normalizedPower: expected.normalizedPower,
+      stressMethod: 'trimp',
     });
   });
 });
