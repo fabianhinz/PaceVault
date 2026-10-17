@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { CloudDownload, Database, FolderUp, User, type LucideIcon } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import type { Gender } from '@/packages/engine/types.ts';
@@ -9,6 +9,7 @@ import {
   type OnboardingSource,
   type OnboardingStep as Step,
 } from '@/store/onboarding.ts';
+import { formatPaceInput } from '@/lib/formatters.ts';
 import { useScrollFadeEffect } from '@/lib/hooks/useScrollFadeEffect.ts';
 import { ActionTile } from '@/components/ui/ActionTile.tsx';
 import { Button } from '@/components/ui/Button.tsx';
@@ -23,9 +24,12 @@ import { Label } from '@/components/ui/Label.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
 import { FitUploadButton } from '@/features/sessions/FitUploadButton.tsx';
 import { IntervalsConnectionForm } from '@/features/intervals/IntervalsConnectionForm.tsx';
+import { PaceEstimateButton } from '@/features/settings/PaceEstimateButton.tsx';
+import { PaceEstimatorDialog } from '@/features/settings/PaceEstimatorDialog.tsx';
 import type {
-  NumberField,
+  FormField,
   ProfileGate,
+  TextField,
   ThresholdsForm,
 } from '@/features/settings/hooks/useThresholdsForm.ts';
 import { OnboardingProgress } from './OnboardingProgress.tsx';
@@ -121,15 +125,18 @@ const GENDERS: { id: Gender; label: () => string }[] = [
   { id: 'female', label: m.ui_thresholds_female },
 ];
 
-const NumberInput = (props: {
+const fieldId = (field: FormField) => `onboarding-${field}`;
+
+const FieldInput = (props: {
   thresholds: ThresholdsForm;
-  field: NumberField;
+  field: TextField;
   label: string;
   hint: string;
   placeholder: string;
+  inputMode: 'numeric' | 'decimal' | 'text';
   required?: boolean;
 }) => {
-  const id = `onboarding-${props.field}`;
+  const id = fieldId(props.field);
   const error = props.thresholds.visibleError(props.field);
   return (
     <div>
@@ -138,8 +145,8 @@ const NumberInput = (props: {
       </Label>
       <Input
         id={id}
-        type="number"
-        inputMode="numeric"
+        type={props.inputMode === 'text' ? 'text' : 'number'}
+        inputMode={props.inputMode}
         placeholder={props.placeholder}
         value={props.thresholds.form[props.field]}
         onChange={(e) => props.thresholds.setField(props.field, e.target.value)}
@@ -152,20 +159,35 @@ const NumberInput = (props: {
   );
 };
 
-const YouFields = (props: { thresholds: ThresholdsForm }) => (
-  <div className="grid grid-cols-1 gap-3">
+// The error sits on the label line, so the pick reserves no extra line and nothing moves.
+const GenderPick = (props: { thresholds: ThresholdsForm }) => {
+  const error = props.thresholds.visibleError('gender');
+  return (
     <div>
-      <Label id="onboarding-gender" required>
-        {m.ui_thresholds_gender()}
-      </Label>
-      <div role="radiogroup" aria-labelledby="onboarding-gender" className="flex flex-col gap-2">
-        {GENDERS.map((option) => (
+      <div className="flex items-baseline justify-between gap-2">
+        <Label id="onboarding-gender-label" required>
+          {m.ui_thresholds_gender()}
+        </Label>
+        <span id="onboarding-gender-error" className="text-xs text-status-danger">
+          {error}
+        </span>
+      </div>
+      <div
+        role="radiogroup"
+        aria-labelledby="onboarding-gender-label"
+        aria-describedby="onboarding-gender-error"
+        aria-invalid={error !== ''}
+        className="flex flex-col gap-2"
+      >
+        {GENDERS.map((option, index) => (
           <ActionTile
             key={option.id}
             icon={User}
             title={option.label()}
             selected={props.thresholds.form.gender === option.id}
+            className={error === '' ? undefined : 'border-status-danger-strong'}
             buttonProps={{
+              id: index === 0 ? fieldId('gender') : undefined,
               role: 'radio',
               'aria-checked': props.thresholds.form.gender === option.id,
             }}
@@ -174,42 +196,108 @@ const YouFields = (props: { thresholds: ThresholdsForm }) => (
         ))}
       </div>
     </div>
-    <NumberInput
+  );
+};
+
+const YOU_FIELDS: FormField[] = ['gender', 'restHr', 'maxHr', 'weight', 'birthYear'];
+const THRESHOLD_FIELDS: FormField[] = ['ftp', 'thresholdPace'];
+
+const YouFields = (props: { thresholds: ThresholdsForm }) => (
+  <div className="grid grid-cols-1 gap-3">
+    <GenderPick thresholds={props.thresholds} />
+    <FieldInput
       thresholds={props.thresholds}
       field="restHr"
       label={m.ui_thresholds_resting_hr()}
       hint={m.ui_onboarding_rest_hr_hint()}
       placeholder="52"
+      inputMode="numeric"
       required
     />
-    <NumberInput
+    <FieldInput
       thresholds={props.thresholds}
       field="maxHr"
       label={m.ui_thresholds_max_hr()}
       hint={m.ui_onboarding_max_hr_hint()}
       placeholder="186"
+      inputMode="numeric"
       required
+    />
+    <FieldInput
+      thresholds={props.thresholds}
+      field="weight"
+      label={m.ui_thresholds_weight()}
+      hint={m.ui_onboarding_weight_hint()}
+      placeholder="70"
+      inputMode="decimal"
+    />
+    <FieldInput
+      thresholds={props.thresholds}
+      field="birthYear"
+      label={m.ui_thresholds_birth_year()}
+      hint={m.ui_onboarding_birth_year_hint()}
+      placeholder="1990"
+      inputMode="numeric"
     />
   </div>
 );
 
-// `onAttempt`: a press on the (disabled) button reveals the step's field errors. The disabled
-// button has no pointer events, so the press lands on this wrapper.
-const ContinueButton = (props: {
-  disabled: boolean;
-  onClick: () => void;
-  onAttempt?: () => void;
-}) => (
-  <div className="grid" onPointerDown={props.onAttempt}>
-    <Button disabled={props.disabled} onClick={props.onClick}>
-      {m.ui_btn_continue()}
-    </Button>
-  </div>
+const ThresholdFields = (props: { thresholds: ThresholdsForm }) => {
+  const [estimatorOpen, setEstimatorOpen] = useState(false);
+  return (
+    <div className="grid grid-cols-1 gap-3">
+      <FieldInput
+        thresholds={props.thresholds}
+        field="ftp"
+        label={m.ui_thresholds_ftp()}
+        hint={m.ui_onboarding_ftp_hint()}
+        placeholder="240"
+        inputMode="numeric"
+      />
+      <div className="flex flex-col gap-1">
+        <FieldInput
+          thresholds={props.thresholds}
+          field="thresholdPace"
+          label={m.ui_thresholds_threshold_pace()}
+          hint={m.ui_onboarding_pace_hint()}
+          placeholder="4:30"
+          inputMode="text"
+        />
+        <div className="text-xs">
+          <PaceEstimateButton onClick={() => setEstimatorOpen(true)} />
+        </div>
+      </div>
+      <PaceEstimatorDialog
+        open={estimatorOpen}
+        onOpenChange={setEstimatorOpen}
+        onSave={(paceSecPerKm) =>
+          props.thresholds.setField('thresholdPace', formatPaceInput(paceSecPerKm))
+        }
+      />
+    </div>
+  );
+};
+
+const ContinueButton = (props: { disabled?: boolean; onClick: () => void }) => (
+  <Button disabled={props.disabled} onClick={props.onClick}>
+    {m.ui_btn_continue()}
+  </Button>
 );
 
 const nextStep = () => useOnboardingStore.getState().nextOnboardingStep();
 
 const completeOnboarding = () => useLayoutStore.getState().completeOnboarding();
+
+// Continue is always pressable: with an invalid field it shows the step's errors, focuses the
+// first invalid field and stays on the step.
+const continueStep = (thresholds: ThresholdsForm, fields: FormField[]) => {
+  const first = thresholds.revealErrors(fields).at(0);
+  if (first === undefined) {
+    nextStep();
+    return;
+  }
+  document.getElementById(fieldId(first))?.focus();
+};
 
 const screenOf = (
   step: Step,
@@ -236,39 +324,15 @@ const screenOf = (
       title: m.ui_onboarding_you_title(),
       subtitle: m.ui_onboarding_you_subtitle(),
       body: <YouFields thresholds={thresholds} />,
-      primary: (
-        <ContinueButton
-          disabled={
-            thresholds.form.gender === null ||
-            !thresholds.fieldValid('restHr') ||
-            !thresholds.fieldValid('maxHr')
-          }
-          onClick={nextStep}
-          onAttempt={() => thresholds.revealErrors(['restHr', 'maxHr'])}
-        />
-      ),
+      primary: <ContinueButton onClick={() => continueStep(thresholds, YOU_FIELDS)} />,
     };
   }
-  if (step === 'bike') {
+  if (step === 'thresholds') {
     return {
-      title: m.ui_onboarding_bike_title(),
-      subtitle: m.ui_onboarding_bike_subtitle(),
-      body: (
-        <NumberInput
-          thresholds={thresholds}
-          field="ftp"
-          label={m.ui_thresholds_ftp()}
-          hint={m.ui_onboarding_add_later()}
-          placeholder="240"
-        />
-      ),
-      primary: (
-        <ContinueButton
-          disabled={!thresholds.fieldValid('ftp')}
-          onClick={nextStep}
-          onAttempt={() => thresholds.revealErrors(['ftp'])}
-        />
-      ),
+      title: m.ui_onboarding_thresholds_title(),
+      subtitle: m.ui_onboarding_thresholds_subtitle(),
+      body: <ThresholdFields thresholds={thresholds} />,
+      primary: <ContinueButton onClick={() => continueStep(thresholds, THRESHOLD_FIELDS)} />,
     };
   }
   if (source === 'intervals') {

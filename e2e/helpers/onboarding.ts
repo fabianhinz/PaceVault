@@ -13,7 +13,7 @@ export const startOnboarding = async (page: Page, source: string | RegExp) => {
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
 };
 
-/** "You and your heart rate" with Male, 50 / 185 bpm, then skips the optional FTP screen. */
+/** "You and your heart rate" with Male, 50 / 185 bpm, then skips the optional thresholds screen. */
 export const fillOnboardingProfile = async (page: Page) => {
   await page.getByRole('radio', { name: 'Male', exact: true }).click();
   await page.getByLabel(/^Resting HR/).fill('50');

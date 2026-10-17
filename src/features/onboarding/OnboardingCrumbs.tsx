@@ -1,4 +1,4 @@
-import { Code2 } from 'lucide-react';
+import { CodeXml } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { Crumbs } from '@/components/ui/StatTile.tsx';
 import { ExternalLink } from '@/components/ui/ExternalLink.tsx';
@@ -12,7 +12,7 @@ export const OnboardingCrumbs = () => (
       items={[
         m.ui_onboarding_crumb_device(),
         m.ui_onboarding_crumb_offline(),
-        <ExternalLink key="oss" href={GITHUB_URL} icon={Code2}>
+        <ExternalLink key="oss" href={GITHUB_URL} icon={CodeXml}>
           {m.ui_onboarding_crumb_oss()}
         </ExternalLink>,
       ]}

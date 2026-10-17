@@ -1,5 +1,4 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { Info } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import type { ThresholdKey } from '@/store/user.ts';
 import { formatPaceInput } from '@/lib/formatters.ts';
@@ -12,6 +11,7 @@ import {
 } from '@/components/ui/Dialog.tsx';
 import { Button } from '@/components/ui/Button.tsx';
 import { Input } from '@/components/ui/Input.tsx';
+import { PaceEstimateButton } from './PaceEstimateButton.tsx';
 import { PaceEstimatorDialog } from './PaceEstimatorDialog.tsx';
 import { THRESHOLD_TILE_ICONS } from './thresholdIcons.ts';
 import { fieldErrorFor, type ThresholdsForm } from './hooks/useThresholdsForm.ts';
@@ -55,18 +55,7 @@ const ThresholdEditForm = (props: {
 
   let helperText: ReactNode = visibleError || undefined;
   if (isPace && visibleError === '') {
-    helperText = (
-      <span className="flex gap-1 align-center text-accent">
-        <Info size={16} strokeWidth={1.5} className="shrink-0" />
-        <button
-          type="button"
-          className="cursor-pointer hover:underline"
-          onClick={() => setEstimatorOpen(true)}
-        >
-          {m.ui_thresholds_estimate_from_race()}
-        </button>
-      </span>
-    );
+    helperText = <PaceEstimateButton onClick={() => setEstimatorOpen(true)} />;
   }
 
   return (

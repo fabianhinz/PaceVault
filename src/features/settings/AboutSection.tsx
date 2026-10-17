@@ -1,4 +1,4 @@
-import { Code, BookOpen } from 'lucide-react';
+import { CodeXml, BookOpen } from 'lucide-react';
 import { m } from '@/paraglide/messages.js';
 import { Card } from '@/components/ui/Card.tsx';
 import { CardHeader } from '@/components/ui/CardHeader.tsx';
@@ -24,7 +24,7 @@ export const AboutSection = () => (
     <CardHeader title={m.ui_settings_about_title()} subtitle={m.ui_settings_about_desc()} />
     <List>
       <ListItem
-        icon={<Code size={18} />}
+        icon={<CodeXml size={18} />}
         primary={m.ui_settings_about_github()}
         secondary={m.ui_settings_about_github_desc()}
         onClick={() => openExternal(GITHUB_URL)}

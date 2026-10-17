@@ -5,12 +5,28 @@ import { setThreshold, thresholdTile } from './helpers/thresholds';
 import { fillOnboardingProfile, startOnboarding } from './helpers/onboarding';
 
 test.describe('Onboarding flow', () => {
-  test('profile → upload FIT → complete onboarding', async ({ page }) => {
+  test('profile with the optional values → upload FIT → values are saved', async ({ page }) => {
     await startOnboarding(page, 'FIT files');
 
     await expect(page.locator('[data-layout="dock"]')).not.toBeVisible();
 
-    await fillOnboardingProfile(page);
+    const next = page.getByRole('button', { name: 'Continue', exact: true });
+    await page.getByRole('radio', { name: 'Male', exact: true }).click();
+    await page.getByLabel(/^Resting HR/).fill('50');
+    await page.getByLabel(/^Max HR/).fill('185');
+    await page.getByLabel(/^Weight/).fill('72');
+    await page.getByLabel(/^Birth year/).fill('1990');
+    await next.click();
+
+    await expect(page.getByRole('heading', { name: 'Your thresholds' })).toBeVisible();
+    await page.getByLabel(/^FTP/).fill('250');
+    await page.getByRole('button', { name: 'Estimate from a race time' }).click();
+    const estimator = page.getByRole('dialog', { name: 'Estimate Threshold Pace' });
+    await estimator.getByRole('textbox').fill('20:00');
+    await estimator.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(estimator).toHaveCount(0);
+    await expect(page.getByLabel(/^Threshold Pace/)).toHaveValue(/^\d:\d\d$/);
+    await next.click();
 
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
     await expect(uploadButton).toBeEnabled();
@@ -20,6 +36,12 @@ test.describe('Onboarding flow', () => {
     await expect(page.locator('[data-layout="dock"]')).toBeVisible();
 
     await expect(page.getByText(/test data/i)).not.toBeVisible();
+
+    await page.goto('/settings');
+    await expect(thresholdTile(page, 'Weight')).toContainText('72');
+    await expect(thresholdTile(page, 'FTP')).toContainText('250');
+    await expect(thresholdTile(page, 'Pace')).not.toContainText('Add pace');
+    await expect(page.getByLabel('Birth year')).toHaveValue('1990');
   });
 
   test('try demo data from the intro → complete onboarding', async ({ page }) => {
@@ -35,31 +57,50 @@ test.describe('Onboarding flow', () => {
     await expect(page.getByText(/test data/i)).toBeVisible();
   });
 
-  test('Continue is disabled until gender and valid HR; an HR error waits for blur, not typing', async ({
+  test('Continue shows the step errors, focuses the first invalid field and stays; valid values advance', async ({
     page,
   }) => {
     await startOnboarding(page, 'FIT files');
 
+    const heading = page.getByRole('heading', { name: 'You and your heart rate' });
     const next = page.getByRole('button', { name: 'Continue', exact: true });
-    await expect(next).toBeDisabled();
-
-    await page.getByLabel(/^Resting HR/).fill('50');
-    await page.getByLabel(/^Max HR/).fill('185');
-    await expect(next).toBeDisabled();
+    const required = page.getByText('Required', { exact: true });
+    await expect(next).toBeEnabled();
+    await next.click();
+    await expect(heading).toBeVisible();
+    await expect(required).toHaveCount(3);
+    await expect(page.getByRole('radio', { name: 'Male', exact: true })).toBeFocused();
 
     await page.getByRole('radio', { name: 'Female' }).click();
-    await expect(next).toBeEnabled();
-
-    await page.getByLabel(/^Max HR/).fill('40');
-    await expect(next).toBeDisabled();
-    await expect(page.getByText('Min 120 bpm')).toHaveCount(0);
-
-    await page.getByLabel(/^Max HR/).blur();
-    await expect(page.getByText('Min 120 bpm')).toBeVisible();
+    await expect(required).toHaveCount(2);
+    await page.getByLabel(/^Resting HR/).fill('50');
+    await page.getByLabel(/^Max HR/).fill('250');
+    await page.getByLabel(/^Weight/).fill('500');
+    await next.click();
+    await expect(page.getByText('Max 230 bpm')).toBeVisible();
+    await expect(page.getByText('Max 200 kg')).toBeVisible();
+    await expect(page.getByLabel(/^Max HR/)).toBeFocused();
+    await expect(heading).toBeVisible();
 
     await page.getByLabel(/^Max HR/).fill('185');
-    await expect(page.getByText('Min 120 bpm')).toHaveCount(0);
-    await expect(next).toBeEnabled();
+    await expect(page.getByText('Max 230 bpm')).toHaveCount(0);
+    await page.getByLabel(/^Weight/).fill('');
+    await page.getByLabel(/^Birth year/).fill('19');
+    await expect(page.getByText(/^Between 1920/)).toHaveCount(0);
+    await page.getByLabel(/^Birth year/).blur();
+    await expect(page.getByText(/^Between 1920/)).toBeVisible();
+    await page.getByLabel(/^Birth year/).fill('');
+    await next.click();
+
+    await expect(page.getByRole('heading', { name: 'Your thresholds' })).toBeVisible();
+    const pace = page.getByLabel(/^Threshold Pace/);
+    await pace.fill('abc');
+    await next.click();
+    await expect(page.getByText('Format: m:ss (2:30-9:00)')).toBeVisible();
+    await expect(pace).toBeFocused();
+    await pace.fill('');
+    await next.click();
+    await expect(page.getByRole('button', { name: /upload fit files/i })).toBeVisible();
   });
 
   test("changing FTP in settings saves it as today's entry", async ({ page }) => {

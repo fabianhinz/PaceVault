@@ -8,6 +8,8 @@ import { parsePaceInput, formatPaceInput } from '@/lib/formatters.ts';
 
 export type NumberField = 'restHr' | 'maxHr' | 'ftp' | 'weight' | 'birthYear';
 export type TextField = NumberField | 'thresholdPace';
+/** A field that can show an error: the text fields plus the gender pick. */
+export type FormField = TextField | 'gender';
 
 interface FormValues {
   gender: Gender | null;
@@ -147,6 +149,12 @@ const fieldError = (field: TextField, form: FormValues, stored: FormValues): str
   return numberError(field, form);
 };
 
+const formFieldError = (field: FormField, form: FormValues, stored: FormValues): string => {
+  if (field !== 'gender') return fieldError(field, form, stored);
+  if (form.gender === null) return m.ui_thresholds_required();
+  return '';
+};
+
 export const fieldErrorFor = (field: TextField, draft: string, values: FormValues): string =>
   fieldError(field, { ...values, [field]: draft }, values);
 
@@ -212,7 +220,7 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   const profile = useUserStore((s) => s.profile);
   const [, startTransition] = useTransition();
   const [form, setForm] = useState<FormValues>(() => storedForm(profile));
-  const [revealed, setRevealed] = useState<TextField[]>([]);
+  const [revealed, setRevealed] = useState<FormField[]>([]);
 
   const stored = storedForm(profile);
   const errors = formErrors(form, stored);
@@ -226,24 +234,24 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
     form.gender !== stored.gender || fields.some((field) => form[field] !== stored[field]);
   const valid = form.gender !== null && fields.every((field) => errors[field] === '');
 
-  const fieldValid = (field: TextField): boolean => errors[field] === '';
-
   // An error shows only once its field is left (blur) or a submit is tried while it is invalid,
   // and hides as soon as the value is valid again, so typing never flags a half-entered value.
-  const visibleError = (field: TextField): string => {
+  const visibleError = (field: FormField): string => {
     if (!revealed.includes(field)) return '';
-    return errors[field];
+    return formFieldError(field, form, stored);
   };
 
-  const revealErrors = (targets: TextField[]) => {
-    const invalid = targets.filter((field) => errors[field] !== '');
+  /** Shows the errors of the invalid `targets` and returns them, in the order given. */
+  const revealErrors = (targets: FormField[]): FormField[] => {
+    const invalid = targets.filter((field) => formFieldError(field, form, stored) !== '');
     setRevealed((current) => [...current, ...invalid.filter((field) => !current.includes(field))]);
+    return invalid;
   };
 
   const setField = (field: TextField, value: string) => {
     const next = { ...form, [field]: value };
     setForm(next);
-    setRevealed((current) => current.filter((shown) => fieldError(shown, next, stored) !== ''));
+    setRevealed((current) => current.filter((shown) => formFieldError(shown, next, stored) !== ''));
   };
 
   const saveField = (field: ThresholdKey, value: string): ThresholdKey | undefined => {
@@ -254,7 +262,9 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   };
 
   const setGender = (value: string) => {
-    if (isGender(value)) setForm((current) => ({ ...current, gender: value }));
+    if (!isGender(value)) return;
+    setForm((current) => ({ ...current, gender: value }));
+    setRevealed((current) => current.filter((shown) => shown !== 'gender'));
   };
 
   const save = () => {
@@ -275,7 +285,6 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
     current,
     dirty,
     valid,
-    fieldValid,
     visibleError,
     revealErrors,
     setField,

@@ -170,6 +170,229 @@
         recompute. Everything is in the working tree; nothing is committed.
       </p>
 
+      <h2>Review round 2 fixes</h2>
+
+      <div class="card">
+        <h3><span class="label">R7</span>Continue is always enabled (R-O2)</h3>
+        <p>
+          Continue can always be pressed. With an invalid field it shows every error of the step,
+          moves focus to the first invalid field and stays; with valid fields it advances. The
+          gender pick is part of this: its "Required" sits on the label line and the tiles get the
+          error border, so nothing moves. The wrapper <code>div</code> and <code>fieldValid</code>
+          are gone. Settings is unchanged (R-O1).
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:163</code> (gender error),
+          <code>:293</code> (<code>continueStep</code>), <code>:322</code>, <code>:330</code>;
+          <code>src/features/settings/hooks/useThresholdsForm.ts:152</code>,
+          <code>:245</code> (<code>revealErrors</code> now returns the invalid fields). Test:
+          <code>e2e/onboarding.spec.ts:60</code>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r2-before-d-en-continue.png"
+              alt="R7 before · Desktop · Continue pressed, fields empty"
+              loading="lazy"
+            />
+            <figcaption>R7 before · Desktop · Continue pressed, fields empty</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r2-after-d-en-continue.png"
+              alt="R7 after · Desktop · Continue pressed, fields empty"
+              loading="lazy"
+            />
+            <figcaption>R7 after · Desktop · Continue pressed, fields empty</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-before-p-en-continue.png"
+              alt="R7 before · 390 px · Continue pressed"
+              loading="lazy"
+            />
+            <figcaption>R7 before · 390 px · Continue pressed</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-after-p-en-continue.png"
+              alt="R7 after · 390 px · Continue pressed, focus on Male"
+              loading="lazy"
+            />
+            <figcaption>R7 after · 390 px · Continue pressed, focus on Male</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R8</span>Code icon: <code>CodeXml</code> (R-O3)</h3>
+        <p>
+          In lucide-react 0.563 <code>Code2</code> is only a legacy alias of
+          <code>CodeXml</code> (same <code>code-xml</code> glyph), so both places now import
+          <code>CodeXml</code>. The crumb already used <code>Code2</code> since round 1 (the round-1
+          text said <code>Code</code>), so it looks the same; Settings → About changes from
+          <code>Code</code> to the same glyph.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingCrumbs.tsx:15</code>,
+          <code>src/features/settings/AboutSection.tsx:27</code>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r2-before-d-en-about.png"
+              alt="R8 before · Desktop · Settings → About"
+              loading="lazy"
+            />
+            <figcaption>R8 before · Desktop · Settings → About</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r2-after-d-en-about.png"
+              alt="R8 after · Desktop · Settings → About"
+              loading="lazy"
+            />
+            <figcaption>R8 after · Desktop · Settings → About</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r2-after-d-en-crumbs.png"
+              alt="R8 after · Desktop · crumb (unchanged glyph)"
+              loading="lazy"
+            />
+            <figcaption>R8 after · Desktop · crumb (unchanged glyph)</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R9</span>Profile fields regrouped, still 4 screens</h3>
+        <p>
+          Screen 2 adds optional weight and birth year; screen 3 is now "Your thresholds" / "Deine
+          Schwellenwerte" with optional FTP and optional threshold pace, plus the Settings "Estimate
+          from a race time" link and <code>PaceEstimatorDialog</code> (link moved to a shared
+          <code>PaceEstimateButton</code>). Each optional field states what it is for in its
+          reserved helper line; an error replaces it in the same line. "Add later in Settings" is
+          said once, in each screen's subtitle. Validation is the existing
+          <code>useThresholdsForm</code> logic; invalid optional values block Continue, empty ones
+          don't. <code>createProfile</code> already saved weight, birth year, FTP and pace, so the
+          one save through <code>profileGate</code> covers them (asserted in the e2e test). Step id
+          <code>bike</code> is renamed <code>thresholds</code> (not persisted). On a 390 × 844 phone
+          screen 2 scrolls inside the dialog with the footer pinned.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:202-279</code>;
+          <code>src/features/settings/PaceEstimateButton.tsx</code>,
+          <code>src/features/settings/ThresholdEditDialog.tsx:58</code>;
+          <code>src/store/onboarding.ts:4</code>; <code>messages/en.json:605</code>,
+          <code>:620-628</code> (DE same lines). Removed keys:
+          <code>ui_onboarding_bike_title</code>, <code>ui_onboarding_bike_subtitle</code>,
+          <code>ui_onboarding_add_later</code>. Test: <code>e2e/onboarding.spec.ts:8</code>.
+        </p>
+        <table>
+          <tr>
+            <th>Field</th>
+            <th>EN hint</th>
+            <th>DE hint</th>
+            <th>Checked against</th>
+          </tr>
+          <tr>
+            <td>Weight</td>
+            <td>For calories on runs and from heart rate</td>
+            <td>Für Kalorien bei Läufen und aus der Herzfrequenz</td>
+            <td>
+              <code>energy.ts</code>: running and Keytel (HR) methods need weight; power does not
+            </td>
+          </tr>
+          <tr>
+            <td>Birth year</td>
+            <td>For calories from heart rate</td>
+            <td>Für Kalorien aus der Herzfrequenz</td>
+            <td><code>energy.ts</code>: age only in Keytel</td>
+          </tr>
+          <tr>
+            <td>FTP</td>
+            <td>Power zones, training load and efforts for rides</td>
+            <td>Leistungszonen, Trainingslast, Belastungen am Rad</td>
+            <td>
+              <code>zoneColors.ts</code> power zones, <code>stress.ts</code> TSS (any session with
+              NP), <code>effortDetection.ts</code> power signal (cycling)
+            </td>
+          </tr>
+          <tr>
+            <td>Threshold pace</td>
+            <td>Pace zones and efforts for runs</td>
+            <td>Tempozonen und Belastungen bei Läufen</td>
+            <td>
+              <code>zones.ts</code> running zones, <code>effortDetection.ts</code> pace signal
+            </td>
+          </tr>
+        </table>
+        <p class="meta">
+          The DE FTP hint was shortened from "… und Belastungen beim Radfahren", which wrapped at
+          390 px. Intro list item 2 now reads "Gender and heart rate, optional weight, birth year,
+          FTP and pace".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="r2-before-d-en-you.png" alt="R9 before · Desktop · screen 2" loading="lazy" />
+            <figcaption>R9 before · Desktop · screen 2</figcaption>
+          </figure>
+          <figure>
+            <img src="r2-after-d-en-you.png" alt="R9 after · Desktop · screen 2" loading="lazy" />
+            <figcaption>R9 after · Desktop · screen 2</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r2-before-d-en-step3.png"
+              alt="R9 before · Desktop · screen 3"
+              loading="lazy"
+            />
+            <figcaption>R9 before · Desktop · screen 3</figcaption>
+          </figure>
+          <figure>
+            <img src="r2-after-d-en-step3.png" alt="R9 after · Desktop · screen 3" loading="lazy" />
+            <figcaption>R9 after · Desktop · screen 3</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r2-before-p-en-you.png" alt="R9 before · 390 px · screen 2" loading="lazy" />
+            <figcaption>R9 before · 390 px · screen 2</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r2-after-p-en-you.png" alt="R9 after · 390 px · screen 2" loading="lazy" />
+            <figcaption>R9 after · 390 px · screen 2</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-after-p-de-you-bottom.png"
+              alt="R9 after · 390 px · DE · screen 2 scrolled"
+              loading="lazy"
+            />
+            <figcaption>R9 after · 390 px · DE · screen 2 scrolled</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-before-p-en-step3.png"
+              alt="R9 before · 390 px · screen 3"
+              loading="lazy"
+            />
+            <figcaption>R9 before · 390 px · screen 3</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r2-after-p-en-step3.png" alt="R9 after · 390 px · screen 3" loading="lazy" />
+            <figcaption>R9 after · 390 px · screen 3</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-after-p-de-step3.png"
+              alt="R9 after · 390 px · DE · screen 3"
+              loading="lazy"
+            />
+            <figcaption>R9 after · 390 px · DE · screen 3</figcaption>
+          </figure>
+        </div>
+      </div>
+
       <h2>Review round 1 fixes</h2>
 
       <div class="card">
@@ -1020,31 +1243,34 @@
           the same WebGL-picking class as <code>:480</code>.
         </li>
         <li>
-          <strong>R-O1 · Settings uses R4 as well.</strong> The eager logic was the shared
-          <code>visibleError</code> in <code>useThresholdsForm</code>, so the Settings birth year
-          now also waits for blur. The tile edit dialog (<code>ThresholdEditDialog.tsx:45</code>)
-          has its own draft logic and still checks as you type. Not changed: it has a reserved line,
-          so nothing shifts. Say if it should follow R4 too.
+          <strong>R-O1 · Settled: keep.</strong> The Settings threshold dialog keeps checking as you
+          type.
+        </li>
+        <li><strong>R-O2 · Settled: Continue always enabled</strong> (R7).</li>
+        <li>
+          <strong>R-O3 · Settled: <code>CodeXml</code></strong> (current name of <code>Code2</code>,
+          R8).
+        </li>
+        <li><strong>R-O4 · Settled: keep</strong> the 20 px taller Settings row.</li>
+        <li>
+          <strong>R-O5 · Source step Continue stays disabled</strong> until a source is picked. R7
+          covers steps with fields and errors; the source picker has no error line. Say if it should
+          also be always enabled (it would need an error message for "no source picked").
         </li>
         <li>
-          <strong>R-O2 · Continue stays disabled.</strong> The plan and the e2e test keep it
-          disabled, so "tries Continue" means a press on the disabled button, which a wrapper
-          catches (R4). Keyboard users can't focus a disabled button, so for them errors show on
-          blur only. The other option is an enabled Continue that reveals the errors and doesn't
-          advance.
+          <strong>R-O6 · Gender error placement.</strong> "Required" sits at the right end of the
+          gender label line rather than below the tiles, so no line is reserved; the inputs show
+          theirs below. Say if it should move below the tiles (reserves 20 px).
         </li>
         <li>
-          <strong>R-O3 · Crumb icon.</strong> The shared <code>ExternalLink</code> needs an icon,
-          and it puts it first. I used <code>Code</code>, the icon on the GitHub row in Settings →
-          About, instead of the earlier trailing ↗.
-        </li>
-        <li>
-          <strong>R-O4 · Settings threshold row is 20 px taller</strong> with no error, because the
-          helper line is now reserved (R5).
+          <strong>R-O7 · FTP "training load" scope.</strong> TSS uses FTP for any session with
+          Normalized Power, so a run with a power meter also uses it. The hint says "for rides",
+          which is the usual case.
         </li>
       </ol>
 
       <h2>Verification</h2>
+      <p class="meta">Round 2 run, after R7–R9.</p>
       <table>
         <tr>
           <th>Command</th>
@@ -1056,19 +1282,15 @@
         </tr>
         <tr>
           <td><code>vp check</code></td>
-          <td class="ok">pass (fmt, lint, types; 556 files)</td>
+          <td class="ok">pass (fmt, lint, types; 562 files)</td>
         </tr>
         <tr>
           <td><code>vp test -- --run</code></td>
-          <td class="ok">pass, 131 files / 1304 tests</td>
+          <td class="ok">pass, 133 files / 1314 tests</td>
         </tr>
         <tr>
           <td><code>vp exec playwright test</code></td>
-          <td class="ok">
-            pass, 83/83 (second full run). First run: 81 passed,
-            <code>mobile/map.spec.ts:281</code> and <code>:480</code> failed and passed with
-            <code>--workers 1</code>
-          </td>
+          <td class="ok">pass, 83/83 in the first full run (no flakes)</td>
         </tr>
         <tr>
           <td><code>vp build</code> (final)</td>
@@ -1076,9 +1298,10 @@
         </tr>
       </table>
       <p class="meta">
-        Screenshots: a temporary <code>e2e/zz-review-capture.spec.ts</code> against the configured
-        web server, with SwiftShader WebGL (headless Chromium has no GPU here) and a mocked
-        intervals.icu API. Taken after the suite passed; the spec and its test results are deleted.
+        Screenshots: a temporary <code>e2e/zz-review-capture.spec.ts</code> (round 2:
+        <code>e2e/zzReviewCapture.spec.ts</code>) against the configured web server, with
+        SwiftShader WebGL (headless Chromium has no GPU here) and a mocked intervals.icu API. Taken
+        after the suite passed; the spec and its test results are deleted.
       </p>
 
       <h2>How to check it yourself</h2>

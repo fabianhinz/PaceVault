@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-export type OnboardingStep = 'intro' | 'source' | 'you' | 'bike' | 'import';
+export type OnboardingStep = 'intro' | 'source' | 'you' | 'thresholds' | 'import';
 export type OnboardingSource = 'intervals' | 'fit' | 'demo';
 
-export const ONBOARDING_FLOW_STEPS: OnboardingStep[] = ['source', 'you', 'bike', 'import'];
+export const ONBOARDING_FLOW_STEPS: OnboardingStep[] = ['source', 'you', 'thresholds', 'import'];
 
 interface OnboardingState {
   step: OnboardingStep;
@@ -22,8 +22,8 @@ interface OnboardingState {
 const NEXT_STEP: Record<OnboardingStep, OnboardingStep> = {
   intro: 'source',
   source: 'you',
-  you: 'bike',
-  bike: 'import',
+  you: 'thresholds',
+  thresholds: 'import',
   import: 'import',
 };
 
@@ -31,8 +31,8 @@ const PREVIOUS_STEP: Record<OnboardingStep, OnboardingStep> = {
   intro: 'intro',
   source: 'intro',
   you: 'source',
-  bike: 'you',
-  import: 'bike',
+  thresholds: 'you',
+  import: 'thresholds',
 };
 
 export const useOnboardingStore = create<OnboardingState>()(

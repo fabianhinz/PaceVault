@@ -35,7 +35,13 @@ Compared in `mockups/onboarding/index.html`: A glass over glow, B one thing at a
 - **Gender: binary and required, app-wide.**
   - Remove `other` from Settings (`src/features/settings/ThresholdsSection.tsx:45`) and from the schema (`src/store/user.ts:71`).
   - No migration and no version bump. The owner confirmed no profile uses `other`.
-- **Flow (4 screens):**
+- **Review round 2 (2026-10-17), replacing the flow below:**
+  - Screen 2 "You & heart rate" adds optional weight and birth year.
+  - Screen 3 becomes "Your thresholds", with optional FTP and optional threshold pace. Threshold pace includes the existing race-time estimator (`PaceEstimatorDialog.tsx`).
+  - Still 4 screens.
+  - Every optional field states in its helper line what it unlocks (calories, zones, training load, efforts). The line is factual, and an error replaces it in the same reserved line. "Add later in Settings" appears once per screen.
+  - Continue is always enabled; pressing it with invalid fields reveals their errors and focuses the first one.
+- **Flow (4 screens, original decision):**
   1. Source
   2. You & heart: gender, rest HR, max HR (required)
   3. Bike: FTP (optional)
