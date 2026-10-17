@@ -4,6 +4,7 @@ import { m } from '@/paraglide/messages.js';
 import { cn } from '@/lib/utils.ts';
 import { Button } from '@/components/ui/Button.tsx';
 import { Typography } from '@/components/ui/Typography.tsx';
+import { overlayClass } from '@/components/ui/Card.tsx';
 import {
   useImportProgressStore,
   type ForegroundImport,
@@ -11,7 +12,7 @@ import {
   type ImportSummary,
 } from '@/store/importProgress.ts';
 
-const MIN_OPEN_MS = 800;
+const MIN_OPEN_MS = 1500;
 const SIZE = 180;
 const STROKE = 10;
 const RADIUS = (SIZE - STROKE) / 2;
@@ -130,7 +131,7 @@ const OverlayContent = (props: { foreground: ForegroundImport }) => {
       aria-modal={showSummary || undefined}
       aria-live={showSummary ? undefined : 'polite'}
       aria-busy={!showSummary}
-      className="fixed inset-0 z-50 grid place-items-center bg-surface-base/85 backdrop-blur-sm"
+      className={cn('fixed inset-0 z-50 grid place-items-center', overlayClass)}
     >
       {showSummary && summary !== null ? (
         <div
@@ -160,8 +161,30 @@ const OverlayContent = (props: { foreground: ForegroundImport }) => {
   );
 };
 
+const useHeldReprocess = (foreground: ForegroundImport | null): ForegroundImport | null => {
+  const [previous, setPrevious] = useState(foreground);
+  const [held, setHeld] = useState<ForegroundImport | null>(null);
+
+  if (foreground !== previous) {
+    setPrevious(foreground);
+    if (foreground === null && previous?.task === 'reprocess') setHeld(previous);
+    else setHeld(null);
+  }
+
+  useEffect(() => {
+    if (held === null) return;
+    const remaining = Math.max(0, held.openedAt + MIN_OPEN_MS - Date.now());
+    const timeout = setTimeout(() => setHeld(null), remaining);
+    return () => clearTimeout(timeout);
+  }, [held]);
+
+  return held;
+};
+
 export const ImportProgressOverlay = () => {
   const foreground = useImportProgressStore((s) => s.foreground);
-  if (foreground === null) return null;
-  return <OverlayContent key={foreground.openedAt} foreground={foreground} />;
+  const held = useHeldReprocess(foreground);
+  const shown = foreground ?? held;
+  if (shown === null) return null;
+  return <OverlayContent key={shown.openedAt} foreground={shown} />;
 };

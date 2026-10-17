@@ -8,9 +8,11 @@ import { parsePaceInput, formatPaceInput } from '@/lib/formatters.ts';
 
 export type NumberField = 'restHr' | 'maxHr' | 'ftp' | 'weight' | 'birthYear';
 export type TextField = NumberField | 'thresholdPace';
+/** A field that can show an error: the text fields plus the gender pick. */
+export type FormField = TextField | 'gender';
 
-export interface FormValues {
-  gender: Gender;
+interface FormValues {
+  gender: Gender | null;
   birthYear: string;
   restHr: string;
   maxHr: string;
@@ -37,7 +39,7 @@ const paceText = (value: number | undefined): string => {
 const storedForm = (profile: UserProfile | null): FormValues => {
   if (!profile) {
     return {
-      gender: 'male',
+      gender: null,
       birthYear: '',
       restHr: '',
       maxHr: '',
@@ -147,6 +149,12 @@ const fieldError = (field: TextField, form: FormValues, stored: FormValues): str
   return numberError(field, form);
 };
 
+const formFieldError = (field: FormField, form: FormValues, stored: FormValues): string => {
+  if (field !== 'gender') return fieldError(field, form, stored);
+  if (form.gender === null) return m.ui_thresholds_required();
+  return '';
+};
+
 export const fieldErrorFor = (field: TextField, draft: string, values: FormValues): string =>
   fieldError(field, { ...values, [field]: draft }, values);
 
@@ -159,15 +167,14 @@ const formErrors = (form: FormValues, stored: FormValues): Record<TextField, str
   weight: fieldError('weight', form, stored),
 });
 
-const isGender = (value: string): value is Gender =>
-  value === 'male' || value === 'female' || value === 'other';
+const isGender = (value: string): value is Gender => value === 'male' || value === 'female';
 
 const epochHistory = (value: number | undefined) => {
   if (value === undefined) return undefined;
   return [{ date: 0, value }];
 };
 
-const createProfile = (form: FormValues) => {
+const createProfile = (form: FormValues, gender: Gender) => {
   const restHr = Number(form.restHr);
   const maxHr = Number(form.maxHr);
   const thresholds: UserProfile['thresholds'] = {
@@ -179,7 +186,7 @@ const createProfile = (form: FormValues) => {
   const thresholdPace = epochHistory(parsePaceInput(form.thresholdPace));
   if (thresholdPace) thresholds.thresholdPace = thresholdPace;
   const profile: Omit<UserProfile, 'id' | 'createdAt'> = {
-    gender: form.gender,
+    gender,
     thresholds,
     showMetricHelp: true,
   };
@@ -196,7 +203,9 @@ const parsedThreshold = (field: ThresholdKey, value: string): number | undefined
 };
 
 const saveChanges = (form: FormValues, stored: FormValues) => {
-  if (form.gender !== stored.gender) useUserStore.getState().setProfileGender(form.gender);
+  if (form.gender !== null && form.gender !== stored.gender) {
+    useUserStore.getState().setProfileGender(form.gender);
+  }
   if (form.birthYear !== stored.birthYear) {
     useUserStore.getState().setProfileBirthYear(optionalNumber(form.birthYear));
   }
@@ -211,6 +220,7 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   const profile = useUserStore((s) => s.profile);
   const [, startTransition] = useTransition();
   const [form, setForm] = useState<FormValues>(() => storedForm(profile));
+  const [revealed, setRevealed] = useState<FormField[]>([]);
 
   const stored = storedForm(profile);
   const errors = formErrors(form, stored);
@@ -222,15 +232,26 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   }
   const dirty =
     form.gender !== stored.gender || fields.some((field) => form[field] !== stored[field]);
-  const valid = fields.every((field) => errors[field] === '');
+  const valid = form.gender !== null && fields.every((field) => errors[field] === '');
 
-  const visibleError = (field: TextField): string => {
-    if (form[field] === stored[field]) return '';
-    return errors[field];
+  // An error shows only once its field is left (blur) or a submit is tried while it is invalid,
+  // and hides as soon as the value is valid again, so typing never flags a half-entered value.
+  const visibleError = (field: FormField): string => {
+    if (!revealed.includes(field)) return '';
+    return formFieldError(field, form, stored);
+  };
+
+  /** Shows the errors of the invalid `targets` and returns them, in the order given. */
+  const revealErrors = (targets: FormField[]): FormField[] => {
+    const invalid = targets.filter((field) => formFieldError(field, form, stored) !== '');
+    setRevealed((current) => [...current, ...invalid.filter((field) => !current.includes(field))]);
+    return invalid;
   };
 
   const setField = (field: TextField, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
+    const next = { ...form, [field]: value };
+    setForm(next);
+    setRevealed((current) => current.filter((shown) => formFieldError(shown, next, stored) !== ''));
   };
 
   const saveField = (field: ThresholdKey, value: string): ThresholdKey | undefined => {
@@ -241,14 +262,17 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   };
 
   const setGender = (value: string) => {
-    if (isGender(value)) setForm((current) => ({ ...current, gender: value }));
+    if (!isGender(value)) return;
+    setForm((current) => ({ ...current, gender: value }));
+    setRevealed((current) => current.filter((shown) => shown !== 'gender'));
   };
 
   const save = () => {
-    if (!valid) return;
+    const gender = form.gender;
+    if (!valid || gender === null) return;
     startTransition(() => {
       if (mode === 'create' || !profile) {
-        createProfile(form);
+        createProfile(form, gender);
       } else {
         saveChanges(form, stored);
       }
@@ -256,7 +280,18 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
     });
   };
 
-  return { form, current, dirty, valid, visibleError, setField, saveField, setGender, save };
+  return {
+    form,
+    current,
+    dirty,
+    valid,
+    visibleError,
+    revealErrors,
+    setField,
+    saveField,
+    setGender,
+    save,
+  };
 };
 
 export type ThresholdsForm = ReturnType<typeof useThresholdsForm>;

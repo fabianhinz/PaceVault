@@ -1,0 +1,1504 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Onboarding Redesign Review</title>
+    <style>
+      :root {
+        --bg: #05070d;
+        --surface: #0d111a;
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #e6e9ef;
+        --muted: #9aa3b2;
+        --accent: #3b82f6;
+        --tag: #f97316;
+        --code: #151b27;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.55 system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 19px;
+        margin: 40px 0 12px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 16px;
+      }
+      code {
+        background: var(--code);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+        font:
+          13px/1.4 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        margin: 0 0 16px;
+      }
+      .label {
+        display: inline-block;
+        min-width: 34px;
+        text-align: center;
+        background: var(--tag);
+        color: #111;
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 1px 7px;
+        margin-right: 8px;
+      }
+      .label.n {
+        background: var(--accent);
+        color: #fff;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+      .card p {
+        margin: 4px 0;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .shots {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 12px;
+        align-items: flex-start;
+      }
+      figure {
+        margin: 0;
+        flex: 1 1 260px;
+        max-width: 100%;
+      }
+      figure.phone {
+        flex: 0 1 220px;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #000;
+      }
+      figcaption {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      ul,
+      ol {
+        padding-left: 22px;
+      }
+      li {
+        margin: 4px 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .ok {
+        color: #4ade80;
+      }
+      .warn {
+        color: #fbbf24;
+      }
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme='light']) {
+          color-scheme: dark;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Onboarding redesign</h1>
+      <p class="lead">
+        Review of <code>plans/onboarding-redesign.md</code> (round-5 mockup). Flow B, one question
+        per screen, over the live H1 map: logo loader → intro → Source · You &amp; heart rate · Bike
+        · Import. Same steps and data as before. Built on top of the uncommitted training-load
+        recompute. Everything is in the working tree; nothing is committed.
+      </p>
+
+      <h2>Review round 3 fixes</h2>
+
+      <div class="card">
+        <h3><span class="label">R11</span>Source step: no Back, no Continue (R-O5)</h3>
+        <p>
+          Step 1/4 has no footer. Tapping intervals.icu or FIT files stores the source and goes
+          straight to step 2; "Try demo data" starts the demo as Continue did before (import
+          overlay, then the app with the demo banner). Back on step 2 still returns to the source
+          step. The phone Dialog renders no <code>DialogFooter</code> on this step, so there is no
+          empty bar; the card is just shorter. The tiles are plain buttons now (Tab, Enter or
+          Space), no longer radios: nothing stays selected, so the white "picked" tile is gone, and
+          so are <code>pickOnboardingSource</code>, the disabled-Continue logic and the
+          <code>'demo'</code> value of <code>OnboardingSource</code>. When a step change removes the
+          focused control (a tile, or Back on the way to step 1), focus moves to the new step's
+          heading; Continue keeps its focus as before. The progress bar still shows 1/4.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:108</code> (<code>pickSource</code>),
+          <code>:116</code> (<code>SourcePicker</code>), <code>:317</code> (no primary),
+          <code>:383-387</code> (heading focus), <code>:402</code>, <code>:420</code> (footer only
+          with a primary); <code>src/features/onboarding/hooks/useStepFocusEffect.ts</code>;
+          <code>src/store/onboarding.ts:6</code>,
+          <code>:49</code> (<code>chooseOnboardingSource</code>), <code>:54</code>. Tests:
+          <code>e2e/onboarding.spec.ts:60</code> (no Back / Continue on 1/4, keyboard pick, focus),
+          <code>e2e/helpers/onboarding.ts:12</code> (tap the tile, no Continue).
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r1-after-d-en-source.png"
+              alt="R11 before · Desktop · source step with Back and Continue"
+              loading="lazy"
+            />
+            <figcaption>R11 before · Desktop · source step with Back and Continue</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r3-after-d-en-source.png"
+              alt="R11 after · Desktop · source step, tiles only"
+              loading="lazy"
+            />
+            <figcaption>R11 after · Desktop · source step, tiles only</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r3-after-d-en-advanced.png"
+              alt="R11 after · Desktop · FIT files tapped, step 2"
+              loading="lazy"
+            />
+            <figcaption>R11 after · Desktop · FIT files tapped, step 2</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-after-p-en-source.png"
+              alt="R11 before · 390 px · source step with Back and Continue"
+              loading="lazy"
+            />
+            <figcaption>R11 before · 390 px · source step with Back and Continue</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-source.png"
+              alt="R11 after · 390 px · no footer bar"
+              loading="lazy"
+            />
+            <figcaption>R11 after · 390 px · no footer bar</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-advanced.png"
+              alt="R11 after · 390 px · FIT files tapped, step 2"
+              loading="lazy"
+            />
+            <figcaption>R11 after · 390 px · FIT files tapped, step 2</figcaption>
+          </figure>
+        </div>
+        <p class="meta">
+          Round 2 took no source-step shots and did not change that step, so the "before" shots are
+          the round-1 "after" ones.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span class="label">R12</span>Gender error in a reserved line under the tiles (R-O6)
+        </h3>
+        <p>
+          "Required" moved from the right end of the label line to a helper line directly under Male
+          / Female. The line is always reserved (16 px plus 4 px margin), so nothing moves when the
+          error appears. The line is a new shared <code>HelperText</code>, which
+          <code>Input</code> now uses for its own helper line too, so both look the same by
+          construction. Red tile borders, <code>aria-describedby</code> and the R7 behaviour
+          (Continue reveals the error and focuses Male) are unchanged.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:170</code>, <code>:200</code>;
+          <code>src/components/ui/HelperText.tsx</code>;
+          <code>src/components/ui/Input.tsx:53</code>. Test:
+          <code>e2e/onboarding.spec.ts:101-104</code> (error text in the reserved line, below
+          Female, same box before and after Continue).
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r2-after-d-en-continue.png"
+              alt="R12 before · Desktop · error on the label line"
+              loading="lazy"
+            />
+            <figcaption>R12 before · Desktop · error on the label line</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r3-after-d-en-gender-error.png"
+              alt="R12 after · Desktop · error under the tiles"
+              loading="lazy"
+            />
+            <figcaption>R12 after · Desktop · error under the tiles</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r3-after-d-de-gender-error.png"
+              alt="R12 after · Desktop · DE"
+              loading="lazy"
+            />
+            <figcaption>R12 after · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-after-p-en-continue.png"
+              alt="R12 before · 390 px · error on the label line"
+              loading="lazy"
+            />
+            <figcaption>R12 before · 390 px · error on the label line</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-en-gender-error.png"
+              alt="R12 after · 390 px · error under the tiles"
+              loading="lazy"
+            />
+            <figcaption>R12 after · 390 px · error under the tiles</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r3-after-p-de-gender-error.png"
+              alt="R12 after · 390 px · DE"
+              loading="lazy"
+            />
+            <figcaption>R12 after · 390 px · DE</figcaption>
+          </figure>
+        </div>
+        <p class="meta">There is no DE "before" shot of the gender error from round 2.</p>
+      </div>
+
+      <h2>Review round 2 fixes</h2>
+
+      <div class="card">
+        <h3><span class="label">R7</span>Continue is always enabled (R-O2)</h3>
+        <p>
+          Continue can always be pressed. With an invalid field it shows every error of the step,
+          moves focus to the first invalid field and stays; with valid fields it advances. The
+          gender pick is part of this: its "Required" sits on the label line and the tiles get the
+          error border, so nothing moves. The wrapper <code>div</code> and <code>fieldValid</code>
+          are gone. Settings is unchanged (R-O1).
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:163</code> (gender error),
+          <code>:293</code> (<code>continueStep</code>), <code>:322</code>, <code>:330</code>;
+          <code>src/features/settings/hooks/useThresholdsForm.ts:152</code>,
+          <code>:245</code> (<code>revealErrors</code> now returns the invalid fields). Test:
+          <code>e2e/onboarding.spec.ts:60</code>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r2-before-d-en-continue.png"
+              alt="R7 before · Desktop · Continue pressed, fields empty"
+              loading="lazy"
+            />
+            <figcaption>R7 before · Desktop · Continue pressed, fields empty</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r2-after-d-en-continue.png"
+              alt="R7 after · Desktop · Continue pressed, fields empty"
+              loading="lazy"
+            />
+            <figcaption>R7 after · Desktop · Continue pressed, fields empty</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-before-p-en-continue.png"
+              alt="R7 before · 390 px · Continue pressed"
+              loading="lazy"
+            />
+            <figcaption>R7 before · 390 px · Continue pressed</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-after-p-en-continue.png"
+              alt="R7 after · 390 px · Continue pressed, focus on Male"
+              loading="lazy"
+            />
+            <figcaption>R7 after · 390 px · Continue pressed, focus on Male</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R8</span>Code icon: <code>CodeXml</code> (R-O3)</h3>
+        <p>
+          In lucide-react 0.563 <code>Code2</code> is only a legacy alias of
+          <code>CodeXml</code> (same <code>code-xml</code> glyph), so both places now import
+          <code>CodeXml</code>. The crumb already used <code>Code2</code> since round 1 (the round-1
+          text said <code>Code</code>), so it looks the same; Settings → About changes from
+          <code>Code</code> to the same glyph.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingCrumbs.tsx:15</code>,
+          <code>src/features/settings/AboutSection.tsx:27</code>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r2-before-d-en-about.png"
+              alt="R8 before · Desktop · Settings → About"
+              loading="lazy"
+            />
+            <figcaption>R8 before · Desktop · Settings → About</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r2-after-d-en-about.png"
+              alt="R8 after · Desktop · Settings → About"
+              loading="lazy"
+            />
+            <figcaption>R8 after · Desktop · Settings → About</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r2-after-d-en-crumbs.png"
+              alt="R8 after · Desktop · crumb (unchanged glyph)"
+              loading="lazy"
+            />
+            <figcaption>R8 after · Desktop · crumb (unchanged glyph)</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R9</span>Profile fields regrouped, still 4 screens</h3>
+        <p>
+          Screen 2 adds optional weight and birth year; screen 3 is now "Your thresholds" / "Deine
+          Schwellenwerte" with optional FTP and optional threshold pace, plus the Settings "Estimate
+          from a race time" link and <code>PaceEstimatorDialog</code> (link moved to a shared
+          <code>PaceEstimateButton</code>). Each optional field states what it is for in its
+          reserved helper line; an error replaces it in the same line. "Add later in Settings" is
+          said once, in each screen's subtitle. Validation is the existing
+          <code>useThresholdsForm</code> logic; invalid optional values block Continue, empty ones
+          don't. <code>createProfile</code> already saved weight, birth year, FTP and pace, so the
+          one save through <code>profileGate</code> covers them (asserted in the e2e test). Step id
+          <code>bike</code> is renamed <code>thresholds</code> (not persisted). On a 390 × 844 phone
+          screen 2 scrolls inside the dialog with the footer pinned.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:202-279</code>;
+          <code>src/features/settings/PaceEstimateButton.tsx</code>,
+          <code>src/features/settings/ThresholdEditDialog.tsx:58</code>;
+          <code>src/store/onboarding.ts:4</code>; <code>messages/en.json:605</code>,
+          <code>:620-628</code> (DE same lines). Removed keys:
+          <code>ui_onboarding_bike_title</code>, <code>ui_onboarding_bike_subtitle</code>,
+          <code>ui_onboarding_add_later</code>. Test: <code>e2e/onboarding.spec.ts:8</code>.
+        </p>
+        <table>
+          <tr>
+            <th>Field</th>
+            <th>EN hint</th>
+            <th>DE hint</th>
+            <th>Checked against</th>
+          </tr>
+          <tr>
+            <td>Weight</td>
+            <td>For calories on runs and from heart rate</td>
+            <td>Für Kalorien bei Läufen und aus der Herzfrequenz</td>
+            <td>
+              <code>energy.ts</code>: running and Keytel (HR) methods need weight; power does not
+            </td>
+          </tr>
+          <tr>
+            <td>Birth year</td>
+            <td>For calories from heart rate</td>
+            <td>Für Kalorien aus der Herzfrequenz</td>
+            <td><code>energy.ts</code>: age only in Keytel</td>
+          </tr>
+          <tr>
+            <td>FTP</td>
+            <td>Power zones, training load and efforts for rides</td>
+            <td>Leistungszonen, Trainingslast, Belastungen am Rad</td>
+            <td>
+              <code>zoneColors.ts</code> power zones, <code>stress.ts</code> TSS (any session with
+              NP), <code>effortDetection.ts</code> power signal (cycling)
+            </td>
+          </tr>
+          <tr>
+            <td>Threshold pace</td>
+            <td>Pace zones and efforts for runs</td>
+            <td>Tempozonen und Belastungen bei Läufen</td>
+            <td>
+              <code>zones.ts</code> running zones, <code>effortDetection.ts</code> pace signal
+            </td>
+          </tr>
+        </table>
+        <p class="meta">
+          The DE FTP hint was shortened from "… und Belastungen beim Radfahren", which wrapped at
+          390 px. Intro list item 2 now reads "Gender and heart rate, optional weight, birth year,
+          FTP and pace".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="r2-before-d-en-you.png" alt="R9 before · Desktop · screen 2" loading="lazy" />
+            <figcaption>R9 before · Desktop · screen 2</figcaption>
+          </figure>
+          <figure>
+            <img src="r2-after-d-en-you.png" alt="R9 after · Desktop · screen 2" loading="lazy" />
+            <figcaption>R9 after · Desktop · screen 2</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r2-before-d-en-step3.png"
+              alt="R9 before · Desktop · screen 3"
+              loading="lazy"
+            />
+            <figcaption>R9 before · Desktop · screen 3</figcaption>
+          </figure>
+          <figure>
+            <img src="r2-after-d-en-step3.png" alt="R9 after · Desktop · screen 3" loading="lazy" />
+            <figcaption>R9 after · Desktop · screen 3</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r2-before-p-en-you.png" alt="R9 before · 390 px · screen 2" loading="lazy" />
+            <figcaption>R9 before · 390 px · screen 2</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r2-after-p-en-you.png" alt="R9 after · 390 px · screen 2" loading="lazy" />
+            <figcaption>R9 after · 390 px · screen 2</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-after-p-de-you-bottom.png"
+              alt="R9 after · 390 px · DE · screen 2 scrolled"
+              loading="lazy"
+            />
+            <figcaption>R9 after · 390 px · DE · screen 2 scrolled</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-before-p-en-step3.png"
+              alt="R9 before · 390 px · screen 3"
+              loading="lazy"
+            />
+            <figcaption>R9 before · 390 px · screen 3</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r2-after-p-en-step3.png" alt="R9 after · 390 px · screen 3" loading="lazy" />
+            <figcaption>R9 after · 390 px · screen 3</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r2-after-p-de-step3.png"
+              alt="R9 after · 390 px · DE · screen 3"
+              loading="lazy"
+            />
+            <figcaption>R9 after · 390 px · DE · screen 3</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <h2>Review round 1 fixes</h2>
+
+      <div class="card">
+        <h3><span class="label">R1</span>Crumbs: no "Interactive map", shared ExternalLink</h3>
+        <p>
+          The "Interactive map" crumb and its key <code>ui_onboarding_crumb_map</code> (EN + DE) are
+          gone. "Open source" now uses the shared <code>ExternalLink</code> (icon first,
+          <code>Code</code> icon as in Settings → About), so it looks like the Weather and
+          intervals.icu links. The component fits the crumb line as is, so it is unchanged.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingCrumbs.tsx:15</code>;
+          <code>src/components/ui/ExternalLink.tsx</code> (untouched).
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="r1-before-d-en-crumbs.png" alt="R1 before · Desktop · EN" loading="lazy" />
+            <figcaption>R1 before · Desktop · EN</figcaption>
+          </figure>
+          <figure>
+            <img src="r1-after-d-en-crumbs.png" alt="R1 after · Desktop · EN" loading="lazy" />
+            <figcaption>R1 after · Desktop · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-before-p-de-crumbs.png" alt="R1 before · 390 px · DE" loading="lazy" />
+            <figcaption>R1 before · 390 px · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-after-p-de-crumbs.png" alt="R1 after · 390 px · DE" loading="lazy" />
+            <figcaption>R1 after · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R2</span>Crumbs only on the intro</h3>
+        <p>
+          The source step and the FIT import step no longer show the crumb line. Only the intro does
+          (desktop card and phone dialog). The FIT import step now has no body, just the heading and
+          the upload button.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:101</code> (source picker),
+          <code>:285</code> (<code>body: null</code>), <code>:333</code>, <code>:349</code>; intro
+          keeps it at <code>src/features/onboarding/OnboardingIntro.tsx:42</code>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="r1-before-d-en-source.png" alt="R2 before · Desktop · EN" loading="lazy" />
+            <figcaption>R2 before · Desktop · EN</figcaption>
+          </figure>
+          <figure>
+            <img src="r1-after-d-en-source.png" alt="R2 after · Desktop · EN" loading="lazy" />
+            <figcaption>R2 after · Desktop · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-before-p-en-source.png" alt="R2 before · 390 px · EN" loading="lazy" />
+            <figcaption>R2 before · 390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-after-p-en-source.png" alt="R2 after · 390 px · EN" loading="lazy" />
+            <figcaption>R2 after · 390 px · EN</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R3</span>Bike title: "Powermeter"</h3>
+        <p>
+          DE now reads "Trainierst du mit einem Powermeter?". EN "Do you train with power?" is
+          cycling jargon and reads oddly to anyone else, so it now matches: "Do you train with a
+          power meter?".
+        </p>
+        <p class="meta"><code>messages/de.json:623</code>, <code>messages/en.json:623</code>.</p>
+        <div class="shots">
+          <figure>
+            <img src="r1-before-d-de-bike.png" alt="R3 before · Desktop · DE" loading="lazy" />
+            <figcaption>R3 before · Desktop · DE</figcaption>
+          </figure>
+          <figure>
+            <img src="r1-after-d-de-bike.png" alt="R3 after · Desktop · DE" loading="lazy" />
+            <figcaption>R3 after · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-before-p-de-bike.png" alt="R3 before · 390 px · DE" loading="lazy" />
+            <figcaption>R3 before · 390 px · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="r1-after-p-de-bike.png" alt="R3 after · 390 px · DE" loading="lazy" />
+            <figcaption>R3 after · 390 px · DE</figcaption>
+          </figure>
+          <figure>
+            <img src="r1-after-d-en-bike.png" alt="R3 after · Desktop · EN" loading="lazy" />
+            <figcaption>R3 after · Desktop · EN</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">R4</span>Field errors wait for blur or a Continue press</h3>
+        <p>
+          <code>useThresholdsForm</code> now tracks which errors are revealed. A field's error shows
+          once you leave it while it is invalid, or when you press the disabled Continue. It hides
+          as soon as the value is valid. Continue stays disabled, and a wrapper catches the press
+          because the disabled button has <code>pointer-events: none</code>. The helper line was
+          already reserved (<code>reserveHelper</code>), so nothing moves.
+        </p>
+        <p class="meta">
+          <code>src/features/settings/hooks/useThresholdsForm.ts:231-247</code>;
+          <code>src/features/onboarding/OnboardingStep.tsx:146</code> (blur), <code>:196-208</code>,
+          <code>:247</code>, <code>:269</code> (Continue press). Settings shares this logic (see
+          R5). Regression test: <code>e2e/onboarding.spec.ts:38</code>.
+        </p>
+        <div class="shots">
+          <figure class="phone">
+            <img
+              src="r1-before-p-en-typing.png"
+              alt="R4 before · 390 px · typing 1 in Max HR"
+              loading="lazy"
+            />
+            <figcaption>R4 before · 390 px · typing "1"</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-after-p-en-typing.png"
+              alt="R4 after · 390 px · typing 1 in Max HR"
+              loading="lazy"
+            />
+            <figcaption>R4 after · 390 px · typing "1"</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-after-p-en-blurred.png"
+              alt="R4 after · 390 px · after blur"
+              loading="lazy"
+            />
+            <figcaption>R4 after · 390 px · after blur</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-after-d-en-attempt.png"
+              alt="R4 after · Desktop · Continue pressed with empty fields"
+              loading="lazy"
+            />
+            <figcaption>R4 after · Desktop · Continue pressed, fields empty</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span class="label">R5</span>Settings → Thresholds: birth year error no longer shifts the
+          row
+        </h3>
+        <p>
+          This bug was already there before this work: <code>HEAD~1</code> had the same
+          <code>grid items-end</code> row and the same conditional helper line. The row is now
+          <code>items-start</code>, and the birth year always reserves its helper line, so an error
+          only fills space that is already there. Save is offset by <code>sm:mt-6</code> to sit on
+          the inputs' bottom edge, as before. The error also follows R4 now (blur, not typing). The
+          row is 20 px taller when there is no error.
+        </p>
+        <p class="meta">
+          <code>src/features/settings/ThresholdsSection.tsx:53-56</code>, <code>:113</code>,
+          <code>:116</code>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="r1-before-d-en-birthyear-typing.png"
+              alt="R5 before · Desktop · 199 typed"
+              loading="lazy"
+            />
+            <figcaption>R5 before · Desktop · "199" (row shifted)</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-after-d-en-birthyear-typing.png"
+              alt="R5 after · Desktop · 199 typed"
+              loading="lazy"
+            />
+            <figcaption>R5 after · Desktop · "199" while typing</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="r1-after-d-en-birthyear-blurred.png"
+              alt="R5 after · Desktop · after blur"
+              loading="lazy"
+            />
+            <figcaption>R5 after · Desktop · after blur, nothing moved</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-before-p-en-birthyear-typing.png"
+              alt="R5 before · 390 px · 199 typed"
+              loading="lazy"
+            />
+            <figcaption>R5 before · 390 px</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="r1-after-p-en-birthyear-typing.png"
+              alt="R5 after · 390 px · 199 typed"
+              loading="lazy"
+            />
+            <figcaption>R5 after · 390 px</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <h2>User-visible changes</h2>
+
+      <div class="card">
+        <h3><span class="label">C1</span>First-start logo loader (L3)</h3>
+        <p>
+          The public/logo.svg strokes grow bottom to top and retract off the top, staggered by 0.3
+          s, on a 3.0 s cycle. The loader covers the lazy import and decode of
+          <code>demoRoutes.json</code>, stays up for at least one full cycle and hands off only at a
+          cycle boundary (<code>ceil(max(ready, 3000) / 3000) × 3000</code>), so the logo is empty
+          when it fades out (500 ms). Caption "Loading map data…" / "Kartendaten werden geladen…".
+          Surface is the new shared <code>overlayClass</code> (see C9).
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/LogoLoader.tsx:20</code> (hand-off), <code>:55</code>;
+          keyframes <code>src/index.css:149-197</code>. Decisions: "Logo loader: L3, grow and
+          retract", "First-start loading". Screenshots at ~1.4 s, mid-cycle.
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-01-loader.png" alt="C1 · Desktop · EN" loading="lazy" />
+            <figcaption>C1 · Desktop · EN</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-01-loader.png" alt="C1 · Desktop · DE" loading="lazy" />
+            <figcaption>C1 · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-01-loader.png" alt="C1 · 390 px · EN" loading="lazy" />
+            <figcaption>C1 · 390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-01-loader.png" alt="C1 · 390 px · DE" loading="lazy" />
+            <figcaption>C1 · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C2</span>Preview: demo routes draw in on the live map</h3>
+        <p>
+          At hand-off the 14 demo routes draw in as 28 passes (original + a ~22 m jittered copy
+          each, staggered over 1.8 s, 1.6–2.4 s each, ease-out). Same look as
+          <code>gps-tracks</code>: running green, cycling orange, faint alpha, additive blend, no
+          blue (§6). In memory only, not pickable, gone once onboarding completes. The camera fits
+          the preview clear of the card (desktop) or the dialog / pill (phone).
+        </p>
+        <p class="meta">
+          <code>src/features/map/previewDrawIn.ts:86</code>, <code>:123</code>;
+          <code>src/features/map/hooks/useOnboardingPreviewRoutes.ts:16</code>,
+          <code>useOnboardingPreviewLayer.ts:23</code>,
+          <code>useOnboardingPreviewCameraEffect.ts:43</code>; wired at
+          <code>src/features/map/DeckGLOverlay.tsx:111-112</code>. Decisions: "Hero: H1", "Demo
+          preview seeding: (a), in memory only", "Map during onboarding: pan and zoom only".
+          Screenshots ~0.7 s after hand-off.
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-02-drawin.png" alt="C2 · Desktop · EN, mid draw-in" loading="lazy" />
+            <figcaption>C2 · Desktop · EN, mid draw-in</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-02-drawin.png" alt="C2 · Desktop · DE, mid draw-in" loading="lazy" />
+            <figcaption>C2 · Desktop · DE, mid draw-in</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-02-drawin.png" alt="C2 · 390 px · EN, mid draw-in" loading="lazy" />
+            <figcaption>C2 · 390 px · EN, mid draw-in</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C3</span>Intro with crumbs and the GitHub link</h3>
+        <p>
+          Logo + "PaceVault", the tagline as the question-sized heading, one line on what the app
+          is, then the three asks as <code>List</code>/<code>ListItem</code> +
+          <code>IconTile</code>. The crumb line "Stays on this device · Works offline · Interactive
+          map · Open source ↗" wraps and keeps all four crumbs; no "·" starts a line. "Open source"
+          opens <code>GITHUB_URL</code> (now exported from Settings → About) in a new tab. CTAs "Try
+          demo data" (secondary) and "Get started". No "Next" heading, no "add later" helper, no
+          time estimate.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingIntro.tsx:12</code>, <code>:46</code>;
+          <code>src/features/onboarding/OnboardingCrumbs.tsx:7</code>; <code>Crumbs wrap</code> at
+          <code>src/components/ui/StatTile.tsx:49-76</code>;
+          <code>src/features/settings/AboutSection.tsx:8</code>. Decisions: "Intro step before the
+          flow", "Intro copy", "Crumbs: no icon", "Tone", Open 2 (opt-in <code>wrap</code>).
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-03-intro.png" alt="C3 · Desktop · EN, draw-in finished" loading="lazy" />
+            <figcaption>C3 · Desktop · EN, draw-in finished</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-03-intro.png" alt="C3 · Desktop · DE" loading="lazy" />
+            <figcaption>C3 · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-03-intro.png" alt="C3 · 390 px · EN" loading="lazy" />
+            <figcaption>C3 · 390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-03-intro.png" alt="C3 · 390 px · DE" loading="lazy" />
+            <figcaption>C3 · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C4</span>Step 1/4: Source</h3>
+        <p>
+          Progress bar + "1/4", the question and subtitle, then three <code>ActionTile</code> rows
+          (intervals.icu, FIT files, Try demo data) and the crumb line. Continue is disabled until a
+          pick; "Try demo data" + Continue starts the demo, the others go to step 2. Back returns to
+          the intro. The intervals.icu caption is shortened to fit the row tile.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:101</code> (<code>SourcePicker</code>),
+          <code>:305</code> (shell); progress
+          <code>src/features/onboarding/OnboardingProgress.tsx:9</code>;
+          <code>messages/en.json:598</code>. Decisions: "Flow: B", "Step layout", "Flow (4
+          screens)", "DE demo copy".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-04-source.png" alt="C4 · Desktop · EN, nothing picked" loading="lazy" />
+            <figcaption>C4 · Desktop · EN, nothing picked</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-15-source-fit.png" alt="C4 · Desktop · DE, FIT picked" loading="lazy" />
+            <figcaption>C4 · Desktop · DE, FIT picked</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-15-source-fit.png" alt="C4 · 390 px · EN, FIT picked" loading="lazy" />
+            <figcaption>C4 · 390 px · EN, FIT picked</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-04-source.png" alt="C4 · 390 px · DE" loading="lazy" />
+            <figcaption>C4 · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C5</span>Step 2/4: You and your heart rate</h3>
+        <p>
+          Gender as two <code>ActionTile</code> rows (Male / Female, nothing preselected, required),
+          then rest HR and max HR (required, with the hint or the validation error under the field).
+          Continue needs a gender and both HR values valid.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:158</code>; gate via
+          <code>fieldValid</code> at
+          <code>src/features/settings/hooks/useThresholdsForm.ts:228</code>;
+          <code>gender: null</code> at <code>:40</code>. Decisions: "Gender: binary and required",
+          "Profile", "Per-screen gates".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-05-you-empty.png" alt="C5 · Desktop · EN, empty" loading="lazy" />
+            <figcaption>C5 · Desktop · EN, empty</figcaption>
+          </figure>
+          <figure>
+            <img src="d-en-06-you-error.png" alt="C5 · Desktop · EN, max HR 40" loading="lazy" />
+            <figcaption>C5 · Desktop · EN, max HR 40</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-05-you-empty.png" alt="C5 · Desktop · DE" loading="lazy" />
+            <figcaption>C5 · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-06-you-error.png" alt="C5 · 390 px · EN, max HR 40" loading="lazy" />
+            <figcaption>C5 · 390 px · EN, max HR 40</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-05-you-empty.png" alt="C5 · 390 px · DE" loading="lazy" />
+            <figcaption>C5 · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C6</span>Step 3/4: Bike (optional FTP)</h3>
+        <p>
+          FTP with the "You can add this later in Settings" hint. Empty is valid; an out-of-range
+          value blocks Continue. Threshold pace, weight and birth year are not asked (Settings).
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:246</code>. Decisions: "Flow (4
+          screens)", "Profile".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-09-bike.png" alt="C6 · Desktop · EN" loading="lazy" />
+            <figcaption>C6 · Desktop · EN</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-09-bike.png" alt="C6 · Desktop · DE" loading="lazy" />
+            <figcaption>C6 · Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-09-bike.png" alt="C6 · 390 px · EN" loading="lazy" />
+            <figcaption>C6 · 390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-09-bike.png" alt="C6 · 390 px · DE" loading="lazy" />
+            <figcaption>C6 · 390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C7</span>Step 4/4: Import (intervals.icu or FIT)</h3>
+        <p>
+          intervals.icu: <code>IntervalsConnectionForm</code> as it is, with the profile gate and
+          <code>onSynced → completeOnboarding</code>; the form's own "Import sessions" button
+          imports, so the footer only has Back. FIT: the subtitle is the existing FIT description,
+          the body is the crumb line, and the footer primary is <code>FitUploadButton</code>. The
+          profile (incl. FTP) is still written once, at import.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingStep.tsx:262</code> (intervals),
+          <code>:271</code> (FIT). Decisions: "Screens", "Form", "Scope".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-10-connect.png" alt="C7 · Desktop · EN, connect" loading="lazy" />
+            <figcaption>C7 · Desktop · EN, connect</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-10-connect.png" alt="C7 · Desktop · DE, connect" loading="lazy" />
+            <figcaption>C7 · Desktop · DE, connect</figcaption>
+          </figure>
+          <figure>
+            <img src="d-en-16-upload.png" alt="C7 · Desktop · EN, FIT" loading="lazy" />
+            <figcaption>C7 · Desktop · EN, FIT</figcaption>
+          </figure>
+          <figure>
+            <img src="d-de-16-upload.png" alt="C7 · Desktop · DE, FIT" loading="lazy" />
+            <figcaption>C7 · Desktop · DE, FIT</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-16-upload.png" alt="C7 · 390 px · EN, FIT" loading="lazy" />
+            <figcaption>C7 · 390 px · EN, FIT</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-16-upload.png" alt="C7 · 390 px · DE, FIT" loading="lazy" />
+            <figcaption>C7 · 390 px · DE, FIT</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-10-connect.png" alt="C7 · 390 px · EN, connect" loading="lazy" />
+            <figcaption>C7 · 390 px · EN, connect</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3>
+          <span class="label">C8</span>Phone: Dialog without a scrim, "Continue setup · n/4" pill
+        </h3>
+        <p>
+          On phone the intro and the steps sit in the existing <code>Dialog</code> (inset floating
+          card, grabber, drag-to-dismiss) with the new <code>DialogContent scrim={false}</code> and
+          <code>DialogRoot modal={false}</code>: no overlay, the map pans and zooms underneath, and
+          map taps never close it. Grabber tap/drag and Escape close it; a
+          <code>FloatingPill</code> "Continue setup · 2/4" (or "Start setup" on the intro) reopens
+          the same step with the values kept. The camera refits (900 ms) on close and reopen.
+        </p>
+        <p class="meta">
+          <code>src/components/ui/Dialog.tsx:117</code>, <code>:125</code>;
+          <code>src/features/onboarding/OnboardingFlow.tsx:86</code> (pill),
+          <code>:107</code> (dialog). Decisions: "Hybrid layout", "<code>DialogContent scrim</code
+          >".
+        </p>
+        <div class="shots">
+          <figure class="phone">
+            <img src="p-en-07-pill.png" alt="C8 · 390 px · EN, card closed" loading="lazy" />
+            <figcaption>C8 · 390 px · EN, card closed</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="p-en-08-reopened.png"
+              alt="C8 · 390 px · EN, reopened, values kept"
+              loading="lazy"
+            />
+            <figcaption>C8 · 390 px · EN, reopened, values kept</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-07-pill.png" alt="C8 · 390 px · DE, card closed" loading="lazy" />
+            <figcaption>C8 · 390 px · DE, card closed</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-de-08-reopened.png" alt="C8 · 390 px · DE, reopened" loading="lazy" />
+            <figcaption>C8 · 390 px · DE, reopened</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C9</span>Import overlay (unchanged, shared surface)</h3>
+        <p>
+          The full-screen <code>ImportProgressOverlay</code> runs as before, above the desktop card
+          and the phone dialog. Its surface class is now the shared <code>overlayClass</code>, which
+          the loader (C1) also uses.
+        </p>
+        <p class="meta">
+          <code>src/components/ui/Card.tsx:15</code>,
+          <code>src/components/ui/ImportProgressOverlay.tsx:134</code>. Decisions: "Import progress:
+          reuse", "Overlay surface".
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="d-en-11-connect-valid.png"
+              alt="C9 · Desktop · EN, key valid, before import"
+              loading="lazy"
+            />
+            <figcaption>C9 · Desktop · EN, key valid, before import</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="d-en-12-import-overlay.png"
+              alt="C9 · Desktop · EN, importing"
+              loading="lazy"
+            />
+            <figcaption>C9 · Desktop · EN, importing</figcaption>
+          </figure>
+          <figure>
+            <img src="d-en-13-import-summary.png" alt="C9 · Desktop · EN, summary" loading="lazy" />
+            <figcaption>C9 · Desktop · EN, summary</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="p-en-12-import-overlay.png"
+              alt="C9 · 390 px · EN, importing"
+              loading="lazy"
+            />
+            <figcaption>C9 · 390 px · EN, importing</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-13-import-summary.png" alt="C9 · 390 px · EN, summary" loading="lazy" />
+            <figcaption>C9 · 390 px · EN, summary</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C10</span>Camera fits the imported tracks after import</h3>
+        <p>
+          No new code: closing the summary completes onboarding, the preview layer disappears and
+          the existing first overview fit frames the user's own tracks (here two Karlsruhe sessions
+          from the mocked intervals.icu import). No draw-in of the user's tracks.
+        </p>
+        <p class="meta">
+          <code>src/lib/mapCamera.ts:127-133</code> (unchanged); preview off via
+          <code>onboardingComplete</code> in <code>useOnboardingPreviewLayer.ts:23</code>. Decision:
+          "After the import the camera fits the imported tracks".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-14-after-import.png" alt="C10 · Desktop · EN" loading="lazy" />
+            <figcaption>C10 · Desktop · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-14-after-import.png" alt="C10 · 390 px · EN" loading="lazy" />
+            <figcaption>C10 · 390 px · EN</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C11</span>Binary gender in onboarding and in Settings</h3>
+        <p>
+          Onboarding offers Male / Female with nothing preselected (C5). Settings → Thresholds now
+          lists only Male / Female; "Other" / "Divers" is gone, and so is the key
+          <code>ui_thresholds_other</code>.
+        </p>
+        <p class="meta">
+          <code>src/features/settings/ThresholdsSection.tsx:40-43</code>; type
+          <code>src/packages/engine/types.ts:7</code>; schema <code>src/store/user.ts:71</code>.
+          Decision: "Gender: binary and required, app-wide".
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="d-en-17-settings-gender.png"
+              alt="C11 · Desktop · EN, Settings"
+              loading="lazy"
+            />
+            <figcaption>C11 · Desktop · EN, Settings</figcaption>
+          </figure>
+          <figure class="phone">
+            <img
+              src="p-en-17-settings-gender.png"
+              alt="C11 · 390 px · EN, Settings"
+              loading="lazy"
+            />
+            <figcaption>C11 · 390 px · EN, Settings</figcaption>
+          </figure>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="label">C12</span>"Try demo data" / "Demo ansehen"</h3>
+        <p>
+          "Test Data" and the "Generate" step are gone. The intro button and the source tile both
+          read "Try demo data" (DE "Demo ansehen") and start the demo directly; its loading state is
+          the import overlay. The demo handler is the old <code>handleGenerate</code>, unchanged.
+        </p>
+        <p class="meta">
+          <code>src/features/onboarding/OnboardingFlow.tsx:25</code>; keys
+          <code>ui_onboarding_demo_title</code> / <code>_desc</code>. Decisions: "Copy", "DE demo
+          copy". See the C3 and C4 screenshots.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label">C13</span>intervals.icu status line has a fixed height</h3>
+        <p>
+          The status line under "intervals.icu" sits in an <code>h-8</code> box (two caption lines),
+          so "Not connected", "Checking key…", "Key valid" and the long error no longer move the key
+          field. Applies in Settings too. <code>IntervalsConnectionForm</code> lost its
+          <code>children</code> slot (only onboarding used it).
+        </p>
+        <p class="meta">
+          <code>src/features/intervals/IntervalsConnectionForm.tsx:136</code>. Decision:
+          "intervals.icu form: reserve a fixed-height status line".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="d-en-10-connect.png" alt='C13 · Onboarding, "Not connected"' loading="lazy" />
+            <figcaption>C13 · Onboarding, "Not connected"</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="d-en-11-connect-valid.png"
+              alt='C13 · Onboarding, "Key valid"'
+              loading="lazy"
+            />
+            <figcaption>C13 · Onboarding, "Key valid"</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="d-en-18-settings-intervals.png"
+              alt="C13 · Settings → Data, desktop"
+              loading="lazy"
+            />
+            <figcaption>C13 · Settings → Data, desktop</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="p-en-18-settings-intervals.png" alt="C13 · Settings, 390 px" loading="lazy" />
+            <figcaption>C13 · Settings, 390 px</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <h2>Changes without UI</h2>
+
+      <div class="card">
+        <h3>
+          <span class="label n">N1</span>Store <code>useOnboardingStore</code> (not persisted)
+        </h3>
+        <p>
+          <code>step</code>, <code>source</code>, <code>onboardingCardOpen</code>,
+          <code>onboardingPreviewRevealed</code> with scope-named actions. A reload restarts at the
+          loader and the intro. <code>revealOnboardingPreview</code> also opens the phone card.
+        </p>
+        <p class="meta">
+          <code>src/store/onboarding.ts:38</code>. Decision: Open 1 (not persisted).
+        </p>
+      </div>
+      <div class="card">
+        <h3>
+          <span class="label n">N2</span>Form: gender <code>null</code> until picked,
+          <code>fieldValid</code>
+        </h3>
+        <p>
+          <code>FormValues.gender</code> is <code>Gender | null</code>; <code>valid</code> requires
+          a gender; <code>save</code> narrows it before <code>createProfile</code>;
+          <code>saveChanges</code> skips <code>null</code>; <code>isGender</code> drops
+          <code>other</code>. New <code>fieldValid(field)</code> for the per-screen gates.
+          <code>FormValues</code> is no longer exported (last importer removed).
+        </p>
+        <p class="meta">
+          <code>src/features/settings/hooks/useThresholdsForm.ts:40</code>, <code>:162</code>,
+          <code>:226-228</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N3</span>Engine: no Keytel estimate without a gender</h3>
+        <p>
+          <code>EnergyBody.gender</code> is optional. The male/female average for
+          <code>other</code> is gone; without a gender the heart-rate method gives no estimate
+          (missing is missing, not 0 kcal). <code>moreStats</code> passes
+          <code>thresholds?.gender</code> without the <code>?? 'other'</code> fallback. Stress and
+          training effect needed only the narrower type.
+        </p>
+        <p class="meta">
+          <code>src/packages/engine/energy.ts:12</code>, <code>:146</code>;
+          <code>src/lib/moreStats.ts:152</code>. Tests:
+          <code>tests/packages/engine/energy.spec.ts:75</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3>
+          <span class="label n">N4</span>Schema: <code>gender: z.enum(['male', 'female'])</code>, no
+          migration
+        </h3>
+        <p>
+          A stored profile with <code>other</code> now rehydrates to <code>null</code> (Zod
+          fallback, no throw). No version bump, as settled.
+        </p>
+        <p class="meta">
+          <code>src/store/user.ts:71</code>. Test:
+          <code>tests/store/userStore.integration.test.ts:130</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N5</span>Removed dead code</h3>
+        <p>
+          <code>OnboardingThresholds</code> and the staged-history helpers; the
+          <code>ThresholdTiles</code> <code>mode</code> prop and its create branches;
+          <code>StatTile</code>'s <code>required</code> prop (its only user was the create mode);
+          <code>ActionTile</code>'s <code>StackTile</code> and <code>layout</code> prop (row is the
+          only layout; <code>description</code> became optional for the gender rows);
+          <code>IntervalsConnectionForm</code> <code>children</code>; message keys
+          <code>ui_thresholds_other</code>, <code>ui_thresholds_onboarding_note</code>,
+          <code>ui_onboarding_welcome_*</code>, <code>ui_onboarding_testdata_*</code>.
+          <code>OnboardingPage</code> is a thin container; <code>AppLayout</code> no longer wraps it
+          in a <code>max-w-2xl</code> main.
+        </p>
+        <p class="meta">
+          <code>src/features/settings/ThresholdsSection.tsx</code>,
+          <code>ThresholdTiles.tsx:27</code>, <code>src/components/ui/StatTile.tsx:20</code>,
+          <code>src/components/ui/ActionTile.tsx:65</code>,
+          <code>src/features/filters/FilterList.tsx</code>,
+          <code>src/pages/OnboardingPage.tsx:3</code>,
+          <code>src/components/layout/AppLayout.tsx:102</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N6</span>E2E helper and specs</h3>
+        <p>
+          New <code>startOnboarding(page, source)</code> and
+          <code>fillOnboardingProfile(page)</code>. Onboarding, ZIP and intervals.icu specs go
+          through them; "Continue is disabled until gender and valid HR" replaces the upload-gate
+          test; one new phone test (map drag keeps the card, grabber → pill "Continue setup · 2/4" →
+          same question with values kept).
+        </p>
+        <p class="meta">
+          <code>e2e/helpers/onboarding.ts:7</code>, <code>e2e/onboarding.spec.ts</code>,
+          <code>e2e/zipUpload.spec.ts</code>, <code>e2e/intervals.spec.ts</code>.
+        </p>
+      </div>
+      <div class="card">
+        <h3><span class="label n">N7</span>Unit test for the draw-in</h3>
+        <p>
+          <code>slicePath</code>: empty before start, prefix + interpolated end point mid-pass, full
+          path at/after the end; <code>buildPreviewPasses</code> is deterministic.
+        </p>
+        <p class="meta"><code>tests/features/map/previewDrawIn.spec.ts</code>.</p>
+      </div>
+
+      <h2>Deviations from the plan</h2>
+      <ol>
+        <li>
+          <strong
+            >Preview camera fit runs at the reveal, not under the loader, and does not wait for the
+            map's <code>load</code> event.</strong
+          >
+          The card and the dialog it pads against only mount at the reveal, so the fit runs one
+          frame after it (<code>duration: 0</code>). Waiting for <code>load</code> (which waits for
+          tiles) made the draw-in play at the default Europe view on a slow basemap; maplibre's
+          camera works before <code>load</code>.
+          <code>src/features/map/hooks/useOnboardingPreviewCameraEffect.ts:43-68</code>. The
+          <code>mapLoaded</code> parameter the plan implied is not used.
+        </li>
+        <li>
+          <strong>Energy: the heart-rate method is skipped without a gender</strong>
+          (<code>energy.ts:146</code>), in addition to the per-interval guard the plan named. The
+          guard alone would sum to a 0 kcal estimate, which breaks "0 is data, missing is missing".
+          Blockers (weight/age) still win, so today's UI is unchanged.
+        </li>
+        <li>
+          <strong>Loader stroke dashes follow the mockup</strong>:
+          <code>stroke-dasharray: 1 2</code> with offsets 1.05 → 0 → −1.05, not <code>1</code> with
+          1 → 0 → −1. The extra 0.05 hides the round caps when a stroke is empty.
+        </li>
+        <li>
+          <strong>Intro logo</strong> is <code>&lt;img src="/logo.svg"&gt;</code> (32 px), not
+          inline SVG markup. Only the loader inlines the paths (it has to animate them).
+        </li>
+        <li>
+          <strong>Small additions:</strong> <code>ActionTile.description</code> is optional (gender
+          rows have no caption); source and gender tiles carry <code>role="radio"</code> +
+          <code>aria-checked</code> through the existing <code>buttonProps</code>; HR/FTP inputs
+          show the mockup placeholders 52 / 186 / 240; the phone pill carries
+          <code>data-layout="onboarding-pill"</code> so the camera can measure it;
+          <code>onboardingProgressOf</code> / <code>ONBOARDING_FLOW_STEPS</code> in the store feed
+          both "n/4" and the pill.
+        </li>
+        <li>
+          <strong>Demo handler location:</strong> <code>startOnboardingDemo</code> lives in
+          <code>OnboardingFlow.tsx</code> (as planned) and reaches the intro and the source step as
+          an <code>onDemo</code> prop, so neither imports the flow (no import cycle).
+        </li>
+        <li>
+          <strong>Training-load recompute code was not touched.</strong> The only shared file is
+          <code>src/components/ui/ImportProgressOverlay.tsx</code> (one class swap to
+          <code>overlayClass</code>, line 134).
+        </li>
+      </ol>
+
+      <h2>Open points for your review</h2>
+      <ol>
+        <li>
+          <strong>Phone camera does not refit between steps.</strong> As planned it refits only on
+          close/reopen. The "You" step is taller than the source step, so part of the preview can
+          sit under the card (compare <code>p-en-04-source</code> vs.
+          <code>p-en-06-you-error</code>). Options: (a) keep; (b) also refit on step change.
+          <em>Recommendation: (a)</em>, the map is pannable and the card is dismissible.
+        </li>
+        <li>
+          <strong>Pill covers the expanded map attribution</strong> at 390 px (bottom right, see
+          <code>p-en-07-pill</code>). Options: keep, or lift the pill above the attribution row.
+        </li>
+        <li>
+          <strong>Cross-field HR error shows twice.</strong> With max HR 40 the existing validation
+          shows "Min 120 bpm" under max HR and "Resting HR must be less than max HR" under rest HR
+          (<code>d-en-06-you-error</code>). This is today's
+          <code>useThresholdsForm</code> behaviour, more visible now that both fields sit together.
+          Not changed (scope).
+        </li>
+        <li>
+          <strong>"PaceVault" in the intro is a hard-coded brand string</strong>, not a message key.
+        </li>
+        <li>
+          <strong>Focus is not trapped</strong> in the non-modal phone card (known risk in the
+          plan); Tab can leave it.
+        </li>
+        <li>
+          <strong>Demo banner still says "test data" / "Testdaten"</strong>
+          (<code>ui_demo_banner_text</code>), as the plan noted. Follow-up, out of scope.
+        </li>
+        <li>
+          <strong>E2E flakes under parallel load:</strong> in the first full run
+          <code>e2e/mobile/map.spec.ts:480</code> (known) and <code>:281</code> failed; both passed
+          with <code>--workers 1</code>, and the second full run passed 83/83. <code>:281</code> is
+          the same WebGL-picking class as <code>:480</code>.
+        </li>
+        <li>
+          <strong>R-O1 · Settled: keep.</strong> The Settings threshold dialog keeps checking as you
+          type.
+        </li>
+        <li><strong>R-O2 · Settled: Continue always enabled</strong> (R7).</li>
+        <li>
+          <strong>R-O3 · Settled: <code>CodeXml</code></strong> (current name of <code>Code2</code>,
+          R8).
+        </li>
+        <li><strong>R-O4 · Settled: keep</strong> the 20 px taller Settings row.</li>
+        <li>
+          <strong>R-O5 · Settled: no Back, no Continue on the source step</strong>; a tile tap
+          advances (R11).
+        </li>
+        <li>
+          <strong>R-O6 · Settled: reserved line under the tiles</strong>, like the inputs (R12).
+        </li>
+        <li>
+          <strong>R-O7 · FTP "training load" scope.</strong> TSS uses FTP for any session with
+          Normalized Power, so a run with a power meter also uses it. The hint says "for rides",
+          which is the usual case.
+        </li>
+        <li>
+          <strong>R-O8 · No "picked" tile on the way back.</strong> With R11 the source tiles are
+          plain buttons, so Back from step 2 shows all three tiles unselected; the chosen source is
+          still kept for step 4. Options: (a) keep; (b) highlight the last choice again (the tiles
+          would carry state without a Continue to confirm it). <em>Recommendation: (a).</em>
+          <strong>Settled: (a) keep.</strong>
+        </li>
+      </ol>
+
+      <h2>Verification</h2>
+      <p class="meta">Round 3 run, after R11–R12.</p>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp build</code> (first)</td>
+          <td class="ok">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp check</code></td>
+          <td class="ok">pass (fmt, lint, types; 564 files)</td>
+        </tr>
+        <tr>
+          <td><code>vp test -- --run</code></td>
+          <td class="ok">pass, 133 files / 1320 tests</td>
+        </tr>
+        <tr>
+          <td><code>vp exec playwright test</code></td>
+          <td class="ok">pass, 84/84 in the first full run (no flakes)</td>
+        </tr>
+        <tr>
+          <td><code>vp build</code> (final)</td>
+          <td class="ok">pass</td>
+        </tr>
+      </table>
+      <p class="meta">
+        Screenshots: a temporary <code>e2e/zz-review-capture.spec.ts</code> (rounds 2 and 3:
+        <code>e2e/zzReviewCapture.spec.ts</code>) against the configured web server, with
+        SwiftShader WebGL (headless Chromium has no GPU here) and a mocked intervals.icu API. Taken
+        after the suite passed; the spec and its test results are deleted.
+      </p>
+
+      <h2>How to check it yourself</h2>
+      <ol>
+        <li>
+          Clear site data and open the app: the logo grows and retracts for at least 3 s; with CPU
+          throttling a second cycle finishes before the hand-off, and the logo is empty when it
+          fades.
+        </li>
+        <li>
+          The routes draw in (green runs, orange rides, no blue), framed clear of the card (desktop)
+          or the dialog (phone). Pan and zoom work; track hover/click does nothing.
+        </li>
+        <li>
+          Intro: the crumb line wraps without a leading "·" (DE at 390 px); "Open source" opens
+          GitHub in a new tab.
+        </li>
+        <li>
+          Get started → each step shows "n/4"; step 1 has no Back or Continue and a tile tap
+          advances; Back works on steps 2–4; Continue on step 2 needs a gender and both HR values
+          (the gender error shows under the tiles).
+        </li>
+        <li>
+          intervals.icu path: source → you → bike → key → import → the camera fits your tracks. FIT
+          path: the same, then Upload FIT files.
+        </li>
+        <li>
+          Demo from the intro and from the source tile: the import overlay runs, then the demo
+          banner shows.
+        </li>
+        <li>
+          Phone: drag the map with the card open (it stays); tap or drag the grabber (pill "Continue
+          setup · n/4"); tap the pill (same step, values kept, camera refits); Escape closes it.
+        </li>
+        <li>
+          Settings → Thresholds: gender offers only Male / Female. Settings → Data: typing a key
+          doesn't move the key field.
+        </li>
+      </ol>
+    </main>
+  </body>
+</html>

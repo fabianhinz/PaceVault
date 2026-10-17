@@ -145,3 +145,53 @@ textarea,
     --fade-bottom: 32px;
   }
 }
+
+/* Logo loader L3 (grow & retract): one 3.0 s cycle. Stroke i stays empty until i × 0.3 s, grows over
+   1.2 s, then retracts off the top over 1.2 s. All three are empty again at 100 %, so every multiple
+   of 3.0 s is a clean hand-off. Each stroke has its own keyframes: a shared one with animation-delay
+   would drift off the cycle boundary. */
+@theme {
+  --animate-logo-stroke-0: logo-stroke-0 3s ease-in-out infinite both;
+  --animate-logo-stroke-1: logo-stroke-1 3s ease-in-out infinite both;
+  --animate-logo-stroke-2: logo-stroke-2 3s ease-in-out infinite both;
+
+  @keyframes logo-stroke-0 {
+    0% {
+      stroke-dashoffset: 1.05;
+    }
+    40% {
+      stroke-dashoffset: 0;
+    }
+    80%,
+    100% {
+      stroke-dashoffset: -1.05;
+    }
+  }
+
+  @keyframes logo-stroke-1 {
+    0%,
+    10% {
+      stroke-dashoffset: 1.05;
+    }
+    50% {
+      stroke-dashoffset: 0;
+    }
+    90%,
+    100% {
+      stroke-dashoffset: -1.05;
+    }
+  }
+
+  @keyframes logo-stroke-2 {
+    0%,
+    20% {
+      stroke-dashoffset: 1.05;
+    }
+    60% {
+      stroke-dashoffset: 0;
+    }
+    100% {
+      stroke-dashoffset: -1.05;
+    }
+  }
+}

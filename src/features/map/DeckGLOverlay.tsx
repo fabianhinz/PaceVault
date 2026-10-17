@@ -6,6 +6,8 @@ import { PathLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { useSessionDetailPath } from './hooks/useSessionDetailPath.ts';
 import { useMapCameraEffect } from './hooks/useMapCameraEffect.ts';
 import { useOverviewMapControlsEffect } from './hooks/useOverviewMapControlsEffect.ts';
+import { useOnboardingPreviewLayer } from './hooks/useOnboardingPreviewLayer.ts';
+import { useOnboardingPreviewCameraEffect } from './hooks/useOnboardingPreviewCameraEffect.ts';
 import { dimmedColor, lapSubPath, nearestRecordIndex } from './lapPath.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
 import type { SessionGPS } from '@/packages/engine/types.ts';
@@ -107,6 +109,8 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   );
 
   useMapCameraEffect(props.gpsData, props.tracks, selectedLapPath?.path ?? null, props.mapLoaded);
+  useOnboardingPreviewCameraEffect();
+  const onboardingPreviewLayer = useOnboardingPreviewLayer();
 
   const detailHandlers = useMemo(() => {
     const lapAt = (info: PickingInfo) => {
@@ -418,6 +422,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
 
   overlay.setProps({
     layers: [
+      onboardingPreviewLayer,
       trackLayers,
       detailLayer,
       studioRouteLayer,

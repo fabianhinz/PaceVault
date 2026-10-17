@@ -12,6 +12,8 @@ export const floatingLgClass = `${floatingSurface} lg:shadow-[0_8px_24px_rgb(0_0
 
 export const scrimClass = 'bg-black/40 backdrop-blur-sm';
 
+export const overlayClass = 'bg-surface-base/85 backdrop-blur-sm';
+
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   variant?: 'default' | 'compact';

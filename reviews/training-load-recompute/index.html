@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Training Load Recompute</title>
+    <style>
+      :root {
+        --bg: #05070d;
+        --surface: #0d111a;
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #e6e9ef;
+        --muted: #9aa3b2;
+        --accent: #3b82f6;
+        --tag: #f97316;
+        --code: #151b27;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.55 system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+      }
+      h1 {
+        font-size: 26px;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 19px;
+        margin: 40px 0 12px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border);
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 16px;
+      }
+      code {
+        background: var(--code);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 1px 5px;
+        font:
+          13px/1.4 ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        margin: 0 0 16px;
+      }
+      .label {
+        display: inline-block;
+        min-width: 34px;
+        text-align: center;
+        background: var(--tag);
+        color: #111;
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 1px 7px;
+        margin-right: 8px;
+      }
+      .label.n {
+        background: var(--accent);
+        color: #fff;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+        font-size: 16px;
+      }
+      .card p {
+        margin: 4px 0;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .shots {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 12px;
+        align-items: flex-start;
+      }
+      figure {
+        margin: 0;
+        flex: 1 1 260px;
+        max-width: 100%;
+      }
+      figure.phone {
+        flex: 0 1 220px;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #000;
+      }
+      figcaption {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      ul,
+      ol {
+        padding-left: 22px;
+      }
+      li {
+        margin: 4px 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .ok {
+        color: #4ade80;
+      }
+      .warn {
+        color: #fbbf24;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Training load: recompute on threshold change</h1>
+      <p class="lead">
+        Review of <code>plans/training-load-recompute.md</code>. Stored load (TSS / TRIMP /
+        duration) now follows gender, rest HR, max HR and FTP. Every session is reparsed once so it
+        stores the app's own NP. All changes are in the working tree; nothing is committed.
+      </p>
+
+      <h2>User-visible changes</h2>
+
+      <div class="card">
+        <h3><span class="label">C1</span>Overlay copy: "Migrating your sessions…"</h3>
+        <p>
+          <code>ui_reprocess_updating</code> was "Updating your sessions…" / "Einheiten werden
+          aktualisiert…". It now reads "Migrating your sessions…" / "Einheiten werden migriert…".
+          The same text is used for derivation reprocessing and for the recompute.
+        </p>
+        <p class="meta">
+          <code>messages/en.json:615</code>, <code>messages/de.json:615</code>. Decision: "Rename
+          the overlay copy".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="c1-overlay-desktop-en.png" alt="Desktop overlay, English" />
+            <figcaption>Desktop · EN</figcaption>
+          </figure>
+          <figure>
+            <img src="c1-overlay-desktop-de.png" alt="Desktop overlay, German" />
+            <figcaption>Desktop · DE</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="c1-overlay-phone-en.png" alt="Phone overlay, English" />
+            <figcaption>390 px · EN</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="c1-overlay-phone-de.png" alt="Phone overlay, German" />
+            <figcaption>390 px · DE</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">C2</span>One-time reparse on the first start</h3>
+        <p>
+          <code>SESSION_DERIVATION_VERSION</code> goes from 3 to 4. On the first start every session
+          is reparsed once from its FIT file (or from its records when it has no FIT) and gets the
+          app's own NP plus the current profile's load. The C1 screenshots were taken during this
+          run: 70 seeded sessions at version 3, captured right after the reload.
+        </p>
+        <p class="meta">
+          <code>src/packages/engine/sessionDerivation.ts:12</code>. Decisions: "NP via a one-time
+          full reparse", "Rollout: one release".
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">C3</span>Overlay after a threshold change</h3>
+        <p>
+          When you save a profile change (here: a first FTP of 250 W in Settings), the recompute
+          opens the same overlay, but only when at least one session's load changes. There is no
+          summary or toast afterwards. The ring counts the changed sessions (71 = 70 seeded rides +
+          1 uploaded run).
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/recomputeTrainingLoad.ts:38-51</code>,
+          <code>src/features/sessions/hooks/useTrainingLoadRecomputeEffect.ts</code>, mounted at
+          <code>src/components/layout/AppLayout.tsx:68</code>. Decisions: "Trigger", "Feedback:
+          reuse the existing full-screen reprocess overlay".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="c2-recompute-overlay-desktop.png" alt="Recompute overlay, desktop" />
+            <figcaption>Desktop · EN, right after saving FTP</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="c2-recompute-overlay-phone.png" alt="Recompute overlay, phone" />
+            <figcaption>390 px · EN</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">C4</span>Minimum display time of 1.5 s</h3>
+        <p>
+          <code>MIN_OPEN_MS</code> goes from 800 to 1500. The import summary waits that long, as
+          before. The reprocess overlay now also stays up until <code>openedAt + 1500 ms</code>:
+          when <code>foreground</code> is cleared early, the overlay keeps rendering the last
+          reprocess state. The app may already mount underneath. The C1 and C3 screenshots exist
+          because of this: both runs finish in well under 1.5 s.
+        </p>
+        <p class="meta">
+          <code>src/components/ui/ImportProgressOverlay.tsx:14</code>,
+          <code>:163-188</code> (<code>useHeldReprocess</code>). Decisions: "Minimum display time…",
+          "The minimum display time is enforced in the overlay".
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">C5</span>Load tile switches TRIMP → TSS after you add an FTP</h3>
+        <p>
+          A run with power (<code>e2e/fixtures/running.fit</code>) imported without an FTP shows 78
+          TRIMP. After you add FTP 250 W, the same tile shows 206 TSS, computed from the stored app
+          NP and without reading records. A first FTP entry applies to every session.
+        </p>
+        <p class="meta">
+          <code>src/lib/sessionStress.ts</code> (<code>sessionStressAt</code>), tile at
+          <code>src/features/sessions/session/MoreStatsRow.tsx:62-71</code> (unchanged). Decision:
+          "Stored training load follows threshold changes…, including TRIMP → TSS once FTP exists".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="c3-load-before-desktop.png" alt="Load tile before, TRIMP" />
+            <figcaption>Desktop · before (TRIMP)</figcaption>
+          </figure>
+          <figure>
+            <img src="c3-load-after-desktop.png" alt="Load tile after, TSS" />
+            <figcaption>Desktop · after (TSS)</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="c3-load-before-phone.png" alt="Load tile before, phone" />
+            <figcaption>390 px · before</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="c3-load-after-phone.png" alt="Load tile after, phone" />
+            <figcaption>390 px · after</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="label">C6</span>Fitness chart follows the new load</h3>
+        <p>
+          Dashboard "Performance Metrics" with 70 seeded rides (avg HR + NP). Before: TRIMP, CTL 61
+          / ATL 60. After adding FTP: TSS, CTL 81 / ATL 77. The dashboard reads the store
+          reactively, so the store update is enough. Expect the same one-time jump on the first
+          start after release (plan, Risks).
+        </p>
+        <p class="meta">
+          Consumer <code>src/packages/engine/metrics.ts:72</code> (unchanged). Decision: "Stored
+          training load follows threshold changes".
+        </p>
+        <div class="shots">
+          <figure>
+            <img src="c4-fitness-before-desktop.png" alt="Fitness chart before" />
+            <figcaption>Desktop · before</figcaption>
+          </figure>
+          <figure>
+            <img src="c4-fitness-after-desktop.png" alt="Fitness chart after" />
+            <figcaption>Desktop · after</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="c4-fitness-before-phone.png" alt="Fitness chart before, phone" />
+            <figcaption>390 px · before</figcaption>
+          </figure>
+          <figure class="phone">
+            <img src="c4-fitness-after-phone.png" alt="Fitness chart after, phone" />
+            <figcaption>390 px · after</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <h2>Changes without UI</h2>
+
+      <div class="card">
+        <h3><span class="label n">N1</span>Engine: <code>calculateSummaryStress</code></h3>
+        <p>
+          New pure function that computes load from stored fields (duration, avg HR, NP) and
+          thresholds. The order is TSS (NP and FTP &gt; 0), then TRIMP (avg HR), then duration. NP 0
+          W with an FTP gives TSS 0. <code>calculateTSS</code> takes NP instead of records.
+          <code>calculateSessionStress</code> now always derives NP from records, delegates to the
+          new function, and returns NP whenever it exists.
+        </p>
+        <p class="meta">
+          <code>src/packages/engine/stress.ts:7-24, 48-54, 116-143, 156-171</code>. Test:
+          <code>tests/packages/engine/stress.spec.ts</code> covers TSS, TRIMP, duration and TSS 0 at
+          0 W.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="label n">N2</span>Import always stores the app's NP</h3>
+        <p>
+          The <code>hasPowerRecords</code> gate and the device
+          <code>normalized_power</code> fallback are gone. Import computes NP from records and calls
+          <code>calculateSummaryStress</code>, the same function the recompute uses, so a fresh
+          import never "changes" on the next run. To observe: import a power file with no FTP;
+          <code>normalizedPower</code> is set and the load is TRIMP.
+        </p>
+        <p class="meta">
+          <code>src/parsers/fit.ts:176-180, 215</code>. Decision: "From then on the import always
+          computes app NP".
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="label n">N3</span>Keep rule removed from reprocessing</h3>
+        <p>
+          The reparse now keeps its own <code>tss</code> / <code>stressMethod</code> /
+          <code>normalizedPower</code>. Before, it kept the stored values unless both sides were
+          TSS. The records-only path uses <code>sessionStressAt</code> with records NP, or the
+          stored NP when the records have none. With no profile, the stored values stay.
+          <code>SESSION_REPROCESSING_LOCK</code> is now exported.
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/reprocessSessions.ts:21, 39-54, 71-84</code>. Tests updated in
+          <code>tests/features/sessions/reprocessSessions.integration.test.ts</code>.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3>
+          <span class="label n">N4</span>Store action <code>applyRecomputedTrainingLoad</code>
+        </h3>
+        <p>
+          Assigns only <code>tss</code>, <code>stressMethod</code> and
+          <code>normalizedPower</code> on the immer draft, by id, so a concurrent
+          <code>markSessionSeen</code> survives. The persisted shape is unchanged, so there is no
+          version bump.
+        </p>
+        <p class="meta">
+          <code>src/store/sessions.ts:36-39, 49, 92-103</code>. Test:
+          <code>tests/features/sessions/recomputeTrainingLoad.integration.test.ts</code> checks that
+          the run keeps <code>isNew: true</code>.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="label n">N5</span>Recompute and trigger</h3>
+        <p>
+          <code>recomputeTrainingLoad()</code> takes the reprocessing web lock, rehydrates sessions,
+          diffs every session against <code>sessionStressAt</code>, and opens the overlay only for a
+          non-empty diff. It commits every <code>REPROCESS_BATCH_SIZE</code>, flushes, and returns
+          the number changed. It reads no records. The effect runs it on the first
+          <code>phase === 'done'</code> after start and whenever
+          <code>trainingLoadSignature(profile)</code> changes (gender and the rest HR / max HR / FTP
+          histories).
+        </p>
+        <p class="meta">
+          <code>src/features/sessions/recomputeTrainingLoad.ts</code>,
+          <code>src/lib/sessionStress.ts</code>,
+          <code>src/features/sessions/hooks/useTrainingLoadRecomputeEffect.ts</code>. Integration
+          test: a TRIMP ride becomes 64 TSS after <code>saveTodaysThresholds({ ftp: 250 })</code>,
+          with <code>getSessionRecords</code> mocked to throw, and the result is persisted.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="label n">N6</span>E2E seeds store a consistent load (deviation)</h3>
+        <p>
+          The seed helpers wrote <code>tss: 80, stressMethod: 'trimp'</code> without an avg HR. The
+          startup heal rewrote that to the duration load and opened the overlay in the middle of the
+          mobile bottom-sheet tests. Seeds now store the load the app itself computes. The
+          labs/coach seed gets FTP 250 plus an NP with (NP/FTP)² × 100 = the requested TSS, so the
+          coach tests keep their TSS 50 / 200 baselines.
+        </p>
+        <p class="meta"><code>e2e/helpers/seed.ts:17-30, 143, 182, 250, 264</code>.</p>
+      </div>
+
+      <h2>Verification</h2>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp build</code></td>
+          <td class="ok">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp check</code></td>
+          <td class="warn">
+            fmt flags only the untracked <code>plans/*.md</code>, which I may not edit.
+            <code>vp check --no-fmt</code> passes (lint and types, 544 files), and
+            <code>vp fmt --check src tests messages e2e</code> is clean.
+          </td>
+        </tr>
+        <tr>
+          <td><code>vp test -- --run</code></td>
+          <td class="ok">1299 / 1299 pass</td>
+        </tr>
+        <tr>
+          <td><code>vp exec playwright test</code></td>
+          <td class="warn">
+            81 pass, 1 fail: <code>e2e/mobile/map.spec.ts:480</code> (lap zoom by tap). It fails the
+            same way on a clean HEAD checkout under parallel load and passes with
+            <code>--workers 1</code>, so it is not caused by this change.
+          </td>
+        </tr>
+        <tr>
+          <td><code>vp build</code> (final)</td>
+          <td class="ok">pass</td>
+        </tr>
+      </table>
+
+      <h2>Open points for your review</h2>
+      <ol>
+        <li>
+          <strong>Settings page remounts after saving a threshold.</strong> While the reprocess
+          overlay is open the app underneath unmounts (<code>appMounted</code>,
+          <code>src/components/layout/AppLayout.tsx</code>), the same behaviour reprocessing has
+          today. After a small Settings edit (e.g. adding FTP), the Settings page therefore remounts
+          and the scroll position and open dialogs are lost. Options: (a) keep it (consistent with
+          reprocessing); (b) during a recompute keep the app mounted and only cover it with the
+          overlay. <em>Recommendation: (b)</em>, a small change to <code>appMounted</code>. Not
+          implemented; waiting for your decision.
+        </li>
+        <li>
+          <strong>Flaky e2e</strong> <code>e2e/mobile/map.spec.ts:480</code> also fails on a clean
+          HEAD under parallel load and passes with <code>--workers 1</code>. Suggest a separate
+          follow-up branch.
+        </li>
+        <li>
+          <strong>Unplanned file:</strong> <code>e2e/helpers/seed.ts</code> changed so the seeded
+          load matches the profile (see N6). Otherwise the startup recompute opens the overlay
+          mid-test.
+        </li>
+      </ol>
+
+      <h2>How to check it yourself</h2>
+      <ol>
+        <li>
+          First start on this branch with existing data: "Migrating your sessions…" appears once,
+          for at least 1.5 s. Reload: it does not appear again.
+        </li>
+        <li>
+          Remove the FTP (or start fresh without one) and import power rides: the load tile on the
+          session shows TRIMP.
+        </li>
+        <li>
+          Add an FTP in Settings: the overlay shows briefly, the tiles switch to TSS, and the
+          dashboard fitness chart and load change.
+        </li>
+        <li>
+          Change max HR: only sessions from today on change. Older sessions keep their load, because
+          dated thresholds apply from today.
+        </li>
+        <li>Change gender: every TRIMP session changes, because gender is undated.</li>
+        <li>
+          Reload after any of these: nothing changes again and no overlay appears (idempotent).
+        </li>
+        <li>
+          With intervals.icu connected, an intervals.icu ride behaves the same as a file import.
+        </li>
+      </ol>
+    </main>
+  </body>
+</html>

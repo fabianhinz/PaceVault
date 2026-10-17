@@ -2,8 +2,11 @@ import type { SessionLap, SessionRecord, Sport } from '@/packages/engine/types.t
 import { analyzeLaps, detectIntervals, type LapAnalysis } from './laps.ts';
 import { computeDynamicLaps, splitDistanceRange } from './dynamicLaps.ts';
 import { deviceLapSpans, lapBands, type LapBand, type LapSpan } from './lapRanges.ts';
+import type { EffortLimiter, EffortSignal } from '@/packages/engine/effortDetection.ts';
+import type { ResolvedThresholds } from './thresholdsAt.ts';
+import { buildEffortLapSet } from './effortLaps.ts';
 
-export type LapSource = 'off' | 'device' | 'splits';
+export type LapSource = 'off' | 'device' | 'splits' | 'efforts';
 
 const DEFAULT_SPLIT_DISTANCES: Record<Sport, number> = {
   running: 1000,
@@ -21,11 +24,24 @@ export const effectiveSplitDistance = (
   return Math.min(defaultSplitDistance(sport), splitDistanceRange(sport, sessionMetres).max);
 };
 
+export interface LapSetEfforts {
+  signal: EffortSignal;
+  limitedBy: EffortLimiter | undefined;
+  /** see `effortWorkAverage` */
+  workAverage: number | undefined;
+}
+
 export interface LapSet {
   analysis: LapAnalysis[];
   spans: LapSpan[];
   bands: LapBand[];
   hrRecoveries: number[];
+  efforts?: LapSetEfforts;
+}
+
+interface EffortContext {
+  sport: Sport;
+  thresholds: ResolvedThresholds | undefined;
 }
 
 export const buildDeviceLapSet = (records: SessionRecord[], laps: SessionLap[]): LapSet | null => {
@@ -50,9 +66,13 @@ export const buildLapSet = (
   laps: SessionLap[],
   source: LapSource,
   splitDistance: number,
+  effortContext: EffortContext,
 ): LapSet | null => {
   if (source === 'off') return null;
   if (source === 'device') return buildDeviceLapSet(records, laps);
+  if (source === 'efforts') {
+    return buildEffortLapSet(records, effortContext.sport, effortContext.thresholds).set;
+  }
   const result = computeDynamicLaps(records, splitDistance);
   if (result.analysis.length === 0) return null;
   return {

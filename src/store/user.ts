@@ -68,7 +68,7 @@ const requiredHistorySchema = historySchema.pipe(z.array(datedNumberSchema).min(
 
 const profileSchema = z.looseObject({
   id: z.string(),
-  gender: z.enum(['male', 'female', 'other']),
+  gender: z.enum(['male', 'female']),
   thresholds: z.object({
     restHr: requiredHistorySchema,
     maxHr: requiredHistorySchema,

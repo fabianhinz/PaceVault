@@ -15,6 +15,7 @@ import { useIntervalsSync } from '@/features/intervals/hooks/useIntervalsSync.ts
 import { ImportProgressOverlay } from '@/components/ui/ImportProgressOverlay.tsx';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { useSessionReprocessingEffect } from '@/features/sessions/hooks/useSessionReprocessingEffect.ts';
+import { useTrainingLoadRecomputeEffect } from '@/features/sessions/hooks/useTrainingLoadRecomputeEffect.ts';
 import { useSessionReprocessingActive } from '@/features/sessions/hooks/useSessionReprocessingActive.ts';
 import { NewerVersionOverlay } from './NewerVersionOverlay.tsx';
 import { OverviewMapControls } from '@/features/map/OverviewMapControls.tsx';
@@ -64,6 +65,7 @@ export const AppLayout = () => {
   const appMounted = onboardingComplete && !reprocessing && !reprocessOverlayOpen;
 
   useSessionReprocessingEffect();
+  useTrainingLoadRecomputeEffect();
   useIntervalsSync();
 
   return (
@@ -97,11 +99,7 @@ export const AppLayout = () => {
           <Dock />
         </BottomSheetProvider>
       )}
-      {!onboardingComplete && (
-        <main data-layout="main" className="relative z-10 p-6 pt-18 w-full mx-auto max-w-2xl">
-          <OnboardingPage />
-        </main>
-      )}
+      {!onboardingComplete && <OnboardingPage />}
       <ImportProgressOverlay />
       <NewerVersionOverlay />
     </div>

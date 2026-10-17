@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
+import { HelperText } from './HelperText.tsx';
 
 type InputVariant = 'field' | 'bare';
 
@@ -49,16 +50,7 @@ export const Input = (props: InputProps) => {
           {input}
         </div>
       )}
-      {(helperText || props.reserveHelper) && (
-        <p
-          className={cn(
-            'mt-1 min-h-4 text-xs',
-            error ? 'text-status-danger' : 'text-text-quaternary',
-          )}
-        >
-          {helperText}
-        </p>
-      )}
+      {(helperText || props.reserveHelper) && <HelperText error={error}>{helperText}</HelperText>}
     </div>
   );
 };

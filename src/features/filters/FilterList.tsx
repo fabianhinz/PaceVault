@@ -87,7 +87,6 @@ export const FilterList = (props: FilterListProps) => {
               return (
                 <ActionTile
                   key={filterKey(criteria)}
-                  layout="row"
                   look="dashed"
                   icon={filterIcon(criteria)}
                   title={tile.title}
@@ -103,7 +102,6 @@ export const FilterList = (props: FilterListProps) => {
         )}
         {text === '' && zoom !== null && activeFilter !== null && (
           <ActionTile
-            layout="row"
             look="accent"
             icon={ZoomOut}
             title={zoom.title}
@@ -118,7 +116,6 @@ export const FilterList = (props: FilterListProps) => {
         )}
         {text === '' && showZoomHint && (
           <ActionTile
-            layout="row"
             look="hint"
             icon={ZoomOut}
             title={m.ui_filter_zoom_hint_title()}
@@ -133,7 +130,6 @@ export const FilterList = (props: FilterListProps) => {
             return (
               <ActionTile
                 key={filter.id}
-                layout="row"
                 icon={filterIcon(filter.criteria)}
                 title={tile.title}
                 description={tile.description}

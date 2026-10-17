@@ -5,6 +5,7 @@ import { METRIC_EXPLANATIONS, type MetricExplanation, type MetricId } from '@/li
 import { useUserStore } from '@/store/user.ts';
 import { cn } from '@/lib/utils.ts';
 import { Button } from './Button.tsx';
+import { Chip } from './Chip.tsx';
 import { Typography } from './Typography.tsx';
 import type { ReactNode } from 'react';
 
@@ -25,11 +26,7 @@ const ExplanationBody = (props: { explanation: MetricExplanation; primary: boole
       <Typography variant="subtitle1" className="font-semibold">
         {props.explanation.friendlyName}
       </Typography>
-      {props.explanation.shortLabel && (
-        <Typography variant="caption" className="rounded bg-white/10 px-1.5 py-0.5">
-          {props.explanation.shortLabel}
-        </Typography>
-      )}
+      {props.explanation.shortLabel && <Chip>{props.explanation.shortLabel}</Chip>}
     </div>
 
     <Typography>{props.explanation.oneLiner}</Typography>

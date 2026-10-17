@@ -11,6 +11,7 @@ import { DOCK_ROW_BOTTOM_CSS } from '@/lib/dockGeometry.ts';
 import { SHEET_HANDLE_HEIGHT, SHEET_TOP_GAP_CSS } from '@/lib/sheetPosition.ts';
 import { m } from '@/paraglide/messages.js';
 import { floatingClass, scrimClass } from './Card.tsx';
+import { Chip } from './Chip.tsx';
 import { SheetGrabber } from './SheetGrabber.tsx';
 import { Typography } from './Typography.tsx';
 
@@ -112,34 +113,51 @@ const DialogCard = (props: HTMLMotionProps<'div'>) => {
   );
 };
 
-export const DialogContent = (props: DialogPrimitive.DialogContentProps) => (
-  <DialogPrimitive.Portal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      onOpenAutoFocus={(e) => e.preventDefault()}
-      {...props}
-      asChild
-      className={cn(
-        floatingClass,
-        'fixed z-50 flex flex-col overflow-hidden rounded-3xl focus:outline-none',
-        'bottom-(--sheet-bottom) mx-auto max-w-lg',
-        'left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))]',
-        'max-h-[min(75dvh,calc(100dvh-var(--sheet-top)-var(--sheet-bottom)))]',
-        'data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
-        'lg:block lg:p-6 lg:overflow-y-auto lg:rounded-xl',
-        'lg:inset-x-auto lg:right-auto lg:bottom-auto lg:mx-0 lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2',
-        'lg:w-full lg:max-w-[min(32rem,calc(100vw-25rem))] lg:max-h-[calc(100dvh-25rem)]',
-        'lg:data-[state=open]:slide-in-from-bottom-0 lg:data-[state=closed]:slide-out-to-bottom-0',
-        'lg:data-[state=open]:zoom-in-95 lg:data-[state=closed]:zoom-out-95',
-        'data-[state=open]:animate-in data-[state=closed]:animate-out',
-        'data-[dismissed]:animate-none!',
-        props.className,
-      )}
-    >
-      <DialogCard>{props.children}</DialogCard>
-    </DialogPrimitive.Content>
-  </DialogPrimitive.Portal>
-);
+interface DialogContentProps extends DialogPrimitive.DialogContentProps {
+  /** false: no overlay, and outside taps never close it (pair with `DialogRoot modal={false}`). */
+  scrim?: boolean;
+}
+
+export const DialogContent = (props: DialogContentProps) => {
+  const { scrim: _scrim, ...contentProps } = props;
+  const scrim = props.scrim ?? true;
+  return (
+    <DialogPrimitive.Portal>
+      {scrim && <DialogOverlay />}
+      <DialogPrimitive.Content
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        {...contentProps}
+        onPointerDownOutside={(e) => {
+          if (!scrim) e.preventDefault();
+          props.onPointerDownOutside?.(e);
+        }}
+        onInteractOutside={(e) => {
+          if (!scrim) e.preventDefault();
+          props.onInteractOutside?.(e);
+        }}
+        asChild
+        className={cn(
+          floatingClass,
+          'fixed z-50 flex flex-col overflow-hidden rounded-3xl focus:outline-none',
+          'bottom-(--sheet-bottom) mx-auto max-w-lg',
+          'left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))]',
+          'max-h-[min(75dvh,calc(100dvh-var(--sheet-top)-var(--sheet-bottom)))]',
+          'data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
+          'lg:block lg:p-6 lg:overflow-y-auto lg:rounded-xl',
+          'lg:inset-x-auto lg:right-auto lg:bottom-auto lg:mx-0 lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2',
+          'lg:w-full lg:max-w-[min(32rem,calc(100vw-25rem))] lg:max-h-[calc(100dvh-25rem)]',
+          'lg:data-[state=open]:slide-in-from-bottom-0 lg:data-[state=closed]:slide-out-to-bottom-0',
+          'lg:data-[state=open]:zoom-in-95 lg:data-[state=closed]:zoom-out-95',
+          'data-[state=open]:animate-in data-[state=closed]:animate-out',
+          'data-[dismissed]:animate-none!',
+          props.className,
+        )}
+      >
+        <DialogCard>{props.children}</DialogCard>
+      </DialogPrimitive.Content>
+    </DialogPrimitive.Portal>
+  );
+};
 
 interface DialogHeaderProps {
   title: string;
@@ -156,11 +174,7 @@ export const DialogHeader = (props: DialogHeaderProps) => {
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
           <DialogTitle className="max-lg:truncate">{props.title}</DialogTitle>
-          {props.chip !== undefined && (
-            <Typography variant="caption" className="shrink-0 rounded bg-white/10 px-1.5 py-0.5">
-              {props.chip}
-            </Typography>
-          )}
+          {props.chip !== undefined && <Chip className="shrink-0">{props.chip}</Chip>}
         </div>
         {props.subtitle !== undefined && (
           <Typography variant="caption" as="p">

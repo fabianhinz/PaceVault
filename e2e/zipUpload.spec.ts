@@ -7,16 +7,13 @@ import {
   ACTIVITIES_ZIP,
 } from './helpers/seed';
 import { uploadFilesWithButton, dropFiles } from './helpers/upload';
-import { setThreshold } from './helpers/thresholds';
+import { fillOnboardingProfile, startOnboarding } from './helpers/onboarding';
 
 test.describe('ZIP archive upload', () => {
   test.describe('onboarding (file picker only)', () => {
     test('upload a ZIP containing a single FIT file → session appears', async ({ page }) => {
-      await page.goto('/');
-
-      await page.getByText('FIT files', { exact: true }).click();
-      await setThreshold(page, 'Rest HR', '50');
-      await setThreshold(page, 'Max HR', '185');
+      await startOnboarding(page, 'FIT files');
+      await fillOnboardingProfile(page);
       const uploadButton = page.getByRole('button', { name: /upload fit files/i });
       await expect(uploadButton).toBeEnabled();
 
@@ -27,11 +24,8 @@ test.describe('ZIP archive upload', () => {
     });
 
     test('upload a ZIP containing multiple FIT files → all sessions appear', async ({ page }) => {
-      await page.goto('/');
-
-      await page.getByText('FIT files', { exact: true }).click();
-      await setThreshold(page, 'Rest HR', '50');
-      await setThreshold(page, 'Max HR', '185');
+      await startOnboarding(page, 'FIT files');
+      await fillOnboardingProfile(page);
       const uploadButton = page.getByRole('button', { name: /upload fit files/i });
       await expect(uploadButton).toBeEnabled();
 

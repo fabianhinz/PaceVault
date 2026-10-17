@@ -2,20 +2,31 @@ import { test, expect } from './helpers/test';
 import { RUNNING_FIT, seedOnboardingComplete } from './helpers/seed';
 import { closeImportSummary, uploadFilesWithButton } from './helpers/upload';
 import { setThreshold, thresholdTile } from './helpers/thresholds';
+import { fillOnboardingProfile, startOnboarding } from './helpers/onboarding';
 
 test.describe('Onboarding flow', () => {
-  test('set thresholds → upload FIT → complete onboarding', async ({ page }) => {
-    await page.goto('/');
-
-    await page.getByText('FIT files', { exact: true }).click();
-
-    await expect(thresholdTile(page, 'Rest HR')).toBeVisible();
+  test('profile with the optional values → upload FIT → values are saved', async ({ page }) => {
+    await startOnboarding(page, 'FIT files');
 
     await expect(page.locator('[data-layout="dock"]')).not.toBeVisible();
 
-    await setThreshold(page, 'Rest HR', '50');
-    await setThreshold(page, 'Max HR', '185');
-    await expect(page.getByRole('button', { name: 'Save', exact: true })).toHaveCount(0);
+    const next = page.getByRole('button', { name: 'Continue', exact: true });
+    await page.getByRole('radio', { name: 'Male', exact: true }).click();
+    await page.getByLabel(/^Resting HR/).fill('50');
+    await page.getByLabel(/^Max HR/).fill('185');
+    await page.getByLabel(/^Weight/).fill('72');
+    await page.getByLabel(/^Birth year/).fill('1990');
+    await next.click();
+
+    await expect(page.getByRole('heading', { name: 'Your thresholds' })).toBeVisible();
+    await page.getByLabel(/^FTP/).fill('250');
+    await page.getByRole('button', { name: 'Estimate from a race time' }).click();
+    const estimator = page.getByRole('dialog', { name: 'Estimate Threshold Pace' });
+    await estimator.getByRole('textbox').fill('20:00');
+    await estimator.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(estimator).toHaveCount(0);
+    await expect(page.getByLabel(/^Threshold Pace/)).toHaveValue(/^\d:\d\d$/);
+    await next.click();
 
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
     await expect(uploadButton).toBeEnabled();
@@ -24,49 +35,104 @@ test.describe('Onboarding flow', () => {
 
     await expect(page.locator('[data-layout="dock"]')).toBeVisible();
 
-    await expect(thresholdTile(page, 'Rest HR')).not.toBeVisible();
-
     await expect(page.getByText(/test data/i)).not.toBeVisible();
+
+    await page.goto('/settings');
+    await expect(thresholdTile(page, 'Weight')).toContainText('72');
+    await expect(thresholdTile(page, 'FTP')).toContainText('250');
+    await expect(thresholdTile(page, 'Pace')).not.toContainText('Add pace');
+    await expect(page.getByLabel('Birth year')).toHaveValue('1990');
   });
 
-  test('generate test data → complete onboarding', async ({ page }) => {
+  test('try demo data from the intro → complete onboarding', async ({ page }) => {
     await page.goto('/');
 
-    await page.getByText(/test data/i).click();
-
-    const generateButton = page.getByRole('button', { name: 'Generate', exact: true });
-    await expect(generateButton).toBeVisible();
-    await generateButton.click();
+    const demoButton = page.getByRole('button', { name: 'Try demo data' });
+    await demoButton.click({ timeout: 15_000 });
 
     await closeImportSummary(page);
     await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30000 });
-    await expect(generateButton).not.toBeVisible();
+    await expect(demoButton).not.toBeVisible();
 
     await expect(page.getByText(/test data/i)).toBeVisible();
   });
 
-  test('upload button is disabled until thresholds are valid', async ({ page }) => {
-    await page.goto('/');
+  test('a source tile advances on its own; Back returns to the source step without Back or Continue', async ({
+    page,
+  }) => {
+    await startOnboarding(page, 'FIT files');
 
-    await page.getByText('FIT files', { exact: true }).click();
+    const youHeading = page.getByRole('heading', { name: 'You and your heart rate' });
+    await expect(youHeading).toBeVisible();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
 
-    const uploadButton = page.getByRole('button', { name: /upload fit files/i });
-    await expect(uploadButton).toBeDisabled();
+    const sourceHeading = page.getByRole('heading', { name: 'Where are your sessions?' });
+    await expect(sourceHeading).toBeVisible();
+    await expect(page.getByTestId('onboarding-progress')).toHaveText('1/4');
+    await expect(page.getByRole('button', { name: 'Back', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Continue', exact: true })).toHaveCount(0);
+    await expect(page.locator(':focus')).toContainText('Where are your sessions?');
 
-    await setThreshold(page, 'Rest HR', '50');
-    await expect(uploadButton).toBeDisabled();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: /^intervals\.icu/ })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    await expect(youHeading).toBeVisible();
+    await expect(page.locator(':focus')).toContainText('You and your heart rate');
+  });
 
-    await thresholdTile(page, 'Max HR').click();
-    const dialog = page.getByRole('dialog');
-    await dialog.locator('input').fill('40');
-    await expect(dialog.getByText('Min 120 bpm')).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
-    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(dialog).toHaveCount(0);
-    await expect(uploadButton).toBeDisabled();
+  test('Continue shows the step errors, focuses the first invalid field and stays; valid values advance', async ({
+    page,
+  }) => {
+    await startOnboarding(page, 'FIT files');
 
-    await setThreshold(page, 'Max HR', '185');
-    await expect(uploadButton).toBeEnabled();
+    const heading = page.getByRole('heading', { name: 'You and your heart rate' });
+    const next = page.getByRole('button', { name: 'Continue', exact: true });
+    const required = page.getByText('Required', { exact: true });
+    const genderError = page.locator('#onboarding-gender-error');
+    const genderBox = await genderError.boundingBox();
+    await expect(next).toBeEnabled();
+    await next.click();
+    await expect(heading).toBeVisible();
+    await expect(required).toHaveCount(3);
+    await expect(page.getByRole('radio', { name: 'Male', exact: true })).toBeFocused();
+
+    // The gender error fills the reserved line under the tiles: below Female, nothing moves.
+    await expect(genderError).toHaveText('Required');
+    const femaleBox = await page.getByRole('radio', { name: 'Female' }).boundingBox();
+    expect(await genderError.boundingBox()).toEqual(genderBox);
+    expect(genderBox?.y ?? 0).toBeGreaterThan((femaleBox?.y ?? 0) + (femaleBox?.height ?? 0));
+
+    await page.getByRole('radio', { name: 'Female' }).click();
+    await expect(required).toHaveCount(2);
+    await page.getByLabel(/^Resting HR/).fill('50');
+    await page.getByLabel(/^Max HR/).fill('250');
+    await page.getByLabel(/^Weight/).fill('500');
+    await next.click();
+    await expect(page.getByText('Max 230 bpm')).toBeVisible();
+    await expect(page.getByText('Max 200 kg')).toBeVisible();
+    await expect(page.getByLabel(/^Max HR/)).toBeFocused();
+    await expect(heading).toBeVisible();
+
+    await page.getByLabel(/^Max HR/).fill('185');
+    await expect(page.getByText('Max 230 bpm')).toHaveCount(0);
+    await page.getByLabel(/^Weight/).fill('');
+    await page.getByLabel(/^Birth year/).fill('19');
+    await expect(page.getByText(/^Between 1920/)).toHaveCount(0);
+    await page.getByLabel(/^Birth year/).blur();
+    await expect(page.getByText(/^Between 1920/)).toBeVisible();
+    await page.getByLabel(/^Birth year/).fill('');
+    await next.click();
+
+    await expect(page.getByRole('heading', { name: 'Your thresholds' })).toBeVisible();
+    const pace = page.getByLabel(/^Threshold Pace/);
+    await pace.fill('abc');
+    await next.click();
+    await expect(page.getByText('Format: m:ss (2:30-9:00)')).toBeVisible();
+    await expect(pace).toBeFocused();
+    await pace.fill('');
+    await next.click();
+    await expect(page.getByRole('button', { name: /upload fit files/i })).toBeVisible();
   });
 
   test("changing FTP in settings saves it as today's entry", async ({ page }) => {
@@ -128,5 +194,34 @@ test.describe('Thresholds editor on phone', () => {
     await dialog.getByRole('button', { name: 'Drag to close' }).tap();
     await expect(dialog).toHaveCount(0);
     await expect(restTile).toContainText('50');
+  });
+
+  test('the map pans under the open card; the grabber closes it and the pill reopens the same question', async ({
+    page,
+  }) => {
+    await startOnboarding(page, 'FIT files');
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'You and your heart rate' })).toBeVisible();
+    await page.getByRole('radio', { name: 'Male', exact: true }).click();
+    await page.getByLabel(/^Resting HR/).fill('50');
+
+    await page.mouse.move(195, 120);
+    await page.mouse.down();
+    await page.mouse.move(260, 200, { steps: 5 });
+    await page.mouse.up();
+    await expect(dialog).toBeVisible();
+
+    await dialog.getByRole('button', { name: 'Drag to close' }).tap();
+    await expect(dialog).toHaveCount(0);
+
+    const pill = page.getByRole('button', { name: 'Continue setup · 2/4' });
+    await pill.tap();
+    await expect(dialog.getByRole('heading', { name: 'You and your heart rate' })).toBeVisible();
+    await expect(page.getByLabel(/^Resting HR/)).toHaveValue('50');
+    await expect(page.getByRole('radio', { name: 'Male', exact: true })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 });

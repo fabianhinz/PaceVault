@@ -4,7 +4,7 @@
 
 export const SPORTS = ['running', 'cycling'] as const;
 export type Sport = (typeof SPORTS)[number];
-export type Gender = 'male' | 'female' | 'other';
+export type Gender = 'male' | 'female';
 
 export type FormStatus = 'detraining' | 'fresh' | 'neutral' | 'optimal' | 'overload';
 

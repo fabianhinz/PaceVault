@@ -33,6 +33,11 @@ const migrateSessionsState = (persisted: unknown, version: number): unknown => {
   return { ...parsed.data, sessions };
 };
 
+export type RecomputedTrainingLoad = Pick<
+  TrainingSession,
+  'id' | 'tss' | 'stressMethod' | 'normalizedPower'
+>;
+
 interface SessionsState {
   sessions: TrainingSession[];
   addSessions: (
@@ -41,6 +46,7 @@ interface SessionsState {
   ) => void;
   deleteSession: (id: string) => void;
   commitReprocessedSessions: (sessions: TrainingSession[]) => void;
+  applyRecomputedTrainingLoad: (changes: RecomputedTrainingLoad[]) => void;
   markSessionSeen: (id: string) => void;
   clearAll: () => void;
 }
@@ -81,6 +87,19 @@ export const useSessionsStore = create<SessionsState>()(
               const reprocessed = reprocessedById.get(stored.id);
               if (reprocessed) draft.sessions[index] = reprocessed;
             });
+          });
+        },
+        applyRecomputedTrainingLoad: (changes) => {
+          const changeById = new Map(changes.map((c) => [c.id, c]));
+          set((draft) => {
+            for (const session of draft.sessions) {
+              const change = changeById.get(session.id);
+              if (change) {
+                session.tss = change.tss;
+                session.stressMethod = change.stressMethod;
+                session.normalizedPower = change.normalizedPower;
+              }
+            }
           });
         },
         markSessionSeen: (id) =>

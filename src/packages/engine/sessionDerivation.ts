@@ -9,7 +9,7 @@ export interface RecordDerivedFields {
   gap?: number;
 }
 
-export const SESSION_DERIVATION_VERSION = 3;
+export const SESSION_DERIVATION_VERSION = 4;
 
 export const isSessionOutdated = (session: { derivationVersion: number }): boolean => {
   return session.derivationVersion < SESSION_DERIVATION_VERSION;

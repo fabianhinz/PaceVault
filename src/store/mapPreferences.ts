@@ -19,7 +19,7 @@ const COLOR_MODES = [
   'speed',
   'wind',
 ] as const satisfies readonly ColorMode[];
-const LAP_SOURCES = ['off', 'device', 'splits'] as const satisfies readonly LapSource[];
+const LAP_SOURCES = ['off', 'device', 'splits', 'efforts'] as const satisfies readonly LapSource[];
 
 interface SportMapPreferences {
   colorMode: ColorMode;

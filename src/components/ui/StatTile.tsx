@@ -19,7 +19,6 @@ type StatTileProps = StatReadingProps &
   StatTileAction & {
     title: string;
     icon?: { icon: LucideIcon; color: string };
-    required?: boolean;
     secondary?: StatReadingProps;
     note?: ReactNode;
     style?: CSSProperties;
@@ -45,16 +44,36 @@ export const IconFact = (props: { icon: LucideIcon; label: string; time: string 
   </span>
 );
 
-export const Crumbs = (props: { items: ReactNode[] }) => (
-  <>
-    {props.items.map((item, i) => (
-      <Fragment key={i}>
-        {i > 0 && ' · '}
-        <span className="whitespace-nowrap">{item}</span>
-      </Fragment>
-    ))}
-  </>
+// `wrap`: every crumb carries its own leading "·" in a fixed slot, and the row is shifted left by
+// that slot inside an overflow-hidden box, so the separator of whichever crumb starts a line is clipped.
+const WrappingCrumbs = (props: { items: ReactNode[] }) => (
+  <span className="block min-w-0 overflow-hidden">
+    <span className="-ml-3.5 flex flex-wrap items-center">
+      {props.items.map((item, i) => (
+        <span key={i} className="inline-flex items-center whitespace-nowrap">
+          <span aria-hidden className="w-3.5 shrink-0 text-center">
+            ·
+          </span>
+          {item}
+        </span>
+      ))}
+    </span>
+  </span>
 );
+
+export const Crumbs = (props: { items: ReactNode[]; wrap?: boolean }) => {
+  if (props.wrap) return <WrappingCrumbs items={props.items} />;
+  return (
+    <>
+      {props.items.map((item, i) => (
+        <Fragment key={i}>
+          {i > 0 && ' · '}
+          <span className="whitespace-nowrap">{item}</span>
+        </Fragment>
+      ))}
+    </>
+  );
+};
 
 export const StatTile = (props: StatTileProps) => {
   const hasChart = props.children !== undefined;
@@ -78,11 +97,6 @@ export const StatTile = (props: StatTileProps) => {
         )}
         <Typography variant="overline" noWrap>
           {props.title}
-          {props.required && (
-            <span aria-hidden className="ml-0.5">
-              *
-            </span>
-          )}
         </Typography>
       </div>
       {props.metricId !== undefined && (

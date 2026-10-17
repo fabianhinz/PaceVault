@@ -127,6 +127,20 @@ describe('user store', () => {
     });
   });
 
+  it("drops a persisted profile with the removed gender 'other' instead of throwing", async () => {
+    const profile = await rehydrateFrom(
+      {
+        profile: {
+          ...flatProfile({}),
+          gender: 'other',
+          thresholds: { restHr: [{ date: 0, value: 48 }], maxHr: [{ date: 0, value: 186 }] },
+        },
+      },
+      3,
+    );
+    expect(profile).toBeNull();
+  });
+
   it('drops an invalid history entry on hydration and keeps the rest', async () => {
     const profile = await rehydrateFrom(
       {
