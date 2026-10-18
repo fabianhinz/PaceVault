@@ -1,0 +1,11 @@
+---
+import { ClipboardCheck, FileText, Monitor, Network } from '@lucide/astro';
+import type { Slot } from '../lib/board.ts';
+/** The four reserved slots (tech-tab round 3): Lucide monitor, file-text, network, clipboard-check. */
+const props = Astro.props as { slot: Slot };
+---
+
+{props.slot === 'mockup' && <Monitor size={14} aria-hidden="true" />}
+{props.slot === 'plan' && <FileText size={14} aria-hidden="true" />}
+{props.slot === 'tech' && <Network size={14} aria-hidden="true" />}
+{props.slot === 'review' && <ClipboardCheck size={14} aria-hidden="true" />}

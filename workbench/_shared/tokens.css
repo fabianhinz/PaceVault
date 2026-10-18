@@ -1,0 +1,84 @@
+/*
+ * Shared design tokens for every workbench page (board, mockup shell, review template).
+ * Names as in src/index.css, values from the repo; each group names its source.
+ */
+
+:root {
+  /* Palette: src/index.css:5-34 (mirrored in src/lib/tokens.ts) */
+  --color-gray-950: #0a0b0f;
+  --color-gray-900: #111318;
+  --color-gray-800: #1a1d24;
+  --color-gray-700: #252830;
+  --color-gray-600: #3a3e48;
+  --color-gray-500: #5c616e;
+  --color-gray-400: #8b8f9a;
+  --color-gray-300: #b0b4be;
+  --color-gray-100: #e5e7eb;
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-orange-500: #f97316;
+  --color-green-400: #4ade80;
+  --color-yellow-400: #facc15;
+  --color-red-400: #f87171;
+
+  /* Surfaces, border, text, accent: src/index.css:36-49 */
+  --color-surface-base: #030712;
+  --color-surface-sunken: var(--color-gray-950);
+  --color-surface: var(--color-gray-900);
+  --color-surface-elevated: var(--color-gray-800);
+  --color-border: var(--color-gray-700);
+  --color-surface-overlay: var(--color-gray-700);
+  --color-text-primary: var(--color-gray-100);
+  --color-text-secondary: var(--color-gray-300);
+  --color-text-tertiary: var(--color-gray-400);
+  --color-text-quaternary: var(--color-gray-500);
+  --color-accent: var(--color-blue-500);
+  --color-accent-hover: var(--color-blue-400);
+  --color-accent-muted: #3b82f633; /* src/index.css:52 */
+
+  /* Status icons only: src/index.css:54-78 */
+  --color-status-neutral: var(--color-gray-400);
+  --color-status-info: var(--color-blue-400);
+  --color-status-success: var(--color-green-400);
+  --color-status-warning: var(--color-yellow-400);
+  --color-status-warning-muted: #eab30833;
+  --color-status-success-muted: #22c55e33;
+  --color-status-danger: var(--color-red-400);
+  --color-status-danger-muted: #ef444433;
+  --color-chart-grade: #a78bfa;
+
+  /* Spacing + radii: src/index.css:90-101 */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-12: 48px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Surface literals: src/components/ui/Card.tsx:3-13
+     (border-white/10, bg-white/5, floating shadow, scrimClass black/40 + backdrop-blur-sm = 8px) */
+  --wb-hairline: rgb(255 255 255 / 0.1);
+  --wb-tile-bg: rgb(255 255 255 / 0.05);
+  --wb-floating-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+  --wb-scrim-bg: rgb(0 0 0 / 0.4);
+  --wb-blur-sm: 8px;
+  --wb-floating-bg: color-mix(in srgb, var(--color-surface) 85%, transparent); /* floatingClass */
+  --wb-blur-xl: 24px;
+
+  /* Type: Tailwind v4 defaults used by src/components/ui/Typography.tsx:4-17 */
+  --font-sans: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-2xl: 1.5rem;
+  --leading-5: 1.25rem;
+  --leading-6: 1.5rem;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+}

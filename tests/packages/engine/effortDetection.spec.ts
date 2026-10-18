@@ -58,7 +58,7 @@ interface RideOptions {
   noHr?: boolean;
 }
 
-/** Synthetic 1 Hz ride, ported from mockups/dynamic-efforts (`finishRide`). */
+/** Synthetic 1 Hz ride. */
 const ride = (options: RideOptions): SessionRecord[] => {
   const power: number[] = [];
   for (const segment of options.segments) {

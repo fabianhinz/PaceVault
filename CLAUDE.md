@@ -71,9 +71,9 @@ Specific guidelines for features, testing, and state management are located in t
 
 > **Plan first, then build.** The owner creates branches and commits; Claude leaves all changes in the working tree.
 
-For a UI change without a settled design, first run the `explore-ui` skill (`.claude/skills/explore-ui/SKILL.md`): research and mockup rounds that end in the plan below.
+All feature work lives in `workbench/<feature>/` (`plan.md`, `mockup/`, `research/`, `review/`). The backlog is the board in `workbench/site/` (Astro, `vp run workbench`), which reads and writes the Markdown files; a `PostToolUse` hook checks every plan, `tech.md` and `ideas.md` edit, and `vp run workbench:check` validates plans and mockups; loose ideas go in `workbench/ideas.md`. Start any feature work through the `feature` skill (`.claude/skills/feature/SKILL.md`). It reads `status:` in the plan's frontmatter and hands over to the stage skill. `ready` and `done` are owner-only; a `PreToolUse` hook (`scripts/statusGuard.ts`) enforces the status gates.
 
-1. **Plan**: Write a plan in `./plans/<feature-name>.md` detailing context, approach, files to modify, and verification steps. Review with the user before writing code.
+1. **Plan**: `workbench/<feature>/plan.md` with context, decisions, approach, files, tests and verification. Review it with the owner; no code before "lets dev".
 2. **Implement**: Write the code and the tests `tests/CLAUDE.md` calls for.
 3. **Verify**: Run the following suite:
 
@@ -83,6 +83,8 @@ For a UI change without a settled design, first run the `explore-ui` skill (`.cl
    vp exec playwright test  # playwright e2e
    vp build           # production build
    ```
+
+4. **Review**: `workbench/<feature>/review/index.html` from `workbench/_shared/review-template.html`; screenshots via `vp run workbench:capture`.
 
 ## 6. Colour Palette
 

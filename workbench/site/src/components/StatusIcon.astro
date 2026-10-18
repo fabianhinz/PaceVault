@@ -1,0 +1,6 @@
+---
+import { statusIcon, type Bucket } from '../lib/board.ts';
+const props = Astro.props as { bucket: Bucket };
+---
+
+<Fragment set:html={statusIcon(props.bucket)} />

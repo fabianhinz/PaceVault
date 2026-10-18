@@ -1,0 +1,55 @@
+flowchart TB
+subgraph L_ui["components"]
+n0["layout/"]
+end
+subgraph L_feature["features"]
+subgraph F_sessions["sessions/"]
+n1["hooks/useTrainingLoadRecomputeEffect.ts"]
+n2["recomputeTrainingLoad.ts"]
+n3["reprocessSessions.ts"]
+end
+end
+subgraph L_store["store"]
+n8["importProgress.ts"]
+n9["sessionReprocessing.ts"]
+n10["sessions.ts"]
+n11["user.ts"]
+end
+subgraph L_lib["lib"]
+n4["lib/sessionStress.ts"]
+n5["lib/thresholdsAt.ts"]
+n6["lib/webLock.ts"]
+end
+subgraph L_engine["engine"]
+n7["packages/engine/"]
+end
+subgraph L_other["other"]
+n12["types/"]
+end
+n0-->n1
+n3-->n4
+n4-->n5
+n4-->n7
+n4-->n12
+n1-->n2
+n1-->n4
+n1-->n9
+n1-->n11
+n2-->n3
+n2-->n4
+n2-->n6
+n2-->n7
+n2-->n8
+n2-->n10
+n2-->n11
+n2-->n12
+subgraph missingPlanned["planned, not in the graph"]
+miss0["parsers/fit.ts"]
+miss1["components/ui/ImportProgressOverlay.tsx"]
+end
+class miss0,miss1 missing
+class n1,n2,n4 focus
+class n5,n6,n8,n9,n11,n12 added
+classDef focus stroke:#e5e7eb,stroke-width:2px
+classDef added fill:#eab30833,stroke:#facc15,color:#facc15,stroke-width:2px
+classDef missing fill:none,stroke:#5c616e,stroke-dasharray:4 3,color:#8b8f9a

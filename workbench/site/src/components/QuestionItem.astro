@@ -1,0 +1,32 @@
+---
+import { inlineMarkdown, type QuestionView } from '../lib/board.ts';
+import DeleteButton from './DeleteButton.astro';
+
+/** An open question with "Answer…" (opens its answer dialog, Q11 b), or an answered one; Delete on hover. */
+type Props = { feature: string; question: QuestionView };
+const props = Astro.props as Props;
+const q = props.question;
+const dialogId = `ans-${props.feature}-${q.id}`;
+---
+
+<li class:list={['wbx-q', { 'is-answered': !q.open }]}>
+  <div class="wbx-q__line">
+    <span class="wbx-q__id">{q.id}</span>
+    {q.open && <span class="wbx-q__state">open</span>}
+    {!q.open && <span class="wbx-q__state">answered {q.date}</span>}
+    {q.open && (
+      <span class="wbx-q__text">
+        <Fragment set:html={inlineMarkdown(q.question)} />
+        {q.options.length > 0 && <span class="wb-muted"> {q.options.map((option) => `(${option.id})`).join(' ')}</span>}
+      </span>
+    )}
+    {!q.open && <span class="wbx-q__text" set:html={inlineMarkdown(q.body)} />}
+    <span class="wbx-acts"><DeleteButton action="plan.deleteQuestion" fields={{ feature: props.feature, expected: q.raw }} label={`Delete ${q.id} with its comments`} /></span>
+  </div>
+  {q.comments.length > 0 && <ul class="wbx-q__comments">{q.comments.map((comment) => <li set:html={inlineMarkdown(comment)} />)}</ul>}
+  {q.open && (
+    <div class="wb-form__row wb-form__row--end">
+      <button type="button" class="wb-btn wb-btn--xs" commandfor={dialogId} command="show-modal">Answer…</button>
+    </div>
+  )}
+</li>

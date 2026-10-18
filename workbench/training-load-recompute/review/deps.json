@@ -1,0 +1,33 @@
+{
+  "feature": "training-load-recompute",
+  "generated": "2026-10-18",
+  "command": "depcruise --config .dependency-cruiser.cjs --output-type json src",
+  "focus": [
+    "src/lib/sessionStress.ts",
+    "src/features/sessions/recomputeTrainingLoad.ts",
+    "src/features/sessions/hooks/useTrainingLoadRecomputeEffect.ts"
+  ],
+  "nodes": 13,
+  "edges": 17,
+  "added": [
+    "src/lib/thresholdsAt.ts",
+    "src/lib/webLock.ts",
+    "src/store/importProgress.ts",
+    "src/store/sessionReprocessing.ts",
+    "src/store/user.ts",
+    "src/types"
+  ],
+  "missing": [
+    "src/parsers/fit.ts",
+    "src/components/ui/ImportProgressOverlay.tsx"
+  ],
+  "boundary": {
+    "rules": [
+      "engine-is-pure",
+      "store-no-features"
+    ],
+    "violations": [],
+    "modules": 463,
+    "dependencies": 2078
+  }
+}

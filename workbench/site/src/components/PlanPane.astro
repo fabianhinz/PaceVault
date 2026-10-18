@@ -1,0 +1,65 @@
+---
+import { inlineMarkdown, type FeatureView } from '../lib/board.ts';
+import CheckRow from './CheckRow.astro';
+import QuestionItem from './QuestionItem.astro';
+
+/** The Plan tab: Next and Depends on, the three lifted boxes, then the plan without them. */
+type Props = { feature: FeatureView };
+const props = Astro.props as Props;
+const f = props.feature;
+const open = f.questions.filter((question) => question.open);
+const answered = f.questions.filter((question) => !question.open);
+const ticked = f.checks.filter((item) => item.checked).length;
+const toConfirm = f.agent.filter((item) => !item.checked).length;
+---
+
+<article class="wb-md wbx-plan">
+  <section class="wbx-state" aria-label="State">
+    <div class="wbx-row">
+      <span class="wb-state__k">Next</span>
+      <span class="wbx-state__v" set:html={inlineMarkdown(f.data.next)} />
+    </div>
+    <div class="wbx-row">
+      <span class="wb-state__k">Depends on</span>
+      <span class="wbx-state__v">
+        {f.deps.length === 0 && <span class="wb-muted">none</span>}
+        {f.deps.map((dep) => <span class="wbx-chip">{dep}</span>)}
+      </span>
+    </div>
+  </section>
+
+  <section class="wb-checks" aria-label="Real-data checks">
+    <div class="wbx-box__head">
+      <p class="wb-checks__title">Real-data checks</p>
+      {f.checks.length > 0 && <span class="wbx-box__count">{ticked} / {f.checks.length} ticked</span>}
+    </div>
+    {f.checks.length === 0 && <p class="wbx-empty">None yet.</p>}
+    {f.checks.length > 0 && <ul class="wbx-items">{f.checks.map((item) => <CheckRow feature={f.folder} item={item} kind="check" />)}</ul>}
+  </section>
+
+  <section class="wb-checks wb-checks--agent" aria-label="Agent decisions">
+    <div class="wbx-box__head">
+      <p class="wb-checks__title">Agent decisions to confirm</p>
+      {f.agent.length > 0 && <span class="wbx-box__count">{toConfirm} to confirm</span>}
+    </div>
+    {f.agent.length === 0 && <p class="wbx-empty">None.</p>}
+    {f.agent.length > 0 && <ul class="wbx-items">{f.agent.map((item) => <CheckRow feature={f.folder} item={item} kind="agent" />)}</ul>}
+  </section>
+
+  <section class="wbx-qbox" aria-label="Open questions">
+    <div class="wbx-box__head">
+      <p class="wb-checks__title">Open questions</p>
+      <span class="wbx-box__count">{open.length} open · {answered.length} answered</span>
+    </div>
+    {open.length === 0 && <p class="wbx-empty">No open questions.</p>}
+    {open.length > 0 && <ul class="wbx-items">{open.map((question) => <QuestionItem feature={f.folder} question={question} />)}</ul>}
+    {answered.length > 0 && (
+      <details class="wbx-answered-toggle">
+        <summary class="wb-btn wb-btn--xs wb-btn--ghost">{answered.length} answered</summary>
+        <ul class="wbx-items">{answered.map((question) => <QuestionItem feature={f.folder} question={question} />)}</ul>
+      </details>
+    )}
+  </section>
+
+  <Fragment set:html={f.planHtml} />
+</article>

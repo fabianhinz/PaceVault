@@ -1,0 +1,58 @@
+{
+  "feature": "onboarding-redesign",
+  "generated": "2026-10-18",
+  "command": "depcruise --config .dependency-cruiser.cjs --output-type json src",
+  "focus": [
+    "src/store/onboarding.ts",
+    "src/features/onboarding/OnboardingFlow.tsx",
+    "src/features/onboarding/OnboardingIntro.tsx",
+    "src/features/onboarding/OnboardingStep.tsx",
+    "src/features/onboarding/OnboardingProgress.tsx",
+    "src/features/onboarding/OnboardingCrumbs.tsx",
+    "src/features/onboarding/LogoLoader.tsx",
+    "src/features/onboarding/hooks/useStepFocusEffect.ts",
+    "src/features/map/previewDrawIn.ts",
+    "src/features/map/hooks/useOnboardingPreviewRoutes.ts",
+    "src/features/map/hooks/useOnboardingPreviewLayer.ts",
+    "src/features/map/hooks/useOnboardingPreviewCameraEffect.ts",
+    "src/components/ui/HelperText.tsx",
+    "src/features/settings/PaceEstimateButton.tsx"
+  ],
+  "nodes": 44,
+  "edges": 74,
+  "added": [
+    "src/components/ui/Button.tsx",
+    "src/components/ui/ExternalLink.tsx",
+    "src/components/ui/FloatingPill.tsx",
+    "src/components/ui/IconTile.tsx",
+    "src/components/ui/Label.tsx",
+    "src/components/ui/List.tsx",
+    "src/components/ui/SegmentBar.tsx",
+    "src/components/ui/Typography.tsx",
+    "src/features/demo",
+    "src/features/map/fitPadding.ts",
+    "src/features/map/mapPadding.ts",
+    "src/features/map/trackColors.ts",
+    "src/features/sessions",
+    "src/features/settings/PaceEstimatorDialog.tsx",
+    "src/store/importProgress.ts",
+    "src/store/layout.ts",
+    "src/store/sessions.ts"
+  ],
+  "missing": [
+    "src/components/layout/AppLayout.tsx",
+    "src/features/settings/ThresholdsSection.tsx",
+    "src/features/settings/ThresholdTiles.tsx",
+    "src/features/filters/FilterList.tsx",
+    "src/store/user.ts"
+  ],
+  "boundary": {
+    "rules": [
+      "engine-is-pure",
+      "store-no-features"
+    ],
+    "violations": [],
+    "modules": 463,
+    "dependencies": 2078
+  }
+}

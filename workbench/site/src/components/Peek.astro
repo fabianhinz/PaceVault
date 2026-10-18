@@ -1,0 +1,17 @@
+---
+import type { Bucket } from '../lib/board.ts';
+import StatusIcon from './StatusIcon.astro';
+
+/** A slice of the neighbour's dialog in the same column; click it or press [ / ] to switch. */
+type Props = { title: string; bucket: Bucket; step: -1 | 1 };
+const props = Astro.props as Props;
+const prev = props.step === -1;
+const word = prev ? 'Previous' : 'Next';
+const key = prev ? '[' : ']';
+---
+
+<button type="button" class={`wb-peek wb-peek--${prev ? 'prev' : 'next'}`} data-step={props.step} aria-label={`${word}: ${props.title}`} title={`${word}: ${props.title}  ${key}`}>
+  <span class="wb-peek__chev" aria-hidden="true">{prev ? '‹' : '›'}</span>
+  <StatusIcon bucket={props.bucket} />
+  <span class="wb-peek__title">{props.title}</span>
+</button>

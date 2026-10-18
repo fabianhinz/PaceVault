@@ -25,7 +25,7 @@ export default defineConfig({
     tabWidth: 2,
     arrowParens: 'always',
     endOfLine: 'lf',
-    ignorePatterns: ['mockups'],
+    ignorePatterns: ['workbench/*/mockup', 'workbench/*/review/deps.*'],
   },
   lint: {
     plugins: ['oxc', 'typescript', 'unicorn', 'react'],
@@ -36,7 +36,14 @@ export default defineConfig({
       'typescript/no-floating-promises': 'off',
       '@typescript-eslint/no-non-null-assertion': 'error',
     },
-    ignorePatterns: ['dist', '**/paraglide', 'project.inlang', 'e2e'],
+    ignorePatterns: [
+      'dist',
+      '**/paraglide',
+      'project.inlang',
+      'e2e',
+      'workbench',
+      '.claude/skills/*/references',
+    ],
     overrides: [
       {
         files: ['**/*.{ts,tsx}'],

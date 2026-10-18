@@ -1,0 +1,40 @@
+---
+import { inlineMarkdown, type QuestionView } from '../lib/board.ts';
+import WriteForm from './WriteForm.astro';
+
+/**
+ * The answer dialog of one open question (Q11 b): pick an option and add your words, or
+ * "Comment, keep open". Empty words quote the option letter.
+ */
+type Props = { feature: string; question: QuestionView };
+const props = Astro.props as Props;
+const q = props.question;
+const id = `ans-${props.feature}-${q.id}`;
+let placeholder = 'Your answer, quoted as Owner: "…"';
+if (q.options.length > 0) placeholder = 'Optional: empty quotes the letter, e.g. Owner: "a"';
+const file = `workbench/${props.feature}/plan.md`;
+---
+
+<dialog id={id} class="wbx-adlg" closedby="any" aria-label={`Answer ${q.id}`}>
+  <p class="wbx-pop__title">{q.id} · <code>{file}</code><span class="wbx-grow"></span><button type="button" class="wb-dlg__close" commandfor={id} command="close" aria-label="Close">✕</button></p>
+  <p set:html={inlineMarkdown(q.question)} />
+  <WriteForm action="plan.answerQuestion" class="wb-form wb-form--bare" fields={{ feature: props.feature, expected: q.first }}>
+    {q.options.length > 0 && (
+      <fieldset class="wbx-opts">
+        {q.options.map((option) => (
+          <label class="wbx-opt"><input type="radio" name="option" value={option.id} /><span><strong>({option.id})</strong> <Fragment set:html={inlineMarkdown(option.text)} /></span></label>
+        ))}
+      </fieldset>
+    )}
+    <div><label class="wb-label">Your words</label><input class="wb-input" name="words" placeholder={placeholder} /><p class="wb-hint"></p></div>
+    <div class="wb-form__row">
+      <span class="wbx-quick">
+        <button type="button" class="wb-btn wb-btn--xs" data-quick="you decide">you decide</button>
+        <button type="button" class="wb-btn wb-btn--xs" data-quick="i don't get it">i don't get it</button>
+      </span>
+      <span class="wbx-grow"></span>
+      <button type="submit" class="wb-btn" data-action="plan.commentQuestion" data-expected={q.raw}>Comment, keep open</button>
+      <button type="submit" class="wb-btn wb-btn--primary">Answer</button>
+    </div>
+  </WriteForm>
+</dialog>

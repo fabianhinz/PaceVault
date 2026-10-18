@@ -1,0 +1,39 @@
+---
+import type { CheckItem } from '../../../../scripts/workbenchFrontmatter.ts';
+import { inlineMarkdown } from '../lib/board.ts';
+import DeleteButton from './DeleteButton.astro';
+import WriteForm from './WriteForm.astro';
+
+/** One real-data check or agent decision: tick box, text, Delete on hover (`actions={false}`: none). */
+type Props = { feature: string; item: CheckItem; kind: 'check' | 'agent'; actions?: boolean };
+const props = Astro.props as Props;
+const item = props.item;
+const first = item.raw.split('\n')[0];
+const agent = props.kind === 'agent';
+const why = /\s(Agent:[\s\S]*)$/.exec(item.text);
+let what = item.text;
+if (agent && why) what = item.text.slice(0, why.index);
+let toggle = 'plan.toggleCheck';
+let remove = 'plan.deleteCheck';
+let label = 'Delete this real-data check';
+if (agent) {
+  toggle = 'plan.toggleAgentDecision';
+  remove = 'plan.deleteAgentDecision';
+  label = 'Delete this agent decision';
+}
+---
+
+<li>
+  <div class:list={['wbx-item', { 'is-done': item.checked }]}>
+    <WriteForm action={toggle} class="wbx-inline" fields={{ feature: props.feature, expected: first, checked: String(!item.checked) }}>
+      <button type="submit" class="wbx-box" role="checkbox" aria-checked={item.checked} aria-label={item.checked ? 'Untick' : 'Tick'}>{item.checked ? '✓' : ''}</button>
+    </WriteForm>
+    <span class="wbx-item__text">
+      <Fragment set:html={inlineMarkdown(what)} />
+      {agent && why && <span class="wb-checks__why" set:html={inlineMarkdown(why[1])} />}
+    </span>
+    {props.actions !== false && (
+      <span class="wbx-acts"><DeleteButton action={remove} fields={{ feature: props.feature, expected: item.raw }} label={label} /></span>
+    )}
+  </div>
+</li>

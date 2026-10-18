@@ -36,3 +36,9 @@ scripts/readme/out/
 /playwright/.cache/
 
 .env.local
+
+# Astro generated types (workbench/site)
+workbench/site/.astro
+
+# Feature folders deleted on the board, kept for Undo
+workbench/.trash/
