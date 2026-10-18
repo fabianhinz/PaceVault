@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { profileHistoryDomain, profileHistorySeries, sparklinePath } from '@/lib/profileHistory.ts';
 
 const DAY = 86_400_000;

@@ -10,6 +10,7 @@ Each point stands on its own: what, where, next step.
 
 - **TSS only for rides (runs on TRIMP):** cycling FTP is applied to running power today (`running.fit`: 78 TRIMP → 206 TSS). Decide whether runs use TRIMP only; also fixes the onboarding FTP hint (R-O7).
 - **Move memory rules into the workflow skills:** today the skills reference `feedback_*` memory files.
+- **Rules vs code:** CLAUDE.md says no destructuring, no snapshots, arrow functions only and one shared hooks folder, but `src/components/ui` uses `{ className, ...rest } = props` (9 files, e.g. `src/components/ui/Tabs.tsx:6`), `tests/packages/gpx/__snapshots__/` exists, 6 `function` declarations sit in tests (`tests/factories/sessions.ts:6`), and `src/hooks/useMetrics.ts` sits next to `src/lib/hooks/`. Decide per item: fix the code or document the exception. Spun off from repo-restructure.
 - **Stale memory paths:** `feedback_impl_review_and_acceptance` (says reviews are "not committed" and names `reviews/`, `mockups/`, `plans/<feature>.md`) and `feedback_lets_dev_gate` ("Plans in ./plans") still name the old paths. Until fixed, the skills state "workbench paths override path mentions in memory".
 
 ## To investigate
@@ -32,3 +33,4 @@ Each point stands on its own: what, where, next step.
 ## Loose ideas
 
 - **3d map on session details page**
+- **Rename "feature" to "item" in the workflow:** backlog items are features and bugs; skill names (`feature-*`), `feature-worker` and the skill texts still say "feature". Follow-up to repo-restructure, which only changes the paths.

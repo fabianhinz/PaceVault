@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { buildSessionGpx, buildRouteGpx, buildRouteSegmentGpx } from '@/lib/gpxExport.ts';
 import { buildGpxFilename } from '@/packages/gpx/buildGpx.ts';
 import type { RoutePoint } from '@/packages/gpx/routeGeometry.ts';

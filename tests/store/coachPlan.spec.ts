@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import type { WeeklyPlan } from '@/types/index.ts';
 

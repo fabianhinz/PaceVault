@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { formatSessionName, formatSessionZoneLabel } from '@/lib/sessionTitleFormatter.ts';
 
 const atHour = (hour: number): number => new Date(2025, 0, 15, hour, 0, 0).getTime();

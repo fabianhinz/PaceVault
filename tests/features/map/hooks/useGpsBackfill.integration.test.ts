@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
 import { renderHook, act } from '@testing-library/react';
 import { useGPSBackfill } from '@/features/map/hooks/useGpsBackfill.ts';
 import { useSessionsStore } from '@/store/sessions.ts';

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { zoneLineStroke, zoneScale, type ZoneScale } from '@/lib/zoneColors.ts';
 
 const hr = zoneScale('hr', { maxHr: 200, restHr: 60 }) as ZoneScale;

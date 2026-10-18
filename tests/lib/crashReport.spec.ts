@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { buildIssueUrl } from '@/lib/crashReport.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 

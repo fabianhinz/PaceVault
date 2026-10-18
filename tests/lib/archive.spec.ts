@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { gzipSync, zipSync } from 'fflate';
 import { extractArchiveEntry, isArchiveFile, listActivityEntries } from '@/lib/archive.ts';
 

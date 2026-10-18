@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { encode } from '@googlemaps/polyline-codec';
 import { buildPreviewPasses, slicePath, type PreviewPass } from '@/features/map/previewDrawIn.ts';
 

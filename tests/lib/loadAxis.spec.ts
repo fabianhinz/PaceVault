@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { buildLoadAxis, loadBucketKey } from '@/lib/loadAxis.ts';
 
 const days = ['2026-02-27', '2026-02-28', '2026-03-01', '2026-03-02', '2026-03-03'].map((date) => ({

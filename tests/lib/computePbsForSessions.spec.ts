@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { computePBsForSessions } from '@/lib/records.ts';
 import { makeCyclingRecords, makeRunningRecords } from '@tests/factories/records.ts';
 import type { PersonalBest } from '@/packages/engine/types.ts';

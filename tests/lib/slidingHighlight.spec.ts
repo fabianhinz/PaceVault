@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { highlightRect } from '@/lib/slidingHighlight.ts';
 
 const resolve = (length: { px: number; percent: number }, trackWidth: number) =>

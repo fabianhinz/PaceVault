@@ -42,3 +42,4 @@ workbench/site/.astro
 
 # Feature folders deleted on the board, kept for Undo
 workbench/.trash/
+.vitest/

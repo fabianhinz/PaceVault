@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { useToastStore, toast } from '@/components/ui/toastStore.ts';
 
 describe('toastStore', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { QueryClient } from '@tanstack/react-query';
 import {
   PERSONAL_BESTS_KEY,

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { intervalsSyncWindowOldest } from '@/lib/intervalsSyncWindow.ts';
 import { makeSession } from '@tests/factories/sessions.ts';
 

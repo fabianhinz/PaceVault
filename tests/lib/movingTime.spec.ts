@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { movingSeconds, sessionMovingTime } from '@/lib/movingTime.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { METRIC_EXPLANATIONS, type MetricId, type MetricExplanation } from '@/lib/explanations.ts';
 
 const ALL_METRIC_IDS: MetricId[] = [

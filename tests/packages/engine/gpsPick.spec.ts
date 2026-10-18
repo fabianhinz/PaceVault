@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { segmentIntersectsBounds } from '@/packages/engine/gps.ts';
 import type { GPSBounds } from '@/packages/engine/types.ts';
 

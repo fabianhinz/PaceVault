@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vite-plus/test';
 import { z } from 'zod';
 import { recomputeTrainingLoad } from '@/features/sessions/recomputeTrainingLoad.ts';
 import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';

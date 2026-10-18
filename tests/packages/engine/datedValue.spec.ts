@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { upsertDatedValue, valueAt } from '@/packages/engine/datedValue.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;

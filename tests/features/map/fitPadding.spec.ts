@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { fitPadding, MIN_FIT_BOX, PHONE_FIT_MARGIN } from '@/features/map/fitPadding.ts';
 import { computeSheetLayout, sheetFitHeight } from '@/lib/sheetPosition.ts';
 

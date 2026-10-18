@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
 import { SESSIONS_DERIVATION_MARKER_KEY } from '@/lib/guardedSessionsStorage.ts';

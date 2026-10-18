@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { analyzeLaps, detectIntervals } from '@/lib/laps.ts';
 import type { SessionLap } from '@/packages/engine/types.ts';
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { windowedGradients, type GradientPoint } from '@/packages/engine/gradient.ts';
 
 const flat = (metres: number, elevation = 100): GradientPoint[] =>

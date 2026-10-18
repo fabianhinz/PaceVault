@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, afterEach, vi } from 'vitest';
+import { beforeEach, afterEach, vi } from 'vite-plus/test';
 import type { StoreApi } from 'zustand';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';

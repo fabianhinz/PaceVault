@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { useUserStore } from '@/store/user.ts';
 import { makeUserProfile } from '@tests/factories/profiles.ts';
 import { getDB } from '@/lib/db';

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { aerobicDecoupling } from '@/packages/engine/decoupling.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { lapSubPath, nearestRecordIndex } from '@/features/map/lapPath.ts';
 import { buildSportColoredPath } from '@/features/map/zoneColoredPath.ts';
 import { lapIndexAtRecord, type LapSpan } from '@/lib/lapRanges.ts';

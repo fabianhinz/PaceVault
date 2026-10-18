@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { buildMoreStats, moreStatsTopics, peakScale, pickPeak, pickZone } from '@/lib/moreStats.ts';
 import type { ResolvedThresholds } from '@/lib/thresholdsAt.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vite-plus/test';
 import { validateRecords } from '@/lib/validation.ts';
 import { sensorWarningText } from '@/features/sessions/session/sensorWarningText.ts';
 import { overwriteGetLocale } from '@/paraglide/runtime.js';

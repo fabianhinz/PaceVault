@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { computeRecordExtremes } from '@/lib/recordExtremes.ts';
 import type { SessionRecord } from '@/packages/engine/types.ts';
 

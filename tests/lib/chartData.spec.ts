@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { buildRouteChartRows, buildSessionChartRows, hasSeriesValues } from '@/lib/chartData.ts';
 import { buildRouteProfile } from '@/packages/gpx/routeProfile.ts';
 import { buildSessionTerrain } from '@/lib/sessionTerrain.ts';

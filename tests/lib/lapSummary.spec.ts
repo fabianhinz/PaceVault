@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { summarizeLaps } from '@/lib/lapSummary.ts';
 import type { LapSet } from '@/lib/lapSet.ts';
 import type { LapAnalysis } from '@/lib/laps.ts';

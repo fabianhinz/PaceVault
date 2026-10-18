@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { wattsPerKgHistory } from '@/packages/engine/wattsPerKg.ts';
 
 const day = (year: number, month: number, date: number) =>

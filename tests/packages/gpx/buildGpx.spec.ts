@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { buildGpxString, buildGpxFilename } from '@/packages/gpx/buildGpx.ts';
 import type { GpxMetadata, GpxPoint } from '@/packages/gpx/buildGpx.ts';
 

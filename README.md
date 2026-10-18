@@ -46,7 +46,7 @@ How each metric is calculated, and the research behind it: [`src/packages/engine
 
 > requires vite+ - see: <https://viteplus.dev/guide/>, <https://viteplus.dev/guide/ide-integration#ide-integration>
 
-1. Fork and clone the repo
+1. Fork and clone the repo. vp installs and uses the Node version from `.node-version`; no separate Node manager is needed.
 2. `vp install && vp dev`
 3. Create a branch: `git checkout -b feat/my-thing`
 4. Read `CLAUDE.md` for architecture rules before writing code

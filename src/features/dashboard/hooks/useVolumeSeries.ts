@@ -53,15 +53,13 @@ export const useVolumeSeries = (axis: DashboardAxis): VolumeSeries => {
       if (total === undefined || total.value === undefined) return null;
       return toVolumeDisplay(metric, total.value);
     };
-    const rows = through.map(
-      (date, i): VolumeRow => ({
-        date,
-        current: display(totals.current[i]),
-        before: display(totals.before?.[i]),
-        running: display(bySport.get('running')?.[i]),
-        cycling: display(bySport.get('cycling')?.[i]),
-      }),
-    );
+    const rows = through.map((date, i): VolumeRow => ({
+      date,
+      current: display(totals.current[i]),
+      before: display(totals.before?.[i]),
+      running: display(bySport.get('running')?.[i]),
+      cycling: display(bySport.get('cycling')?.[i]),
+    }));
     let beforeLabel: string | null = null;
     if (totals.beforeWindow !== null) {
       beforeLabel = formatVolumeWindow(totals.beforeWindow);

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { effortPattern, effortWorkAverage } from '@/lib/effortLaps.ts';
 import type { EffortBlock, EffortKind } from '@/packages/engine/effortDetection.ts';
 import type { LapAnalysis } from '@/lib/laps.ts';

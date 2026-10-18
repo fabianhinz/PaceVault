@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { getFormStatus, getInjuryRisk, getLoadState } from '@/packages/engine/coaching.ts';
 
 describe('getFormStatus', () => {

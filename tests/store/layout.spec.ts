@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { useLayoutStore } from '@/store/layout.ts';
 
 const migrate = (persisted: Record<string, unknown>, version: number) => {

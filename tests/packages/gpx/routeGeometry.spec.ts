@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { decode } from '@googlemaps/polyline-codec';
 import { buildRouteGeometry } from '@/packages/gpx/routeGeometry.ts';
 import type { ParsedGpxPoint } from '@/packages/gpx/parseGpx.ts';

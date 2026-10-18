@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 
 describe('import-progress store', () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { useMemo } from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { simplifyGpxPoints } from '@/packages/gpx/simplifyGpxPoints.ts';
 import type { GpxPoint } from '@/packages/gpx/buildGpx.ts';
 

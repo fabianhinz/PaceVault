@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { groupSteps } from '@/lib/groupSteps.ts';
 import type { WorkoutStep } from '@/types/index.ts';
 

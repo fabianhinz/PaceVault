@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { markSessionsOutdated } from '@/lib/debug/migrationCommands.ts';
 import { SESSION_DERIVATION_VERSION } from '@/packages/engine/sessionDerivation.ts';
 

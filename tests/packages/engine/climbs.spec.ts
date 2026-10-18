@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { climbingRate, detectClimbs } from '@/packages/engine/climbs.ts';
 import { windowedGradients } from '@/packages/engine/gradient.ts';
 import type { SessionRecord, Sport } from '@/packages/engine/types.ts';

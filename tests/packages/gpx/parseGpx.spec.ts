@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { parseGpx } from '@/packages/gpx/parseGpx.ts';
 
 const gpx = (body: string): string =>

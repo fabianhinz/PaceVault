@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { pickBoundsFromCorners, filterTracksByPickBounds } from '@/features/map/trackPicking.ts';
 import type { PickableTrack } from '@/features/map/trackPicking.ts';
 import type { GPSBounds } from '@/packages/engine/types.ts';

@@ -15,3 +15,4 @@
 - **Existing tests**: Don't add tests to files you didn't otherwise touch. If a test fails because behaviour changed on purpose, update or delete it — don't add a sibling.
 - **Naming**: Files live in `tests/` as `*.spec.ts` or `*.integration.test.ts`.
 - **Location**: Tests mirror the source folder structure: `src/<path>/<file>.ts` is tested in `tests/<path>/`, e.g. `src/packages/engine/zones.ts` → `tests/packages/engine/zones.spec.ts`.
+- **Imports**: Test APIs (`describe`, `it`, `expect`, `vi`, …) are imported from `vite-plus/test`, not `vitest`.

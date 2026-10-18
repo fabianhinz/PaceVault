@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { computeMetrics } from '@/packages/engine/metrics.ts';
 import { calculateTrainingEffect } from '@/packages/engine/trainingEffect.ts';
 import { ctlOnDate } from '@/lib/sessionFitness.ts';

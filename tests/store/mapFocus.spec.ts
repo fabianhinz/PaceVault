@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';

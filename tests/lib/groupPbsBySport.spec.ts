@@ -1,5 +1,5 @@
 import { v4 } from 'uuid';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { groupPBsBySport } from '@/lib/records.ts';
 import type { PersonalBest } from '@/packages/engine/types.ts';
 

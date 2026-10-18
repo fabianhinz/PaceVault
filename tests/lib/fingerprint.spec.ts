@@ -1,5 +1,5 @@
 import { v4 } from 'uuid';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { generateFingerprint, findDuplicates } from '@/lib/fingerprint.ts';
 import type { TrainingSession } from '@/packages/engine/types.ts';
 import { SESSION_DERIVATION_VERSION } from '@/packages/engine/sessionDerivation.ts';

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { segmentAtDistance } from '@/features/studio/markers/routeSegments.ts';
 
 const TOTAL = 10_000;

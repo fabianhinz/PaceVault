@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { computeRunningZones, getZoneForPace, getZoneMidPace } from '@/packages/engine/zones.ts';
 
 describe('computeRunningZones', () => {

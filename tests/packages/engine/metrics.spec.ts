@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { computeMetrics } from '@/packages/engine/metrics.ts';
 import { makeSession, makeSessionSequence } from '@tests/factories/sessions.ts';
 

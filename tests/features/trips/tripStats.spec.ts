@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { computeTripTotals } from '@/features/trips/tripStats.ts';
 import { makeSession } from '../../factories/sessions.ts';
 

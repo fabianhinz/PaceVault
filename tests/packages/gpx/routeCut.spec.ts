@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { decode } from '@googlemaps/polyline-codec';
 import { haversineM } from '@/packages/engine/gps.ts';
 import { parseGpx, type ParsedGpxPoint } from '@/packages/gpx/parseGpx.ts';

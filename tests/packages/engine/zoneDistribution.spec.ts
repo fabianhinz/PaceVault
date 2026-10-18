@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { secondsInZones } from '@/packages/engine/zoneDistribution.ts';
 
 const zoneIndexAt = (hr: number): number => {

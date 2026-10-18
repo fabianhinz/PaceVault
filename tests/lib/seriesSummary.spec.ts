@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { summarizeValues } from '@/lib/seriesSummary.ts';
 
 describe('summarizeValues', () => {

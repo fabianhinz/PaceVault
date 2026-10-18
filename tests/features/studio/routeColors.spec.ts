@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vite-plus/test';
 import { nextRouteColor, routeColorOrder } from '@/features/studio/routeColors.ts';
 
 describe('nextRouteColor', () => {

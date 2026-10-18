@@ -18,7 +18,7 @@
 | i18n          | Paraglide.js (`src/paraglide/`) — import messages from `@/paraglide/messages.js`                                                                                                            |
 | File parsing  | `fit-file-parser` for .FIT binaries                                                                                                                                                         |
 | Storage       | IndexedDB via `idb` — `kv` store for Zustand persist, `session-records` store for time-series (`src/lib/db.ts`)                                                                             |
-| Toolchain     | **Vite+** (`vp dev`, `vp build`, `vp lint`, `vp fmt`, `vp test`, `vp check`) wrapping pnpm                                                                                                  |
+| Toolchain     | **Vite+ 1.3** (`vp dev`, `vp build`, `vp lint`, `vp fmt`, `vp test`, `vp check`) wrapping pnpm; tests run on Vitest 5                                                                       |
 | Linting       | Oxlint (via Vite+) — configured in `.oxlintrc.json`                                                                                                                                         |
 | Formatting    | Oxfmt (via Vite+) — configured in `.oxfmtrc.jsonc`                                                                                                                                          |
 
