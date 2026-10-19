@@ -1,8 +1,13 @@
 {
   "files": [],
   "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" },
-    { "path": "./tsconfig.test.json" }
+    { "path": "./apps/web" },
+    { "path": "./packages/engine" },
+    { "path": "./packages/gpx" },
+    { "path": "./packages/i18n" },
+    { "path": "./packages/testing" },
+    { "path": "./packages/ui" },
+    { "path": "./tools/workbench" },
+    { "path": "./tools/docs" }
   ]
 }

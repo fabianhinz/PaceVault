@@ -2,7 +2,7 @@
 
 A local-first training log for runners and cyclists, right in your browser.
 
-![PaceVault features](./docs/readme/en_banner.png)
+![PaceVault features](./docs/banners/en_banner.png)
 
 **Try it: <https://pacevault.web.app>** — no sign-up. Install it as an app (PWA) and it works offline.
 
@@ -24,7 +24,7 @@ A local-first training log for runners and cyclists, right in your browser.
 - [intervals.icu](https://intervals.icu/) sync with your own API key — new activities arrive automatically
 - GPX routes into the Route studio
 
-No data yet? Pick "Test data" on the welcome screen to explore with a generated year of training.
+No data yet? Pick "Try demo data" on the welcome screen to explore with a generated year of training.
 
 ## Privacy & offline
 
@@ -40,23 +40,23 @@ The app stays fully usable offline without them: it is an installable PWA, and m
 
 ## Metrics & sources
 
-How each metric is calculated, and the research behind it: [`src/packages/engine/SOURCES.md`](./src/packages/engine/SOURCES.md).
+How each metric is calculated, and the research behind it: [`packages/engine/SOURCES.md`](./packages/engine/SOURCES.md).
 
 ## Contributing
 
 > requires vite+ - see: <https://viteplus.dev/guide/>, <https://viteplus.dev/guide/ide-integration#ide-integration>
 
 1. Fork and clone the repo. vp installs and uses the Node version from `.node-version`; no separate Node manager is needed.
-2. `vp install && vp dev`
+2. `vp install && vp dev` (the app lives in `apps/web`; see the repo map in `CLAUDE.md`)
 3. Create a branch: `git checkout -b feat/my-thing`
 4. Read `CLAUDE.md` for architecture rules before writing code
 5. Run the full verification suite before opening a PR:
 
    ```bash
-   vp check                # fmt + lint + typecheck
-   vp test -- --run        # unit & integration tests
-   vp exec playwright test # e2e tests
-   vp build                # production build
+   vp run check   # fmt + lint + typecheck, per package
+   vp run test    # unit & integration tests, every package
+   vp run e2e     # e2e tests (apps/web)
+   vp run build   # production build (apps/web)
    ```
 
 6. Open a PR against `main`
@@ -66,15 +66,15 @@ How each metric is calculated, and the research behind it: [`src/packages/engine
 "Report bug" issues contain the minified stack and the build commit. Source maps ship with every build, so a local rebuild resolves the stack:
 
 1. `git checkout <commit>` from the report
-2. Put the real `VITE_CARTO_API_KEY` in `.env.local`, then `vp build`
-3. Compare chunk names in the stack (e.g. `index-D4f.js`) with `dist/assets/` — matching names mean the build is byte-identical
-4. Resolve the frames with the `.map` files in `dist/assets/`, by hand or by loading the build in DevTools
+2. Put the real `VITE_CARTO_API_KEY` in `apps/web/.env.local`, then `vp build`
+3. Compare chunk names in the stack (e.g. `index-D4f.js`) with `apps/web/dist/assets/` — matching names mean the build is byte-identical
+4. Resolve the frames with the `.map` files in `apps/web/dist/assets/`, by hand or by loading the build in DevTools
 
 ### Regenerating the README banner
 
 ```bash
-vp run readme:banner                # German (default) → docs/readme/de_banner.png
-vp run readme:banner --locale en    # English → docs/readme/en_banner.png
+vp run docs:banner                # German (default) → docs/banners/de_banner.png
+vp run docs:banner --locale en    # English → docs/banners/en_banner.png
 ```
 
-Loads the demo data in Playwright with a frozen clock, captures each tile in that locale (`scripts/readme/capture.readme.ts`) and renders `docs/readme/<locale>_banner.png` from `scripts/readme/banner/`; banner texts per locale live in `scripts/readme/tiles.ts`. It runs the full Chromium build in headless mode on the GPU, so glass surfaces render as on a real device. It needs network access for the map tiles; set `VITE_CARTO_API_KEY` in `.env.local` if you have one. Raw tile shots land in `scripts/readme/out/<locale>/` (gitignored). The script is not part of the e2e suite.
+The banner is produced by `tools/docs` (see its [README](./tools/docs/README.md)): it loads the demo data in Playwright with a frozen clock, captures each tile in that locale and renders `docs/banners/<locale>_banner.png`. It needs network access for the map tiles; set `VITE_CARTO_API_KEY` in `apps/web/.env.local` if you have one. The script is not part of the e2e suite.

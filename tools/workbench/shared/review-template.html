@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Onboarding redesign · Review (template demo)</title>
+    <link rel="stylesheet" href="../../../shared/review.css" />
+  </head>
+  <body class="rv">
+    <main class="rv-doc">
+      <header class="rv-text">
+        <p class="rv-over">Review · round 2 · template demo with real entries</p>
+        <h1>Onboarding redesign</h1>
+        <p>
+          Flow B, one question per screen, over the live H1 map: logo loader → intro → Source · You
+          &amp; heart rate · Bike · Import. Same steps and data as before.
+        </p>
+      </header>
+
+      <h2>Changes</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R7</span>Continue is always enabled</h3>
+        <div class="rv-text">
+          <p>
+            Continue can always be pressed. With an invalid field it shows every error of the step,
+            moves focus to the first invalid field and stays; with valid fields it advances.
+          </p>
+          <p class="rv-refs">
+            <code>src/features/onboarding/OnboardingStep.tsx:163</code>, <code>:293</code>
+            (<code>continueStep</code>);
+            <code>src/features/settings/hooks/useThresholdsForm.ts:152</code>. Test:
+            <code>e2e/onboarding.spec.ts:60</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · Continue pressed, fields empty</span
+            ><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img
+                src="before/d-en-continue.png"
+                alt="R7 before · Desktop"
+                width="1280"
+                height="800"
+                loading="lazy"
+              />
+              <img
+                class="rv-after"
+                src="after/d-en-continue.png"
+                alt="R7 after · Desktop"
+                width="1280"
+                height="800"
+                loading="lazy"
+              />
+              <span class="rv-tag rv-tag--before">Before</span
+              ><span class="rv-tag rv-tag--after">After</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value="50"
+                aria-label="R7 desktop: before / after split"
+              />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · Continue pressed</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img
+                src="before/p-en-continue.png"
+                alt="R7 before · Phone"
+                width="390"
+                height="844"
+                loading="lazy"
+              />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img
+                src="after/p-en-continue.png"
+                alt="R7 after · Phone, focus on Male"
+                width="390"
+                height="844"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R9</span>Profile fields regrouped, still 4 screens</h3>
+        <div class="rv-text">
+          <p>
+            Screen 2 adds optional weight and birth year; screen 3 is now "Your thresholds" with
+            optional FTP and threshold pace. Each optional field says what it is for in its helper
+            line; an error replaces it in the same line.
+          </p>
+          <p class="rv-refs">
+            <code>src/features/onboarding/OnboardingStep.tsx:202-279</code>;
+            <code>src/features/settings/PaceEstimateButton.tsx</code>;
+            <code>src/store/onboarding.ts:4</code>. Test: <code>e2e/onboarding.spec.ts:8</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · screen 2</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img
+                src="before/d-en-you.png"
+                alt="R9 before · Desktop · screen 2"
+                width="1280"
+                height="800"
+                loading="lazy"
+              />
+              <img
+                class="rv-after"
+                src="after/d-en-you.png"
+                alt="R9 after · Desktop · screen 2"
+                width="1280"
+                height="800"
+                loading="lazy"
+              />
+              <span class="rv-tag rv-tag--before">Before</span
+              ><span class="rv-tag rv-tag--after">After</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value="50"
+                aria-label="R9 desktop: before / after split"
+              />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · screen 2</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img
+                src="before/p-en-you.png"
+                alt="R9 before · Phone · screen 2"
+                width="390"
+                height="844"
+                loading="lazy"
+              />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img
+                src="after/p-en-you.png"
+                alt="R9 after · Phone · screen 2"
+                width="390"
+                height="844"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C3</span>Intro with crumbs and the GitHub link</h3>
+        <div class="rv-text">
+          <p>
+            Logo + "PaceVault", the tagline as the heading, one line on what the app is, then the
+            three asks. The crumb line wraps and keeps all four crumbs; "Open source" opens
+            <code>GITHUB_URL</code> in a new tab.
+          </p>
+          <p class="rv-refs">
+            <code>src/features/onboarding/OnboardingIntro.tsx:12</code>, <code>:46</code>;
+            <code>src/features/onboarding/OnboardingCrumbs.tsx:7</code>;
+            <code>src/features/settings/AboutSection.tsx:8</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · new screen, no before</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img
+                src="after/d-en-03-intro.png"
+                alt="C3 · Desktop · EN, draw-in finished"
+                width="1280"
+                height="800"
+                loading="lazy"
+              />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After</figcaption>
+              <img
+                src="after/p-en-03-intro.png"
+                alt="C3 · Phone · EN"
+                width="390"
+                height="844"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <h2>Changes without UI</h2>
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N3</span>Engine: no Keytel estimate without a gender</h3>
+        <div class="rv-text">
+          <p>
+            <code>EnergyBody.gender</code> is optional; without a gender the heart-rate method gives
+            no estimate (missing is missing, not 0 kcal).
+          </p>
+          <p class="rv-refs">
+            <code>packages/engine/src/energy.ts:12</code>, <code>:146</code>;
+            <code>src/lib/moreStats.ts:152</code>. Test:
+            <code>tests/packages/engine/energy.spec.ts:75</code>.
+          </p>
+        </div>
+      </article>
+
+      <h2>Deviations</h2>
+      <ol class="rv-text">
+        <li>
+          <strong>Preview camera fit runs at the reveal, not under the loader.</strong> The card it
+          pads against only mounts at the reveal, so the fit runs one frame after it.
+          <code>src/features/map/hooks/useOnboardingPreviewCameraEffect.ts:43-68</code>.
+        </li>
+      </ol>
+
+      <h2>Open points</h2>
+      <ol class="rv-text">
+        <li>
+          <strong>Phone camera does not refit between steps.</strong> Options: (a) keep; (b) also
+          refit on step change. <em>Recommendation: (a)</em>, the map is pannable.
+        </li>
+        <li>
+          <strong>Pill covers the expanded map attribution</strong> at 390 px. Options: keep, or
+          lift the pill above the attribution row.
+        </li>
+      </ol>
+
+      <h2>Verification</h2>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp check</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp test -- --run</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp exec playwright test</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp build</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+      </table>
+
+      <h2>How to check</h2>
+      <ol class="rv-text">
+        <li>Clear site data and open the app: the logo grows and retracts for at least 3 s.</li>
+        <li>
+          On step 2, press Continue with empty fields: every error shows, focus moves to the first
+          one.
+        </li>
+        <li>Intro: the crumb line wraps without a leading "·" (DE at 390 px).</li>
+      </ol>
+    </main>
+    <script src="../../../shared/frame-keys.js"></script>
+    <script>
+      // swipe compare: the range value drives --pos (1 listener)
+      addEventListener('input', (e) =>
+        e.target.closest('.rv-swipe')?.style.setProperty('--pos', `${e.target.value}%`),
+      );
+    </script>
+  </body>
+</html>

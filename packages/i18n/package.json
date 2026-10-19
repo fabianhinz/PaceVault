@@ -1,0 +1,22 @@
+{
+  "name": "@pacevault/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./messages.js": "./src/paraglide/messages.js",
+    "./runtime.js": "./src/paraglide/runtime.js",
+    "./vite.ts": "./vite.ts"
+  },
+  "scripts": {
+    "check": "vp check",
+    "compile": "node scripts/compile.ts"
+  },
+  "dependencies": {
+    "@inlang/paraglide-js": "^2.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "~5.9.3"
+  }
+}

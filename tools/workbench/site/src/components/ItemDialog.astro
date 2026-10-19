@@ -1,0 +1,75 @@
+---
+import { Check } from '@lucide/astro';
+import { LABELS, SLOTS, SLOT_LABEL, SLOT_MISSING, firstSlot, type ItemView } from '../lib/board.ts';
+import AnswerDialog from './AnswerDialog.astro';
+import DeleteButton from './DeleteButton.astro';
+import MockupPane from './MockupPane.astro';
+import Peek from './Peek.astro';
+import PlanPane from './PlanPane.astro';
+import ReviewPane from './ReviewPane.astro';
+import SlotIcon from './SlotIcon.astro';
+import StatusIcon from './StatusIcon.astro';
+import TechPane from './TechPane.astro';
+import TypeIcon from './TypeIcon.astro';
+import WriteForm from './WriteForm.astro';
+
+/**
+ * One item: tabs Mockup · Plan · Tech · Review in fixed slots (missing ones greyed and
+ * disabled), Mockup opens first; the tab bar shows each slot's icon and whether it exists; peeks
+ * to the neighbours of the same column. The type icon sits before the title, the areas
+ * as one muted line after it. `tech` slot:
+ * the rendered tech.md. In the header, an in-review card has Done (accepts the reviewed work:
+ * `status: done`); every other card has delete (the folder is removed, Undo in the toast).
+ */
+type Props = {
+  item: ItemView;
+  prev: ItemView | undefined;
+  next: ItemView | undefined;
+};
+const props = Astro.props as Props;
+const f = props.item;
+const id = `dlg-${f.folder}`;
+const first = firstSlot(f);
+const DONE_LABEL = 'Accept as done: sets status: done; clean up later in the chat';
+---
+
+<dialog id={id} class="wb-dlg" data-bucket={f.data.status} closedby="any" aria-labelledby={`${id}-title`}>
+  {SLOTS.map((slot) => (
+    <input type="radio" class={`wb-tab wb-tab--${slot}`} data-tab={slot} name={`tab-${f.folder}`} id={`tab-${f.folder}-${slot}`} aria-label={slot} checked={slot === first} disabled={!f.has[slot]} />
+  ))}
+  {props.prev && <Peek title={props.prev.data.title} bucket={props.prev.data.status} step={-1} />}
+  <div class="wb-dlg__panel">
+    <header class="wb-dlg__head">
+      <span class="wb-pill" title="Drag the card on the board to change the status"><StatusIcon bucket={f.data.status} />{LABELS[f.data.status]}</span>
+      {f.type !== undefined && <TypeIcon type={f.type} />}
+      <h2 id={`${id}-title`} class="wb-dlg__title">{f.data.title}</h2>
+      {f.areas.length > 0 && <span class="wbx-areas wbx-areas--head">{f.areas.join(' · ')}</span>}
+      {f.data.status === 'in-review' && (
+        <WriteForm action="plan.setStatus" class="wbx-inline" fields={{ item: f.folder, expected: f.lines.status, to: 'done' }}>
+          <button type="submit" class="wb-btn wb-btn--xs wbx-done" aria-label={DONE_LABEL} title={DONE_LABEL}><Check size={14} aria-hidden="true" />Done</button>
+        </WriteForm>
+      )}
+      {f.data.status !== 'in-review' && (
+        <DeleteButton action="item.delete" fields={{ item: f.folder }} label={`Delete tools/workbench/backlog/${f.folder}/ (Undo in the toast)`} />
+      )}
+      <button type="button" class="wb-dlg__close" commandfor={id} command="close" aria-label="Close">✕</button>
+    </header>
+    <div class="wb-dlg__tabs">
+      <nav class="wb-tabs" aria-label="Sections">
+        {SLOTS.map((slot) => (
+          <label class:list={[`wb-tabs__${slot}`, { 'tt-tab--grey': !f.has[slot] }]} for={`tab-${f.folder}-${slot}`} title={f.has[slot] ? undefined : SLOT_MISSING[slot]}>
+            <span class:list={['tt-slot', 'tt-tabicon', f.has[slot] ? 'is-on' : 'is-off']}><SlotIcon slot={slot} /></span><span>{SLOT_LABEL[slot]}</span>
+          </label>
+        ))}
+      </nav>
+    </div>
+    <div class="wb-dlg__body">
+      <section class="wb-pane wb-pane--mockup">{f.has.mockup && <MockupPane item={f} />}</section>
+      <section class="wb-pane wb-pane--plan"><PlanPane item={f} /></section>
+      <section class="wb-pane wb-pane--tech">{f.has.tech && <TechPane item={f}><slot name="tech" /></TechPane>}</section>
+      <section class="wb-pane wb-pane--review">{f.has.review && <ReviewPane item={f} />}</section>
+    </div>
+  </div>
+  {props.next && <Peek title={props.next.data.title} bucket={props.next.data.status} step={1} />}
+  {f.questions.filter((question) => question.open).map((question) => <AnswerDialog item={f.folder} question={question} />)}
+</dialog>

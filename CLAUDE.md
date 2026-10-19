@@ -1,112 +1,84 @@
 # PaceVault
 
-**WHY:** PaceVault is a local-first, Progressive Web App (PWA) designed for mapping, analyzing, and storing fitness/GPS activities (primarily parsing `.FIT` binaries).
-**WHAT:** A pure client-side SPA with no backend server. The browser _is_ the database. Three external dependencies exist: [Open-Meteo](https://open-meteo.com/) for historical weather data — fetched lazily on session detail view and cached in IndexedDB (`session-weather` store); CARTO's vector basemap tiles, whose style is vendored in `src/features/map/darkMatter.style.json` so the map still paints offline (tiles, glyphs and sprites are cached by the service worker as `carto-tiles`, `carto-assets`); and [intervals.icu](https://intervals.icu/) as an **opt-in** activity source — the user pastes their own API key, and once connected new activities arrive automatically. `src/lib/intervals.ts` is the only call site, and responses are never cached.
+**WHY:** PaceVault is a local-first Progressive Web App (PWA) for mapping, analysing and storing fitness/GPS activities (primarily parsed from `.FIT` binaries).
+**WHAT:** A pnpm workspace driven by Vite+ (`vp`). The app is a pure client-side SPA in `apps/web`; its domain logic lives in workspace packages; the workbench (backlog board, hooks) and the docs tool live in `tools/`. App rules (stack, local-first, external services, palette, surfaces) are in `apps/web/CLAUDE.md`.
 
-## 1. Tech Stack
+## 1. Repo map
 
-| Layer         | Choice                                                                                                                                                                                      |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Build & PWA   | Vite 8 (via Vite+) + `@tailwindcss/vite` + `vite-plugin-pwa`                                                                                                                                |
-| Framework     | React 19, TypeScript 5.9 strict                                                                                                                                                             |
-| Routing       | React Router v7 (`<Routes>`, `<Route>`, `<BrowserRouter>`)                                                                                                                                  |
-| UI            | `@radix-ui/*` primitives wrapped in `src/components/ui/`, styled with Tailwind v4. Dark mode only. Use `clsx` + `tailwind-merge` via `cn()`. No component libraries (no MUI, AntD, Shadcn). |
-| Mapping / GIS | `deck.gl` (core, layers, mapbox), `maplibre-gl`, `react-map-gl`, `@googlemaps/polyline-codec`                                                                                               |
-| State         | Zustand (`persist` middleware) for global state                                                                                                                                             |
-| Data Vis      | Recharts                                                                                                                                                                                    |
-| Icons         | `lucide-react`                                                                                                                                                                              |
-| i18n          | Paraglide.js (`src/paraglide/`) — import messages from `@/paraglide/messages.js`                                                                                                            |
-| File parsing  | `fit-file-parser` for .FIT binaries                                                                                                                                                         |
-| Storage       | IndexedDB via `idb` — `kv` store for Zustand persist, `session-records` store for time-series (`src/lib/db.ts`)                                                                             |
-| Toolchain     | **Vite+ 1.3** (`vp dev`, `vp build`, `vp lint`, `vp fmt`, `vp test`, `vp check`) wrapping pnpm; tests run on Vitest 5                                                                       |
-| Linting       | Oxlint (via Vite+) — configured in `.oxlintrc.json`                                                                                                                                         |
-| Formatting    | Oxfmt (via Vite+) — configured in `.oxfmtrc.jsonc`                                                                                                                                          |
+| Path               | Package                | What it is                                                                                          |
+| ------------------ | ---------------------- | --------------------------------------------------------------------------------------------------- |
+| `apps/web`         | `@pacevault/web`       | The PWA: React 19, routes, features, stores, e2e and app tests. Rules: `apps/web/CLAUDE.md`         |
+| `packages/engine`  | `@pacevault/engine`    | Pure domain logic (metrics, zones, stress, GPS). Rules: `packages/engine/CLAUDE.md`                 |
+| `packages/gpx`     | `@pacevault/gpx`       | Pure GPX parsing, building and route geometry. Rules: `packages/gpx/CLAUDE.md`                      |
+| `packages/testing` | `@pacevault/testing`   | Test factories (records, GPS, sessions) for app and package tests                                   |
+| `packages/i18n`    | `@pacevault/i18n`      | Translations (Paraglide.js messages, compile, Vite plugin). Rules: `packages/i18n/CLAUDE.md`        |
+| `packages/ui`      | `@pacevault/ui`        | UI kit: Radix + Tailwind components, theme tokens, generic UI hooks. Rules: `packages/ui/CLAUDE.md` |
+| `tools/workbench`  | `@pacevault/workbench` | Backlog board (Astro), its scripts, the Claude hooks and the backlog in `tools/workbench/backlog/`  |
+| `tools/docs`       | `@pacevault/docs`      | Produces the docs assets; today the README banner in `docs/banners/`                                |
+| `docs/`            | none                   | Generated docs assets (`docs/banners/`)                                                             |
 
-## 2. Core Architecture Rules
+- The root holds only the workspace: `package.json` (fan-out scripts; the test toolchain `vite-plus`, `vitest` and `@vitest/coverage-v8` is declared here only, so every package resolves the same copy and `vp test` also works inside a package), `pnpm-workspace.yaml` (catalog, overrides), `vite.config.ts` (`fmt` and `lint` for every package, plus `defaultPackage` and `test.projects` so bare `vp dev`/`vp build`/`vp test` work from the root), `tsconfig.json` (references), `.node-version`.
+- Packages are imported by name with `.ts` subpaths (`@pacevault/engine/types.ts`); each package exports `"./*": "./src/*"` and has no build step.
+- Every package declares its own dependencies; shared tool versions come from the `catalog:` in `pnpm-workspace.yaml`.
 
-- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never call an external API outside the three documented integrations above (Open-Meteo, CARTO, intervals.icu). Each is opt-in or lazily triggered — intervals.icu only once the user enters a key — and the app stays fully usable offline without any of them.
-- **Pure engine**: All business logic lives in `src/packages/engine/` as pure functions — absolutely no React or state imports in this directory.
-- **Headless UI**: Import Radix primitive → wrap in `src/components/ui/` → style with Tailwind.
-- **Reuse UI components**: Before inlining layout or UI patterns in feature code, check `src/components/ui/` for existing components (`CardHeader`, `StatTile`, `ValueSkeleton`, etc.). Extract new shared components when a pattern appears in 2+ places.
+## 2. Code rules (every TypeScript package)
+
 - **Named exports only**: Use named exports everywhere.
 - **Arrow functions only**: Never use the `function` keyword — use arrow functions (`const fn = () => {}`) everywhere.
 - **No object destructuring** for component props and hook return values — access via `props.x` and `result.x` instead.
 - **Delete dead code**: Exported but never-imported code should be removed immediately, not left around.
-- **0 is data, missing is missing**: Only a missing key, `null` or `undefined` means "no data". A recorded `0` (0 W, 0 rpm, 0 km/h, 0 bpm) is a value: never filter it out, never hide it with a truthy check (`if (x)`), never replace missing data with `?? 0`. Chart series keep one point per record, with `null` where the value is missing. Pace is `null` only at speed 0 (division by zero).
-- **Required FIT data throws**: Fields the app cannot work without (session `start_time`, `sport`, `total_timer_time`; lap `start_time`, `timestamp`, `total_elapsed_time`, `total_timer_time`; record `timestamp`) throw a `Failed to parse FIT file "<name>": …` error when missing. Everything else is optional and stays `undefined`.
-- **No `as any` for external data**: Use Zod schemas with `safeParse` + `z.infer` to validate and type data from untyped sources (file parsers, IndexedDB, etc.). Schemas live next to the parser/consumer (e.g. `fitSchemas.ts`). On failure: return a safe fallback (`undefined`, `[]`), never throw.
-- **Store actions via getState()**: Call Zustand actions with `useStore.getState().action()` at the call site. Do not extract actions via selectors (`const action = useStore(s => s.action)`). Keep selectors only for state values that trigger re-renders.
-- **No ternary operators in `.ts` files** (convention, not linter-enforced): Prefer `if/else` over `condition ? a : b` in `.ts` files (engine, lib, stores, hooks). Single-level ternaries are allowed in `.tsx` (JSX). Nested ternaries are banned everywhere.
+- **No `as any` for external data**: Use Zod schemas with `safeParse` + `z.infer` to validate and type data from untyped sources (file parsers, IndexedDB, hook input, etc.). Schemas live next to the parser/consumer (e.g. `fitSchemas.ts`). On failure: return a safe fallback (`undefined`, `[]`), never throw.
+- **No non-null assertion `!`**: Narrow with guards, defaults or early returns.
+- **No ternary operators in `.ts` files** (convention, not linter-enforced): Prefer `if/else` over `condition ? a : b` in `.ts` files (engine, lib, stores, hooks, scripts). Single-level ternaries are allowed in `.tsx` (JSX). Nested ternaries are banned everywhere.
 - **No `Object.assign`**: Change state by assigning fields on the immer draft or by replacing the object outright. Store updates go through intent-named actions, never a generic partial patch.
-- **Syntax & Formatting**: Defer to Oxlint and Oxfmt (via Vite+). Do not waste time manually formatting code or enforcing linting rules; focus on logic.
+- **Pure packages**: `packages/engine` and `packages/gpx` hold domain logic only: no React, no state, no app imports (see their CLAUDE.md).
+- **Syntax & Formatting**: Defer to Oxlint and Oxfmt (via Vite+, configured in the root `vite.config.ts`). Do not waste time manually formatting code or enforcing linting rules; focus on logic.
 
 ## 3. File Naming Conventions
 
 | Category         | Convention                                              | Example                                    |
 | ---------------- | ------------------------------------------------------- | ------------------------------------------ |
-| React components | PascalCase                                              | `SessionDetail.tsx`, `ChartPreview.tsx`    |
+| React components | PascalCase                                              | `SessionDetailPage.tsx`, `StatTile.tsx`    |
 | Hooks            | camelCase with `use` prefix                             | `useChartZoom.ts`                          |
-| Stores           | camelCase                                               | `toastStore.ts`, `mapFocus.ts`             |
+| Stores           | camelCase                                               | `toast.ts`, `mapFocus.ts`                  |
 | Engine modules   | camelCase                                               | `trainingEffect.ts`, `zoneDistribution.ts` |
 | Lib utilities    | camelCase                                               | `chartData.ts`, `timeRange.ts`             |
 | Tests            | Match source name + `.spec.ts` / `.integration.test.ts` | `trainingEffect.spec.ts`                   |
 | Web Workers      | camelCase                                               | `gpsBuild.worker.ts`                       |
 
-- Feature hooks live in `src/features/<feature>/hooks/`
-- Shared hooks live in `src/lib/hooks/`
 - Side-effect-only hooks (no return value) use `Effect` suffix: `useMapCameraEffect.ts`. Hooks that return data, refs, or callbacks keep normal `useSomething` naming.
 - No kebab-case for TypeScript files.
 
-## 4. Directory Structure & Deep Context (Progressive Disclosure)
+## 4. Deep Context (Progressive Disclosure)
 
-Specific guidelines for features, testing, and state management are located in their respective directories. Read these files when working in these areas:
+Read the CLAUDE.md of the area you work in:
 
-- Route-level page components live in `src/pages/` (e.g. `DashboardPage.tsx`, `SessionDetailPage.tsx`). Pages are thin containers: they wire route params to features but contain no business logic.
-- `@src/features/CLAUDE.md`: Rules for feature-level hooks and store colocation.
-- `@src/store/CLAUDE.md`: Rules for Zustand store scope-naming and persist middleware.
-- `@tests/CLAUDE.md`: The testing strategy (Engine/Lib vs. Integration vs. UI).
-- `@messages/CLAUDE.md`: Translation tone, placeholder rules, and microcopy guidelines.
+- `@apps/web/CLAUDE.md`: app stack, local-first rule, external services, 0-is-data, FIT rules, colour palette, surfaces.
+- `@apps/web/src/features/CLAUDE.md`: feature-level hooks and store colocation.
+- `@apps/web/src/store/CLAUDE.md`: Zustand store scope-naming and persist middleware.
+- `@apps/web/tests/CLAUDE.md`: the testing strategy (packages and lib vs. integration vs. e2e).
+- `@packages/i18n/CLAUDE.md`: translation tone, placeholder rules, microcopy and how messages are compiled.
+- `@packages/ui/CLAUDE.md`: UI kit rules (no app imports, no provider, slots), theme tokens and surfaces.
+- `@packages/engine/CLAUDE.md`, `@packages/gpx/CLAUDE.md`, `@packages/testing/CLAUDE.md`: package rules.
+- `@tools/workbench/CLAUDE.md`, `@tools/docs/CLAUDE.md`: tool rules.
 
 ## 5. Dev Workflow & Actionable Verification
 
 > **Plan first, then build.** The owner creates branches and commits; Claude leaves all changes in the working tree.
 
-All feature work lives in `workbench/<feature>/` (`plan.md`, `mockup/`, `research/`, `review/`). The backlog is the board in `workbench/site/` (Astro, `vp run workbench`), which reads and writes the Markdown files; a `PostToolUse` hook checks every plan, `tech.md` and `ideas.md` edit, and `vp run workbench:check` validates plans and mockups; loose ideas go in `workbench/ideas.md`. Start any feature work through the `feature` skill (`.claude/skills/feature/SKILL.md`). It reads `status:` in the plan's frontmatter and hands over to the stage skill. `ready` and `done` are owner-only; a `PreToolUse` hook (`scripts/statusGuard.ts`) enforces the status gates.
+All backlog work lives in `tools/workbench/backlog/<item>/` (`plan.md`, `tech.md`, `mockup/`, `research/`, `review/`); every item is a folder (there is no ideas list), and every agent decision goes to `review/decisions.md`. How the owner works with the backlog is in `tools/workbench/GUIDE.md`; how the board, the hooks and the status gates work is in `tools/workbench/README.md`. Start any backlog work (feature, bug, chore) through the `item` skill (`.claude/skills/item/SKILL.md`). It reads `status:` in the plan's frontmatter and hands over to the stage skill. `ready` and `done` are owner-only; a `PreToolUse` hook (`tools/workbench/scripts/statusGuard.ts`) enforces the status gates.
 
-1. **Plan**: `workbench/<feature>/plan.md` with context, decisions, approach, files, tests and verification. Review it with the owner; no code before "lets dev".
-2. **Implement**: Write the code and the tests `tests/CLAUDE.md` calls for.
-3. **Verify**: Run the following suite:
+1. **Plan**: `tools/workbench/backlog/<item>/plan.md` with context, decisions, approach, files, tests and verification, plus `tech.md` from `tools/workbench/shared/tech-template.md`. Review it with the owner; no code before "lets dev".
+2. **Implement**: Write the code and the tests `apps/web/tests/CLAUDE.md` calls for.
+3. **Verify**: Run the suite from the root (each script fans out to the workspace packages):
 
    ```bash
-   vp check           # fmt + lint + typecheck (one command)
-   vp test -- --run   # vitest
-   vp exec playwright test  # playwright e2e
-   vp build           # production build
+   vp run check   # per package: vp check (fmt + lint + types); workbench: astro check
+   vp run test    # vitest in every package with tests
+   vp run e2e     # playwright e2e (apps/web)
+   vp run build   # production build (apps/web)
    ```
 
-4. **Review**: `workbench/<feature>/review/index.html` from `workbench/_shared/review-template.html`; screenshots via `vp run workbench:capture`.
+   The bare built-ins work from the root as well: `vp check` (whole workspace), `vp test -- --run` (all test projects), `vp build` (apps/web). Playwright has no root config: run e2e with `vp run e2e` or `vp -C apps/web exec playwright test`. The root `vp run check` and `vp run test` compile the translations first (`vp run -F @pacevault/i18n compile`); before a bare `vp check` after translation keys changed, run that compile (the message types come from the generated files).
 
-## 6. Colour Palette
-
-Anything drawn on the map — sport tracks, studio routes, markers — has to hold up against the dark basemap. Check a new or changed colour against these rules before adding it.
-
-- **No blue, cyan, teal or grey on the map.** The basemap's roads, rivers and water are slate blue; a track in that family reads as a street or a river. Blue stays reserved for the app accent, the live-position dot and UI surfaces off the map.
-- **Judge a colour by how it renders, not by its swatch.** Tracks blend additively at low alpha, so a single pass is dim and overlaps build brightness. A good track colour has one strong dominant channel: a single pass stays visible, and repeated passes build a heat ramp instead of washing straight to white. Warm hues build the most fire-like ramp.
-- **Sport colours must stay apart at every overlap stage**, from one pass to a saturated hot spot, not only as full-strength swatches. Current pair: running green `#4ade80`, cycling fire orange `#f97316`. A new sport takes a hue that is neither of these nor blue.
-- **Colour-blind safety is not a criterion** for the map palette; punch and visibility are.
-- **Studio routes are never shown alongside session tracks**, so they only need to differ from the basemap and from each other. Studio colour keys are persisted, so renaming or removing one needs a store migration.
-- **Zone colours** (blue → green → yellow → orange → red) replace the sport colour on the session detail map rather than appearing next to it, so sharing a hue with a sport colour is acceptable there.
-- A sport colour lives in three places that must change together: the map (`src/features/map/trackColors.ts`), the CSS theme (`src/index.css`) and its JS mirror (`src/lib/tokens.ts`).
-- Every colour token in `src/lib/tokens.ts` mirrors one in `src/index.css`; change both together.
-
-## 7. Surfaces
-
-Every surface takes its background from `src/components/ui/Card.tsx`; never hand-copy the class string.
-
-- **Content** (cards, the bottom sheet, segmented controls, chart cards): `glassClass`.
-- **Floating** (anything drawn over other content: portals, fixed/absolute/sticky overlays, popups, map markers, pills over charts or the map): `floatingClass`, or `<Card floating>`.
-- **Sticky only from `lg`** (floats on desktop, scrolls with the page below): `floatingLgClass`.
-- **Tile** (a bordered block inside a content surface: stat cells, grid tiles, selectable rows in dialogs): `tileClass`, padding at the call site.
-- **Scrim** (behind a modal overlay on phone): `scrimClass`.
-- Decide by placement, not by component: a `Card` over the map is floating, the bottom sheet is content.
-- On phone, modal overlays are an inset floating card built from `DialogContent` + `DialogHeader`/`DialogBody`/`DialogFooter`; never hand-build a sheet.
+4. **Review**: `tools/workbench/backlog/<item>/review/index.html` from `tools/workbench/shared/review-template.html`; screenshots via `vp run workbench:capture`.

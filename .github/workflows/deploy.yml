@@ -22,8 +22,8 @@ jobs:
           node-version-file: .node-version
           cache: true
 
-      - run: vp run paraglide:compile
-      - run: vp build
+      - run: vp run -F @pacevault/i18n compile
+      - run: vp run build
         env:
           VITE_CARTO_API_KEY: ${{ secrets.VITE_CARTO_API_KEY }}
 
@@ -33,3 +33,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PACEVAULT }}
           channelId: live
           projectId: pacevault
+          entryPoint: apps/web

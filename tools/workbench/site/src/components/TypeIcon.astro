@@ -1,0 +1,13 @@
+---
+import { Bug, Sparkles, Wrench } from '@lucide/astro';
+import type { ItemType } from '../../../scripts/frontmatter.ts';
+import { TYPE_COLOR } from '../lib/board.ts';
+/** The item type before the title on the card and in the dialog header (R5): Lucide sparkles, bug, wrench in the fixed type colour. */
+const props = Astro.props as { type: ItemType };
+---
+
+<span class="wbx-type" role="img" aria-label={props.type} title={props.type} style={`color: ${TYPE_COLOR[props.type]}`}>
+  {props.type === 'feature' && <Sparkles size={14} aria-hidden="true" />}
+  {props.type === 'bug' && <Bug size={14} aria-hidden="true" />}
+  {props.type === 'chore' && <Wrench size={14} aria-hidden="true" />}
+</span>

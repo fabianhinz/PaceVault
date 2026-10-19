@@ -23,23 +23,20 @@ dist-ssr
 *.sln
 *.sw?
 
-data
 coverage
-src/paraglide
+packages/i18n/src/paraglide
 
-scripts/readme/out/
+tools/docs/banner/out/
 
 # Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 
 .env.local
 
-# Astro generated types (workbench/site)
-workbench/site/.astro
+# Astro generated types (any Astro root, also a stray one from a wrong --root)
+.astro/
 
-# Feature folders deleted on the board, kept for Undo
-workbench/.trash/
 .vitest/

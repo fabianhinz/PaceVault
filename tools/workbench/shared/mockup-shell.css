@@ -1,0 +1,336 @@
+/*
+ * Mockup shell styles: toolbar, frames, notes panel, Q badges.
+ * Tokens from tokens.css (names as in packages/ui/src/theme.css). Text never below --text-xs (12px).
+ * No repo token: 1px hairlines, 9999px, the 720px breakpoint, 22rem panel width.
+ */
+@import url('tokens.css');
+
+.ms-screen [hidden] {
+  display: none !important;
+}
+body.ms {
+  margin: 0;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr); /* the toolbar may not widen the page */
+  overflow: hidden;
+  background: var(--color-surface-base);
+  color: var(--color-text-secondary);
+  font: var(--text-sm) / var(--leading-5) var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+body.ms *,
+body.ms *::before,
+body.ms *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- toolbar ---------- */
+
+.ms-bar {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--wb-hairline);
+  background: var(--color-surface);
+  white-space: nowrap;
+}
+/* one line of controls; scrolls sideways when the window is narrow */
+.ms-bar__scroll {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-2) var(--spacing-4);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+/* Notes: always reachable, behind a divider */
+.ms-bar__pinned {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-4);
+  border-left: 1px solid var(--wb-hairline);
+}
+.ms-bar__spacer {
+  flex: 1;
+}
+.ms-group {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+.ms-group__label {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+}
+.ms-seg {
+  display: flex;
+  padding: 2px; /* inset of the segmented track: no repo token */
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+.ms-seg button,
+.ms-btn,
+.ms-select {
+  appearance: none;
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-tertiary);
+  font: var(--text-sm) / var(--leading-5) var(--font-sans);
+  cursor: pointer;
+}
+.ms-seg button:hover,
+.ms-btn:hover {
+  color: var(--color-text-primary);
+}
+.ms-seg button[aria-pressed='true'] {
+  background: var(--color-surface-overlay);
+  color: var(--color-text-primary);
+}
+.ms-seg button:disabled {
+  color: var(--color-text-quaternary);
+  cursor: not-allowed;
+}
+.ms-btn,
+.ms-select {
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+}
+.ms-btn[aria-expanded='true'] {
+  background: var(--color-surface-overlay);
+  color: var(--color-text-primary);
+}
+.ms-select {
+  padding-right: var(--spacing-6);
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+}
+/* repo focus style (ring-2 ring-accent), drawn inset so scrollers can't clip it */
+.ms-bar :focus-visible,
+.ms-tabs :focus-visible,
+.ms-q:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* ---------- frames ---------- */
+
+.ms-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0;
+  min-height: 0;
+}
+body.ms-panel-open .ms-main {
+  grid-template-columns: minmax(0, 1fr) 22rem;
+}
+.ms-stage {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-6);
+  padding: var(--spacing-4);
+  overflow: hidden;
+}
+/* below 85 % the frames are shown 1:1 and the stage scrolls */
+.ms-stage.is-scroll {
+  overflow: auto;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.ms-frame {
+  flex: none;
+  margin: 0;
+}
+.ms-frame[hidden] {
+  display: none;
+}
+.ms-frame__cap {
+  height: 28px; /* matches the fit() caption allowance */
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-6);
+}
+.ms-frame__box {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-base);
+}
+.ms-frame__box--phone {
+  border-radius: var(--radius-lg);
+}
+.ms-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+
+/* ---------- Q badges ---------- */
+
+.ms-q {
+  display: inline-block;
+  margin: 0 var(--spacing-1);
+  padding: 0 var(--spacing-2);
+  border: 0;
+  border-radius: 9999px;
+  font: var(--font-weight-semibold) var(--text-xs) / var(--leading-5) var(--font-sans);
+  vertical-align: middle;
+  outline-offset: -2px;
+  cursor: pointer;
+}
+.ms-q--open {
+  background: var(--color-status-warning-muted);
+  color: var(--color-status-warning);
+}
+.ms-q--settled {
+  background: var(--color-status-success-muted);
+  color: var(--color-status-success);
+}
+/* badges are shell UI: counter-scale them so they stay 12px inside a scaled frame */
+.ms-screen .ms-q {
+  font-size: calc(var(--text-xs) / var(--ms-scale, 1));
+  line-height: calc(var(--leading-5) / var(--ms-scale, 1));
+  padding: 0 calc(var(--spacing-2) / var(--ms-scale, 1));
+}
+body.ms-labels-off .ms-screen .ms-q {
+  display: none;
+}
+
+/* ---------- notes panel ---------- */
+
+.ms-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--wb-hairline);
+  background: var(--color-surface);
+}
+body:not(.ms-panel-open) .ms-panel {
+  visibility: hidden;
+}
+.ms-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--wb-hairline);
+}
+.ms-tabs button {
+  flex: none;
+  white-space: nowrap;
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-tertiary);
+  font: var(--text-sm) / var(--leading-5) var(--font-sans);
+  cursor: pointer;
+}
+.ms-tabs button[aria-selected='true'] {
+  background: var(--wb-tile-bg);
+  color: var(--color-text-primary);
+}
+.ms-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-4);
+  line-height: var(--leading-6);
+}
+.ms-panel__body p {
+  margin: var(--spacing-2) 0;
+}
+.ms-panel__body strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+.ms-decisions,
+.ms-questions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ms-decisions li,
+.ms-questions li {
+  padding: var(--spacing-3) 0;
+  border-bottom: 1px solid var(--wb-hairline);
+}
+.ms-decisions li.is-focus {
+  margin: 0 calc(-1 * var(--spacing-2));
+  padding: var(--spacing-3) var(--spacing-2);
+  border-radius: var(--radius-md);
+  background: var(--wb-tile-bg);
+}
+.ms-decisions__head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+.ms-decisions__head .ms-q {
+  margin: 0;
+}
+.ms-decisions__head strong {
+  flex: 1;
+}
+.ms-decisions__status {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+}
+.ms-decisions__answer {
+  color: var(--color-text-primary);
+}
+
+@media (max-width: 720px) {
+  body.ms-panel-open .ms-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ms-panel {
+    position: fixed;
+    inset: auto 0 0;
+    height: 70vh;
+    border-left: 0;
+    border-top: 1px solid var(--wb-hairline);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--wb-floating-shadow);
+  }
+}
+
+/* ---------- "frame": "iframe": rules inside each frame's document ---------- */
+
+iframe.ms-screen {
+  display: block;
+  border: 0;
+}
+.ms-frame-doc [hidden] {
+  display: none !important;
+}
+.ms-frame-doc .ms-q {
+  font-size: calc(var(--text-xs) / var(--ms-scale, 1));
+  line-height: calc(var(--leading-5) / var(--ms-scale, 1));
+  padding: 0 calc(var(--spacing-2) / var(--ms-scale, 1));
+}
+.ms-frame-doc[data-labels='off'] .ms-q {
+  display: none;
+}

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/statusGuard.ts\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/tools/workbench/scripts/statusGuard.ts\""
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/workerGitGuard.ts\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/tools/workbench/scripts/workerGitGuard.ts\""
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/workbenchIndexHook.ts\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/tools/workbench/scripts/indexHook.ts\""
           }
         ]
       }

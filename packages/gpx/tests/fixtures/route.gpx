@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="PaceVault e2e" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Alpine Loop</name>
+  </metadata>
+  <trk>
+    <name>Alpine Loop</name>
+    <trkseg>
+      <trkpt lat="47.260000" lon="11.390000"><ele>600.0</ele></trkpt>
+      <trkpt lat="47.270000" lon="11.390000"><ele>620.0</ele></trkpt>
+      <trkpt lat="47.280000" lon="11.390000"><ele>650.0</ele></trkpt>
+      <trkpt lat="47.290000" lon="11.390000"><ele>630.0</ele></trkpt>
+      <trkpt lat="47.300000" lon="11.390000"><ele>660.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

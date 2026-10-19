@@ -1,0 +1,23 @@
+---
+import type { ItemView } from '../lib/board.ts';
+import QuestionItem from './QuestionItem.astro';
+
+/** The Mockup tab: the mockup page in an iframe, with a Questions drawer while any are open (Q14 a). */
+type Props = { item: ItemView };
+const props = Astro.props as Props;
+const f = props.item;
+const open = f.questions.filter((question) => question.open);
+---
+
+<div class:list={['wbx-mock', { 'has-drawer': open.length > 0 }]}>
+  <div class="wbx-mock__frame">
+    <iframe data-src={`/${f.folder}/mockup/index.html`} title={`${f.data.title} · mockup`}></iframe>
+  </div>
+  {open.length > 0 && (
+    <aside class="wbx-drawer" aria-label="Open questions">
+      <p class="wbx-side__title">Open questions · {open.length}</p>
+      <p class="wbx-side__sub">Answers go to <code>{`tools/workbench/backlog/${f.folder}/plan.md`}</code>.</p>
+      <ul class="wbx-items">{open.map((question) => <QuestionItem item={f.folder} question={question} />)}</ul>
+    </aside>
+  )}
+</div>

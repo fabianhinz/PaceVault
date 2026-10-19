@@ -22,15 +22,16 @@ jobs:
           node-version-file: .node-version
           cache: true
 
-      - run: vp run paraglide:compile
-      - run: vp check
-      - run: vp test -- --run
+      - run: vp run -F @pacevault/i18n compile
+      - run: vp run check
+      - run: vp run test
 
       - name: Install Playwright browsers
+        working-directory: apps/web
         run: vp exec playwright install --with-deps chromium
       - name: Run e2e tests
-        run: vp exec playwright test
+        run: vp run e2e
 
-      - run: vp build
+      - run: vp run build
         env:
           VITE_CARTO_API_KEY: ${{ secrets.VITE_CARTO_API_KEY }}

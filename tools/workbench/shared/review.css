@@ -1,0 +1,226 @@
+/*
+ * Review page template styles. Tokens from tokens.css (names as in packages/ui/src/theme.css).
+ * Text never below --text-xs (12px); screenshots never below 86 % of their size.
+ * No repo token: 1px hairlines, 2px divider, the 86 % legibility floor.
+ */
+@import url('tokens.css');
+
+body.rv {
+  margin: 0;
+  background: var(--color-surface-base);
+  color: var(--color-text-secondary);
+  font: var(--text-sm) / var(--leading-6) var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+body.rv *,
+body.rv *::before,
+body.rv *::after {
+  box-sizing: border-box;
+}
+.rv-doc {
+  max-width: calc(1280px + 2 * var(--spacing-4));
+  margin: 0 auto;
+  padding: var(--spacing-8) var(--spacing-4) var(--spacing-12);
+}
+.rv-text {
+  max-width: 48rem;
+}
+.rv-over {
+  margin: 0 0 var(--spacing-1);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+}
+.rv-doc h1 {
+  margin: 0 0 var(--spacing-2);
+  color: var(--color-text-primary);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.3;
+}
+.rv-doc h2 {
+  margin: var(--spacing-12) 0 var(--spacing-4);
+  padding-top: var(--spacing-6);
+  border-top: 1px solid var(--wb-hairline);
+  color: var(--color-text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+}
+.rv-doc p {
+  margin: var(--spacing-2) 0;
+}
+.rv-doc strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+.rv-doc code {
+  font: 0.9em var(--font-mono);
+  padding: 0 var(--spacing-1);
+  border-radius: var(--radius-sm);
+  background: var(--wb-tile-bg);
+  overflow-wrap: anywhere;
+}
+.rv-doc ol,
+.rv-doc ul {
+  padding-left: var(--spacing-6);
+}
+.rv-doc li {
+  margin: var(--spacing-2) 0;
+}
+
+/* ---------- change entry ---------- */
+
+.rv-entry {
+  padding: var(--spacing-6) 0;
+  border-bottom: 1px solid var(--wb-hairline);
+}
+.rv-entry:last-child,
+.rv-entry:has(+ h2) {
+  border-bottom: 0;
+}
+.rv-entry h3 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-3);
+  margin: 0 0 var(--spacing-2);
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+.rv-chip {
+  flex: none;
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--wb-tile-bg);
+  color: var(--color-text-primary);
+  font: var(--font-weight-semibold) var(--text-xs) / var(--leading-5) var(--font-mono);
+}
+.rv-refs {
+  color: var(--color-text-tertiary);
+}
+
+/* ---------- comparison ---------- */
+
+.rv-cmp {
+  margin: var(--spacing-4) 0 0;
+}
+.rv-cmp__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  margin: var(--spacing-4) 0 var(--spacing-2);
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+  line-height: var(--leading-5);
+}
+/* Desktop: one frame at (near) native size, drag to swipe between before and after.
+   Never below 86 % of the shot's width (14px UI text stays ≥ 12px); narrower containers scroll sideways inside. */
+.rv-scroll {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+}
+.rv-stage {
+  position: relative;
+  width: clamp(calc(var(--w) * 0.86), 100%, var(--w));
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface-sunken);
+}
+.rv-stage img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.rv-swipe .rv-after {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  clip-path: inset(0 0 0 var(--pos, 50%));
+}
+.rv-swipe::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--pos, 50%);
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-text-primary);
+  box-shadow: var(--wb-floating-shadow);
+  pointer-events: none;
+}
+.rv-swipe input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+}
+.rv-swipe:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+.rv-tag {
+  position: absolute;
+  top: var(--spacing-2);
+  padding: 0 var(--spacing-2);
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-sm);
+  background: var(--wb-floating-bg);
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--text-xs) / var(--leading-5) var(--font-sans);
+  pointer-events: none;
+}
+.rv-tag--before {
+  left: var(--spacing-2);
+}
+.rv-tag--after {
+  right: var(--spacing-2);
+}
+
+/* Phone: before and after side by side at native size; they stack when two don't fit at ≥ 86 %. */
+.rv-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--w) * 0.86)), var(--w)));
+  gap: var(--spacing-4);
+}
+.rv-pair figure {
+  margin: 0;
+}
+.rv-pair figcaption {
+  margin-bottom: var(--spacing-1);
+  color: var(--color-text-primary);
+  font: var(--font-weight-medium) var(--text-xs) / var(--leading-5) var(--font-sans);
+}
+.rv-pair img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-lg);
+}
+
+/* ---------- other sections ---------- */
+
+.rv-doc table {
+  width: 100%;
+  max-width: 48rem;
+  border-collapse: collapse;
+}
+.rv-doc th,
+.rv-doc td {
+  padding: var(--spacing-2) var(--spacing-3) var(--spacing-2) 0;
+  border-bottom: 1px solid var(--wb-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+.rv-doc th {
+  color: var(--color-text-tertiary);
+  font-weight: var(--font-weight-medium);
+}
+.rv-pass {
+  color: var(--color-status-success);
+}

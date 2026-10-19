@@ -1,0 +1,110 @@
+---
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { Info } from '@lucide/astro';
+import { getCollection, getEntry, render } from 'astro:content';
+import { checkWorkbench, workbenchRoot } from '../../../scripts/check.ts';
+import Board from '../components/Board.astro';
+import ItemDialog from '../components/ItemDialog.astro';
+import { readItem, renderMarkdown, type ItemView } from '../lib/board.ts';
+import { fileItems } from '../lib/writeBack.ts';
+import '../../../shared/workbench.css';
+import '../styles/site.css';
+
+// Rendered per request by `astro dev`; the file watcher reloads the page after every change.
+export const prerender = false;
+
+const root = workbenchRoot();
+const errors = checkWorkbench(root);
+const entries = await getCollection('plans');
+const items = entries
+  .flatMap((entry) => {
+    const item = readItem(root, entry.id);
+    if (item === undefined) return [];
+    return [item];
+  })
+  .sort(
+    (a, b) =>
+      a.data.created.localeCompare(b.data.created) || a.folder.localeCompare(b.folder),
+  );
+const techs = new Map(
+  await Promise.all(
+    items.map(async (item) => {
+      const entry = await getEntry('techs', item.folder);
+      if (entry === undefined) return [item.folder, undefined] as const;
+      return [item.folder, (await render(entry)).Content] as const;
+    }),
+  ),
+);
+
+const read = (file: string) => {
+  const path = join(root, file);
+  if (!existsSync(path)) return '';
+  return readFileSync(path, 'utf8');
+};
+const flaky = fileItems(read('flaky.md')).filter((item) => item.first.startsWith('- `'));
+
+/** tools/workbench/GUIDE.md, outside the backlog (its own path, also with WB_ROOT). */
+const guideFile = fileURLToPath(new URL('../../../GUIDE.md', import.meta.url));
+let guide = '<p class="wbx-empty">tools/workbench/GUIDE.md is missing.</p>';
+if (existsSync(guideFile)) guide = renderMarkdown(readFileSync(guideFile, 'utf8'));
+
+/** Neighbours in the same column, wrapping around; none for a column of one. */
+const around = <T,>(list: T[], index: number) => {
+  if (list.length < 2) return { prev: undefined, next: undefined };
+  return {
+    prev: list[(index - 1 + list.length) % list.length],
+    next: list[(index + 1) % list.length],
+  };
+};
+const column = (item: ItemView) =>
+  items.filter((other) => other.data.status === item.data.status);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Workbench</title>
+  </head>
+  <body class="wb">
+    {errors.length > 0 && (
+      <div class="wbx-banner" role="alert">
+        <strong>workbench:check fails: a plan named here is missing from the board or shown in an older state until it is fixed.</strong>
+        <ul>{errors.map((error) => <li>{error}</li>)}</ul>
+      </div>
+    )}
+    <header class="wbx-head">
+      <button type="button" class="wb-btn wb-btn--xs wb-btn--ghost wbx-info" popovertarget="wbx-guide" aria-label="How to work with the backlog (GUIDE.md)" title="How to work with the backlog (GUIDE.md)"><Info size={16} aria-hidden="true" /></button>
+    </header>
+    <div class="wbx-pop wbx-guide" id="wbx-guide" popover aria-label="How to work with the backlog">
+      <p class="wbx-pop__title">tools/workbench/GUIDE.md<span class="wbx-grow"></span><button type="button" class="wb-dlg__close" popovertarget="wbx-guide" popovertargetaction="hide" aria-label="Close">✕</button></p>
+      <article class="wb-md" set:html={guide} />
+    </div>
+    <Board items={items} flaky={flaky} />
+
+    {items.map((item) => {
+      const list = column(item);
+      const Tech = techs.get(item.folder);
+      return (
+        <ItemDialog item={item} {...around(list, list.indexOf(item))}>
+          {Tech && <Tech slot="tech" />}
+        </ItemDialog>
+      );
+    })}
+
+    <dialog class="tt-full" aria-labelledby="tt-full-title">
+      <header class="tt-full__head"><h2 id="tt-full-title" class="tt-full__title"></h2><div class="tt-full__tools"><button type="button" class="wb-dlg__close tt-full__close" aria-label="Close">✕</button></div></header>
+      <div class="tt-full__body"></div>
+    </dialog>
+    <div class="wbx-toast" id="wbx-toast" popover="manual" role="status">
+      <div class="wbx-toast__head"><span>Writes to</span><span id="wbx-toast-files"></span><span class="wbx-grow"></span><span class="wbx-toast__act" id="wbx-toast-act"></span><button type="button" class="wb-dlg__close" data-toast-close aria-label="Close">✕</button></div>
+      <div id="wbx-toast-diffs"></div>
+      <div class="wbx-toast__foot" id="wbx-toast-foot"></div>
+    </div>
+    <script src="../scripts/board.ts"></script>
+  </body>
+</html>
