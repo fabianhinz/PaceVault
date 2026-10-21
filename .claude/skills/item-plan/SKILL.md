@@ -9,20 +9,20 @@ The owner decides; you draft, ask, record. This skill ends in a plan with no ope
 
 ## Standing rules
 
-- No code before the owner writes "lets dev" (`feedback_lets_dev_gate`). Answers update the plan and nothing else.
-- The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files through the dev server and updates by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, question rules, mockup ↔ plan, `tech.md` from `planned` on); it must pass. If the hook reports an error (an answered question without a quote, a mockup ID missing from the plan), fix the file it names.
+- No code before the owner writes "lets dev" (root `CLAUDE.md` §5). Answers update the plan and nothing else.
+- The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files through the dev server and updates by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, question rules, mockup ↔ plan, `tech.md` from `planned` on except for `size: small`); it must pass. If the hook reports an error (an answered question without a quote, a mockup ID missing from the plan), fix the file it names.
 - Status moves only as the status guard allows: `idea | exploring → planned` when the first draft exists; `in-dev | in-review → planned` when the plan needs rework (it then needs the owner's `ready` again). `ready` and `done` are owner-only: propose them in one line, never set them.
-- Never tick a `- [ ]` item under `## Real-data checks` (plan) or in `review/decisions.md`; never commit (`feedback_no_commits`).
+- Never tick a `- [ ]` item under `## Real-data checks` (plan) or in `review/decisions.md`; never commit (root `CLAUDE.md` §5).
 - Every `path:line` you write is verified against the current file.
-- Workbench paths override path mentions in memory files.
 - Workers are spawned as `subagent_type: "item-worker"`; the prompt carries only the task and its context.
 
 ## Plan rules
 
-- Terse and change-focused (`feedback_terse_plans`): short context, then concrete change blocks (file → what changes), tests, verification. No analysis essays.
-- Strictly scoped (`feedback_scoped_branches`, `feedback_minimal_fixes`): the smallest change that solves the real problem; adjacent work is spun off (step 3).
-- Engine code holds domain logic only (`feedback_engine_scope`); a bumped persisted store version gets a `migrate` function (`feedback_persist_migrations`).
-- Every plan has a "Delivery and acceptance" section: review doc in `tools/workbench/backlog/<f>/review/`, cleanup only via `item-done` after the owner's acceptance (`feedback_impl_review_and_acceptance`).
+- Terse and change-focused, so the owner can scan it: 2–3 lines of context, then concrete change blocks (file → what changes), tests, verification. No analysis essays, watch-out essays, UX-risk tables or rationale sections; analysis belongs in the conversation.
+- Strictly scoped, so every branch stays reviewable and single-purpose: the smallest change that solves the real problem (a copy update beats new plumbing, an existing UI state beats a new toast; no extra toasts or notifications for flows that already show progress or are silent by design). Check how the UI actually behaves before rating a problem's severity. Adjacent work, even a useful fix, is spun off (step 3).
+- Engine code holds domain logic only (root `CLAUDE.md` §2, `packages/engine/CLAUDE.md`); a bumped persisted store version gets a `migrate` function (`apps/web/src/store/CLAUDE.md`).
+- Every plan has a "Delivery and acceptance" section: review doc in `tools/workbench/backlog/<f>/review/` (root `CLAUDE.md` §5 step 4), cleanup only via `item-done` after the owner's acceptance (`tools/workbench/CLAUDE.md` Acceptance).
+- `size: small` (owner-only, fast lane): no tech.md and no fact-check worker; the plan's `## Files` is the change list and you verify its `path:line`s yourself.
 
 ## Question format (`## Open questions`, the heading stays even when empty)
 
@@ -43,7 +43,7 @@ Every decision you or a worker make without asking goes into `tools/workbench/ba
 ## Steps
 
 1. **Draft early.** Write the plan as soon as the direction is known, in the shape of `tools/workbench/backlog/session-detail-load-perf/plan.md`: Context, Decisions (settled), Approach, Files, Tests, Verification, Delivery and acceptance, Open questions, Risks. Keep or add `type:` and `areas:` in the frontmatter (see `item-backlog`). Things only real data can confirm go under `## Real-data checks` as `- [ ]` items. Set `status: planned` once the draft exists.
-   With the plan, copy `tools/workbench/shared/tech-template.md` to `tools/workbench/backlog/<f>/tech.md` and fill it in the template's section order (Data flow, Modules, Components, Files with `### New` and `### Changed`, Interfaces: overview first, details further down; leave out a section that does not apply). Every diagram is Mermaid; `### New` / `### Changed` hold one backticked path per bullet. `vp run workbench:check` fails for an item at `planned` or later without it.
+   With the plan, copy `tools/workbench/shared/tech-template.md` to `tools/workbench/backlog/<f>/tech.md` and fill it in the template's section order (Data flow, Modules, Components, Files with `### New` and `### Changed`, Interfaces: overview first, details further down; leave out a section that does not apply). Every diagram is Mermaid; `### New` / `### Changed` hold one backticked path per bullet. `vp run workbench:check` fails for an item at `planned` or later without it. A `size: small` item has no tech.md.
    Done when every section exists and every open point is a numbered question.
 
 2. **Q&A, one topic at a time.** Give a 2–3 line catch-up on the topic, then ask at most 4 questions per round (AskUserQuestion when available), recommended option first, each option with a concrete example (label text, ASCII sketch, before/after numbers). Record each answer in the plan right away, quoted. Nothing but the plan changes.
@@ -52,6 +52,6 @@ Every decision you or a worker make without asking goes into `tools/workbench/ba
 3. **Spin off.** Adjacent work that surfaced becomes its own `idea` item folder via the `item-backlog` rules, never a plan section.
 
 4. **Fact-check.** Spawn one `item-worker` to verify every `path:line`, file name and API the plan and its `tech.md` rely on against the current code (every `### Changed` path exists, every `### New` path sits where the plan creates it), and to list anything missing from Files or Tests. Fix the plan from its report; relay new questions as Q items.
-   Done when the worker reports no mismatch.
+   Done when the worker reports no mismatch. For `size: small`, skip the worker: verify every `path:line` of the plan yourself.
 
 5. **Hand over.** When `## Open questions` has no `open` item, tell the owner in one line: "Plan has no open questions; set `status: ready` when you agree, then write "lets dev"." Rewrite `next:` (e.g. `Q&A on Q5–Q7`, `Owner sets ready`, `Implement on "lets dev"`).

@@ -28,10 +28,10 @@
 - **No object destructuring** for component props and hook return values — access via `props.x` and `result.x` instead.
 - **Delete dead code**: Exported but never-imported code should be removed immediately, not left around.
 - **No `as any` for external data**: Use Zod schemas with `safeParse` + `z.infer` to validate and type data from untyped sources (file parsers, IndexedDB, hook input, etc.). Schemas live next to the parser/consumer (e.g. `fitSchemas.ts`). On failure: return a safe fallback (`undefined`, `[]`), never throw.
-- **No non-null assertion `!`**: Narrow with guards, defaults or early returns.
+- **No non-null assertion `!`**: Narrow with guards, defaults, optional chaining, `for…of` or type-guard filters, or early returns. `!` silences `noUncheckedIndexedAccess` without handling the missing case (lint: `no-non-null-assertion`).
 - **No ternary operators in `.ts` files** (convention, not linter-enforced): Prefer `if/else` over `condition ? a : b` in `.ts` files (engine, lib, stores, hooks, scripts). Single-level ternaries are allowed in `.tsx` (JSX). Nested ternaries are banned everywhere.
 - **No `Object.assign`**: Change state by assigning fields on the immer draft or by replacing the object outright. Store updates go through intent-named actions, never a generic partial patch.
-- **Pure packages**: `packages/engine` and `packages/gpx` hold domain logic only: no React, no state, no app imports (see their CLAUDE.md).
+- **Pure packages**: `packages/engine` and `packages/gpx` hold domain logic only: no React, no state, no app imports (see their CLAUDE.md). Presentation aggregations (e.g. per-sport TSS for chart colours), serialization (GPX export), format conversion and I/O stay out of the engine even when pure: they go to feature hooks or `apps/web/src/lib/`.
 - **Syntax & Formatting**: Defer to Oxlint and Oxfmt (via Vite+, configured in the root `vite.config.ts`). Do not waste time manually formatting code or enforcing linting rules; focus on logic.
 
 ## 3. File Naming Conventions
@@ -64,13 +64,13 @@ Read the CLAUDE.md of the area you work in:
 
 ## 5. Dev Workflow & Actionable Verification
 
-> **Plan first, then build.** The owner creates branches and commits; Claude leaves all changes in the working tree.
+> **Plan first, then build.** The owner creates branches and commits; Claude never commits or offers to, and leaves all changes in the working tree. Review changes with `git diff`.
 
 All backlog work lives in `tools/workbench/backlog/<item>/` (`plan.md`, `tech.md`, `mockup/`, `research/`, `review/`); every item is a folder (there is no ideas list), and every agent decision goes to `review/decisions.md`. How the owner works with the backlog is in `tools/workbench/GUIDE.md`; how the board, the hooks and the status gates work is in `tools/workbench/README.md`. Start any backlog work (feature, bug, chore) through the `item` skill (`.claude/skills/item/SKILL.md`). It reads `status:` in the plan's frontmatter and hands over to the stage skill. `ready` and `done` are owner-only; a `PreToolUse` hook (`tools/workbench/scripts/statusGuard.ts`) enforces the status gates.
 
-1. **Plan**: `tools/workbench/backlog/<item>/plan.md` with context, decisions, approach, files, tests and verification, plus `tech.md` from `tools/workbench/shared/tech-template.md`. Review it with the owner; no code before "lets dev".
+1. **Plan**: `tools/workbench/backlog/<item>/plan.md` with context, decisions, approach, files, tests and verification, plus `tech.md` from `tools/workbench/shared/tech-template.md`. Review it with the owner; no code before "lets dev". With several open topics, every topic gets its plan and an agreed order first, walked one at a time (short catch-up, then a questionnaire). A `size: small` item (owner-only, one-line bugs and chores) has no `tech.md`.
 2. **Implement**: Write the code and the tests `apps/web/tests/CLAUDE.md` calls for.
-3. **Verify**: Run the suite from the root (each script fans out to the workspace packages):
+3. **Verify**: Run all four from the root, never skip e2e (each script fans out to the workspace packages). Type the `vp` commands, never the pnpm script wrappers (`pnpm check`, …); Node is managed by vp too (`vp env`, pinned in `.node-version`):
 
    ```bash
    vp run check   # per package: vp check (fmt + lint + types); workbench: astro check
@@ -81,4 +81,4 @@ All backlog work lives in `tools/workbench/backlog/<item>/` (`plan.md`, `tech.md
 
    The bare built-ins work from the root as well: `vp check` (whole workspace), `vp test -- --run` (all test projects), `vp build` (apps/web). Playwright has no root config: run e2e with `vp run e2e` or `vp -C apps/web exec playwright test`. The root `vp run check` and `vp run test` compile the translations first (`vp run -F @pacevault/i18n compile`); before a bare `vp check` after translation keys changed, run that compile (the message types come from the generated files).
 
-4. **Review**: `tools/workbench/backlog/<item>/review/index.html` from `tools/workbench/shared/review-template.html`; screenshots via `vp run workbench:capture`.
+4. **Review**: every implemented plan delivers `tools/workbench/backlog/<item>/review/index.html` from `tools/workbench/shared/review-template.html`: each change labelled (C1, C2, …) with before/after screenshots (desktop and 390 px, via `vp run workbench:capture`) and 1–2 lines (what, `path:line`, which decision). The item folder is cleaned up only after the owner accepts (`tools/workbench/CLAUDE.md` Acceptance).

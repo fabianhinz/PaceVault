@@ -9,12 +9,12 @@ Intake only: open a folder. No research, no mockups, no plan content beyond the 
 
 ## Standing rules
 
-- The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files through the dev server and updates by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, type and areas, question rules, mockup ↔ plan); it must pass. If the hook reports an error, fix the file it names.
+- The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files through the dev server and updates by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, type and areas, question rules, mockup ↔ plan, a `tech.md` from `planned` on except for `size: small`); it must pass. If the hook reports an error, fix the file it names.
 - Status moves only as the status guard allows. A new `plan.md` starts at `status: idea`. `ready` and `done` are owner-only: propose them in one line, never set them.
-- Never tick a `- [ ]` item; never commit (`feedback_no_commits`).
+- Never tick a `- [ ]` item; never commit (root `CLAUDE.md` §5).
 - Every `path:line` you write is verified against the current file.
-- Workbench paths override path mentions in memory files.
-- Keep it terse (`feedback_terse_plans`) and scoped (`feedback_scoped_branches`): one idea per item, no adjacent improvements folded in.
+- Keep it terse and scoped: one idea per item, no adjacent improvements folded in; an adjacent idea gets its own item, so every branch stays reviewable and single-purpose.
+- `size: small` (fast lane, for one-line bugs and chores) is owner-only: suggest it to the owner in one line, never write it (the status guard refuses any agent change to the line).
 
 ## Steps
 
@@ -41,6 +41,6 @@ Intake only: open a folder. No research, no mockups, no plan content beyond the 
    ## Open questions
    ```
 
-   `type`: exactly one of `feature`, `bug`, `chore`. `areas`: at least one, the workspace parts the item touches: `app` (apps/web, the PWA we ship), `engine`, `gpx`, `ui`, `i18n`, `testing` (packages/*), `workbench` (board, scripts, hooks), `docs` (tools/docs), `repo` (root workspace config), `skills` (`.claude/`). List the areas the item mainly changes, not every file it brushes, each once. Nothing else is allowed; `workbench:check` reports a missing or unknown type, a missing, empty, unknown or duplicate area (both are required for every status except `done`; the lists are `ITEM_TYPES`/`AREAS` in `tools/workbench/scripts/frontmatter.ts`). Add `depends-on: [<folder>]` only when the owner names a dependency. `## Open questions` stays even when empty.
+   `type`: exactly one of `feature`, `bug`, `chore`. `areas`: at least one, the workspace parts the item touches: `app` (apps/web, the PWA we ship), `engine`, `gpx`, `ui`, `i18n`, `testing` (packages/*), `workbench` (board, scripts, hooks), `docs` (tools/docs), `repo` (root workspace config), `skills` (`.claude/`). List the areas the item mainly changes, not every file it brushes, each once. Nothing else is allowed; `workbench:check` reports a missing or unknown type, a missing, empty, unknown or duplicate area (both are required for every status except `done`; the lists are `ITEM_TYPES`/`AREAS` in `tools/workbench/scripts/frontmatter.ts`). Add `depends-on: [<folder>]` only when the owner names a dependency. `size: small` is the owner's line: a small item skips tech.md, the fact-check worker and the deps graph, and the suite runs once. `## Open questions` stays even when empty.
 
 3. **Hand over.** Tell the owner in one line what was captured and where, and the next stage you'd suggest (`item-explore` for a UI change without a settled design, `item-plan` otherwise). `next:` already says it.

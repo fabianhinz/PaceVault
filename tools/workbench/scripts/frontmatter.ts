@@ -86,6 +86,8 @@ export const planFrontmatterSchema = z
       })
       .optional(),
     next: z.string().trim().min(1),
+    /** Fast lane (owner-only): no tech.md, no fact-check, no deps graph, the suite runs once. */
+    size: z.enum(['small'], { error: () => 'size must be: small' }).optional(),
   })
   .superRefine((front, ctx) => {
     // Done items from before the type/areas split (review round 2, R5) stay valid without them.
@@ -128,6 +130,15 @@ export const readStatus = (text: string): string | undefined => {
   if (!match) return undefined;
   const line = /^status:[ \t]*([^\s#]*)/m.exec(match[1]);
   if (!line || line[1] === '') return undefined;
+  return line[1].replace(/^["']|["']$/g, '');
+};
+
+/** The raw `size:` value, without validating it (the status guard keeps it owner-only). */
+export const readSize = (text: string): string | undefined => {
+  const match = FRONTMATTER.exec(text);
+  if (!match) return undefined;
+  const line = /^size:[ \t]*([^\s#]*)/m.exec(match[1]);
+  if (!line) return undefined;
   return line[1].replace(/^["']|["']$/g, '');
 };
 
@@ -300,7 +311,8 @@ const FROM_PLANNED: readonly Status[] = ['planned', ...PAST_READY];
 
 /**
  * The `workbench:check` rules for one `plan.md`: frontmatter present and valid, every answer
- * quotes the owner, no open question from `ready` on, a `tech.md` from `planned` on.
+ * quotes the owner, no open question from `ready` on, a `tech.md` from `planned` on (not for
+ * `size: small`).
  */
 export const checkPlan = (folder: string, plan: string, hasTech: boolean): string[] => {
   const path = `tools/workbench/backlog/${folder}/plan.md`;
@@ -329,7 +341,8 @@ export const checkPlan = (folder: string, plan: string, hasTech: boolean): strin
     const ids = open.map((question) => question.id).join(', ');
     errors.push(`${path}: status ${parsed.data.status} with open questions (${ids})`);
   }
-  if (FROM_PLANNED.includes(parsed.data.status) && !hasTech) {
+  const needsTech = parsed.data.size !== 'small';
+  if (FROM_PLANNED.includes(parsed.data.status) && needsTech && !hasTech) {
     errors.push(
       `tools/workbench/backlog/${folder}/tech.md: missing (required from status planned on; template tools/workbench/shared/tech-template.md)`,
     );

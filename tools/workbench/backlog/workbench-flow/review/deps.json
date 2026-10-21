@@ -1,0 +1,65 @@
+{
+  "item": "workbench-flow",
+  "generated": "2026-10-21",
+  "command": "depcruise --config tools/workbench/.dependency-cruiser.cjs --output-type json tools/workbench/scripts tools/workbench/site/src tools/workbench/tests",
+  "roots": [
+    "tools/workbench/scripts",
+    "tools/workbench/site/src",
+    "tools/workbench/tests"
+  ],
+  "focus": [
+    "tools/workbench/scripts/frontmatter.ts",
+    "tools/workbench/tests/frontmatter.spec.ts",
+    "tools/workbench/scripts/statusGuard.ts",
+    "tools/workbench/tests/statusGuard.spec.ts",
+    "tools/workbench/tests/boardRead.spec.ts",
+    "tools/workbench/site/src/app/ItemCard.tsx",
+    ".claude/skills/item-backlog/SKILL.md",
+    ".claude/skills/item-explore/SKILL.md",
+    ".claude/skills/item-plan/SKILL.md",
+    ".claude/skills/item-implement/SKILL.md",
+    ".claude/skills/item-review/SKILL.md",
+    ".claude/skills/item-done/SKILL.md",
+    ".claude/agents/item-worker.md",
+    ".claude/settings.json",
+    "CLAUDE.md",
+    "apps/web/CLAUDE.md",
+    "packages/i18n/CLAUDE.md",
+    "tools/workbench/CLAUDE.md",
+    "tools/workbench/README.md",
+    "tools/workbench/GUIDE.md"
+  ],
+  "astro": [],
+  "nodes": 20,
+  "edges": 22,
+  "added": [
+    "packages/ui/src/components",
+    "packages/ui/src/lib",
+    "tools/workbench/scripts/check.ts",
+    "tools/workbench/scripts/cleanup.ts",
+    "tools/workbench/scripts/deps.ts",
+    "tools/workbench/scripts/interfaces.ts",
+    "tools/workbench/site/src/actions",
+    "tools/workbench/site/src/app/CheckRow.tsx",
+    "tools/workbench/site/src/app/Columns.tsx",
+    "tools/workbench/site/src/app/ItemPanel.tsx",
+    "tools/workbench/site/src/app/icons.tsx",
+    "tools/workbench/site/src/lib",
+    "tools/workbench/tests/interfaces.spec.ts",
+    "tools/workbench/tests/writeBack.spec.ts"
+  ],
+  "missing": [],
+  "boundary": {
+    "rules": [
+      "engine-is-pure",
+      "store-no-features"
+    ],
+    "violations": [],
+    "modules": 797,
+    "dependencies": 2329
+  },
+  "components": {
+    "nodes": 4,
+    "edges": 3
+  }
+}

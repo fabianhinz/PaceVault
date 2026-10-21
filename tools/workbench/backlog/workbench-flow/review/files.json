@@ -1,0 +1,91 @@
+{
+  "item": "workbench-flow",
+  "generated": "2026-10-21",
+  "base": "ba8654df846cc3823e4374962c2be77be620766c",
+  "ref": "WB_BASE=HEAD",
+  "planned": [
+    {
+      "path": ".claude/agents/item-worker.md",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/skills/item-backlog/SKILL.md",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/skills/item-done/SKILL.md",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/skills/item-explore/SKILL.md",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/skills/item-implement/SKILL.md",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/skills/item-plan/SKILL.md",
+      "status": "modified"
+    },
+    {
+      "path": ".claude/skills/item-review/SKILL.md",
+      "status": "modified"
+    },
+    {
+      "path": "CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "packages/i18n/CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/GUIDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/README.md",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/scripts/frontmatter.ts",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/scripts/statusGuard.ts",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/site/src/app/ItemCard.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/tests/boardRead.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/tests/frontmatter.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/tests/statusGuard.spec.ts",
+      "status": "modified"
+    }
+  ],
+  "notPlanned": [
+    {
+      "path": "apps/web/src/store/CLAUDE.md",
+      "status": "modified"
+    }
+  ],
+  "untouched": [".claude/settings.json"]
+}

@@ -215,4 +215,14 @@ describe('board.read', () => {
       'Later, renamed',
     );
   });
+
+  it('reads size: small and asks no tech.md of a small item at planned', async () => {
+    const small = planText('Small', '2026-10-03')
+      .replace('status: idea', 'status: planned')
+      .replace('next: Something\n', 'next: Something\nsize: small\n');
+    item('d-small', small);
+    const board = await need().read();
+    expect(board.items.find((entry) => entry.folder === 'd-small')?.data.size).toBe('small');
+    expect(board.errors.some((error) => error.includes('backlog/d-small/'))).toBe(false);
+  });
 });

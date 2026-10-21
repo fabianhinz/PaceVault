@@ -11,13 +11,13 @@ The owner decides; you research, mock up, relay and ask. This skill ends in a se
 
 - Every design decision goes to the owner, in rounds of at most 4 questions, one topic at a time, recommended option first, each with a concrete example (ASCII sketch, label text, before/after). A decision is settled only when the owner settles it; one handed to you ("you decide") goes to `tools/workbench/backlog/<f>/review/decisions.md` (`## Agent decisions`, format of `item-plan`: only what changes behaviour, look or scope, with its kind first; a replaced one becomes `[~] … Superseded by: <pointer>`).
 - Questions live in the plan's `## Open questions` in the `item-plan` format (`- **Q3** · open · …` / `- **Q3** · answered <date> · … → (a) …. Owner: "<verbatim>"`). A reply that doesn't pick an option ("i don't get it") keeps the question open: explain again with a more concrete example. The mockup's `decisions[]` list these IDs with a short title (`{ id, title }`); the badges and the Questions tab read the states from the plan through the board.
-- No code before "lets dev" (`feedback_lets_dev_gate`). Answers update the plan and the mockup, nothing else.
+- No code before "lets dev" (root `CLAUDE.md` §5). Answers update the plan and the mockup, nothing else.
 - Workers are spawned as `subagent_type: "item-worker"` (no git writes, no status changes). They write only inside `tools/workbench/backlog/<f>/mockup/` or `tools/workbench/backlog/<f>/research/` and start no dev or preview servers.
 - The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files through the dev server and updates by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, question rules, mockup ↔ plan); it must pass.
 - Status moves only as the status guard allows: `idea → exploring` at the start, `exploring → planned` when `item-plan` writes the draft. `ready` and `done` are owner-only: propose them in one line.
-- Never tick a `- [ ]` item; never commit (`feedback_no_commits`).
-- Every code reference you relay or write is a `path:line` verified against the current file. Workbench paths override path mentions in memory files.
-- Design rules the briefs carry: no `prefers-reduced-motion` handling (`feedback_no_reduced_motion`); copy states facts, never sells (`feedback_no_marketing_tone`); banners at the very top of the page (`feedback_banners_top_of_page`).
+- Never tick a `- [ ]` item; never commit (root `CLAUDE.md` §5).
+- Every code reference you relay or write is a `path:line` verified against the current file.
+- Design rules the briefs carry: the UI rules of `apps/web/CLAUDE.md` (no `prefers-reduced-motion` handling, banners at the very top of the page, same action in the same place at every width) and the tone of `packages/i18n/CLAUDE.md` (copy states facts, never sells).
 
 ## Paths
 

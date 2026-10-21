@@ -1,0 +1,17 @@
+flowchart TB
+subgraph D0["packages/ui/src/components/"]
+c0["Card"]
+c1["Typography"]
+end
+subgraph D1["tools/workbench/site/src/app/"]
+c2["ItemCard"]
+c3["icons"]
+end
+c2-->c0
+c2-->c1
+c2-->c3
+class c2 mod
+class c0,c1,c3 ui
+classDef new stroke:#e5e7eb,stroke-width:2px
+classDef mod stroke:#8b8f9a,stroke-width:2px
+classDef ui stroke:#8b8f9a,stroke-dasharray:4 3

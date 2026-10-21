@@ -1,0 +1,6 @@
+## Agent decisions
+
+- [x] **(look) A small card's outline replaces the tile border (`border-accent/30`) instead of adding a ring on top, and keeps its tint on hover (`hover:bg-accent/10`).** Agent: Q6 asks for a subtle background and outline; a ring over the existing white border reads as a double outline, and the plain hover would drop the tint.
+- [x] **(scope) The status guard also refuses a new plan written with `size:`.** Agent: follows from Q5 (owner-only); without it item-backlog could create a small item directly.
+- [~] **(look) Every status column's card list gets 8px top padding, with or without a small card, so the first card sits 16px under the column head instead of 8px.** Agent: R1; the column body scrolls and clips, so a first card's Fast tag needs room inside it. Padding only while the first card is small would shift that column alone, and moving the head's bottom padding into the body instead keeps the old spacing but puts the first tag about 2px under the column's count chip. Superseded by: R2 (plan.md Decisions)
+- [~] **(look) While a small card drags, its Fast banner fades with it (50% opacity, like the card).** Agent: R2; banner and card read as one unit, and a full-strength banner over the faded card would look detached. Superseded by: R3 (plan.md Decisions)

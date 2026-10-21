@@ -181,6 +181,13 @@ Terrain, climbs, extremes, stats (`SessionChartsExplorer.tsx:107-118`, `:205-233
 3. Owner records the same trace after: one main-thread decode, no `buildSessionChartRows` on the main thread, shorter page commit.
 4. Manual: zoom/reset/fast repeated zoom (last wins); next session via the peek (no old rows); reprocess or delete while open; weather loads for a session without cached weather.
 
+## Sweep findings (2026-10-21)
+
+- **Blank page:** a session without records (or a failed decode, which returns `[]`) renders nothing at the gate (`apps/web/src/pages/SessionDetailPage.tsx:49`): no header, no delete. The plan keeps this gate.
+- **Map re-decodes in prod too:** the effect depends on `sessions` (`apps/web/src/features/map/hooks/useSessionDetailPath.ts:58`), so every sessions-store change decodes again (e.g. `markSessionSeen` on mount). The records query fixes it.
+- **Stale records after reprocessing:** the page's records effect never re-runs; the planned invalidation fixes it.
+- Paths above predate the monorepo: `src/` is `apps/web/src/`, `src/packages/engine/` is `packages/engine/src/`, `src/components/ui/` is `packages/ui/src/components/`. Verification step "next session via the peek" has no basis: the peek doesn't navigate.
+
 ## Open questions
 
 None. All questions answered on 2026-10-14.

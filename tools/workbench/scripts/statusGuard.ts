@@ -10,6 +10,7 @@ import {
   decisionsWithoutKind,
   isOpenCheck,
   readChecks,
+  readSize,
   readStatus,
   type CheckItem,
 } from './frontmatter.ts';
@@ -27,6 +28,8 @@ import {
  *   `Superseded by: <pointer>` with the rest unchanged, a `[~]` item never changes, and every
  *   decision an agent adds names its kind (`**(behaviour|look|scope) …**`).
  * - A new plan starts at `status: idea`.
+ * - `size:` in plan.md is owner-only: an agent never adds, changes or removes it, nor writes a
+ *   new plan with it.
  * - Bash: a heuristic, per command segment with `cd` tracking, against in-place writes to a
  *   plan.md or review/decisions.md and deleting an item folder.
  * Exit 2 blocks the call (stderr goes back to Claude); a crash exits 1, which never blocks.
@@ -90,10 +93,15 @@ const decidePlan = (
 ): string | undefined => {
   const path = `tools/workbench/backlog/${folder}/plan.md`;
   const to = readStatus(after);
+  const sizeMessage = `size: is owner-only; the owner sets or removes it (${path}). Ask the owner.`;
   if (before === undefined) {
-    if (to === 'idea') return undefined;
-    return `A new plan starts at status: idea, not ${to ?? '(none)'} (${path}). Ask the owner.`;
+    if (to !== 'idea') {
+      return `A new plan starts at status: idea, not ${to ?? '(none)'} (${path}). Ask the owner.`;
+    }
+    if (readSize(after) !== undefined) return sizeMessage;
+    return undefined;
   }
+  if (readSize(before) !== readSize(after)) return sizeMessage;
   const from = readStatus(before);
   if (!isAllowedMove(from, to)) {
     return `status: ${from ?? '(none)'} → ${to ?? '(none)'} is owner-only or skips a gate (${path}). Ask the owner.`;

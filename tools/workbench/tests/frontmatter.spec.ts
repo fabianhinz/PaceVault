@@ -5,6 +5,7 @@ import {
   planFrontmatterSchema,
   readChecks,
   readQuestions,
+  readSize,
   readTechPaths,
   AREAS,
 } from '../scripts/frontmatter.ts';
@@ -255,6 +256,16 @@ flowchart TB
     expect(checkPlan('p', plan({ status: 'planned' }), false)[0]).toMatch(
       /^tools\/workbench\/backlog\/p\/tech\.md: missing/,
     );
+  });
+
+  it('skips the tech.md rule for size: small and accepts no other size', () => {
+    expect(checkPlan('s', plan({ status: 'planned', size: 'small' }), false)).toEqual([]);
+    expect(checkPlan('s', plan({ status: 'in-dev', size: 'small' }), false)).toEqual([]);
+    expect(checkPlan('b', plan({ status: 'planned', size: 'big' }), true)).toEqual([
+      'tools/workbench/backlog/b/plan.md: size: size must be: small',
+    ]);
+    expect(readSize(plan({ size: 'small' }))).toBe('small');
+    expect(readSize(plan({}))).toBeUndefined();
   });
 
   it('checks mockup decisions against the plan by ID only', () => {

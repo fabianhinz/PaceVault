@@ -9,11 +9,11 @@ The owner checks the result on the item's Review tab: the review doc, the agent 
 
 ## Standing rules
 
-- The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files through the dev server and updates by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, question rules, mockup ↔ plan, `tech.md` from `planned` on); it must pass.
+- The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files through the dev server and updates by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, question rules, mockup ↔ plan, `tech.md` from `planned` on except for `size: small`); it must pass.
 - Status moves only as the status guard allows: `in-dev → in-review` when the doc is ready; `in-review → in-dev` while a review round reworks code, then back to `in-review`; `in-dev | in-review → planned` when a finding changes the plan itself (then it needs the owner's `ready` again). `ready` and `done` are owner-only: propose them in one line, never set them.
-- Never tick a `- [ ]` item under `## Real-data checks` (plan) or in `review/decisions.md`; never commit (`feedback_no_commits`); never delete the mockup, plan or review (that is `item-done`, after acceptance).
-- Smallest fix for each finding (`feedback_minimal_fixes`); nothing adjacent.
-- Every `path:line` in the doc is verified against the current file. Workbench paths override path mentions in memory files (the review doc and its screenshots are committed).
+- Never tick a `- [ ]` item under `## Real-data checks` (plan) or in `review/decisions.md`; never commit (root `CLAUDE.md` §5); never delete the mockup, plan or review (that is `item-done`, after acceptance).
+- Smallest fix for each finding: a copy update beats new plumbing, an existing UI state beats a new toast; no extra toasts or notifications. Check how the UI actually behaves before rating a finding's severity. Nothing adjacent.
+- Every `path:line` in the doc is verified against the current file (the review doc and its screenshots are committed).
 - Workers are spawned as `subagent_type: "item-worker"`; the prompt carries only the task.
 
 ## The review doc
@@ -29,6 +29,7 @@ The owner checks the result on the item's Review tab: the review doc, the agent 
 - **Open points:** boundary violations from `vp run workbench:deps` (rule, from → to), the workers' open questions (options, recommendation first), owner steps (what the status guard kept from the agents), new test failures, and real-data checks still to do. Agent decisions are not copied into the doc: they live in `review/decisions.md`, and the owner confirms them by ticking them on the Review tab.
 - **Verification:** command table of the CLAUDE.md §5 suite with pass/fail; failures marked known or new per `tools/workbench/backlog/flaky.md`; the `workbench:deps` run (import graph, components, files, interfaces; see Actuals).
 - **How to check:** numbered steps the owner can do in the running app.
+- **`size: small`:** only Changes, Verification and How to check (before/after shots for a UI bug); no `workbench:deps` run.
 
 ## Screenshots per item type
 
@@ -40,7 +41,7 @@ The owner checks the result on the item's Review tab: the review doc, the agent 
 
 ## Actuals (Tech tab: Planned | Actual)
 
-Every round, before writing the doc, run `vp run workbench:deps -- <f>` for every item with a `tech.md`; it writes all Actual sides of the Tech tab into `tools/workbench/backlog/<f>/review/`:
+Every round, before writing the doc, run `vp run workbench:deps -- <f>` for every item with a `tech.md` (skip for `size: small`: `deps.ts` exits without a tech.md); it writes all Actual sides of the Tech tab into `tools/workbench/backlog/<f>/review/`:
 
 - `deps.mmd`, `deps.json`: the import graph (dependency-cruiser with `tools/workbench/.dependency-cruiser.cjs` over the folders of the plan's `areas:` and of the planned TypeScript paths), focused on every `### New` and `### Changed` path of `tech.md`, with counts, added, missing and the boundary result (the boundary rules are checked over `apps/web/src` and `packages/`). Exit 1 means a boundary rule (`engine-is-pure`, `store-no-features`) is violated: the printed line goes into Open points; it is a finding, not something to fix outside the plan.
 - `components.mmd`: the component tree of the New / Changed `.tsx` files and the `.tsx` files they import (counts in `deps.json`).
@@ -55,7 +56,7 @@ Before every hand-over, read `tools/workbench/backlog/<f>/review/decisions.md` a
 
 ### First round (from `item-implement` or `status: in-dev` without a doc)
 
-1. **Doc.** Run `vp run workbench:deps -- <f>` first (see Actuals). `cp tools/workbench/shared/review-template.html tools/workbench/backlog/<f>/review/index.html`, then fill it in small Edit steps from the plan and the worker report: one C entry per UI or flow change, Changes without UI as short entries saying what the owner can observe, Deviations and Owner steps from the report. Agent decisions the worker reported but did not write go to `review/decisions.md`, not into the doc.
+1. **Doc.** Run `vp run workbench:deps -- <f>` first (see Actuals; skip for `size: small`). `cp tools/workbench/shared/review-template.html tools/workbench/backlog/<f>/review/index.html`, then fill it in small Edit steps from the plan and the worker report: one C entry per UI or flow change, Changes without UI as short entries saying what the owner can observe, Deviations and Owner steps from the report. Agent decisions the worker reported but did not write go to `review/decisions.md`, not into the doc.
 2. **Capture "after".** If `review/capture.spec.ts` doesn't exist (no "before" was taken) and the item changes UI, write it from the template for its type (see Screenshots per item type). Extend it with a scene for every C entry. Run `vp run workbench:capture -- tools/workbench/backlog/<f>/review`; the shots land in `review/after/`.
 3. **Check the doc.** Every `<img>` points at a file that exists, and every PNG in `before/` and `after/` is referenced or listed as unused. Open the doc headless and check `naturalWidth > 0` for every image when unsure.
 4. **Sweep decisions.** See Decision sweep.
@@ -71,7 +72,7 @@ Findings arrive in the chat or as `- **Rn** · open · on <entry> · …` lines 
    - changes a settled plan decision → record it in the plan (quote the owner) and, if the approach must be replanned, move to `planned` and stop for this item;
    - otherwise → a fix.
 3. **Fix.** One `item-worker` per item with the R items, the plan path and "smallest fix per item, full CLAUDE.md §5 suite". Failures: listed in `tools/workbench/backlog/flaky.md` → re-run with `vp -C apps/web exec playwright test --last-failed --workers 1`; not listed → new, into Open points.
-4. **Recapture and document.** Re-run `vp run workbench:deps -- <f>` (see Actuals). Extend `capture.spec.ts` for any new scene, run the capture, add a "Review round n" section above Changes with one R entry per finding (fixed: before/after; not fixed: why), update Deviations, Open points and Verification.
+4. **Recapture and document.** Re-run `vp run workbench:deps -- <f>` (see Actuals; skip for `size: small`). Extend `capture.spec.ts` for any new scene, run the capture, add a "Review round n" section above Changes with one R entry per finding (fixed: before/after; not fixed: why), update Deviations, Open points and Verification.
 5. **Sweep decisions.** See Decision sweep.
 6. **Hand over.** Set `status: in-review`; rewrite `next:` to `Owner reviews round n`. One line to the owner, as in the first round.
 

@@ -11,6 +11,6 @@ next: 'Owner decides: explore the UI or plan directly'
 
 ## Idea
 
-A 3D map on the session details page. From the ideas.md "Loose ideas" list.
+A 3D map on the session details page. Today pitch and rotate are off (`apps/web/src/features/map/MapBackground.tsx:85-87`), and the map is the one shared background for every route. 3D terrain needs DEM tiles, a fourth external service beyond the three `apps/web/CLAUDE.md` allows; without it only a 3D path from record elevation (deck.gl) is possible.
 
 ## Open questions

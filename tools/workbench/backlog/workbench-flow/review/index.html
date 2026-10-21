@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Workbench flow · Review</title>
+    <link rel="stylesheet" href="../../../shared/review.css" />
+  </head>
+  <body class="rv">
+    <main class="rv-doc">
+      <header class="rv-text">
+        <p class="rv-over">Review · round 3</p>
+        <h1>Lighter item flow: fast lane and in-repo rules</h1>
+        <p>
+          A <code>size: small</code> fast lane for one-line bugs and chores, owner-only and marked
+          with a yellow "Fast" banner on the board; the memory rules now live in the repo's
+          CLAUDE.md files and skills, and the memory folder is empty. Round 3 settles the card look:
+          the banner is the card's top strip, with a yellow border.
+        </p>
+      </header>
+
+      <h2>Review round 3</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R3</span>"Fast" banner inside the card, yellow border</h3>
+        <div class="rv-text">
+          <p>
+            A small card gets a yellow "Fast" banner with a Zap icon as its top strip, edge to edge,
+            and a border in the banner's colour. No list padding, no corner tag. Replaces R2 and R1.
+          </p>
+          <p class="rv-refs">
+            <code>tools/workbench/site/src/app/ItemCard.tsx:42</code>, <code>:46-56</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Idea column of the running board · before: R1 corner tag · after: R3</span>
+          </p>
+          <div class="rv-pair" style="--w: 224px">
+            <figure>
+              <figcaption>Before (R1)</figcaption>
+              <img
+                src="before/r1-small-card.png"
+                alt="R3 before · Idea column with the R1 corner tags"
+                width="224"
+                height="611"
+                loading="lazy"
+              />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img
+                src="after/r3-small-card.png"
+                alt="R3 after · Idea column with three small cards carrying the Fast banner"
+                width="206"
+                height="574"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R2</span>"Fast" banner attached above the card</h3>
+        <div class="rv-text">
+          <p>
+            Built, then replaced by R3 before it reached your board: the banner sat outside the
+            card, attached above it. It also removed the R1 list padding, so
+            <code>Columns.tsx</code> has no diff any more.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Idea column · R2 (superseded)</span></p>
+          <div class="rv-pair" style="--w: 224px">
+            <figure>
+              <figcaption>After (R2)</figcaption>
+              <img
+                src="after/r2-small-card.png"
+                alt="R2 · Idea column with the Fast banner attached above three small cards"
+                width="224"
+                height="659"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <h2>Review round 2</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R1</span>Small cards carry a yellow "Fast" tag</h3>
+        <div class="rv-text">
+          <p>
+            The accent tint and outline from C1 were not recognizable. A small card keeps the normal
+            tile and gets a yellow "Fast" tag with a Zap icon on its top-right corner, on the border
+            line (owner picked "Corner tag"). The card lists get top padding so a first card's tag
+            isn't clipped (agent decision 3). Replaces agent decision 1.
+          </p>
+          <p class="rv-refs">
+            <code>tools/workbench/site/src/app/ItemCard.tsx:40</code>, <code>:45-54</code>;
+            <code>tools/workbench/site/src/app/Columns.tsx:179-180</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span
+              >Idea column of the running board · for this shot only, Onboarding first fit was moved
+              to the top in the browser page (no file changed) to show the first-card case</span
+            >
+          </p>
+          <div class="rv-pair" style="--w: 224px">
+            <figure>
+              <figcaption>After</figcaption>
+              <img
+                src="after/r1-small-card.png"
+                alt="R1 after · Idea column with three small cards carrying the Fast tag"
+                width="224"
+                height="611"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <h2>Changes</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C1</span>Small cards are tinted and outlined</h3>
+        <div class="rv-text">
+          <p>
+            A card whose plan has <code>size: small</code> gets an accent outline in place of the
+            white tile border and a faint accent background, kept on hover (Q6, agent decision 1).
+            No screenshots: the owner skipped the capture for this item. Replaced by R1.
+          </p>
+          <p class="rv-refs">
+            <code>tools/workbench/site/src/app/ItemCard.tsx:40</code>. Test:
+            <code>tools/workbench/tests/boardRead.spec.ts:219</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C2</span>Fast lane through the item flow</h3>
+        <div class="rv-text">
+          <p>
+            A small item has no <code>tech.md</code>, no fact-check worker and no deps graph; its
+            plan's <code>## Files</code> is the change list; the final suite is not repeated when a
+            round built a single small item; its review doc keeps Changes, Verification and How to
+            check, with before/after shots for UI bugs (Q1, Q7).
+          </p>
+          <p class="rv-refs">
+            <code>.claude/skills/item-plan/SKILL.md:25</code>, <code>:55</code>;
+            <code>.claude/skills/item-implement/SKILL.md:36</code>, <code>:49</code>,
+            <code>:56</code>; <code>.claude/skills/item-review/SKILL.md:32</code>, <code>:44</code>,
+            <code>:59</code>, <code>:75</code>;
+            <code>.claude/skills/item-backlog/SKILL.md:17</code>; <code>CLAUDE.md:71</code>;
+            <code>tools/workbench/README.md:21</code>; <code>tools/workbench/GUIDE.md:19</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C3</span><code>size:</code> is owner-only</h3>
+        <div class="rv-text">
+          <p>
+            Agents can't add, change or remove <code>size:</code>, nor create a plan with it; the
+            status guard answers "size: is owner-only … Ask the owner." Agents may only suggest it
+            (Q5, agent decision 2).
+          </p>
+          <p class="rv-refs">
+            <code>tools/workbench/scripts/statusGuard.ts:31</code>, <code>:96-104</code>. Test:
+            <code>tools/workbench/tests/statusGuard.spec.ts:59</code>.
+          </p>
+        </div>
+      </article>
+
+      <h2>Changes without UI</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N1</span><code>size: small</code> in the plan schema</h3>
+        <div class="rv-text">
+          <p>
+            <code>size</code> is optional and accepts only <code>small</code>;
+            <code>workbench:check</code> no longer asks a small item for a <code>tech.md</code>.
+          </p>
+          <p class="rv-refs">
+            <code>tools/workbench/scripts/frontmatter.ts:90</code>,
+            <code>:137</code> (<code>readSize</code>), <code>:344</code>. Test:
+            <code>tools/workbench/tests/frontmatter.spec.ts:261</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N2</span>Memory rules now live in the repo</h3>
+        <div class="rv-text">
+          <p>
+            Every <code>feedback_*</code> tag is gone from the skills and the item-worker agent;
+            each rule is written out where it applies (Q2–Q4).
+          </p>
+          <table>
+            <tr>
+              <th>Memory rule</th>
+              <th>Now in</th>
+            </tr>
+            <tr>
+              <td>no_non_null_assertion, engine_scope</td>
+              <td><code>CLAUDE.md:31</code>, <code>:34</code></td>
+            </tr>
+            <tr>
+              <td>no_commits, lets_dev_gate, run_e2e, use_vp_commands, paraglide_build</td>
+              <td><code>CLAUDE.md:67</code>, <code>:71</code>, <code>:73</code></td>
+            </tr>
+            <tr>
+              <td>impl_review_and_acceptance</td>
+              <td><code>CLAUDE.md:84</code>; <code>tools/workbench/CLAUDE.md:11</code></td>
+            </tr>
+            <tr>
+              <td>persist_migrations</td>
+              <td><code>apps/web/src/store/CLAUDE.md:4</code></td>
+            </tr>
+            <tr>
+              <td>no_reduced_motion, banners_top_of_page, consistent_action_placement</td>
+              <td><code>apps/web/CLAUDE.md:43-45</code></td>
+            </tr>
+            <tr>
+              <td>no_marketing_tone</td>
+              <td><code>packages/i18n/CLAUDE.md:22</code></td>
+            </tr>
+            <tr>
+              <td>one_board_server</td>
+              <td><code>tools/workbench/CLAUDE.md:12</code></td>
+            </tr>
+            <tr>
+              <td>terse_plans, scoped_branches, minimal_fixes</td>
+              <td>
+                <code>.claude/skills/item-plan/SKILL.md:21-22</code>;
+                <code>.claude/skills/item-backlog/SKILL.md:16</code>;
+                <code>.claude/skills/item-review/SKILL.md:15</code>;
+                <code>.claude/agents/item-worker.md:22</code>
+              </td>
+            </tr>
+            <tr>
+              <td>user_no_gh_cli</td>
+              <td>dropped; <code>CLAUDE.md:67</code> says "Review changes with git diff"</td>
+            </tr>
+            <tr>
+              <td>max_effort, no_attribution</td>
+              <td>dropped</td>
+            </tr>
+          </table>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N3</span>Memory folder emptied</h3>
+        <div class="rv-text">
+          <p>
+            All 19 <code>feedback_*</code> notes and <code>user_no_gh_cli</code> are deleted from
+            <code>~/.claude/projects/-Users-fabianhinz-Documents-Dev-PaceVault/memory/</code>;
+            <code>MEMORY.md</code> keeps only its heading. Outside git, no undo.
+          </p>
+        </div>
+      </article>
+
+      <h2>Deviations</h2>
+      <ol class="rv-text">
+        <li>
+          <strong><code>apps/web/src/store/CLAUDE.md</code> changed, not planned.</strong> The
+          Persistence rule gained the reason behind <code>migrate</code> (old state is mapped, not
+          dropped). <code>apps/web/src/store/CLAUDE.md:4</code>.
+        </li>
+        <li>
+          <strong>UI rules are a <code>### UI rules</code> subsection of §2</strong>, not a new
+          numbered section, so references to §3–§5 of <code>apps/web/CLAUDE.md</code> stay valid.
+          <code>apps/web/CLAUDE.md:39</code>.
+        </li>
+        <li>
+          <strong>Banner example left out.</strong> The memory's example ("NoGpsBanner above
+          SessionHeader") no longer matches the code; see Open points 1.
+        </li>
+        <li>
+          <strong
+            ><code>max_effort</code> and <code>user_no_gh_cli</code> dropped after
+            implementation.</strong
+          >
+          Both were built as planned, then dropped by the owner:
+          <code>.claude/settings.json</code> is back to its committed state, and
+          <code>CLAUDE.md:67</code> only says to review changes with <code>git diff</code>. The plan
+          records both; <code>files.json</code> lists <code>.claude/settings.json</code> as planned,
+          untouched.
+        </li>
+        <li>
+          <strong>Unused capture spec and fixture.</strong> <code>review/capture.spec.ts</code> and
+          <code>review/fixture/</code> were written for the "before" shot; the owner skipped the
+          capture. They go with the folder at cleanup. The R1 shot came from the running board
+          instead.
+        </li>
+        <li>
+          <strong><code>Columns.tsx</code> back to its committed state.</strong> R1 added top
+          padding to the card lists (not planned); R2 removed it again. "Fast" is plain text like
+          every other board string, and the banner is the kit <code>Typography</code> caption.
+        </li>
+        <li>
+          <strong>Formatting.</strong> <code>vp fmt</code> ran on four files of this item that a
+          bare <code>vp check</code> flagged (<code>plan.md</code>, <code>review/files.json</code>,
+          <code>review/index.html</code>, <code>tools/workbench/tests/statusGuard.spec.ts</code>);
+          <code>vp run check</code> misses them because the workbench check runs only
+          <code>astro check</code>.
+        </li>
+      </ol>
+
+      <h2>Open points</h2>
+      <ol class="rv-text">
+        <li>
+          <strong>Banners below the header on session detail.</strong>
+          <code>SensorWarningBanner</code> and <code>NoGpsBanner</code> render after
+          <code>SessionHeader</code> (<code>apps/web/src/pages/SessionDetailPage.tsx:59</code>,
+          <code>:63-64</code>), against the new rule at <code>apps/web/CLAUDE.md:44</code>. Options:
+          (a) a follow-up bug item; (b) leave it. <em>Recommendation: (a).</em>
+        </li>
+        <li>
+          <strong>Seven map e2e tests failed under load in the final run</strong> ("Could not create
+          a WebGL context" while <code>workbench:deps</code> ran in parallel):
+          <code>e2e/map.spec.ts:32</code>, <code>:38</code>, <code>:47</code>, <code>:87</code>;
+          <code>e2e/studio.spec.ts:140</code>, <code>:160</code>;
+          <code>e2e/mobile/map.spec.ts:481</code>. All 7 pass on
+          <code>--last-failed --workers 1</code>, and the worker's run passed all 84. None is in
+          <code>flaky.md</code>. Options: (a) leave them out of <code>flaky.md</code>; (b) list
+          them. <em>Recommendation: (a)</em>, the load was self-made.
+        </li>
+        <li>
+          <strong
+            ><code>workbench:deps</code> writes <code>review/files.json</code> unformatted.</strong
+          >
+          The fmt ignore list covers <code>review/deps.*</code> but not
+          <code>files.json</code> (<code>vite.config.ts:19-24</code>), so a bare
+          <code>vp check</code> flags it after every review round. Options: (a) add
+          <code>tools/workbench/backlog/*/review/files.json</code> to the ignore list; (b) have
+          <code>deps.ts</code> format its output; (c) leave it. <em>Recommendation: (a)</em>, a
+          one-line follow-up outside this plan.
+        </li>
+        <li>
+          <strong>Owner steps:</strong> the manual checks below (How to check 1 and 5); tick or
+          reject agent decision 3 (card list padding). Agent decision 1 (the tint) is ticked, so
+          only you can mark it <code>[~] … Superseded by: R1</code>.
+        </li>
+      </ol>
+
+      <h2>Verification</h2>
+      <table>
+        <tr>
+          <th>Round 3 (R2, R3)</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td>
+            <code>vp run check</code>, <code>vp run test</code>, <code>vp run e2e</code> (84/84),
+            <code>vp run build</code>
+          </td>
+          <td class="rv-pass">pass on R2; they don't cover the board, which is all R3 changed</td>
+        </tr>
+        <tr>
+          <td><code>vp check</code> in <code>tools/workbench</code> (fmt, lint, types) on R3</td>
+          <td class="rv-pass">pass (0 errors; 2 old warnings in <code>Stage.tsx</code>)</td>
+        </tr>
+        <tr>
+          <td>
+            <code>vp run workbench:check</code>, <code>vp fmt --check</code> (workspace) on R3
+          </td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <th>Round 2 (R1)</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp run check</code></td>
+          <td class="rv-pass">pass (10/10)</td>
+        </tr>
+        <tr>
+          <td><code>vp run test</code></td>
+          <td class="rv-pass">pass (6/6, 1387 tests)</td>
+        </tr>
+        <tr>
+          <td><code>vp run e2e</code> (run alone)</td>
+          <td class="rv-pass">pass (84/84)</td>
+        </tr>
+        <tr>
+          <td><code>vp run build</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp fmt --check</code> (whole workspace)</td>
+          <td class="rv-pass">pass after formatting the four files</td>
+        </tr>
+        <tr>
+          <th>Round 1</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp run check</code></td>
+          <td class="rv-pass">pass (10/10)</td>
+        </tr>
+        <tr>
+          <td><code>vp run test</code> (includes the workbench tests)</td>
+          <td class="rv-pass">pass (6/6)</td>
+        </tr>
+        <tr>
+          <td><code>vp run e2e</code></td>
+          <td>77 pass, 7 fail (WebGL context under load, new, not in flaky.md)</td>
+        </tr>
+        <tr>
+          <td><code>vp -C apps/web exec playwright test --last-failed --workers 1</code></td>
+          <td class="rv-pass">pass (7/7)</td>
+        </tr>
+        <tr>
+          <td><code>vp run build</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp run workbench:check</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td>
+            No <code>feedback_*</code>, <code>user_no_gh_cli</code> or <code>gh</code> left in the
+            rules
+          </td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td><code>WB_BASE=HEAD vp run workbench:deps -- workbench-flow</code></td>
+          <td class="rv-pass">
+            Round 3: 20 modules, 22 imports drawn (14 added, 0 missing); 4 components, 3 imports;
+            files: 19 changed and planned, 1 not planned
+            (<code>apps/web/src/store/CLAUDE.md</code>), 1 planned untouched
+            (<code>.claude/settings.json</code>), base <code>HEAD</code>; interfaces: 6 planned
+            files, 34 exports, 0 not planned, 0 missing; boundary rules: no violations
+          </td>
+        </tr>
+      </table>
+
+      <h2>How to check</h2>
+      <ol class="rv-text">
+        <li>
+          Add <code>size: small</code> by hand to a plan at <code>idea</code>: on the board its card
+          gets a yellow "Fast" banner as its top strip and a yellow border.
+        </li>
+        <li>Ask Claude to add or remove <code>size:</code> on a plan: the status guard refuses.</li>
+        <li>
+          Move that item to <code>planned</code> without a <code>tech.md</code>:
+          <code>vp run workbench:check</code> passes.
+        </li>
+        <li>
+          Read root <code>CLAUDE.md</code> §5 (lines 67–84) and the UI rules in
+          <code>apps/web/CLAUDE.md</code> (39–45): the moved rules read as intended.
+        </li>
+        <li>
+          In a fresh session (empty memory folder), ask for a commit (Claude declines) and for a
+          plan (terse, scoped).
+        </li>
+      </ol>
+    </main>
+    <script>
+      // swipe compare: the range value drives --pos (1 listener)
+      addEventListener('input', (e) =>
+        e.target.closest('.rv-swipe')?.style.setProperty('--pos', `${e.target.value}%`),
+      );
+    </script>
+  </body>
+</html>

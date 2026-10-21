@@ -19,10 +19,9 @@ You are a worker on the PaceVault repo: the app (`apps/web`, a local-first PWA i
 - **Deletions:** delete only files your task names or files you created yourself during the task.
 - **Small edits:** write in small Edit steps; no single Write above ~300 lines. Build large files in pieces.
 - **Decisions:** a decision is only what changes behaviour, look or scope and the plan does not cover. It goes into `tools/workbench/backlog/<item>/review/decisions.md` under `## Agent decisions` as `- [ ] **(<kind>) <decision>.** Agent: <reason>` with the kind `behaviour`, `look` or `scope` first (create the file with that heading if it is missing; the status guard refuses a new line without a kind), never silently into the code and never into the plan. Also list it in your report. Implementation details (class names, version pins, file splits, internal helpers) are not decisions: they go under **Deviations** in your report. A decision that replaced one of yours becomes `- [~] … Superseded by: <pointer>` (only that change on the line).
-- **Scope:** do the task, nothing adjacent (`feedback_scoped_branches`). Adjacent findings go into your report.
+- **Scope:** do the task, nothing adjacent, even a useful fix: every branch stays reviewable and single-purpose. Adjacent findings go into your report.
 - **References:** every `path:line` you write is verified against the current file.
 - **Servers:** start no long-running dev or preview server unless the task says so; Playwright configs start their own.
-- **Workbench paths** (`tools/workbench/backlog/<f>/plan.md`, `mockup/`, `research/`, `review/`) override path mentions in memory files.
 
 ## Code rules (root `CLAUDE.md` §2 and `apps/web/CLAUDE.md` §2, summarised; the CLAUDE.md files win on any difference)
 

@@ -2,7 +2,7 @@
 
 How to work with the backlog as the owner (statuses, gates, your part, the board): [`GUIDE.md`](GUIDE.md), also behind the info button in the head of the Needs you column on the board. This file is the technical reference: layout, files, hooks and commands.
 
-Everything about a backlog item (feature, bug or chore) lives in one folder, `tools/workbench/backlog/<item>/`: `plan.md`, `tech.md` (data flow, modules, interfaces and components as Mermaid diagrams; written with the plan from `shared/tech-template.md`, required from `planned` on), `mockup/`, `research/`, `review/` (`index.html`, `findings.md`, `decisions.md`, `deps.mmd`/`deps.json`, `components.mmd`, `files.json` and `interfaces.md` from `workbench:deps`, the Actual sides of the Tech tab's per-section Planned | Actual switches, screenshots). Next to the items, `backlog/` holds `flaky.md` (known-flaky tests). The board is a local Astro site in `site/` with one React island on `@pacevault/ui`: run `vp run workbench` and open the printed URL (`http://localhost:4321`). It reads the Markdown files through the dev server and updates in place when any of them changes, without a page reload.
+Everything about a backlog item (feature, bug or chore) lives in one folder, `tools/workbench/backlog/<item>/`: `plan.md`, `tech.md` (data flow, modules, interfaces and components as Mermaid diagrams; written with the plan from `shared/tech-template.md`, required from `planned` on except for `size: small`), `mockup/`, `research/`, `review/` (`index.html`, `findings.md`, `decisions.md`, `deps.mmd`/`deps.json`, `components.mmd`, `files.json` and `interfaces.md` from `workbench:deps`, the Actual sides of the Tech tab's per-section Planned | Actual switches, screenshots). Next to the items, `backlog/` holds `flaky.md` (known-flaky tests). The board is a local Astro site in `site/` with one React island on `@pacevault/ui`: run `vp run workbench` and open the printed URL (`http://localhost:4321`). It reads the Markdown files through the dev server and updates in place when any of them changes, without a page reload.
 
 ## Layout
 
@@ -17,7 +17,8 @@ Everything about a backlog item (feature, bug or chore) lives in one folder, `to
 
 ## Item files
 
-- `plan.md` frontmatter: `title`, `status`, `created`, `next`, `type: feature | bug | chore` and `areas: [<area>, …]` (at least one of `app` (`apps/web`)/`engine`/`gpx`/`ui`/`i18n`/`testing`/`workbench`/`docs`/`repo`/`skills`, no duplicates; `ITEM_TYPES`/`AREAS` in `scripts/frontmatter.ts`), both required for every status except `done` (done items from before the split stay valid without them), optional `depends-on: [<folder>]`. The card shows the type as an icon in a fixed colour (`TYPE_COLOR` in `site/src/lib/vocabulary.ts`) and the areas as a muted line that wraps. Tracked sections: `## Open questions` and `## Real-data checks`.
+- `plan.md` frontmatter: `title`, `status`, `created`, `next`, `type: feature | bug | chore` and `areas: [<area>, …]` (at least one of `app` (`apps/web`)/`engine`/`gpx`/`ui`/`i18n`/`testing`/`workbench`/`docs`/`repo`/`skills`, no duplicates; `ITEM_TYPES`/`AREAS` in `scripts/frontmatter.ts`), both required for every status except `done` (done items from before the split stay valid without them), optional `depends-on: [<folder>]`, optional `size: small` (owner-only, the status guard refuses an agent change to the line). The card shows the type as an icon in a fixed colour (`TYPE_COLOR` in `site/src/lib/vocabulary.ts`) and the areas as a muted line that wraps. Tracked sections: `## Open questions` and `## Real-data checks`.
+- Fast lane (`size: small`, for one-line bugs and chores): no `tech.md`, no fact-check worker, no `workbench:deps` run, the suite runs once; the review doc has only Changes, Verification and How to check (before/after shots for UI bugs); the card is tinted and outlined in the accent colour.
 - `review/decisions.md`: `## Agent decisions` with `- [ ] **(<kind>) <decision>.** Agent: <reason>` items. Created by the first agent decision, also before a review doc exists. Only the owner ticks or removes an item.
 - Decision kinds: `behaviour`, `look` or `scope`, first in the bold part; the status guard requires it on every line an agent adds (older lines stay valid). Superseded: `- [~] … Superseded by: <pointer>`, an agent's only change to an open line when a later decision replaced it; the Review tab hides those behind "N superseded", and neither Needs you nor cleanup counts them.
 - `review/findings.md`: `## Round n` with `- **Rn** · open · on <entry> · …` items.
@@ -27,7 +28,7 @@ Everything about a backlog item (feature, bug or chore) lives in one folder, `to
 
 `.claude/settings.json` runs three scripts from `scripts/`:
 
-- `statusGuard.ts` (PreToolUse, Edit/Write/Bash): keeps agents inside the status gates of `backlog/<item>/plan.md`, keeps `## Real-data checks` (plan.md) and `## Agent decisions` (`review/decisions.md`) owner-ticked, lets an agent mark an open decision superseded only by adding `Superseded by: …`, requires a kind on every decision an agent adds, and blocks Bash writes to those two files and deleting a backlog folder.
+- `statusGuard.ts` (PreToolUse, Edit/Write/Bash): keeps agents inside the status gates of `backlog/<item>/plan.md`, keeps `## Real-data checks` (plan.md) and `## Agent decisions` (`review/decisions.md`) owner-ticked, lets an agent mark an open decision superseded only by adding `Superseded by: …`, requires a kind on every decision an agent adds, keeps `size:` owner-only, and blocks Bash writes to those two files and deleting a backlog folder.
 - `workerGitGuard.ts` (PreToolUse, Bash): subagents never run git writes.
 - `indexHook.ts` (PostToolUse, Edit/Write): after an edit of a `backlog/<item>/plan.md`, `tech.md` or `review/decisions.md` it runs the plan rules and returns every problem to Claude.
 
@@ -46,7 +47,7 @@ The workflow skills live in `.claude/skills/item*`: `item` (the router, `/item`)
 
 ```bash
 vp run workbench                  # the board on http://localhost:4321 (astro dev)
-vp run workbench:check            # check (astro sync + astro check) and plans:check (plans, questions, mockup ↔ plan labels, tech.md presence, agent-decision format)
+vp run workbench:check            # check (astro sync + astro check) and plans:check (plans, questions, mockup ↔ plan labels, tech.md presence except for `size: small`, agent-decision format)
 vp run workbench:capture -- backlog/<item>/review   # re-take review screenshots (app on 5176, board on 4321)
 vp run workbench:deps -- <item>   # every Actual side of the Tech tab → <item>/review/: deps.mmd + deps.json (import graph over the plan's areas and planned folders, boundary check over apps/web/src + packages), components.mmd (.tsx tree), files.json (changed vs planned since the merge-base with main; WB_BASE=<rev> overrides), interfaces.md
 vp run workbench:interfaces -- <item>   # interfaces.md alone (exported signatures of the changed TypeScript files, unplanned ones marked; same base as files.json)

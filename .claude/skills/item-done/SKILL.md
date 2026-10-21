@@ -10,8 +10,7 @@ Acceptance is the owner's: they press Mark done in the panel footer of the in-re
 ## Standing rules
 
 - Run only when the owner accepted: its plan has `status: done`; never set it yourself. Otherwise tell the owner in one line that only they can accept it: press Mark done in the panel footer of the in-review item on the board.
-- Never commit (`feedback_no_commits`); the deletion stays in the working tree for the owner.
-- Workbench paths override path mentions in memory files.
+- Never commit (root `CLAUDE.md` §5); the deletion stays in the working tree for the owner.
 
 ## Steps
 

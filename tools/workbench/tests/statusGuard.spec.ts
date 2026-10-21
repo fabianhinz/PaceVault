@@ -56,6 +56,32 @@ describe('statusGuard', () => {
     expect(write(planText('idea'), undefined)).toBeUndefined();
   });
 
+  it('keeps size: owner-only', () => {
+    const message =
+      'size: is owner-only; the owner sets or removes it (tools/workbench/backlog/x/plan.md). Ask the owner.';
+    const small = planText('planned').replace(
+      'next: Something\n',
+      'next: Something\nsize: small\n',
+    );
+    // Adding, changing and removing the line.
+    expect(edit(planText('planned'), 'next: Something\n', 'next: Something\nsize: small\n')).toBe(
+      message,
+    );
+    expect(edit(small, 'size: small', 'size: big')).toBe(message);
+    expect(edit(small, 'size: small\n', '')).toBe(message);
+    // An edit that keeps it, and a status move on a small plan, pass.
+    expect(edit(small, 'Text.', 'More text.')).toBeUndefined();
+    expect(
+      edit(small.replace('status: planned', 'status: ready'), 'status: ready', 'status: in-dev'),
+    ).toBeUndefined();
+    // A new plan never carries it.
+    const newSmall = planText('idea').replace(
+      'next: Something\n',
+      'next: Something\nsize: small\n',
+    );
+    expect(write(newSmall, undefined)).toBe(message);
+  });
+
   it('blocks ticking real-data checks, allows adding open items', () => {
     const current = planText('in-review', '\n## Real-data checks\n\n- [ ] A real ride.\n');
     expect(edit(current, '- [ ] A real ride.', '- [x] A real ride.')).toBe(
