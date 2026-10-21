@@ -2,7 +2,13 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked, type Tokens } from 'marked';
-import { DECISIONS, checkMockupDecisions, checkPlan, planBody } from './frontmatter.ts';
+import {
+  DECISIONS,
+  SUPERSEDED_BY,
+  checkMockupDecisions,
+  checkPlan,
+  planBody,
+} from './frontmatter.ts';
 
 /**
  * `vp run plans:check` (in tools/workbench; the root `vp run workbench:check` runs it after
@@ -35,9 +41,14 @@ export const itemFolders = (root: string): string[] =>
 /** `- [ ] **<decision>.** Agent: <reason>` (or ticked), the reason may run over several lines. */
 const DECISION = /^\*\*[\s\S]+?\*\*[\s\S]*?\bAgent:\s*\S/;
 
+const DECISION_FORMAT = '- [ ] **(<kind>) <decision>.** Agent: <reason>';
+
 /**
  * The format of `backlog/<item>/review/decisions.md`: a `## Agent decisions` heading, and under it
- * only `- [ ] **<decision>.** Agent: <reason>` items (ticked or not).
+ * only `- [ ] **<decision>.** Agent: <reason>` items, ticked, open or superseded
+ * (`- [~] … Superseded by: <pointer>`, the pointer required). The kind (`**(behaviour) …**`) is
+ * not checked here: lines written before the rule stay valid, and `statusGuard.ts` requires it on
+ * every decision an agent adds (`decisionsWithoutKind`).
  */
 export const checkDecisions = (folder: string, text: string): string[] => {
   const path = `tools/workbench/backlog/${folder}/review/decisions.md`;
@@ -52,15 +63,19 @@ export const checkDecisions = (folder: string, text: string): string[] => {
     }
     if (!inside || token.type === 'space') continue;
     if (token.type !== 'list') {
-      errors.push(
-        `${path}: only "- [ ] **<decision>.** Agent: <reason>" items go under ## ${DECISIONS}`,
-      );
+      errors.push(`${path}: only "${DECISION_FORMAT}" items go under ## ${DECISIONS}`);
       continue;
     }
     for (const item of (token as Tokens.List).items) {
-      if (item.task && DECISION.test(item.text.trim())) continue;
+      const itemText = item.text.trim();
       const first = item.raw.split('\n')[0];
-      errors.push(`${path}: "${first}" is not "- [ ] **<decision>.** Agent: <reason>"`);
+      if (item.task && DECISION.test(itemText)) continue;
+      if (/^\[~\]\s/.test(itemText) && DECISION.test(itemText.replace(/^\[~\]\s+/, ''))) {
+        if (SUPERSEDED_BY.test(itemText)) continue;
+        errors.push(`${path}: "${first}" is superseded without "Superseded by: <pointer>"`);
+        continue;
+      }
+      errors.push(`${path}: "${first}" is not "${DECISION_FORMAT}"`);
     }
   }
   if (!found) errors.unshift(`${path}: no ## ${DECISIONS} heading`);

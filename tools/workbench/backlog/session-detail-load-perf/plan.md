@@ -1,6 +1,6 @@
 ---
 title: Session detail reload
-status: planned
+status: idea
 created: 2026-10-14
 type: feature
 areas: [app, ui]

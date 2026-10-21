@@ -255,9 +255,18 @@ body:not(.ms-panel-open) .ms-panel {
 }
 .ms-panel__body {
   flex: 1;
+  min-width: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: var(--spacing-4);
   line-height: var(--leading-6);
+  /* long paths and code wrap instead of widening (and side-scrolling) the panel */
+  overflow-wrap: anywhere;
+}
+.ms-panel__body code,
+.ms-panel__body pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .ms-panel__body p {
   margin: var(--spacing-2) 0;

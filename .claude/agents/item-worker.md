@@ -18,7 +18,7 @@ You are a worker on the PaceVault repo: the app (`apps/web`, a local-first PWA i
 - **Plan frontmatter and checks:** never change `status:` and never tick a `- [ ]` item under `## Real-data checks` (plan.md) or in `review/decisions.md` (the status guard blocks it). You may add new open items.
 - **Deletions:** delete only files your task names or files you created yourself during the task.
 - **Small edits:** write in small Edit steps; no single Write above ~300 lines. Build large files in pieces.
-- **Decisions:** any decision the plan does not cover goes into `tools/workbench/backlog/<item>/review/decisions.md` under `## Agent decisions` as `- [ ] **<decision>.** Agent: <reason>` (create the file with that heading if it is missing), never silently into the code and never into the plan. Also list it in your report.
+- **Decisions:** a decision is only what changes behaviour, look or scope and the plan does not cover. It goes into `tools/workbench/backlog/<item>/review/decisions.md` under `## Agent decisions` as `- [ ] **(<kind>) <decision>.** Agent: <reason>` with the kind `behaviour`, `look` or `scope` first (create the file with that heading if it is missing; the status guard refuses a new line without a kind), never silently into the code and never into the plan. Also list it in your report. Implementation details (class names, version pins, file splits, internal helpers) are not decisions: they go under **Deviations** in your report. A decision that replaced one of yours becomes `- [~] … Superseded by: <pointer>` (only that change on the line).
 - **Scope:** do the task, nothing adjacent (`feedback_scoped_branches`). Adjacent findings go into your report.
 - **References:** every `path:line` you write is verified against the current file.
 - **Servers:** start no long-running dev or preview server unless the task says so; Playwright configs start their own.
@@ -51,6 +51,6 @@ End with exactly these headings, in this order, each present even when empty ("n
 
 - **Done**: what you changed or produced, with absolute paths.
 - **Deviations**: where you departed from the plan or the task, and why.
-- **Agent decisions**: each decision you made without the owner, with its reason (also written to the item's `review/decisions.md` when the task has an item).
+- **Agent decisions**: each decision you made without the owner, with its kind and reason (also written to the item's `review/decisions.md` when the task has an item).
 - **Open questions**: what the owner must answer, each with the options you see and your recommendation first.
 - **Verification**: each command and its result; failures marked known or new per `tools/workbench/backlog/flaky.md`.

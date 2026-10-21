@@ -2,15 +2,19 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'astro/zod';
 import { Marked, marked, type Token, type Tokens } from 'marked';
+import { createHighlighter, type Highlighter } from 'shiki';
+import { checkWorkbench, itemFolders } from '../../../scripts/check.ts';
 import {
   DECISIONS,
   PLAN_CHECKS,
   checkPlan,
+  isOpenCheck,
   parseFrontmatter,
   planBody,
   planFrontmatterSchema,
   readChecks,
   readQuestions,
+  readTechEntries,
   type CheckItem,
   type ItemType,
   type PlanFrontmatter,
@@ -23,65 +27,18 @@ import {
   parseOptions,
   questionParts,
   type Finding,
+  type Item,
   type Option,
 } from './writeBack.ts';
+import { REASONS, type Reason } from './vocabulary.ts';
 
-/** Server-side model of the board: what each card, dialog and form needs, read per request. */
+/**
+ * Server-side model of the board: what each card, panel and form needs, read by `board.read`
+ * (`readBoard`) on every request of the island.
+ */
 
-export type Bucket = Status | 'needs-you';
-
-export const LABELS: Record<Bucket, string> = {
-  'needs-you': 'Needs you',
-  idea: 'Idea',
-  exploring: 'Exploring',
-  planned: 'Planned',
-  ready: 'Ready',
-  'in-dev': 'In dev',
-  'in-review': 'In review',
-  done: 'Done',
-};
-
-/** Fixed colours of the item types (card and dialog icon): feature sky, bug rose, chore lime. */
-export const TYPE_COLOR: Record<ItemType, string> = {
-  feature: '#38bdf8',
-  bug: '#fb7185',
-  chore: '#a3e635',
-};
-
-const RING = '<circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>';
-const fill = (dash: string) =>
-  `${RING}<circle cx="7" cy="7" r="2.5" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="${dash} 100" transform="rotate(-90 7 7)"/>`;
-
-/** Dashed ring → empty ring → 20/40/60/80 % fill → full. */
-const ICON_SHAPES: Record<Bucket, string> = {
-  'needs-you':
-    '<circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="1.4 1.75"/>',
-  idea: RING,
-  exploring: fill('3.14'),
-  planned: fill('6.28'),
-  ready: fill('9.42'),
-  'in-dev': fill('12.57'),
-  'in-review': fill('15.71'),
-  done: '<circle cx="7" cy="7" r="6.75" fill="currentColor"/>',
-};
-
-export const statusIcon = (bucket: Bucket) =>
-  `<svg class="wb-si wb-si--${bucket}" viewBox="0 0 14 14" aria-hidden="true">${ICON_SHAPES[bucket]}</svg>`;
-
-export const SLOTS = ['mockup', 'plan', 'tech', 'review'] as const;
-export type Slot = (typeof SLOTS)[number];
-export const SLOT_LABEL: Record<Slot, string> = {
-  mockup: 'Mockup',
-  plan: 'Plan',
-  tech: 'Tech',
-  review: 'Review',
-};
-export const SLOT_MISSING: Record<Slot, string> = {
-  mockup: 'No mockup yet',
-  plan: 'No plan yet',
-  tech: 'No tech.md yet',
-  review: 'No review yet',
-};
+// board.spec.ts reads these through this module; the island imports vocabulary.ts directly.
+export { REASON_TAB, TYPE_COLOR } from './vocabulary.ts';
 
 export const escapeHtml = (text: string) =>
   text
@@ -134,11 +91,6 @@ export const renderMarkdown = (markdown: string): string => {
   return sync(md.parse(markdown));
 };
 
-const inlineMd = new Marked({ renderer: { html: (token) => escapeHtml(token.text) } });
-
-/** Inline markdown (check items, questions, findings) with the same escaping. */
-export const inlineMarkdown = (text: string): string => sync(inlineMd.parseInline(text));
-
 /** The plan body without the sections lifted into the boxes at the top of the Plan tab. */
 export const stripSections = (body: string, headings: readonly string[]): string => {
   let skipping = false;
@@ -166,6 +118,8 @@ const depsSchema = z.object({
     modules: z.number(),
     dependencies: z.number(),
   }),
+  components: z.object({ nodes: z.number(), edges: z.number() }).optional(),
+  astro: z.array(z.string()).optional(),
 });
 
 export type Deps = { mmd: string; json: z.infer<typeof depsSchema> | undefined };
@@ -335,37 +289,13 @@ const movesOf = (folder: string, text: string, status: Status, hasTech: boolean)
   });
 };
 
-/** The first slot that exists: Mockup opens first, else the next one. */
-export const firstSlot = (item: ItemView): Slot => {
-  const slot = SLOTS.find((candidate) => item.has[candidate]);
-  if (slot === undefined) return 'plan';
-  return slot;
-};
-
-/** Why a card waits on the owner (Q2), in the order of the Needs you groups; in-review cards have their own column (R1). */
-export const REASONS = ['questions', 'decisions', 'findings'] as const;
-export type Reason = (typeof REASONS)[number];
-
-export const REASON_LABEL: Record<Reason, string> = {
-  questions: 'Open questions',
-  decisions: 'Agent decisions',
-  findings: 'Open findings',
-};
-
-/** The dialog tab an entry opens on (Q8): questions live in the Plan, the rest in the Review. */
-export const REASON_TAB: Record<Reason, Slot> = {
-  questions: 'plan',
-  decisions: 'review',
-  findings: 'review',
-};
-
 export type NeedsYouEntry = { folder: string; title: string; reason: Reason; count: number };
 
 type NeedsYouInput = Pick<ItemView, 'folder' | 'data' | 'questions' | 'decisions' | 'findings'>;
 
 const countsOf = (item: NeedsYouInput): Record<Reason, number> => ({
   questions: item.questions.filter((question) => question.open).length,
-  decisions: item.decisions.filter((decision) => !decision.checked).length,
+  decisions: item.decisions.filter(isOpenCheck).length,
   findings: item.findings.filter((finding) => finding.state === 'open').length,
 });
 
@@ -383,3 +313,414 @@ export const needsYou = (items: NeedsYouInput[]): NeedsYouEntry[] =>
       return [{ folder: item.folder, title: item.data.title, reason, count }];
     }),
   );
+
+/** The languages the Tech tab highlights (what tech.md files use); others render as plain code. */
+const TECH_LANGS = ['ts', 'tsx', 'js', 'json', 'bash'];
+
+let highlighting: Promise<Highlighter> | undefined = undefined;
+
+/** One Shiki highlighter for the dev server's lifetime (creating one costs ~100 ms). */
+const highlighter = () => {
+  if (highlighting === undefined) {
+    highlighting = createHighlighter({ themes: ['github-dark'], langs: TECH_LANGS });
+  }
+  return highlighting;
+};
+
+const plainCode = (code: string) => `<pre><code>${escapeHtml(code)}</code></pre>\n`;
+
+/**
+ * tech.md → HTML: GFM with raw HTML escaped (as `renderMarkdown`), headings as written (the Tech
+ * tab walks `## Modules` to the next H2), code highlighted by Shiki `github-dark`, a language
+ * Shiki has not loaded as plain escaped code, ```mermaid left as `<pre class="mermaid">` for
+ * the browser to draw.
+ */
+export const renderTech = async (markdown: string): Promise<string> => {
+  const shiki = await highlighter();
+  const loaded = new Set(shiki.getLoadedLanguages());
+  const md = new Marked({
+    gfm: true,
+    renderer: {
+      code: (token) => {
+        const lang = (token.lang ?? '').trim().split(/\s+/)[0];
+        if (lang === 'mermaid') return `<pre class="mermaid">${escapeHtml(token.text)}</pre>\n`;
+        if (lang === '' || !loaded.has(lang)) return plainCode(token.text);
+        return `${shiki.codeToHtml(token.text, { lang, theme: 'github-dark' })}\n`;
+      },
+      html: (token) => {
+        if (token.block) return `<p>${escapeHtml(token.text.trim())}</p>\n`;
+        return escapeHtml(token.text);
+      },
+    },
+    hooks: {
+      postprocess: (html) =>
+        html
+          .replaceAll('<table>', '<div class="wb-table"><table>')
+          .replaceAll('</table>', '</table></div>'),
+    },
+  });
+  return sync(md.parse(markdown));
+};
+
+/** The label row of an Actual figure: the label, the file and its date. */
+const actualBar = (path: string, generated: string | undefined) => {
+  let date = '';
+  if (generated !== undefined) date = ` · ${escapeHtml(generated)}`;
+  return `<div class="tt-fig__bar"><span class="tt-fig__label">Actual</span><span class="tt-fig__path">${path}${date}</span></div>`;
+};
+
+/** An Actual side whose file is missing: the label row and the command that writes it (R21). */
+const missingActual = (block: string, path: string, folder: string, command = 'deps') =>
+  `<figure class="tt-fig tt-actual" data-block="${block}">${actualBar(path, undefined)}<p class="tt-placeholder">Run <code>vp run workbench:${command} -- ${escapeHtml(folder)}</code></p></figure>`;
+
+/**
+ * The Actual side of the Tech tab's Modules section: the actual import graph
+ * (`review/deps.mmd`, `deps.json`) and the boundary check, or how to generate them.
+ */
+export const modulesActualHtml = (folder: string, graph: Deps | undefined): string => {
+  if (graph === undefined) return missingActual('actual', 'review/deps.mmd', folder);
+  const json = graph.json;
+  let counts = '';
+  let added = '';
+  let missing = '';
+  let check = '';
+  if (json !== undefined) {
+    counts = `<p class="tt-counts"><span>Drawn: ${json.nodes} modules · ${json.edges} imports</span></p>`;
+    const astro = json.astro ?? [];
+    if (astro.length > 0) {
+      counts += `<p class="tt-counts"><span><code>.astro</code> files are not in the graph (dependency-cruiser does not parse them): ${astro.map((path) => `<code>${escapeHtml(path)}</code>`).join(' · ')}</span></p>`;
+    }
+    added = ` <b>(${json.added.length})</b>`;
+    missing = ` <b>(${json.missing.length})</b>`;
+    const violations = json.boundary.violations;
+    const rules = escapeHtml(json.boundary.rules.join(', '));
+    if (violations.length === 0) {
+      check = `<p class="tt-check" data-block="check"><span class="tt-check__ok">✔</span><span><strong>Boundary check</strong> · <code>${rules}</code>: no violations (${json.boundary.modules} modules, ${json.boundary.dependencies} dependencies cruised)</span></p>`;
+    } else {
+      const list = violations
+        .map((violation) => `${violation.rule}: ${violation.from} → ${violation.to}`)
+        .join('; ');
+      check = `<div class="tt-check" data-block="check"><span class="tt-check__err">✕</span><span><strong>Boundary check</strong> · ${violations.length} violation(s): ${escapeHtml(list)}</span></div>`;
+    }
+  }
+  const figure = [
+    '<figure class="tt-fig tt-actual" data-block="actual">',
+    actualBar('review/deps.mmd', json?.generated),
+    '<div data-graph="actual" data-title="Actual imports · review/deps.mmd"></div>',
+    `<pre hidden data-mmd>${escapeHtml(graph.mmd)}</pre>`,
+    counts,
+    '<p class="tt-legend">',
+    '<span><i class="tt-sw tt-sw--focus"></i>focus</span>',
+    `<span><i class="tt-sw tt-sw--added"></i>imported, not planned${added}</span>`,
+    `<span><i class="tt-sw tt-sw--missing"></i>planned, not in the graph${missing}</span>`,
+    '</p></figure>',
+  ];
+  return figure.join('') + check;
+};
+
+/**
+ * The Actual side of the Components section: `review/components.mmd` (the component tree of the
+ * item's `.tsx` files, `vp run workbench:deps`), drawn by the client like the import graph.
+ */
+export const componentsActualHtml = (
+  folder: string,
+  mmd: string | undefined,
+  graph: Deps | undefined,
+): string => {
+  if (mmd === undefined) return missingActual('components-actual', 'review/components.mmd', folder);
+  let counts = '';
+  const components = graph?.json?.components;
+  if (components !== undefined) {
+    counts = `<p class="tt-counts"><span>Drawn: ${components.nodes} components · ${components.edges} imports</span></p>`;
+  }
+  return [
+    '<figure class="tt-fig tt-actual" data-block="components-actual">',
+    actualBar('review/components.mmd', graph?.json?.generated),
+    '<div data-graph="components" data-title="Actual components · review/components.mmd"></div>',
+    `<pre hidden data-mmd>${escapeHtml(mmd)}</pre>`,
+    counts,
+    '<p class="tt-legend">',
+    '<span><i class="tt-sw tt-sw--focus"></i>new</span>',
+    '<span><i class="tt-sw tt-sw--mod"></i>changed</span>',
+    '<span><i class="tt-sw tt-sw--missing"></i>imported</span>',
+    '</p></figure>',
+  ].join('');
+};
+
+const fileChangeSchema = z.object({
+  path: z.string(),
+  status: z.enum(['added', 'modified', 'deleted']),
+});
+
+const filesSchema = z.object({
+  generated: z.string(),
+  base: z.string(),
+  ref: z.string(),
+  planned: z.array(fileChangeSchema),
+  notPlanned: z.array(fileChangeSchema),
+  untouched: z.array(z.string()),
+});
+
+/**
+ * A row of the Files section (R33): the path, its chip (A added/new, M modified/changed, D
+ * deleted; none for an untouched planned path), a note (planned side) and a tag (actual side).
+ */
+type FileRow = {
+  path: string;
+  chip: 'A' | 'M' | 'D' | undefined;
+  note: string;
+  tag: 'not planned' | 'untouched' | undefined;
+};
+
+const CHIP_TITLES = { A: 'added', M: 'modified', D: 'deleted' } as const;
+
+const STATUS_CHIPS = { added: 'A', modified: 'M', deleted: 'D' } as const;
+
+/** Inline markdown of a note: escaped text, backticked spans as code. */
+const inlineNote = (note: string) =>
+  escapeHtml(note).replace(/`([^`]+)`/g, (_match, code: string) => `<code>${code}</code>`);
+
+/** `a/b/c.ts` → [`a/b`, `c.ts`]; a folder path `a/b/` → [`a`, `b/`]; a root file → [``, name]. */
+const splitPath = (path: string): [string, string] => {
+  const folder = path.endsWith('/');
+  const parts = path.replace(/\/+$/, '').split('/');
+  let name = parts.pop() ?? path;
+  if (folder) name = `${name}/`;
+  return [parts.join('/'), name];
+};
+
+const compareRows = (a: FileRow, b: FileRow) => {
+  const left = splitPath(a.path);
+  const right = splitPath(b.path);
+  return left[0].localeCompare(right[0]) || left[1].localeCompare(right[1]);
+};
+
+/**
+ * The body of a Files frame (R30, R33), the same on both sides: a one-line summary, then one list
+ * sorted by folder, then name, under muted folder headings (repo-relative, `repo root`); each row
+ * the file name, the note, the tag and the chip in fixed columns. A deleted file is struck
+ * through, an untouched one muted.
+ */
+const fileList = (summary: string, rows: FileRow[]) => {
+  const out = [`<p class="tt-fsummary">${summary}</p>`];
+  let current: string | undefined = undefined;
+  for (const row of [...rows].sort(compareRows)) {
+    const split = splitPath(row.path);
+    if (split[0] !== current) {
+      current = split[0];
+      let label = `${split[0]}/`;
+      if (split[0] === '') label = 'repo root';
+      out.push(`<div class="tt-folder">${escapeHtml(label)}</div>`);
+    }
+    let chip = '<span class="tt-chip tt-chip--none"></span>';
+    if (row.chip !== undefined) {
+      chip = `<span class="tt-chip tt-chip--${row.chip}" title="${CHIP_TITLES[row.chip]}">${row.chip}</span>`;
+    }
+    let tag = '';
+    if (row.tag !== undefined) tag = row.tag;
+    let modifier = '';
+    if (row.chip === 'D') modifier = ' tt-frow--deleted';
+    if (row.tag === 'untouched') modifier = ' tt-frow--untouched';
+    out.push(
+      `<div class="tt-frow${modifier}" title="${escapeHtml(row.path)}"><span class="tt-frow__name">${escapeHtml(split[1])}</span><span class="tt-frow__note">${inlineNote(row.note)}</span><span class="tt-frow__tag">${tag}</span>${chip}</div>`,
+    );
+  }
+  return `<div class="tt-files__body">${out.join('')}</div>`;
+};
+
+const filesCount = (count: number) => {
+  if (count === 1) return '1 file';
+  return `${count} files`;
+};
+
+/**
+ * The Planned side of the Files section (R33): tech.md's `### New` (A) and `### Changed` (M) as
+ * one list like the actual side, the note muted after the name; `undefined` without paths.
+ */
+export const filesPlannedHtml = (tech: string): string | undefined => {
+  const entries = readTechEntries(tech);
+  if (entries.added.length === 0 && entries.changed.length === 0) return undefined;
+  const rows = (list: { path: string; note: string }[], chip: 'A' | 'M'): FileRow[] =>
+    list.map((entry) => ({ path: entry.path, chip, note: entry.note, tag: undefined }));
+  const all = [...rows(entries.added, 'A'), ...rows(entries.changed, 'M')];
+  return [
+    '<figure class="tt-fig tt-files" data-block="files-planned">',
+    '<div class="tt-fig__bar"><span class="tt-fig__label">Planned</span><span class="tt-fig__path">from tech.md</span></div>',
+    fileList(filesCount(all.length), all),
+    '</figure>',
+  ].join('');
+};
+
+/**
+ * The Actual side of the Files section: `review/files.json` (`vp run workbench:deps`) as one list
+ * like the planned side (R33): the changed files with their git status chip, unplanned ones tagged
+ * "not planned", planned paths nobody touched muted and tagged "untouched"; the base in the label
+ * row; the command when the file is missing or unreadable.
+ */
+export const filesActualHtml = (folder: string, text: string | undefined): string => {
+  const missing = missingActual('files-actual', 'review/files.json', folder);
+  if (text === undefined) return missing;
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    return missing;
+  }
+  const parsed = filesSchema.safeParse(raw);
+  if (!parsed.success) return missing;
+  const files = parsed.data;
+  const rows = (
+    list: { path: string; status: keyof typeof STATUS_CHIPS }[],
+    tag: FileRow['tag'],
+  ): FileRow[] =>
+    list.map((entry) => ({ path: entry.path, chip: STATUS_CHIPS[entry.status], note: '', tag }));
+  const all = [
+    ...rows(files.planned, undefined),
+    ...rows(files.notPlanned, 'not planned'),
+    ...files.untouched.map((path): FileRow => ({
+      path,
+      chip: undefined,
+      note: '',
+      tag: 'untouched',
+    })),
+  ];
+  const changed = files.planned.length + files.notPlanned.length;
+  const summary = `${filesCount(changed)} · ${files.notPlanned.length} not planned · ${files.untouched.length} untouched · base ${files.base.slice(0, 7)}`;
+  const base = `${files.generated} · ${files.ref}`;
+  return [
+    '<figure class="tt-fig tt-files" data-block="files-actual">',
+    actualBar('review/files.json', base),
+    fileList(summary, all),
+    '</figure>',
+  ].join('');
+};
+
+/**
+ * The Actual side of the Tech tab's Interfaces section: the ```ts blocks of `review/interfaces.md`
+ * (`vp run workbench:deps`) highlighted as in tech.md, in a figure labelled with the file and its
+ * date, with the planned / not planned file counts (R23: a not planned file's path line ends in
+ * `· not planned`) and the planned paths nobody changed; the command before the script ran.
+ */
+export const interfacesActualHtml = async (
+  folder: string,
+  text: string | undefined,
+): Promise<string> => {
+  if (text === undefined) return missingActual('interfaces-actual', 'review/interfaces.md', folder);
+  const tokens = marked.lexer(text);
+  const blocks = tokens
+    .filter((token): token is Tokens.Code => token.type === 'code')
+    .map((token) => `\`\`\`${token.lang ?? ''}\n${token.text}\n\`\`\``);
+  const missing = (sectionTokensOf(tokens, 'Missing') ?? [])
+    .filter((token): token is Tokens.List => token.type === 'list')
+    .flatMap((token) =>
+      token.items.map((entry) => /`([^`]+)`/.exec(entry.text)?.[1] ?? entry.text),
+    );
+  let generated: string | undefined = undefined;
+  const date = /Generated (\d{4}-\d{2}-\d{2})/.exec(text);
+  if (date !== null) generated = date[1];
+  let countsHtml = '';
+  const counts = /(\d+) planned, (\d+) not planned/.exec(text);
+  if (counts !== null) {
+    countsHtml = `<p class="tt-counts"><span>Changed TypeScript files: ${counts[1]} planned · ${counts[2]} not planned</span></p>`;
+  }
+  let missingHtml = '';
+  if (missing.length > 0) {
+    missingHtml = `<p class="tt-counts"><span>Planned, not changed: ${missing.map((path) => `<code>${escapeHtml(path)}</code>`).join(' · ')}</span></p>`;
+  }
+  return [
+    '<figure class="tt-fig tt-interfaces" data-block="interfaces-actual">',
+    actualBar('review/interfaces.md', generated),
+    `<div class="tt-code">${await renderTech(blocks.join('\n\n'))}</div>`,
+    countsHtml,
+    missingHtml,
+    '</figure>',
+  ].join('');
+};
+
+/** The tokens under `## <heading>` up to the next H2; `undefined` when there is no such heading. */
+const sectionTokensOf = (tokens: Token[], heading: string): Token[] | undefined => {
+  const start = tokens.findIndex(
+    (token) =>
+      token.type === 'heading' &&
+      (token as Tokens.Heading).depth === 2 &&
+      token.text.trim() === heading,
+  );
+  if (start === -1) return undefined;
+  const rest = tokens.slice(start + 1);
+  const end = rest.findIndex(
+    (token) => token.type === 'heading' && (token as Tokens.Heading).depth <= 2,
+  );
+  if (end === -1) return rest;
+  return rest.slice(0, end);
+};
+
+/**
+ * An item with its Tech tab: `techHtml` from tech.md and `actualHtml`, every Actual side of the
+ * one Planned | Actual switch (import graph, changed files, interfaces, component tree).
+ */
+export type BoardItem = ItemView & {
+  techHtml: string | undefined;
+  actualHtml: string | undefined;
+};
+
+export type BoardView = {
+  items: BoardItem[];
+  needs: NeedsYouEntry[];
+  /** flaky.md entries (`- \`<test>\` · …`). */
+  flaky: Item[];
+  /** `workbench:check` errors (the red banner). */
+  errors: string[];
+  /** tools/workbench/GUIDE.md without its H1 (the panel title). */
+  guideHtml: string;
+};
+
+const techOf = async (root: string, item: ItemView): Promise<BoardItem> => {
+  const tech = readIfExists(join(root, item.folder, 'tech.md'));
+  if (tech === undefined) {
+    return { ...item, techHtml: undefined, actualHtml: undefined };
+  }
+  const review = join(root, item.folder, 'review');
+  const parts = [
+    modulesActualHtml(item.folder, item.graph),
+    filesPlannedHtml(tech) ?? '',
+    filesActualHtml(item.folder, readIfExists(join(review, 'files.json'))),
+    await interfacesActualHtml(item.folder, readIfExists(join(review, 'interfaces.md'))),
+    componentsActualHtml(item.folder, readIfExists(join(review, 'components.mmd')), item.graph),
+  ];
+  return { ...item, techHtml: await renderTech(tech), actualHtml: parts.join('') };
+};
+
+const guideOf = (guideFile: string): string => {
+  const text = readIfExists(guideFile);
+  if (text === undefined) return '<p>tools/workbench/GUIDE.md is missing.</p>';
+  return renderMarkdown(text.replace(/^# .*\n/, ''));
+};
+
+/**
+ * The whole board, read from the files: items in created, then folder order (a plan that fails
+ * the schema is left out and named in `errors`), Needs you, flaky entries and the guide.
+ */
+export const readBoard = async (root: string, guideFile: string): Promise<BoardView> => {
+  const views = itemFolders(root)
+    .flatMap((folder) => {
+      const item = readItem(root, folder);
+      if (item === undefined) return [];
+      return [item];
+    })
+    .sort(
+      (a, b) => a.data.created.localeCompare(b.data.created) || a.folder.localeCompare(b.folder),
+    );
+  const items = await Promise.all(views.map((item) => techOf(root, item)));
+  let flaky: Item[] = [];
+  const flakyText = readIfExists(join(root, 'flaky.md'));
+  if (flakyText !== undefined) {
+    flaky = fileItems(flakyText).filter((entry) => entry.first.startsWith('- `'));
+  }
+  return {
+    items,
+    needs: needsYou(items),
+    flaky,
+    errors: checkWorkbench(root),
+    guideHtml: guideOf(guideFile),
+  };
+};

@@ -49,7 +49,7 @@ The page is `tools/workbench/backlog/{item}/mockup/index.html`. Start from the w
   - `title`;
   - `variants[]` and `scenarios[]` as `{id, label}`;
   - `extras[]` as `{id, type: "toggle" | "choice" | "button", label, options?, default?}` (every control renders as a native select in one scrolling toolbar line; keep option labels short);
-  - `decisions[]` as `{id: "Q1", title, status: "open" | "settled", options?, answer?}`, one per Q item above, same IDs and states as the plan. Every question for the owner is a Q item here, including your own; there is no separate list;
+  - `decisions[]` as `{id: "Q1", title}`, one per Q item above, same IDs as the plan; no state, options or answer (the badges and the Questions tab read them from the plan through the board). Every question for the owner is a Q item here, including your own; there is no separate list;
   - optional `"frame": "iframe"`: each frame becomes one `srcdoc` iframe at the device size, so `dvh`, media queries and app frameworks (Preact) behave as on a device. The screen template's content is the iframe's `<body>`, its scripts run inside it, and the host page's styles are copied in. State attributes go on the iframe's `<html>`; scripts there reach the shell as `parent.MockupShell`. Use it when the screen needs real viewport behaviour or a framework; otherwise keep the default inline frames.
 - **Screen:** `<template id="mockup-screen">`, rendered into both frames. Inside it:
   - `data-when="scenario:cold|warm"` shows an element only for those values (any state key: `variant`, `device`, `lang`, an extra id);
@@ -93,7 +93,7 @@ Load the file in headless Chromium through the repo's Playwright (`@playwright/t
 - no page-level scroll: `document.documentElement.scrollHeight <= window.innerHeight`;
 - **shell scale:** for each view, the stage's `dataset.scale` is ≥ 0.86, or the frame shows at 1:1 with the stage scrolling (`is-scroll`);
 - switch through every variant, scenario, language and extra; no console errors; look at screenshots of both frames;
-- every `data-q` badge renders and every `decisions[]` ID matches the brief's Q list and state;
+- every `data-q` badge renders and every `decisions[]` ID matches the brief's Q list;
 - **layout shift:** record the bounding boxes of the main containers, headers, inputs and first list items, then type, hover, add and remove items and open and close lists; every box stays within ±0.5 px;
 - **typography:** the computed font size, weight and line height of every visible text node is one of the `Typography` variants' values.
 
@@ -105,6 +105,6 @@ Under the fixed headings of your final report:
 
 - **Done:** per variant, what it looks like on desktop and on phone, in 2–3 lines;
 - **Agent decisions:** choices you made where this brief was ambiguous;
-- **Open questions:** questions for the owner (each also a `decisions[]` entry with status `open`);
+- **Open questions:** questions for the owner (each also a `decisions[]` entry `{ id, title }`, and a `- **Qn** · open · …` item for the plan);
 - **Verification:** results at both laptop sizes, including the shell scale, layout-shift and typography checks.
 ```

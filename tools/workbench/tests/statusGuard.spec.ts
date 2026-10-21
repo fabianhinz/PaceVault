@@ -105,27 +105,115 @@ describe('statusGuard', () => {
         },
         current,
       );
-    const open = decisions('- [ ] **Batch 50.** Agent: fits.');
+    const open = decisions('- [ ] **(behaviour) Batch 50.** Agent: fits.');
     const ticked =
       'Agent decisions are ticked by the owner only (tools/workbench/backlog/x/review/decisions.md).';
     const removed =
       'Items under ## Agent decisions are removed by the owner only (tools/workbench/backlog/x/review/decisions.md).';
 
     expect(writeDecisions(open, undefined)).toBeUndefined();
-    expect(writeDecisions(decisions('- [x] **Batch 50.** Agent: fits.'), undefined)).toBe(ticked);
     expect(
-      editDecisions(open, 'fits.', 'fits.\n- [ ] **Desktop at 1280.** Agent: shell frame.'),
+      writeDecisions(decisions('- [x] **(behaviour) Batch 50.** Agent: fits.'), undefined),
+    ).toBe(ticked);
+    expect(
+      editDecisions(open, 'fits.', 'fits.\n- [ ] **(look) Desktop at 1280.** Agent: shell frame.'),
     ).toBeUndefined();
-    expect(editDecisions(open, '- [ ] **Batch', '- [x] **Batch')).toBe(ticked);
-    expect(editDecisions(open, '- [ ] **Batch 50.** Agent: fits.', '')).toBe(removed);
+    expect(editDecisions(open, '- [ ] **(behaviour) Batch', '- [x] **(behaviour) Batch')).toBe(
+      ticked,
+    );
+    expect(editDecisions(open, '- [ ] **(behaviour) Batch 50.** Agent: fits.', '')).toBe(removed);
     expect(writeDecisions(decisions(''), open)).toBe(removed);
-    expect(editDecisions(open, '**Batch 50.**', '**Batch 40.**')).toBeUndefined();
+    expect(editDecisions(open, 'Batch 50.**', 'Batch 40.**')).toBeUndefined();
 
     const file = 'tools/workbench/backlog/x/review/decisions.md';
     expect(bash(`sed -i '' 's/a/b/' ${file}`)).toBeDefined();
     expect(bash(`rm ${file}`)).toBeDefined();
     expect(bash(`echo "- [x] a" >> ${file}`)).toBeDefined();
     expect(bash(`cat ${file}`)).toBeUndefined();
+  });
+
+  it('lets an agent supersede an open decision only by adding the pointer (R17)', () => {
+    const decisions = (items: string) => `## Agent decisions\n\n${items}\n`;
+    const editDecisions = (current: string, oldString: string, newString: string) =>
+      decide(
+        {
+          tool_name: 'Edit',
+          tool_input: { file_path: DECISIONS_FILE, old_string: oldString, new_string: newString },
+        },
+        current,
+      );
+    const open = decisions(
+      '- [ ] **Popover guide.** Agent: one surface.\n- [x] **Batch.** Agent: b.',
+    );
+    const superseded = decisions(
+      '- [~] **Popover guide.** Agent: one surface. Superseded by: guide in the Panel (plan).\n- [x] **Batch.** Agent: b.',
+    );
+
+    expect(
+      editDecisions(
+        open,
+        '- [ ] **Popover guide.** Agent: one surface.',
+        '- [~] **Popover guide.** Agent: one surface. Superseded by: guide in the Panel (plan).',
+      ),
+    ).toBeUndefined();
+    // over two lines, the pointer on its own line
+    expect(
+      editDecisions(
+        open,
+        '- [ ] **Popover guide.** Agent: one surface.',
+        '- [~] **Popover guide.** Agent: one surface.\n  Superseded by: Q12.',
+      ),
+    ).toBeUndefined();
+    expect(editDecisions(open, '- [ ] **Popover guide.**', '- [~] **Popover guide.**')).toMatch(
+      /names what replaced it/,
+    );
+    expect(
+      editDecisions(
+        open,
+        '- [ ] **Popover guide.** Agent: one surface.',
+        '- [~] **Popover guide, reworded.** Agent: one surface. Superseded by: Q12.',
+      ),
+    ).toMatch(/Only an open decision becomes superseded/);
+    expect(
+      editDecisions(
+        open,
+        '- [x] **Batch.** Agent: b.',
+        '- [~] **Batch.** Agent: b. Superseded by: Q2.',
+      ),
+    ).toMatch(/Only an open decision becomes superseded/);
+    expect(editDecisions(superseded, '- [~] **Popover', '- [ ] **Popover')).toMatch(
+      /stays as it is/,
+    );
+    expect(editDecisions(superseded, '(plan).', '(plan, Q1).')).toMatch(/stays as it is/);
+    expect(editDecisions(superseded, '- [~] **Popover', '- [x] **Popover')).toBeDefined();
+  });
+
+  it('requires a kind on every decision an agent adds, keeps legacy lines valid (R17)', () => {
+    const decisions = (items: string) => `## Agent decisions\n\n${items}\n`;
+    const write = (content: string, current: string | undefined) =>
+      decide({ tool_name: 'Write', tool_input: { file_path: DECISIONS_FILE, content } }, current);
+    const legacy = decisions('- [ ] **Batch 50.** Agent: fits.');
+
+    expect(write(decisions('- [ ] **Batch 50.** Agent: fits.'), undefined)).toMatch(
+      /names its kind first/,
+    );
+    expect(
+      write(
+        decisions(
+          '- [ ] **Batch 50.** Agent: fits.\n- [ ] **(scope) No phone layout.** Agent: Q3.',
+        ),
+        legacy,
+      ),
+    ).toBeUndefined();
+    expect(
+      write(
+        decisions('- [ ] **Batch 50.** Agent: fits.\n- [ ] **Class names.** Agent: x.'),
+        legacy,
+      ),
+    ).toMatch(/names its kind first/);
+    expect(write(decisions('- [ ] **(chore) Batch.** Agent: x.'), undefined)).toMatch(
+      /names its kind first/,
+    );
   });
 
   it('blocks Bash writes to a plan.md and folder deletes, lets reads and workbench tasks pass', () => {

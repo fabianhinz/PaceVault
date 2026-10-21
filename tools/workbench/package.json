@@ -9,15 +9,25 @@
     "test": "vp test -- --run",
     "cleanup": "node scripts/cleanup.ts",
     "deps": "node scripts/deps.ts",
+    "interfaces": "node scripts/interfaces.ts",
     "capture": "vp exec playwright test -c playwright.review.config.ts"
   },
   "dependencies": {
-    "@lucide/astro": "1.59.0",
+    "@astrojs/react": "7.1.0",
     "@mermaid-js/layout-elk": "1.0.1",
+    "@pacevault/i18n": "workspace:*",
+    "@pacevault/ui": "workspace:*",
+    "@tailwindcss/vite": "^4.2.2",
+    "@tanstack/react-query": "^5.97.0",
     "astro": "7.4.0",
+    "lucide-react": "^0.563.0",
     "marked": "18.1.1",
     "mermaid": "12.2.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "shiki": "^4.5.0",
     "sirv": "3.0.2",
+    "tailwindcss": "^4.2.2",
     "yaml": "2.9.1",
     "zod": "^4.6.7"
   },
@@ -25,7 +35,10 @@
     "@astrojs/check": "0.9.10",
     "@playwright/test": "^1.58.2",
     "@types/node": "^24.10.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "dependency-cruiser": "18.6.0",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vite": "catalog:"
   }
 }

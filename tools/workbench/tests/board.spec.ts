@@ -89,7 +89,7 @@ describe('board', () => {
     expect(view('only-decisions')?.has.review).toBe(true);
     expect(view('only-decisions')?.reviewDoc).toBe(false);
     expect(view('only-decisions')?.decisions).toEqual([
-      { text: '**Batch 50.** Agent: fits.', checked: false, raw: DECISION },
+      { text: '**Batch 50.** Agent: fits.', checked: false, superseded: false, raw: DECISION },
     ]);
     expect(view('only-findings')?.has.review).toBe(true);
     expect(view('with-doc')?.reviewDoc).toBe(true);
@@ -107,7 +107,7 @@ describe('board', () => {
     expect(new Set(Object.values(loaded.board.TYPE_COLOR)).size).toBe(3);
   });
 
-  it('lists what needs the owner by reason; a done item only for agent decisions', () => {
+  it('lists what needs the owner by reason; a done item only for agent decisions; superseded ones never', () => {
     const loaded = need();
     item('needs-review', 'in-review', '', {
       'review/findings.md': findingsText(
@@ -120,7 +120,9 @@ describe('board', () => {
       '\n## Open questions\n\n- **Q1** · open · Which?\n- **Q2** · open · Where?\n- **Q3** · answered 2026-10-19 · How? Owner: "so"\n',
     );
     item('needs-ticks', 'done', '', {
-      'review/decisions.md': decisionsText(`${DECISION}\n- [x] **Ticked.** Agent: yes.`),
+      'review/decisions.md': decisionsText(
+        `${DECISION}\n- [x] **Ticked.** Agent: yes.\n- [~] **Replaced.** Agent: no. Superseded by: Q2.`,
+      ),
       'review/findings.md': findingsText('- **R1** · open · general · a'),
     });
     item('needs-nothing', 'idea', '', {

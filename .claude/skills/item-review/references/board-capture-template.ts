@@ -28,20 +28,28 @@ const settle = async (page: Page) => {
   });
 };
 
+const board = (page: Page) => page.locator('main[aria-label="Board"]');
+
+/** The board is a client-only React island: wait for it and its first card. */
 const openBoard = async (page: Page) => {
   await page.goto(BOARD);
-  await expect(page.locator('.wb-board')).toBeVisible();
+  await expect(board(page).locator('[data-item]').first()).toBeVisible();
   await settle(page);
 };
 
-/** The card's dialog, opened by a click on the card, on `tab` (mockup | plan | tech | review). */
-const openDialog = async (page: Page, folder: string, tab: string) => {
-  await page.locator(`.wb-card[data-item="${folder}"]`).click();
-  const dialog = page.locator(`dialog#dlg-${folder}`);
-  await expect(dialog).toBeVisible();
-  await dialog.locator(`label.wb-tabs__${tab}`).click();
+/**
+ * The item's panel (a region named after the item's title), opened by a click on its card, on
+ * `tab` (Mockup | Plan | Tech | Review, kit tabs). The panel opens collapsed; only Expand widens it.
+ */
+const openPanel = async (page: Page, folder: string, title: string, tab: string) => {
+  await board(page).locator(`[data-item="${folder}"]`).click();
+  const panel = page.getByRole('region', { name: title, exact: true });
+  await expect(panel).toBeVisible();
+  const trigger = panel.getByRole('tab', { name: tab, exact: true });
+  await trigger.click();
+  await expect(trigger).toHaveAttribute('aria-selected', 'true');
   await settle(page);
-  return dialog;
+  return panel;
 };
 
 /** review/<after|before>/<name>.png next to this spec: one element, or the page (`fullPage`). */
@@ -64,13 +72,13 @@ test('the whole board', async ({ page }) => {
 
 test('one column', async ({ page }) => {
   await openBoard(page);
-  await shoot(page, 'column-in-review', page.locator('.wb-col[data-col="in-review"]'));
+  await shoot(page, 'column-in-review', board(page).locator('section[aria-label="In review"]'));
 });
 
-test('a card and its dialog on the Plan tab', async ({ page }) => {
+test('a card and its panel on the Plan tab', async ({ page }) => {
   await openBoard(page);
   // an item that exists on the board right now
-  await shoot(page, 'card', page.locator('.wb-card[data-item="<folder>"]'));
-  await openDialog(page, '<folder>', 'plan');
-  await shoot(page, 'dialog-plan');
+  await shoot(page, 'card', board(page).locator('[data-item="<folder>"]'));
+  await openPanel(page, '<folder>', '<title>', 'Plan');
+  await shoot(page, 'panel-plan');
 });

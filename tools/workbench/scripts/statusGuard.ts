@@ -2,7 +2,17 @@ import { existsSync, readFileSync } from 'node:fs';
 import { posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import { DECISIONS, PLAN_CHECKS, STATUSES, readChecks, readStatus } from './frontmatter.ts';
+import {
+  DECISIONS,
+  PLAN_CHECKS,
+  STATUSES,
+  SUPERSEDED_BY,
+  decisionsWithoutKind,
+  isOpenCheck,
+  readChecks,
+  readStatus,
+  type CheckItem,
+} from './frontmatter.ts';
 
 /**
  * PreToolUse hook (matcher `Edit|Write|Bash`): keeps agents inside the workbench status gates.
@@ -13,6 +23,9 @@ import { DECISIONS, PLAN_CHECKS, STATUSES, readChecks, readStatus } from './fron
  * - Under `## Real-data checks` (plan.md) and `## Agent decisions` (`<f>/review/decisions.md`)
  *   the ticked count may not rise and the item count may not drop (ticking is owner-only; open
  *   items may be added or reworded; an agent may create decisions.md with open items).
+ * - `## Agent decisions` only (R17): an open item becomes `- [~]` only by gaining
+ *   `Superseded by: <pointer>` with the rest unchanged, a `[~]` item never changes, and every
+ *   decision an agent adds names its kind (`**(behaviour|look|scope) …**`).
  * - A new plan starts at `status: idea`.
  * - Bash: a heuristic, per command segment with `cd` tracking, against in-place writes to a
  *   plan.md or review/decisions.md and deleting an item folder.
@@ -109,12 +122,63 @@ const decideChecks = (
   return undefined;
 };
 
+/** A `[~]` line as the open line it came from: `[ ]` again and without `Superseded by: …`. */
+const unsuperseded = (raw: string): string =>
+  raw.replace(/^(\s*)- \[~\]/, '$1- [ ]').replace(/\s*\bSuperseded by:[\s\S]*$/, '');
+
+/**
+ * Superseding (R17): an agent turns an open `- [ ]` decision into `- [~]` only by adding
+ * `Superseded by: <pointer>` and leaving the rest of the line as it was; a superseded line stays
+ * as it is (never back to open, never reworded).
+ */
+const decideSuperseded = (
+  path: string,
+  before: string | undefined,
+  after: string,
+): string | undefined => {
+  let beforeItems: CheckItem[] = [];
+  if (before !== undefined) beforeItems = readChecks(before, DECISIONS);
+  const afterItems = readChecks(after, DECISIONS);
+  const afterSuperseded = new Set(
+    afterItems.filter((item) => item.superseded).map((item) => item.raw),
+  );
+  const reopened = beforeItems.find((item) => item.superseded && !afterSuperseded.has(item.raw));
+  if (reopened !== undefined) {
+    return `A superseded decision stays as it is (${path}): "${reopened.raw.split('\n')[0]}".`;
+  }
+  const beforeSuperseded = new Set(
+    beforeItems.filter((item) => item.superseded).map((item) => item.raw),
+  );
+  const open = new Set(beforeItems.filter(isOpenCheck).map((item) => item.raw));
+  for (const item of afterItems) {
+    if (!item.superseded || beforeSuperseded.has(item.raw)) continue;
+    const first = item.raw.split('\n')[0];
+    if (!SUPERSEDED_BY.test(item.raw)) {
+      return `A superseded decision names what replaced it: "- [~] … Superseded by: <pointer>" (${path}): "${first}".`;
+    }
+    if (!open.has(unsuperseded(item.raw))) {
+      return `Only an open decision becomes superseded, by "[ ]" → "[~]" plus "Superseded by: …" and no other change (${path}): "${first}".`;
+    }
+  }
+  return undefined;
+};
+
 const decideDecisions = (
   folder: string,
   before: string | undefined,
   after: string,
-): string | undefined =>
-  decideChecks(`tools/workbench/backlog/${folder}/review/decisions.md`, DECISIONS, before, after);
+): string | undefined => {
+  const path = `tools/workbench/backlog/${folder}/review/decisions.md`;
+  const checks = decideChecks(path, DECISIONS, before, after);
+  if (checks !== undefined) return checks;
+  const superseded = decideSuperseded(path, before, after);
+  if (superseded !== undefined) return superseded;
+  const kindless = decisionsWithoutKind(before, after);
+  if (kindless.length > 0) {
+    return `A new agent decision names its kind first: "- [ ] **(behaviour|look|scope) <decision>.** Agent: <reason>"; implementation details go under Deviations in the report, not into decisions.md (${path}): "${kindless[0]}".`;
+  }
+  return undefined;
+};
 
 /** The guarded file an Edit/Write targets, with its decide function. */
 const guarded = (filePath: string) => {

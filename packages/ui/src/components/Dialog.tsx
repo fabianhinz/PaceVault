@@ -164,6 +164,8 @@ interface DialogHeaderProps {
   subtitle?: string;
   icon?: LucideIcon;
   chip?: string;
+  /** Buttons at the right end of the header row (e.g. Close), at every width. */
+  actions?: ReactNode;
 }
 
 export const DialogHeader = (props: DialogHeaderProps) => {
@@ -182,6 +184,9 @@ export const DialogHeader = (props: DialogHeaderProps) => {
           </Typography>
         )}
       </div>
+      {props.actions !== undefined && (
+        <div className="ml-auto flex shrink-0 items-center gap-2">{props.actions}</div>
+      )}
     </div>
   );
 };

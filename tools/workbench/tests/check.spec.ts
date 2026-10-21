@@ -24,6 +24,7 @@ describe('checkWorkbench', () => {
 
   it('checks the format of review/decisions.md', () => {
     const path = 'tools/workbench/backlog/x/review/decisions.md';
+    const FORMAT = '- [ ] **(<kind>) <decision>.** Agent: <reason>';
     const good =
       '## Agent decisions\n\n- [ ] **Batch 50.** Agent: fits.\n- [x] **Desktop at 1280** (shell). Agent: the frame,\n  over two lines.\n';
     expect(checkDecisions('x', good)).toEqual([]);
@@ -34,10 +35,19 @@ describe('checkWorkbench', () => {
         '## Agent decisions\n\nA note.\n\n- [ ] Batch 50, no bold lead. Agent: fits.\n- **Plain.** Agent: no box.\n- [ ] **No reason.**\n',
       ),
     ).toEqual([
-      `${path}: only "- [ ] **<decision>.** Agent: <reason>" items go under ## Agent decisions`,
-      `${path}: "- [ ] Batch 50, no bold lead. Agent: fits." is not "- [ ] **<decision>.** Agent: <reason>"`,
-      `${path}: "- **Plain.** Agent: no box." is not "- [ ] **<decision>.** Agent: <reason>"`,
-      `${path}: "- [ ] **No reason.**" is not "- [ ] **<decision>.** Agent: <reason>"`,
+      `${path}: only "${FORMAT}" items go under ## Agent decisions`,
+      `${path}: "- [ ] Batch 50, no bold lead. Agent: fits." is not "${FORMAT}"`,
+      `${path}: "- **Plain.** Agent: no box." is not "${FORMAT}"`,
+      `${path}: "- [ ] **No reason.**" is not "${FORMAT}"`,
+    ]);
+    // superseded (R17): accepted with its pointer, rejected without
+    expect(
+      checkDecisions(
+        'x',
+        '## Agent decisions\n\n- [~] **(look) Popover guide.** Agent: one surface. Superseded by: guide in the Panel.\n- [~] **Old.** Agent: x.\n',
+      ),
+    ).toEqual([
+      `${path}: "- [~] **Old.** Agent: x." is superseded without "Superseded by: <pointer>"`,
     ]);
 
     mkdirSync(join(root, 'x', 'review'), { recursive: true });

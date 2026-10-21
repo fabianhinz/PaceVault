@@ -9,7 +9,7 @@ Intake only: open a folder. No research, no mockups, no plan content beyond the 
 
 ## Standing rules
 
-- The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files on every request and reloads by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, type and areas, question rules, mockup ↔ plan); it must pass. If the hook reports an error, fix the file it names.
+- The board (`vp run workbench`, Astro in `tools/workbench/site/`) reads the files through the dev server and updates by itself; there is nothing to regenerate. A `PostToolUse` hook runs the `workbench:check` rules after every Edit/Write of a `plan.md`, `tech.md` or `review/decisions.md` and reports errors at once. Before handing over, run `vp run workbench:check` (frontmatter, type and areas, question rules, mockup ↔ plan); it must pass. If the hook reports an error, fix the file it names.
 - Status moves only as the status guard allows. A new `plan.md` starts at `status: idea`. `ready` and `done` are owner-only: propose them in one line, never set them.
 - Never tick a `- [ ]` item; never commit (`feedback_no_commits`).
 - Every `path:line` you write is verified against the current file.

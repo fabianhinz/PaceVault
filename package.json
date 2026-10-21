@@ -10,9 +10,10 @@
     "build": "vp run -F '@pacevault/*' build",
     "e2e": "vp run -F @pacevault/web e2e",
     "workbench": "vp run -F @pacevault/workbench dev",
-    "workbench:check": "vp run -F @pacevault/workbench check && vp run -F @pacevault/workbench plans:check",
+    "workbench:check": "vp run @pacevault/i18n#compile && vp run -F @pacevault/workbench check && vp run -F @pacevault/workbench plans:check",
     "workbench:cleanup": "vp run -F @pacevault/workbench cleanup",
     "workbench:deps": "vp run -F @pacevault/workbench deps",
+    "workbench:interfaces": "vp run -F @pacevault/workbench interfaces",
     "workbench:capture": "vp run -F @pacevault/workbench capture",
     "docs:banner": "vp run -F @pacevault/docs banner"
   },

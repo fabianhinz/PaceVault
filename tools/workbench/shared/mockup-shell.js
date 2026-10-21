@@ -5,15 +5,17 @@
  *
  * A mockup declares, the shell renders:
  *   <script type="application/json" id="mockup-config"> { title, variants, scenarios, extras,
- *     decisions } </script>   (decisions = every Q label, status open | settled; the Questions
- *                               tab lists open ones first)
+ *     decisions } </script>   (decisions = every Q label as { id, title }; state and text come
+ *                               from the item's plan.md: the board serves ../questions.json)
  *   <template id="mockup-screen"> markup rendered into the desktop and the phone frame </template>
  *   <template id="mockup-notes"> free-form notes (Notes tab) </template>
  *
  * Inside the screen markup:
  *   data-when="scenario:cold"   shown only when the state matches (any key; "a|b" alternatives)
  *   data-de="…"                 German text; the element's own text is English
- *   data-q="Q1"                 renders the decision badge for Q1 (status from config.decisions)
+ *   data-q="Q1"                 renders the badge for Q1: open (amber) or settled (green) from
+ *                               questions.json, neutral while it is missing (page opened
+ *                               without the board)
  * Each screen root gets data-device, data-view, data-lang, data-variant, data-scenario, data-<extra>.
  *
  * Mockup scripts:
@@ -24,6 +26,10 @@
  *                                                 depends on Path); the value stays if still
  *                                                 present, else becomes the first option
  *   MockupShell.hydrate({ variant, scenario, … }) set many keys at once, one render
+ *
+ * Questions: fetched from ../questions.json on load and again on a { wbQuestions: true } message
+ * (the board sends it when the item's questions change). Inside the board (?board=1) the
+ * Questions tab is hidden: questions are answered in the board's Plan tab; the badges stay.
  *
  * Extra notes-panel tabs, after Notes · Questions, in document order:
  *   <template id="mockup-panel-inspector" data-label="Inspector"> … </template>
@@ -164,52 +170,98 @@
       isIframe ? f.screen.contentDocument.documentElement : f.screen,
     );
 
-  // ---------- notes panel: Notes · Questions ----------
-  const statusLabel = { open: 'open', settled: 'settled' };
-  const badge = (q) => {
-    const d = (cfg.decisions ?? []).find((x) => x.id === q);
-    return h(
+  // ---------- notes panel: Notes · Questions (from the plan, through the board) ----------
+  const inBoard = new URLSearchParams(location.search).get('board') === '1';
+  // undefined: loading; null: no board (fetch failed); else [{ id, state, date?, text }]
+  let questions = undefined;
+  const titleOf = (id) => (cfg.decisions ?? []).find((x) => x.id === id)?.title;
+  // an ID the plan has under Decisions (settled) but not as a question is settled
+  const stateOf = (id) => {
+    if (!questions) return undefined;
+    const q = questions.find((x) => x.id === id);
+    return q && q.state === 'open' ? 'open' : 'settled';
+  };
+  const paint = (el) => {
+    const id = el.dataset.qid;
+    const st = stateOf(id);
+    el.className = st ? `ms-q ms-q--${st}` : 'ms-q';
+    el.style.background = st ? '' : 'var(--wb-tile-bg)';
+    el.style.color = st ? '' : 'var(--color-text-secondary)';
+    el.title = [id, titleOf(id), st].filter(Boolean).join(' · ');
+  };
+  const badges = []; // the badges inside the screens, repainted after every fetch
+  const badge = (q, register = true) => {
+    const el = h(
       'button',
       {
         type: 'button',
-        class: `ms-q ms-q--${d?.status ?? 'open'}`,
-        title: d?.title ?? q,
-        onclick: () => togglePanel('questions', q),
+        class: 'ms-q',
+        'data-qid': q,
+        onclick: () => (inBoard ? undefined : togglePanel('questions', q)),
       },
       q,
     );
+    if (register) badges.push(el);
+    paint(el);
+    return el;
   };
-  // one Questions tab: open items first, then settled ones (same order as in the config otherwise)
-  const allDecisions = cfg.decisions ?? [];
-  const openCount = allDecisions.filter((d) => d.status === 'open').length;
-  const decisions = h(
-    'ol',
-    { class: 'ms-decisions' },
-    ...[
-      ...allDecisions.filter((d) => d.status === 'open'),
-      ...allDecisions.filter((d) => d.status !== 'open'),
-    ].map((d) =>
-      h(
-        'li',
-        { id: `ms-dec-${d.id}` },
+  const decisions = h('ol', { class: 'ms-decisions' });
+  const renderQuestions = () => {
+    let label = 'Questions';
+    if (questions === undefined) {
+      decisions.replaceChildren(h('li', {}, 'Loading the questions from the board…'));
+    } else if (questions === null) {
+      decisions.replaceChildren(
         h(
-          'div',
-          { class: 'ms-decisions__head' },
-          badge(d.id),
-          h('strong', {}, d.title),
-          h('span', { class: 'ms-decisions__status' }, statusLabel[d.status]),
+          'li',
+          {},
+          "The questions come from the item's plan.md through the board (vp run workbench); this page was opened without it.",
         ),
-        d.options ? h('p', {}, d.options) : undefined,
-        d.answer ? h('p', { class: 'ms-decisions__answer' }, d.answer) : undefined,
-      ),
-    ),
-  );
+      );
+    } else {
+      const open = questions.filter((q) => q.state === 'open');
+      if (open.length > 0) label = `Questions · ${open.length} open`;
+      decisions.replaceChildren(
+        ...[...open, ...questions.filter((q) => q.state !== 'open')].map((q) =>
+          h(
+            'li',
+            { id: `ms-dec-${q.id}` },
+            h(
+              'div',
+              { class: 'ms-decisions__head' },
+              badge(q.id, false),
+              h('strong', {}, titleOf(q.id) ?? ''),
+              h(
+                'span',
+                { class: 'ms-decisions__status' },
+                q.state === 'open' ? 'open' : `answered ${q.date ?? ''}`.trim(),
+              ),
+            ),
+            h('p', { class: q.state === 'open' ? undefined : 'ms-decisions__answer' }, q.text),
+          ),
+        ),
+      );
+    }
+    const tab = tabBar.querySelector('[data-tab="questions"]');
+    if (tab) tab.textContent = label;
+  };
+  const loadQuestions = () =>
+    fetch(new URL('../questions.json', location.href), { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((list) => {
+        questions = Array.isArray(list) ? list : null;
+      })
+      .catch(() => {
+        questions = null;
+      })
+      .finally(() => {
+        renderQuestions();
+        for (const el of badges) paint(el);
+      });
   const notes = h('div', { class: 'ms-notes' });
   if (notesTpl) notes.append(notesTpl.content.cloneNode(true));
-  const tabs = {
-    notes: ['Notes', notes],
-    questions: [openCount > 0 ? `Questions · ${openCount} open` : 'Questions', decisions],
-  };
+  const tabs = { notes: ['Notes', notes] };
+  if (!inBoard) tabs.questions = ['Questions', decisions];
   for (const tpl of document.querySelectorAll('template[id^="mockup-panel-"]')) {
     const pane = h('div', { class: 'ms-notes' }, tpl.content.cloneNode(true));
     tabs[tpl.id.slice('mockup-panel-'.length)] = [tpl.dataset.label ?? tpl.id, pane];
@@ -246,6 +298,11 @@
     layout();
   };
   showTab('notes');
+  renderQuestions();
+  loadQuestions();
+  addEventListener('message', (e) => {
+    if (e.data && e.data.wbQuestions === true) loadQuestions();
+  });
 
   document.body.classList.add('ms');
   document.body.prepend(bar, h('div', { class: 'ms-main' }, stage, panel));
@@ -335,26 +392,6 @@
     renderBadges();
     apply();
   };
-
-  // ---------- board keys: same logic as shared/frame-keys.js ----------
-  // Inside the workbench board's iframe, Esc / [ / ] go to the board (close, previous, next card);
-  // in iframe mode also from the inner frame documents.
-  const forwardKeys = (win) => {
-    if (window.parent === window) return;
-    win.addEventListener('keydown', (e) => {
-      if (!['Escape', '[', ']'].includes(e.key) || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.defaultPrevented) return;
-      const typing = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
-      if (e.target.closest?.(typing)) return;
-      if (e.key === 'Escape' && win.document.querySelector('dialog[open]')) return;
-      window.parent.postMessage({ wbKey: e.key }, '*');
-    });
-  };
-  forwardKeys(window);
-  if (isIframe) {
-    for (const f of Object.values(frames))
-      f.screen.addEventListener('load', () => forwardKeys(f.screen.contentWindow), { once: true });
-  }
 
   addEventListener('resize', layout);
   window.MockupShell = {

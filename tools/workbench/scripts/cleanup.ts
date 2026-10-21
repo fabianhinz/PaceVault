@@ -3,7 +3,7 @@ import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { itemFolders } from './check.ts';
-import { DECISIONS, readChecks, readStatus } from './frontmatter.ts';
+import { DECISIONS, isOpenCheck, readChecks, readStatus } from './frontmatter.ts';
 
 /**
  * `vp run workbench:cleanup`: deletes every `status: done` item folder whose files are all
@@ -12,7 +12,7 @@ import { DECISIONS, readChecks, readStatus } from './frontmatter.ts';
  * `review/decisions.md`, are skipped with a warning.
  */
 
-/** `openDecisions`: unticked items in `review/decisions.md`. */
+/** `openDecisions`: open items in `review/decisions.md` (ticked and superseded ones do not block). */
 export type CleanupItem = { folder: string; status: string | undefined; openDecisions: number };
 
 /** Uncommitted state of one folder: `git status --porcelain` lines and the plan.md diff. */
@@ -93,7 +93,7 @@ const readChanges = (folder: string): FolderChanges => {
 const openDecisionsOf = (folder: string): number => {
   const file = join(WORKBENCH, folder, 'review', 'decisions.md');
   if (!existsSync(file)) return 0;
-  return readChecks(readFileSync(file, 'utf8'), DECISIONS).filter((item) => !item.checked).length;
+  return readChecks(readFileSync(file, 'utf8'), DECISIONS).filter(isOpenCheck).length;
 };
 
 const main = () => {

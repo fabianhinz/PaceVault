@@ -4,17 +4,23 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { z } from 'zod';
-import { readTechPaths } from './frontmatter.ts';
+import { compareFiles, gitChanges } from './changedFiles.ts';
+import { parseFrontmatter, planFrontmatterSchema, readTechPaths } from './frontmatter.ts';
+import { interfaceFiles, writeInterfaces } from './interfaces.ts';
 
 /**
  * `vp run workbench:deps -- <item>`: the actual import graph of an item at review time.
- * Cruises `apps/web/src` and `packages` once with dependency-cruiser
- * (`tools/workbench/.dependency-cruiser.cjs`: boundary rules and options), then focuses on the
- * `### New` paths of `tools/workbench/backlog/<item>/tech.md` (`### Changed`
- * when New is empty), collapses every other feature and layer folder to one node, keeps only the
- * edges that touch a focus module and marks modules imported but not planned (added) and planned
- * but not in the graph (missing). Writes `…/backlog/<item>/review/deps.mmd` (Mermaid) and
+ * Checks the boundary rules over `apps/web/src` and `packages` with dependency-cruiser
+ * (`tools/workbench/.dependency-cruiser.cjs`: boundary rules and options), then cruises the item's
+ * folders (R26: the roots of its `areas:` plus the folders of its planned TypeScript paths) and
+ * focuses on every `### New` and `### Changed` path of `tools/workbench/backlog/<item>/tech.md`,
+ * collapses every other folder to one node, keeps only the edges that touch a focus module and
+ * marks modules imported but not planned (added) and planned code paths not in the graph (missing;
+ * `.astro` is never parsed and listed in `deps.json` `astro`). Writes `…/backlog/<item>/review/deps.mmd` (Mermaid) and
  * `review/deps.json` (counts, added, missing, boundary result) and exits 1 on a boundary violation.
+ * The same run writes the other Actual sides of the Tech tab (R21): `review/components.mmd` (the
+ * component tree of the New / Changed `.tsx` files), `review/files.json` (the files changed since
+ * the base, `changedFiles.ts`) and `review/interfaces.md` (`interfaces.ts`).
  */
 
 const moduleSchema = z.object({
@@ -76,10 +82,27 @@ const appPath = (path: string): string | undefined => {
   return path.slice(APP_SRC.length);
 };
 
-/** A module the graph can draw: app sources and workspace package sources, no node_modules. */
+/** Code files the graph can draw (R26: any repo folder the item's areas cruise, no node_modules). */
+const CODE = /\.(tsx?|jsx?|mjs|cjs)$/;
+
+/** Planned paths that could be in the graph: code, `.astro` (never parsed) or a folder. */
+const SOURCE = /(\.(tsx?|jsx?|mjs|cjs|astro)|\/)$/;
+
 const isDrawable = (path: string) =>
   !path.includes('node_modules/') &&
-  (path.startsWith(APP_SRC) || /^packages\/[^/]+\/src\//.test(path));
+  CODE.test(path) &&
+  /^(apps|packages|tools|\.claude)\//.test(path);
+
+const dirOf = (path: string) => path.split('/').slice(0, -1).join('/');
+
+const baseName = (path: string) => path.split('/').slice(-1)[0];
+
+/** `@pacevault/ui/components/Button.tsx` → `packages/ui/src/components/Button.tsx` (each package exports `./*` from `./src/*`). */
+const repoPath = (path: string) => {
+  const match = /^@pacevault\/([^/]+)\/(.+)$/.exec(path);
+  if (match) return `packages/${match[1]}/src/${match[2]}`;
+  return path;
+};
 
 /** The repo layer of a module path; anything outside the named folders is `other`. */
 export const layerOf = (path: string): Layer => {
@@ -130,9 +153,13 @@ const collapseFolder = (path: string): string | undefined => {
 /** The feature folder name of an app module below `features/`. */
 const featureOf = (node: string) => (appPath(node) ?? node).split('/')[1];
 
-/** The node a module is drawn as: itself, or its folder when no focus module lives there. */
+/**
+ * The node a module is drawn as: itself, or its folder when no focus module lives there. App
+ * modules fold to their feature, component or top folder; any other module (R26) to its own folder.
+ */
 const nodeOf = (path: string, focus: string[]) => {
-  const folder = collapseFolder(path);
+  let folder = collapseFolder(path);
+  if (appPath(path) === undefined) folder = dirOf(path);
   if (folder === undefined || inFocus(path, focus)) return path;
   if (focus.some((entry) => inFocus(entry.replace(/\/$/, ''), [folder]))) return path;
   return folder;
@@ -167,24 +194,30 @@ const labelOf = (node: string, layer: Layer, folded: boolean) => {
 };
 
 /**
- * Regroups a dependency-cruiser result by layer around the focus modules (Q5–Q7) and marks the
- * difference to the planned paths (Q2). Only app and workspace package sources are drawn;
- * node_modules are left out.
+ * Regroups a dependency-cruiser result around the focus modules (Q5–Q7, R26) and marks the
+ * difference to the planned paths (Q2). App modules (`apps/web/src`) are grouped by layer as
+ * before; every other module by its folder (`packages/ui/src/components`,
+ * `tools/workbench/site/src/app`, …), labelled with its file name (a folded folder with its own
+ * name and `/`); labels that would repeat get their repo path. node_modules are left out.
  */
 export const toDepsGraph = (cruise: DepsInput, focus: string[], planned: string[]): DepsGraph => {
-  const sources = new Set(cruise.modules.map((module) => module.source).filter(isDrawable));
+  const modules = cruise.modules.map((module) => ({
+    source: repoPath(module.source),
+    dependencies: module.dependencies.map((dependency) => repoPath(dependency.resolved)),
+  }));
+  const sources = new Set(modules.map((module) => module.source).filter(isDrawable));
   const focusNodes = new Set([...sources].filter((path) => inFocus(path, focus)));
   const folded = new Set<string>();
   const edgeKeys = new Set<string>();
   const edges: [string, string][] = [];
-  for (const module of cruise.modules) {
+  for (const module of modules) {
     if (!sources.has(module.source)) continue;
     const from = nodeOf(module.source, focus);
     if (from !== module.source) folded.add(from);
-    for (const dependency of module.dependencies) {
-      if (!sources.has(dependency.resolved)) continue;
-      const to = nodeOf(dependency.resolved, focus);
-      if (to !== dependency.resolved) folded.add(to);
+    for (const resolved of module.dependencies) {
+      if (!sources.has(resolved)) continue;
+      const to = nodeOf(resolved, focus);
+      if (to !== resolved) folded.add(to);
       if (from === to || (!focusNodes.has(from) && !focusNodes.has(to))) continue;
       const key = `${from}\n${to}`;
       if (edgeKeys.has(key)) continue;
@@ -197,36 +230,65 @@ export const toDepsGraph = (cruise: DepsInput, focus: string[], planned: string[
   const ids = new Map(nodes.map((node, index) => [node, `n${index}`]));
   const idOf = (node: string) => ids.get(node) ?? node;
   const added = nodes.filter((node) => !planned.some((path) => covers(node, path)));
-  // Only source modules can be drawn, so a planned path elsewhere (messages/*.json) is never missing.
+  // A planned path that is not code (messages/*.json, SKILL.md) can never be drawn, so it is never missing.
   const missing = planned.filter(
-    (path) => isDrawable(path) && !nodes.some((node) => covers(node, path)),
+    (path) => SOURCE.test(path) && !nodes.some((node) => covers(node, path)),
   );
 
+  const isApp = (node: string) => appPath(node) !== undefined;
+  const labels = new Map<string, string>();
+  for (const node of nodes) {
+    let label = baseName(node);
+    if (folded.has(node)) label = `${label}/`;
+    if (isApp(node)) {
+      let layer = layerOf(node);
+      const featureOnly =
+        layer === 'feature' &&
+        folded.has(node) &&
+        nodes.filter((other) => isApp(other) && featureOf(other) === featureOf(node)).length === 1;
+      if (featureOnly) layer = 'other';
+      label = labelOf(node, layer, folded.has(node));
+    }
+    labels.set(node, label);
+  }
+  const taken = [...labels.values()];
+  for (const node of nodes) {
+    const label = labels.get(node) ?? node;
+    if (taken.filter((other) => other === label).length > 1)
+      labels.set(node, appPath(node) ?? node);
+  }
+
   const lines = ['flowchart TB'];
-  const nodeLine = (node: string, layer: Layer) =>
-    `${idOf(node)}["${labelOf(node, layer, folded.has(node))}"]`;
+  const nodeLine = (node: string) => `${idOf(node)}["${labels.get(node) ?? node}"]`;
   for (const entry of LAYER_TITLES) {
-    const inLayer = nodes.filter((node) => layerOf(node) === entry.layer);
+    const inLayer = nodes.filter((node) => isApp(node) && layerOf(node) === entry.layer);
     if (inLayer.length === 0) continue;
     lines.push(`subgraph L_${entry.layer}["${entry.title}"]`);
     if (entry.layer === 'feature') {
       const features = [...new Set(inLayer.map(featureOf))];
       for (const feature of features) {
         const own = inLayer.filter((node) => featureOf(node) === feature);
-        const collapsedOnly = own.length === 1 && folded.has(own[0]);
-        if (collapsedOnly) {
-          lines.push(nodeLine(own[0], 'other'));
+        if (own.length === 1 && folded.has(own[0])) {
+          lines.push(nodeLine(own[0]));
           continue;
         }
         lines.push(`subgraph F_${feature.replace(/\W/g, '_')}["${feature}/"]`);
-        for (const node of own) lines.push(nodeLine(node, 'feature'));
+        for (const node of own) lines.push(nodeLine(node));
         lines.push('end');
       }
     } else {
-      for (const node of inLayer) lines.push(nodeLine(node, entry.layer));
+      for (const node of inLayer) lines.push(nodeLine(node));
     }
     lines.push('end');
   }
+  const others = nodes.filter((node) => !isApp(node));
+  const folders = [...new Set(others.map(dirOf))].sort(compareText);
+  folders.forEach((folder, index) => {
+    lines.push(`subgraph G${index}["${folder}/"]`);
+    for (const node of others.filter((other) => dirOf(other) === folder))
+      lines.push(nodeLine(node));
+    lines.push('end');
+  });
   for (const edge of edges) lines.push(`${idOf(edge[0])}-->${idOf(edge[1])}`);
   if (missing.length > 0) {
     lines.push('subgraph missingPlanned["planned, not in the graph"]');
@@ -250,6 +312,116 @@ export const toDepsGraph = (cruise: DepsInput, focus: string[], planned: string[
     added,
     missing,
   };
+};
+
+export type ComponentGraph = {
+  mermaid: string;
+  /** Components drawn (the item's `.tsx` files and the `.tsx` files they import). */
+  nodes: number;
+  /** Imports drawn between them. */
+  edges: number;
+};
+
+const isComponent = (path: string) => path.endsWith('.tsx') && !path.includes('node_modules/');
+
+const componentName = (path: string) => (path.split('/').pop() ?? path).replace(/\.tsx$/, '');
+
+/**
+ * The actual component tree (R21): the item's `.tsx` files (`entries`, New and Changed) and the
+ * `.tsx` files they import within the repo, one subgraph per folder, an arrow per import. New
+ * files drawn bold, changed files as modified, imported files dashed (the planned diagram's
+ * `ui` style).
+ */
+export const toComponentGraph = (
+  cruise: DepsInput,
+  added: string[],
+  changed: string[],
+): ComponentGraph => {
+  const entries = new Set([...added, ...changed].filter(isComponent));
+  const imports = new Map<string, Set<string>>();
+  for (const module of cruise.modules) {
+    const from = repoPath(module.source);
+    if (!isComponent(from)) continue;
+    const own = imports.get(from) ?? new Set<string>();
+    for (const dependency of module.dependencies) {
+      const to = repoPath(dependency.resolved);
+      if (isComponent(to) && to !== from) own.add(to);
+    }
+    imports.set(from, own);
+  }
+  const drawn = new Set(entries);
+  for (const entry of entries) for (const to of imports.get(entry) ?? []) drawn.add(to);
+  const nodes = [...drawn].sort(compareText);
+  const ids = new Map(nodes.map((node, index) => [node, `c${index}`]));
+  const idOf = (node: string) => ids.get(node) ?? node;
+  const edges: [string, string][] = [];
+  for (const from of nodes) {
+    for (const to of [...(imports.get(from) ?? [])].sort(compareText)) {
+      if (drawn.has(to)) edges.push([from, to]);
+    }
+  }
+  const lines = ['flowchart TB'];
+  if (nodes.length === 0) lines.push('none["no .tsx files under ### New or ### Changed"]');
+  const folders = [...new Set(nodes.map(dirOf))];
+  folders.forEach((folder, index) => {
+    lines.push(`subgraph D${index}["${folder}/"]`);
+    for (const node of nodes.filter((entry) => dirOf(entry) === folder)) {
+      lines.push(`${idOf(node)}["${componentName(node)}"]`);
+    }
+    lines.push('end');
+  });
+  for (const edge of edges) lines.push(`${idOf(edge[0])}-->${idOf(edge[1])}`);
+  const classOf = (list: string[], name: string) => {
+    if (list.length > 0) lines.push(`class ${list.map(idOf).join(',')} ${name}`);
+  };
+  const addedSet = new Set(added);
+  classOf(
+    nodes.filter((node) => entries.has(node) && addedSet.has(node)),
+    'new',
+  );
+  classOf(
+    nodes.filter((node) => entries.has(node) && !addedSet.has(node)),
+    'mod',
+  );
+  classOf(
+    nodes.filter((node) => !entries.has(node)),
+    'ui',
+  );
+  lines.push(
+    'classDef new stroke:#e5e7eb,stroke-width:2px',
+    'classDef mod stroke:#8b8f9a,stroke-width:2px',
+    'classDef ui stroke:#8b8f9a,stroke-dasharray:4 3',
+  );
+  return { mermaid: `${lines.join('\n')}\n`, nodes: nodes.length, edges: edges.length };
+};
+
+/** The folders an area's code lives in (R26); `repo` and `skills` hold none. */
+const AREA_ROOTS: Record<string, string[]> = {
+  app: ['apps/web/src'],
+  engine: ['packages/engine/src'],
+  gpx: ['packages/gpx/src'],
+  ui: ['packages/ui/src'],
+  i18n: ['packages/i18n/src'],
+  testing: ['packages/testing/src'],
+  workbench: ['tools/workbench/site/src', 'tools/workbench/scripts'],
+  docs: ['tools/docs'],
+};
+
+/**
+ * The folders the import graph cruises (R26): the roots of the item's areas plus the folders of
+ * its planned TypeScript paths (a planned folder as is), each once, sorted; a folder inside
+ * another listed one is dropped.
+ */
+export const cruiseRoots = (areas: string[], planned: string[]): string[] => {
+  const roots = areas.flatMap((area) => AREA_ROOTS[area] ?? []);
+  for (const path of planned) {
+    if (path.endsWith('/')) roots.push(path.replace(/\/+$/, ''));
+    else if (/\.tsx?$/.test(path)) roots.push(dirOf(path));
+  }
+  const unique = [...new Set(roots.filter((root) => root !== ''))].sort(compareText);
+  return unique.filter(
+    (root) => !unique.some((other) => other !== root && root.startsWith(`${other}/`)),
+  );
 };
 
 /** `node_modules/.pnpm/react@19/node_modules/react/index.js` → `react`; source paths stay. */
@@ -299,13 +471,13 @@ export const CRUISE_ARGS = [
 ];
 
 /**
- * Runs depcruise over the app and the packages; `undefined` (with the reason on stderr) when no
- * result parses.
+ * Runs depcruise with `args` (default: over the app and the packages); `undefined` (with the
+ * reason on stderr) when no result parses.
  */
-const cruiseRepo = (): Cruise | undefined => {
+const cruiseRepo = (args: string[] = CRUISE_ARGS): Cruise | undefined => {
   const bin = join(import.meta.dirname, '..', 'node_modules', '.bin', 'depcruise');
   // depcruise exits with the number of error-level violations, so the status is not a failure.
-  const run = spawnSync(bin, CRUISE_ARGS, {
+  const run = spawnSync(bin, args, {
     cwd: REPO_ROOT,
     encoding: 'utf8',
     maxBuffer: 256 * 1024 * 1024,
@@ -325,6 +497,20 @@ const cruiseRepo = (): Cruise | undefined => {
   return parsed.data;
 };
 
+/** The `areas:` of an item's plan.md; `[]` when the plan or its frontmatter does not parse. */
+const areasOf = (planFile: string): string[] => {
+  if (!existsSync(planFile)) return [];
+  let raw: unknown;
+  try {
+    raw = parseFrontmatter(readFileSync(planFile, 'utf8'));
+  } catch {
+    return [];
+  }
+  const parsed = planFrontmatterSchema.safeParse(raw);
+  if (!parsed.success) return [];
+  return parsed.data.areas ?? [];
+};
+
 const main = () => {
   const args = parseArgs({ allowPositionals: true, options: {} });
   const item = args.positionals[0];
@@ -339,34 +525,83 @@ const main = () => {
     process.exit(1);
   }
   const paths = readTechPaths(readFileSync(techFile, 'utf8'));
-  let focus = paths.added;
-  if (focus.length === 0) focus = paths.changed;
+  // R26: the focus is every planned path, New and Changed.
+  const planned = [...paths.added, ...paths.changed];
+  const focus = planned;
   if (focus.length === 0) {
     console.error(`${BACKLOG}/${item}/tech.md: no paths under ### New or ### Changed`);
     process.exit(1);
   }
+  // The boundary rules are app rules: checked over apps/web/src and packages as before.
   const cruise = cruiseRepo();
   if (cruise === undefined) process.exit(1);
-  const graph = toDepsGraph(cruise, focus, [...paths.added, ...paths.changed]);
   const boundary = boundaryOf(cruise);
+  // The graph cruises the item's areas and the folders of its planned TypeScript paths (R26).
+  const roots = cruiseRoots(areasOf(join(folder, 'plan.md')), planned).filter((root) =>
+    existsSync(join(REPO_ROOT, root)),
+  );
+  let scoped: Cruise = cruise;
+  if (roots.length > 0) {
+    const run = cruiseRepo([...CRUISE_ARGS.slice(0, 4), ...roots]);
+    if (run === undefined) process.exit(1);
+    scoped = run;
+  }
+  const graph = toDepsGraph(scoped, focus, planned);
+  const astro = planned.filter((path) => path.endsWith('.astro'));
   const review = join(folder, 'review');
+  const generated = new Date().toISOString().slice(0, 10);
   mkdirSync(review, { recursive: true });
   writeFileSync(join(review, 'deps.mmd'), graph.mermaid);
+
+  // Components (R21): the item's .tsx files and what they import, cruised from those files.
+  const tsx = interfaceFiles(REPO_ROOT, planned).files.filter((path) => path.endsWith('.tsx'));
+  let components: ComponentGraph = toComponentGraph({ modules: [] }, [], []);
+  if (tsx.length > 0) {
+    const cruised = cruiseRepo([...CRUISE_ARGS.slice(0, 4), ...tsx]);
+    if (cruised === undefined) process.exit(1);
+    const tsxAdded = interfaceFiles(REPO_ROOT, paths.added).files;
+    components = toComponentGraph(
+      cruised,
+      tsx.filter((path) => tsxAdded.includes(path)),
+      tsx.filter((path) => !tsxAdded.includes(path)),
+    );
+  }
+  writeFileSync(join(review, 'components.mmd'), components.mermaid);
+
   const json = {
     item,
-    generated: new Date().toISOString().slice(0, 10),
-    command: `depcruise ${CRUISE_ARGS.join(' ')}`,
+    generated,
+    command: `depcruise ${CRUISE_ARGS.slice(0, 4).join(' ')} ${roots.join(' ')}`,
+    roots,
     focus,
+    astro,
     nodes: graph.nodes,
     edges: graph.edges,
     added: graph.added,
     missing: graph.missing,
     boundary,
+    components: { nodes: components.nodes, edges: components.edges },
   };
   writeFileSync(join(review, 'deps.json'), `${JSON.stringify(json, null, 2)}\n`);
   console.log(
     `${BACKLOG}/${item}/review/deps.mmd: ${graph.nodes} modules · ${graph.edges} imports drawn · ${graph.added.length} added · ${graph.missing.length} missing`,
   );
+  console.log(
+    `${BACKLOG}/${item}/review/components.mmd: ${components.nodes} components · ${components.edges} imports`,
+  );
+
+  // Files (R21): what git says changed since the base, against the planned New / Changed.
+  const changes = gitChanges(REPO_ROOT, process.env.WB_BASE);
+  if (changes === undefined) process.exit(1);
+  const files = compareFiles(changes.changes, planned);
+  const filesJson = { item, generated, base: changes.base, ref: changes.ref, ...files };
+  writeFileSync(join(review, 'files.json'), `${JSON.stringify(filesJson, null, 2)}\n`);
+  console.log(
+    `${BACKLOG}/${item}/review/files.json: ${files.planned.length} changed and planned · ${files.notPlanned.length} changed, not planned · ${files.untouched.length} planned, untouched (base ${changes.base.slice(0, 7)}, ${changes.ref})`,
+  );
+
+  console.log(writeInterfaces(item, files));
+
   const line = boundaryLine(boundary);
   if (boundary.violations.length > 0) {
     console.error(line);

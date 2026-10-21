@@ -153,15 +153,61 @@ const listItems = (tokens: Token[]): Tokens.ListItem[] =>
   });
 
 /** `raw`: the item as it stands in the file (all its lines), for the board's write-back. */
-export type CheckItem = { text: string; checked: boolean; raw: string };
+/**
+ * `superseded`: `- [~]`, an agent decision a later answer or decision replaced (R17); neither open
+ * nor ticked (`checked` is false), it carries `Superseded by: <pointer>`.
+ */
+export type CheckItem = { text: string; checked: boolean; superseded: boolean; raw: string };
 
 const rawOf = (item: Tokens.ListItem) => item.raw.replace(/\s+$/, '');
 
-/** The `- [ ]` / `- [x]` items under `## <heading>`. */
+/** `[~] ` at the start of a list item's text: GFM reads it as a plain item, not a task. */
+const SUPERSEDED_MARK = /^\[~\]\s+/;
+
+/** `Superseded by: <pointer>` on a `[~]` item, the pointer not empty. */
+export const SUPERSEDED_BY = /\bSuperseded by:\s*\S/;
+
+/**
+ * The `- [ ]` / `- [x]` items under `## <heading>`; under `## Agent decisions` also the `- [~]`
+ * (superseded) items.
+ */
 export const readChecks = (text: string, heading: CheckHeading): CheckItem[] =>
-  listItems(sectionTokens(text, heading))
-    .filter((item) => item.task)
-    .map((item) => ({ text: item.text.trim(), checked: item.checked === true, raw: rawOf(item) }));
+  listItems(sectionTokens(text, heading)).flatMap((item): CheckItem[] => {
+    const itemText = item.text.trim();
+    if (item.task) {
+      return [
+        { text: itemText, checked: item.checked === true, superseded: false, raw: rawOf(item) },
+      ];
+    }
+    if (heading === DECISIONS && SUPERSEDED_MARK.test(itemText)) {
+      const rest = itemText.replace(SUPERSEDED_MARK, '');
+      return [{ text: rest, checked: false, superseded: true, raw: rawOf(item) }];
+    }
+    return [];
+  });
+
+/** Open: neither ticked nor superseded (what waits on the owner). */
+export const isOpenCheck = (item: CheckItem): boolean => !item.checked && !item.superseded;
+
+/** The kinds a new agent decision names first in its bold part: `**(behaviour) …**` (R17). */
+const DECISION_KINDS = ['behaviour', 'look', 'scope'] as const;
+
+/** `**(behaviour|look|scope) …` at the start of a decision's text. */
+export const DECISION_KIND = new RegExp(`^\\*\\*\\((?:${DECISION_KINDS.join('|')})\\)\\s`);
+
+/**
+ * The decisions an edit adds without a kind (R17): open or ticked items of `after` whose line is
+ * not in `before` and whose bold part does not start with `(behaviour)`, `(look)` or `(scope)`.
+ * Items already in `before` (written before the rule) and superseded items are not new decisions.
+ */
+export const decisionsWithoutKind = (before: string | undefined, after: string): string[] => {
+  let known = new Set<string>();
+  if (before !== undefined) known = new Set(readChecks(before, DECISIONS).map((item) => item.raw));
+  return readChecks(after, DECISIONS)
+    .filter((item) => !item.superseded && !known.has(item.raw))
+    .filter((item) => !DECISION_KIND.test(item.text))
+    .map((item) => item.raw.split('\n')[0]);
+};
 
 export type Question = {
   id: string;
@@ -199,31 +245,51 @@ export const readQuestions = (text: string): Question[] => {
 
 export type TechPaths = { added: string[]; changed: string[] };
 
-/** The first code span of each bullet under `### <heading>` inside `## Modules`. */
-const modulePaths = (tech: string, heading: string): string[] => {
-  const out: string[] = [];
-  let inside = false;
-  for (const token of sectionTokens(tech, 'Modules')) {
-    if (token.type === 'heading') {
-      inside = token.text.trim() === heading;
-      continue;
-    }
-    if (!inside) continue;
-    for (const item of listItems([token])) {
-      const code = /`([^`]+)`/.exec(item.text);
-      if (code) out.push(code[1].trim());
+/** A planned path of tech.md with the note after it (`- \`path\`: note`). */
+export type TechEntry = { path: string; note: string };
+
+/**
+ * The first code span of each bullet under `### <heading>` inside `## Files` (the template since
+ * R25) or `## Modules` (older tech.md files), with the text after it as the note.
+ */
+const moduleEntries = (tech: string, heading: string): TechEntry[] => {
+  const out: TechEntry[] = [];
+  for (const section of ['Files', 'Modules']) {
+    let inside = false;
+    for (const token of sectionTokens(tech, section)) {
+      if (token.type === 'heading') {
+        inside = token.text.trim() === heading;
+        continue;
+      }
+      if (!inside) continue;
+      for (const item of listItems([token])) {
+        const code = /`([^`]+)`/.exec(item.text);
+        if (!code) continue;
+        const note = item.text
+          .slice(code.index + code[0].length)
+          .replace(/^\s*[:—–-]?\s*/, '')
+          .trim();
+        out.push({ path: code[1].trim(), note });
+      }
     }
   }
   return out;
 };
 
+/** The planned New and Changed entries of tech.md (paths with their notes), for the Tech tab's Files section. */
+export const readTechEntries = (tech: string): { added: TechEntry[]; changed: TechEntry[] } => ({
+  added: moduleEntries(tech, 'New'),
+  changed: moduleEntries(tech, 'Changed'),
+});
+
 /**
  * The planned paths of `tools/workbench/backlog/<item>/tech.md`: one backticked path per bullet under
- * `## Modules` › `### New` (`added`) and `### Changed` (`changed`). Other lists are ignored.
+ * `## Files` (or `## Modules`) › `### New` (`added`) and `### Changed` (`changed`). Other lists are
+ * ignored.
  */
 export const readTechPaths = (tech: string): TechPaths => ({
-  added: modulePaths(tech, 'New'),
-  changed: modulePaths(tech, 'Changed'),
+  added: moduleEntries(tech, 'New').map((entry) => entry.path),
+  changed: moduleEntries(tech, 'Changed').map((entry) => entry.path),
 });
 
 /** Statuses from `ready` on; a plan there must not have open questions. */
@@ -271,9 +337,14 @@ export const checkPlan = (folder: string, plan: string, hasTech: boolean): strin
   return errors;
 };
 
+/**
+ * `decisions[]` of `#mockup-config`: each Q badge's ID and the short title of its tooltip. State,
+ * options and answer come from the plan (the board serves them as `questions.json`); a legacy
+ * `status` or `answer` is ignored.
+ */
 const mockupConfigSchema = z.object({
   decisions: z
-    .array(z.object({ id: z.string().regex(/^[A-Z]+\d+$/), status: z.enum(['open', 'settled']) }))
+    .array(z.object({ id: z.string().regex(/^[A-Z]+\d+$/), title: z.string().optional() }))
     .optional(),
 });
 
@@ -281,8 +352,8 @@ const MOCKUP_CONFIG = /<script\b[^>]*\bid=["']mockup-config["'][^>]*>([\s\S]*?)<
 
 /**
  * Every `decisions[]` ID in the mockup's `#mockup-config` exists in the plan's
- * `## Open questions` or `## Decisions (settled)`, with the same state. A mockup without
- * `#mockup-config` (not on the shell yet) has nothing to check.
+ * `## Open questions` or `## Decisions (settled)`. A mockup without `#mockup-config` (not on
+ * the shell yet) has nothing to check.
  */
 export const checkMockupDecisions = (
   folder: string,
@@ -300,26 +371,17 @@ export const checkMockupDecisions = (
   }
   const config = mockupConfigSchema.safeParse(json);
   if (!config.success) return [`${file}: #mockup-config: ${config.error.issues[0]?.message}`];
-  const questions = readQuestions(plan);
+  const ids = new Set(readQuestions(plan).map((question) => question.id));
   const settledText = sectionTokens(plan, 'Decisions (settled)')
     .map((token) => token.raw)
     .join('');
   const errors: string[] = [];
   for (const decision of config.data.decisions ?? []) {
-    const question = questions.find((candidate) => candidate.id === decision.id);
-    let planState: 'open' | 'settled' | undefined = undefined;
-    if (question && question.state === 'open') planState = 'open';
-    else if (question) planState = 'settled';
-    else if (new RegExp(`\\b${decision.id}\\b`).test(settledText)) planState = 'settled';
-    if (planState === undefined) {
-      errors.push(
-        `${file}: ${decision.id} is not in the plan's Open questions or Decisions (settled)`,
-      );
-    } else if (planState !== decision.status) {
-      errors.push(
-        `${file}: ${decision.id} is ${decision.status} in the mockup but ${planState} in the plan`,
-      );
-    }
+    if (ids.has(decision.id)) continue;
+    if (new RegExp(`\\b${decision.id}\\b`).test(settledText)) continue;
+    errors.push(
+      `${file}: ${decision.id} is not in the plan's Open questions or Decisions (settled)`,
+    );
   }
   return errors;
 };

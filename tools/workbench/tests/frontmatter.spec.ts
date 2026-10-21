@@ -65,20 +65,30 @@ describe('workbenchFrontmatter', () => {
       {
         text: 'A smart-recording power ride.',
         checked: false,
+        superseded: false,
         raw: '- [ ] A smart-recording power ride.',
       },
-      { text: 'A Strava ZIP.', checked: true, raw: '- [x] A Strava ZIP.' },
+      { text: 'A Strava ZIP.', checked: true, superseded: false, raw: '- [x] A Strava ZIP.' },
     ]);
     expect(readChecks(PLAN, 'Agent decisions')).toEqual([]);
     const decisions =
-      '## Agent decisions\n\n- [ ] **Desktop at 1280×800.** Agent: matches the shell frame.\n';
+      '## Agent decisions\n\n- [ ] **Desktop at 1280×800.** Agent: matches the shell frame.\n- [~] **Popover.** Agent: x. Superseded by: Q1.\n';
     expect(readChecks(decisions, 'Agent decisions')).toEqual([
       {
         text: '**Desktop at 1280×800.** Agent: matches the shell frame.',
         checked: false,
+        superseded: false,
         raw: '- [ ] **Desktop at 1280×800.** Agent: matches the shell frame.',
       },
+      {
+        text: '**Popover.** Agent: x. Superseded by: Q1.',
+        checked: false,
+        superseded: true,
+        raw: '- [~] **Popover.** Agent: x. Superseded by: Q1.',
+      },
     ]);
+    // a `[~]` line under the plan checks is not a check
+    expect(readChecks('## Real-data checks\n\n- [~] A ride.\n', 'Real-data checks')).toEqual([]);
   });
 
   it('reads the New and Changed paths of tech.md and nothing else', () => {
@@ -118,6 +128,39 @@ flowchart TB
 `;
     expect(readTechPaths(tech)).toEqual({
       added: ['src/features/x/A.tsx', 'src/features/x/hooks/'],
+      changed: ['src/store/user.ts'],
+    });
+  });
+
+  it('reads New / Changed from ## Files (the template since R25), a list before the headings ignored', () => {
+    const tech = `# Tech
+
+## Modules
+
+\`\`\`mermaid
+flowchart TB
+\`\`\`
+
+- \`src/loose.ts\`: not under New
+
+## Files
+
+### New
+
+- \`src/features/x/A.tsx\`: new
+
+### Changed
+
+- \`src/store/user.ts\`
+
+## Interfaces
+
+### Changed
+
+- \`src/also/ignored.ts\`
+`;
+    expect(readTechPaths(tech)).toEqual({
+      added: ['src/features/x/A.tsx'],
       changed: ['src/store/user.ts'],
     });
   });
@@ -214,7 +257,7 @@ flowchart TB
     );
   });
 
-  it('checks mockup decisions against the plan by ID and state', () => {
+  it('checks mockup decisions against the plan by ID only', () => {
     const planText = plan(
       {},
       '# Long\n\n## Decisions (settled)\n\n- **Q2** Frames at native size.\n\n## Open questions\n\n- **Q1** · open · Which?\n',
@@ -226,22 +269,26 @@ flowchart TB
         'f',
         planText,
         mockup([
-          { id: 'Q1', status: 'open' },
-          { id: 'Q2', status: 'settled' },
+          { id: 'Q1', title: 'Which' },
+          { id: 'Q2', title: 'Frames' },
         ]),
       ),
     ).toEqual([]);
-    const errors = checkMockupDecisions(
-      'f',
-      planText,
-      mockup([
-        { id: 'Q1', status: 'settled' },
-        { id: 'Q9', status: 'open' },
-      ]),
-    );
-    expect(errors).toHaveLength(2);
-    expect(errors[0]).toContain('tools/workbench/backlog/f/mockup/index.html: Q1');
-    expect(errors[1]).toContain('tools/workbench/backlog/f/mockup/index.html: Q9');
+    // a legacy status is ignored, also one that no longer matches the plan
+    expect(
+      checkMockupDecisions(
+        'f',
+        planText,
+        mockup([
+          { id: 'Q1', title: 'Which', status: 'settled' },
+          { id: 'Q2', title: 'Frames', status: 'open' },
+        ]),
+      ),
+    ).toEqual([]);
+    const errors = checkMockupDecisions('f', planText, mockup([{ id: 'Q9', title: 'Gone' }]));
+    expect(errors).toEqual([
+      "tools/workbench/backlog/f/mockup/index.html: Q9 is not in the plan's Open questions or Decisions (settled)",
+    ]);
     expect(checkMockupDecisions('f', planText, '<html>old mockup</html>')).toEqual([]);
   });
 });

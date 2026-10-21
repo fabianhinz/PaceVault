@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ActionError, defineAction } from 'astro:actions';
 import { z } from 'astro/zod';
 import {
@@ -7,10 +8,12 @@ import {
   PLAN_CHECKS,
   STATUSES,
   checkPlan,
+  isOpenCheck,
   readChecks,
   readStatus,
 } from '../../../scripts/frontmatter.ts';
 import { workbenchRoot } from '../../../scripts/check.ts';
+import { readBoard } from '../lib/board.ts';
 import {
   answerLine,
   commentLine,
@@ -24,11 +27,11 @@ import {
 } from '../lib/writeBack.ts';
 
 /**
- * The board's writes: it shows, moves status, ticks, answers and deletes; creating and editing
- * go through agents. Each action reads the file, changes only the lines it names, refuses when
- * those lines are not as the board rendered them (409, the board reloads) or when the result
- * would fail `workbench:check`, writes, and returns every change with its diff for the toast and
- * for Undo. No token: local dev server only.
+ * The board's read (`board.read`) and writes: it shows, moves status, ticks, answers and deletes;
+ * creating and editing go through agents. Each write reads the file, changes only the lines it
+ * names, refuses when those lines are not as the board showed them (409, the board refetches) or
+ * when the result would fail `workbench:check`, writes, and returns every change with its diff
+ * for the write card and for Undo. No token: local dev server only.
  */
 
 export type Change = { path: string; before: string; after: string; diff: string };
@@ -49,6 +52,8 @@ const WRITABLE =
   /^(?:flaky\.md|[a-z0-9-]+\/plan\.md|[a-z0-9-]+\/review\/(?:findings|decisions)\.md)$/;
 
 const WORKBENCH_ROOT = workbenchRoot();
+/** tools/workbench/GUIDE.md, outside the backlog (its own path, also with WB_ROOT). */
+const GUIDE_FILE = fileURLToPath(new URL('../../../GUIDE.md', import.meta.url));
 
 const today = () => {
   const now = new Date();
@@ -72,7 +77,7 @@ const need = (path: string): string => {
   return text;
 };
 
-/** The text after a line edit, or the refusal: 409 when the file changed since the board rendered it. */
+/** The text after a line edit, or the refusal: 409 when the file changed since the board showed it. */
 const applied = (path: string, result: EditResult): string => {
   if (result.ok) return result.text;
   if (result.reason === 'unchanged') {
@@ -80,7 +85,7 @@ const applied = (path: string, result: EditResult): string => {
   }
   throw new ActionError({
     code: 'CONFLICT',
-    message: `tools/workbench/backlog/${path} changed since the board rendered it; reloading.`,
+    message: `tools/workbench/backlog/${path} changed since the board rendered it; the board now shows the current file.`,
   });
 };
 
@@ -141,7 +146,7 @@ const statusNotes = (item: string, to: string): string[] => {
   if (to !== 'ready') return [];
   const decisions = read(decisionsPath(item));
   if (decisions === null) return [];
-  const calls = readChecks(decisions, DECISIONS).filter((check) => !check.checked).length;
+  const calls = readChecks(decisions, DECISIONS).filter(isOpenCheck).length;
   if (calls === 0) return [];
   return [`${calls} agent decision(s) not confirmed.`];
 };
@@ -384,4 +389,12 @@ const undo = defineAction({
   },
 });
 
-export const server = { plan, review, flaky, item: itemActions, undo };
+/** The whole board for the island (TanStack Query `['board']`). */
+const board = {
+  read: defineAction({
+    accept: 'json',
+    handler: () => readBoard(WORKBENCH_ROOT, GUIDE_FILE),
+  }),
+};
+
+export const server = { board, plan, review, flaky, item: itemActions, undo };
