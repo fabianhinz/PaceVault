@@ -118,6 +118,12 @@ test.describe('Studio', () => {
     await expect(page.getByText('Summit', { exact: true })).toHaveCount(0);
 
     await page.getByRole('button', { name: /^split point/i }).click();
+    await test.step('empty km field saves the marker at 0 km', async () => {
+      const save = page.getByRole('button', { name: /^save$/i });
+      await expect(save).toBeEnabled();
+      await page.getByRole('dialog').getByRole('spinbutton').fill('');
+      await expect(save).toBeDisabled();
+    });
     await page.getByRole('button', { name: /^delete$/i }).click();
     await expect(page.getByText('Split point', { exact: true })).toHaveCount(0);
   });

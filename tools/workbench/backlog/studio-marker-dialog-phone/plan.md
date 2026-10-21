@@ -1,10 +1,10 @@
 ---
 title: Marker dialog on phone
-status: planned
+status: done
 created: 2026-10-19
 type: bug
 areas: [app]
-next: Owner sets ready, then "lets dev"
+next: Owner reviews round 1
 size: small
 ---
 

@@ -9,9 +9,9 @@ import {
 } from '@pacevault/engine/sessionDerivation.ts';
 import type { SessionRecord } from '@pacevault/engine/types.ts';
 
-function makeRecord(overrides: Partial<SessionRecord> = {}): SessionRecord {
+const makeRecord = (overrides: Partial<SessionRecord> = {}): SessionRecord => {
   return { timestamp: 0, ...overrides };
-}
+};
 
 describe('deriveDistanceFromRecords', () => {
   it('returns undefined for empty array', () => {

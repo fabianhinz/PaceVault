@@ -1,5 +1,5 @@
 import { m } from '@pacevault/i18n/messages.js';
-import { useMetrics } from '@/hooks/useMetrics.ts';
+import { useMetrics } from '@/lib/hooks/useMetrics.ts';
 import { Card } from '@pacevault/ui/components/Card.tsx';
 import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
 import { Typography } from '@pacevault/ui/components/Typography.tsx';

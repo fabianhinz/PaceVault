@@ -4,7 +4,8 @@ status: idea
 created: 2026-10-14
 type: feature
 areas: [app, ui]
-next: Not ready yet (owner, 2026-10-18); record the baseline DevTools trace, then review the plan with the owner
+next: Not ready yet (owner, 2026-10-18); after load-model, record the baseline DevTools trace, then review the plan with the owner
+depends-on: [load-model]
 ---
 
 # Session detail: reload performance
@@ -187,6 +188,15 @@ Terrain, climbs, extremes, stats (`SessionChartsExplorer.tsx:107-118`, `:205-233
 - **Map re-decodes in prod too:** the effect depends on `sessions` (`apps/web/src/features/map/hooks/useSessionDetailPath.ts:58`), so every sessions-store change decodes again (e.g. `markSessionSeen` on mount). The records query fixes it.
 - **Stale records after reprocessing:** the page's records effect never re-runs; the planned invalidation fixes it.
 - Paths above predate the monorepo: `src/` is `apps/web/src/`, `src/packages/engine/` is `packages/engine/src/`, `src/components/ui/` is `packages/ui/src/components/`. Verification step "next session via the peek" has no basis: the peek doesn't navigate.
+
+## After load-model (2026-10-21)
+
+load-model changes the same page; refresh this plan against it:
+
+- **Same rows:** load-model changes `TrainingEffectCard.tsx` (thresholds object, "From heart rate" caption) and `MoreStatsRow.tsx` / `moreStats.ts` (basis note) — the rows this plan gives a loading state.
+- **`store-sessions` v4:** load-model bumps the sessions store to v4 (applied HR signature, `apps/web/src/store/sessions.ts:118-119`); the worker's own Zod read of `store-sessions` (`:139`) must accept it.
+- **Reprocess:** load-model's derivation bump rewrites every session's records once; the planned invalidation on reprocess covers it. Its HR recompute only reads records, no invalidation needed.
+- **Baseline trace:** record it after load-model, so the before/after comparison doesn't mix both changes.
 
 ## Open questions
 

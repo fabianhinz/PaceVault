@@ -1,10 +1,10 @@
 ---
 title: Code conventions
-status: planned
+status: done
 created: 2026-10-19
 type: chore
 areas: [app, ui, gpx, testing, repo]
-next: Owner sets ready, then "lets dev"
+next: Owner reviews round 1
 size: small
 ---
 

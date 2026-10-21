@@ -7,7 +7,7 @@
 
 - **Pure, no React, no app imports**: No imports from `apps/web` (`@/…`), no React, no state library. Imports `@pacevault/engine` (types, gradient, GPS helpers), `zod`, `simplify-ts` and `@googlemaps/polyline-codec`. `DOMParser` (in `parseGpx.ts`) is the one browser API it uses.
 - **External data through Zod**: Parsed GPX is validated with `safeParse`; on failure return a safe fallback, never throw.
-- **Tests**: `tests/<module>.spec.ts` in jsdom (for `DOMParser`), no app setup file. Fixtures live in `tests/fixtures/` (`route.gpx` is a copy of the e2e fixture).
+- **Tests**: `tests/<module>.spec.ts` in jsdom (for `DOMParser`), no app setup file. Fixtures live in `tests/fixtures/` (`route.gpx` is a copy of the e2e fixture). A snapshot is allowed for file-format output; `buildGpx` locks the exported XML other apps read.
 
 ## Verification
 

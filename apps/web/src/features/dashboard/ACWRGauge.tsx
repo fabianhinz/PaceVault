@@ -1,5 +1,5 @@
 import { m } from '@pacevault/i18n/messages.js';
-import { useMetrics } from '@/hooks/useMetrics.ts';
+import { useMetrics } from '@/lib/hooks/useMetrics.ts';
 import { Typography } from '@pacevault/ui/components/Typography.tsx';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { acwrColorMap, acwrFill, ACWR_ZONES } from '@/lib/statusColors.ts';

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
 import { useStudioStore, type StudioRoute } from '@/store/studio.ts';
 import { useStudioMarkerEditorStore } from '@/store/studioMarkerEditor.ts';
@@ -82,7 +83,9 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
   }, [active, editor.markerId, editor.initialDistanceM, existing, isPoi, props.route]);
 
   const trimmedLabel = label.trim();
-  const canSave = !isPoi || trimmedLabel.length > 0;
+  // An empty or non-numeric km field keeps Save disabled instead of saving at 0 km.
+  const kmIsNumber = !Number.isNaN(Number.parseFloat(kmText));
+  const canSave = kmIsNumber && (!isPoi || trimmedLabel.length > 0);
 
   const handleKmStartChange = (value: string) => {
     setKmText(value);
@@ -197,10 +200,17 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
           </div>
         </DialogBody>
 
-        <DialogFooter className={cn(isEdit && 'max-lg:grid-cols-3')}>
+        <DialogFooter className={cn(isEdit && 'max-lg:grid-cols-[auto_1fr_1fr]')}>
           {isEdit && (
-            <Button variant="danger" className="lg:mr-auto" onClick={handleDelete}>
-              {m.ui_btn_delete()}
+            // max-w-fit undoes the footer's phone w-full, so mr-2 widens the gap to Cancel.
+            <Button
+              variant="danger"
+              size="icon"
+              aria-label={m.ui_btn_delete()}
+              className="max-lg:mr-2 max-lg:max-w-fit lg:mr-auto"
+              onClick={handleDelete}
+            >
+              <Trash2 size={16} />
             </Button>
           )}
           <Button variant="secondary" onClick={() => useStudioMarkerEditorStore.getState().close()}>

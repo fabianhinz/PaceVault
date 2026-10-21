@@ -3,7 +3,7 @@ import { SESSION_DERIVATION_VERSION } from '@pacevault/engine/sessionDerivation.
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function makeSession(overrides?: Partial<TrainingSession>): TrainingSession {
+export const makeSession = (overrides?: Partial<TrainingSession>): TrainingSession => {
   return {
     id: `session-${Date.now()}`,
     sport: 'cycling',
@@ -26,9 +26,9 @@ export function makeSession(overrides?: Partial<TrainingSession>): TrainingSessi
     source: { kind: 'file' },
     ...overrides,
   };
-}
+};
 
-export function makeSessionSequence(
+export const makeSessionSequence = (
   count: number,
   options?: {
     startDate?: number;
@@ -37,7 +37,7 @@ export function makeSessionSequence(
     tssVariation?: number;
     daysBetween?: number;
   },
-): TrainingSession[] {
+): TrainingSession[] => {
   const startDate = options?.startDate ?? Date.now() - count * DAY_MS;
   const sport = options?.sport ?? 'cycling';
   const baseTss = options?.baseTss ?? 90;
@@ -70,4 +70,4 @@ export function makeSessionSequence(
   }
 
   return sessions;
-}
+};

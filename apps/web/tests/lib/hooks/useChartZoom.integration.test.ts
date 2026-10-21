@@ -13,7 +13,7 @@ const sampleData = [
   { date: '2024-01-05', value: 50 },
 ];
 
-function mockEvent(activeLabel: string | number | undefined): MouseHandlerDataParam {
+const mockEvent = (activeLabel: string | number | undefined): MouseHandlerDataParam => {
   return {
     activeLabel,
     activeTooltipIndex: undefined,
@@ -22,7 +22,7 @@ function mockEvent(activeLabel: string | number | undefined): MouseHandlerDataPa
     activeDataKey: undefined,
     activeCoordinate: undefined,
   };
-}
+};
 
 const series = Array.from({ length: 10 }, (_, i) => ({ time: i, value: i * 10 }));
 

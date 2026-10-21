@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { analyzeLaps, detectIntervals } from '@/lib/laps.ts';
 import type { SessionLap } from '@pacevault/engine/types.ts';
 
-function makeLap(overrides: Partial<SessionLap> = {}): SessionLap {
+const makeLap = (overrides: Partial<SessionLap> = {}): SessionLap => {
   return {
     lapIndex: 0,
     startTime: 0,
@@ -12,7 +12,7 @@ function makeLap(overrides: Partial<SessionLap> = {}): SessionLap {
     intensity: 'active',
     ...overrides,
   };
-}
+};
 
 describe('analyzeLaps', () => {
   it('returns empty array for empty input', () => {

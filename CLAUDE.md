@@ -18,14 +18,14 @@
 | `docs/`            | none                   | Generated docs assets (`docs/banners/`)                                                             |
 
 - The root holds only the workspace: `package.json` (fan-out scripts; the test toolchain `vite-plus`, `vitest` and `@vitest/coverage-v8` is declared here only, so every package resolves the same copy and `vp test` also works inside a package), `pnpm-workspace.yaml` (catalog, overrides), `vite.config.ts` (`fmt` and `lint` for every package, plus `defaultPackage` and `test.projects` so bare `vp dev`/`vp build`/`vp test` work from the root), `tsconfig.json` (references), `.node-version`.
-- Packages are imported by name with `.ts` subpaths (`@pacevault/engine/types.ts`); each package exports `"./*": "./src/*"` and has no build step.
+- Packages are imported by name with `.ts` subpaths (`@pacevault/engine/types.ts`); each package exports `"./*": "./src/*"` (except `@pacevault/i18n`, which exports its compiled messages, runtime and Vite plugin by name) and has no build step.
 - Every package declares its own dependencies; shared tool versions come from the `catalog:` in `pnpm-workspace.yaml`.
 
 ## 2. Code rules (every TypeScript package)
 
 - **Named exports only**: Use named exports everywhere.
 - **Arrow functions only**: Never use the `function` keyword — use arrow functions (`const fn = () => {}`) everywhere.
-- **No object destructuring** for component props and hook return values — access via `props.x` and `result.x` instead.
+- **No object destructuring** for component props and hook return values — access via `props.x` and `result.x` instead. Exception: a `packages/ui` wrapper may rest-destructure `props` to strip its own props before forwarding (`packages/ui/CLAUDE.md` § Rules).
 - **Delete dead code**: Exported but never-imported code should be removed immediately, not left around.
 - **No `as any` for external data**: Use Zod schemas with `safeParse` + `z.infer` to validate and type data from untyped sources (file parsers, IndexedDB, hook input, etc.). Schemas live next to the parser/consumer (e.g. `fitSchemas.ts`). On failure: return a safe fallback (`undefined`, `[]`), never throw.
 - **No non-null assertion `!`**: Narrow with guards, defaults, optional chaining, `for…of` or type-guard filters, or early returns. `!` silences `noUncheckedIndexedAccess` without handling the missing case (lint: `no-non-null-assertion`).

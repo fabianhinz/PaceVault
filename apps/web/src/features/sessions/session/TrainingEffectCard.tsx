@@ -10,7 +10,7 @@ import { cn } from '@pacevault/ui/lib/cn.ts';
 import { ctlOnDate } from '@/lib/sessionFitness.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
-import { useMetrics } from '@/hooks/useMetrics.ts';
+import { useMetrics } from '@/lib/hooks/useMetrics.ts';
 import { m } from '@pacevault/i18n/messages.js';
 import { getLocale } from '@pacevault/i18n/runtime.js';
 import {

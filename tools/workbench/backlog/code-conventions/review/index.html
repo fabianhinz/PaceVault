@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Code conventions · Review</title>
+    <link rel="stylesheet" href="../../../shared/review.css" />
+  </head>
+  <body class="rv">
+    <main class="rv-doc">
+      <header class="rv-text">
+        <p class="rv-over">Review · round 1</p>
+        <h1>Code that contradicts the CLAUDE.md rules</h1>
+        <p>
+          Two rule conflicts fixed in the code, two documented as exceptions, one rule corrected. No
+          behaviour change. Fast lane: Changes, Verification, How to check.
+        </p>
+      </header>
+
+      <h2>Changes</h2>
+      <p class="rv-text">No UI change, no screenshots.</p>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C1</span>Arrow functions only</h3>
+        <div class="rv-text">
+          <p>
+            The last six <code>function</code> declarations are <code>const</code> arrow functions
+            (Q6).
+          </p>
+          <p class="rv-refs">
+            <code>packages/testing/src/sessions.ts:6</code>, <code>:31</code>;
+            <code>apps/web/tests/parsers/fitLaps.spec.ts:4</code>;
+            <code>apps/web/tests/parsers/fit.spec.ts:12</code>;
+            <code>apps/web/tests/lib/lapsAnalysis.spec.ts:5</code>;
+            <code>apps/web/tests/lib/hooks/useChartZoom.integration.test.ts:16</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C2</span><code>useMetrics</code> in the shared hooks folder</h3>
+        <div class="rv-text">
+          <p>
+            <code>apps/web/src/hooks/useMetrics.ts</code> moved to
+            <code>apps/web/src/lib/hooks/useMetrics.ts</code> (unchanged content); its four
+            importers follow, and the empty <code>src/hooks/</code> folder is gone (Q6).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/features/dashboard/ReadinessGauge.tsx:2</code>,
+            <code>FormStatusCard.tsx:2</code>, <code>ACWRGauge.tsx:2</code>;
+            <code>apps/web/src/features/sessions/session/TrainingEffectCard.tsx:13</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C3</span>Exceptions documented, one rule corrected</h3>
+        <div class="rv-text">
+          <p>
+            The ui wrappers may rest-destructure props to strip their own (Q4); the GPX export keeps
+            its snapshot as the file-format contract (Q5); the root exports rule names
+            <code>@pacevault/i18n</code> as the package that exports by name (agent decision 1).
+          </p>
+          <p class="rv-refs">
+            <code>packages/ui/CLAUDE.md:12</code>; <code>CLAUDE.md:28</code> (pointer);
+            <code>packages/gpx/CLAUDE.md:10</code>; <code>CLAUDE.md:21</code>.
+          </p>
+        </div>
+      </article>
+
+      <h2>Verification</h2>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp run check</code></td>
+          <td class="rv-pass">pass (10/10)</td>
+        </tr>
+        <tr>
+          <td><code>vp run test</code></td>
+          <td class="rv-pass">pass (1387 tests)</td>
+        </tr>
+        <tr>
+          <td><code>vp run e2e</code></td>
+          <td class="rv-pass">pass (84/84)</td>
+        </tr>
+        <tr>
+          <td><code>vp run build</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td>
+            Plan greps: no <code>function</code> declaration, no <code>apps/web/src/hooks/</code>
+          </td>
+          <td class="rv-pass">pass</td>
+        </tr>
+      </table>
+
+      <h2>How to check</h2>
+      <ol class="rv-text">
+        <li>
+          Open the dashboard and a session: the form gauges and the training effect card show values
+          as before.
+        </li>
+        <li>
+          Read the new rule lines: <code>CLAUDE.md:21</code> and <code>:28</code>,
+          <code>packages/ui/CLAUDE.md:12</code>, <code>packages/gpx/CLAUDE.md:10</code>.
+        </li>
+        <li>
+          When committing, stage the move as a pair so git records a rename:
+          <code>git add apps/web/src/hooks/useMetrics.ts apps/web/src/lib/hooks/useMetrics.ts</code
+          >.
+        </li>
+      </ol>
+    </main>
+  </body>
+</html>

@@ -9,6 +9,7 @@
 - **No provider**: the packages are only used inside this repo, so the kit is not configurable. Fixed texts come from `m` in `@pacevault/i18n/messages.js` (never paraglide paths of the app); dock and sheet geometry live in `src/lib/`.
 - **UI only, no logic**: stores and app features stay in the app. A component that needs app data takes it as props or as a slot (`Toast` takes `toasts` and `onDismiss`; metric help is an `info?: ReactNode` slot on `StatTile`, `StatRail` rows, `ListItemHeader` and `ChartRow`).
 - **Headless UI**: Import the Radix primitive → wrap it in `src/components/` → style with Tailwind. Use `cn()` from `src/lib/cn.ts` (`clsx` + `tailwind-merge`). No component libraries (no MUI, AntD, Shadcn).
+- **Props**: a wrapper may rest-destructure `props` to strip its own props (`variant`, `className`, …) before forwarding the rest to a primitive; elsewhere the root no-destructuring rule holds.
 - **Reuse before inlining**: before writing layout or UI patterns in app code, check `src/components/` (`CardHeader`, `StatTile`, `ValueSkeleton`, …). Extract a new kit component when a pattern appears in 2+ places.
 - **Theme**: every token lives in `src/theme.css`; every colour token in `src/lib/tokens.ts` mirrors one there, change both together. Consumers import `tailwindcss`, then `@pacevault/ui/theme.css`, and add `@source` for `packages/ui/src` (Tailwind does not scan workspace packages).
 - **Server rendering**: hooks must not touch `window` during render without a guard (`useMediaQuery` reads as `false` on the server).

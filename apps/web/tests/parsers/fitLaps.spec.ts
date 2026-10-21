@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { mapFitLaps } from '@/parsers/fit.ts';
 
-function makeFitLap(overrides: Record<string, unknown> = {}) {
+const makeFitLap = (overrides: Record<string, unknown> = {}) => {
   return {
     start_time: '2025-08-16T16:14:27.000Z',
     timestamp: '2025-08-16T16:26:44.000Z',
@@ -15,7 +15,7 @@ function makeFitLap(overrides: Record<string, unknown> = {}) {
     max_heart_rate: 130,
     ...overrides,
   };
-}
+};
 
 describe('mapFitLaps', () => {
   it('returns empty array for empty input', () => {

@@ -42,7 +42,7 @@ For code, mockups and plans alike:
 
 - **No reduced-motion handling**: no `prefers-reduced-motion` fallbacks; its absence is not a risk to flag (owner, 2026-10-16).
 - **Banners at the very top**: a `Banner` is the page container's first child, above any header, title or actions menu.
-- **Same action, same place**: an action keeps its place and label at every width; narrow layouts may shrink secondary actions to icons, never move or rename them. Dialog-like surfaces: status as a chip in the header, Expand and Close (✕) top right; footer with the destructive action spelled out (`danger`, never icon-only) on the left and the primary action on the right.
+- **Same action, same place**: an action keeps its place and label at every width; narrow layouts may shrink secondary actions to icons, never move or rename them. Dialog-like surfaces: status as a chip in the header, Expand and Close (✕) top right; footer with the destructive action spelled out (`danger`) on the left, or in a three-action footer a `danger` icon button with an accessible label, and the primary action on the right.
 
 ## 3. Colour Palette
 
