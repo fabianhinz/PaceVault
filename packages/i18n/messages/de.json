@@ -601,7 +601,6 @@
   "ui_weather_row_wind": "Wind",
   "ui_onboarding_intervals_title": "intervals.icu",
   "ui_onboarding_intervals_desc": "Einmal verbinden – synct automatisch",
-  "ui_onboarding_loading": "Kartendaten werden geladen…",
   "ui_onboarding_tagline": "Deine Läufe und Radtouren auf einer interaktiven Karte.",
   "ui_onboarding_intro_desc": "PaceVault analysiert deine Einheiten lokal in diesem Browser – ohne Konto.",
   "ui_onboarding_ask_source": "1 · Woher deine Einheiten kommen",

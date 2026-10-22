@@ -601,7 +601,6 @@
   "ui_weather_row_wind": "Wind",
   "ui_onboarding_intervals_title": "intervals.icu",
   "ui_onboarding_intervals_desc": "Connect once — new sessions sync in",
-  "ui_onboarding_loading": "Loading map data…",
   "ui_onboarding_tagline": "Your runs and rides on an interactive map.",
   "ui_onboarding_intro_desc": "PaceVault analyzes your sessions locally in this browser — no account needed.",
   "ui_onboarding_ask_source": "1 · Where your sessions come from",

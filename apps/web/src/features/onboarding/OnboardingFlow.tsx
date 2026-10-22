@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import { ListChecks } from 'lucide-react';
@@ -23,7 +24,6 @@ import {
   useThresholdsForm,
   type ThresholdsForm,
 } from '@/features/settings/hooks/useThresholdsForm.ts';
-import { LogoLoader } from './LogoLoader.tsx';
 import { OnboardingIntro, OnboardingIntroActions } from './OnboardingIntro.tsx';
 import { OnboardingStep } from './OnboardingStep.tsx';
 
@@ -128,8 +128,8 @@ const PhoneOnboarding = (props: ShellProps) => {
 };
 
 /**
- * Onboarding over the live map: the logo loader, then the intro and the four steps in a
- * left-column card (desktop) or a scrim-less Dialog with a reopen pill (phone).
+ * Onboarding over the live map: the intro and the four steps in a left-column card (desktop)
+ * or a scrim-less Dialog with a reopen pill (phone); mounting it reveals the demo preview.
  * The form lives here, so its values survive the steps and a phone close / reopen.
  */
 export const OnboardingFlow = () => {
@@ -139,9 +139,12 @@ export const OnboardingFlow = () => {
   const thresholds = useThresholdsForm('create');
   const onDemo = () => void startOnboardingDemo(queryClient);
 
+  useEffect(() => {
+    useOnboardingStore.getState().revealOnboardingPreview();
+  }, []);
+
   return (
     <>
-      <LogoLoader />
       {revealed && device.isDesktop && (
         <DesktopOnboarding thresholds={thresholds} onDemo={onDemo} />
       )}
