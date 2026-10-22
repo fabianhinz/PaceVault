@@ -426,94 +426,6 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       chart: chartNodes.speed,
     },
     {
-      key: 'elevation',
-      title: m.ui_stat_elevation(),
-      icon: Mountain,
-      color: tokens.chartElevation,
-      metricId: elevationMetricId,
-      hasData: hasSeriesValues(rows, 'elevation'),
-      rail: (
-        <SeriesRail
-          group={HOVER_GROUP}
-          unit="m"
-          formatX={formatHoverTime}
-          rest={{
-            header: '',
-            value: railGain(stats.elevationGain),
-            secondary: `${railLoss(stats.elevationLoss)} m`,
-            note: vamNote(stats.vam, m.ui_rail_vam_avg),
-          }}
-          readingAt={(x) => {
-            const point = byTime.get(x);
-            if (!point) return undefined;
-            return {
-              value: railInt(point.elevation),
-              secondary: `${railGain(stats.elevationGain)} m`,
-              note: vamNote(climbSpanAt(climbSpans, Number(x))?.vam, m.ui_rail_vam),
-            };
-          }}
-        />
-      ),
-      chart: chartNodes.elevation,
-    },
-    {
-      key: 'cadence',
-      title: m.ui_stat_cadence(),
-      icon: cadenceIcon,
-      color: tokens.chartCadence,
-      metricId: 'cadence',
-      hasData: hasSeriesValues(rows, 'cadence'),
-      rail: (
-        <SeriesRail
-          group={HOVER_GROUP}
-          unit={isRunning ? 'spm' : 'rpm'}
-          formatX={formatHoverTime}
-          rest={{
-            header: m.ui_rail_avg(),
-            value: railInt(railCadence(stats.avgCadence, isRunning)),
-            secondary: `${m.ui_rail_max()} ${railInt(railCadence(stats.maxCadence, isRunning))}`,
-          }}
-          readingAt={(x) => {
-            const point = byTime.get(x);
-            if (!point) return undefined;
-            return {
-              value: railInt(point.cadence),
-              secondary: `${m.ui_rail_avg()} ${railInt(railCadence(stats.avgCadence, isRunning))}`,
-            };
-          }}
-        />
-      ),
-      chart: chartNodes.cadence,
-    },
-    {
-      key: 'grade',
-      title: m.ui_chart_title_grade(),
-      icon: TrendingUp,
-      color: tokens.chartGrade,
-      hasData: hasSeriesValues(rows, 'grade'),
-      rail: (
-        <SeriesRail
-          group={HOVER_GROUP}
-          unit="%"
-          formatX={formatHoverTime}
-          rest={{
-            header: m.ui_rail_max(),
-            value: railSigned1(stats.maxGrade),
-            secondary: `${m.ui_rail_min()} ${railSigned1(stats.minGrade)}`,
-          }}
-          readingAt={(x) => {
-            const point = byTime.get(x);
-            if (!point) return undefined;
-            return {
-              value: railSigned1(point.grade),
-              secondary: `${m.ui_rail_max()} ${railSigned1(stats.maxGrade)}`,
-            };
-          }}
-        />
-      ),
-      chart: chartNodes.grade,
-    },
-    {
       key: 'pace',
       title: m.ui_zones_tab_pace(),
       icon: Timer,
@@ -567,6 +479,94 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
         />
       ),
       chart: chartNodes.gap,
+    },
+    {
+      key: 'elevation',
+      title: m.ui_stat_elevation(),
+      icon: Mountain,
+      color: tokens.chartElevation,
+      metricId: elevationMetricId,
+      hasData: hasSeriesValues(rows, 'elevation'),
+      rail: (
+        <SeriesRail
+          group={HOVER_GROUP}
+          unit="m"
+          formatX={formatHoverTime}
+          rest={{
+            header: '',
+            value: railGain(stats.elevationGain),
+            secondary: `${railLoss(stats.elevationLoss)} m`,
+            note: vamNote(stats.vam, m.ui_rail_vam_avg),
+          }}
+          readingAt={(x) => {
+            const point = byTime.get(x);
+            if (!point) return undefined;
+            return {
+              value: railInt(point.elevation),
+              secondary: `${railGain(stats.elevationGain)} m`,
+              note: vamNote(climbSpanAt(climbSpans, Number(x))?.vam, m.ui_rail_vam),
+            };
+          }}
+        />
+      ),
+      chart: chartNodes.elevation,
+    },
+    {
+      key: 'grade',
+      title: m.ui_chart_title_grade(),
+      icon: TrendingUp,
+      color: tokens.chartGrade,
+      hasData: hasSeriesValues(rows, 'grade'),
+      rail: (
+        <SeriesRail
+          group={HOVER_GROUP}
+          unit="%"
+          formatX={formatHoverTime}
+          rest={{
+            header: m.ui_rail_max(),
+            value: railSigned1(stats.maxGrade),
+            secondary: `${m.ui_rail_min()} ${railSigned1(stats.minGrade)}`,
+          }}
+          readingAt={(x) => {
+            const point = byTime.get(x);
+            if (!point) return undefined;
+            return {
+              value: railSigned1(point.grade),
+              secondary: `${m.ui_rail_max()} ${railSigned1(stats.maxGrade)}`,
+            };
+          }}
+        />
+      ),
+      chart: chartNodes.grade,
+    },
+    {
+      key: 'cadence',
+      title: m.ui_stat_cadence(),
+      icon: cadenceIcon,
+      color: tokens.chartCadence,
+      metricId: 'cadence',
+      hasData: hasSeriesValues(rows, 'cadence'),
+      rail: (
+        <SeriesRail
+          group={HOVER_GROUP}
+          unit={isRunning ? 'spm' : 'rpm'}
+          formatX={formatHoverTime}
+          rest={{
+            header: m.ui_rail_avg(),
+            value: railInt(railCadence(stats.avgCadence, isRunning)),
+            secondary: `${m.ui_rail_max()} ${railInt(railCadence(stats.maxCadence, isRunning))}`,
+          }}
+          readingAt={(x) => {
+            const point = byTime.get(x);
+            if (!point) return undefined;
+            return {
+              value: railInt(point.cadence),
+              secondary: `${m.ui_rail_avg()} ${railInt(railCadence(stats.avgCadence, isRunning))}`,
+            };
+          }}
+        />
+      ),
+      chart: chartNodes.cadence,
     },
   ];
 

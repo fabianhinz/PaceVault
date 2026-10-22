@@ -11,5 +11,6 @@ export const toFitParseProfile =
       maxHr: resolved.maxHr,
       gender: resolved.gender,
       ftp: resolved.ftp,
+      thresholdHr: resolved.thresholdHr,
     };
   };

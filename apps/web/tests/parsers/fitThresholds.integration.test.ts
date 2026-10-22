@@ -22,7 +22,7 @@ const fixedProfile = (ftp: number) => () => ({
 });
 
 describe('FIT import with an FTP history', () => {
-  it('scores a ride with the FTP in effect on its date', async () => {
+  it('scores a run from heart rate, not from its power, whatever the FTP', async () => {
     const at200 = await parseFitFile(runningFit(), 'run.fit', fixedProfile(200));
     const at300 = await parseFitFile(runningFit(), 'run.fit', fixedProfile(300));
     const profile = makeUserProfile({
@@ -38,8 +38,9 @@ describe('FIT import with an FTP history', () => {
 
     const imported = await parseFitFile(runningFit(), 'run.fit', toFitParseProfile(profile));
 
-    expect(imported.session.stressMethod).toBe('tss');
+    expect(imported.session.normalizedPower).toBeDefined();
+    expect(imported.session.stressMethod).toBe('trimp');
     expect(imported.session.tss).toBe(at200.session.tss);
-    expect(imported.session.tss).not.toBe(at300.session.tss);
+    expect(imported.session.tss).toBe(at300.session.tss);
   });
 });

@@ -7,7 +7,7 @@ import type { Gender, UserProfile } from '@/types/index.ts';
 import { upsertDatedValue, type DatedValue } from '@pacevault/engine/datedValue.ts';
 import { idbStorage } from '@/lib/idbStorage.ts';
 
-export type ThresholdKey = 'restHr' | 'maxHr' | 'ftp' | 'thresholdPace' | 'weight';
+export type ThresholdKey = 'restHr' | 'maxHr' | 'thresholdHr' | 'ftp' | 'thresholdPace' | 'weight';
 
 const persistedUserSchema = z.looseObject({ profile: z.looseObject({}).nullable() });
 
@@ -45,6 +45,7 @@ const withDatedThresholds = (persisted: unknown): unknown => {
   return { ...parsed.data, profile: { ...parsed.data.profile, thresholds } };
 };
 
+// v4 adds the optional dated `thresholds.thresholdHr`: a v3 profile has none and needs no step.
 const migrateUserState = (persisted: unknown, version: number): unknown => {
   let state = persisted;
   if (version < 2) state = withoutAutoSessionNames(state);
@@ -72,6 +73,7 @@ const profileSchema = z.looseObject({
   thresholds: z.object({
     restHr: requiredHistorySchema,
     maxHr: requiredHistorySchema,
+    thresholdHr: historySchema.optional(),
     ftp: historySchema.optional(),
     thresholdPace: historySchema.optional(),
   }),
@@ -149,6 +151,12 @@ export const useUserStore = create<UserState>()(
             if (changes.maxHr !== undefined) {
               profile.thresholds.maxHr = upsert(profile.thresholds.maxHr, changes.maxHr);
             }
+            if (changes.thresholdHr !== undefined) {
+              profile.thresholds.thresholdHr = upsert(
+                profile.thresholds.thresholdHr,
+                changes.thresholdHr,
+              );
+            }
             if (changes.ftp !== undefined) {
               profile.thresholds.ftp = upsert(profile.thresholds.ftp, changes.ftp);
             }
@@ -176,7 +184,7 @@ export const useUserStore = create<UserState>()(
         name: 'store-user',
         storage: createJSONStorage(() => idbStorage),
         skipHydration: true,
-        version: 3,
+        version: 4,
         migrate: (persisted, version) => migrateUserState(persisted, version) as UserState,
         merge: (persisted, current) => ({ ...current, profile: parsePersistedProfile(persisted) }),
       },

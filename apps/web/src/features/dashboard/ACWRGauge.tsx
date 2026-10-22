@@ -7,6 +7,7 @@ import { getACWRColor, getInjuryRisk } from '@pacevault/engine/coaching.ts';
 import { MetricLabel } from '@/components/MetricLabel.tsx';
 import { GaugeDial } from '@pacevault/ui/components/GaugeDial.tsx';
 import type { InjuryRisk } from '@pacevault/engine/types.ts';
+import { MISSING } from '@/lib/railFormat.ts';
 
 const acwrRiskLabel: Record<InjuryRisk, () => string> = {
   low: m.ui_acwr_risk_low,
@@ -14,30 +15,48 @@ const acwrRiskLabel: Record<InjuryRisk, () => string> = {
   high: m.ui_acwr_risk_high,
 };
 
+const ACWR_MIN = 0;
+const ACWR_MAX = 2;
+
 export const ACWRGauge = () => {
   const metrics = useMetrics();
-  const acwr = metrics.current?.acwr ?? 0;
-  const color = getACWRColor(acwr);
-  const risk = getInjuryRisk(acwr);
+  const acwr = metrics.current?.acwr;
+  // Without history there is no ratio: `--`, an empty dial and no risk label.
+  const dialValue = acwr ?? ACWR_MIN;
+  const color = getACWRColor(dialValue);
 
   return (
     <div className="w-28 flex gap-1 flex-1 h-full flex-col items-center justify-end">
       <div className="relative w-full max-w-[160px]">
-        <GaugeDial min={0} max={2} value={acwr} zones={ACWR_ZONES} valueFill={acwrFill[color]} />
+        <GaugeDial
+          min={ACWR_MIN}
+          max={ACWR_MAX}
+          value={dialValue}
+          zones={ACWR_ZONES}
+          valueFill={acwrFill[color]}
+        />
         <div className="absolute inset-0 flex flex-col items-center justify-end">
-          <Typography variant="h1" className={cn('leading-none pb-1', acwrColorMap[color].text)}>
-            {acwr.toFixed(1)}
+          <Typography
+            variant="h1"
+            className={cn(
+              'leading-none pb-1',
+              acwr === undefined ? 'text-text-tertiary' : acwrColorMap[color].text,
+            )}
+          >
+            {acwr === undefined ? MISSING : acwr.toFixed(1)}
           </Typography>
         </div>
       </div>
-      <Typography
-        variant="overline"
-        as="p"
-        className={cn('whitespace-nowrap', acwrColorMap[color].text)}
-      >
-        {acwrRiskLabel[risk]()}
-      </Typography>
-      <MetricLabel metricId="acwr" size="sm" contextLabel="asd" />
+      {acwr !== undefined && (
+        <Typography
+          variant="overline"
+          as="p"
+          className={cn('whitespace-nowrap', acwrColorMap[color].text)}
+        >
+          {acwrRiskLabel[getInjuryRisk(acwr)]()}
+        </Typography>
+      )}
+      <MetricLabel metricId="acwr" size="sm" />
     </div>
   );
 };

@@ -7,9 +7,11 @@ export interface RecordDerivedFields {
   avgCadence?: number;
   maxSpeed?: number;
   gap?: number;
+  avgHr?: number;
+  maxHr?: number;
 }
 
-export const SESSION_DERIVATION_VERSION = 4;
+export const SESSION_DERIVATION_VERSION = 5;
 
 export const isSessionOutdated = (session: { derivationVersion: number }): boolean => {
   return session.derivationVersion < SESSION_DERIVATION_VERSION;
@@ -28,7 +30,7 @@ export const deriveDistanceFromRecords = (records: SessionRecord[]): number | un
 
 export const timeWeightedMean = (
   records: SessionRecord[],
-  field: 'power' | 'cadence',
+  field: 'power' | 'cadence' | 'hr',
 ): number | undefined => {
   let weighted = 0;
   let seconds = 0;
@@ -48,7 +50,7 @@ export const timeWeightedMean = (
 
 export const deriveAvgFromRecords = (
   records: SessionRecord[],
-  field: 'power' | 'cadence',
+  field: 'power' | 'cadence' | 'hr',
 ): number | undefined => {
   const mean = timeWeightedMean(records, field);
   if (mean === undefined) return undefined;
@@ -57,7 +59,7 @@ export const deriveAvgFromRecords = (
 
 export const deriveMaxFromRecords = (
   records: SessionRecord[],
-  field: 'power' | 'speed',
+  field: 'power' | 'speed' | 'hr',
 ): number | undefined => {
   const values = records.map((r) => r[field]).filter((v): v is number => v !== undefined);
   if (values.length === 0) return undefined;
@@ -78,5 +80,7 @@ export const deriveSessionFieldsFromRecords = (
     avgCadence: deriveAvgFromRecords(records, 'cadence'),
     maxSpeed: deriveMaxFromRecords(records, 'speed'),
     gap,
+    avgHr: deriveAvgFromRecords(records, 'hr'),
+    maxHr: deriveMaxFromRecords(records, 'hr'),
   };
 };

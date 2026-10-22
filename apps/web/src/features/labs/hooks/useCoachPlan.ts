@@ -40,7 +40,8 @@ export const useCoachPlan = (): {
     }
 
     const weekOf = getMondayOfWeek(today);
-    const currentKey = buildPlanCacheKey(weekOf, sessions.length, thresholdPace);
+    const loads = sessions.map((session) => session.tss);
+    const currentKey = buildPlanCacheKey(weekOf, loads, thresholdPace);
 
     if (cachedPlan && cacheKey === currentKey) {
       const zones = computeRunningZones(thresholdPace);

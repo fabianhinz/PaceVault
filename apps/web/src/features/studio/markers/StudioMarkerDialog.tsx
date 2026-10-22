@@ -83,9 +83,13 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
   }, [active, editor.markerId, editor.initialDistanceM, existing, isPoi, props.route]);
 
   const trimmedLabel = label.trim();
-  // An empty or non-numeric km field keeps Save disabled instead of saving at 0 km.
+  // An empty or non-numeric km field keeps Save disabled instead of saving at 0 km; so does the
+  // "from previous split" field while it is shown, instead of saving on top of the previous split.
   const kmIsNumber = !Number.isNaN(Number.parseFloat(kmText));
-  const canSave = kmIsNumber && (!isPoi || trimmedLabel.length > 0);
+  const showsFromSplit = !isPoi && prevSplitM !== null;
+  const fromSplitIsNumber = !Number.isNaN(Number.parseFloat(kmFromSplitText));
+  const canSave =
+    kmIsNumber && (!isPoi || trimmedLabel.length > 0) && (!showsFromSplit || fromSplitIsNumber);
 
   const handleKmStartChange = (value: string) => {
     setKmText(value);
@@ -97,12 +101,10 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
 
   const handleKmFromSplitChange = (value: string) => {
     setKmFromSplitText(value);
-    if (prevSplitM !== null) {
-      const offsetKm = Number.parseFloat(value);
-      const offset = Number.isNaN(offsetKm) ? 0 : Math.max(0, offsetKm);
-      const distanceM = clampKm(prevSplitM / 1000 + offset, maxKm) * 1000;
-      setKmText(toKm(distanceM));
-    }
+    const offsetKm = Number.parseFloat(value);
+    if (prevSplitM === null || Number.isNaN(offsetKm)) return;
+    const distanceM = clampKm(prevSplitM / 1000 + Math.max(0, offsetKm), maxKm) * 1000;
+    setKmText(toKm(distanceM));
   };
 
   const handleSave = () => {
@@ -173,7 +175,7 @@ export const StudioMarkerDialog = (props: { route: StudioRoute }) => {
               />
             </div>
 
-            {!isPoi && prevSplitM !== null && (
+            {showsFromSplit && (
               <div>
                 <Label>{m.ui_studio_marker_from_split_label()}</Label>
                 <Input

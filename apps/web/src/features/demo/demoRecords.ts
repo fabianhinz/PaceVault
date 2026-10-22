@@ -136,6 +136,8 @@ export interface SimulatedSession {
   records: SessionRecord[];
   /** Record index where each step begins (shared with the previous step's end). */
   stepStarts: number[];
+  /** Timer seconds from the first to the last record. */
+  duration: number;
 }
 
 // Rider + bike, rolling resistance, drag area, air density.
@@ -146,6 +148,11 @@ const CDA = 0.36;
 const RHO = 1.2;
 const MAX_BIKE_SPEED = 16;
 const COAST_GRADE = -0.025;
+/**
+ * Climbs lift steady riding at most to this share of FTP, below the effort detection's leave
+ * level (0.80), so steady rides over hills show no efforts.
+ */
+const CLIMB_EFFORT_CAP = 0.77;
 
 const pedalPower = (v: number, grade: number): number =>
   v * MASS_KG * GRAVITY * (CRR + grade) + 0.5 * RHO * CDA * v ** 3;
@@ -328,7 +335,11 @@ export const simulateSession = (input: SimulateInput): SimulatedSession => {
         } else if (route && rng.next() < 0.004) {
           coasting = Math.round(rng.between(4, 12));
         }
-        let watts = persona.ftp * effort * (1 + noise * 2) * (1 + clamp(grade * 5, 0, 0.35));
+        const climbing = Math.min(
+          effort * (1 + clamp(grade * 5, 0, 0.35)),
+          Math.max(effort, CLIMB_EFFORT_CAP),
+        );
+        let watts = persona.ftp * climbing * (1 + noise * 2);
         if (coasting > 0 || grade < COAST_GRADE) watts = 0;
         if (startT === 0) watts *= ramp;
         power = Math.max(0, Math.round(watts));
@@ -346,7 +357,7 @@ export const simulateSession = (input: SimulateInput): SimulatedSession => {
     }
   });
 
-  return { records, stepStarts };
+  return { records, stepStarts, duration: t };
 };
 
 // ---------------------------------------------------------------------------

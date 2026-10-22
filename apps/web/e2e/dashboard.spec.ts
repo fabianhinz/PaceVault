@@ -1,5 +1,5 @@
 import { test, expect } from './helpers/test';
-import { seedWithSessions } from './helpers/seed';
+import { seedOnboardingComplete, seedWithSessions } from './helpers/seed';
 import { applyFilter } from './helpers/filters';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -44,5 +44,18 @@ test.describe('Dashboard volume', () => {
     await expect(
       page.getByRole('region', { name: 'Volume' }).getByRole('tab', { name: 'Elevation' }),
     ).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+test.describe('Dashboard form', () => {
+  test('regression: form gauges show 0.0 without history', async ({ page }) => {
+    await seedOnboardingComplete(page);
+    await page.goto('/');
+
+    await expect(page.getByText('Current Form', { exact: true })).toBeVisible();
+    // Readiness and ramp rate: `--` instead of 0.0, and no status or risk label
+    await expect(page.getByRole('heading', { level: 1, name: '--', exact: true })).toHaveCount(2);
+    await expect(page.getByRole('heading', { level: 1, name: '0.0', exact: true })).toHaveCount(0);
+    await expect(page.getByText(/^(Neutral|Low risk)$/)).toHaveCount(0);
   });
 });

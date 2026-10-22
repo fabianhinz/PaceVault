@@ -19,7 +19,7 @@ const TODAY_MOCK = new Date('2026-03-04T00:00:00').getTime();
  */
 const steadyBaseline = () =>
   Array.from({ length: 84 }, (_, i) => ({
-    sport: 'running' as const,
+    sport: 'cycling' as const,
     date: TODAY_MOCK - (84 - i) * DAY_MS, // days -84 to -1
     tss: 50,
   }));
@@ -31,12 +31,12 @@ const steadyBaseline = () =>
  */
 const overloadSpike = () => [
   ...Array.from({ length: 84 }, (_, i) => ({
-    sport: 'running' as const,
+    sport: 'cycling' as const,
     date: TODAY_MOCK - (91 - i) * DAY_MS, // days -91 to -8
     tss: 50,
   })),
   ...Array.from({ length: 7 }, (_, i) => ({
-    sport: 'running' as const,
+    sport: 'cycling' as const,
     date: TODAY_MOCK - (7 - i) * DAY_MS, // days -7 to -1
     tss: 200,
   })),

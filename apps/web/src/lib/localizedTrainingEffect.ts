@@ -23,4 +23,5 @@ const TE_SUMMARY_MAP: Record<TESummaryKey, () => string> = {
 
 export const localizedTELabel = (key: TELabelKey): string => TE_LABEL_MAP[key]();
 
-export const localizedTESummary = (key: TESummaryKey): string => TE_SUMMARY_MAP[key]();
+export const localizedTESummary = (key: TESummaryKey): string =>
+  `${TE_SUMMARY_MAP[key]()} ${m.ui_te_from_hr()}`;

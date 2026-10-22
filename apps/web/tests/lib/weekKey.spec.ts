@@ -28,20 +28,22 @@ describe('getMondayOfWeek', () => {
 });
 
 describe('buildPlanCacheKey', () => {
-  it('builds a colon-separated key', () => {
-    expect(buildPlanCacheKey('2026-02-09', 5, 300)).toBe('2026-02-09:5:300');
+  it('starts with week, session count and threshold pace', () => {
+    expect(buildPlanCacheKey('2026-02-09', [40, 65.5], 300)).toMatch(/^2026-02-09:2:300:/);
+    expect(buildPlanCacheKey('2026-02-09', [], 300)).toMatch(/^2026-02-09:0:300:/);
   });
 
-  it('handles zero sessions', () => {
-    expect(buildPlanCacheKey('2026-02-09', 0, 300)).toBe('2026-02-09:0:300');
+  it('stays the same for the same loads', () => {
+    expect(buildPlanCacheKey('2026-02-09', [40, 65.5], 300)).toBe(
+      buildPlanCacheKey('2026-02-09', [40, 65.5], 300),
+    );
   });
 
-  it('produces different keys for different inputs', () => {
-    const a = buildPlanCacheKey('2026-02-09', 5, 300);
-    const b = buildPlanCacheKey('2026-02-09', 6, 300);
-    const c = buildPlanCacheKey('2026-02-16', 5, 300);
-    expect(a).not.toBe(b);
-    expect(a).not.toBe(c);
+  it('changes when a recompute moves a stored load', () => {
+    const before = buildPlanCacheKey('2026-02-09', [40, 65.5], 300);
+    expect(buildPlanCacheKey('2026-02-09', [40, 71.2], 300)).not.toBe(before);
+    expect(buildPlanCacheKey('2026-02-16', [40, 65.5], 300)).not.toBe(before);
+    expect(buildPlanCacheKey('2026-02-09', [40, 65.5, 20], 300)).not.toBe(before);
   });
 });
 

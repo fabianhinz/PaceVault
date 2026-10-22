@@ -18,7 +18,7 @@
 | `docs/`            | none                   | Generated docs assets (`docs/banners/`)                                                             |
 
 - The root holds only the workspace: `package.json` (fan-out scripts; the test toolchain `vite-plus`, `vitest` and `@vitest/coverage-v8` is declared here only, so every package resolves the same copy and `vp test` also works inside a package), `pnpm-workspace.yaml` (catalog, overrides), `vite.config.ts` (`fmt` and `lint` for every package, plus `defaultPackage` and `test.projects` so bare `vp dev`/`vp build`/`vp test` work from the root), `tsconfig.json` (references), `.node-version`.
-- Packages are imported by name with `.ts` subpaths (`@pacevault/engine/types.ts`); each package exports `"./*": "./src/*"` (except `@pacevault/i18n`, which exports its compiled messages, runtime and Vite plugin by name) and has no build step.
+- Packages are imported by name with `.ts` subpaths (`@pacevault/engine/types.ts`); each package exports `"./*": "./src/*"` (except `@pacevault/i18n`, which exports its compiled messages, runtime and Vite plugin by name, and `@pacevault/web`, which exports a few modules by name for the tools and e2e helpers, `apps/web/package.json` `exports`) and has no build step.
 - Every package declares its own dependencies; shared tool versions come from the `catalog:` in `pnpm-workspace.yaml`.
 
 ## 2. Code rules (every TypeScript package)

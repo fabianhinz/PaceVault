@@ -143,7 +143,8 @@ export const DialogContent = (props: DialogContentProps) => {
           'left-[max(0.5rem,env(safe-area-inset-left))] right-[max(0.5rem,env(safe-area-inset-right))]',
           'max-h-[min(75dvh,calc(100dvh-var(--sheet-top)-var(--sheet-bottom)))]',
           'data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
-          'lg:block lg:p-6 lg:overflow-y-auto lg:rounded-xl',
+          // Desktop: the card keeps its flex column, so the footer stays visible and the body scrolls.
+          'lg:p-6 lg:rounded-xl',
           'lg:inset-x-auto lg:right-auto lg:bottom-auto lg:mx-0 lg:left-1/2 lg:top-1/2 lg:-translate-x-1/2 lg:-translate-y-1/2',
           'lg:w-full lg:max-w-[min(32rem,calc(100vw-25rem))] lg:max-h-[calc(100dvh-25rem)]',
           'lg:data-[state=open]:slide-in-from-bottom-0 lg:data-[state=closed]:slide-out-to-bottom-0',
@@ -198,7 +199,9 @@ export const DialogBody = (props: { className?: string; children: ReactNode }) =
     <div
       ref={ref}
       className={cn(
-        'scroll-fade min-h-0 shrink overflow-y-auto overscroll-contain px-5 pt-1 pb-5 lg:contents',
+        'scroll-fade min-h-0 shrink overflow-y-auto overscroll-contain px-5 pt-1 pb-5',
+        // Desktop: the card's padding frames the body; 4px inside keep focus rings unclipped.
+        'lg:-mx-1 lg:px-1 lg:pt-0 lg:pb-1',
         props.className,
       )}
     >

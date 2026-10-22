@@ -40,21 +40,24 @@ export interface EffortDetection {
 export interface EffortSignalDefaults {
   /** seconds of moving time a work block needs */
   minWork: number;
-  /** work at or above this share of the reference */
+  /** a work block starts at a segment at or above this share of the reference */
   enter: number;
+  /** a work block grows into adjacent segments at or above this share of the reference */
+  leave: number;
   /** steady at or above this share of the reference */
   steady: number;
 }
 
 /**
  * Power factors are × FTP, pace × threshold speed, HR × heart-rate reserve above rest.
- * Power steady 0.75 is the Coggan Z2/Z3 boundary.
+ * Power steady 0.75 is the Coggan Z2/Z3 boundary. Work enters at `enter` and only ends
+ * below `leave` (hysteresis), so a level that wanders around `enter` stays one block.
  * @see [CogganAllen2010], [Karvonen1957]
  */
 export const EFFORT_SIGNAL_DEFAULTS: Record<EffortSignal, EffortSignalDefaults> = {
-  power: { minWork: 30, enter: 0.88, steady: 0.75 },
-  pace: { minWork: 60, enter: 0.88, steady: 0.82 },
-  hr: { minWork: 120, enter: 0.8, steady: 0.7 },
+  power: { minWork: 30, enter: 0.88, leave: 0.8, steady: 0.75 },
+  pace: { minWork: 60, enter: 0.88, leave: 0.85, steady: 0.82 },
+  hr: { minWork: 120, enter: 0.8, leave: 0.75, steady: 0.7 },
 };
 export const EFFORT_SIGNAL_ORDER: Record<Sport, EffortSignal[]> = {
   cycling: ['power', 'hr'],
@@ -115,6 +118,12 @@ interface Segment {
   from: number;
   to: number;
   mean: number;
+}
+
+interface SignalLevels {
+  enter: number;
+  leave: number;
+  steady: number;
 }
 
 const valueOrNaN = (value: number | undefined): number => {
@@ -566,21 +575,39 @@ const postprocess = (
   return markWarmupCooldown(refineEdges(merge(out), x, trace));
 };
 
-const labelSegments = (
-  segments: Segment[],
-  length: number,
-  enter: number,
-  steady: number,
-): Piece[] => {
+/**
+ * Work seeds at segments with a mean at or above `enter` and grows into directly adjacent
+ * segments at or above `leave`, in both directions. A gap between segments (a break) or a
+ * dropout (mean NaN, never ≥ leave) stops the growth.
+ */
+const workSegments = (segments: Segment[], levels: SignalLevels): boolean[] => {
+  const isWork = segments.map((segment) => segment.mean >= levels.enter);
+  const grows = (from: Segment | undefined, into: Segment | undefined): boolean =>
+    from !== undefined && into !== undefined && from.to === into.from;
+  for (let i = 1; i < segments.length; i++) {
+    const segment = segments[i];
+    if (isWork[i] || isWork[i - 1] !== true || !segment || segment.mean < levels.leave) continue;
+    if (grows(segments[i - 1], segment)) isWork[i] = true;
+  }
+  for (let i = segments.length - 2; i >= 0; i--) {
+    const segment = segments[i];
+    if (isWork[i] || isWork[i + 1] !== true || !segment || segment.mean < levels.leave) continue;
+    if (grows(segment, segments[i + 1])) isWork[i] = true;
+  }
+  return isWork;
+};
+
+const labelSegments = (segments: Segment[], length: number, levels: SignalLevels): Piece[] => {
+  const isWork = workSegments(segments, levels);
   const pieces: Piece[] = [];
   let previousEnd = 0;
-  for (const segment of segments) {
+  for (const [index, segment] of segments.entries()) {
     if (segment.from > previousEnd) {
       pieces.push({ kind: 'break', from: previousEnd, to: segment.from });
     }
     let kind: BlockKind = 'rest';
-    if (segment.mean >= enter) kind = 'work';
-    else if (segment.mean >= steady) kind = 'steady';
+    if (isWork[index] === true) kind = 'work';
+    else if (segment.mean >= levels.steady) kind = 'steady';
     pieces.push({ kind, from: segment.from, to: segment.to });
     previousEnd = segment.to;
   }
@@ -663,8 +690,11 @@ export const detectEfforts = (
 
   const defaults = EFFORT_SIGNAL_DEFAULTS[chosen];
   const enter = referenceOf(chosen, thresholds, defaults.enter);
+  const leave = referenceOf(chosen, thresholds, defaults.leave);
   const steady = referenceOf(chosen, thresholds, defaults.steady);
-  if (enter === undefined || steady === undefined) return { blocks: [], signal: chosen, limitedBy };
+  if (enter === undefined || leave === undefined || steady === undefined) {
+    return { blocks: [], signal: chosen, limitedBy };
+  }
 
   let gradeFactor = (_second: number): number => 1;
   if (chosen === 'pace') {
@@ -673,7 +703,7 @@ export const detectEfforts = (
   }
   const x = signalSeries(grid, chosen, gradeFactor);
   const pieces = postprocess(
-    labelSegments(peltSegments(x, grid.isBreak), grid.length, enter, steady),
+    labelSegments(peltSegments(x, grid.isBreak), grid.length, { enter, leave, steady }),
     grid,
     x,
     defaults,

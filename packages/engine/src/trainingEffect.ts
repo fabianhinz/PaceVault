@@ -12,10 +12,11 @@
 // every constant anchored to published reference sessions:
 //  - Aerobic TE: per-sample Banister TRIMP, mapped to 0–5 via a power-law
 //    (exponent 0.25 per [Wenger1986]) anchored so that 1 hour at lactate
-//    threshold ([Karvonen1957], [Swain1998]) produces TE 3.0 ("Improving").
-//  - Anaerobic TE: time above VT2 (90% HRR per [Swain1998], [Stagno2007],
-//    [ACSM2018]), anchored so that 6 minutes at VO2max ([Billat1999])
-//    produces TE 3.0.
+//    threshold (the threshold HR, else 88% HRR per [Karvonen1957],
+//    [Swain1998]) produces TE 3.0 ("Improving").
+//  - Anaerobic TE: time above the threshold HR when set, else above VT2
+//    (90% HRR per [Swain1998], [Stagno2007], [ACSM2018]), anchored so that
+//    6 minutes at VO2max ([Billat1999]) produces TE 3.0.
 //  - Fitness scaling: CTL-based multiplier (1.0× at CTL 0, up to 2.0× at
 //    CTL 200 per [Friel2009]) so fitter athletes need harder efforts.
 //
@@ -24,22 +25,26 @@
 // stimulus model is fundamentally different (TRIMP vs. EPOC).
 // ---------------------------------------------------------------------------
 
-import type { SessionRecord, Gender } from './types.ts';
-import { BANISTER } from './stress.ts';
+import type { SessionRecord } from './types.ts';
+import {
+  BANISTER,
+  banisterImpulse,
+  hrReserveSamples,
+  thresholdHrRatio,
+  type StressThresholds,
+} from './stress.ts';
+
+export type TrainingEffectThresholds = Pick<
+  StressThresholds,
+  'restHr' | 'maxHr' | 'gender' | 'thresholdHr'
+>;
 
 /**
- * Lactate threshold as fraction of heart rate reserve.
- * @see [Karvonen1957] — HRR method
- * @see [Swain1998] — LT occurs at ~88% HRR in trained athletes
- */
-export const LT_HRR = 0.88;
-
-/**
- * Second ventilatory threshold (VT2) as fraction of heart rate reserve.
- * Intensities above this are predominantly anaerobic.
+ * Second ventilatory threshold (VT2) as fraction of heart rate reserve, used when no
+ * threshold HR is set. Intensities above this are predominantly anaerobic.
  * @see [Swain1998], [Stagno2007], [ACSM2018]
  */
-const VT2_HRR = 0.9;
+export const VT2_HRR = 0.9;
 
 /**
  * Sub-linear dose–response exponent for aerobic training adaptation.
@@ -67,10 +72,16 @@ const CTL_MAX = 200;
 
 /**
  * Compute the Banister TRIMP for the aerobic reference session:
- * 1 hour at lactate threshold (LT_HRR).
+ * 1 hour at lactate threshold (the threshold HR ratio).
  */
-const computeTrimpRef = (coeff: { a: number; b: number }): number =>
-  60 * LT_HRR * coeff.a * Math.exp(coeff.b * LT_HRR);
+const computeTrimpRef = (coeff: { a: number; b: number }, threshold: number): number =>
+  60 * threshold * coeff.a * Math.exp(coeff.b * threshold);
+
+/** The anaerobic line: threshold HR when set, VT2 at 90% of HR reserve otherwise. */
+const anaerobicLine = (thresholds: TrainingEffectThresholds): number => {
+  if (thresholds.thresholdHr === undefined) return VT2_HRR;
+  return thresholdHrRatio(thresholds);
+};
 
 /** Semantic key identifying a training effect band. */
 export type TELabelKey =
@@ -102,64 +113,43 @@ type TrainingEffectLabel = {
 
 /**
  * Accumulate per-sample Banister TRIMP across the full session to produce aerobic and anaerobic training effect scores.
+ * Pauses (records more than 10 s apart) don't count, like the HR load.
  * @param records - Time-series session records; only records with an `hr` field contribute.
- * @param maxHr - Athlete's maximum heart rate in bpm.
- * @param restHr - Athlete's resting heart rate in bpm.
- * @param gender - Biological sex used to select the Banister gender coefficient.
+ * @param thresholds - Rest HR, max HR, gender and optional threshold HR valid at the session date.
  * @param ctl - Current chronic training load; scales the fitness baseline so fitter athletes require more stimulus.
  * @returns Object with `aerobic` and `anaerobic` scores on a 0–5 scale, or `undefined` when no HR data is present or `maxHr <= restHr`.
  */
 export const calculateTrainingEffect = (
   records: SessionRecord[],
-  maxHr: number,
-  restHr: number,
-  gender: Gender,
+  thresholds: TrainingEffectThresholds,
   ctl: number,
 ): { aerobic: number; anaerobic: number } | undefined => {
-  if (maxHr <= restHr) return undefined;
+  if (thresholds.maxHr <= thresholds.restHr) return undefined;
 
-  const hrRange = maxHr - restHr;
+  const samples = hrReserveSamples(records, thresholds.restHr, thresholds.maxHr);
+  if (samples.length === 0) return undefined;
+
   let banisterKey: 'female' | 'male' = 'male';
-  if (gender === 'female') {
+  if (thresholds.gender === 'female') {
     banisterKey = 'female';
   }
   const coeff = BANISTER[banisterKey];
 
-  let aerobicTrimp = 0;
+  const aerobicTrimp = banisterImpulse(samples, thresholds.gender);
+  const line = anaerobicLine(thresholds);
   let anaerobicImpulse = 0;
-  let prevTimestamp: number | undefined;
-  let hasHr = false;
-
-  for (let i = 0; i < records.length; i++) {
-    const record = records[i];
-    if (!record || record.hr === undefined) continue;
-
-    hasHr = true;
-    const hrr = Math.max(0, Math.min(1, (record.hr - restHr) / hrRange));
-    let dt = 1 / 60; // assume 1s for first record
-    if (prevTimestamp !== undefined) {
-      dt = (record.timestamp - prevTimestamp) / 60;
-    }
-    prevTimestamp = record.timestamp;
-
-    if (dt <= 0) continue;
-
-    // Aerobic TRIMP: per-sample Banister
-    aerobicTrimp += dt * hrr * coeff.a * Math.exp(coeff.b * hrr);
-
-    // Anaerobic impulse: intensity above VT2, normalized by (1.0 - VT2_HRR)
-    if (hrr > VT2_HRR) {
-      anaerobicImpulse += (dt * (hrr - VT2_HRR)) / (1.0 - VT2_HRR);
+  for (const sample of samples) {
+    // Anaerobic impulse: intensity above the anaerobic line, normalized by its distance to max
+    if (sample.ratio > line) {
+      anaerobicImpulse += (sample.minutes * (sample.ratio - line)) / (1.0 - line);
     }
   }
-
-  if (!hasHr) return undefined;
 
   // Fitness scaling: CTL 0 → 1.0x, CTL 200 → 2.0x
   const fitnessScale = 1 + Math.max(0, Math.min(CTL_MAX, ctl)) / CTL_MAX;
 
   // Aerobic TE: reference-anchored power-law with diminishing returns
-  const trimpRef = computeTrimpRef(coeff);
+  const trimpRef = computeTrimpRef(coeff, thresholdHrRatio(thresholds));
   const aerobic = Math.max(
     0,
     Math.min(5, TE_IMPROVING * Math.pow(aerobicTrimp / (trimpRef * fitnessScale), DIMINISHING_P)),

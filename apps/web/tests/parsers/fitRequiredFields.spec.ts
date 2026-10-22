@@ -112,4 +112,31 @@ describe('parseFitFile optional data', () => {
     expect(result.session.avgPower).toBe(100);
     expect(result.session.avgCadence).toBe(45);
   });
+
+  it('derives avg and max HR from the records when the summary lacks them', async () => {
+    const result = await parse({
+      sessions: [session],
+      records: [
+        { elapsed_time: 0, heart_rate: 120 },
+        { elapsed_time: 1, heart_rate: 140 },
+        { elapsed_time: 2, heart_rate: 160 },
+        { elapsed_time: 3, heart_rate: 150 },
+      ],
+    });
+    expect(result.session.avgHr).toBe(150);
+    expect(result.session.maxHr).toBe(160);
+    expect(result.session.stressMethod).toBe('trimp');
+  });
+
+  it('keeps the summary avg and max HR over the records', async () => {
+    const result = await parse({
+      sessions: [{ ...session, avg_heart_rate: 130, max_heart_rate: 170 }],
+      records: [
+        { elapsed_time: 0, heart_rate: 120 },
+        { elapsed_time: 1, heart_rate: 140 },
+      ],
+    });
+    expect(result.session.avgHr).toBe(130);
+    expect(result.session.maxHr).toBe(170);
+  });
 });

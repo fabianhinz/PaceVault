@@ -1,18 +1,23 @@
-import { calculateSummaryStress } from '@pacevault/engine/stress.ts';
-import type { TrainingSession } from '@pacevault/engine/types.ts';
+import { calculateSessionStress, calculateSummaryStress } from '@pacevault/engine/stress.ts';
+import type { SessionRecord, TrainingSession } from '@pacevault/engine/types.ts';
 import type { UserProfile } from '@/types/index.ts';
 import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 
 export type StoredSessionStress = Pick<TrainingSession, 'tss' | 'stressMethod' | 'normalizedPower'>;
 
-type StressInputs = Pick<TrainingSession, 'date' | 'duration' | 'avgHr' | 'normalizedPower'>;
+type StressInputs = Pick<
+  TrainingSession,
+  'date' | 'duration' | 'avgHr' | 'normalizedPower' | 'sport'
+>;
 
+/** Metadata path: re-scores from the stored summary, reads no records. */
 export const sessionStressAt = (
   session: StressInputs,
   profile: UserProfile,
 ): StoredSessionStress => {
   const thresholds = thresholdsAt(profile, session.date);
   const stress = calculateSummaryStress(
+    session.sport,
     {
       durationSec: session.duration,
       avgHr: session.avgHr,
@@ -27,12 +32,38 @@ export const sessionStressAt = (
   };
 };
 
-export const trainingLoadSignature = (profile: UserProfile | null): string => {
+/** Records path: the same call as the parser, with the thresholds at the session date. */
+export const sessionStressFromRecordsAt = (
+  session: StressInputs,
+  records: SessionRecord[],
+  profile: UserProfile,
+): StoredSessionStress => {
+  const stress = calculateSessionStress(
+    session.sport,
+    records,
+    { durationSec: session.duration, avgHr: session.avgHr },
+    thresholdsAt(profile, session.date),
+  );
+  return {
+    tss: stress.tss,
+    stressMethod: stress.stressMethod,
+    normalizedPower: stress.normalizedPower ?? session.normalizedPower,
+  };
+};
+
+/** The profile values HR loads depend on: a change re-scores them from the records. */
+export const trainingLoadHrSignature = (profile: UserProfile | null): string => {
   if (profile === null) return '';
   return JSON.stringify([
     profile.gender,
     profile.thresholds.restHr,
     profile.thresholds.maxHr,
-    profile.thresholds.ftp ?? [],
+    profile.thresholds.thresholdHr ?? [],
   ]);
+};
+
+/** The profile values TSS depends on: a change re-scores rides from their stored NP. */
+export const trainingLoadFtpSignature = (profile: UserProfile | null): string => {
+  if (profile === null) return '';
+  return JSON.stringify(profile.thresholds.ftp ?? []);
 };

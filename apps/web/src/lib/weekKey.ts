@@ -32,8 +32,19 @@ export const loadBucketDayRange = (
   return { from: key, to: key };
 };
 
-export const buildPlanCacheKey = (
-  weekOf: string,
-  sessionCount: number,
-  thresholdPace: number,
-): string => `${weekOf}:${sessionCount}:${thresholdPace}`;
+/** 32-bit FNV-1a over the stored loads, in store order: changes whenever a load changes. */
+const loadDigest = (loads: number[]): string => {
+  let hash = 0x811c9dc5;
+  for (const char of loads.join(',')) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+};
+
+/**
+ * The Labs week plan is kept per week, session count, threshold pace and stored loads: a
+ * recompute or reprocess that moves the loads refreshes it, otherwise it stays for the week.
+ */
+export const buildPlanCacheKey = (weekOf: string, loads: number[], thresholdPace: number): string =>
+  `${weekOf}:${loads.length}:${thresholdPace}:${loadDigest(loads)}`;

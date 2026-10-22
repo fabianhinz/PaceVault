@@ -129,13 +129,7 @@ export const TrainingEffectCard = (props: TrainingEffectCardProps) => {
 
   const te = useMemo(() => {
     if (!thresholds) return undefined;
-    return calculateTrainingEffect(
-      props.records,
-      thresholds.maxHr,
-      thresholds.restHr,
-      thresholds.gender,
-      ctl,
-    );
+    return calculateTrainingEffect(props.records, thresholds, ctl);
   }, [props.records, thresholds, ctl]);
 
   if (!profile) {

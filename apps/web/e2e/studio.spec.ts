@@ -117,6 +117,25 @@ test.describe('Studio', () => {
     await page.getByRole('button', { name: /^delete$/i }).click();
     await expect(page.getByText('Summit', { exact: true })).toHaveCount(0);
 
+    await test.step('regression: cleared from-split field puts the split on the previous one', async () => {
+      await page.getByRole('button', { name: /add split point/i }).click();
+      await page.getByRole('dialog').getByRole('spinbutton').first().fill('3.5');
+      await page.getByRole('button', { name: /^save$/i }).click();
+      const splits = page.getByRole('button', { name: /^split point/i });
+      await expect(splits).toHaveCount(2);
+      await splits.filter({ hasText: /3[.,]5/ }).click();
+      const dialog = page.getByRole('dialog');
+      const save = dialog.getByRole('button', { name: /^save$/i });
+      // The inputs have no accessible name: the km field first, "from last split" second.
+      const fromSplit = dialog.getByRole('spinbutton').nth(1);
+      await expect(fromSplit).not.toHaveValue('');
+      await expect(save).toBeEnabled();
+      await fromSplit.fill('');
+      await expect(save).toBeDisabled();
+      await dialog.getByRole('button', { name: /^delete$/i }).click();
+      await expect(splits).toHaveCount(1);
+    });
+
     await page.getByRole('button', { name: /^split point/i }).click();
     await test.step('empty km field saves the marker at 0 km', async () => {
       const save = page.getByRole('button', { name: /^save$/i });

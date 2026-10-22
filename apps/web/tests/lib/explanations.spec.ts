@@ -38,10 +38,7 @@ const REQUIRED_FIELDS: (keyof MetricExplanation)[] = [
   'friendlyName',
   'oneLiner',
   'range',
-  'sports',
 ];
-
-const VALID_SPORTS = ['running', 'cycling', 'all'] as const;
 
 describe('Metric Explanation Registry', () => {
   it('has an entry for every MetricId', () => {
@@ -61,21 +58,12 @@ describe('Metric Explanation Registry', () => {
       const value = entry[field];
       if (typeof value === 'string') {
         expect(value.length, `${id}.${field} is empty`).toBeGreaterThan(0);
-      } else if (Array.isArray(value)) {
-        expect(value.length, `${id}.${field} is empty array`).toBeGreaterThan(0);
       }
     }
   });
 
   it.each(ALL_METRIC_IDS)('"%s" id field matches its map key', (id) => {
     expect(METRIC_EXPLANATIONS[id].id).toBe(id);
-  });
-
-  it.each(ALL_METRIC_IDS)('"%s" sports array contains only valid values', (id) => {
-    const entry = METRIC_EXPLANATIONS[id];
-    for (const sport of entry.sports) {
-      expect(VALID_SPORTS).toContain(sport);
-    }
   });
 
   it('direct lookup returns the correct entry', () => {

@@ -9,8 +9,7 @@ import {
   type Sport,
   type Gender,
 } from '@pacevault/engine/types.ts';
-import { calculateSummaryStress } from '@pacevault/engine/stress.ts';
-import { calculateNormalizedPower } from '@pacevault/engine/normalize.ts';
+import { calculateSessionStress } from '@pacevault/engine/stress.ts';
 import {
   SESSION_DERIVATION_VERSION,
   deriveSessionFieldsFromRecords,
@@ -108,6 +107,7 @@ export interface FitParseProfile {
   maxHr: number;
   gender: Gender;
   ftp?: number;
+  thresholdHr?: number;
 }
 
 export const parseFitFile = async (
@@ -172,14 +172,15 @@ export const parseFitFile = async (
   }
   const laps = mapFitLaps(lapsResult.data);
 
-  const userProfile = profileAt(sessionDate);
-  const normalizedPower = calculateNormalizedPower(records);
-  const stressResult = calculateSummaryStress(
-    { durationSec: sessionDuration, avgHr: fitSession.avg_heart_rate, normalizedPower },
-    userProfile,
-  );
-
   const derived = deriveSessionFieldsFromRecords(sport, records);
+  const avgHr = fitSession.avg_heart_rate ?? derived.avgHr;
+
+  const stressResult = calculateSessionStress(
+    sport,
+    records,
+    { durationSec: sessionDuration, avgHr },
+    profileAt(sessionDate),
+  );
 
   const avgSpeed = fitSession.enhanced_avg_speed ?? fitSession.avg_speed;
   const name = meta?.name ?? extractSessionName(fileName);
@@ -209,10 +210,10 @@ export const parseFitFile = async (
     date: sessionDate,
     duration: sessionDuration,
     distance: sessionDistance,
-    avgHr: fitSession.avg_heart_rate,
-    maxHr: fitSession.max_heart_rate,
+    avgHr,
+    maxHr: fitSession.max_heart_rate ?? derived.maxHr,
     avgPower: derived.avgPower ?? fitSession.avg_power,
-    normalizedPower,
+    normalizedPower: stressResult.normalizedPower,
     avgCadence: derived.avgCadence ?? fitSession.avg_cadence,
     avgSpeed,
     avgPace,

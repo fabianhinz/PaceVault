@@ -18,7 +18,8 @@ describe('ctlOnDate', () => {
       makeSession({ id: `later-${i}`, date: oldSession.date + (i + 1) * DAY_MS, tss: 180 }),
     );
     const records = makeRunningRecords(3600, { baseHr: 165 });
-    const effectWith = (ctl: number) => calculateTrainingEffect(records, 190, 50, 'male', ctl);
+    const effectWith = (ctl: number) =>
+      calculateTrainingEffect(records, { maxHr: 190, restHr: 50, gender: 'male' }, ctl);
 
     const before = computeMetrics([...base, oldSession], { endDate: now });
     const after = computeMetrics([...base, oldSession, ...laterBlock], { endDate: now });

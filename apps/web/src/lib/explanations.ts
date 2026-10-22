@@ -37,7 +37,6 @@ export interface MetricExplanation {
   friendlyName: string;
   oneLiner: string;
   range: string;
-  sports: ('running' | 'cycling' | 'all')[];
 }
 
 const tss: MetricExplanation = {
@@ -46,7 +45,6 @@ const tss: MetricExplanation = {
   friendlyName: m.exp_tss_friendlyName(),
   oneLiner: m.exp_tss_oneLiner(),
   range: m.exp_tss_range(),
-  sports: ['cycling'],
 };
 
 const trimp: MetricExplanation = {
@@ -55,7 +53,6 @@ const trimp: MetricExplanation = {
   friendlyName: m.exp_trimp_friendlyName(),
   oneLiner: m.exp_trimp_oneLiner(),
   range: m.exp_trimp_range(),
-  sports: ['all'],
 };
 
 const duration: MetricExplanation = {
@@ -64,7 +61,6 @@ const duration: MetricExplanation = {
   friendlyName: m.exp_duration_friendlyName(),
   oneLiner: m.exp_duration_oneLiner(),
   range: m.exp_duration_range(),
-  sports: ['all'],
 };
 
 const tripLoad: MetricExplanation = {
@@ -72,7 +68,6 @@ const tripLoad: MetricExplanation = {
   friendlyName: m.exp_tripLoad_friendlyName(),
   oneLiner: m.exp_tripLoad_oneLiner(),
   range: m.exp_tripLoad_range(),
-  sports: ['all'],
 };
 
 const ctl: MetricExplanation = {
@@ -81,7 +76,6 @@ const ctl: MetricExplanation = {
   friendlyName: m.exp_ctl_friendlyName(),
   oneLiner: m.exp_ctl_oneLiner(),
   range: m.exp_ctl_range(),
-  sports: ['all'],
 };
 
 const atl: MetricExplanation = {
@@ -90,7 +84,6 @@ const atl: MetricExplanation = {
   friendlyName: m.exp_atl_friendlyName(),
   oneLiner: m.exp_atl_oneLiner(),
   range: m.exp_atl_range(),
-  sports: ['all'],
 };
 
 const tsb: MetricExplanation = {
@@ -99,7 +92,6 @@ const tsb: MetricExplanation = {
   friendlyName: m.exp_tsb_friendlyName(),
   oneLiner: m.exp_tsb_oneLiner(),
   range: m.exp_tsb_range(),
-  sports: ['all'],
 };
 
 const acwr: MetricExplanation = {
@@ -108,7 +100,6 @@ const acwr: MetricExplanation = {
   friendlyName: m.exp_acwr_friendlyName(),
   oneLiner: m.exp_acwr_oneLiner(),
   range: m.exp_acwr_range(),
-  sports: ['all'],
 };
 
 const normalizedPower: MetricExplanation = {
@@ -117,7 +108,6 @@ const normalizedPower: MetricExplanation = {
   friendlyName: m.exp_normalizedPower_friendlyName(),
   oneLiner: m.exp_normalizedPower_oneLiner(),
   range: m.exp_normalizedPower_range(),
-  sports: ['cycling'],
 };
 
 const gradeAdjustedPace: MetricExplanation = {
@@ -126,7 +116,6 @@ const gradeAdjustedPace: MetricExplanation = {
   friendlyName: m.exp_gradeAdjustedPace_friendlyName(),
   oneLiner: m.exp_gradeAdjustedPace_oneLiner(),
   range: m.exp_gradeAdjustedPace_range(),
-  sports: ['running'],
 };
 
 const recovery: MetricExplanation = {
@@ -135,7 +124,6 @@ const recovery: MetricExplanation = {
   friendlyName: m.exp_recovery_friendlyName(),
   oneLiner: m.exp_recovery_oneLiner(),
   range: m.exp_recovery_range(),
-  sports: ['all'],
 };
 
 const trainingZones: MetricExplanation = {
@@ -144,7 +132,6 @@ const trainingZones: MetricExplanation = {
   friendlyName: m.exp_trainingZones_friendlyName(),
   oneLiner: m.exp_trainingZones_oneLiner(),
   range: m.exp_trainingZones_range(),
-  sports: ['all'],
 };
 
 const aerobicTE: MetricExplanation = {
@@ -153,7 +140,6 @@ const aerobicTE: MetricExplanation = {
   friendlyName: m.exp_aerobicTE_friendlyName(),
   oneLiner: m.exp_aerobicTE_oneLiner(),
   range: m.exp_aerobicTE_range(),
-  sports: ['all'],
 };
 
 const anaerobicTE: MetricExplanation = {
@@ -162,7 +148,6 @@ const anaerobicTE: MetricExplanation = {
   friendlyName: m.exp_anaerobicTE_friendlyName(),
   oneLiner: m.exp_anaerobicTE_oneLiner(),
   range: m.exp_anaerobicTE_range(),
-  sports: ['all'],
 };
 
 const avgHr: MetricExplanation = {
@@ -171,7 +156,6 @@ const avgHr: MetricExplanation = {
   friendlyName: m.exp_avgHr_friendlyName(),
   oneLiner: m.exp_avgHr_oneLiner(),
   range: m.exp_avgHr_range(),
-  sports: ['all'],
 };
 
 const avgPace: MetricExplanation = {
@@ -180,7 +164,6 @@ const avgPace: MetricExplanation = {
   friendlyName: m.exp_avgPace_friendlyName(),
   oneLiner: m.exp_avgPace_oneLiner(),
   range: m.exp_avgPace_range(),
-  sports: ['running'],
 };
 
 const avgSpeed: MetricExplanation = {
@@ -189,7 +172,6 @@ const avgSpeed: MetricExplanation = {
   friendlyName: m.exp_avgSpeed_friendlyName(),
   oneLiner: m.exp_avgSpeed_oneLiner(),
   range: m.exp_avgSpeed_range(),
-  sports: ['cycling'],
 };
 
 const avgPower: MetricExplanation = {
@@ -198,7 +180,6 @@ const avgPower: MetricExplanation = {
   friendlyName: m.exp_avgPower_friendlyName(),
   oneLiner: m.exp_avgPower_oneLiner(),
   range: m.exp_avgPower_range(),
-  sports: ['cycling'],
 };
 
 const elevation: MetricExplanation = {
@@ -207,7 +188,6 @@ const elevation: MetricExplanation = {
   friendlyName: m.exp_elevation_friendlyName(),
   oneLiner: m.exp_elevation_oneLiner(),
   range: m.exp_elevation_range(),
-  sports: ['all'],
 };
 
 const vam: MetricExplanation = {
@@ -215,7 +195,6 @@ const vam: MetricExplanation = {
   friendlyName: m.exp_vam_friendlyName(),
   oneLiner: m.exp_vam_oneLiner(),
   range: m.exp_vam_range(),
-  sports: ['all'],
 };
 
 const cadence: MetricExplanation = {
@@ -224,7 +203,6 @@ const cadence: MetricExplanation = {
   friendlyName: m.exp_cadence_friendlyName(),
   oneLiner: m.exp_cadence_oneLiner(),
   range: m.exp_cadence_range(),
-  sports: ['all'],
 };
 
 const vdot: MetricExplanation = {
@@ -233,7 +211,6 @@ const vdot: MetricExplanation = {
   friendlyName: m.exp_vdot_friendlyName(),
   oneLiner: m.exp_vdot_oneLiner(),
   range: m.exp_vdot_range(),
-  sports: ['running'],
 };
 
 const calories: MetricExplanation = {
@@ -242,7 +219,6 @@ const calories: MetricExplanation = {
   friendlyName: m.exp_calories_friendlyName(),
   oneLiner: m.exp_calories_oneLiner(),
   range: m.exp_calories_range(),
-  sports: ['all'],
 };
 
 const movingTime: MetricExplanation = {
@@ -251,7 +227,6 @@ const movingTime: MetricExplanation = {
   friendlyName: m.exp_movingTime_friendlyName(),
   oneLiner: m.exp_movingTime_oneLiner(),
   range: m.exp_movingTime_range(),
-  sports: ['all'],
 };
 
 const decoupling: MetricExplanation = {
@@ -260,7 +235,6 @@ const decoupling: MetricExplanation = {
   friendlyName: m.exp_decoupling_friendlyName(),
   oneLiner: m.exp_decoupling_oneLiner(),
   range: m.exp_decoupling_range(),
-  sports: ['all'],
 };
 
 const intensityFactor: MetricExplanation = {
@@ -269,7 +243,6 @@ const intensityFactor: MetricExplanation = {
   friendlyName: m.exp_intensityFactor_friendlyName(),
   oneLiner: m.exp_intensityFactor_oneLiner(),
   range: m.exp_intensityFactor_range(),
-  sports: ['cycling'],
 };
 
 const variabilityIndex: MetricExplanation = {
@@ -278,7 +251,6 @@ const variabilityIndex: MetricExplanation = {
   friendlyName: m.exp_variabilityIndex_friendlyName(),
   oneLiner: m.exp_variabilityIndex_oneLiner(),
   range: m.exp_variabilityIndex_range(),
-  sports: ['cycling'],
 };
 
 const peakPower: MetricExplanation = {
@@ -287,7 +259,6 @@ const peakPower: MetricExplanation = {
   friendlyName: m.exp_peakPower_friendlyName(),
   oneLiner: m.exp_peakPower_oneLiner(),
   range: m.exp_peakPower_range(),
-  sports: ['cycling'],
 };
 
 const stepLength: MetricExplanation = {
@@ -296,7 +267,6 @@ const stepLength: MetricExplanation = {
   friendlyName: m.exp_stepLength_friendlyName(),
   oneLiner: m.exp_stepLength_oneLiner(),
   range: m.exp_stepLength_range(),
-  sports: ['running'],
 };
 
 export const METRIC_EXPLANATIONS: Record<MetricId, MetricExplanation> = {

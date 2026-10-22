@@ -70,7 +70,14 @@ const roundToTen = (value: number): number => Math.round(value / 10) * 10;
 const rangeFraction = (factor: number): number =>
   (factor - (1 - RANGE_TRACK_SPAN)) / (2 * RANGE_TRACK_SPAN);
 
-const loadCell = (_stats: MoreStats, session: TrainingSession): ReactNode => (
+const loadNote = (stats: MoreStats, session: TrainingSession): string => {
+  if (session.stressMethod === 'trimp' && stats.thresholdHrEstimated) {
+    return m.ui_more_stats_load_from_hr_estimated();
+  }
+  return LOAD_SOURCES[session.stressMethod]();
+};
+
+const loadCell = (stats: MoreStats, session: TrainingSession): ReactNode => (
   <StatTile
     key="load"
     title={m.ui_more_stats_load()}
@@ -78,7 +85,7 @@ const loadCell = (_stats: MoreStats, session: TrainingSession): ReactNode => (
     info={tileInfo(session.stressMethod)}
     unit={METRIC_EXPLANATIONS[session.stressMethod].shortLabel}
     value={integerFmt.format(session.tss)}
-    note={LOAD_SOURCES[session.stressMethod]()}
+    note={loadNote(stats, session)}
   />
 );
 

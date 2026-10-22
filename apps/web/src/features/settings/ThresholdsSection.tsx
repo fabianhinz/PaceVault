@@ -76,6 +76,7 @@ export const ThresholdsSection = () => {
     const histories: Histories = {
       restHr: profile.thresholds.restHr,
       maxHr: profile.thresholds.maxHr,
+      thresholdHr: profile.thresholds.thresholdHr ?? [],
       ftp: profile.thresholds.ftp ?? [],
       thresholdPace: profile.thresholds.thresholdPace ?? [],
       weight: profile.weight ?? [],

@@ -23,6 +23,7 @@ export interface UserProfile {
     maxHr: DatedValue<number>[];
     ftp?: DatedValue<number>[];
     thresholdPace?: DatedValue<number>[];
+    thresholdHr?: DatedValue<number>[];
   };
   weight?: DatedValue<number>[];
   birthYear?: number;

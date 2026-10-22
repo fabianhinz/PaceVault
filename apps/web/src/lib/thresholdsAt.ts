@@ -5,12 +5,17 @@ import type { UserProfile } from '@/types/index.ts';
 export interface ResolvedThresholds {
   restHr: number;
   maxHr: number;
+  /** Raw threshold HR; `undefined` means the engine's estimate applies. */
+  thresholdHr?: number;
   ftp?: number;
   thresholdPace?: number;
   weightKg?: number;
   age?: number;
   gender: Gender;
 }
+
+/** The profile fields thresholds are resolved from; the demo builder has no `id` or `createdAt`. */
+export type ThresholdsProfile = Pick<UserProfile, 'thresholds' | 'weight' | 'birthYear' | 'gender'>;
 
 const requiredValueAt = (
   history: UserProfile['thresholds']['restHr'],
@@ -32,9 +37,10 @@ const ageAt = (birthYear: number | undefined, date: number): number | undefined 
   return new Date(date).getFullYear() - birthYear;
 };
 
-export const thresholdsAt = (profile: UserProfile, date: number): ResolvedThresholds => ({
+export const thresholdsAt = (profile: ThresholdsProfile, date: number): ResolvedThresholds => ({
   restHr: requiredValueAt(profile.thresholds.restHr, date, 'restHr'),
   maxHr: requiredValueAt(profile.thresholds.maxHr, date, 'maxHr'),
+  thresholdHr: optionalValueAt(profile.thresholds.thresholdHr, date),
   ftp: optionalValueAt(profile.thresholds.ftp, date),
   thresholdPace: optionalValueAt(profile.thresholds.thresholdPace, date),
   weightKg: optionalValueAt(profile.weight, date),

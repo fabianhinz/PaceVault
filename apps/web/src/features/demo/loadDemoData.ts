@@ -8,6 +8,7 @@ import { useImportProgressStore } from '@/store/importProgress.ts';
 import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
 import { createStudioRouteFromPoints } from '@/features/studio/createStudioRoute.ts';
 import { bulkSaveSessionData, saveSessionGPS } from '@/lib/indexeddb.ts';
+import { trainingLoadHrSignature } from '@/lib/sessionStress.ts';
 import { buildDemoDataset, DEMO_SEED } from './buildDemoDataset.ts';
 import { parseDemoRoutes } from './demoRecords.ts';
 
@@ -35,6 +36,12 @@ export const loadDemoData = async (queryClient: QueryClient): Promise<number> =>
   await Promise.all([bulkSaveSessionData(dataset.sessionData), ...gpsTracks.map(saveSessionGPS)]);
 
   useSessionsStore.getState().addSessions(dataset.sessions);
+  // The builder scores every session with the profile it sets, so no records recompute follows.
+  if (useSessionsStore.getState().sessions.length === dataset.sessions.length) {
+    useSessionsStore
+      .getState()
+      .setAppliedHrSignature(trainingLoadHrSignature(useUserStore.getState().profile));
+  }
   for (const trip of dataset.trips) {
     const tripId = useTripsStore.getState().createTrip(trip.name, trip.description);
     useTripsStore.getState().updateTrip(tripId, trip.name, trip.sessionIds, trip.description);

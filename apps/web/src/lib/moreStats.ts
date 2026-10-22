@@ -35,6 +35,8 @@ interface ZoneShare {
 
 export interface MoreStats {
   sport: Sport;
+  /** No threshold HR at the session date: HR load and training effect use the engine's estimate. */
+  thresholdHrEstimated: boolean;
   calories?: EnergyEstimate | EnergyBlocked;
   movingTime?: {
     movingS: number;
@@ -144,7 +146,10 @@ export const buildMoreStats = (
   thresholds: ResolvedThresholds | undefined,
 ): MoreStats => {
   const gradients = windowedGradients(records);
-  const stats: MoreStats = { sport: session.sport };
+  const stats: MoreStats = {
+    sport: session.sport,
+    thresholdHrEstimated: thresholds?.thresholdHr === undefined,
+  };
 
   stats.calories = estimateSessionEnergy(
     records,

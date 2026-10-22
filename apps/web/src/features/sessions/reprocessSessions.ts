@@ -6,9 +6,12 @@ import {
   isSessionOutdated,
 } from '@pacevault/engine/sessionDerivation.ts';
 import { parseFitFile, type ParsedFitResult } from '@/parsers/fit.ts';
-import { calculateNormalizedPower } from '@pacevault/engine/normalize.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
-import { sessionStressAt, type StoredSessionStress } from '@/lib/sessionStress.ts';
+import {
+  sessionStressFromRecordsAt,
+  trainingLoadHrSignature,
+  type StoredSessionStress,
+} from '@/lib/sessionStress.ts';
 import { bulkReplaceSessionData, getFitFile, getSessionRecords } from '@/lib/indexeddb.ts';
 import { claimSessionsDerivationVersion } from '@/lib/guardedSessionsStorage.ts';
 import { withExclusiveLock } from '@/lib/webLock.ts';
@@ -80,8 +83,7 @@ const recomputedStress = (
       normalizedPower: session.normalizedPower,
     };
   }
-  const normalizedPower = calculateNormalizedPower(records) ?? session.normalizedPower;
-  return sessionStressAt({ ...session, normalizedPower }, profile);
+  return sessionStressFromRecordsAt(session, records, profile);
 };
 
 const recomputeFromRecords = async (
@@ -93,10 +95,15 @@ const recomputeFromRecords = async (
 
   let gap = session.gap;
   if (session.sport === 'running') gap = derived.gap;
+  const withHr = {
+    ...session,
+    avgHr: session.avgHr ?? derived.avgHr,
+    maxHr: session.maxHr ?? derived.maxHr,
+  };
 
   return {
-    ...session,
-    ...recomputedStress(session, records, profile),
+    ...withHr,
+    ...recomputedStress(withHr, records, profile),
     distance: derived.distance ?? session.distance,
     avgPower: derived.avgPower ?? session.avgPower,
     avgCadence: derived.avgCadence ?? session.avgCadence,
@@ -197,6 +204,11 @@ const runWithLock = async (): Promise<number> => {
     const batch = outdatedIds.slice(start, start + REPROCESS_BATCH_SIZE);
     const updated = await reprocessBatch(batch, profile);
     useSessionsStore.getState().commitReprocessedSessions(updated);
+    await guardedSessionsStorage.flush();
+  }
+  // Every session was scored with this profile's HR values, so the records recompute can skip.
+  if (profile !== null && outdatedIds.length === useSessionsStore.getState().sessions.length) {
+    useSessionsStore.getState().setAppliedHrSignature(trainingLoadHrSignature(profile));
     await guardedSessionsStorage.flush();
   }
   return outdatedIds.length;

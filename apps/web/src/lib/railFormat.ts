@@ -1,7 +1,7 @@
 import { formatPaceTick } from '@/lib/formatters.ts';
 import { getLocale } from '@pacevault/i18n/runtime.js';
 
-const MISSING = '--';
+export const MISSING = '--';
 
 export const railInt = (value: number | null | undefined): string => {
   if (value === undefined || value === null) return MISSING;

@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useMatch } from 'react-router-dom';
 import MapGL from 'react-map-gl/maplibre';
 import type { PickingInfo } from '@deck.gl/core';
-import { styles } from './mapStyle.ts';
+import { MAP_MAXZOOM, styles } from './mapStyle.ts';
 import { useMapTracks } from './hooks/useMapTracks.ts';
 import { useGPSBackfill } from './hooks/useGpsBackfill.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
@@ -72,6 +72,7 @@ export const MapBackground = () => {
         ref={mapRef}
         onLoad={() => setMapLoaded(true)}
         mapStyle={styles.dark}
+        maxZoom={MAP_MAXZOOM}
         initialViewState={{
           longitude: 10,
           latitude: 50,

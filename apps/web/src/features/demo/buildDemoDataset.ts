@@ -7,6 +7,7 @@ import type {
 import { calculateSessionStress } from '@pacevault/engine/stress.ts';
 import { valueAt, type DatedValue } from '@pacevault/engine/datedValue.ts';
 import type { UserProfile } from '@/types/index.ts';
+import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 import {
   SESSION_DERIVATION_VERSION,
   deriveSessionFieldsFromRecords,
@@ -28,19 +29,26 @@ import {
   type DemoPersona,
   type DemoRoute,
   type DemoRoutesJson,
+  type SimulatedSession,
 } from './demoRecords.ts';
 import { createSeededRandom } from './seededRandom.ts';
 
 /** Fixed seed so every visitor gets the same dataset. */
 export const DEMO_SEED = 20_260_518;
 
-export const DEMO_PERSONA: DemoPersona & { gender: Gender; birthYear: number } = {
+export const DEMO_PERSONA: DemoPersona & {
+  gender: Gender;
+  birthYear: number;
+  thresholdHr: number;
+} = {
   gender: 'female',
   birthYear: 1992,
   maxHr: 178,
   restHr: 48,
   ftp: 200,
   thresholdPace: 300,
+  // Where the demo HR model puts threshold effort: rest + ~0.88 of the HR reserve.
+  thresholdHr: 163,
 };
 
 export type DemoSession = Omit<TrainingSession, 'createdAt' | 'isNew'>;
@@ -107,11 +115,6 @@ const startTime = (monday: Date, placed: PlacedEntry, jitterMinutes: number): nu
   ).getTime();
 };
 
-const average = (values: number[]): number | undefined => {
-  if (values.length === 0) return undefined;
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-};
-
 const DEMO_FTP_STEP = { daysBeforeNewest: 60, ftp: 210 };
 const DEMO_WEIGHTS = [
   { daysBeforeNewest: 90, kg: 61 },
@@ -136,36 +139,20 @@ const buildSession = (
   id: string,
   date: number,
   workout: DemoWorkout,
-  records: SessionRecord[],
-  ftpHistory: DatedValue<number>[],
+  simulated: SimulatedSession,
+  profile: DemoDataset['profile'],
 ): DemoSession => {
   const sport = workout.sport;
-  const lastRecord = records[records.length - 1];
-  const duration = lastRecord?.timerTime ?? 0;
-  const hrs: number[] = [];
-  for (const r of records) {
-    if (r.hr !== undefined) hrs.push(r.hr);
-  }
-  const avgHr = average(hrs);
-  let roundedAvgHr: number | undefined = undefined;
-  let maxHr: number | undefined = undefined;
-  if (avgHr !== undefined) {
-    roundedAvgHr = Math.round(avgHr);
-    maxHr = Math.max(...hrs);
-  }
-
-  let stressFtp: number | undefined = undefined;
-  if (records.some((r) => r.power !== undefined)) stressFtp = valueAt(ftpHistory, date);
-  const stress = calculateSessionStress(
-    records,
-    duration,
-    roundedAvgHr,
-    DEMO_PERSONA.restHr,
-    DEMO_PERSONA.maxHr,
-    DEMO_PERSONA.gender,
-    stressFtp,
-  );
+  const records = simulated.records;
+  const duration = simulated.duration;
   const derived = deriveSessionFieldsFromRecords(sport, records);
+  // The same call as the parser and the recompute, so the startup recompute finds nothing to rewrite.
+  const stress = calculateSessionStress(
+    sport,
+    records,
+    { durationSec: duration, avgHr: derived.avgHr },
+    thresholdsAt(profile, date),
+  );
   const distance = derived.distance;
 
   let avgSpeed: number | undefined = undefined;
@@ -181,8 +168,8 @@ const buildSession = (
     date,
     duration,
     distance,
-    avgHr: roundedAvgHr,
-    maxHr,
+    avgHr: derived.avgHr,
+    maxHr: derived.maxHr,
     avgPower: derived.avgPower,
     normalizedPower: stress.normalizedPower,
     avgCadence: derived.avgCadence,
@@ -235,6 +222,19 @@ export const buildDemoDataset = (input: {
     monday.getDate() + lastOffset,
   );
   const ftpHistory = demoFtpHistory(newestDay);
+  const profile: DemoDataset['profile'] = {
+    gender: DEMO_PERSONA.gender,
+    thresholds: {
+      maxHr: [{ date: 0, value: DEMO_PERSONA.maxHr }],
+      restHr: [{ date: 0, value: DEMO_PERSONA.restHr }],
+      thresholdHr: [{ date: 0, value: DEMO_PERSONA.thresholdHr }],
+      ftp: ftpHistory,
+      thresholdPace: [{ date: 0, value: DEMO_PERSONA.thresholdPace }],
+    },
+    weight: demoWeightHistory(newestDay),
+    birthYear: DEMO_PERSONA.birthYear,
+    showMetricHelp: true,
+  };
 
   const sessions: DemoSession[] = [];
   const sessionData: DemoSessionData[] = [];
@@ -253,14 +253,14 @@ export const buildDemoDataset = (input: {
       sport: workout.sport,
       workout,
       route,
-      persona: DEMO_PERSONA,
+      persona: { ...DEMO_PERSONA, ftp: valueAt(ftpHistory, date) ?? DEMO_PERSONA.ftp },
       rng,
       effortScale: rng.between(0.97, 1.03),
       hasHr: item.entry.noHr !== true,
       cityStops:
         workout.sport === 'cycling' && workout.route !== undefined && cityRoutes.has(workout.route),
     });
-    sessions.push(buildSession(id, date, workout, simulated.records, ftpHistory));
+    sessions.push(buildSession(id, date, workout, simulated, profile));
     sessionData.push({
       sessionId: id,
       records: simulated.records,
@@ -270,18 +270,7 @@ export const buildDemoDataset = (input: {
   }
 
   return {
-    profile: {
-      gender: DEMO_PERSONA.gender,
-      thresholds: {
-        maxHr: [{ date: 0, value: DEMO_PERSONA.maxHr }],
-        restHr: [{ date: 0, value: DEMO_PERSONA.restHr }],
-        ftp: ftpHistory,
-        thresholdPace: [{ date: 0, value: DEMO_PERSONA.thresholdPace }],
-      },
-      weight: demoWeightHistory(newestDay),
-      birthYear: DEMO_PERSONA.birthYear,
-      showMetricHelp: true,
-    },
+    profile,
     sessions,
     sessionData,
     trips: [

@@ -14,14 +14,15 @@ const SEED_THRESHOLDS = { restHr: 50, maxHr: 185, gender: 'male' as const };
 const COACH_FTP = 250;
 
 // The load the app's own startup recompute gives, so seeding never triggers a migration.
-const seededLoad = (durationSec: number) =>
-  calculateSummaryStress({ durationSec }, SEED_THRESHOLDS);
+const seededLoad = (sport: 'running' | 'cycling', durationSec: number) =>
+  calculateSummaryStress(sport, { durationSec }, SEED_THRESHOLDS);
 
-// A one-hour session with TSS = (NP / FTP)² × 100, so a seeded TSS survives the recompute.
+// A one-hour ride with TSS = (NP / FTP)² × 100, so a seeded TSS survives the recompute.
 const seededTssLoad = (tss: number) => {
   const normalizedPower = COACH_FTP * Math.sqrt(tss / 100);
   return {
     ...calculateSummaryStress(
+      'cycling',
       { durationSec: 3600, normalizedPower },
       { ...SEED_THRESHOLDS, ftp: COACH_FTP },
     ),
@@ -140,7 +141,7 @@ export const seedIntervalsConnected = async (
     date,
     duration: 3600,
     distance: 10000,
-    ...seededLoad(3600),
+    ...seededLoad('running', 3600),
     isPlanned: false,
     hasDetailedRecords: false,
     derivationVersion: SESSION_DERIVATION_VERSION,
@@ -179,7 +180,7 @@ export const seedWithSessions = async (page: Page, sessions: SeedSession[]) => {
     duration: s.duration ?? 3600,
     distance: s.distance ?? 10000,
     elevationGain: s.elevationGain,
-    ...seededLoad(s.duration ?? 3600),
+    ...seededLoad(s.sport, s.duration ?? 3600),
     isPlanned: false,
     hasDetailedRecords: false,
     derivationVersion: SESSION_DERIVATION_VERSION,
@@ -225,8 +226,9 @@ export const seedTrips = async (
   await page.reload();
 };
 
+// Rides with NP and FTP: one hour from heart rate can't reach the TSS the coach tests need.
 interface SeedCoachSession {
-  sport: 'running' | 'cycling';
+  sport: 'cycling';
   date: number;
   tss?: number;
 }

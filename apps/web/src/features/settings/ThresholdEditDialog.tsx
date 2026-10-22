@@ -26,6 +26,7 @@ interface ThresholdEditDialogProps {
 const FIELD_TITLES: Record<ThresholdKey, () => string> = {
   restHr: m.ui_thresholds_resting_hr,
   maxHr: m.ui_thresholds_max_hr,
+  thresholdHr: m.ui_thresholds_threshold_hr,
   ftp: m.ui_thresholds_ftp,
   thresholdPace: m.ui_thresholds_threshold_pace,
   weight: m.ui_thresholds_weight,

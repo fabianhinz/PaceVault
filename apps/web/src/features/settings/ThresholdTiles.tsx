@@ -57,6 +57,13 @@ const TILES: TileSpec[] = [
     format: formatInt,
   },
   {
+    key: 'thresholdHr',
+    title: m.ui_thresholds_tile_threshold_hr,
+    color: tokens.chartHr,
+    unit: 'bpm',
+    format: formatInt,
+  },
+  {
     key: 'ftp',
     title: m.ui_thresholds_tile_ftp,
     color: tokens.chartPower,
@@ -89,6 +96,7 @@ const TILES: TileSpec[] = [
 const addCaption = (key: ThresholdTileKey, histories: ThresholdTilesProps['histories']): string => {
   if (key === 'restHr') return m.ui_thresholds_add_rest_hr();
   if (key === 'maxHr') return m.ui_thresholds_add_max_hr();
+  if (key === 'thresholdHr') return m.ui_thresholds_add_threshold_hr();
   if (key === 'ftp') return m.ui_thresholds_add_ftp();
   if (key === 'weight') return m.ui_thresholds_add_weight();
   if (key === 'thresholdPace') return m.ui_thresholds_add_pace();

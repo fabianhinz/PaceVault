@@ -6,7 +6,7 @@ import { useUserStore, type ThresholdKey } from '@/store/user.ts';
 import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 import { parsePaceInput, formatPaceInput } from '@/lib/formatters.ts';
 
-export type NumberField = 'restHr' | 'maxHr' | 'ftp' | 'weight' | 'birthYear';
+export type NumberField = 'restHr' | 'maxHr' | 'thresholdHr' | 'ftp' | 'weight' | 'birthYear';
 export type TextField = NumberField | 'thresholdPace';
 /** A field that can show an error: the text fields plus the gender pick. */
 export type FormField = TextField | 'gender';
@@ -16,12 +16,21 @@ interface FormValues {
   birthYear: string;
   restHr: string;
   maxHr: string;
+  thresholdHr: string;
   ftp: string;
   thresholdPace: string;
   weight: string;
 }
 
-const TEXT_FIELDS: TextField[] = ['birthYear', 'restHr', 'maxHr', 'ftp', 'thresholdPace', 'weight'];
+const TEXT_FIELDS: TextField[] = [
+  'birthYear',
+  'restHr',
+  'maxHr',
+  'thresholdHr',
+  'ftp',
+  'thresholdPace',
+  'weight',
+];
 const PROFILE_FIELDS: TextField[] = ['birthYear'];
 const MIN_BIRTH_YEAR = 1920;
 const MIN_AGE_YEARS = 10;
@@ -43,6 +52,7 @@ const storedForm = (profile: UserProfile | null): FormValues => {
       birthYear: '',
       restHr: '',
       maxHr: '',
+      thresholdHr: '',
       ftp: '',
       thresholdPace: '',
       weight: '',
@@ -54,6 +64,7 @@ const storedForm = (profile: UserProfile | null): FormValues => {
     birthYear: numberText(profile.birthYear),
     restHr: numberText(today.restHr),
     maxHr: numberText(today.maxHr),
+    thresholdHr: numberText(today.thresholdHr),
     ftp: numberText(today.ftp),
     thresholdPace: paceText(today.thresholdPace),
     weight: numberText(today.weightKg),
@@ -72,7 +83,24 @@ interface Range {
   maxLabel: string;
 }
 
-const rangeFor = (field: NumberField): Range => {
+/** Threshold HR lies between the resting and the max HR the form holds. */
+const thresholdHrRange = (form: FormValues): Range => {
+  const restHr = optionalNumber(form.restHr);
+  const maxHr = optionalNumber(form.maxHr);
+  let min = 31;
+  let max = 229;
+  if (restHr !== undefined && !Number.isNaN(restHr)) min = restHr + 1;
+  if (maxHr !== undefined && !Number.isNaN(maxHr)) max = maxHr - 1;
+  return {
+    min,
+    max,
+    minLabel: m.ui_thresholds_min_bpm({ value: String(min) }),
+    maxLabel: m.ui_thresholds_max_bpm({ value: String(max) }),
+  };
+};
+
+const rangeFor = (field: NumberField, form: FormValues): Range => {
+  if (field === 'thresholdHr') return thresholdHrRange(form);
   if (field === 'restHr') {
     return {
       min: 30,
@@ -122,7 +150,7 @@ const isRequired = (field: TextField, stored: FormValues): boolean => {
 const numberError = (field: NumberField, form: FormValues): string => {
   const value = Number(form[field]);
   if (Number.isNaN(value)) return m.ui_thresholds_required();
-  const range = rangeFor(field);
+  const range = rangeFor(field, form);
   if (value < range.min) return range.minLabel;
   if (value > range.max) return range.maxLabel;
   if (field === 'birthYear' && !Number.isInteger(value)) return range.minLabel;
@@ -162,6 +190,7 @@ const formErrors = (form: FormValues, stored: FormValues): Record<TextField, str
   birthYear: fieldError('birthYear', form, stored),
   restHr: fieldError('restHr', form, stored),
   maxHr: fieldError('maxHr', form, stored),
+  thresholdHr: fieldError('thresholdHr', form, stored),
   ftp: fieldError('ftp', form, stored),
   thresholdPace: fieldError('thresholdPace', form, stored),
   weight: fieldError('weight', form, stored),
@@ -181,6 +210,8 @@ const createProfile = (form: FormValues, gender: Gender) => {
     restHr: [{ date: 0, value: restHr }],
     maxHr: [{ date: 0, value: maxHr }],
   };
+  const thresholdHr = epochHistory(optionalNumber(form.thresholdHr));
+  if (thresholdHr) thresholds.thresholdHr = thresholdHr;
   const ftp = epochHistory(optionalNumber(form.ftp));
   if (ftp) thresholds.ftp = ftp;
   const thresholdPace = epochHistory(parsePaceInput(form.thresholdPace));

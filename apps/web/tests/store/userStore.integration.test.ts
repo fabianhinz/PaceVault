@@ -165,4 +165,36 @@ describe('user store', () => {
     ]);
     expect(profile?.thresholds.restHr).toEqual([{ date: 0, value: 48 }]);
   });
+
+  it('migrates a version 3 profile to version 4 unchanged, and keeps unrecognised shapes', async () => {
+    const migrate = useUserStore.persist.getOptions().migrate;
+    expect(migrate?.('garbage', 3)).toBe('garbage');
+    expect(migrate?.({ profile: { id: 'p', thresholds: 'x' } }, 3)).toEqual({
+      profile: { id: 'p', thresholds: 'x' },
+    });
+
+    const thresholds = {
+      restHr: [{ date: 0, value: 48 }],
+      maxHr: [{ date: 0, value: 186 }],
+      ftp: [{ date: 0, value: 240 }],
+    };
+    const profile = await rehydrateFrom({ profile: { ...flatProfile({}), thresholds } }, 3);
+    expect(profile?.thresholds).toEqual(thresholds);
+  });
+
+  it('a saved threshold HR survives rehydrate', async () => {
+    const { id: _id, createdAt: _ca, ...profileData } = makeUserProfile();
+    useUserStore.getState().setProfile(profileData);
+    useUserStore.getState().saveTodaysThresholds({ thresholdHr: 165 });
+    await new Promise((r) => setTimeout(r, 50));
+    const db = await getDB();
+    const persisted = JSON.parse((await db.get('kv', 'store-user')) ?? '{}');
+
+    const profile = await rehydrateFrom(persisted.state, persisted.version);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expect(persisted.version).toBe(4);
+    expect(profile?.thresholds.thresholdHr).toEqual([{ date: today.getTime(), value: 165 }]);
+  });
 });

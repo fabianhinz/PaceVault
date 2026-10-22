@@ -205,7 +205,7 @@ const GenderPick = (props: { thresholds: ThresholdsForm }) => {
 };
 
 const YOU_FIELDS: FormField[] = ['gender', 'restHr', 'maxHr', 'weight', 'birthYear'];
-const THRESHOLD_FIELDS: FormField[] = ['ftp', 'thresholdPace'];
+const THRESHOLD_FIELDS: FormField[] = ['ftp', 'thresholdPace', 'thresholdHr'];
 
 const YouFields = (props: { thresholds: ThresholdsForm }) => (
   <div className="grid grid-cols-1 gap-3">
@@ -278,6 +278,14 @@ const ThresholdFields = (props: { thresholds: ThresholdsForm }) => {
         onSave={(paceSecPerKm) =>
           props.thresholds.setField('thresholdPace', formatPaceInput(paceSecPerKm))
         }
+      />
+      <FieldInput
+        thresholds={props.thresholds}
+        field="thresholdHr"
+        label={m.ui_thresholds_threshold_hr()}
+        hint={m.ui_onboarding_threshold_hr_hint()}
+        placeholder="165"
+        inputMode="numeric"
       />
     </div>
   );

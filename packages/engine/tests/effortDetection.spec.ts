@@ -282,6 +282,54 @@ describe('detectEfforts', () => {
     });
   });
 
+  const threeBlockRide = (seed: number, workPower: (i: number) => number): SessionRecord[] => {
+    const r = rng(seed);
+    const segments: Segment[] = [
+      { dur: 600, kind: 'warmup', power: (i, d) => 130 + (30 * i) / d + gauss(r) * 12 },
+    ];
+    for (let k = 0; k < 3; k++) {
+      segments.push({ dur: 720, kind: 'work', power: (i) => workPower(i) + gauss(r) * 12 });
+      if (k < 2) segments.push({ dur: 240, kind: 'rest', power: () => 125 + gauss(r) * 12 });
+    }
+    segments.push({ dur: 600, kind: 'cooldown', power: () => 120 + gauss(r) * 12 });
+    return ride({ seed, segments, grade: (i) => 0.006 * Math.sin(i / 180) });
+  };
+
+  it('regression: sweet spot 3×12 fragments into many blocks', () => {
+    // enter 0.88 × 250 = 220 W, leave 0.80 × 250 = 200 W; the level wanders slowly from 204 to 236 W
+    const records = threeBlockRide(71, (i) => 220 + 16 * Math.sin((2 * Math.PI * i) / 240));
+
+    const efforts = work(detectEfforts(records, 'cycling', FULL).blocks);
+
+    expect(efforts).toHaveLength(3);
+    efforts.forEach((block, k) => {
+      expect(Math.abs(block.start - (600 + k * 960))).toBeLessThanOrEqual(20);
+      expect(Math.abs(block.end - (1320 + k * 960))).toBeLessThanOrEqual(20);
+    });
+  });
+
+  it('keeps a block going above the leave level and ends it below', () => {
+    // 8 min at 0.96 FTP, then 4 min at 0.84 FTP (between leave and enter): one block of 12 min
+    const records = threeBlockRide(73, (i) => {
+      if (i < 480) return 240;
+      return 210;
+    });
+
+    const efforts = work(detectEfforts(records, 'cycling', FULL).blocks);
+
+    expect(efforts).toHaveLength(3);
+    efforts.forEach((block, k) => {
+      expect(Math.abs(block.end - (1320 + k * 960))).toBeLessThanOrEqual(20);
+    });
+  });
+
+  it('finds no block where nothing reaches the enter level', () => {
+    // 0.84 FTP blocks: above leave, below enter, so nothing seeds a work block
+    const records = threeBlockRide(79, () => 210);
+
+    expect(work(detectEfforts(records, 'cycling', FULL).blocks)).toEqual([]);
+  });
+
   it('falls back to HR without FTP and reports the missing FTP', () => {
     const result = detectEfforts(intervalRide(), 'cycling', NO_FTP);
 

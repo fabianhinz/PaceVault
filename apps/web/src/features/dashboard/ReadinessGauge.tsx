@@ -7,6 +7,7 @@ import { statusTextClass, statusFill } from '@/lib/statusColors.ts';
 import { MetricLabel } from '@/components/MetricLabel.tsx';
 import { GaugeDial } from '@pacevault/ui/components/GaugeDial.tsx';
 import type { FormStatus } from '@pacevault/engine/types.ts';
+import { MISSING } from '@/lib/railFormat.ts';
 
 const readinessLabel: Record<FormStatus, () => string> = {
   detraining: m.ui_readiness_detraining,
@@ -15,6 +16,9 @@ const readinessLabel: Record<FormStatus, () => string> = {
   optimal: m.ui_readiness_optimal,
   overload: m.ui_readiness_overload,
 };
+
+const TSB_MIN = -40;
+const TSB_MAX = 40;
 
 const TSB_ZONES = [
   { from: -40, to: -30, color: tokens.statusDangerStrong },
@@ -26,37 +30,44 @@ const TSB_ZONES = [
 
 export const ReadinessGauge = () => {
   const metrics = useMetrics();
-  const tsb = metrics.current?.tsb ?? 0;
+  const tsb = metrics.current?.tsb;
+  const status = metrics.coaching.status;
 
-  const coachingLabel = readinessLabel[metrics.coaching.status]();
+  // Without history there is no form: `--`, an empty dial and no status label.
+  let shown = MISSING;
+  if (tsb !== undefined) shown = `${tsb > 0 ? '+' : ''}${tsb.toFixed(1)}`;
 
   return (
     <div className="w-28 flex gap-1 flex-1 h-full flex-col items-center justify-end">
       <div className="relative w-full max-w-[160px]">
         <GaugeDial
-          min={-40}
-          max={40}
-          value={tsb}
+          min={TSB_MIN}
+          max={TSB_MAX}
+          value={tsb ?? TSB_MIN}
           zones={TSB_ZONES}
-          valueFill={statusFill[metrics.coaching.status] ?? tokens.statusNeutral}
+          valueFill={statusFill[status] ?? tokens.statusNeutral}
         />
         <div className="absolute inset-0 flex flex-col items-center justify-end">
           <Typography
             variant="h1"
-            className={cn('leading-none pb-1', statusTextClass[metrics.coaching.status])}
+            className={cn(
+              'leading-none pb-1',
+              tsb === undefined ? 'text-text-tertiary' : statusTextClass[status],
+            )}
           >
-            {tsb > 0 ? '+' : ''}
-            {tsb.toFixed(1)}
+            {shown}
           </Typography>
         </div>
       </div>
-      <Typography
-        variant="overline"
-        as="p"
-        className={cn('whitespace-nowrap', statusTextClass[metrics.coaching.status])}
-      >
-        {coachingLabel}
-      </Typography>
+      {tsb !== undefined && (
+        <Typography
+          variant="overline"
+          as="p"
+          className={cn('whitespace-nowrap', statusTextClass[status])}
+        >
+          {readinessLabel[status]()}
+        </Typography>
+      )}
       <MetricLabel metricId="tsb" size="sm" />
     </div>
   );

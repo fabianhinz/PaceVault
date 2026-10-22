@@ -8,13 +8,19 @@ import {
 } from '@/features/demo/buildDemoDataset.ts';
 import { parseDemoRoutes, type DemoRoutesJson } from '@/features/demo/demoRecords.ts';
 import {
+  DEMO_WORKOUTS,
   FLAUCHER_EASY,
+  GARDA_TRIP,
   ISAR_800S,
   STARNBERGER_LONG_RIDE,
   TEGERNSEE_LOOP,
 } from '@/features/demo/demoSchedule.ts';
 import { haversineM } from '@pacevault/engine/gps.ts';
 import { analyzeLaps } from '@/lib/laps.ts';
+import { buildEffortLapSet, effortPattern } from '@/lib/effortLaps.ts';
+import { thresholdsAt } from '@/lib/thresholdsAt.ts';
+import { sessionStressAt, sessionStressFromRecordsAt } from '@/lib/sessionStress.ts';
+import type { UserProfile } from '@/types/index.ts';
 import type { SessionRecord } from '@pacevault/engine/types.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -202,6 +208,52 @@ describe('buildDemoDataset', () => {
       for (const lap of entry.laps) {
         expect(Object.keys(lap).filter((k) => DELETED_LAP_FIELDS.includes(k))).toEqual([]);
       }
+    }
+  });
+
+  const effortsOf = (session: DemoDataset['sessions'][number]) =>
+    buildEffortLapSet(
+      recordsOf(dataset, session.id),
+      session.sport,
+      thresholdsAt(dataset.profile, session.date),
+    ).set;
+
+  it('shows three efforts of one pattern on every sweet spot ride, none on the Garda rides', () => {
+    const sweetSpots = dataset.sessions.filter(
+      (s) => s.name === DEMO_WORKOUTS.indoorSweetSpot.name,
+    );
+    expect(sweetSpots.length).toBeGreaterThan(0);
+    for (const session of sweetSpots) {
+      const set = effortsOf(session);
+      if (!set) throw new Error(`no efforts on ${new Date(session.date).toISOString()}`);
+      expect(effortPattern(set)?.count).toBe(3);
+    }
+
+    const gardaIds = new Set(dataset.trips.find((t) => t.name === GARDA_TRIP)?.sessionIds);
+    const gardaRides = dataset.sessions.filter((s) => gardaIds.has(s.id) && s.sport === 'cycling');
+    expect(gardaRides.length).toBeGreaterThan(0);
+    for (const session of gardaRides) expect(effortsOf(session)).toBeNull();
+  }, 60_000);
+
+  it('scores rides from power and runs from heart rate', () => {
+    for (const session of dataset.sessions) {
+      if (session.sport === 'cycling') expect(session.stressMethod).toBe('tss');
+      if (session.sport === 'running') expect(session.stressMethod).toBe('trimp');
+    }
+  });
+
+  it('stores the loads the training load recompute computes', () => {
+    const profile: UserProfile = { ...dataset.profile, id: 'demo', createdAt: 0 };
+    for (const session of dataset.sessions) {
+      const stored = {
+        tss: session.tss,
+        stressMethod: session.stressMethod,
+        normalizedPower: session.normalizedPower,
+      };
+      expect(sessionStressFromRecordsAt(session, recordsOf(dataset, session.id), profile)).toEqual(
+        stored,
+      );
+      if (session.sport === 'cycling') expect(sessionStressAt(session, profile)).toEqual(stored);
     }
   });
 });

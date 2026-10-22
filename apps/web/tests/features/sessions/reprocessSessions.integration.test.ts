@@ -19,6 +19,8 @@ import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { calculateGAP } from '@pacevault/engine/normalize.ts';
 import {
   SESSION_DERIVATION_VERSION,
+  deriveAvgFromRecords,
+  deriveMaxFromRecords,
   isSessionOutdated,
 } from '@pacevault/engine/sessionDerivation.ts';
 import { calculateSessionStress } from '@pacevault/engine/stress.ts';
@@ -161,29 +163,40 @@ describe('reprocessOutdatedSessions', () => {
     expect(sessionById('file')?.name).toBe('Morning Run');
   });
 
-  it('recomputes a session without a stored FIT file from its records', async () => {
+  it('recomputes a run without a stored FIT file from its records, its load from heart rate', async () => {
     useUserStore.setState({ profile: makeUserProfile() });
     const records = makeRunningRecords(600);
     const laps = makeLaps(2);
     await bulkSaveSessionData([{ sessionId: 'demo', records, laps }]);
-    await storeSessions([
-      outdatedSession({
-        id: 'demo',
-        gap: 999,
-        distance: 1,
-        tss: 55,
-        source: { kind: 'demo' },
-      }),
-    ]);
+    const stored = outdatedSession({
+      id: 'demo',
+      gap: 999,
+      distance: 1,
+      tss: 55,
+      avgHr: undefined,
+      maxHr: undefined,
+      source: { kind: 'demo' },
+    });
+    await storeSessions([stored]);
 
     await reprocessOutdatedSessions();
 
+    const derivedAvgHr = deriveAvgFromRecords(records, 'hr');
+    const expected = calculateSessionStress(
+      'running',
+      records,
+      { durationSec: stored.duration, avgHr: derivedAvgHr },
+      { restHr: 50, maxHr: 190, gender: 'male', ftp: 250 },
+    );
+    expect(derivedAvgHr).toBeDefined();
     expect(sessionById('demo')).toMatchObject({
       gap: calculateGAP(records),
       distance: records.at(-1)?.distance,
-      // The profile's load from the stored NP: 3600 s × 215 W × 0.86 / (250 W × 3600) × 100
-      tss: 74,
-      stressMethod: 'tss',
+      avgHr: derivedAvgHr,
+      maxHr: deriveMaxFromRecords(records, 'hr'),
+      // A run never scores TSS, even with a stored NP and an FTP
+      tss: expected.tss,
+      stressMethod: 'trimp',
       derivationVersion: SESSION_DERIVATION_VERSION,
     });
   });
@@ -275,7 +288,7 @@ describe('reprocessOutdatedSessions', () => {
     );
   });
 
-  it('reprocessing a TSS ride recomputes NP and TSS from its FIT', async () => {
+  it('reprocessing a run from its FIT scores it from heart rate, not TSS', async () => {
     const fit = runningFit();
     const sessionDate = (
       await parseFitFile(fit.slice(0), 'run.fit', () => ({
@@ -310,11 +323,11 @@ describe('reprocessOutdatedSessions', () => {
 
     await reprocessOutdatedSessions();
 
-    expect(fresh.session.stressMethod).toBe('tss');
+    expect(fresh.session.stressMethod).toBe('trimp');
     expect(sessionById('tss')).toMatchObject({
       tss: fresh.session.tss,
       normalizedPower: fresh.session.normalizedPower,
-      stressMethod: 'tss',
+      stressMethod: 'trimp',
     });
   });
 
@@ -333,13 +346,10 @@ describe('reprocessOutdatedSessions', () => {
     });
     await storeSessions([stored]);
     const expected = calculateSessionStress(
+      'cycling',
       records,
-      stored.duration,
-      stored.avgHr,
-      50,
-      190,
-      'male',
-      250,
+      { durationSec: stored.duration, avgHr: stored.avgHr },
+      { restHr: 50, maxHr: 190, gender: 'male', ftp: 250 },
     );
 
     await reprocessOutdatedSessions();
@@ -370,12 +380,10 @@ describe('reprocessOutdatedSessions', () => {
     });
     await storeSessions([stored]);
     const expected = calculateSessionStress(
+      'cycling',
       records,
-      stored.duration,
-      stored.avgHr,
-      50,
-      190,
-      'male',
+      { durationSec: stored.duration, avgHr: stored.avgHr },
+      { restHr: 50, maxHr: 190, gender: 'male' },
     );
 
     await reprocessOutdatedSessions();

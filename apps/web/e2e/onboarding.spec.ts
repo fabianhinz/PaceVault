@@ -26,6 +26,7 @@ test.describe('Onboarding flow', () => {
     await estimator.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(estimator).toHaveCount(0);
     await expect(page.getByLabel(/^Threshold Pace/)).toHaveValue(/^\d:\d\d$/);
+    await page.getByLabel(/^Threshold HR/).fill('165');
     await next.click();
 
     const uploadButton = page.getByRole('button', { name: /upload fit files/i });
@@ -40,7 +41,8 @@ test.describe('Onboarding flow', () => {
     await page.goto('/settings');
     await expect(thresholdTile(page, 'Weight')).toContainText('72');
     await expect(thresholdTile(page, 'FTP')).toContainText('250');
-    await expect(thresholdTile(page, 'Pace')).not.toContainText('Add pace');
+    await expect(thresholdTile(page, 'Threshold pace')).not.toContainText('Add threshold pace');
+    await expect(thresholdTile(page, 'Threshold HR')).toContainText('165');
     await expect(page.getByLabel('Birth year')).toHaveValue('1990');
   });
 
@@ -131,6 +133,12 @@ test.describe('Onboarding flow', () => {
     await expect(page.getByText('Format: m:ss (2:30-9:00)')).toBeVisible();
     await expect(pace).toBeFocused();
     await pace.fill('');
+    const thresholdHr = page.getByLabel(/^Threshold HR/);
+    await thresholdHr.fill('190');
+    await next.click();
+    await expect(page.getByText('Max 184 bpm')).toBeVisible();
+    await expect(thresholdHr).toBeFocused();
+    await thresholdHr.fill('');
     await next.click();
     await expect(page.getByRole('button', { name: /upload fit files/i })).toBeVisible();
   });
@@ -167,6 +175,10 @@ test.describe('Onboarding flow', () => {
 
     await setThreshold(page, 'Rest HR', '52');
     await expect(thresholdTile(page, 'Rest HR')).toContainText(todayShort);
+
+    await expect(thresholdTile(page, 'Threshold HR')).toContainText('Add threshold HR');
+    await setThreshold(page, 'Threshold HR', '170');
+    await expect(thresholdTile(page, 'Threshold HR')).toContainText('170');
 
     await page.reload();
     await expect(ftpTile).toContainText('280');

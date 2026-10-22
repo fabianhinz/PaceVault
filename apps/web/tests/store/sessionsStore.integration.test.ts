@@ -100,6 +100,26 @@ describe('sessions store', () => {
     ]);
   });
 
+  it('migrates version 3 state without an applied HR signature, so the first start re-scores HR loads', () => {
+    const migrate = useSessionsStore.persist.getOptions().migrate;
+    const session = { id: 'a', source: { kind: 'file' }, derivationVersion: 4, tss: 55 };
+    expect(migrate?.({ sessions: [session, 'garbage'] }, 3)).toEqual({
+      sessions: [session, 'garbage'],
+      appliedHrSignature: null,
+    });
+    expect(migrate?.('garbage', 3)).toBe('garbage');
+  });
+
+  it('the applied HR signature survives rehydrate', async () => {
+    useSessionsStore.getState().setAppliedHrSignature('["male",[],[],[]]');
+    await guardedSessionsStorage.flush();
+    useSessionsStore.setState({ appliedHrSignature: null });
+
+    await useSessionsStore.persist.rehydrate();
+
+    expect(useSessionsStore.getState().appliedHrSignature).toBe('["male",[],[],[]]');
+  });
+
   it('a tab holding outdated sessions does not overwrite the persisted sessions', async () => {
     const { createdAt: _ca, ...data } = makeSession({ id: 'a', isNew: true });
     useSessionsStore.getState().addSessions([data], { markNew: true });

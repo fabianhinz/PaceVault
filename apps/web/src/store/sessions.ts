@@ -30,6 +30,7 @@ const migrateSessionsState = (persisted: unknown, version: number): unknown => {
   let sessions = parsed.data.sessions;
   if (version < 2) sessions = sessions.map(withFileSource);
   if (version < 3) sessions = sessions.map(withUnknownDerivationVersion);
+  if (version < 4) return { ...parsed.data, sessions, appliedHrSignature: null };
   return { ...parsed.data, sessions };
 };
 
@@ -40,6 +41,11 @@ export type RecomputedTrainingLoad = Pick<
 
 interface SessionsState {
   sessions: TrainingSession[];
+  /**
+   * The HR part of the training load signature (gender, rest, max and threshold HR) the stored
+   * HR loads were computed with; `null` until the first records recompute.
+   */
+  appliedHrSignature: string | null;
   addSessions: (
     sessions: Omit<TrainingSession, 'createdAt' | 'isNew'>[],
     options?: { markNew?: boolean },
@@ -47,6 +53,7 @@ interface SessionsState {
   deleteSession: (id: string) => void;
   commitReprocessedSessions: (sessions: TrainingSession[]) => void;
   applyRecomputedTrainingLoad: (changes: RecomputedTrainingLoad[]) => void;
+  setAppliedHrSignature: (signature: string) => void;
   markSessionSeen: (id: string) => void;
   clearAll: () => void;
 }
@@ -66,6 +73,7 @@ export const useSessionsStore = create<SessionsState>()(
     persist(
       (set) => ({
         sessions: [],
+        appliedHrSignature: null,
         addSessions: (sessionsData, options) => {
           const newSessions = sessionsData.map((s) => ({
             ...s,
@@ -102,6 +110,10 @@ export const useSessionsStore = create<SessionsState>()(
             }
           });
         },
+        setAppliedHrSignature: (signature) =>
+          set((draft) => {
+            draft.appliedHrSignature = signature;
+          }),
         markSessionSeen: (id) =>
           set((draft) => {
             const session = draft.sessions.find((s) => s.id === id);
@@ -115,7 +127,7 @@ export const useSessionsStore = create<SessionsState>()(
         name: 'store-sessions',
         storage: createJSONStorage(() => guardedSessionsStorage),
         skipHydration: true,
-        version: 3,
+        version: 4,
         migrate: (persisted, version) => migrateSessionsState(persisted, version) as SessionsState,
       },
     ),
