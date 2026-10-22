@@ -83,3 +83,24 @@ export const windowedGradients = (points: GradientPoint[]): Array<number | undef
   }
   return result;
 };
+
+export const averageGradient = (
+  points: GradientPoint[],
+  startIndex: number,
+  endIndex: number,
+): number | undefined => {
+  let first: { distance: number; elevation: number } | undefined = undefined;
+  let last: { distance: number; elevation: number } | undefined = undefined;
+  for (let i = Math.max(startIndex, 0); i <= Math.min(endIndex, points.length - 1); i++) {
+    const point = points[i];
+    if (!point || point.distance === undefined) continue;
+    if (point.elevation === undefined || point.elevation === null) continue;
+    const node = { distance: point.distance, elevation: point.elevation };
+    first ??= node;
+    last = node;
+  }
+  if (!first || !last) return undefined;
+  const span = last.distance - first.distance;
+  if (span <= 0) return undefined;
+  return (last.elevation - first.elevation) / span;
+};

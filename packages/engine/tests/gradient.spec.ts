@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { windowedGradients, type GradientPoint } from '../src/gradient.ts';
+import { averageGradient, windowedGradients, type GradientPoint } from '../src/gradient.ts';
 
 const flat = (metres: number, elevation = 100): GradientPoint[] =>
   Array.from({ length: metres + 1 }, (_, d) => ({ distance: d, elevation }));
@@ -50,5 +50,41 @@ describe('windowedGradients', () => {
       ...flat(100).map((p) => ({ ...p, distance: (p.distance ?? 0) + 101 })),
     ];
     expect(largest(windowedGradients(points))).toBeLessThan(0.01);
+  });
+});
+
+describe('averageGradient', () => {
+  it('divides the net climb by the distance', () => {
+    const points = Array.from({ length: 1001 }, (_, d) => ({ distance: d, elevation: d * 0.1 }));
+    expect(averageGradient(points, 0, 1000)).toBeCloseTo(0.1, 6);
+  });
+
+  it('a flat span averages to 0', () => {
+    expect(averageGradient(flat(200), 0, 200)).toBe(0);
+  });
+
+  it('missing elevation at the ends uses the nearest points with data', () => {
+    const points: GradientPoint[] = [
+      { distance: 0 },
+      { distance: 100, elevation: null },
+      { distance: 200, elevation: 50 },
+      { distance: 700, elevation: 100 },
+      { distance: 800 },
+    ];
+    expect(averageGradient(points, 0, 4)).toBeCloseTo(0.1, 6);
+  });
+
+  it('only counts the given span', () => {
+    const points = [
+      { distance: 0, elevation: 0 },
+      { distance: 100, elevation: 10 },
+      { distance: 200, elevation: 10 },
+    ];
+    expect(averageGradient(points, 1, 2)).toBe(0);
+  });
+
+  it('is undefined without distance', () => {
+    const points: GradientPoint[] = [{ elevation: 10 }, { elevation: 20 }];
+    expect(averageGradient(points, 0, 1)).toBeUndefined();
   });
 });

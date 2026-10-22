@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Startup loader · Mockup</title>
+    <link rel="stylesheet" href="../../../shared/mockup-shell.css" />
+    <script src="../../../shared/mockup-shell.js" defer></script>
+    <script src="routes.js" defer></script>
+    <script src="startup.js" defer></script>
+    <style>
+      /* Screen content only. Tokens from tools/workbench/shared/tokens.css. */
+      .ms-screen [hidden] {
+        display: none !important;
+      }
+      .scr {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: var(--color-surface-base);
+        color: var(--color-text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      .scr * {
+        box-sizing: border-box;
+      }
+
+      /* Typography variants (packages/ui/src/components/Typography.tsx) */
+      .t-h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        line-height: 1.75rem;
+        font-weight: 700;
+        color: var(--color-text-primary);
+      }
+      .t-title {
+        margin: 0;
+        font-size: var(--text-base);
+        line-height: var(--leading-6);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+      .t-body1 {
+        margin: 0;
+        font-size: var(--text-sm);
+        line-height: var(--leading-5);
+        font-weight: 400;
+        color: var(--color-text-primary);
+      }
+      .t-subtitle1 {
+        margin: 0;
+        font-size: var(--text-sm);
+        line-height: var(--leading-5);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+      .t-caption {
+        margin: 0;
+        font-size: var(--text-xs);
+        line-height: 1rem;
+        font-weight: 400;
+        color: var(--color-text-secondary);
+      }
+      .t-overline {
+        margin: 0;
+        font-size: var(--text-xs);
+        line-height: 1rem;
+        font-weight: var(--font-weight-medium);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-secondary);
+      }
+      .c-secondary {
+        color: var(--color-text-secondary);
+      }
+      .c-tertiary {
+        color: var(--color-text-tertiary);
+      }
+      .tnum {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Map: basemap canvas + track canvas (additive, like ADDITIVE_BLEND on gps-tracks) */
+      .app {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      .app.is-mounted {
+        opacity: 1;
+      }
+      .map {
+        position: absolute;
+        inset: 0;
+      }
+      .map canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .map .map-base {
+        opacity: 0;
+        transition: opacity 300ms linear;
+      }
+      .map .map-base.is-loaded {
+        opacity: 1;
+      }
+      .map .map-tracks {
+        mix-blend-mode: plus-lighter;
+      }
+      .map.is-pointer {
+        cursor: pointer;
+      }
+
+      /* Surfaces (packages/ui/src/components/Card.tsx) */
+      .glass {
+        background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+        backdrop-filter: blur(var(--wb-blur-xl));
+        -webkit-backdrop-filter: blur(var(--wb-blur-xl));
+        border: 1px solid var(--wb-hairline);
+      }
+      .floating {
+        background: var(--wb-floating-bg);
+        backdrop-filter: blur(var(--wb-blur-xl));
+        -webkit-backdrop-filter: blur(var(--wb-blur-xl));
+        border: 1px solid var(--wb-hairline);
+        box-shadow: var(--wb-floating-shadow);
+      }
+      .tile {
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--wb-hairline);
+        background: var(--wb-tile-bg);
+      }
+      .card {
+        display: flex;
+        flex-direction: column;
+        padding: var(--spacing-4);
+        border-radius: 1rem;
+        pointer-events: auto;
+      }
+      .card__head {
+        margin-bottom: var(--spacing-4);
+      }
+      .card__foot {
+        margin-top: var(--spacing-4);
+        padding-top: var(--spacing-3);
+        border-top: 1px solid var(--wb-hairline);
+      }
+
+      /* Content column (desktop, AppLayout main: max-w 40dvw, p-6, pl-0) / bottom sheet (phone) */
+      .panel {
+        position: absolute;
+        z-index: 10;
+        pointer-events: none;
+      }
+      .panel__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-4);
+      }
+      [data-device='desktop'] .panel {
+        top: 0;
+        right: 0;
+        width: 512px;
+        padding: var(--spacing-6) var(--spacing-6) 0 0;
+      }
+      [data-device='phone'] .panel {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 776.48px;
+        transform: translateY(295.24px);
+        border-radius: 1rem 1rem 0 0;
+        border-left: 0;
+        border-right: 0;
+        border-bottom: 0;
+        background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+        backdrop-filter: blur(var(--wb-blur-xl));
+        -webkit-backdrop-filter: blur(var(--wb-blur-xl));
+        border-top: 1px solid var(--wb-hairline);
+        pointer-events: auto;
+      }
+      .panel__handle {
+        display: none;
+      }
+      [data-device='phone'] .panel__handle {
+        display: flex;
+        height: 48px;
+        align-items: center;
+        justify-content: center;
+      }
+      .panel__handle span {
+        width: 40px;
+        height: 4px;
+        border-radius: 9999px;
+        background: rgb(255 255 255 / 0.3);
+      }
+      [data-device='phone'] .panel__body {
+        padding: 0 var(--spacing-6);
+      }
+      [data-device='desktop'] .panel .card.glass,
+      [data-device='desktop'] .panel .card.tile-card {
+        background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+      }
+      [data-device='phone'] .panel .card {
+        background: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border: 0;
+        padding: 0;
+      }
+      .gauges {
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-6);
+      }
+      .gauge {
+        width: 112px;
+        height: 64px;
+        border-radius: 112px 112px 0 0;
+        border: 8px solid var(--color-surface-overlay);
+        border-bottom: 0;
+      }
+      .bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 6px;
+        height: 96px;
+      }
+      .bars span {
+        flex: 1;
+        border-radius: 2px 2px 0 0;
+        background: var(--color-surface-overlay);
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--spacing-2);
+      }
+      .stats .tile {
+        padding: var(--spacing-3);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-1);
+      }
+      .btn {
+        display: inline-flex;
+        align-self: flex-start;
+        align-items: center;
+        height: 36px;
+        padding: 0 var(--spacing-4);
+        border: 0;
+        border-radius: 9999px;
+        background: var(--color-accent);
+        color: #fff;
+        font-family: inherit;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-2);
+      }
+
+      /* Dock (apps/web/src/components/layout/Dock.tsx, DockItems.tsx) */
+      .dock {
+        position: absolute;
+        z-index: 50;
+        display: flex;
+        gap: var(--spacing-2);
+      }
+      .dock__seg {
+        position: relative;
+        display: flex;
+        border-radius: 9999px;
+      }
+      .dock__item {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 9999px;
+        color: var(--color-text-tertiary);
+      }
+      .dock__item.is-active {
+        background: var(--color-accent-muted);
+        color: var(--color-accent-hover);
+      }
+      .dock__item svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      [data-device='desktop'] .dock {
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        flex-direction: column;
+      }
+      [data-device='desktop'] .dock__seg {
+        flex-direction: column;
+        gap: 4px;
+        padding: 4px;
+      }
+      [data-device='desktop'] .dock__item {
+        width: 40px;
+        height: 40px;
+      }
+      [data-device='desktop'] .dock__circle {
+        display: none;
+      }
+      [data-device='phone'] .dock {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        height: 52px;
+      }
+      [data-device='phone'] .dock__seg--tabs {
+        flex: 1;
+        min-width: 0;
+        gap: 2px;
+        padding: 3px;
+      }
+      [data-device='phone'] .dock__seg--tabs .dock__item {
+        flex: 1;
+        min-width: 0;
+        height: 44px;
+      }
+      [data-device='phone'] .dock__seg--tools {
+        display: none;
+      }
+      [data-device='phone'] .dock__circle {
+        padding: 3px;
+      }
+      [data-device='phone'] .dock__circle .dock__item {
+        width: 44px;
+        height: 44px;
+      }
+      [data-device='phone'] .dock__circle--filter {
+        order: 3;
+      }
+      [data-device='phone'] .dock__seg--tabs {
+        order: 2;
+      }
+
+      /* Inline loader (new: apps/web/index.html), overlayClass look: surface-base/85 + blur 8 px */
+      .boot {
+        position: absolute;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        background: rgb(3 7 18 / 0.85);
+        backdrop-filter: blur(var(--boot-blur, 8px));
+        -webkit-backdrop-filter: blur(var(--boot-blur, 8px));
+      }
+      .boot.is-gone {
+        display: none;
+      }
+      .boot.is-passive {
+        pointer-events: none;
+      }
+      .boot__logo {
+        width: 96px;
+        height: 96px;
+        display: block;
+      }
+      .boot__qs {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(50% + 64px);
+        display: flex;
+        justify-content: center;
+        gap: var(--spacing-1);
+      }
+
+      /* Mockup-only timeline readout, styled as FloatingPill (packages/ui/src/components/FloatingPill.tsx) */
+      .readout {
+        position: absolute;
+        z-index: 200;
+        top: 12px;
+        left: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-1);
+        pointer-events: none;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-2);
+        width: 366px;
+        padding: var(--spacing-2) var(--spacing-3);
+        border-radius: 9999px;
+        white-space: nowrap;
+      }
+      .pill__ms {
+        width: 60px;
+        flex-shrink: 0;
+        text-align: right;
+      }
+      .pill__phase {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--color-text-primary);
+      }
+      .pill__lock {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--spacing-1);
+        flex-shrink: 0;
+      }
+      .pill__lock svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .pill__lock.is-locked {
+        color: var(--color-status-warning);
+      }
+      .pill__lock.is-open {
+        color: var(--color-status-success);
+      }
+      .pill__dot {
+        width: 1px;
+        height: 12px;
+        background: var(--wb-hairline);
+        flex-shrink: 0;
+      }
+      .readout__qs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-1);
+        max-width: 366px;
+        pointer-events: auto;
+      }
+      .scr .ms-q {
+        pointer-events: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="application/json" id="mockup-config">
+      {
+        "title": "Startup loader",
+        "variants": [
+          { "id": "A", "label": "A · L3 at 1.5 s" },
+          { "id": "B", "label": "B · Rush to the boundary" },
+          { "id": "C", "label": "C · Quiet start" },
+          { "id": "D", "label": "D · Glass lifts" },
+          { "id": "E", "label": "E · Floor and cut" }
+        ],
+        "scenarios": [
+          { "id": "warm", "label": "Warm reload · 300 tracks" },
+          { "id": "cold", "label": "Cold reload · ready 2.6 s" },
+          { "id": "large", "label": "Large library · 3,000" },
+          { "id": "small", "label": "Small library · 8" },
+          { "id": "first", "label": "First tracks after onboarding" },
+          { "id": "onboarding", "label": "Onboarding preview" },
+          { "id": "never", "label": "Ready never comes" },
+          { "id": "session", "label": "Session link reload" },
+          { "id": "nojs", "label": "JavaScript off" }
+        ],
+        "extras": [
+          {
+            "id": "drawin",
+            "type": "choice",
+            "label": "Draw-in",
+            "default": "V2",
+            "options": [
+              { "id": "V1", "label": "V1 · Bloom" },
+              { "id": "V2", "label": "V2 · Scatter" },
+              { "id": "V3", "label": "V3 · Ripple" },
+              { "id": "V4", "label": "V4 · Timeline" },
+              { "id": "V5", "label": "V5 · Comets" },
+              { "id": "V6", "label": "V6 · Ground speed" }
+            ]
+          },
+          {
+            "id": "intensity",
+            "type": "choice",
+            "label": "Intensity",
+            "default": "faint",
+            "options": [
+              { "id": "faint", "label": "Faint" },
+              { "id": "warm", "label": "Warm" },
+              { "id": "hot", "label": "Hot" }
+            ]
+          },
+          {
+            "id": "speed",
+            "type": "choice",
+            "label": "Speed",
+            "default": "1",
+            "options": [
+              { "id": "1", "label": "1×" },
+              { "id": "0.5", "label": "0.5×" },
+              { "id": "0.25", "label": "0.25×" }
+            ]
+          },
+          { "id": "replay", "type": "button", "label": "Replay" }
+        ],
+        "decisions": [
+          { "id": "Q1", "title": "Minimum display time" },
+          { "id": "Q2", "title": "Large libraries" },
+          { "id": "Q3", "title": "Deep links / when it plays" },
+          { "id": "Q4", "title": "Picking during draw-in" },
+          { "id": "Q5", "title": "Loader text" },
+          { "id": "Q6", "title": "Repetition" },
+          { "id": "Q7", "title": "First tracks without a reload" },
+          { "id": "Q8", "title": "Draw-in choreography" },
+          { "id": "Q9", "title": "Hand-off to the normal map" },
+          { "id": "Q10", "title": "Onboarding timing" },
+          { "id": "Q11", "title": "Brightness during draw-in" },
+          { "id": "Q12", "title": "Loader variants" },
+          { "id": "Q13", "title": "When ready never comes" },
+          { "id": "Q14", "title": "JavaScript off" },
+          { "id": "Q15", "title": "Session link reload" },
+          { "id": "Q16", "title": "e2e skip" },
+          { "id": "Q17", "title": "Logo size" }
+        ]
+      }
+    </script>
+
+    <template id="mockup-screen">
+      <div class="scr">
+        <div class="app">
+          <div class="map">
+            <canvas class="map-base"></canvas>
+            <canvas class="map-tracks"></canvas>
+          </div>
+
+          <section class="panel" data-when="scenario:warm|cold|large|small|first|never|session">
+            <div class="panel__handle"><span></span></div>
+            <div class="panel__body">
+              <div class="panel__overview stack" data-when="scenario:warm|cold|large|small|first|never">
+                <div class="card glass">
+                  <div class="card__head">
+                    <h3 class="t-title" data-de="Aktuelle Form">Current Form</h3>
+                    <p class="t-caption" data-de="Wie bereit du bist">Your training readiness</p>
+                  </div>
+                  <div class="gauges"><div class="gauge"></div><div class="gauge"></div></div>
+                </div>
+                <div class="card glass">
+                  <div class="bars">
+                    <span style="height: 30%"></span><span style="height: 52%"></span>
+                    <span style="height: 41%"></span><span style="height: 68%"></span>
+                    <span style="height: 22%"></span><span style="height: 75%"></span>
+                    <span style="height: 58%"></span><span style="height: 0%"></span>
+                    <span style="height: 47%"></span><span style="height: 84%"></span>
+                    <span style="height: 36%"></span><span style="height: 61%"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="panel__session stack" data-when="scenario:session">
+                <div class="card glass">
+                  <div class="card__head">
+                    <h2 class="t-h2 js-session-name">Flaucher</h2>
+                    <p class="t-caption" data-de="Laufen · Di., 14. Okt. 2025 · 07:12">Running · Tue, 14 Oct 2025 · 07:12</p>
+                  </div>
+                  <div class="stats">
+                    <div class="tile">
+                      <span class="t-overline" data-de="Distanz">Distance</span>
+                      <span class="t-title tnum js-session-km">10.4 km</span>
+                    </div>
+                    <div class="tile">
+                      <span class="t-overline" data-de="Dauer">Duration</span>
+                      <span class="t-title tnum">52:10</span>
+                    </div>
+                    <div class="tile">
+                      <span class="t-overline" data-de="Pace">Pace</span>
+                      <span class="t-title tnum">5:01 /km</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel panel--onboarding" data-when="scenario:onboarding">
+            <div class="panel__handle"><span></span></div>
+            <div class="panel__body">
+              <div class="card glass stack">
+                <h3 class="t-title" data-de="Deine Läufe und Radtouren auf einer interaktiven Karte.">Your runs and rides on an interactive map.</h3>
+                <p class="t-body1 c-secondary" data-de="PaceVault analysiert deine Einheiten lokal in diesem Browser – ohne Konto.">PaceVault analyzes your sessions locally in this browser — no account needed.</p>
+                <button type="button" class="btn t-subtitle1" data-de="Los geht's">Get started</button>
+              </div>
+            </div>
+          </section>
+
+          <nav class="dock" data-when="scenario:warm|cold|large|small|first|never|session">
+            <div class="dock__circle dock__circle--locate floating" style="border-radius: 9999px">
+              <span class="dock__item"><svg viewBox="0 0 24 24"><line x1="2" x2="5" y1="12" y2="12" /><line x1="19" x2="22" y1="12" y2="12" /><line x1="12" x2="12" y1="2" y2="5" /><line x1="12" x2="12" y1="19" y2="22" /><circle cx="12" cy="12" r="7" /></svg></span>
+            </div>
+            <div class="dock__seg dock__seg--tabs floating">
+              <span class="dock__item js-tab-overview is-active"><svg viewBox="0 0 24 24"><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></svg></span>
+              <span class="dock__item js-tab-sessions"><svg viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span>
+              <span class="dock__item"><svg viewBox="0 0 24 24"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" /><path d="M6.453 15h11.094" /><path d="M8.5 2h7" /></svg></span>
+              <span class="dock__item"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg></span>
+            </div>
+            <div class="dock__seg dock__seg--tools floating">
+              <span class="dock__item"><svg viewBox="0 0 24 24"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" /></svg></span>
+              <span class="dock__item"><svg viewBox="0 0 24 24"><line x1="2" x2="5" y1="12" y2="12" /><line x1="19" x2="22" y1="12" y2="12" /><line x1="12" x2="12" y1="2" y2="5" /><line x1="12" x2="12" y1="19" y2="22" /><circle cx="12" cy="12" r="7" /></svg></span>
+            </div>
+            <div class="dock__circle dock__circle--filter floating" style="border-radius: 9999px">
+              <span class="dock__item"><svg viewBox="0 0 24 24"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" /></svg></span>
+            </div>
+          </nav>
+        </div>
+
+        <div class="boot" role="status">
+          <svg class="boot__logo" viewBox="0 0 120 120" aria-hidden="true">
+            <defs>
+              <linearGradient class="js-grad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff" /><stop offset="50%" stop-color="#22d3ee" stop-opacity="1" /><stop offset="100%" stop-color="#22d3ee" stop-opacity="0" /></linearGradient>
+              <linearGradient class="js-grad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff" /><stop offset="50%" stop-color="#4ade80" stop-opacity="1" /><stop offset="100%" stop-color="#4ade80" stop-opacity="0" /></linearGradient>
+              <linearGradient class="js-grad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff" /><stop offset="50%" stop-color="#60a5fa" stop-opacity="1" /><stop offset="100%" stop-color="#60a5fa" stop-opacity="0" /></linearGradient>
+            </defs>
+            <rect width="120" height="120" rx="20" fill="#030712" />
+            <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+              <path class="js-stroke" d="M 35 105 C 15 65, 35 35, 60 25" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1.05" />
+              <path class="js-stroke" d="M 60 105 C 60 60, 50 45, 60 25" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1.05" />
+              <path class="js-stroke" d="M 85 105 C 105 65, 85 35, 60 25" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="1.05" />
+            </g>
+          </svg>
+          <div class="boot__qs">
+            <span data-q="Q1"></span><span data-q="Q5"></span><span data-q="Q6"></span><span data-q="Q12"></span><span data-q="Q17"></span>
+          </div>
+        </div>
+
+        <div class="readout">
+          <div class="pill floating">
+            <span class="pill__ms t-caption tnum js-ms">0 ms</span>
+            <span class="pill__dot"></span>
+            <span class="pill__phase t-caption js-phase">Loading</span>
+            <span class="pill__dot"></span>
+            <span class="pill__lock t-caption js-lock is-locked">
+              <svg class="js-lock-closed" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+              <svg class="js-lock-open" viewBox="0 0 24 24" hidden><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg>
+              <span class="js-lock-text">Picking locked</span>
+            </span>
+          </div>
+          <div class="readout__qs">
+            <span data-q="Q8"></span><span data-q="Q4"></span><span data-q="Q9"></span><span data-q="Q11"></span><span data-q="Q16"></span>
+            <span data-when="scenario:warm|cold|small"><span data-q="Q3"></span></span>
+            <span data-when="scenario:large"><span data-q="Q2"></span></span>
+            <span data-when="scenario:first"><span data-q="Q7"></span></span>
+            <span data-when="scenario:onboarding"><span data-q="Q10"></span></span>
+            <span data-when="scenario:never"><span data-q="Q13"></span></span>
+            <span data-when="scenario:session"><span data-q="Q15"></span></span>
+            <span data-when="scenario:nojs"><span data-q="Q14"></span></span>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template id="mockup-notes">
+      <p>
+        <strong>What this shows.</strong> A page reload: the inline loader paints first (new, in
+        <code>apps/web/index.html</code>), React mounts behind it with the camera already at the
+        final view (no flight), the loader hands off and <code>gps-tracks</code> draws in as a
+        TripsLayer. Variant = loader timing (A–E), Draw-in = choreography (V1–V6); every
+        combination plays. Replay or any change restarts from the first paint.
+      </p>
+      <p><strong>This run</strong> (ms from first paint): <span id="live-timeline">–</span></p>
+      <p>
+        <strong>Timeline readout</strong> (top left, styled as <code>FloatingPill</code>): a
+        mockup-only aid, not part of the design. Shows elapsed ms, phase (loading · hand-off ·
+        draw-in · done) and whether picking is locked (Q4). Speed slows the whole clock down.
+      </p>
+
+      <h3>Loader variants (warm = ready 400 ms · cold = ready 2,600 ms)</h3>
+      <p>
+        <strong>A · L3 at 1.5 s.</strong> Today's rule at half the cycle: smallest change, one
+        timing for startup and onboarding. Warm: logo 0–1,500, fade 1,500–1,900, draw-in from
+        1,900. Cold: hand-off at 3,000, draw-in from 3,400.
+      </p>
+      <p>
+        <strong>B · Rush to the boundary.</strong> Today's 3.0 s look; once ready (floor 800) the
+        strokes run 3× to the cycle end (≤ 1,000), then 300 fade. Warm: rush 800–1,533, fade to
+        1,833, draw-in from 1,833. Cold: rush 2,600–2,733, draw-in from 3,033. Research pick.
+      </p>
+      <p>
+        <strong>C · Quiet start.</strong> Glass only at first; the logo fades in (400) only if not
+        ready at 700, then runs as A from that moment. Warm: glass fade 400–650, draw-in from 650,
+        no logo. Cold: logo from 700, hand-off at 3,700, draw-in from 4,100.
+      </p>
+      <p>
+        <strong>D · Glass lifts.</strong> As A, but the glass fades over 600 while its blur goes
+        8 → 0 px and the draw-in starts underneath at the boundary. Warm: 1,500–2,100, draw-in
+        from 1,500. Cold: 3,000–3,600, draw-in from 3,000.
+      </p>
+      <p>
+        <strong>E · Floor and cut.</strong> 3.0 s look, no cycle lock: fades at ready once 1,000
+        passed, even mid-stroke, the logo scaling to 0.92 over the 400 fade. Warm: 1,000–1,400,
+        draw-in from 1,400. Cold: 2,600–3,000, draw-in from 3,000.
+      </p>
+      <p>
+        Cap (Q13): no ready after 10,000 → the loader fades at once with the variant's fade; tracks
+        arriving later (here 12,500) just appear. Ready never waits for tiles: the basemap fades
+        in on its own clock in every scenario.
+      </p>
+
+      <h3>Draw-ins (0 = draw-in start; timestamps baked per vertex as in TripsLayer)</h3>
+      <p>
+        <strong>V1 Bloom</strong>: all tracks 0–1,500, one easeOutCubic. <strong>V2 Scatter</strong>:
+        seeded random start order over 0–1,000, 800–1,400 per track, easeOutCubic, ≤ 2,400.
+        <strong>V3 Ripple</strong>: start by the start point's distance from the fitted view's
+        centre, 0–1,200, 1,200 each. <strong>V4 Timeline</strong>: oldest → newest by date,
+        starts over 0–3,000, 600 each. <strong>V5 Comets</strong>: V2 plus bright heads (trail
+        250, fading), gone at the end. <strong>V6 Ground speed</strong>: one ground speed (the
+        75th-percentile track takes 1,500), linear, stagger 0–300, every track capped to end by
+        2,500.
+      </p>
+      <p>
+        Brightness during the draw-in is the chosen Track intensity (Q11: faint 80, warm 160, hot
+        255 of 255), so the last frame equals the final map. Hover (desktop) or tap (phone)
+        highlights a track only once the readout shows picking on.
+      </p>
+
+      <h3>Where each part lives</h3>
+      <ul>
+        <li>
+          Inline loader: <strong>new</strong> in <code>apps/web/index.html:16-22</code> (today only
+          the body colour); React mounts at <code>apps/web/src/main.tsx:39</code>. Look from
+          <code>overlayClass</code> (<code>packages/ui/src/components/Card.tsx:15</code>), logo
+          from <code>apps/web/src/features/onboarding/LogoLoader.tsx:13-50</code>, L3 keyframes
+          copied from <code>packages/ui/src/theme.css:132-175</code>. Caption dropped (Q5).
+        </li>
+        <li>
+          Track layer: <code>gps-tracks</code> in
+          <code>apps/web/src/features/map/DeckGLOverlay.tsx:159-187</code> becomes a
+          <strong>new</strong> TripsLayer (<code>@deck.gl/geo-layers</code>), colours
+          <code>apps/web/src/features/map/trackColors.ts:29-32</code>, alpha
+          <code>trackColors.ts:18-22</code>, blend <code>trackColors.ts:4-11</code> (here: canvas
+          <code>lighter</code> / <code>plus-lighter</code>).
+        </li>
+        <li>
+          Draw-in timing: replaces <code>apps/web/src/features/map/previewDrawIn.ts:86-114</code>
+          (onboarding passes, kept as two per route, Q10).
+        </li>
+        <li>
+          Camera: the 1 s overview flight at
+          <code>apps/web/src/features/map/hooks/useMapCameraEffect.ts:59</code> becomes an instant
+          fit behind the loader.
+        </li>
+        <li>
+          Chrome: content column <code>apps/web/src/components/layout/AppLayout.tsx:82-92</code>,
+          dock <code>apps/web/src/components/layout/Dock.tsx:48-100</code> (rail and bar), bottom sheet
+          <code>packages/ui/src/components/BottomSheet.tsx:99-108</code> (position 0.5).
+          Simplified: dashboard charts are grey placeholders; the onboarding scenario shows one
+          card instead of <code>OnboardingFlow</code>.
+        </li>
+        <li>Basemap: painted on a canvas (no tiles), a stand-in for CARTO dark-matter.</li>
+      </ul>
+    </template>
+  </body>
+</html>

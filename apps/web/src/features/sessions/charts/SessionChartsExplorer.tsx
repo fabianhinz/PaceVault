@@ -220,6 +220,7 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
       elevationLoss: session.elevationLoss,
       maxGrade: extremes.maxGrade,
       minGrade: extremes.minGrade,
+      avgGrade: undefined,
       avgPaceSecPerKm: session.avgPace,
       bestPaceSecPerKm: extremes.bestPaceSecPerKm,
       gapSecPerKm: session.gap,
@@ -242,6 +243,21 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
   };
   if (stats.normalizedPower === undefined) {
     powerRest = { header: m.ui_rail_avg(), value: railInt(stats.avgPower) };
+  }
+
+  let gradeRest: { header: string; value: string; secondary?: string } = {
+    header: m.ui_rail_max(),
+    value: railSigned1(stats.maxGrade),
+    secondary: `${m.ui_rail_min()} ${railSigned1(stats.minGrade)}`,
+  };
+  let gradeReadingSecondary = `${m.ui_rail_max()} ${railSigned1(stats.maxGrade)}`;
+  if (railRange !== null) {
+    gradeRest = {
+      header: m.ui_rail_avg(),
+      value: railSigned1(stats.avgGrade),
+      secondary: `${m.ui_rail_max()} ${railSigned1(stats.maxGrade)}`,
+    };
+    gradeReadingSecondary = `${m.ui_rail_avg()} ${railSigned1(stats.avgGrade)}`;
   }
 
   let elevationMetricId: MetricId = 'elevation';
@@ -522,17 +538,13 @@ export const SessionChartsExplorer = (props: SessionChartsExplorerProps) => {
           group={HOVER_GROUP}
           unit="%"
           formatX={formatHoverTime}
-          rest={{
-            header: m.ui_rail_max(),
-            value: railSigned1(stats.maxGrade),
-            secondary: `${m.ui_rail_min()} ${railSigned1(stats.minGrade)}`,
-          }}
+          rest={gradeRest}
           readingAt={(x) => {
             const point = byTime.get(x);
             if (!point) return undefined;
             return {
               value: railSigned1(point.grade),
-              secondary: `${m.ui_rail_max()} ${railSigned1(stats.maxGrade)}`,
+              secondary: gradeReadingSecondary,
             };
           }}
         />

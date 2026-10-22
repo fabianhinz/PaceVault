@@ -1,6 +1,7 @@
 import type { SessionRecord } from '@pacevault/engine/types.ts';
 import { calculateGAP, calculateNormalizedPower } from '@pacevault/engine/normalize.ts';
 import { climbingRate } from '@pacevault/engine/climbs.ts';
+import { averageGradient } from '@pacevault/engine/gradient.ts';
 import { timeWeightedMean } from '@pacevault/engine/sessionDerivation.ts';
 import { movingSeconds } from './movingTime.ts';
 import { summarizeValues } from './seriesSummary.ts';
@@ -25,6 +26,7 @@ export interface RangeStats {
   elevationLoss: number | undefined;
   maxGrade: number | undefined;
   minGrade: number | undefined;
+  avgGrade: number | undefined;
   avgPaceSecPerKm: number | undefined;
   bestPaceSecPerKm: number | undefined;
   gapSecPerKm: number | undefined;
@@ -98,8 +100,11 @@ export const computeRangeStats = (
   }
 
   let vam: number | undefined = undefined;
+  let avgGrade: number | undefined = undefined;
   if (firstIndex !== undefined && lastIndex !== undefined) {
     vam = climbingRate(records, terrain.climbs, firstIndex, lastIndex);
+    const average = averageGradient(records, firstIndex, lastIndex);
+    if (average !== undefined) avgGrade = average * 100;
   }
 
   const hr = summarizeValues(inRange.map((r) => r.hr));
@@ -127,6 +132,7 @@ export const computeRangeStats = (
     elevationLoss: elevation.loss,
     maxGrade: grade.max,
     minGrade: grade.min,
+    avgGrade,
     avgPaceSecPerKm: paceOf(avgSpeed),
     bestPaceSecPerKm: paceOf(speed.max),
     gapSecPerKm: calculateGAP(inRange, gradients),

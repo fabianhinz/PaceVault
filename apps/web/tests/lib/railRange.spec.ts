@@ -45,6 +45,13 @@ describe('computeRangeStats', () => {
     expect(stats.avgPaceSecPerKm).toBe(200);
   });
 
+  it('the average gradient of a selected lap covers only that lap', () => {
+    const records = ride([100, 100, 100, 100, 100], [0, 30, 60, 60, 60]);
+    const terrain = buildSessionTerrain('cycling', records);
+    expect(computeRangeStats(records, { from: 0, to: 2 }, terrain).avgGrade).toBeCloseTo(10, 6);
+    expect(computeRangeStats(records, { from: 2, to: 4 }, terrain).avgGrade).toBe(0);
+  });
+
   it('counts a recorded 0 cadence as a value', () => {
     const records = [0, 1, 2].map((i) => ({ timestamp: i, hr: 100, cadence: 0 }));
     const stats = computeRangeStats(
