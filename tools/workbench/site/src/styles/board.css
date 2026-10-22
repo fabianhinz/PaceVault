@@ -1,0 +1,500 @@
+/* The board: Tailwind and the kit theme (tokens and utilities); the kit components are scanned for
+   classes. Below, the workbench-local styles the island cannot express as utilities: the prose of
+   server-rendered markdown (`.wb-md`: plan, guide, tech.md) and the Tech tab's figures (`.tt-*`,
+   drawn by site/src/scripts/tech.ts). Tailwind scans site/src (source) and the kit (@source),
+   not the backlog's mockup pages. */
+@import 'tailwindcss' source('..');
+@import '@pacevault/ui/theme.css';
+@source '../../../../../packages/ui/src';
+
+:root {
+  color-scheme: dark;
+  --wb-hairline: rgb(255 255 255 / 0.1);
+}
+
+/* No rubber-band bounce and no back-swipe on the page itself (R13). */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface-base);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- prose: Typography h3 / title / body1 for markdown ---------- */
+
+.wb-md {
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+  line-height: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.wb-md > :first-child {
+  margin-top: 0;
+}
+/* the plan's H1, lifted out of the heading flow (renderMarkdown) */
+.wb-md__lead {
+  margin: 0 0 1rem;
+  font-size: var(--text-lg);
+  line-height: 1.75rem;
+  font-weight: 700;
+}
+.wb-md h2,
+.wb-md h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: var(--text-lg);
+  line-height: 1.75rem;
+  font-weight: 700;
+}
+.wb-md h4,
+.wb-md h5 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: var(--text-base);
+  line-height: 1.5rem;
+  font-weight: var(--font-weight-medium);
+}
+.wb-md h4 code {
+  font-weight: normal;
+}
+.wb-md p {
+  margin: 0.5rem 0;
+}
+.wb-md ul,
+.wb-md ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+.wb-md ul {
+  list-style: disc;
+}
+.wb-md ol {
+  list-style: decimal;
+}
+.wb-md li + li {
+  margin-top: 0.25rem;
+}
+.wb-md li > p {
+  margin: 0.25rem 0;
+}
+.wb-md li::marker {
+  color: var(--color-text-quaternary);
+}
+.wb-md strong {
+  font-weight: var(--font-weight-medium);
+}
+.wb-md a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.wb-md code {
+  padding: 0 0.25rem;
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 0.1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.wb-md blockquote {
+  margin: 0.75rem 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--color-border);
+  color: var(--color-text-tertiary);
+}
+.wb-md pre {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-sunken);
+  font: var(--text-xs) / 1.25rem var(--font-mono);
+}
+/* Shiki writes its own background inline */
+.wb-md pre.shiki {
+  background: var(--color-surface-sunken) !important;
+}
+.wb-md pre code {
+  padding: 0;
+  background: none;
+  font: inherit;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+.wb-md hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--wb-hairline);
+}
+.wb-md .wb-table {
+  margin: 0.75rem 0;
+  overflow-x: auto;
+}
+.wb-md table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.wb-md th,
+.wb-md td {
+  min-width: 6rem;
+  padding: 0.375rem 0.75rem 0.375rem 0;
+  border-bottom: 1px solid var(--wb-hairline);
+  text-align: left;
+  vertical-align: top;
+}
+.wb-md th {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.wb-md td code {
+  overflow-wrap: normal;
+}
+.wb-md details {
+  margin: 0.5rem 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+}
+.wb-md details summary {
+  cursor: pointer;
+}
+
+/* inline markdown in rows (checks, questions, findings): no block margins */
+/* long paths and inline code wrap inside narrow columns (the Review side column) */
+.wb-inline {
+  overflow-wrap: anywhere;
+}
+.wb-inline p {
+  display: inline;
+  margin: 0;
+}
+.wb-inline code {
+  padding: 0 0.25rem;
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 0.1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.wb-inline strong {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+/* ---------- Tech tab: tech.md headings as written, figures drawn by tech.ts ---------- */
+
+.tt-md h1 {
+  margin: 0 0 1rem;
+  font-size: var(--text-lg);
+  line-height: 1.75rem;
+  font-weight: 700;
+}
+.tt-md h2 {
+  margin: 2rem 0 0.5rem;
+}
+.tt-md h3 {
+  font-size: var(--text-base);
+  line-height: 1.5rem;
+  font-weight: var(--font-weight-medium);
+}
+.tt-fig {
+  /* the collapsed Stage (Stage.tsx): sunken frame, label row, the graph in its own border */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+  padding: 0.5rem;
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-sunken);
+}
+.tt-fig [data-graph] {
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-md);
+}
+/* Typography overline + caption textTertiary, as the stage's label row */
+.tt-fig__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.25rem;
+  padding: 0 0.25rem;
+}
+.tt-fig__label {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1rem;
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tt-fig__path {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tt-tools {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+  margin: -0.5rem 0 -0.5rem auto;
+}
+/* Button ghost icon */
+.tt-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+.tt-expand:hover {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--color-text-primary);
+}
+.tt-expand:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+.tt-seg {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 2px;
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-md);
+  background: rgb(255 255 255 / 0.05);
+}
+.tt-seg button {
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-tertiary);
+  font: inherit;
+  font-size: var(--text-xs);
+  line-height: 1.5rem;
+  cursor: pointer;
+}
+.tt-seg button[aria-pressed='true'] {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+}
+.tt-seg button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+/* the switch in a frame's label row (R29): as tall as the ghost icon buttons next to it, */
+/* first in the row (R31), never squeezed by a long path */
+.tt-seg--sm {
+  flex-shrink: 0;
+  margin: -0.25rem 0.25rem -0.25rem 0;
+}
+.tt-seg--sm button {
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+/* a section without its actual file: the command, muted, at the end of the planned frame */
+.tt-missing {
+  margin: 0 !important;
+  padding: 0 0.25rem;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+/* Files (R30, R33): the same list on both sides: summary, folders as muted small headings,
+   one row per file in fixed columns (name · note · tag · chip) */
+.tt-files__body {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  border: 1px solid var(--wb-hairline);
+  border-radius: var(--radius-md);
+}
+.tt-fsummary {
+  margin: 0 0 0.25rem !important;
+  padding: 0 0.25rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.tt-folder {
+  margin-top: 0.5rem;
+  padding: 0 0.25rem;
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tt-frow {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) 5.5rem 1.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+  padding: 0 0.25rem 0 0.75rem;
+  border-radius: var(--radius-sm);
+}
+.tt-frow:hover {
+  background: rgb(255 255 255 / 0.05);
+}
+.tt-frow__name {
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+}
+.tt-frow--deleted .tt-frow__name {
+  color: var(--color-text-tertiary);
+  text-decoration: line-through;
+}
+.tt-frow--untouched .tt-frow__name {
+  color: var(--color-text-tertiary);
+}
+.tt-frow__note {
+  overflow: hidden;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tt-frow__tag {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+  text-align: right;
+  white-space: nowrap;
+}
+.tt-chip {
+  min-width: 1.25rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.125rem;
+  text-align: center;
+}
+.tt-chip--A {
+  background: var(--color-status-success-muted);
+  color: var(--color-status-success);
+}
+.tt-chip--M {
+  background: var(--color-status-warning-muted);
+  color: var(--color-status-warning);
+}
+.tt-chip--D {
+  background: var(--color-status-danger-muted);
+  color: var(--color-status-danger);
+}
+/* a frame body in the full-screen stage (R32): scrolls inside, padded like the inline frame */
+.tt-full__frame {
+  overflow: auto !important;
+  padding: 0.5rem;
+}
+.tt-full__frame > .tt-files__body,
+.tt-full__frame > .tt-code {
+  border: 0;
+}
+.tt-mark {
+  margin-left: 0.375rem;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+}
+/* Interfaces: the code blocks sit in the frame like a graph in its border */
+.tt-code > pre {
+  margin: 0 !important;
+}
+.tt-code > pre + pre {
+  margin-top: 0.5rem !important;
+}
+.tt-counts,
+.tt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0 0 !important;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-xs);
+  line-height: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+.tt-check {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.5rem 0 !important;
+}
+.tt-check__ok {
+  color: var(--color-status-success);
+}
+.tt-check__err {
+  color: var(--color-status-danger);
+}
+.tt-sw {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 0.25rem;
+  vertical-align: -2px;
+  border: 1px solid var(--color-gray-600);
+  border-radius: 3px;
+  background: var(--color-surface-elevated);
+}
+.tt-sw--focus {
+  border-color: var(--color-text-primary);
+  border-width: 2px;
+}
+.tt-sw--mod {
+  border-color: var(--color-gray-500);
+  border-width: 2px;
+}
+.tt-sw--added {
+  border-color: var(--color-yellow-400);
+  background: var(--color-status-warning-muted);
+}
+.tt-sw--missing {
+  border: 1px dashed var(--color-gray-500);
+  background: none;
+}
+.tt-placeholder {
+  margin: 0;
+  padding: 1rem;
+  border: 1px dashed var(--wb-hairline);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
+}
+/* zoom and pan: the svg moves by a transform inside a fixed box, no layout shift */
+[data-graph],
+.tt-full__body {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+[data-graph].is-panning,
+.tt-full__body.is-panning {
+  cursor: grabbing;
+}
+[data-graph] svg,
+.tt-full__body svg {
+  display: block;
+  max-width: none;
+  transform-origin: 0 0;
+  user-select: none;
+}

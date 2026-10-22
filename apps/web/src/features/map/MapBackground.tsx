@@ -1,0 +1,115 @@
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { useMatch } from 'react-router-dom';
+import MapGL from 'react-map-gl/maplibre';
+import type { PickingInfo } from '@deck.gl/core';
+import { MAP_MAXZOOM, styles } from './mapStyle.ts';
+import { useMapTracks } from './hooks/useMapTracks.ts';
+import { useGPSBackfill } from './hooks/useGpsBackfill.ts';
+import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
+import { useMapPopupState } from './hooks/useMapPopupState.ts';
+import { useSuppressTapMouseEffect } from './hooks/useSuppressTapMouseEffect.ts';
+import { DeckGLOverlay } from './DeckGLOverlay.tsx';
+import { StudioMarkerPins } from '../studio/markers/StudioMarkerPins.tsx';
+import { StudioTrackPickPopup } from '../studio/markers/StudioTrackPickPopup.tsx';
+import { StudioRoutesPickPopup } from '../studio/markers/StudioRoutesPickPopup.tsx';
+import { useStudioMapPopup } from '../studio/hooks/useStudioMapPopup.ts';
+import { useStudioRoutesPopup } from '../studio/hooks/useStudioRoutesPopup.ts';
+import { SessionsPickPopup } from '../sessions/SessionsPickPopup.tsx';
+import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useWatchPositionEffect } from '@/lib/hooks/useWatchPositionEffect.ts';
+import { useGeolocationCameraEffect } from './hooks/useGeolocationCameraEffect.ts';
+import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
+import type { MapRef } from 'react-map-gl/maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import './map-attribution.css';
+
+export const MapBackground = () => {
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  const mapRef = useRef<MapRef>(null);
+  const pointerFine = useDevice().pointerFine;
+
+  const backfill = useGPSBackfill();
+  const tracks = useMapTracks(backfill.gpsData);
+  const popupState = useMapPopupState(mapRef, tracks);
+  const studioPopup = useStudioMapPopup();
+  const studioRoutesPopup = useStudioRoutesPopup(mapRef);
+  const studioTracks = useStudioMapTracks();
+
+  useWatchPositionEffect();
+  useGeolocationCameraEffect(mapRef);
+  useSuppressTapMouseEffect(mapRef, mapLoaded);
+
+  const match = useMatch('/sessions/:id');
+  useEffect(() => {
+    useMapFocusStore.getState().setOpenedSession(match?.params.id ?? null);
+  }, [match?.params.id]);
+
+  const sessionsOnClick = popupState.onClick;
+  const studioOnClick = studioPopup.onClick;
+  const routesOnClick = studioRoutesPopup.onClick;
+
+  const onMapClick = useCallback(
+    (info: PickingInfo) => {
+      if (info.layer?.id === 'studio-routes') {
+        if (studioTracks.focusedRouteId) {
+          studioOnClick(info);
+        } else {
+          routesOnClick(info);
+        }
+        return;
+      }
+      return sessionsOnClick(info);
+    },
+    [sessionsOnClick, studioOnClick, routesOnClick, studioTracks.focusedRouteId],
+  );
+
+  const interactive = popupState.interactive && !studioPopup.popup && !studioRoutesPopup.popup;
+
+  return (
+    <div className="fixed inset-0 z-0" onPointerLeave={popupState.onPointerLeave}>
+      <MapGL
+        ref={mapRef}
+        onLoad={() => setMapLoaded(true)}
+        mapStyle={styles.dark}
+        maxZoom={MAP_MAXZOOM}
+        initialViewState={{
+          longitude: 10,
+          latitude: 50,
+          zoom: 4,
+        }}
+        scrollZoom={interactive}
+        dragPan={interactive}
+        doubleClickZoom={interactive}
+        keyboard={interactive}
+        touchZoomRotate={interactive}
+        dragRotate={false}
+        pitchWithRotate={false}
+        touchPitch={false}
+        attributionControl={{ compact: true }}
+        style={{ width: '100%', height: '100%' }}
+        cursor={popupState.hoveringTrack ? 'pointer' : undefined}
+      >
+        <DeckGLOverlay
+          key={pointerFine ? 'overlaid' : 'interleaved'}
+          tracks={tracks}
+          onClick={onMapClick}
+          onHover={popupState.onHover}
+          hoveringTrack={popupState.hoveringTrack}
+          gpsData={backfill.gpsData}
+          mapLoaded={mapLoaded}
+        />
+        {studioTracks.focusedRouteId && <StudioMarkerPins routeId={studioTracks.focusedRouteId} />}
+      </MapGL>
+      {studioPopup.popup && (
+        <StudioTrackPickPopup info={studioPopup.popup} onClose={studioPopup.close} />
+      )}
+      {studioRoutesPopup.popup && (
+        <StudioRoutesPickPopup info={studioRoutesPopup.popup} onClose={studioRoutesPopup.close} />
+      )}
+      {popupState.popup && (
+        <SessionsPickPopup info={popupState.popup} onClose={popupState.closePopup} />
+      )}
+    </div>
+  );
+};

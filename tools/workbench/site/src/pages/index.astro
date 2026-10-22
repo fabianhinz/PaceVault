@@ -1,0 +1,20 @@
+---
+import { Board } from '../app/Board.tsx';
+import '../styles/board.css';
+
+// The island reads the board through the dev server's actions (board.read); no static build.
+export const prerender = false;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Workbench</title>
+  </head>
+  <body>
+    <Board client:only="react" />
+  </body>
+</html>

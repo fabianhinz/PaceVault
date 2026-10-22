@@ -1,0 +1,21 @@
+import { cn } from '../lib/cn.ts';
+
+interface IconBadgeProps {
+  show: boolean;
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const IconBadge = (props: IconBadgeProps) => {
+  return (
+    <span className={cn('relative inline-flex', props.className)}>
+      {props.children}
+      {props.show && (
+        <span
+          data-testid="icon-badge"
+          className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-accent"
+        />
+      )}
+    </span>
+  );
+};

@@ -1,0 +1,5 @@
+/* The kit theme (tokens and utilities); the kit components are scanned for classes, the banner
+   page itself is under the Vite root. The app base styles are not part of the banner. */
+@import 'tailwindcss';
+@import '@pacevault/ui/theme.css';
+@source '../../../../packages/ui/src';

@@ -1,0 +1,21 @@
+import { expect, type Page } from './test';
+
+/** Intro → "Get started" → tap a source tile (by its title), which advances on its own. */
+export const startOnboarding = async (page: Page, source: string | RegExp) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Get started' }).click();
+  let name = source;
+  if (typeof source === 'string') name = new RegExp(`^${source}`);
+  await page.getByRole('button', { name }).click();
+};
+
+/** "You and your heart rate" with Male, 50 / 185 bpm, then skips the optional thresholds screen. */
+export const fillOnboardingProfile = async (page: Page) => {
+  await page.getByRole('radio', { name: 'Male', exact: true }).click();
+  await page.getByLabel(/^Resting HR/).fill('50');
+  await page.getByLabel(/^Max HR/).fill('185');
+  const next = page.getByRole('button', { name: 'Continue', exact: true });
+  await next.click();
+  await expect(page.getByLabel(/^FTP/)).toBeVisible();
+  await next.click();
+};

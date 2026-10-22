@@ -1,0 +1,45 @@
+import { m } from '@pacevault/i18n/messages.js';
+import { useTripsStore } from '@/store/trips.ts';
+import { Button } from '@pacevault/ui/components/Button.tsx';
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogDescription,
+} from '@pacevault/ui/components/Dialog.tsx';
+
+export const DeleteTripDialog = (props: {
+  tripId: string;
+  tripName: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDeleted?: () => void;
+}) => {
+  return (
+    <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
+      <DialogContent>
+        <DialogHeader title={m.ui_trips_delete_title()} />
+        <DialogBody>
+          <DialogDescription>{m.ui_trips_delete_desc({ name: props.tripName })}</DialogDescription>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
+            {m.ui_btn_cancel()}
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              useTripsStore.getState().deleteTrip(props.tripId);
+              props.onOpenChange(false);
+              props.onDeleted?.();
+            }}
+          >
+            {m.ui_btn_delete()}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
+  );
+};

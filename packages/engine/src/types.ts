@@ -1,0 +1,140 @@
+// ---------------------------------------------------------------------------
+// Engine-owned types — all pure data definitions used by engine functions
+// ---------------------------------------------------------------------------
+
+export const SPORTS = ['running', 'cycling'] as const;
+export type Sport = (typeof SPORTS)[number];
+export type Gender = 'male' | 'female';
+
+export type FormStatus = 'detraining' | 'fresh' | 'neutral' | 'optimal' | 'overload';
+
+export type InjuryRisk = 'low' | 'moderate' | 'high';
+
+export type LoadState =
+  | 'immature'
+  | 'transitioning'
+  | 'high-risk'
+  | 'moderate-risk'
+  | 'undertraining'
+  | 'sweet-spot';
+
+export type RunningZoneName = 'recovery' | 'easy' | 'tempo' | 'threshold' | 'vo2max';
+
+export type RaceDistance = '5k' | '10k' | 'half-marathon' | 'marathon';
+
+export type PBCategory = 'peak-power' | 'fastest-distance' | 'longest' | 'most-elevation';
+
+// ---------------------------------------------------------------------------
+// Interfaces
+// ---------------------------------------------------------------------------
+
+export type SessionSource =
+  | { kind: 'file' }
+  | { kind: 'intervals'; activityId: string }
+  | { kind: 'demo' };
+
+export interface TrainingSession {
+  id: string;
+  name?: string;
+  sport: Sport;
+  date: number;
+  duration: number;
+  distance?: number;
+  avgHr?: number;
+  maxHr?: number;
+  avgPower?: number;
+  normalizedPower?: number;
+  avgCadence?: number;
+  avgPace?: number;
+  elevationGain?: number;
+  elevationLoss?: number;
+  subSport?: string;
+  avgSpeed?: number;
+  maxSpeed?: number;
+  gap?: number;
+  tss: number;
+  stressMethod: 'tss' | 'trimp' | 'duration';
+  isPlanned: boolean;
+  hasDetailedRecords: boolean;
+  fingerprint?: string;
+  derivationVersion: number;
+  createdAt: number;
+  isNew?: boolean;
+  source: SessionSource;
+}
+
+export type SessionFields = Omit<TrainingSession, 'id' | 'createdAt' | 'isNew' | 'source'>;
+
+export interface SessionRecord {
+  timestamp: number;
+  hr?: number;
+  power?: number;
+  cadence?: number;
+  speed?: number;
+  lat?: number;
+  lng?: number;
+  elevation?: number;
+  distance?: number;
+  timerTime?: number;
+}
+
+export interface SessionLap {
+  lapIndex: number;
+  startTime: number;
+  endTime: number;
+  totalTimerTime: number;
+  totalMovingTime?: number;
+  distance?: number;
+  minHr?: number;
+  maxHr?: number;
+  intensity?: string;
+}
+
+export interface DailyMetrics {
+  date: string;
+  tss: number;
+  ctl: number;
+  atl: number;
+  tsb: number;
+  acwr: number;
+}
+
+export interface RunningZone {
+  name: RunningZoneName;
+  label: string;
+  minPace: number; // sec/km (slower = higher number)
+  maxPace: number; // sec/km (faster = lower number)
+  color: string;
+}
+
+export interface PersonalBest {
+  sport: Sport;
+  category: PBCategory;
+  window: number;
+  value: number;
+  sessionId: string;
+  date: number;
+}
+
+// ---------------------------------------------------------------------------
+// GPS types
+// ---------------------------------------------------------------------------
+
+export interface GPSPoint {
+  lat: number;
+  lng: number;
+}
+
+export interface GPSBounds {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+
+export interface SessionGPS {
+  sessionId: string;
+  encodedPolyline: string;
+  pointCount: number;
+  bounds: GPSBounds;
+}
