@@ -82,3 +82,5 @@ All backlog work lives in `tools/workbench/backlog/<item>/` (`plan.md`, `tech.md
    The bare built-ins work from the root as well: `vp check` (whole workspace), `vp test -- --run` (all test projects), `vp build` (apps/web). Playwright has no root config: run e2e with `vp run e2e` or `vp -C apps/web exec playwright test`. The root `vp run check` and `vp run test` compile the translations first (`vp run -F @pacevault/i18n compile`); before a bare `vp check` after translation keys changed, run that compile (the message types come from the generated files).
 
 4. **Review**: every implemented plan delivers `tools/workbench/backlog/<item>/review/index.html` from `tools/workbench/shared/review-template.html`: each change labelled (C1, C2, …) with before/after screenshots (desktop and 390 px, via `vp run workbench:capture`) and 1–2 lines (what, `path:line`, which decision). The item folder is cleaned up only after the owner accepts (`tools/workbench/CLAUDE.md` Acceptance).
+
+@docs/conventions/CLAUDE.md
