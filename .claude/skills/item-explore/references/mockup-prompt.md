@@ -60,9 +60,10 @@ The page is `tools/workbench/backlog/{item}/mockup/index.html`. Start from the w
 - **Scripts** (only where markup and `data-when` can't do it):
   - `MockupShell.onChange((state, screens) => …)` on every state change; `screens` are the two roots (in iframe mode, the two `<html>` elements);
   - `MockupShell.onAction('<button extra id>', fn)`;
-  - `MockupShell.set('scenario', 'cold')` changes one key from a script (e.g. a click inside the frame);
+  - `MockupShell.set('scenario', 'cold')` changes one key from a script outside the frames (e.g. an `onAction` handler);
   - `MockupShell.setOptions('<choice extra id>', [{id, label}])` replaces a choice's options (the value stays if still present, else the first option);
   - `MockupShell.hydrate({variant, scenario, …})` sets several keys in one render.
+- **State flows one way:** the toolbar's state applies to both frames; an interaction inside one frame (a click, a popover, a selection, hover, the camera) stays local to that frame. A frame never calls `set` or `hydrate` and never shares state with the other frame; the toolbar may show a stale value after an in-frame change. A toolbar change of a key resets that key in both frames.
 - **Readability:** the shell scales a frame only while the scale stays ≥ 0.86, otherwise shows it at 1:1 and the stage scrolls; it offers "both" only when both fit. Don't fight this with your own scaling.
 
 ## Rules for the screen content

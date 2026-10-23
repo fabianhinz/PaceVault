@@ -4,6 +4,7 @@ import { MapControlsBar } from '@/features/map/MapControlsBar.tsx';
 import type { SessionLap, SessionRecord, TrainingSession } from '@pacevault/engine/types.ts';
 import { ColorByControl } from './ColorByControl.tsx';
 import { LapsControl } from './LapsControl.tsx';
+import { MapViewControl } from './MapViewControl.tsx';
 import { useSessionColorModes } from './hooks/useSessionColorModes.ts';
 
 interface SessionMapControlsProps {
@@ -22,6 +23,7 @@ export const SessionMapControls = (props: SessionMapControlsProps) => {
 
   return (
     <MapControlsBar testId="map-pills">
+      <MapViewControl />
       <ColorByControl
         sport={props.session.sport}
         effective={effective}

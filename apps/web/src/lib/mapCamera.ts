@@ -1,11 +1,23 @@
+import type { MapView } from '@/store/mapControls.ts';
+
 export type MapCameraTarget =
   | { kind: 'overview' }
-  | { kind: 'session'; sessionId: string; lapIndex: number | null }
+  | { kind: 'session'; sessionId: string; lapIndex: number | null; view: MapView }
   | { kind: 'trip'; tripKey: string }
   | { kind: 'studioTab' }
   | { kind: 'studioRoute'; routeId: string };
 
-export type MapCameraFit = 'overview' | 'session' | 'lap' | 'lapClose' | 'trip' | 'studio';
+export type MapCameraFit =
+  | 'overview'
+  | 'session'
+  | 'lap'
+  | 'lapClose'
+  | 'tilt'
+  | 'flatten'
+  | 'trip'
+  | 'studio';
+
+const SESSION_ZOOM_OUT_LEVELS = 2;
 
 export interface MapCameraObservation {
   target: MapCameraTarget;
@@ -98,6 +110,7 @@ const sameTargetFit = (
 ): MapCameraFit | null => {
   const target = obs.target;
   if (target.kind === 'session' && previous.kind === 'session') {
+    if (target.view !== previous.view) return 'tilt';
     return lapChangeFit(state, previous.lapIndex, target.lapIndex, obs.lapCloseCount);
   }
   if (target.kind === 'studioTab' && refitRequested) return studioFit(obs);
@@ -119,6 +132,9 @@ export const nextMapCamera = (state: MapCameraState, obs: MapCameraObservation):
   if (previous === null || !sameSubject(previous, obs.target)) {
     pending = arrivalFit(previous, obs, refitRequested);
     refitRequest = obs.refitRequest;
+    if (pending === null && previous?.kind === 'session' && previous.view === '3d') {
+      pending = 'flatten';
+    }
   } else {
     pending = sameTargetFit(state, previous, obs, refitRequested);
     if (refitHandledBy(obs.target)) refitRequest = obs.refitRequest;
@@ -144,7 +160,7 @@ export const nextMapCamera = (state: MapCameraState, obs: MapCameraObservation):
 };
 
 export const mapCameraFitBlocked = (fit: MapCameraFit, obs: MapCameraObservation): boolean => {
-  if (fit === 'studio') return false;
+  if (fit === 'studio' || fit === 'tilt' || fit === 'flatten') return false;
   return obs.sessionDataBlocked || obs.progressOverlayOpen;
 };
 
@@ -153,3 +169,11 @@ export const settleMapCameraFit = (state: MapCameraState): MapCameraState => ({
   pending: null,
   initialDone: true,
 });
+
+export const sessionMinZoom = ({
+  fitZoom,
+  currentZoom,
+}: {
+  fitZoom: number;
+  currentZoom: number;
+}): number => Math.min(fitZoom - SESSION_ZOOM_OUT_LEVELS, currentZoom);

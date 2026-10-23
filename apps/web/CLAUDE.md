@@ -1,7 +1,7 @@
 # @pacevault/web
 
 **WHY:** The PaceVault PWA: maps, analyses and stores fitness/GPS activities in the browser.
-**WHAT:** A pure client-side SPA with no backend server. The browser _is_ the database. Three external dependencies exist: [Open-Meteo](https://open-meteo.com/) for historical weather data — fetched lazily on session detail view and cached in IndexedDB (`session-weather` store); CARTO's vector basemap tiles, whose style is vendored in `src/features/map/darkMatter.style.json` so the map still paints offline (tiles, glyphs and sprites are cached by the service worker as `carto-tiles`, `carto-assets`); and [intervals.icu](https://intervals.icu/) as an **opt-in** activity source — the user pastes their own API key, and once connected new activities arrive automatically. `src/lib/intervals.ts` is the only call site, and responses are never cached.
+**WHAT:** A pure client-side SPA with no backend server. The browser _is_ the database. Four external dependencies exist: [Open-Meteo](https://open-meteo.com/) for historical weather data — fetched lazily on session detail view and cached in IndexedDB (`session-weather` store); CARTO's vector basemap tiles, whose style is vendored in `src/features/map/darkMatter.style.json` so the map still paints offline (tiles, glyphs and sprites are cached by the service worker as `carto-tiles`, `carto-assets`); [Mapterhorn](https://mapterhorn.com/) terrain (DEM) tiles, fetched only while the 3D map view is on and cached by the service worker as `mapterhorn-dem`; and [intervals.icu](https://intervals.icu/) as an **opt-in** activity source — the user pastes their own API key, and once connected new activities arrive automatically. `src/lib/intervals.ts` is the only call site, and responses are never cached.
 
 Shared code rules (named exports, arrow functions, no destructuring, Zod, no ternaries in `.ts`, …) are in the root `CLAUDE.md` §2. Paths below are relative to `apps/web/`.
 
@@ -25,7 +25,7 @@ Shared code rules (named exports, arrow functions, no destructuring, Zod, no ter
 
 ## 2. App Rules
 
-- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never call an external API outside the three documented integrations above (Open-Meteo, CARTO, intervals.icu). Each is opt-in or lazily triggered — intervals.icu only once the user enters a key — and the app stays fully usable offline without any of them.
+- **Local-first absolute rule**: IDs are generated via `v4()` from the `uuid` package. Never call an external API outside the four documented integrations above (Open-Meteo, CARTO, Mapterhorn, intervals.icu). Each is opt-in or lazily triggered — intervals.icu only once the user enters a key — and the app stays fully usable offline without any of them.
 - **Pure engine**: All business logic lives in `@pacevault/engine` (`packages/engine`) as pure functions; the app wires it to stores and UI.
 - **Headless UI**: Import Radix primitive → wrap in `@pacevault/ui` (`packages/ui/src/components/`) → style with Tailwind. Kit rules: `packages/ui/CLAUDE.md`.
 - **Reuse UI components**: Before inlining layout or UI patterns in feature code, check `@pacevault/ui/components/` for existing components (`CardHeader`, `StatTile`, `ValueSkeleton`, etc.). Extract new shared components when a pattern appears in 2+ places. App-bound components (`MetricLabel`, `ErrorFallbacks`, `ImportProgressOverlay`, `PaceRange`, `ToastHost`) live in `src/components/`.

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>3D session map · Mockup</title>
+    <link rel="stylesheet" href="../../../shared/mockup-shell.css" />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.css" />
+    <link rel="stylesheet" href="screen.css" />
+    <style>
+      /* host-only: the Tech and Notes panes */
+      .tech-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--text-xs);
+      }
+      .tech-table th,
+      .tech-table td {
+        padding: var(--spacing-1) var(--spacing-1);
+        border-bottom: 1px solid var(--wb-hairline);
+        text-align: left;
+        vertical-align: top;
+      }
+      .tech-table th {
+        color: var(--color-text-tertiary);
+        font-weight: var(--font-weight-medium);
+      }
+      .tech h3 {
+        margin: var(--spacing-4) 0 var(--spacing-1);
+        color: var(--color-text-primary);
+        font-size: var(--text-sm);
+      }
+      .tech ul {
+        margin: 0;
+        padding-left: var(--spacing-4);
+      }
+      .tech li {
+        margin: 2px 0;
+      }
+      .tech code,
+      .notes-pane code {
+        font-size: var(--text-xs);
+      }
+    </style>
+  </head>
+  <body>
+    <script type="application/json" id="mockup-config">
+{
+  "title": "3D session map",
+  "frame": "iframe",
+  "variants": [
+    {
+      "id": "D",
+      "label": "D · MapLibre terrain"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "hilly",
+      "label": "Lechlauf Ultra (your FIT) · 53.8 km"
+    },
+    {
+      "id": "flat",
+      "label": "Flat run · 11 km"
+    },
+    {
+      "id": "noelev",
+      "label": "Same run without elevation"
+    },
+    {
+      "id": "offline",
+      "label": "Offline · no DEM tiles"
+    },
+    {
+      "id": "loading",
+      "label": "Records loading"
+    }
+  ],
+  "extras": [
+    {
+      "id": "mode3d",
+      "type": "toggle",
+      "label": "3D",
+      "default": "off"
+    },
+    {
+      "id": "colorBy",
+      "type": "choice",
+      "label": "Color by",
+      "default": "sport",
+      "options": [
+        {
+          "id": "sport",
+          "label": "Sport color"
+        },
+        {
+          "id": "hr",
+          "label": "HR zones"
+        },
+        {
+          "id": "power",
+          "label": "Power zones"
+        },
+        {
+          "id": "pace",
+          "label": "Pace zones"
+        },
+        {
+          "id": "speed",
+          "label": "Speed"
+        }
+      ]
+    },
+    {
+      "id": "popover",
+      "type": "toggle",
+      "label": "Map view popover",
+      "default": "off"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "Q1",
+      "title": "Variants in the mockup"
+    },
+    {
+      "id": "Q2",
+      "title": "DEM service"
+    },
+    {
+      "id": "Q3",
+      "title": "Camera presets"
+    },
+    {
+      "id": "Q4",
+      "title": "Replay along the track"
+    },
+    {
+      "id": "Q5",
+      "title": "Terrain exaggeration"
+    },
+    {
+      "id": "Q6",
+      "title": "3D default and persistence"
+    },
+    {
+      "id": "Q7",
+      "title": "Offline / DEM tiles not cached"
+    },
+    {
+      "id": "Q8",
+      "title": "3D pill label"
+    },
+    {
+      "id": "Q9",
+      "title": "Where the replay control lives"
+    },
+    {
+      "id": "Q10",
+      "title": "Camera during replay"
+    },
+    {
+      "id": "Q11",
+      "title": "Terrain shading vs the no-grey map rule"
+    },
+    {
+      "id": "Q12",
+      "title": "Track width in 3D"
+    },
+    {
+      "id": "Q13",
+      "title": "Which variant wins"
+    },
+    {
+      "id": "Q14",
+      "title": "How the session track is drawn"
+    },
+    {
+      "id": "Q15",
+      "title": "When terrain is shown"
+    },
+    {
+      "id": "Q16",
+      "title": "Offline and caching of DEM tiles"
+    },
+    {
+      "id": "Q17",
+      "title": "Free rotate and pitch in 3D"
+    },
+    {
+      "id": "Q18",
+      "title": "Zoom-out limit on the session map"
+    },
+    {
+      "id": "Q19",
+      "title": "Play wins over chart scrub"
+    },
+    {
+      "id": "Q20",
+      "title": "Replay speed control"
+    },
+    {
+      "id": "Q21",
+      "title": "Map input during replay"
+    },
+    {
+      "id": "Q22",
+      "title": "Camera during replay while flat"
+    },
+    {
+      "id": "Q23",
+      "title": "Modifier + drag orbits the camera"
+    },
+    {
+      "id": "Q24",
+      "title": "Modifier + drag while flat: rotate only"
+    },
+    {
+      "id": "Q25",
+      "title": "Orbit pivot under the cursor"
+    },
+    {
+      "id": "Q26",
+      "title": "Where the orbit gesture applies"
+    },
+    {
+      "id": "Q27",
+      "title": "Click in 3D does nothing"
+    },
+    {
+      "id": "Q28",
+      "title": "Double-click in 3D"
+    },
+    {
+      "id": "Q29",
+      "title": "Lap select in 3D keeps the angle"
+    },
+    {
+      "id": "Q30",
+      "title": "Dot and chase camera glide"
+    },
+    {
+      "id": "Q31",
+      "title": "Touch orbit"
+    },
+    {
+      "id": "Q32",
+      "title": "Replay moves to its own item"
+    },
+    {
+      "id": "Q33",
+      "title": "Max tilt in 3D"
+    },
+    {
+      "id": "Q34",
+      "title": "Cut scope: 2D untouched"
+    },
+    {
+      "id": "Q35",
+      "title": "2D behaves exactly as today"
+    },
+    {
+      "id": "Q36",
+      "title": "2D / 3D control shows the current mode"
+    },
+    {
+      "id": "Q37",
+      "title": "Camera tilt when switching to 3D"
+    },
+    {
+      "id": "Q38",
+      "title": "No further cuts from 3D"
+    },
+    {
+      "id": "Q39",
+      "title": "Chart dot in 3D"
+    },
+    {
+      "id": "Q40",
+      "title": "Click on the track in 3D selects the lap"
+    }
+  ]
+}
+    </script>
+
+    <template id="mockup-screen">
+      <div id="map" class="map"></div>
+      <div id="mapPins" class="map-pins"></div>
+      <div id="mapError" class="map-error floating" hidden><span class="t-caption c-primary"></span></div>
+      <main id="main" class="main"></main>
+      <div id="pills" class="pills-anchor"></div>
+      <div id="popHost"></div>
+      <div id="dock"></div>
+      <script src="srcdoc-worker-fix.js"></script>
+      <script src="https://unpkg.com/maplibre-gl@5.18.0/dist/maplibre-gl.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/deck.gl@9.2.9/dist.min.js"></script>
+      <script src="data/darkMatter.style.js"></script>
+      <script src="data/tracks.js"></script>
+      <script src="core.js"></script>
+      <script src="ui.js"></script>
+      <script src="maps.js"></script>
+      <script src="screen.js"></script>
+    </template>
+
+    <template id="mockup-notes"><div class="notes-pane">
+<p><strong>Variant D, round 5: cut scope</strong> (Q34–Q38). The 2D map is today's, untouched. 3D is a switch in a "Map view" control built like Color by. Replay is its own item (Q32). Sources: <code>research/tech.md</code> §1c, §2, §4 V5.</p>
+<table class="tech-table">
+  <thead>
+    <tr><th></th><th>2D (default per visit, Q6) — today, unchanged</th><th>3D</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Basemap</td><td>CARTO dark-matter</td><td>same + Mapterhorn terrain ×1 (Q5) + black/white hillshade (Q11)</td></tr>
+    <tr><td>Track, laps, dot</td><td>deck.gl <code>session-detail</code>, <code>lap-hover</code>, <code>lap-casing</code>, <code>lap-selected</code>, <code>hovered-point</code></td><td>MapLibre line/circle layers on the terrain, track min 3 px (Q12); deck.gl draws nothing session-related</td></tr>
+    <tr><td>Map click / tap on the track</td><td>lap select (deck picking, 25 px)</td><td>lap select, same tolerance (Q40); beside the track nothing</td></tr>
+    <tr><td>Lap select</td><td>fits the lap, max zoom 16</td><td>fits the lap at the current pitch and bearing (Q29)</td></tr>
+    <tr><td>Gestures</td><td>pan, zoom, two-finger twist, Shift+drag box zoom, double-click zoom</td><td>+ right-drag and two-finger tilt (Q17, Q31), Shift/Ctrl/Cmd+drag orbit around the cursor (Q23, Q25); double-click does nothing (Q28)</td></tr>
+    <tr><td>Camera</td><td>fit, north up, pitch 0</td><td>on entry: fit, north up, 30° (Q37); max tilt 60° (Q33); zoom-out limit fit − 2 (Q18, 3D only)</td></tr>
+    <tr><td>Chart dot</td><td>jumps</td><td>jumps (Q39)</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Try it.</strong> Click the "2D" pill: "Map view" popover on desktop, drawer on the phone, with 2D · 3D. In 3D: Shift, Ctrl or Cmd + drag orbits around the point you grab; right-drag (desktop) or two fingers (phone) rotate and tilt. Click a chart, the lap strip or the track (2D and 3D) to select a lap.</p>
+
+<p><strong>Extras.</strong> No open questions left in the mockup; Q28, Q33, Q37 and Q39 are fixed behaviour. "Offline · no DEM tiles" shows the 3D item disabled with "No terrain data" (Q7).</p>
+
+<p><strong>State flows one way.</strong> The toolbar sets both frames. Anything done inside a frame (Map view 2D/3D, popover, lap select/step/clear, chart hover, camera) stays in that frame and never writes back to the toolbar, so the toolbar can show a stale value after an in-frame change. A toolbar change applies to both frames again.</p>
+
+<p><strong>Data.</strong> Your FIT file "Lechlauf Ultra" (trail run, Sep 19, 2026), parsed with the app's own <code>parseFitFile</code> (<code>apps/web/src/parsers/fit.ts:113</code>): 37,809 records at 1 s, 53.8 km, 10 h 30 min, 60 device laps, 853–2,129 m, HR, power, cadence, speed, GPS. Weather and training-effect rows are placeholders. Flat run: <code>apps/web/src/features/demo/demoRoutes.json</code> "englischer-garten" with simulated records.</p>
+
+<p><strong>Components</strong> (copied classes, real values):</p>
+<ul>
+  <li>Map view control: built like <code>apps/web/src/features/sessions/session/ColorByControl.tsx:111-134</code> (FloatingPill h-11 with icon, current mode and chevron; <code>ResponsivePopover</code> with a caption header on desktop, <code>RadioGroup</code> gap-1, items rounded-lg px-2 py-2 with label + one line of copy, an unavailable item disabled with its reason).</li>
+  <li>Pills: <code>packages/ui/src/components/FloatingPill.tsx:5-20</code>; bar <code>apps/web/src/features/map/MapControlsBar.tsx:8-44</code>; Laps pill and stepper <code>apps/web/src/features/sessions/session/LapsControl.tsx:387-394</code>.</li>
+  <li>Lap bands: <code>apps/web/src/components/charts/LapBands.tsx</code>; laps row and strip: <code>apps/web/src/features/sessions/session/LapsRow.tsx</code>, <code>apps/web/src/features/sessions/session/LapStrip.tsx:25</code>.</li>
+  <li>Dock <code>apps/web/src/components/layout/Dock.tsx:48-100</code>; header <code>apps/web/src/features/sessions/SessionHeader.tsx:19</code>; summary <code>apps/web/src/features/sessions/session/SessionSummaryCard.tsx:15</code>; charts <code>packages/ui/src/components/ChartsCard.tsx:14,47</code>; sheet <code>packages/ui/src/components/BottomSheet.tsx:52</code>; popover <code>packages/ui/src/components/Popover.tsx:12</code> / drawer <code>packages/ui/src/components/Dialog.tsx:121</code>.</li>
+  <li>2D map layers and handlers: <code>apps/web/src/features/map/DeckGLOverlay.tsx:116-141,202-274,352-371</code>, unchanged.</li>
+</ul>
+
+<p><strong>New parts</strong>: the Map view control (pill + popover/drawer), the 3D MapLibre track/lap/dot layers, the modifier-drag orbit.</p>
+
+<p><strong>Mockup only.</strong> <code>srcdoc-worker-fix.js</code>: inside the board's srcdoc frames MapLibre's workers drop every message (origin <code>"null"</code> vs <code>http://localhost:4321</code>); the app is a real page and does not need it.</p>
+</div>
+</template>
+    <template id="mockup-panel-tech" data-label="Tech"><div class="tech">
+<p>Claims from <code>research/tech.md</code> (§ cited); <em>verified here</em> = observed while building this mockup with the real libraries.</p>
+<section data-tech="D">
+  <h3>D · MapLibre terrain, 3D as a switch (Q13, Q34)</h3>
+  <p><strong>2D code untouched.</strong> The 2D session map is today's: deck.gl <code>session-detail</code> PathLayer, lap layers and <code>hovered-point</code> through <code>MapboxOverlay</code> with <code>pickingRadius</code> 25 and the pointer cursor on the track, today's flags (<code>MapBackground.tsx:86-88</code>: no drag rotate, no pitch), Shift+drag box zoom, double-click zoom, no zoom-out limit, the chart dot jumps.</p>
+  <p><strong>3D, two code paths.</strong> In 3D the session track, laps and hover dot are MapLibre <code>line</code>/<code>circle</code> layers (one GeoJSON feature per record segment, <code>tolerance: 0</code>) draped on Mapterhorn terrain; deck.gl draws nothing session-related. Track, lap, hover and pick logic exist twice (deck in 2D, MapLibre in 3D): the accepted cost of keeping 2D untouched (Q34).</p>
+  <h3>Pros</h3>
+  <ul><li>2D risk-free; the 3D look every comparable product has (ux.md §1); MapLibre ships terrain, no new deps (§4 V5).</li></ul>
+  <h3>Cons</h3>
+  <ul><li>Fourth external service (<code>apps/web/CLAUDE.md:28</code>); a second rendering path for the session layers; heavier on phones; offline needs cached DEM tiles (§4 V5). Track height is the DEM's, not the device's (§3).</li></ul>
+  <h3>Tech (3D)</h3>
+  <ul>
+    <li><strong>Switch (Q36).</strong> Pill shows the current mode ("2D" / "3D"); popover/drawer "Map view" with 2D "Flat map" and 3D "Terrain from Mapterhorn"; 3D disabled with "No terrain data" when DEM tiles are unavailable (Q7).</li>
+    <li><strong>Terrain.</strong> <code>raster-dem</code> Mapterhorn (<code>tiles.mapterhorn.com/{z}/{x}/{y}.webp</code>, Terrarium, 512 px, <code>maxzoom</code> 16: z17 answered 404 along the route) + <code>setTerrain({ exaggeration: 1 })</code> (Q5) + hillshade under the roads: shadow <code>#000000</code>, highlight white 10 %, <code>hillshade-exaggeration</code> 0.6 (Q11; the no-grey map rule of <code>apps/web/CLAUDE.md</code> §3 accepted for shading). Added on entering 3D, removed on leaving (Q15). SW <code>CacheFirst</code> cache <code>mapterhorn-dem</code> like <code>carto-tiles</code> (Q16; described, not in the mockup).</li>
+    <li><strong>Entering 3D (Q37).</strong> Fit to the session, north up, 30° tilt, 1.2 s like today's session fit. <em>Measured on an Apple M5:</em> building the 37,808 segment features, the GeoJSON source and the terrain costs one ~120 ms main-thread frame; idle after ~1.7 s including the ease. On mid-range phones this frame is likely several times longer (not measured) — a risk of per-segment features for long activities.</li>
+    <li><strong>Camera fits with terrain.</strong> <em>Verified here:</em> MapLibre's <code>easeTo</code> cannot take a target elevation (5.18): it samples the centre height from DEM tiles of the zooms it passes (0 m where a tile is not loaded) and, without <code>freezeElevation</code>, keeps that value — the camera ended inside the mountain; with <code>freezeElevation</code> plus a height settle afterwards the lap drifted into place, more the higher the lap (10–12 px on laps at 1,940–2,070 m, ~2 px in the 850 m valley). Now the target is computed without moving the map (<code>cameraForBounds</code> with the page padding kept on the map, 0.4 zoom out when pitched) and gets the ground height at its centre (<code>queryTerrainElevation</code>, fallback median record elevation); the ease is one <code>jumpTo</code> per frame interpolating centre (screen-linear weight, as MapLibre's own ease), zoom, pitch, bearing and <code>elevation</code>, with centre clamping off for its duration. Measured: the lap's screen box moves toward its final place every frame (≤ 0.7 px back-steps) on valley and summit laps, 0 px correction after the ease. A user gesture cancels it.</li>
+    <li><strong>Lap step jumped first (owner report).</strong> Cause: every fit began with <code>setPadding({0})</code> (part of the round-2 pitched-fit workaround), itself a camera jump to "somewhere else", and the lap highlight came from a <code>setData</code> through the GeoJSON worker, a few frames late. Now the padding sits on the map and changes only with the layout, and the lap highlight / hover is <code>setFeatureState</code> on the track's segment features (visible the next frame). Recorded per frame for ‹ and › in 2D and 3D: the camera moves monotonically to the target and the new lap is highlighted from the first frame.</li>
+    <li><strong>Laps (Q29, Q40).</strong> Hover white 3 px, selected white casing (12 m × 1.6, min 9 px) + lap in track colours (min 5 px), rest dimmed 0.8 — draped. Click/tap on the track selects the lap under it like 2D: <code>queryRenderedFeatures</code> in a 25 px box (<code>PICK_RADIUS</code>) on <code>session-detail-line</code>, each segment feature carries its record index, the nearest hit → <code>lapIndexAtRecord</code>; hover shows the pointer and the lap highlight; beside the track nothing happens. Selecting frames the lap at the current pitch and bearing (max zoom 16, 800 ms like today's lap fit); deselect frames the session at the same angle (1.2 s). </li>
+    <li><strong>Lap switch cost (app risk).</strong> <em>Measured on an Apple M5 (both frames):</em> the first version rebuilt all 37,808 GeoJSON features to dim the rest of the track when a lap was selected or cleared: a ~195 ms frozen frame in 3D. Now every feature carries its full and dimmed colour and the dim is a <code>setPaintProperty('line-color', ['get', 'd'])</code>: select/clear/switch ≈ 17–32 ms synchronous, no frame over 50 ms in 2D or 3D. The app's planned 3D layers need the same: never rebuild the track source for a lap change, and show the lap through feature state, not setData/setFilter. The app's lap fit (<code>useMapCameraEffect.ts</code>, <code>fitBounds</code> 800 ms) is a MapLibre ease: on terrain it hits the same elevation sampling (camera under ground or drift that grows with height) and needs the elevation-aware ease above in 3D; its 2D path is unaffected.</li>
+    <li><strong>Orbit (Q23, Q25, Q26), 3D only.</strong> Shift, Ctrl or Cmd + left drag: horizontal turns (0.4°/px), vertical tilts (0.3°/px) around the map point grabbed (terrain-aware <code>map.unproject</code>); <code>jumpTo({ bearing, pitch })</code> then <code>panBy</code> re-anchoring; moves that would shift the centre more than 20 km are rejected (pivot near the horizon). Box zoom is off in 3D only; in 2D Shift+drag is box zoom as today. Detail pages only.</li>
+    <li><strong>Touch (Q31).</strong> Two-finger twist rotates around the finger midpoint, two-finger vertical drag tilts around the map centre (<em>verified in maplibre-gl 5.18.0</em>: <code>TwoFingersTouchRotateHandler</code> returns <code>pinchAround</code>; <code>TwoFingersTouchPitchHandler</code> returns only <code>pitchDelta</code>, so <code>around = transform.centerPoint</code>). Twist already rotates in today's 2D (<code>touchZoomRotate</code> on).</li>
+    <li><strong>Limits.</strong> Max tilt 60° (Q33, MapLibre's default; above 60° is experimental, tech.md §1a). Zoom-out limit fit − 2 in 3D only (Q18; dropped in 2D by Q35). Double-click does nothing in 3D (Q28).</li>
+    <li><strong>Chart dot (Q39).</strong> Jumps to the record under the chart cursor in 2D and 3D.</li>
+    <li><strong>Record vs DEM height</strong> (your file, every 5th record, z14): median +3.4 m, 5–95 % −12.8 … +18.1 m, extremes ±43 m; draping hides it, the chart keeps the record elevation.</li>
+    <li>Effort: L. Risks: two code paths for session layers; tile volume (≈20–60 DEM tiles per pitched view, estimate, §1c); <code>@deck.gl/maplibre</code> 9.4 does not drape deck layers either (RFC #10758 open), so 3D stays on MapLibre layers.</li>
+  </ul>
+</section>
+</div>
+</template>
+
+    <script src="../../../shared/mockup-shell.js"></script>
+    <script src="host.js"></script>
+  </body>
+</html>

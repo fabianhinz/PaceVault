@@ -9,13 +9,9 @@ import {
 } from '../helpers/seed';
 import { uploadFitFiles } from '../helpers/upload';
 import { expectFilterInputStaysPut } from '../helpers/filters';
-import { exposeMap } from '../helpers/map';
+import { MAP_LAUNCH_OPTIONS, exposeMap } from '../helpers/map';
 
-test.use({
-  launchOptions: {
-    args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
-  },
-});
+test.use({ launchOptions: MAP_LAUNCH_OPTIONS });
 
 const SCAN_STEP = 20;
 const SCAN_BOTTOM = 400;

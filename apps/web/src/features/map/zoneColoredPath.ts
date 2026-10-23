@@ -13,6 +13,7 @@ export interface DetailPath {
   path: [number, number][];
   recordIndices: number[];
   color: Color | Color[];
+  elevations: Array<number | null>;
 }
 
 const FALLBACK_COLOR: Color = [160, 160, 160, 80];
@@ -50,13 +51,15 @@ const smoothedValues = (
 const validPath = (records: SessionRecord[]) => {
   const path: [number, number][] = [];
   const recordIndices: number[] = [];
+  const elevations: Array<number | null> = [];
   records.forEach((r, index) => {
     if (isValidCoordinate(r) && r.lng != null && r.lat != null) {
       path.push([r.lng, r.lat]);
       recordIndices.push(index);
+      elevations.push(r.elevation ?? null);
     }
   });
-  return { path, recordIndices };
+  return { path, recordIndices, elevations };
 };
 
 const buildColoredPath = (
@@ -70,7 +73,12 @@ const buildColoredPath = (
     const record = records[index];
     if (record) colors.push(colorAt(record, index));
   }
-  return { path: valid.path, recordIndices: valid.recordIndices, color: colors };
+  return {
+    path: valid.path,
+    recordIndices: valid.recordIndices,
+    color: colors,
+    elevations: valid.elevations,
+  };
 };
 
 export const buildZoneColoredPath = (
@@ -108,5 +116,10 @@ export const buildSportColoredPath = (
 ): DetailPath | null => {
   const valid = validPath(records);
   if (valid.path.length < 2) return null;
-  return { path: valid.path, recordIndices: valid.recordIndices, color: sportColor };
+  return {
+    path: valid.path,
+    recordIndices: valid.recordIndices,
+    color: sportColor,
+    elevations: valid.elevations,
+  };
 };

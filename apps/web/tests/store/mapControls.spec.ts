@@ -8,6 +8,7 @@ describe('useMapControlsStore', () => {
       trackColorMode: 'sport',
       selectedLapIndex: null,
       hoveredLapIndex: null,
+      sessionMapView: '2d',
     });
   });
 
@@ -32,5 +33,14 @@ describe('useMapControlsStore', () => {
     expect(useMapControlsStore.getState().selectedLapIndex).toBe(1);
     useMapControlsStore.getState().toggleSelectedLap(1);
     expect(useMapControlsStore.getState().selectedLapIndex).toBeNull();
+  });
+
+  it('opening or closing a session resets the map view to 2D', () => {
+    useMapControlsStore.getState().setSessionMapView('3d');
+    useMapControlsStore.getState().resetSessionControlsOnSessionOpen();
+    expect(useMapControlsStore.getState().sessionMapView).toBe('2d');
+    useMapControlsStore.getState().setSessionMapView('3d');
+    useMapControlsStore.getState().resetSessionControlsOnSessionClose();
+    expect(useMapControlsStore.getState().sessionMapView).toBe('2d');
   });
 });

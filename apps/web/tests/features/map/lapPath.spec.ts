@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { lapSubPath, nearestRecordIndex } from '@/features/map/lapPath.ts';
+import {
+  lapSubPath,
+  lapVertexBounds,
+  lapVertexBreaks,
+  nearestRecordIndex,
+} from '@/features/map/lapPath.ts';
 import { buildSportColoredPath } from '@/features/map/zoneColoredPath.ts';
 import { lapIndexAtRecord, type LapSpan } from '@/lib/lapRanges.ts';
-import type { SessionRecord } from '@pacevault/engine/types.ts';
+import { createMockSessionRecord } from '@pacevault/testing/records.ts';
 
-const records: SessionRecord[] = [
-  { timestamp: 0, lat: 49, lng: 8.4 },
-  { timestamp: 1 },
-  { timestamp: 2, lat: 49, lng: 8.401 },
-  { timestamp: 3, lat: 49, lng: 8.402 },
-  { timestamp: 4, lat: 49, lng: 8.403 },
-  { timestamp: 5, lat: 49, lng: 8.404 },
+const records = [
+  createMockSessionRecord({ timestamp: 0, lng: 8.4, elevation: 100 }),
+  createMockSessionRecord({ timestamp: 1, lat: undefined, lng: undefined }),
+  createMockSessionRecord({ timestamp: 2, lng: 8.401, elevation: 0 }),
+  createMockSessionRecord({ timestamp: 3, lng: 8.402, elevation: undefined }),
+  createMockSessionRecord({ timestamp: 4, lng: 8.403, elevation: 120 }),
+  createMockSessionRecord({ timestamp: 5, lng: 8.404, elevation: 130 }),
 ];
 
 const spans: LapSpan[] = [
@@ -42,5 +47,37 @@ describe('lap on the map', () => {
       [8.403, 49],
       [8.404, 49],
     ]);
+  });
+
+  it('cuts the lap elevations out with the path, keeping 0 m and missing heights', () => {
+    if (!detail) throw new Error('expected a path');
+    expect(lapSubPath(detail, { lapIndex: 0, startRecord: 0, endRecord: 3 })?.elevations).toEqual([
+      100,
+      0,
+      null,
+    ]);
+    expect(lapSubPath(detail, { lapIndex: 1, startRecord: 3, endRecord: 5 })?.elevations).toEqual([
+      null,
+      120,
+      130,
+    ]);
+  });
+
+  it('bounds the vertices of a lap, the same ones its sub-path covers', () => {
+    if (!detail) throw new Error('expected a path');
+    expect(
+      lapVertexBounds({ detailPath: detail, span: { lapIndex: 0, startRecord: 0, endRecord: 3 } }),
+    ).toEqual({ first: 0, last: 2 });
+    expect(
+      lapVertexBounds({ detailPath: detail, span: { lapIndex: 1, startRecord: 3, endRecord: 5 } }),
+    ).toEqual({ first: 2, last: 4 });
+    expect(
+      lapVertexBounds({ detailPath: detail, span: { lapIndex: 2, startRecord: 9, endRecord: 12 } }),
+    ).toBeNull();
+  });
+
+  it('breaks the line at the first and last vertex of every lap', () => {
+    if (!detail) throw new Error('expected a path');
+    expect(lapVertexBreaks({ detailPath: detail, spans })).toEqual([0, 2, 2, 4]);
   });
 });
