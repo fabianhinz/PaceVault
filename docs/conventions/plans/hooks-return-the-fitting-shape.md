@@ -1,0 +1,67 @@
+---
+id: hooks-return-the-fitting-shape
+tdr_reference: tdr/hooks-return-the-fitting-shape.md
+depends_on: [one-server-call-per-hook-module]
+generated: 2026-10-23
+---
+
+# A hook returns the shape its call site needs
+
+Read `tdr/hooks-return-the-fitting-shape.md` first — the binding rule text, detection signals, and reference implementation live there, not here. This file is only the checklist for getting this target from its current state to that rule.
+
+## Depends on
+
+None. Paths below are today's; if `hook-directory-placement` has already run, `lib/hooks/useMapHover.ts`, `lib/hooks/useMetrics.ts` and `lib/hooks/useWatchPositionEffect.ts` live in `features/map/hooks/`, `features/dashboard/hooks/` and `features/map/hooks/`. The five read hooks (`useOnboardingPreviewRoutes`, `useSessionWeather`, `usePersonalBests`, `useIntervalsKeyCheck`, `useIntervalsSync`) get their `UseQueryResult<...>` annotations in the one-server-call plan and are left out here.
+- [`one-server-call-per-hook-module`](one-server-call-per-hook-module.md) — gives the workbench hooks the names and the key builder item 7 annotates.
+
+## Changes
+
+1. Annotate every effect-only hook with `: void`.
+   Files: `apps/web/src/lib/hooks/useWatchPositionEffect.ts:10`, `apps/web/src/features/onboarding/hooks/useStepFocusEffect.ts:9`, `apps/web/src/features/map/hooks/useOverviewMapControlsEffect.ts:5`, `apps/web/src/features/map/hooks/useMapCameraEffect.ts:94`, `apps/web/src/features/map/hooks/useOnboardingPreviewCameraEffect.ts:43`, `apps/web/src/features/map/hooks/useSuppressTapMouseEffect.ts:8`, `apps/web/src/features/map/hooks/useGeolocationCameraEffect.ts:6`, `apps/web/src/features/sessions/hooks/useFileDropEffect.ts:7`, `apps/web/src/features/sessions/session/hooks/useSessionLapsEffect.ts:11`, `apps/web/src/features/sessions/hooks/useSessionReprocessingEffect.ts:7`, `apps/web/src/features/sessions/hooks/useTrainingLoadRecomputeEffect.ts:7`
+   Change: `export const useXEffect = (<params>) => {` becomes `export const useXEffect = (<params>): void => {` in each file; bodies unchanged.
+   Check: `rg -nU "export const use\w+Effect = \((?:[^()]|\([^()]*\))*\)\s*=>" apps/web/src` prints nothing; `vp check` passes.
+
+2. Return single values bare instead of wrapping them in an object.
+   Files: `apps/web/src/features/map/hooks/useGpsBackfill.ts`, `apps/web/src/features/map/MapBackground.tsx`, `apps/web/src/features/studio/hooks/useStudioRoutePoints.ts`, `apps/web/src/pages/StudioDetailPage.tsx`, `apps/web/src/lib/hooks/useDismiss.ts`
+   Change: `useGpsBackfill.ts:61` `return { gpsData };` -> `return gpsData;` with the signature `(): SessionGPS[] | null`; in `MapBackground.tsx` `const backfill = useGPSBackfill();` (`:32`) becomes `const gpsData = useGPSBackfill();` (or `useGpsBackfill` once the one-hook-per-file plan renamed it) and `backfill.gpsData` (`:33`, `:99`) becomes `gpsData`. `useStudioRoutePoints.ts:22` `return { points };` -> `return points;` with the signature `(routeId: string): RoutePoint[] | null`; in `StudioDetailPage.tsx` `const routePoints = useStudioRoutePoints(props.route.id);` becomes `const routePoints = ...` reading `routePoints` where it read `routePoints.points`. `useDismiss.ts:8` gets the annotation `: RefObject<HTMLDivElement | null>` (it already returns the ref bare).
+   Check: `rg -n "return \{ (gpsData|points) \};" apps/web/src` prints nothing; `vp check` and `vp test -- --run tests/features/map/hooks` (from `apps/web/`) pass.
+
+3. Name the inline and `ReturnType`-derived composites in the dashboard hooks.
+   Files: `apps/web/src/lib/hooks/useMetrics.ts`, `apps/web/src/features/dashboard/hooks/useFilteredMetrics.ts`, `apps/web/src/features/dashboard/hooks/useDashboardAxis.ts`, `apps/web/src/features/dashboard/hooks/useDashboardChartZoom.ts`, `apps/web/src/features/dashboard/hooks/useDashboardChartEvents.ts`
+   Change: `useMetrics` inline `(): { history; current; coaching }` -> file-local `interface TrainingMetrics { history: DailyMetrics[]; current: DailyMetrics | undefined; coaching: CoachingRecommendation; }` and `(): TrainingMetrics`. `useFilteredMetrics` inline `(): { history; sportTss; sessions }` -> `export interface FilteredMetrics { history: DailyMetrics[]; sportTss: Map<string, Record<string, number>>; sessions: TrainingSession[]; }` and `(): FilteredMetrics`. `useDashboardChartZoom` -> `export interface DashboardZoomRange { days: { from: string; to: string; count: number } | null; onZoomComplete: (from: string | number, to: string | number) => void; }` (match the callback type the hook actually builds) and `(): DashboardZoomRange`. `useDashboardAxis.ts:26` `export type DashboardAxis = ReturnType<typeof useDashboardAxis>;` -> `export interface DashboardAxis { history: DailyMetrics[]; sportTss: FilteredMetrics['sportTss']; sessions: TrainingSession[]; days: DashboardZoomRange['days']; onZoomComplete: DashboardZoomRange['onZoomComplete']; }` declared above the hook, and the hook annotated `(): DashboardAxis`. `useDashboardChartEvents` -> `interface DashboardChartEvents` listing `syncId: string; onMouseDown; onMouseMove; onMouseUp` plus the members `categoryHoverHandlers(onHover)` spreads in (use `ReturnType<typeof categoryHoverHandlers>` for that part: `interface DashboardChartEvents extends ReturnType<typeof categoryHoverHandlers> { ... }`), and `(zoom: DashboardChartZoom): DashboardChartEvents`.
+   Check: `rg -n "ReturnType<typeof use" apps/web/src/features/dashboard` prints nothing; `vp check` passes.
+
+4. Name the composites returned by the labs, filters and settings hooks.
+   Files: `apps/web/src/features/labs/hooks/useCoachPlan.ts`, `apps/web/src/features/labs/hooks/usePaceCalculator.ts`, `apps/web/src/features/labs/hooks/useRacePredictor.ts`, `apps/web/src/features/filters/hooks/useFilterBuilder.ts`, `apps/web/src/features/settings/hooks/useThresholdsForm.ts`
+   Change: `useCoachPlan` inline `(): { plan; zones; hasThresholdPace }` -> `interface CoachPlan { plan: WeeklyPlan | null; zones: RunningZone[]; hasThresholdPace: boolean; }` and `(): CoachPlan`. `usePaceCalculator` -> `interface PaceCalculatorForm` with the nine returned members (`paceInput`, `distanceInput`, `timeInput`, `computed`, `solveFor`, `setSolveFor`, `handlePaceChange`, `handleDistanceChange`, `handleTimeChange`) and `(): PaceCalculatorForm`. `useRacePredictor` -> `interface RacePredictorForm` (`distance`, `timeInput`, `setTimeInput`, `handleDistanceChange`, `vdot`, `predictions`) and `(): RacePredictorForm`. `useFilterBuilder` -> `interface FilterBuilder` (`text`, `setText`, `interpretations`, `showNotUnderstood`, `select`, `handleKeyDown`, `tilesRef`, `listRef`) and `(open: boolean, onClose: () => void): FilterBuilder`. `useThresholdsForm.ts:328` `export type ThresholdsForm = ReturnType<typeof useThresholdsForm>;` -> `export interface ThresholdsForm` declared above the hook with its ten members (`form`, `current`, `dirty`, `valid`, `visibleError`, `revealErrors`, `setField`, `saveField`, `setGender`, `save`) and the hook annotated `(mode: 'create' | 'update'): ThresholdsForm`. Member types follow the values returned today. Keep each type file-local except `ThresholdsForm`, which consumers already import.
+   Check: `rg -n "ReturnType<typeof use" apps/web/src/features` prints nothing; `vp check` passes.
+
+5. Name the composites returned by the map, sessions and studio hooks and the remaining app-wide primitives.
+   Files: `apps/web/src/lib/hooks/useMapHover.ts`, `apps/web/src/lib/hooks/useSyncedChartZoom.ts`, `apps/web/src/components/charts/ZoneGradient.tsx` (or `components/charts/hooks/useZoneLineStroke.tsx` after the one-hook-per-file plan), `apps/web/src/features/map/hooks/useMapPopupState.ts`, `apps/web/src/features/sessions/session/hooks/useSessionExport.ts`, `apps/web/src/features/sessions/session/hooks/useEditInStudio.ts`, `apps/web/src/features/sessions/session/hooks/useSessionColorModes.ts`, `apps/web/src/features/sessions/session/hooks/useMiniRailHover.ts`, `apps/web/src/features/sessions/hooks/useFileUpload.ts`, `apps/web/src/features/studio/hooks/useStudioRoutesPopup.ts`, `apps/web/src/features/studio/hooks/useStudioRouteExport.ts`, `apps/web/src/features/studio/hooks/useStudioMapPopup.ts`, `apps/web/src/features/studio/hooks/useGpxImport.ts`
+   Change: declare one file-local interface per hook beside it and annotate the hook with it: `MapHoverHandlers` (`onPointerEnter`, `onPointerLeave`), `SyncedChartZoom` (`zoomRange`, `isZoomed`, `onZoomComplete`, `resetZoom`), `ZoneLineStroke` (`stroke`, `defs`), `MapPopupState` (`popup`, `hoveringTrack`, `interactive`, `onClick`, `onHover`, `closePopup`, `onPointerLeave`), `SessionExport` (`exporting`, `canExport`, `exportGpx`), `EditInStudio` (`canEdit`, `preparing`, `editInStudio`), `SessionColorModes` (`options`, `speedScale`, `effective`), `MiniRailHover` (`index`, `railProps`, `segmentProps`), `FileUpload` (`uploading`, `profile`, `handleFiles`), `StudioRoutesPopup` (`popup`, `onClick`, `close`), `StudioRouteExport` (`exporting`, `exportRoute`, `exportSegment`), `StudioMapPopup` (`popup`, `onClick`, `close`), `GpxImport` (`importing`, `handleFiles`). Member types follow the values returned today. Export a type only where a consumer needs to name it.
+   Check: `rg -nU "export const use[A-Z]\w* = (<[^>]*>)?\((?:[^()]|\([^()]*\))*\)\s*=>" apps/web/src --glob '!**/queries/**' --glob '!**/mutations/**'` prints nothing (every exported hook outside the server-call trees is annotated); `vp check` and `vp test -- --run` pass.
+
+6. (packages/ui) Annotate every kit hook's return type.
+   Files: `packages/ui/src/hooks/useDevice.ts`, `packages/ui/src/hooks/useGrabberDrag.ts`, `packages/ui/src/hooks/useMediaQuery.ts`, `packages/ui/src/hooks/useScrollFadeEffect.ts`, `packages/ui/src/hooks/useSheetScrollElement.ts`
+   Change: `useMediaQuery.ts:6` → `(query: string): boolean =>`; `useScrollFadeEffect.ts:12` → `(ref: RefObject<HTMLElement | null>): void =>`; `useSheetScrollElement.ts:13` → `(): HTMLDivElement | null =>` (skip if the context-provider-accessor-pairs plan already deleted the module). `useDevice.ts:7` → `(): Device =>` with a file-local `interface Device { <desktop flag>: boolean; pointerFine: boolean }` (R3; use the member name as it stands — `desktop` after the boolean plan, `isDesktop` before). `useGrabberDrag.ts:5` → `(): GrabberDrag =>` with file-local `interface GrabberDragProps { drag: 'y'; dragListener: false; dragControls: DragControls; dragElastic: number; dragTransition: typeof SHEET_MOMENTUM; onDragStart: () => void }` and `interface GrabberDrag { onHandlePointerDown: (event: PointerEvent) => void; <dragged predicate>: () => boolean; dragProps: GrabberDragProps }` (`type DragControls` from `motion/react`; the predicate is `wasDragged`, or `isDragged` after the boolean plan); `dragProps` is annotated `const dragProps: GrabberDragProps = {…}` so `drag: 'y' as const` loses its `as const`.
+   Check: `rg -n "^export const use[A-Za-z]+ = \([^)]*\) =>" packages/ui/src` prints nothing (every hook has `): T =>`); `vp run check` and `vp run test` pass.
+
+### tools/workbench
+
+The island's hooks sit in `tools/workbench/site/src/app/hooks/` under the names the one-server-call-per-hook-module plan gave them. The hooks the effects-are-rare and unit-length plans add are written with their return type from the start.
+
+7. (tools/workbench) Annotate the island's hooks (R2, R4, R5).
+   Files: `tools/workbench/site/src/app/hooks/useBoard.ts`, `tools/workbench/site/src/app/hooks/useBoardChangedEffect.ts`, `tools/workbench/site/src/app/hooks/useWriteMutation.ts`, `tools/workbench/site/src/app/hooks/useUndoMutation.ts`
+   Change: `useBoard` → `export const useBoard = (): UseQueryResult<BoardView> => useQuery(boardQueryOptions());` (`import type { BoardView } from '@site/lib/board.ts'`, `type UseQueryResult` from `@tanstack/react-query`); `useBoardChangedEffect` → `(): void =>`; `useWriteMutation` → `(options: { inline?: boolean } = {}): UseMutationResult<WriteResult, Error, WriteInput> =>`; `useUndoMutation` → `(): UseMutationResult<WriteResult, Error, WriteResult> =>`. The annotations state the types TypeScript infers today (TanStack's default error type is `Error`); no body changes.
+   Check: `rg -n "^export const use\w+ = \(" tools/workbench/site/src/app/hooks` shows a `): ` return annotation on every line; `vp check` from `tools/workbench/` is clean; `vp run -F @pacevault/workbench check` passes.
+
+## Open items
+
+- `packages/ui` R7 (a hook returning only a function returns a stable one): no kit hook returns a bare function today.
+- R5 already holds: no hook outside the read hooks flattens a query result into hand-picked fields; `useSessionColorModes` reads `weather.data`/`isLoading` to derive its own composite, which R5 permits.
+- R6 has nothing to change: no exported hook returns a tuple today.
+- The R2 lint gate (`typescript/explicit-function-return-type`) is a tooling proposal; switching it on before these items land fails on the unannotated hooks listed above.
+
+## Done
+
+Once every item in Changes checks out and you've confirmed the result is correct, delete this file — that is this plan's own defined completion state; finishing what was asked doesn't require asking permission to finish it. If `tdr_reference` is set, leave that file in place — it's durable, this plan isn't. Nothing else needs updating: `docs/conventions/CLAUDE.md` indexes the TDR references, not the plans, so it is already correct once this file is gone.
