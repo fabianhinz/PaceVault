@@ -1,0 +1,587 @@
+{
+  "item": "session-3d-map",
+  "generated": "2026-10-23",
+  "base": "cdb32b0df66e4cdae29a8ab95e8c7d687fcef883",
+  "ref": "merge-base main HEAD",
+  "planned": [
+    {
+      "path": "apps/web/CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/e2e/map.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/features/map/DeckGLOverlay.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/features/map/MapBackground.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/features/map/SessionTerrain.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/hooks/useMapCameraEffect.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/features/map/hooks/useMapTerrainEffect.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/hooks/useTerrainHoverPointEffect.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/hooks/useTerrainLapStateEffect.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/hooks/useTerrainLineEffect.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/hooks/useTerrainOrbitEffect.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/hooks/useTerrainTrackPickingEffect.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/lapPath.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/features/map/mapStyle.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/features/map/terrainCamera.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/terrainLine.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/zoneColoredPath.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/features/sessions/session/MapViewControl.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/sessions/session/SessionMapControls.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/lib/mapCamera.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/microcopy/mapView.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/store/mapControls.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/features/map/lapPath.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/features/map/terrainCamera.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/features/map/terrainLine.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/features/map/zoneColoredPath.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/lib/mapCamera.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/store/mapControls.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/vite.config.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/i18n/messages/de.json",
+      "status": "modified"
+    },
+    {
+      "path": "packages/i18n/messages/en.json",
+      "status": "modified"
+    },
+    {
+      "path": "packages/testing/src/records.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/lib/tokens.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/theme.css",
+      "status": "modified"
+    }
+  ],
+  "notPlanned": [
+    {
+      "path": ".claude/skills/item-explore/references/mockup-prompt.md",
+      "status": "modified"
+    },
+    {
+      "path": "CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/e2e/helpers/map.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/e2e/mobile/map.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/e2e/studio.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/features/map/DeckOverlayControl.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/hooks/useMapRendererHandOver.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/features/map/trackColors.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/features/map/hooks/useMapRendererHandOver.integration.test.ts",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/CLAUDE.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/accessible-queries-in-component-tests.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/assertion-vocabulary.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/authenticated-fetch-and-response-parsing.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/behavioural-constants-hoisted-upper-snake.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/boolean-names-without-is-prefix.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/collaborators-replaced-with-mocks.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/colocated-types-module.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/comments-cite-sources-and-explain-why.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/component-declaration-shape.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/component-directory-and-file-naming.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/component-ref-handling-by-need.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/context-provider-accessor-pairs.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/cross-boundary-contracts-in-shared.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/domain-error-subclasses.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/effects-are-rare.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/engine-holds-domain-logic-only.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/env-access-through-validated-facade.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/exhaustive-record-maps-over-branching.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/floating-promises-marked-void.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/formatting-through-intl-namespace.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/helpers-as-namespace-objects.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/helpers-group-by-topic.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/hook-directory-placement.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/hook-results-bound-whole.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/hooks-return-the-fitting-shape.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/index-modules-are-not-barrels.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/library-type-narrowing.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/mirrored-spec-layout.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/names-spell-out-their-meaning.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/native-date-and-duration-constants.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/navigation-through-router-hooks.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/one-hook-per-file.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/one-server-call-per-hook-module.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/outcome-unions-over-exceptions.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/render-through-provider-helpers.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/signature-parameter-shape.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/single-zustand-store-of-slices.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/snackbar-feedback-via-feature-maps.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/spec-describe-and-case-titles.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/styled-api-over-sx.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/test-data-from-mock-factories.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/tooling.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/ui-primitives-from-react-ui.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/unit-length-discipline.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/user-facing-strings-in-copy-modules.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/variant-unions-with-default-resolvers.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/visible-copy-arrives-as-props.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/plans/zod-schema-naming-and-inference.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/accessible-queries-in-component-tests.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/assertion-vocabulary.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/authenticated-fetch-and-response-parsing.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/behavioural-constants-hoisted-upper-snake.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/boolean-names-without-is-prefix.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/classes-are-server-side-only.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/collaborators-replaced-with-mocks.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/colocated-types-module.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/comments-cite-sources-and-explain-why.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/component-declaration-shape.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/component-directory-and-file-naming.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/component-ref-handling-by-need.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/components-call-server-state-hooks-directly.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/context-provider-accessor-pairs.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/cross-boundary-contracts-in-shared.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/domain-error-subclasses.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/effects-are-rare.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/engine-holds-domain-logic-only.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/env-access-through-validated-facade.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/exhaustive-record-maps-over-branching.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/floating-promises-marked-void.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/formatting-through-intl-namespace.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/helpers-as-namespace-objects.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/helpers-group-by-topic.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/helpers-split-by-reachability.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/hook-directory-placement.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/hook-results-bound-whole.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/hooks-return-the-fitting-shape.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/index-modules-are-not-barrels.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/library-type-narrowing.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/mirrored-spec-layout.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/names-spell-out-their-meaning.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/native-date-and-duration-constants.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/navigation-through-router-hooks.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/one-hook-per-file.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/one-server-call-per-hook-module.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/outcome-unions-over-exceptions.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/render-through-provider-helpers.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/server-class-role-suffixes.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/signature-parameter-shape.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/single-zustand-store-of-slices.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/snackbar-feedback-via-feature-maps.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/spec-describe-and-case-titles.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/styled-api-over-sx.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/test-data-from-mock-factories.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/ui-primitives-from-react-ui.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/unit-length-discipline.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/user-facing-strings-in-copy-modules.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/variant-unions-with-default-resolvers.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/visible-copy-arrives-as-props.md",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/zod-schema-naming-and-inference.md",
+      "status": "added"
+    },
+    {
+      "path": "tools/workbench/playwright.review.config.ts",
+      "status": "modified"
+    }
+  ],
+  "untouched": []
+}

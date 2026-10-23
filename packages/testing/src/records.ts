@@ -364,3 +364,11 @@ export const makeInvalidRecords = (type: 'highHr' | 'highPower' | 'zeroHr'): Ses
 
   return records;
 };
+
+export const createMockSessionRecord = (overrides?: Partial<SessionRecord>): SessionRecord => ({
+  timestamp: 0,
+  lat: 49,
+  lng: 8.4,
+  elevation: 115,
+  ...overrides,
+});

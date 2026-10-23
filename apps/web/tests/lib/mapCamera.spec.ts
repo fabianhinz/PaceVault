@@ -3,20 +3,23 @@ import {
   initialMapCameraState,
   mapCameraFitBlocked,
   nextMapCamera,
+  sessionMinZoom,
   settleMapCameraFit,
   type MapCameraObservation,
   type MapCameraState,
   type MapCameraTarget,
 } from '@/lib/mapCamera.ts';
+import type { MapView } from '@/store/mapControls.ts';
 
 const filterA = { sports: ['running'] };
 const filterB = { sports: ['cycling'] };
 
 const overview: MapCameraTarget = { kind: 'overview' };
-const session = (lapIndex: number | null = null): MapCameraTarget => ({
+const session = (lapIndex: number | null = null, view: MapView = '2d'): MapCameraTarget => ({
   kind: 'session',
   sessionId: 's1',
   lapIndex,
+  view,
 });
 const trip: MapCameraTarget = { kind: 'trip', tripKey: 's1,s2' };
 const studioTab: MapCameraTarget = { kind: 'studioTab' };
@@ -282,5 +285,58 @@ describe('nextMapCamera', () => {
     expect(
       mapCameraFitBlocked('studio', observe({ target: studioTab, progressOverlayOpen: true })),
     ).toBe(false);
+  });
+
+  it('25: switching the map view on the session tilts the camera, in both directions', () => {
+    const onSession = settleMapCameraFit(
+      nextMapCamera(settledOn(), observe({ target: session() })),
+    );
+    const into3d = nextMapCamera(onSession, observe({ target: session(null, '3d') }));
+    expect(into3d.pending).toBe('tilt');
+    const back = nextMapCamera(
+      settleMapCameraFit(into3d),
+      observe({ target: session(null, '2d') }),
+    );
+    expect(back.pending).toBe('tilt');
+  });
+
+  it('26: a lap change in 3D still fits the lap', () => {
+    const in3d = settleMapCameraFit(
+      nextMapCamera(
+        settleMapCameraFit(nextMapCamera(settledOn(), observe({ target: session() }))),
+        observe({ target: session(null, '3d') }),
+      ),
+    );
+    expect(nextMapCamera(in3d, observe({ target: session(2, '3d') })).pending).toBe('lap');
+  });
+
+  it('27: leaving a 3D session for the overview flattens the camera, a 2D one keeps it', () => {
+    const in3d = settleMapCameraFit(
+      nextMapCamera(settledOn(), observe({ target: session(null, '3d') })),
+    );
+    expect(nextMapCamera(in3d, observe()).pending).toBe('flatten');
+    const in2d = settleMapCameraFit(nextMapCamera(settledOn(), observe({ target: session() })));
+    expect(nextMapCamera(in2d, observe()).pending).toBeNull();
+  });
+
+  it('28: tilt and flatten are never held back by a delete or an import overlay', () => {
+    const blocked = observe({
+      target: session(),
+      sessionDataBlocked: true,
+      progressOverlayOpen: true,
+    });
+    expect(mapCameraFitBlocked('tilt', blocked)).toBe(false);
+    expect(mapCameraFitBlocked('flatten', blocked)).toBe(false);
+    expect(mapCameraFitBlocked('session', blocked)).toBe(true);
+  });
+});
+
+describe('sessionMinZoom', () => {
+  it('limits zooming out to two levels below the session fit', () => {
+    expect(sessionMinZoom({ fitZoom: 13, currentZoom: 13 })).toBe(11);
+  });
+
+  it('never clamps: a current zoom below the limit becomes the limit', () => {
+    expect(sessionMinZoom({ fitZoom: 13, currentZoom: 9.5 })).toBe(9.5);
   });
 });

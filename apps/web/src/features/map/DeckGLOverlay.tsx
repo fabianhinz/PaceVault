@@ -1,10 +1,10 @@
 import { useDeferredValue, useMemo } from 'react';
 import { useMatch } from 'react-router-dom';
-import { MapboxOverlay } from '@deck.gl/mapbox';
-import type { PickingInfo } from '@deck.gl/core';
+import type { LayersList, PickingInfo } from '@deck.gl/core';
 import { PathLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { useSessionDetailPath } from './hooks/useSessionDetailPath.ts';
 import { useMapCameraEffect } from './hooks/useMapCameraEffect.ts';
+import { useMapRendererHandOver } from './hooks/useMapRendererHandOver.ts';
 import { useOverviewMapControlsEffect } from './hooks/useOverviewMapControlsEffect.ts';
 import { useOnboardingPreviewLayer } from './hooks/useOnboardingPreviewLayer.ts';
 import { useOnboardingPreviewCameraEffect } from './hooks/useOnboardingPreviewCameraEffect.ts';
@@ -18,6 +18,8 @@ import {
   geoAccuracyLine,
   geoDotFill,
   geoDotLine,
+  LAP_CASING_SCALE,
+  LAP_DIMMED_BRIGHTNESS,
   sportTrackColor,
   trackIntensityAlpha,
   trackModifiers,
@@ -33,7 +35,8 @@ import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import type { MapTrack } from './hooks/useMapTracks.ts';
 import { decodeCached, PICK_RADIUS, type TrackPickData } from './hooks/types.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
-import { useControl } from 'react-map-gl/maplibre';
+import { DeckOverlayControl } from './DeckOverlayControl.tsx';
+import { SessionTerrain } from './SessionTerrain.tsx';
 
 type PickHandler = (info: PickingInfo, event: unknown) => boolean | void;
 
@@ -48,11 +51,10 @@ const lapPathFor = (
   return lapSubPath(detailPath, span);
 };
 
-const DIMMED_BRIGHTNESS = 0.8;
 const LAP_CASING_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const LAP_HOVER_COLOR: [number, number, number, number] = [255, 255, 255, 255];
-const LAP_CASING_SCALE = 1.6;
 const HIGHLIGHT_TRANSITIONS = { getWidth: 300, getColor: 300 };
+const NO_LAYERS: LayersList = [];
 
 interface DeckGLOverlayProps {
   tracks: MapTrack[];
@@ -61,16 +63,17 @@ interface DeckGLOverlayProps {
   hoveringTrack: boolean;
   gpsData: SessionGPS[] | null;
   mapLoaded: boolean;
+  terrain: boolean;
 }
 
 export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const hoveredSessionId = useMapFocusStore((s) => s.hoveredSessionId);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const hoveredPoint = useMapFocusStore((s) => s.hoveredPoint);
-  const pickCircle = useMapFocusStore((s) => s.pickCircle);
+  const hoveredPoint = useMapFocusStore((s) => (props.terrain ? null : s.hoveredPoint));
+  const pickCircle = useMapFocusStore((s) => (props.terrain ? null : s.pickCircle));
   const lapSpans = useDeferredValue(useMapControlsStore((s) => s.sessionLaps?.spans));
   const selectedLapIndex = useMapControlsStore((s) => s.selectedLapIndex);
-  const hoveredLapIndex = useMapControlsStore((s) => s.hoveredLapIndex);
+  const hoveredLapIndex = useMapControlsStore((s) => (props.terrain ? null : s.hoveredLapIndex));
   const trackColorMode = useMapControlsStore((s) => s.trackColorMode);
   const hoveredStudioRouteId = useMapFocusStore((s) => s.hoveredStudioRouteId);
   const geoPosition = useGeolocationStore((s) => s.position);
@@ -82,6 +85,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   const pointerFine = useDevice().pointerFine;
 
   const detailPath = useSessionDetailPath(hoveredSessionId, openedSessionId, sessions);
+  const handOver = useMapRendererHandOver({ terrain: props.terrain, mapLoaded: props.mapLoaded });
 
   const match = useMatch('/sessions/:id');
   const highlightedSessionId = hoveredSessionId ?? match?.params.id ?? null;
@@ -108,7 +112,13 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     [previewLapIndex, detailPath, lapSpans],
   );
 
-  useMapCameraEffect(props.gpsData, props.tracks, selectedLapPath?.path ?? null, props.mapLoaded);
+  useMapCameraEffect({
+    gpsData: props.gpsData,
+    tracks: props.tracks,
+    lapPath: selectedLapPath,
+    sessionPath: detailPath,
+    mapLoaded: props.mapLoaded,
+  });
   useOnboardingPreviewCameraEffect();
   const onboardingPreviewLayer = useOnboardingPreviewLayer();
 
@@ -210,7 +220,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       data: [detailPath],
       getPath: (d) => d.path,
       getColor: (d) => {
-        if (isDimmed) return dimmedColor(d.color, DIMMED_BRIGHTNESS);
+        if (isDimmed) return dimmedColor(d.color, LAP_DIMMED_BRIGHTNESS);
         return d.color;
       },
       getWidth: trackModifiers.width.highlighted,
@@ -329,7 +339,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   ]);
 
   const pickCircleLayer = useMemo(() => {
-    if (!pickCircle) {
+    if (!pickCircle || props.terrain) {
       return null;
     }
 
@@ -347,7 +357,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
       getLineWidth: 1,
       pickable: false,
     });
-  }, [pickCircle]);
+  }, [pickCircle, props.terrain]);
 
   const hoveredPointLayer = useMemo(() => {
     let data: Array<{ position: [number, number] }> = [];
@@ -371,7 +381,7 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
   }, [hoveredPoint]);
 
   const geoLayers = useMemo(() => {
-    if (!geoPosition) {
+    if (!geoPosition || props.terrain) {
       return null;
     }
 
@@ -414,27 +424,31 @@ export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
     );
 
     return layers;
-  }, [geoPosition, geoAccuracy]);
+  }, [geoPosition, geoAccuracy, props.terrain]);
 
-  const overlay = useControl<MapboxOverlay>(
-    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS, interleaved: !pointerFine }),
+  const sessionLayers = [
+    onboardingPreviewLayer,
+    trackLayers,
+    detailLayer,
+    studioRouteLayer,
+    pickCircleLayer,
+    lapHoverLayer,
+    lapLayers,
+    hoveredPointLayer,
+    geoLayers,
+  ];
+
+  return (
+    <>
+      {handOver.terrainMounted && (
+        <SessionTerrain detailPath={detailPath} onDrawn={handOver.onTerrainDrawn} />
+      )}
+      <DeckOverlayControl
+        layers={handOver.deckShown ? sessionLayers : NO_LAYERS}
+        interleaved={!pointerFine}
+        hoveringTrack={props.hoveringTrack}
+        onDrawn={handOver.onDeckDrawn}
+      />
+    </>
   );
-
-  overlay.setProps({
-    layers: [
-      onboardingPreviewLayer,
-      trackLayers,
-      detailLayer,
-      studioRouteLayer,
-      pickCircleLayer,
-      lapHoverLayer,
-      lapLayers,
-      hoveredPointLayer,
-      geoLayers,
-    ],
-    pickingRadius: PICK_RADIUS,
-    getCursor: () => (props.hoveringTrack ? 'pointer' : ''),
-  });
-
-  return null;
 };

@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>3D session map · Review</title>
+    <link rel="stylesheet" href="../../../shared/review.css" />
+  </head>
+  <body class="rv">
+    <main class="rv-doc">
+      <header class="rv-text">
+        <p class="rv-over">Review · round 2</p>
+        <h1>3D map on the session details page</h1>
+        <p>
+          A Map view pill switches the session map between 2D and 3D. 3D only tilts the camera to 30°
+          over Mapterhorn terrain with a hillshade. Laps, clicks and the chart dot work as in 2D, and
+          2D renders as before apart from a zoom-out limit. Round 2 fixes R1–R7: 3D lap framing,
+          3D scrubbing and switching speed, box zoom off in 2D, a compact Map view pill and the
+          Mapterhorn credit always in the attribution.
+        </p>
+      </header>
+
+      <h2>Review round 2</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R1</span>3D lap close and lap fit frame the track in the free area</h3>
+        <div class="rv-text">
+          <p>Fixed (on C4, Q58). The 3D fit no longer zooms out by a fixed step. It projects 64 sampled track points plus the four outermost ones on the terrain and corrects zoom and centre up to three times, so the track fills the free map area beside the panel or above the sheet. Closing a lap now lands at zoom 11.79 instead of 11.07 (desktop, 30°), 12.73 at 60° / bearing 40, and 11.01 on the phone with the track clear of the sheet (<a href="perf.md">perf.md</a> › R1 framing). Round 1 had no lap-closed scene, so that shot is after-only.</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/terrainCamera.ts:226</code> (<code>fitCorrection</code>), <code>:265</code> (<code>fitSamples</code>), <code>:282</code>, <code>:305</code>, <code>:321</code> (<code>pitchAwareFit</code>), <code>:351</code> (<code>terrainFitTarget</code>); <code>apps/web/src/features/map/hooks/useMapCameraEffect.ts:240</code>, <code>:364</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · 3D, lap 2 selected, then closed with ✕</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-session-map-3d-lap-closed.png" alt="R1 · Desktop · 3D after closing a lap" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 3D, lap closed</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · EN</figcaption>
+              <img src="after/p-en-session-map-3d-lap-closed.png" alt="R1 · Phone · 3D after closing a lap" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · 3D, lap 2 via the stepper (lap fit)</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-map-3d-lap.png" alt="R1 before · Desktop · 3D lap 2" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-map-3d-lap.png" alt="R1 after · Desktop · 3D lap 2" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R1 desktop: before / after split" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R2</span>Chart scrubbing in 3D as smooth as in 2D</h3>
+        <div class="rv-text">
+          <p>Fixed (on C2). The hovered lap is one small <code>setData</code> on its own one-lap source instead of resetting and re-marking feature state on the whole track; the chart dot is a <code>Marker</code> moved with <code>setLngLat</code> from a store subscription; <code>DeckGLOverlay</code> no longer subscribes to the cursor or the hovered lap in 3D. Measured at 4× CPU throttling on the phone profile: 276 → <strong>30.8 ms</strong> main thread per move (2D: 31.1), longest task 934 → <strong>50 ms</strong>, long tasks 41 → 1 (<a href="perf.md">perf.md</a> › 3D chart scrub). No static visual.</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/hooks/useTerrainLapStateEffect.ts:53</code>, <code>:65</code>, <code>:96</code>; <code>apps/web/src/features/map/terrainLine.ts:251</code>; <code>apps/web/src/features/map/hooks/useTerrainHoverPointEffect.ts:33</code>, <code>:35</code>; <code>apps/web/src/features/map/DeckGLOverlay.tsx:72-76</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R3</span>Box zoom off in 2D too</h3>
+        <div class="rv-text">
+          <p>Fixed (on N3, Q57). Shift + left-drag no longer draws the zoom rectangle in 2D; box zoom is off on every map. The session-view e2e test asserts it in 2D and 3D. No static visual.</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/MapBackground.tsx:92</code>; Test: <code>apps/web/e2e/map.spec.ts:146</code>, <code>:191</code>, <code>:223</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R4</span>Map view pill shrinks to its icon while a lap is selected</h3>
+        <div class="rv-text">
+          <p>Fixed (on C1). With a lap selected the pill shows only the <code>Globe</code> icon, as Color by does. The owner's edits stay: the pill comes first in the row and uses <code>Globe</code> instead of <code>Box</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/features/sessions/session/MapViewControl.tsx:26</code>; <code>apps/web/src/features/sessions/session/SessionMapControls.tsx:26</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · 2D, lap 2 via the stepper</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-map-2d-lap.png" alt="R4 before · Desktop · 2D lap 2" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-map-2d-lap.png" alt="R4 after · Desktop · 2D lap 2" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R4 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 3D, lap 2</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-map-3d-lap.png" alt="R4 before · Phone · 3D lap 2" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-map-3d-lap.png" alt="R4 after · Phone · 3D lap 2" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R5</span>Lighter 3D track and faster switch into 3D</h3>
+        <div class="rv-text">
+          <p>Fixed (on C2, Q59–Q61). Same-colour segments merge into one feature per run (54 features on the Lechlauf instead of ~37,800), the deck.gl overlay gets an empty layer list in 3D, and 3D draws from the detail path 2D already holds (no second records load). The DEM settle check now resolves before its 500 ms cap: mounting the terrain first and the lighter line source were enough, no new settle logic. At 4×: 2D → 3D first tilted frame 859 → <strong>438 ms</strong>, longest task 305 → <strong>60 ms</strong>; 3D lap switch, frame with the tap 58 → <strong>8.3 ms</strong> (<a href="perf.md">perf.md</a> › 2D → 3D tap, 3D lap switch). Q60 first unmounted the deck.gl overlay in 3D; that broke 2D after a round trip (R8), so the "pause" is now an overlay that stays attached with no layers (agent decision in <code>review/decisions.md:49</code>). Re-measured after R8: first tilted frame 473 ms, lap switch tap frame 8.4 ms (<a href="perf.md">perf.md</a> › R8). No static visual.</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/terrainLine.ts:80</code>, <code>:107</code>, <code>:137</code>, <code>:185</code>, <code>:220</code>; <code>apps/web/src/features/map/lapPath.ts:54-66</code>; <code>apps/web/src/features/map/DeckGLOverlay.tsx:443-447</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R6</span>Mapterhorn credit always in the attribution</h3>
+        <div class="rv-text">
+          <p>Fixed (on C3, Q62). "© Mapterhorn" is part of the static attribution string, in 2D and 3D; the DEM sources carry no attribution flag any more and share one source spec. The compact attribution still sits behind the session panel and the sheet; for the crops the test moved the control over open map.</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/mapStyle.ts:21</code>, <code>:29</code>; <code>apps/web/src/features/map/hooks/useMapTerrainEffect.ts:31-32</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · attribution expanded (crop, control moved for the shot) · before: 3D, round 1 · after: 2D</span></p>
+          <div class="rv-pair" style="--w: 345px">
+            <figure>
+              <figcaption>Before · 3D</figcaption>
+              <img src="before/d-en-session-map-3d-attribution.png" alt="R6 before · attribution in 3D, round 1" width="345" height="24" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After · 2D</figcaption>
+              <img src="after/d-en-session-map-2d-attribution.png" alt="R6 after · attribution in 2D" width="339" height="24" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R7</span>No frame without a track when switching 2D ↔ 3D</h3>
+        <div class="rv-text">
+          <p>Fixed (on C2). Into 3D, deck.gl keeps drawing the 2D track until the MapLibre line has rendered its first frame; back to 2D, the MapLibre layers stay until deck.gl reports its first draw. A probe over every render and animation frame (two round trips each, desktop overlaid at 1×, phone interleaved at 4×) found <strong>0 frames without a track</strong> in both directions (<a href="perf.md">perf.md</a> › R7). No static visual.</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/hooks/useMapRendererHandOver.ts:12</code>; <code>apps/web/src/features/map/hooks/useTerrainLineEffect.ts:118</code>; <code>apps/web/src/features/map/DeckOverlayControl.tsx:32</code>; <code>apps/web/src/features/map/DeckGLOverlay.tsx:443-450</code>; Test: <code>apps/web/tests/features/map/hooks/useMapRendererHandOver.integration.test.ts:15</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R8</span>2D track back after 2D → 3D → 2D</h3>
+        <div class="rv-text">
+          <p>Fixed (on C2; found during round 2, caused by the R5 unmount). After a round trip neither renderer drew a track: the remounted deck.gl overlay got layer instances that were already finalised, and every remount leaked a WebGL context until Chrome dropped the oldest. Now <code>DeckOverlayControl</code> stays mounted for the map's lifetime with an empty layer list while 3D owns the track, gets fresh layer clones on every render, and the 3D line's readiness listener ignores a source that is already gone. The R7 probe still finds 0 frames without a track, and 12 quick round trips show no WebGL warning (<a href="perf.md">perf.md</a> › R8). After the fix at 4×: 3D scrub 29.3 ms per move; 3D one-finger pan at 6× frame p95 24.4 ms (round 1: 41.8). No static visual.</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/DeckGLOverlay.tsx:57</code>, <code>:447</code>; <code>apps/web/src/features/map/hooks/useMapRendererHandOver.ts:23</code>; <code>apps/web/src/features/map/DeckOverlayControl.tsx:16</code>, <code>:29</code>, <code>:32</code>; <code>apps/web/src/features/map/hooks/useTerrainLineEffect.ts:129</code>; Test: <code>apps/web/tests/features/map/hooks/useMapRendererHandOver.integration.test.ts:6</code>, <code>:54</code>, <code>apps/web/e2e/map.spec.ts:150</code>, <code>:194</code>, <code>:225-226</code></p>
+        </div>
+      </article>
+
+      <h2>Changes</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C1</span>Map view pill and popover</h3>
+        <div class="rv-text">
+          <p>A new pill, first in the row before Color by and Laps (the owner's order), shows the current view (2D / 3D) with the <code>Globe</code> icon (the owner's change from <code>Box</code>); while a lap is selected it shrinks to the icon (R4). It opens a popover on desktop and a drawer on the phone with two radio items, 2D "Flat map" and 3D "Terrain from Mapterhorn" (Q34, Q36). At 390 px the pill row scrolls sideways as before, so one pill is partly off-screen (seen in every phone shot; Q9 expected this).</p>
+          <p class="rv-refs"><code>apps/web/src/features/sessions/session/MapViewControl.tsx:11</code>; <code>:26</code>; <code>apps/web/src/features/sessions/session/SessionMapControls.tsx:26</code>; <code>apps/web/src/store/mapControls.ts:6</code>, <code>:62</code>; <code>apps/web/src/microcopy/mapView.ts:4</code>; <code>packages/i18n/messages/en.json:726-731</code>; <code>de.json:726-731</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Map view pill clicked, no before (new control)</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-session-map-view-popover.png" alt="C1 · Desktop · 1280 × 800 · Map view pill clicked, no before (new control)" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · drawer open</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · EN</figcaption>
+              <img src="after/p-en-session-map-view-popover.png" alt="C1 · Phone · After · EN" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After · DE</figcaption>
+              <img src="after/p-de-session-map-view-popover.png" alt="C1 · Phone · After · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C2</span>Switching to 3D only tilts the camera</h3>
+        <div class="rv-text">
+          <p>Picking 3D keeps centre and zoom and eases the pitch to 30° over 800 ms; going back to 2D eases pitch and bearing to 0. There is no new fit when you switch (Q54, Q37).</p>
+          <p class="rv-refs"><code>apps/web/src/lib/mapCamera.ts:113</code>; <code>apps/web/src/features/map/terrainCamera.ts:396</code>; <code>apps/web/src/features/map/hooks/useMapCameraEffect.ts:180</code>; Test: <code>apps/web/e2e/map.spec.ts:174</code>, <code>apps/web/tests/lib/mapCamera.spec.ts:290</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · 3D on, 30° tilt, terrain loaded</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-session-map-3d.png" alt="C2 · Desktop · 1280 × 800 · 3D on, 30° tilt, terrain loaded" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 3D on</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · EN</figcaption>
+              <img src="after/p-en-session-map-3d.png" alt="C2 · Phone · After · EN" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C3</span>Terrain, hillshade and the Mapterhorn credit</h3>
+        <div class="rv-text">
+          <p>In 3D the map drapes over Mapterhorn DEM tiles with a black/white hillshade at low opacity (Q2, Q11). The credit "© Mapterhorn" is always part of the compact attribution, in 2D and 3D (R6, Q62; round 1 showed it only in 3D, Q41). The attribution sits behind the session panel on desktop and behind the sheet on the phone, as before this item. For the crop below the test moved the control over open map; the app is unchanged.</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/hooks/useMapTerrainEffect.ts:26</code>; <code>apps/web/src/features/map/mapStyle.ts:21</code>, <code>:29</code>, <code>:37</code>; <code>packages/ui/src/theme.css:75-78</code>; <code>packages/ui/src/lib/tokens.ts:24-27</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · attribution expanded in 3D (crop, control moved for the shot)</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 345px">
+              <img src="after/d-en-session-map-3d-attribution.png" alt="C3 · Desktop · attribution expanded in 3D (crop, control moved for the shot)" width="345" height="24" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 3D on, German</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · DE</figcaption>
+              <img src="after/p-de-session-map-3d.png" alt="C3 · Phone · After · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C4</span>Lap selected in 3D</h3>
+        <div class="rv-text">
+          <p>Selecting a lap from the stepper, the Laps pill, the lap strip or a click on the track highlights it with the casing on the terrain. The rest of the track is dimmed, and the camera frames the lap at the current pitch and bearing (Q29, Q40), since round 2 with the pitch-aware fit (R1).</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/hooks/useTerrainLapStateEffect.ts:80</code>; <code>apps/web/src/features/map/terrainCamera.ts:351</code>; <code>apps/web/src/features/map/lapPath.ts:54</code>, <code>:66</code>; <code>apps/web/src/features/map/hooks/useTerrainLineEffect.ts:145</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · 3D, lap 2 via the stepper</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-session-map-3d-lap.png" alt="C4 · Desktop · 1280 × 800 · 3D, lap 2 via the stepper" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 3D, lap 2</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · EN</figcaption>
+              <img src="after/p-en-session-map-3d-lap.png" alt="C4 · Phone · After · EN" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C5</span>3D without terrain tiles</h3>
+        <div class="rv-text">
+          <p>3D can always be switched on. With every Mapterhorn request aborted, the map tilts flat at 0 m and the track lies on it; cached tiles are used when present (Q42).</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/terrainCamera.ts:114</code>, <code>:137</code>; <code>apps/web/vite.config.ts:64-76</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · 3D, Mapterhorn requests aborted</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-session-map-3d-offline.png" alt="C5 · Desktop · 1280 × 800 · 3D, Mapterhorn requests aborted" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 3D, no tiles</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · EN</figcaption>
+              <img src="after/p-en-session-map-3d-offline.png" alt="C5 · Phone · After · EN" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C6</span>2D framing unchanged</h3>
+        <div class="rv-text">
+          <p>The 2D track, laps and lap framing render as before. Only three things change: the lap and session fits pass <code>pitch: 0, bearing: 0</code>, the zoom-out limit applies (Q56), and the new pill sits first in the row (compact while a lap is selected, R4).</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/hooks/useMapCameraEffect.ts:232</code>; <code>apps/web/src/features/map/DeckGLOverlay.tsx:253</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · 2D, lap 2 via the stepper</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-map-2d-lap.png" alt="C6 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-map-2d-lap.png" alt="C6 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C6 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 2D, lap 2</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-map-2d-lap.png" alt="C6 before · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-map-2d-lap.png" alt="C6 after · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · 2D, whole session</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-map-2d.png" alt="C6b before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-map-2d.png" alt="C6b after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C6b desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 2D, whole session</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-map-2d.png" alt="C6b before · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-map-2d.png" alt="C6b after · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <h2>Changes without UI</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N1</span>Mapterhorn tiles are cached offline</h3>
+        <div class="rv-text">
+          <p>The service worker caches Mapterhorn DEM tiles as <code>mapterhorn-dem</code> (CacheFirst, at most 2,000 tiles for 30 days). Check it in DevTools → Application → Cache Storage after a 3D visit.</p>
+          <p class="rv-refs"><code>apps/web/vite.config.ts:64-76</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N2</span>Mapterhorn documented as the fourth external service</h3>
+        <div class="rv-text">
+          <p>The app rules name Mapterhorn next to Open-Meteo, CARTO and intervals.icu, fetched only while 3D is on.</p>
+          <p class="rv-refs"><code>apps/web/CLAUDE.md:4</code>, <code>:28</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N3</span>Zoom-out limit in 2D and 3D, box zoom off everywhere</h3>
+        <div class="rv-text">
+          <p>On the session page you can zoom out at most to the session's fit zoom − 2, in both views. If you are already further out, that zoom becomes the limit. The limit is cleared when you leave the session (Q56). Since round 2, Shift + drag no longer box-zooms on any map, 2D included (R3, Q57).</p>
+          <p class="rv-refs"><code>apps/web/src/lib/mapCamera.ts:173</code>; <code>apps/web/src/features/map/hooks/useMapCameraEffect.ts:132</code>, <code>:149</code>; <code>apps/web/src/features/map/MapBackground.tsx:92</code>; Test: <code>apps/web/tests/lib/mapCamera.spec.ts:334-342</code>, <code>apps/web/e2e/map.spec.ts:174</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N4</span>Orbit with Shift / Ctrl / Cmd + drag</h3>
+        <div class="rv-text">
+          <p>In 3D, a left-drag with Shift, Ctrl or Cmd orbits around the point under the cursor. Left/right turns the map and up/down tilts it. Right-drag also rotates. Box zoom is off (Q23, Q25; in 2D too since R3).</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/hooks/useTerrainOrbitEffect.ts:46</code>; <code>apps/web/src/features/map/terrainCamera.ts:471</code>; <code>apps/web/src/features/map/MapBackground.tsx:89</code>, <code>:92</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N5</span>Touch gestures</h3>
+        <div class="rv-text">
+          <p>In 3D, twisting with two fingers rotates the map and a vertical two-finger drag tilts it. In 2D, two fingers cannot tilt (Q31).</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/MapBackground.tsx:88-91</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N6</span>Clicks in 3D</h3>
+        <div class="rv-text">
+          <p>A click on the track selects the lap under it. A click beside the track does nothing, and a double-click does nothing (Q40, Q28).</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/hooks/useTerrainTrackPickingEffect.ts:46</code>; <code>apps/web/src/features/map/MapBackground.tsx:86</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N7</span>Chart cursor dot jumps in 3D</h3>
+        <div class="rv-text">
+          <p>Hovering a chart moves a dot on the draped track. It jumps between points as in 2D (Q39). Since round 2 the dot is a MapLibre <code>Marker</code> moved outside React (R2).</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/hooks/useTerrainHoverPointEffect.ts:26</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N8</span>Live-position dot hidden in 3D</h3>
+        <div class="rv-text">
+          <p>Your own position (deck.gl, sea level) is hidden while 3D is on and comes back in 2D (Q44). Since round 2 the deck.gl overlay draws no layers at all in 3D (R5, R8).</p>
+          <p class="rv-refs"><code>apps/web/src/features/map/DeckGLOverlay.tsx:383-384</code>, <code>:447</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N9</span>Map colour tokens</h3>
+        <div class="rv-text">
+          <p>New tokens <code>mapShadow</code>, <code>mapHighlight</code>, <code>mapHillshadeHighlight</code> and <code>mapDotStroke</code> replace literal colours in map paint (Q48).</p>
+          <p class="rv-refs"><code>packages/ui/src/theme.css:75-78</code>; <code>packages/ui/src/lib/tokens.ts:24-27</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N10</span>Test factory for session records</h3>
+        <div class="rv-text">
+          <p><code>createMockSessionRecord</code> builds records for the new specs (Q50).</p>
+          <p class="rv-refs"><code>packages/testing/src/records.ts:368</code></p>
+        </div>
+      </article>
+
+      <h2>Deviations</h2>
+      <ol class="rv-text">
+        <li><strong>One destructured options parameter per new function</strong>, per the signature TDR (Q46).</li>
+        <li><strong><code>terrainDemSource</code> is one constant source spec since round 2</strong> (R6); round 1 took an <code>attributed</code> boolean. <code>apps/web/src/features/map/mapStyle.ts:29</code>.</li>
+        <li><strong><code>useTerrainLineEffect</code> takes <code>dimFactor</code> and <code>width.casingMetres</code></strong>, since round 2 also <code>runs</code> and <code>onDrawn</code>. <code>apps/web/src/features/map/hooks/useTerrainLineEffect.ts:146</code>.</li>
+        <li><strong><code>LAP_DIMMED_BRIGHTNESS</code> and <code>LAP_CASING_SCALE</code> moved to <code>apps/web/src/features/map/trackColors.ts:18-19</code></strong> (not in the file list). 2D and 3D share them.</li>
+        <li><strong>Lap feature state marks the merged runs of a lap</strong> (since R5; round 1 marked every vertex id but the last). Lap ends break the runs, so a run never spans two laps. <code>apps/web/src/features/map/lapPath.ts:66</code>; <code>apps/web/src/features/map/hooks/useTerrainLapStateEffect.ts:37</code>.</li>
+        <li><strong>2D <code>fitBounds</code> still goes through react-map-gl's <code>MapRef</code></strong> because an e2e test spies on it. <code>apps/web/src/features/map/hooks/useMapCameraEffect.ts:232</code>.</li>
+        <li><strong>The internal line types are not exported.</strong> <code>PITCHED_ZOOM_OUT</code> is gone since R1.</li>
+        <li><strong>Specs keep the existing <code>apps/web/tests/</code> layout</strong>, not <code>tests/node|jsdom</code>.</li>
+        <li><strong>Scope addition (asked by the owner in-session): map e2e tests and review captures render on the Metal GPU locally and on SwiftShader in CI.</strong> <code>apps/web/e2e/helpers/map.ts:17</code> (<code>MAP_LAUNCH_OPTIONS</code>), used by <code>apps/web/e2e/map.spec.ts</code>, <code>apps/web/e2e/studio.spec.ts</code> and <code>apps/web/e2e/mobile/map.spec.ts</code>. <code>tools/workbench/playwright.review.config.ts:13-24</code> has its own copy of the switch. This covers most of the <code>e2e-gpu-rendering</code> item.</li>
+        <li><strong>Round 2: the DEM settle fix (R5) needed no new settle logic.</strong> Mounting the terrain first and the lighter line source let <code>isSourceLoaded</code> turn true before the 500 ms cap. <code>apps/web/src/features/map/terrainCamera.ts:137</code>.</li>
+        <li><strong>Round 2: the 3D lap hover preview draws from its own one-lap source</strong> instead of feature state on the track (R2). <code>apps/web/src/features/map/terrainLine.ts:251</code>.</li>
+        <li><strong>Round 2: the scrub measurement moved to the HR chart's upper third</strong> (the widest chart; the phone's bottom nav covers its lower part). Round-1 and round-2 numbers in <a href="perf.md">perf.md</a> therefore differ slightly in method.</li>
+        <li><strong>Round 2: Q60 "pause deck.gl in 3D" is an attached overlay with no layers</strong>, not an unmount (R8; <code>review/decisions.md:49</code>).</li>
+        <li><strong>plan.md and tech.md still describe the pre-round-2 design</strong>: <code>PITCHED_ZOOM_OUT</code>, the second records load (Q47), the <code>hov</code> feature state, the attribution on the DEM source. tech.md stays the planned record; the Actual side is in <code>review/</code>.</li>
+      </ol>
+
+      <h2>Open points</h2>
+      <ol class="rv-text">
+        <li><strong>Question: 3D lap fits zoom in further than in round 1.</strong> Since R1 a lap fills the free area, so lap fits land at zoom 15.0–16 instead of about 13.3 (<a href="perf.md">perf.md</a> › R1 framing). Options: (a) keep; (b) add a margin factor to the pitch-aware fit. <em>Recommendation: (a)</em>, the lap stays clear of the panel, the sheet and the pills.</li>
+        <li><strong>Question: is the empty attached deck.gl overlay acceptable as the Q60 pause?</strong> Options: (a) keep: no layers in 3D, 3D pan at 6× p95 24.4 ms, the overlay's per-frame cost is within the run-to-run spread (<a href="perf.md">perf.md</a> › R8); (b) try stopping deck.gl's per-frame sync through private hooks. <em>Recommendation: (a)</em>; (b) depends on deck.gl internals.</li>
+        <li><strong>Question: intermittent unit test outside this change.</strong> <code>apps/web/tests/lib/computePbsForSessions.spec.ts:44</code> "computePBsForSessions › returns best values from the stronger cycling session" failed once (<code>expected false to be true</code>) and passed on re-run; it did not recur in the final suite. Options: (a) add it to <code>tools/workbench/backlog/flaky.md</code> (which lists only e2e tests today); (b) a bug item. <em>Recommendation: (a)</em>.</li>
+        <li><strong>Adjacent, not fixed:</strong> deck.gl's interleaved <code>getDeckInstance</code> left one no-op map <code>render</code> listener per 3D → 2D remount. Reported before R8; since R8 the overlay stays attached and is no longer remounted per round trip, so it should no longer pile up (not re-checked).</li>
+        <li><strong>Mapterhorn credit still hidden by the panel.</strong> The credit is now always in the attribution (R6), but the compact attribution sits behind the session panel on desktop and behind the sheet on the phone, as the CARTO credit did before this item.</li>
+        <li><strong>Owner step: decisions changed by later answers.</strong> On the Review tab, mark as changed <code>tools/workbench/backlog/session-3d-map/review/decisions.md:25</code> (the <code>Box</code> icon, now <code>Globe</code> by the owner's edit) and <code>:27</code> (zoom-out limit only in 3D, overridden by Q56).</li>
+        <li><strong>Owner step: related items.</strong> After acceptance, close or adjust <code>tools/workbench/backlog/disable-box-zoom/</code> (R3 turned box zoom off everywhere) and <code>tools/workbench/backlog/e2e-gpu-rendering/</code> (mostly covered by the GPU scope addition, Deviation 9).</li>
+        <li><strong>Owner step: manual checks</strong> from the plan's Verification (2D unchanged apart from the limit; 2D ↔ 3D keeps centre and zoom; lap framing at the current angle; orbit; touch; clicks; leaving the session, deleting it and Edit in Studio leave no tilt or limit behind; live-position dot; flight mode), plus the steps for R1–R8 under How to check.</li>
+        <li><strong>Real-data checks still open</strong> (plan <code>## Real-data checks</code>, 11 items): mid-range phone responsiveness on the Lechlauf, summit laps without drift, a session outside the Alps, the offline cases (cached, never cached, going offline in 3D), phone two-finger gestures, a slow connection, entering 3D while zoomed into a lap, the zoom-out limit on long and short sessions, and desktop framing at 30° and 60°.</li>
+        <li><strong>Boundary check:</strong> <code>engine-is-pure</code>, <code>store-no-features</code>: no violations.</li>
+        <li><strong>Files outside this item's plan</strong> (<code>review/files.json</code>, 110 changed but not planned):
+          <ul>
+            <li>This item: <code>apps/web/e2e/helpers/map.ts</code>, <code>apps/web/e2e/mobile/map.spec.ts</code>, <code>apps/web/e2e/studio.spec.ts</code> and <code>tools/workbench/playwright.review.config.ts</code> (GPU scope addition); <code>apps/web/src/features/map/trackColors.ts</code> (Deviation 4); round 2: <code>apps/web/src/features/map/DeckOverlayControl.tsx</code> (R5, R8), <code>apps/web/src/features/map/hooks/useMapRendererHandOver.ts</code> and <code>apps/web/tests/features/map/hooks/useMapRendererHandOver.integration.test.ts</code> (R7, R8).</li>
+            <li>Not this item (the owner's uncommitted work): <code>CLAUDE.md</code>, <code>docs/conventions/</code> (100 files) and <code>.claude/skills/item-explore/references/mockup-prompt.md</code>.</li>
+          </ul>
+        </li>
+      </ol>
+
+      <h2>Verification</h2>
+      <p class="rv-text">Round 2, after the R1–R8 fixes (the final suite ran after R8).</p>
+      <table>
+        <tr><th>Command</th><th>Result</th></tr>
+        <tr><td><code>vp run check</code></td><td class="rv-pass">pass · 10/10 tasks</td></tr>
+        <tr><td><code>vp run test</code></td><td class="rv-pass">pass · 6/6 tasks. An earlier round-2 run had one intermittent failure outside this change (<code>apps/web/tests/lib/computePbsForSessions.spec.ts:44</code>, see Open points), passed on re-run (apps/web 1026, packages 263, 66, 62, 23) and did not recur in the final run</td></tr>
+        <tr><td><code>vp run e2e</code></td><td class="rv-pass">pass · 85 passed, <code>apps/web/e2e/map.spec.ts:42</code> included. On the way, one new failure caused by the change and fixed: <code>apps/web/e2e/map.spec.ts:174</code> "session map view › switching 2D and 3D only tilts…"</td></tr>
+        <tr><td><code>vp run build</code></td><td class="rv-pass">pass</td></tr>
+        <tr><td><code>vp run workbench:deps -- session-3d-map</code></td><td class="rv-pass">pass · exit 0</td></tr>
+        <tr><td><code>vp run workbench:capture -- tools/workbench/backlog/session-3d-map/review</code></td><td class="rv-pass">pass · 9 scenes; Metal GPU, live Mapterhorn tiles. The full run shot 7; the two 3D lap scenes hit "execution context was destroyed" on the store import (no navigation, crash or reload logged) and passed on a separate run after the spec got a retry for that step</td></tr>
+      </table>
+      <ul class="rv-text">
+        <li><strong>Import graph</strong> (<code>review/deps.mmd</code>): 84 modules and 109 imports drawn; 54 imports added, 0 missing.</li>
+        <li><strong>Boundary check:</strong> <code>engine-is-pure</code>, <code>store-no-features</code>: no violations (809 modules, 2408 dependencies cruised).</li>
+        <li><strong>Components</strong> (<code>review/components.mmd</code>): 17 components and 23 imports.</li>
+        <li><strong>Files</strong> (<code>review/files.json</code>, base <code>cdb32b0</code>, the merge-base with <code>main</code>): 34 planned and changed; 110 changed but not planned (sorted in Open points); 0 planned and untouched.</li>
+        <li><strong>Interfaces</strong> (<code>review/interfaces.md</code>): 30 planned files with 82 exports; 8 files outside the plan with 19 exports; 0 missing.</li>
+        <li><strong>Performance</strong> (<a href="perf.md">perf.md</a> › Round 2, R8): production build, M5 GPU, phone profile at 4× CPU throttling.</li>
+        <li><strong>Unused shots:</strong> every German variant in <code>before/</code> and <code>after/</code> (<code>*-de-*</code>, same scenes with the German copy; <code>p-de-session-map-3d</code> and <code>p-de-session-map-view-popover</code> in <code>after/</code> are used), and the round-1 shots in <code>before/</code> of the scenes round 2 did not change: <code>d-en</code> and <code>p-en</code> of <code>session-map-3d</code>, <code>session-map-3d-offline</code> and <code>session-map-view-popover</code>.</li>
+      </ul>
+
+      <h2>How to check</h2>
+      <ol class="rv-text">
+        <li>Open a session with device laps (the demo "Passo San Giovanni loop" or the Lechlauf). The pill row shows the Map view pill (Globe, 2D) first, then Color by and Laps.</li>
+        <li>Tap the 2D pill. A popover (or a drawer on the phone) offers 2D "Flat map" and 3D "Terrain from Mapterhorn". Pick 3D: the map tilts to 30°, centre and zoom stay, and the relief appears with a hillshade. The attribution (ⓘ, behind the panel) lists "© Mapterhorn" in 2D and 3D.</li>
+        <li>Shift-drag (or Ctrl/Cmd-drag) on the map: left/right turns it around the cursor and up/down tilts it. On a phone, twist and drag with two fingers.</li>
+        <li>Pick a lap by tapping the track, then step with the lap stepper. The lap is highlighted and framed at the current angle, and the rest of the track is dimmed. A click beside the track and a double-click do nothing.</li>
+        <li>Hover the charts: the dot on the draped track jumps along with the cursor.</li>
+        <li>Zoom out as far as you can: it stops at about two levels below the session fit, in 3D and in 2D.</li>
+        <li>Pick 2D: pitch and bearing ease back to 0 and the zoom stays. Laps and lap framing look as before.</li>
+        <li>Leave the session: the overview has no tilt and no zoom limit.</li>
+        <li>Turn on flight mode and open a session you have not viewed in 3D. Pick 3D: the map tilts flat with the track on it.</li>
+        <li><strong>R1:</strong> in 3D, select a lap, then close it with ✕ or Esc: the whole track fills the map beside the panel (above the sheet on the phone), not a far zoom-out. Repeat after orbiting to about 60°.</li>
+        <li><strong>R2:</strong> in 3D, scrub a chart quickly on the phone: the dot and the hovered lap follow as smoothly as in 2D.</li>
+        <li><strong>R3:</strong> in 2D, Shift + left-drag on the map: no zoom rectangle appears.</li>
+        <li><strong>R4:</strong> select a lap: the Map view pill shrinks to its Globe icon, like Color by; close the lap and it shows 2D / 3D again.</li>
+        <li><strong>R5:</strong> on a long session (the Lechlauf), switch 2D → 3D and step through laps: the tilt starts without a noticeable hitch, lap switches are immediate.</li>
+        <li><strong>R6:</strong> in 2D, open the attribution: "© Mapterhorn" is listed.</li>
+        <li><strong>R7:</strong> switch 2D ↔ 3D several times and watch the track: it never disappears for a frame.</li>
+        <li><strong>R8:</strong> switch 2D → 3D → 2D a dozen times, quickly too: the 2D track is back every time, laps and the chart dot still work in 2D.</li>
+      </ol>
+    </main>
+    <script>
+      // swipe compare: the range value drives --pos (1 listener)
+      addEventListener('input', (e) =>
+        e.target.closest('.rv-swipe')?.style.setProperty('--pos', `${e.target.value}%`),
+      );
+    </script>
+  </body>
+</html>
