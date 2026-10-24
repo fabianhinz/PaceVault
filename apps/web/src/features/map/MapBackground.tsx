@@ -16,6 +16,7 @@ import { useStudioMapPopup } from '../studio/hooks/useStudioMapPopup.ts';
 import { useStudioRoutesPopup } from '../studio/hooks/useStudioRoutesPopup.ts';
 import { SessionsPickPopup } from '../sessions/SessionsPickPopup.tsx';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useWatchPositionEffect } from '@/lib/hooks/useWatchPositionEffect.ts';
 import { useGeolocationCameraEffect } from './hooks/useGeolocationCameraEffect.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
@@ -28,6 +29,8 @@ export const MapBackground = () => {
 
   const mapRef = useRef<MapRef>(null);
   const pointerFine = useDevice().pointerFine;
+  const terrain = useMapControlsStore((s) => s.sessionMapView === '3d');
+  const terrainTrackHovered = useMapControlsStore((s) => s.terrainTrackHovered);
 
   const backfill = useGPSBackfill();
   const tracks = useMapTracks(backfill.gpsData);
@@ -80,15 +83,16 @@ export const MapBackground = () => {
         }}
         scrollZoom={interactive}
         dragPan={interactive}
-        doubleClickZoom={interactive}
+        doubleClickZoom={interactive && !terrain}
         keyboard={interactive}
         touchZoomRotate={interactive}
-        dragRotate={false}
-        pitchWithRotate={false}
-        touchPitch={false}
+        dragRotate={terrain}
+        pitchWithRotate
+        touchPitch={terrain}
+        boxZoom={false}
         attributionControl={{ compact: true }}
         style={{ width: '100%', height: '100%' }}
-        cursor={popupState.hoveringTrack ? 'pointer' : undefined}
+        cursor={popupState.hoveringTrack || terrainTrackHovered ? 'pointer' : undefined}
       >
         <DeckGLOverlay
           key={pointerFine ? 'overlaid' : 'interleaved'}
@@ -98,6 +102,7 @@ export const MapBackground = () => {
           hoveringTrack={popupState.hoveringTrack}
           gpsData={backfill.gpsData}
           mapLoaded={mapLoaded}
+          terrain={terrain}
         />
         {studioTracks.focusedRouteId && <StudioMarkerPins routeId={studioTracks.focusedRouteId} />}
       </MapGL>

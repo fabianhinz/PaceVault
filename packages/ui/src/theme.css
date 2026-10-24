@@ -72,6 +72,11 @@
   --color-sport-cycling: var(--color-orange-500);
   --color-sport-cycling-muted: #f9731633;
 
+  --color-map-shadow: #000000;
+  --color-map-highlight: #ffffff;
+  --color-map-hillshade-highlight: #ffffff1a;
+  --color-map-dot-stroke: #00000050;
+
   --color-chart-fitness: var(--color-blue-500);
   --color-chart-fatigue: var(--color-pink-500);
   --color-chart-form: var(--color-yellow-500);

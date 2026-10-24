@@ -3,6 +3,10 @@ import { immer } from 'zustand/middleware/immer';
 import type { ColorMode } from '@/lib/colorModes.ts';
 import type { LapSet } from '@/lib/lapSet.ts';
 
+export const MAP_VIEWS = ['2d', '3d'] as const;
+
+export type MapView = (typeof MAP_VIEWS)[number];
+
 interface MapControlsState {
   trackColorMode: ColorMode;
   setTrackColorMode: (mode: ColorMode) => void;
@@ -19,6 +23,10 @@ interface MapControlsState {
   clearLapFocusOnLapSetChange: () => void;
   overviewMapControlsShown: boolean;
   setOverviewMapControlsShown: (shown: boolean) => void;
+  sessionMapView: MapView;
+  setSessionMapView: (view: MapView) => void;
+  terrainTrackHovered: boolean;
+  setTerrainTrackHovered: (hovered: boolean) => void;
   resetSessionControlsOnSessionOpen: () => void;
   resetSessionControlsOnSessionClose: () => void;
 }
@@ -51,10 +59,18 @@ export const useMapControlsStore = create<MapControlsState>()(
     clearLapFocusOnLapSetChange: () => set({ selectedLapIndex: null, hoveredLapIndex: null }),
     overviewMapControlsShown: false,
     setOverviewMapControlsShown: (shown) => set({ overviewMapControlsShown: shown }),
+    sessionMapView: '2d',
+    setSessionMapView: (view) => set({ sessionMapView: view }),
+    terrainTrackHovered: false,
+    setTerrainTrackHovered: (hovered) => {
+      if (get().terrainTrackHovered !== hovered) set({ terrainTrackHovered: hovered });
+    },
     resetSessionControlsOnSessionOpen: () =>
       set({
         selectedLapIndex: null,
         hoveredLapIndex: null,
+        sessionMapView: '2d',
+        terrainTrackHovered: false,
       }),
     resetSessionControlsOnSessionClose: () =>
       set({
@@ -62,6 +78,8 @@ export const useMapControlsStore = create<MapControlsState>()(
         sessionLaps: null,
         selectedLapIndex: null,
         hoveredLapIndex: null,
+        sessionMapView: '2d',
+        terrainTrackHovered: false,
       }),
   })),
 );

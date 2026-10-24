@@ -15,6 +15,9 @@ export const trackModifiers = {
   alpha: { default: 80, highlighted: 255 },
 };
 
+export const LAP_DIMMED_BRIGHTNESS = 0.8;
+export const LAP_CASING_SCALE = 1.6;
+
 export const trackIntensityAlpha: Record<TrackIntensity, number> = {
   faint: trackModifiers.alpha.default,
   warm: 160,

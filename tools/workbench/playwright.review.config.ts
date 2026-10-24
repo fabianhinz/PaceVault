@@ -10,6 +10,18 @@ const PORT = 5176;
 const ORIGIN = `http://localhost:${PORT}`;
 const BOARD_PORT = 4321;
 
+const mapLaunchOptions = () => {
+  if (process.platform === 'darwin' && !process.env.CI) {
+    return {
+      channel: 'chromium',
+      args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'],
+    };
+  }
+  return {
+    args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+  };
+};
+
 export default defineConfig({
   testDir: './backlog',
   testMatch: '**/review/capture.spec.ts',
@@ -24,9 +36,7 @@ export default defineConfig({
     baseURL: ORIGIN,
     timezoneId: 'Europe/Berlin',
     contextOptions: { reducedMotion: 'reduce' },
-    launchOptions: {
-      args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
-    },
+    launchOptions: mapLaunchOptions(),
   },
 
   webServer: [

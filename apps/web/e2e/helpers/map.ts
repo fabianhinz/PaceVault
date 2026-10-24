@@ -2,9 +2,19 @@ import type { Page } from './test';
 
 const SCAN_STEP = 30;
 
-export const SWIFTSHADER_LAUNCH_OPTIONS = {
-  args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+const mapLaunchOptions = () => {
+  if (process.platform === 'darwin' && !process.env.CI) {
+    return {
+      channel: 'chromium',
+      args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'],
+    };
+  }
+  return {
+    args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+  };
 };
+
+export const MAP_LAUNCH_OPTIONS = mapLaunchOptions();
 
 export const pointerState = (page: Page, point: { x: number; y: number }) =>
   page.evaluate(async (p) => {

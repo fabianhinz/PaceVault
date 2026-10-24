@@ -37,7 +37,10 @@ export const nearestRecordIndex = (
   return best;
 };
 
-export const lapSubPath = (detail: DetailPath, span: LapSpan): DetailPath | null => {
+const lapVertexRange = (
+  detail: DetailPath,
+  span: LapSpan,
+): { first: number; end: number } | null => {
   const first = detail.recordIndices.findIndex((index) => index >= span.startRecord);
   if (first < 0) return null;
   let end = detail.recordIndices.findIndex((index) => index > span.endRecord);
@@ -45,6 +48,39 @@ export const lapSubPath = (detail: DetailPath, span: LapSpan): DetailPath | null
     end = detail.recordIndices.length;
   }
   if (end - first < 2) return null;
+  return { first, end };
+};
+
+export const lapVertexBounds = ({
+  detailPath,
+  span,
+}: {
+  detailPath: DetailPath;
+  span: LapSpan;
+}): { first: number; last: number } | null => {
+  const range = lapVertexRange(detailPath, span);
+  if (range === null) return null;
+  return { first: range.first, last: range.end - 1 };
+};
+
+export const lapVertexBreaks = ({
+  detailPath,
+  spans,
+}: {
+  detailPath: DetailPath;
+  spans: LapSpan[];
+}): number[] =>
+  spans.flatMap((span) => {
+    const bounds = lapVertexBounds({ detailPath, span });
+    if (bounds === null) return [];
+    return [bounds.first, bounds.last];
+  });
+
+export const lapSubPath = (detail: DetailPath, span: LapSpan): DetailPath | null => {
+  const range = lapVertexRange(detail, span);
+  if (range === null) return null;
+  const first = range.first;
+  const end = range.end;
   let color = detail.color;
   if (isColorList(color)) {
     color = color.slice(first, end);
@@ -53,6 +89,7 @@ export const lapSubPath = (detail: DetailPath, span: LapSpan): DetailPath | null
     path: detail.path.slice(first, end),
     recordIndices: detail.recordIndices.slice(first, end),
     color,
+    elevations: detail.elevations.slice(first, end),
   };
 };
 

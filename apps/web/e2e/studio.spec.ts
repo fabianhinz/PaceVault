@@ -1,13 +1,13 @@
 import path from 'path';
 import { readFile } from 'fs/promises';
 import { test, expect, type Download, type Page } from './helpers/test';
-import { SWIFTSHADER_LAUNCH_OPTIONS, findPickableTrack } from './helpers/map';
+import { MAP_LAUNCH_OPTIONS, findPickableTrack } from './helpers/map';
 import { seedOnboardingComplete, FIXTURES_DIR } from './helpers/seed';
 import { DB_NAME } from '../src/lib/db.ts';
 
 const ROUTE_GPX = path.join(FIXTURES_DIR, 'route.gpx');
 
-test.use({ launchOptions: SWIFTSHADER_LAUNCH_OPTIONS });
+test.use({ launchOptions: MAP_LAUNCH_OPTIONS });
 
 const openImportedRoute = async (page: Page) => {
   await seedOnboardingComplete(page);

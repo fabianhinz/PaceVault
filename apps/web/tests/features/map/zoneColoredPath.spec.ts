@@ -7,6 +7,7 @@ import {
   buildWindColoredPath,
 } from '@/features/map/zoneColoredPath.ts';
 import { zoneScale, type ZoneScale } from '@/lib/zoneColors.ts';
+import { createMockSessionRecord } from '@pacevault/testing/records.ts';
 
 const FALLBACK_COLOR: [number, number, number, number] = [160, 160, 160, 80];
 
@@ -113,5 +114,19 @@ describe('buildSportColoredPath', () => {
     const result = buildSportColoredPath(records, color);
     expect(result).not.toBeNull();
     expect(result?.path).toHaveLength(2);
+  });
+});
+
+describe('detail path elevations', () => {
+  it('keeps a recorded 0 m as 0 and a missing height as null, aligned with the path', () => {
+    const records = [
+      createMockSessionRecord({ elevation: 0 }),
+      createMockSessionRecord({ lat: undefined, lng: undefined, elevation: 300 }),
+      createMockSessionRecord({ lng: 8.41, elevation: undefined }),
+      createMockSessionRecord({ lng: 8.42, elevation: 12 }),
+    ];
+    const result = buildSportColoredPath(records, [74, 222, 128, 255]);
+    expect(result?.path).toHaveLength(3);
+    expect(result?.elevations).toEqual([0, null, 12]);
   });
 });
