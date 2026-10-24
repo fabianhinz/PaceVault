@@ -62,7 +62,7 @@ None.
 
 3. Read every application variable through the facade.
    Files: `apps/web/src/features/map/mapStyle.ts`, `apps/web/src/lib/crashReport.ts`, `apps/web/src/features/settings/AboutSection.tsx`
-   Change: `mapStyle.ts:17` `const apiKey = import.meta.env.VITE_CARTO_API_KEY;` becomes `const apiKey = env.VITE_CARTO_API_KEY;` with `import { env } from '@/lib/env.ts';` (the `if (!apiKey)` guard at `:19` stays; an empty `.env` entry was already treated as unset there, the schema now also says so). `crashReport.ts:40` `${import.meta.env.VITE_APP_COMMIT}` becomes `${env.VITE_APP_COMMIT}`. `AboutSection.tsx:18` `{import.meta.env.VITE_APP_COMMIT}` becomes `{env.VITE_APP_COMMIT}`. Delete the four commented-out voyager lines and `// TODO` comments in `mapStyle.ts` (`:3-4`, `:6`, `:38-41`, `:55-56`) while touching the file (no comments in this codebase).
+   Change: `mapStyle.ts:44` `const apiKey = import.meta.env.VITE_CARTO_API_KEY;` becomes `const apiKey = env.VITE_CARTO_API_KEY;` with `import { env } from '@/lib/env.ts';` (the `if (!apiKey)` guard at `:46` stays; an empty `.env` entry was already treated as unset there, the schema now also says so). `crashReport.ts:40` `${import.meta.env.VITE_APP_COMMIT}` becomes `${env.VITE_APP_COMMIT}`. `AboutSection.tsx:18` `{import.meta.env.VITE_APP_COMMIT}` becomes `{env.VITE_APP_COMMIT}`. Delete the four commented-out voyager lines and `// TODO` comments in `mapStyle.ts` (`:9-10`, `:12`, `:65-68`, `:82-83`) while touching the file (no comments in this codebase).
    Check: `rg -n "import\.meta\.env\.VITE_" apps/web/src --glob '!**/lib/env.ts'` prints nothing; `vp check`, `vp test -- --run`, `vp run e2e` and `vp run build` pass.
 
 4. Give the Vitest run the variable the build sets.

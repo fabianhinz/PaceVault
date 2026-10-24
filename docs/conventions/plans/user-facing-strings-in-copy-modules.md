@@ -64,10 +64,11 @@ Every item's Check includes `vp run check` clean (it compiles the translations f
 ## Open items
 
 - R1, R2 and R4 are dropped: the app keeps Paraglide (`@pacevault/i18n`) as its copy layer, so user-facing strings are message keys, not literals in per-topic constant objects, and entries are `m.*` functions (Paraglide resolves the locale at call time). R3 (`as const` on the copy object) is moot with no such object.
-- R7 (delete unused entries): all 776 keys in `packages/i18n/messages/en.json` are referenced through `m.<key>` today; nothing to delete beyond the two keys item 8 merges away. The check stays a diff-time review.
+- R7 (delete unused entries): all 782 keys in `packages/i18n/messages/en.json` are referenced through `m.<key>` today; nothing to delete beyond the two keys item 8 merges away. The check stays a diff-time review.
 - `apps/web/src/pages/SettingsPage.tsx:26` `localeLabels` maps locales to their endonyms (`English`, `Deutsch`), deliberately untranslated; it holds no `m.*` copy and stays.
 - Array-shaped spec lists that mix copy with icons and accessors (`SOURCES` in `apps/web/src/features/onboarding/OnboardingStep.tsx:86`, `WIND_LEGEND` in `apps/web/src/features/sessions/session/WeatherCard.tsx:41`, `TILES` in `apps/web/src/features/settings/ThresholdTiles.tsx:44`) are not state-keyed maps and stay in their components.
 - State-keyed `m.*` maps already in `.ts` lib modules (`apps/web/src/lib/coachingMessages.ts`, `localizedTrainingEffect.ts`, `sessionTitleFormatter.ts`, `apps/web/src/features/sessions/session/weatherConditions.ts`, `apps/web/src/features/labs/workoutDisplay.ts`, `apps/web/src/features/sessions/charts/zoneLabel.ts`) are already out of components; R6 targets component-local maps only.
+- `apps/web/src/microcopy/mapView.ts` (`LABEL_BY_MAP_VIEW`, `DESCRIPTION_BY_MAP_VIEW`, read by `apps/web/src/features/sessions/session/MapViewControl.tsx`) and its six `ui_map_view*` keys came with the 3D map view and already follow R5 and R6; it is the first module of the `microcopy/` directory items 2–5 fill.
 
 ## Done
 

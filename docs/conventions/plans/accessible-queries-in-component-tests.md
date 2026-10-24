@@ -15,7 +15,7 @@ Read `tdr/accessible-queries-in-component-tests.md` first — the binding rule t
 
 ## Changes
 
-`apps/web/tests/` holds no component (`.spec.tsx`) spec today, and no spec uses `screen`, `*ByTestId`, `querySelector` or `findBy*` (all four Section 3 greps print nothing over `apps/web/tests/`). The change is the convention line that makes the first component spec follow the rules. No `CLAUDE.md:28` exemption is needed: the render result is bound whole (`const view = renderWithProviders(…)`) and queried through its name, in line with the no-destructuring rule at `CLAUDE.md:28`, which stays unchanged.
+`apps/web/tests/` holds no component (`.spec.tsx`) spec today (the 3D map work added none), and no spec uses `screen`, `*ByTestId`, `querySelector` or `findBy*` (all four Section 3 greps print nothing over `apps/web/tests/`). The change is the convention line that makes the first component spec follow the rules. No `CLAUDE.md:28` exemption is needed: the render result is bound whole (`const view = renderWithProviders(…)`) and queried through its name, in line with the no-destructuring rule at `CLAUDE.md:28`, which stays unchanged.
 
 1. State the query rules in the testing strategy.
    Files: `apps/web/tests/CLAUDE.md` (one new bullet directly after the **Rendering** bullet that the render-helper plan adds after line 11)

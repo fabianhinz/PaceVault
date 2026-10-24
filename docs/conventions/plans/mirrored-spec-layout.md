@@ -15,47 +15,47 @@ Read `tdr/mirrored-spec-layout.md` first — the binding rule text, detection si
 
 ## Changes
 
-Baseline before item 1: `vp test -- --run` from `apps/web/` runs 100 spec files with 976 passing tests in the single jsdom test project of `apps/web/vitest.config.ts`. Every item below must end at 976 passing tests (the count changes only when another plan changes specs). Move files with plain `mv` (never `git mv`), stage nothing. Imports of the test API stay `from 'vite-plus/test'`; `apps/web/tests/setup.ts` and the `@tests` alias stay as they are.
+Baseline before item 1: `vp test -- --run` from `apps/web/` runs 103 spec files with 1027 passing tests in the single jsdom test project of `apps/web/vitest.config.ts`. Every item below must end at 1027 passing tests (the count changes only when another plan changes specs). Move files with plain `mv` (never `git mv`), stage nothing. Imports of the test API stay `from 'vite-plus/test'`; `apps/web/tests/setup.ts` and the `@tests` alias stay as they are.
 
 1. Add the shared-helper alias and a transitional include list.
    Files: `apps/web/vitest.config.ts`, `apps/web/tsconfig.test.json`
    Change: In `resolve.alias` add `'@testUtils': path.resolve(__dirname, 'tests/testUtils')` after `'@tests'`. Replace `include: ['tests/**/*.integration.test.ts', 'tests/**/*.spec.ts']` with `include: ['tests/**/*.spec.{ts,tsx}', 'tests/**/*.integration.test.ts']` (the second glob keeps the not-yet-renamed specs running until item 8 removes it). In `apps/web/tsconfig.test.json` add `"@testUtils/*": ["./tests/testUtils/*"]` to `paths` after `"@tests/*"`.
-   Check: `vp test -- --run` from `apps/web/` reports 976 passed; `vp test -- --run` from the repo root passes (the root `vite.config.ts` `test.projects` entry `'apps/web'` picks the config up); `vp check` from the root is clean.
+   Check: `vp test -- --run` from `apps/web/` reports 1027 passed; `vp test -- --run` from the repo root passes (the root `vite.config.ts` `test.projects` entry `'apps/web'` picks the config up); `vp check` from the root is clean.
 
 2. Replace the five copied FIT-fixture readers with one shared helper.
    Files: `apps/web/tests/testUtils/fixtures.ts` (new), `apps/web/tests/parsers/fit.spec.ts:128-133`, `apps/web/tests/parsers/fitThresholds.integration.test.ts:10-15`, `apps/web/tests/features/sessions/reprocessSessions.integration.test.ts:52-57`, `apps/web/tests/features/intervals/intervalsSync.integration.test.ts:21-26`, `apps/web/tests/features/intervals/intervalsImport.integration.test.ts:10-15`
    Change: `fixtures.ts` exports `readE2eFixture = (name: string): ArrayBuffer` that does `readFileSync(resolve(import.meta.dirname, '../../e2e/fixtures', name))`, copies it into a fresh `Uint8Array` and returns its `buffer` (the body the five copies share). Each spec deletes its local `fixture`/`runningFit` helper and its `node:fs`/`node:path` imports if no longer used, imports `{ readE2eFixture } from '@testUtils/fixtures.ts'`, and calls `readE2eFixture('running.fit')` or `readE2eFixture(name)`. The fixture files stay in `apps/web/e2e/fixtures/` because Playwright reads them too.
-   Check: `rg -n "e2e/fixtures" apps/web/tests` prints only `apps/web/tests/testUtils/fixtures.ts`; `vp test -- --run` from `apps/web/` reports 976 passed.
+   Check: `rg -n "e2e/fixtures" apps/web/tests` prints only `apps/web/tests/testUtils/fixtures.ts`; `vp test -- --run` from `apps/web/` reports 1027 passed.
 
 3. Rename the store specs whose name does not mirror their subject.
    Files: `apps/web/tests/store/sessionsStore.integration.test.ts`, `apps/web/tests/store/userStore.integration.test.ts`, `apps/web/tests/store/storeEngine.integration.test.ts`, `apps/web/tests/store/deleteAllData.integration.test.ts`
    Change: `sessionsStore.integration.test.ts` → `apps/web/tests/store/sessions.integration.spec.ts`; `userStore.integration.test.ts` → `apps/web/tests/store/user.integration.spec.ts`; `storeEngine.integration.test.ts` → `apps/web/tests/store/sessions.engine.integration.spec.ts`; `deleteAllData.integration.test.ts` → `apps/web/tests/lib/indexeddb.deleteAllData.integration.spec.ts` (its subject is `clearAllRecords` from `@/lib/indexeddb.ts` plus the store resets). The other eleven store specs keep their names.
-   Check: `find apps/web/tests/store -name '*.test.ts'` prints nothing; `vp test -- --run` from `apps/web/` reports 976 passed.
+   Check: `find apps/web/tests/store -name '*.test.ts'` prints nothing; `vp test -- --run` from `apps/web/` reports 1027 passed.
 
 4. Rename the parser specs to qualifier names of their subject.
    Files: `apps/web/tests/parsers/fitLaps.spec.ts`, `apps/web/tests/parsers/fitRequiredFields.spec.ts`, `apps/web/tests/parsers/fitThresholds.integration.test.ts`
    Change: `fitLaps.spec.ts` → `fit.laps.spec.ts`; `fitRequiredFields.spec.ts` → `fit.requiredFields.spec.ts`; `fitThresholds.integration.test.ts` → `fit.thresholds.integration.spec.ts` (all three cover `@/parsers/fit.ts`). `fit.spec.ts` and `fitSchemas.spec.ts` keep their names.
-   Check: `ls apps/web/tests/parsers` lists exactly `fit.laps.spec.ts fit.requiredFields.spec.ts fit.spec.ts fit.thresholds.integration.spec.ts fitSchemas.spec.ts`; `vp test -- --run` from `apps/web/` reports 976 passed.
+   Check: `ls apps/web/tests/parsers` lists exactly `fit.laps.spec.ts fit.requiredFields.spec.ts fit.spec.ts fit.thresholds.integration.spec.ts fitSchemas.spec.ts`; `vp test -- --run` from `apps/web/` reports 1027 passed.
 
 5. Rename the `lib` specs to the module they cover.
    Files: `apps/web/tests/lib/chartData.integration.test.ts`, `apps/web/tests/lib/db.integration.test.ts`, `apps/web/tests/lib/indexeddb.integration.test.ts`, `apps/web/tests/lib/studioPoints.integration.test.ts`, `apps/web/tests/lib/computePbsForSessions.spec.ts`, `apps/web/tests/lib/groupPbsBySport.spec.ts`, `apps/web/tests/lib/lapsAnalysis.spec.ts`, `apps/web/tests/lib/utils.spec.ts`, `apps/web/tests/lib/hooks/useChartZoom.integration.test.ts`, `apps/web/tests/lib/hooks/useMapHover.integration.test.ts`
    Change: In place under `apps/web/tests/lib/`: `chartData.integration.test.ts` → `chartData.integration.spec.ts`; `db.integration.test.ts` → `db.integration.spec.ts`; `indexeddb.integration.test.ts` → `indexeddb.integration.spec.ts`; `studioPoints.integration.test.ts` → `indexeddb.studioPoints.integration.spec.ts` (subject `@/lib/indexeddb.ts`); `computePbsForSessions.spec.ts` → `records.computePbsForSessions.spec.ts` and `groupPbsBySport.spec.ts` → `records.groupPbsBySport.spec.ts` (subject `@/lib/records.ts`); `lapsAnalysis.spec.ts` → `laps.spec.ts` (subject `@/lib/laps.ts`); `utils.spec.ts` → `formatters.spec.ts` (subject `@/lib/formatters.ts`); `hooks/useChartZoom.integration.test.ts` → `hooks/useChartZoom.integration.spec.ts`; `hooks/useMapHover.integration.test.ts` → `hooks/useMapHover.integration.spec.ts`. Every other `lib` spec keeps its name.
-   Check: `find apps/web/tests/lib -name '*.test.ts'` prints nothing; `ls apps/web/tests/lib/utils.spec.ts apps/web/tests/lib/lapsAnalysis.spec.ts` fails for both; `vp test -- --run` from `apps/web/` reports 976 passed.
+   Check: `find apps/web/tests/lib -name '*.test.ts'` prints nothing; `ls apps/web/tests/lib/utils.spec.ts apps/web/tests/lib/lapsAnalysis.spec.ts` fails for both; `vp test -- --run` from `apps/web/` reports 1027 passed.
 
 6. Re-home the two app-wiring specs filed under `packages/engine` at their `lib` subjects.
    Files: `apps/web/tests/packages/engine/metricsCoaching.integration.test.ts` → `apps/web/tests/lib/coachingMessages.integration.spec.ts`; `apps/web/tests/packages/engine/stressPipeline.integration.test.ts` → `apps/web/tests/lib/validation.integration.spec.ts`
    Change: `mv` with the new names (their only `@/` subjects are `@/lib/coachingMessages.ts` and `@/lib/validation.ts`); delete the empty `apps/web/tests/packages/`.
-   Check: `ls apps/web/tests/packages` fails; `vp test -- --run` from `apps/web/` reports 976 passed.
+   Check: `ls apps/web/tests/packages` fails; `vp test -- --run` from `apps/web/` reports 1027 passed.
 
 7. Rename the feature specs.
-   Files: `apps/web/tests/features/intervals/intervalsImport.integration.test.ts`, `apps/web/tests/features/intervals/intervalsSync.integration.test.ts`, `apps/web/tests/features/sessions/createIngestBatcher.integration.test.ts`, `apps/web/tests/features/sessions/recomputeTrainingLoad.integration.test.ts`, `apps/web/tests/features/sessions/reprocessSessions.integration.test.ts`, `apps/web/tests/features/map/hooks/useGpsBackfill.integration.test.ts`, `apps/web/tests/features/map/hooks/useMapTracks.integration.test.ts`
-   Change: In place: `intervals/intervalsImport.integration.test.ts` → `intervals/runIntervalsImport.integration.spec.ts` and `intervals/intervalsSync.integration.test.ts` → `intervals/runIntervalsSync.integration.spec.ts` (subjects `@/features/intervals/runIntervalsImport.ts`, `@/features/intervals/runIntervalsSync.ts`); the other five keep their base name and only swap `.integration.test.ts` for `.integration.spec.ts`. The twelve `.spec.ts` feature specs keep their names.
-   Check: `find apps/web/tests -name '*.test.ts*'` prints nothing; `vp test -- --run` from `apps/web/` reports 976 passed.
+   Files: `apps/web/tests/features/intervals/intervalsImport.integration.test.ts`, `apps/web/tests/features/intervals/intervalsSync.integration.test.ts`, `apps/web/tests/features/sessions/createIngestBatcher.integration.test.ts`, `apps/web/tests/features/sessions/recomputeTrainingLoad.integration.test.ts`, `apps/web/tests/features/sessions/reprocessSessions.integration.test.ts`, `apps/web/tests/features/map/hooks/useGpsBackfill.integration.test.ts`, `apps/web/tests/features/map/hooks/useMapTracks.integration.test.ts`, `apps/web/tests/features/map/hooks/useMapRendererHandOver.integration.test.ts`
+   Change: In place: `intervals/intervalsImport.integration.test.ts` → `intervals/runIntervalsImport.integration.spec.ts` and `intervals/intervalsSync.integration.test.ts` → `intervals/runIntervalsSync.integration.spec.ts` (subjects `@/features/intervals/runIntervalsImport.ts`, `@/features/intervals/runIntervalsSync.ts`); the other six (including the 3D renderer hand-over spec, subject `@/features/map/hooks/useMapRendererHandOver.ts`) keep their base name and only swap `.integration.test.ts` for `.integration.spec.ts`. The sixteen `.spec.ts` feature specs keep their names.
+   Check: `find apps/web/tests -name '*.test.ts*'` prints nothing; `vp test -- --run` from `apps/web/` reports 1027 passed.
 
 8. Drop the transitional include glob.
    Files: `apps/web/vitest.config.ts`
    Change: `include` becomes `['tests/**/*.spec.{ts,tsx}']`. Nothing else in the `test` block changes (`environment: 'jsdom'`, `setupFiles: ['tests/setup.ts']`, `globals: true`, `coverage` stay).
-   Check: `rg -n "integration\.test" apps/web/vitest.config.ts` prints nothing; `vp test -- --run` from `apps/web/` reports 976 passed across 100 files.
+   Check: `rg -n "integration\.test" apps/web/vitest.config.ts` prints nothing; `vp test -- --run` from `apps/web/` reports 1027 passed across 103 files.
 
 9. Rewrite the documented test conventions to the adopted layout.
    Files: `apps/web/tests/CLAUDE.md:12,16-17`, `CLAUDE.md:46`

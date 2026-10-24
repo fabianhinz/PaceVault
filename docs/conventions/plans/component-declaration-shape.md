@@ -14,7 +14,7 @@ None.
 
 ## Changes
 
-Today 190 components in `apps/web/src` are declared as unannotated arrows (`export const X = (props: …) =>` or `= () =>`); only `SportsRecords` and `DeckGLOverlay` carry an annotation, and that one is `React.FC`. 82 of them type props with an inline object literal (`(props: { … })`), and `TrainingEffectCard` uses a `type` alias. Items 3–11 bring one directory batch each to the target shape:
+Today 190 components in `apps/web/src` are declared as unannotated arrows (`export const X = (props: …) =>` or `= () =>`); only `SportsRecords` and `DeckGLOverlay` carry a `React.FC` annotation, and the three 3D-map components `DeckOverlayControl`, `SessionTerrain` (`features/map/`) and `MapViewControl` (`features/sessions/session/`) already have the target `FC` shape. 82 of them type props with an inline object literal (`(props: { … })`), and `TrainingEffectCard` uses a `type` alias. Items 3–11 bring one directory batch each to the target shape:
 
 ```tsx
 import type { FC } from 'react';
@@ -52,10 +52,10 @@ For every component in the batch: annotate `: FC<XProps>` (`: FC` with no props,
    Change: As described above (inline props in `StudioDetailPage.tsx:33` and `TripDetailPage.tsx:40` become `StudioDetailProps` / `TripDetailProps`).
    Check: the two batch commands with `apps/web/src/App.tsx apps/web/src/pages apps/web/src/lib/debug`; clean `vp check`.
 
-5. Batch `features/dashboard`, `features/filters`, `features/intervals`, `features/labs`, `features/map`, `features/records` (30 components, 9 inline props).
+5. Batch `features/dashboard`, `features/filters`, `features/intervals`, `features/labs`, `features/map`, `features/records` (32 components, 9 inline props).
    Files: every `.tsx` under those six directories
-   Change: As described above; `DeckGLOverlay: React.FC<DeckGLOverlayProps>` (`features/map/DeckGLOverlay.tsx:66`) and `SportsRecords: React.FC` (`features/records/SportsRecords.tsx:8`) become `FC<DeckGLOverlayProps>` / `FC`.
-   Check: the two batch commands with `apps/web/src/features/{dashboard,filters,intervals,labs,map,records}`; clean `vp check`.
+   Change: As described above; `DeckGLOverlay: React.FC<DeckGLOverlayProps>` (`features/map/DeckGLOverlay.tsx:69`) and `SportsRecords: React.FC` (`features/records/SportsRecords.tsx:8`) become `FC<DeckGLOverlayProps>` / `FC`. In `features/map/DeckOverlayControl.tsx` the `NOTHING_DRAWN` constant and the `freshLayers` helper (`:14-21`) sit between `DeckOverlayControlProps` (`:7-12`) and the component (`:23`); move them above the interface so it sits directly above `DeckOverlayControl` (R2).
+   Check: the two batch commands with `apps/web/src/features/{dashboard,filters,intervals,labs,map,records}`; `rg -n -B2 "^export const DeckOverlayControl" apps/web/src/features/map/DeckOverlayControl.tsx` shows the interface's closing `}` right above it; clean `vp check`.
 
 6. Batch `features/onboarding` (19 components, 10 inline props).
    Files: every `.tsx` under `apps/web/src/features/onboarding/`

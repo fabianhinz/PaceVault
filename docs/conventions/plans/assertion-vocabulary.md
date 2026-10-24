@@ -56,26 +56,31 @@ Line numbers are as of this plan and can shift by a few lines after the mirrored
    Change: The same three rewrites as item 5, except the two URL checks: `expect(urls.some((u) => u.includes('/activity/i100/'))).toBe(false);` becomes `expect(urls).not.toContainEqual(expect.stringContaining('/activity/i100/'));` and the `i200` line becomes `expect(urls).toContainEqual(expect.stringContaining('/activity/i200/'));`.
    Check: `rg -n "expect\([^;]*\.(includes|some|every|indexOf|startsWith|endsWith)\([^;]*\)\s*\)?\s*\.(not\.)?toBe(Truthy|Falsy|\(\s*(true|false)\s*\))" apps/web/tests` prints nothing; `vp test -- --run` from `apps/web/` passes with the same count as before item 1.
 
-8. Write the vocabulary into the testing strategy.
+8. Replace the camera assertion helper of the 3D camera spec with one structural assertion (R8).
+   Files: `apps/web/tests/features/map/terrainCamera.spec.ts:32-39,43-44`
+   Change: Delete `expectCamera` (`:32-39`), a helper that wraps six `expect(…).toBeCloseTo(…, 9)` calls. Its two call sites (`:43-44`) become one `toEqual` each with `expect.closeTo` per field, the same precision as today: `expect(interpolateTerrainCamera({ from: start, to: target, progress: 0 })).toEqual({ center: [expect.closeTo(start.center[0], 9), expect.closeTo(start.center[1], 9)], zoom: expect.closeTo(start.zoom, 9), pitch: expect.closeTo(start.pitch, 9), bearing: expect.closeTo(start.bearing, 9), elevation: expect.closeTo(start.elevation, 9) });` and the same against `target` for `progress: 1`. A file-local `closeToCamera = (camera: TerrainCamera) => ({ center: [expect.closeTo(camera.center[0], 9), …], … })` that only builds the expected value (no `expect(…)` call inside) is allowed if the two literals read too long. `TerrainCamera` has exactly these five fields, so `toEqual` checks nothing the helper did not.
+   Check: `rg -n "expectCamera" apps/web/tests` prints nothing; `rg -c "toBeCloseTo\(" apps/web/tests/features/map/terrainCamera.spec.ts` prints 6 fewer than before the item; `vp test -- --run tests/features/map/terrainCamera.spec.ts` from `apps/web/` passes 22 tests.
+
+9. Write the vocabulary into the testing strategy.
    Files: `apps/web/tests/CLAUDE.md` (one new bullet directly after the **Style** bullet, line 14)
    Change: Insert `- **Assertions**: Interactions with their arguments (\`toHaveBeenCalledWith\`; bare \`toHaveBeenCalled\` only for a call whose arguments the spec does not determine), absence as \`.not.toHaveBeenCalled()\`; \`toBe\` for primitives, \`toEqual\` for objects and arrays; booleans as \`toBe(true)\`/\`toBe(false)\`, never \`toBeTruthy\`/\`toBeFalsy\`; never a computed predicate — \`toContain\`, \`toContainEqual\`, \`toHaveLength\`, \`toThrow\`/\`rejects\` or \`filter(…)\` against \`[]\`; DOM facts through jest-dom (\`toBeInTheDocument\`, \`toBeDisabled\`, \`toHaveValue\`); no file snapshots, inline snapshots only for short literal text (exception: file-format output, \`packages/gpx/CLAUDE.md\` § Rules, Tests). A new matcher is registered with \`expect.extend\` in \`apps/web/tests/setup.ts\` and declared in \`apps/web/tests/types/\`, never written as a helper that wraps \`expect\`.` Line 20 (imports from `vite-plus/test`) stays.
    Check: `rg -n "\*\*Assertions\*\*" apps/web/tests/CLAUDE.md` prints one line directly below the Style bullet; `rg -n "setup\.ts" apps/web/tests/CLAUDE.md` prints the Setup line and the new Assertions line.
 
-9. (packages/engine) Replace the computed-predicate assertions in the engine specs (R5).
+10. (packages/engine) Replace the computed-predicate assertions in the engine specs (R5).
    Files: `packages/engine/tests/normalize.spec.ts` (or `normalizedEffort.spec.ts`), `packages/engine/tests/gradient.spec.ts`, `packages/engine/tests/effortDetection.spec.ts`
    Change: `normalize.spec.ts:105` `expect(uphill.every((f, i) => i === 0 || f > (uphill[i - 1] ?? Infinity))).toBe(true)` → `expect(uphill.filter((f, i) => i > 0 && f <= (uphill[i - 1] ?? -Infinity))).toEqual([])`; `gradient.spec.ts:29` `expect(gradients.slice(101, 111).every((g) => g === undefined)).toBe(true)` → `expect(gradients.slice(101, 111).filter((g) => g !== undefined)).toEqual([])`; `effortDetection.spec.ts:251` `expect(efforts.some((block) => block.start < 1530 && block.end > 1680)).toBe(false)` → `expect(efforts.filter((block) => block.start < 1530 && block.end > 1680)).toEqual([])` (`startSec`/`endSec` if the comments plan already renamed the fields). Each replacement fails on exactly the inputs the old assertion failed on and prints the offending entries.
    Check: `rg -n "\.(every|some)\(.*\)\)\.toBe\((true|false)\)" packages/engine/tests` prints nothing; `vp test -- --run` from `packages/engine/` passes with the same count.
 
 ### packages/gpx
 
-10. (packages/gpx) Assert the profile lengths with `toHaveLength` (R5).
+11. (packages/gpx) Assert the profile lengths with `toHaveLength` (R5).
    Files: `packages/gpx/tests/routeProfile.spec.ts`
    Change: `expect(profile.elevation.length).toBe(profile.grade.length)` (`:33`) → `expect(profile.grade).toHaveLength(profile.elevation.length)`; `expect(profile.elevation.length).toBe(5000)` (`:76`) → `expect(profile.elevation).toHaveLength(5000)`.
    Check: `rg -n "\.length\)\.toBe\(" packages/gpx/tests` prints nothing; `vp -C packages/gpx exec vitest run` passes with the same count.
 
 ### tools/workbench
 
-11. (tools/workbench) Assert the board's error list by membership, not by a predicate (R5).
+12. (tools/workbench) Assert the board's error list by membership, not by a predicate (R5).
    Files: `tools/workbench/tests/site/src/actions/index.read.spec.ts` (`tools/workbench/tests/boardRead.spec.ts` before the mirrored-spec plan)
    Change: `expect(board.errors.some((error) => error.includes('backlog/zz-broken/plan.md'))).toBe(true);` (today `:106`) → `expect(board.errors).toContainEqual(expect.stringContaining('backlog/zz-broken/plan.md'));`; `expect(board.errors.some((error) => error.includes('backlog/d-small/'))).toBe(false);` (today `:226`) → `expect(board.errors.filter((error) => error.includes('backlog/d-small/'))).toEqual([]);`.
    Check: `rg -n "\.(some|every)\(" tools/workbench/tests` prints nothing; `vp test -- --run` from `tools/workbench/` passes 66 tests.
@@ -85,6 +90,7 @@ Line numbers are as of this plan and can shift by a few lines after the mirrored
 - R6 has no call site today (no spec asserts on DOM nodes); item 1 makes the jest-dom matchers available for the first one.
 - R7: no `toMatchSnapshot`, `toMatchFileSnapshot`, `toMatchInlineSnapshot` or `.snap` file exists under `apps/web/tests/`; nothing to change.
 - R9 (import `expect` from `vitest`) dropped by the owner: specs keep importing the test API from `vite-plus/test`.
+- 3D map specs: `expect(samples.length).toBeLessThanOrEqual(70)` (`apps/web/tests/features/map/terrainCamera.spec.ts:281`) asserts an upper bound, not a length, and stays, like the engine's lower-bound checks below. `terrainLine.spec.ts`'s `zoomStops` builds a value and wraps no `expect`, so R8 does not reach it.
 - `toEqual` on primitives stays acceptable here; only `toBe` on a structure literal is wrong (R3 grep prints nothing today).
 - `packages/ui`: kit specs already conform; with no component specs, the kit has no jest-dom and no setup file, so R6 and R8 have nothing to govern there.
 

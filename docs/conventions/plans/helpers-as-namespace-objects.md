@@ -45,7 +45,7 @@ Run every item from the repo root. "Clean `vp check`" means `vp run -F @pacevaul
 
 ## Open items
 
-- Loose-export modules whose function names already carry their topic stay loose (R2): `apps/web/src/lib/railFormat.ts` (`rail*`), `apps/web/src/lib/debug/crashSignal.ts`, `apps/web/src/lib/recordCodec.ts`, and the rest of `apps/web/src/lib`.
+- Loose-export modules whose function names already carry their topic stay loose (R2): `apps/web/src/lib/railFormat.ts` (`rail*`), `apps/web/src/lib/debug/crashSignal.ts`, `apps/web/src/lib/recordCodec.ts`, and the rest of `apps/web/src/lib`. The same holds for the 3D map modules: `apps/web/src/features/map/terrainLine.ts` (`terrainLine*`, `pickTerrainLineVertex`, `nearestLineVertex`) and `apps/web/src/features/map/terrainCamera.ts` (`terrain*Target`, `easeTerrainCamera`, `orbitCamera`, and the fit helpers `screenBox`, `freeArea`, `fitCorrection`, `fitSamples`, which are read only by `terrainCamera.ts` itself and its spec).
 - `apps/web/src/lib/formatters.ts` keeps loose named exports by owner decision; it is not turned into a namespace object.
 - Constant tables and keyed maps that look like objects (`chartTheme` in `lib/chartTheme.ts`, `acwrColorMap`/`acwrFill` in `lib/statusColors.ts`, `trackModifiers`/`studioRouteModifiers` in `features/map/trackColors.ts`) are not namespaces and keep their `as const` / `Record<>` shape.
 - The store `toast` helper (`apps/web/src/store/toast.ts:29`) is not this plan's work: the snackbar-feedback-via-feature-maps plan deletes it and raises feedback through `useSnackbar()`.
