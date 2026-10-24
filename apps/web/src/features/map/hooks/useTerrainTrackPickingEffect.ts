@@ -12,6 +12,15 @@ interface TrackPointerEvent {
   point: { x: number; y: number };
 }
 
+interface TrackTouchEvent extends TrackPointerEvent {
+  points: unknown[];
+}
+
+// Touch input over the map has its touchend default prevented, so a tap never
+// becomes a click; taps are recognised from the touch events instead.
+const TAP_TOLERANCE_PX = 3;
+const SYNTHETIC_CLICK_WINDOW_MS = 500;
+
 const pickedLap = ({
   map,
   layerId,
@@ -64,17 +73,44 @@ export const useTerrainTrackPickingEffect = ({
       if (!pointerFine) return;
       useMapControlsStore.getState().setHoveredLap(picked.lapIndex ?? null);
     };
-    const onClick = (event: TrackPointerEvent) => {
+    const selectAt = (event: TrackPointerEvent) => {
       const lapIndex = pick(event).lapIndex;
       if (lapIndex !== undefined) useMapControlsStore.getState().toggleSelectedLap(lapIndex);
+    };
+    let tapStart: { x: number; y: number } | null = null;
+    let lastTapAt = -Infinity;
+    const onClick = (event: TrackPointerEvent) => {
+      if (performance.now() - lastTapAt < SYNTHETIC_CLICK_WINDOW_MS) return;
+      selectAt(event);
+    };
+    const onTouchStart = (event: TrackTouchEvent) => {
+      tapStart = null;
+      if (event.points.length === 1) tapStart = { x: event.point.x, y: event.point.y };
+    };
+    const onTouchMove = (event: TrackTouchEvent) => {
+      if (tapStart === null) return;
+      const moved = Math.hypot(event.point.x - tapStart.x, event.point.y - tapStart.y);
+      if (event.points.length !== 1 || moved > TAP_TOLERANCE_PX) tapStart = null;
+    };
+    const onTouchEnd = (event: TrackTouchEvent) => {
+      if (tapStart === null) return;
+      tapStart = null;
+      lastTapAt = performance.now();
+      selectAt(event);
     };
     map.on('mousemove', onMove);
     map.on('click', onClick);
     map.on('mouseout', leaveTrack);
+    map.on('touchstart', onTouchStart);
+    map.on('touchmove', onTouchMove);
+    map.on('touchend', onTouchEnd);
     return () => {
       map.off('mousemove', onMove);
       map.off('click', onClick);
       map.off('mouseout', leaveTrack);
+      map.off('touchstart', onTouchStart);
+      map.off('touchmove', onTouchMove);
+      map.off('touchend', onTouchEnd);
       useMapControlsStore.getState().setTerrainTrackHovered(false);
     };
   }, [map, layerId, detailPath, spans, pointerFine]);
