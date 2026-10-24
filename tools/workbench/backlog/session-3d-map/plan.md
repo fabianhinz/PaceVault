@@ -1,6 +1,6 @@
 ---
 title: 3D session map
-status: in-review
+status: done
 created: 2026-10-19
 type: feature
 areas: [app]
