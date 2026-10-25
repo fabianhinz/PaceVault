@@ -1,0 +1,2006 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Light theme · Mockup</title>
+    <link rel="stylesheet" href="../../../shared/mockup-shell.css" />
+    <script src="../../../shared/mockup-shell.js" defer></script>
+    <style>
+      /* Screen content only. Token names as in packages/ui/src/theme.css; the --color-overlay-*,
+         --color-border-subtle/-strong, --color-divider, --color-knob*, --shadow-floating names are
+         the proposed overlay tokens (research/light-palette.md §4). Each variant redefines the same
+         names, as [data-theme] would in theme.css. */
+
+      /* ---------- dark: today (theme.css values, Card.tsx alphas) ---------- */
+      .app {
+        --color-surface-base: #030712;
+        --color-surface-sunken: #0a0b0f;
+        --color-surface: #111318;
+        --color-surface-elevated: #1a1d24;
+        --color-surface-overlay: #252830;
+        --color-border: #252830;
+        --color-text-primary: #e5e7eb;
+        --color-text-secondary: #b0b4be;
+        --color-text-tertiary: #8b8f9a;
+        --color-text-quaternary: #5c616e;
+        --color-accent: #3b82f6;
+        --color-accent-hover: #60a5fa;
+        --color-accent-strong: #2563eb;
+        --color-accent-muted: #3b82f633;
+        --color-status-success: #4ade80;
+        --color-status-warning: #facc15;
+        --color-status-danger: #f87171;
+        --color-sport-running: #4ade80;
+        --color-sport-cycling: #f97316;
+        --color-chart-hr: #ef4444;
+        --color-chart-elevation: #8b5cf6;
+        --color-precip-rain: #60a5fa;
+        --color-overlay-subtle: rgb(255 255 255 / 0.05);
+        --color-overlay: rgb(255 255 255 / 0.1);
+        --color-overlay-strong: rgb(255 255 255 / 0.15);
+        --color-border-subtle: rgb(255 255 255 / 0.1);
+        --color-border-strong: rgb(255 255 255 / 0.3);
+        --color-divider: rgb(255 255 255 / 0.05);
+        --color-on-accent: #ffffff;
+        --color-knob: #ffffff;
+        --color-knob-border: transparent;
+        --shadow-floating: 0 8px 24px rgb(0 0 0 / 0.4);
+        /* surfaces: glassClass bg-surface/55, floatingClass bg-surface/85 (Card.tsx:3,7) */
+        --glass-bg: color-mix(in srgb, var(--color-surface) 55%, transparent);
+        --floating-bg: color-mix(in srgb, var(--color-surface) 85%, transparent);
+        --sheet-bg: var(--glass-bg);
+        --card-bg: var(--glass-bg);
+        --card-border: var(--color-border-subtle);
+        --card-shadow: none;
+        --tile-bg: var(--color-overlay-subtle);
+        --tile-border: var(--color-border-subtle);
+        --num-weight: 700;
+        --lap-active: rgb(255 255 255 / 0.32);
+        --lap-alt: rgb(255 255 255 / 0.22);
+        --lap-rest: rgb(255 255 255 / 0.1);
+        --lap-hover: rgb(255 255 255 / 0.6);
+        --lap-band-hover: rgb(255 255 255 / 0.1);
+        --lap-selected: #ffffff;
+        --grid-line: rgb(255 255 255 / 0.06);
+        --elev-fill: color-mix(in srgb, var(--color-chart-elevation) 25%, transparent);
+      }
+      /* map: dark matter (darkMatter.style.json), additive tracks (trackColors.ts:4-25) */
+      .app {
+        --map-land: #0e0e0e;
+        --map-park: #111111;
+        --map-water: #2c353c;
+        --map-waterway: #3f5a6d;
+        --map-building: #393939;
+        --map-road-minor: #414758;
+        --map-road-minor-case: #0e0e0e;
+        --map-road-major: #535666;
+        --map-road-major-case: #1a1a1a;
+        --map-motorway: #494949;
+        --map-motorway-case: #232323;
+        --map-path: #262626;
+        --map-label: #a8b0b4;
+        --map-label-halo: #222222;
+        --track-run: #4ade80;
+        --track-ride: #f97316;
+        --track-blend: plus-lighter;
+        --track-faint: 0.314;
+        --track-warm: 0.627;
+        --track-casing-run: #ffffff;
+        --track-casing-ride: #ffffff;
+        --track-casing-edge: transparent;
+        --map-dot-stroke: #00000050;
+        --chip-bg: rgb(0 0 0 / 0.6);
+        --chip-text: #ffffff;
+      }
+
+      /* ---------- A: pure white ---------- */
+      .ms-screen[data-variant='a'] .app,
+      .ms-screen[data-variant='a-darkmap'] .app {
+        --color-surface-base: #ffffff;
+        --color-surface-sunken: #f3f4f6;
+        --color-surface: #ffffff;
+        --color-surface-elevated: #ffffff;
+        --color-surface-overlay: #f3f4f6;
+        --color-border: #e5e7eb;
+        --color-text-primary: #111318;
+        --color-text-secondary: #3a3e48;
+        --color-text-tertiary: #5c616e;
+        --color-text-quaternary: #8b8f9a;
+        --color-accent: #2563eb;
+        --color-accent-hover: #1d4ed8;
+        --color-accent-strong: #1e40af;
+        --color-accent-muted: #2563eb1f;
+        --color-status-success: #15803d;
+        --color-status-warning: #854d0e;
+        --color-status-danger: #dc2626;
+        --color-sport-running: #16a34a;
+        --color-sport-cycling: #ea580c;
+        --color-chart-hr: #dc2626;
+        --color-chart-elevation: #6d28d9;
+        --color-precip-rain: #2563eb;
+        --color-overlay-subtle: rgb(0 0 0 / 0.04);
+        --color-overlay: rgb(0 0 0 / 0.06);
+        --color-overlay-strong: rgb(0 0 0 / 0.1);
+        --color-border-subtle: #e5e7eb;
+        --color-border-strong: rgb(0 0 0 / 0.2);
+        --color-divider: rgb(0 0 0 / 0.06);
+        --color-knob-border: #e5e7eb;
+        --shadow-floating: 0 8px 24px rgb(0 0 0 / 0.12);
+        --glass-bg: rgb(255 255 255 / 0.85);
+        --floating-bg: rgb(255 255 255 / 0.92);
+        --elev-fill: color-mix(in srgb, var(--color-chart-elevation) 16%, transparent);
+        --lap-active: rgb(0 0 0 / 0.28);
+        --lap-alt: rgb(0 0 0 / 0.18);
+        --lap-rest: rgb(0 0 0 / 0.08);
+        --lap-hover: rgb(0 0 0 / 0.5);
+        --lap-band-hover: rgb(0 0 0 / 0.05);
+        --lap-selected: #111318;
+        --grid-line: rgb(0 0 0 / 0.07);
+      }
+      /* light UI over the dark map: the glass needs more white or the map greys it */
+      .ms-screen[data-variant='a-darkmap'] .app {
+        --glass-bg: rgb(255 255 255 / 0.94);
+        --floating-bg: rgb(255 255 255 / 0.96);
+        --shadow-floating: 0 8px 24px rgb(0 0 0 / 0.4);
+      }
+
+      /* ---------- B: off-white page, white borderless cards ---------- */
+      .ms-screen[data-variant='b'] .app {
+        --color-surface-base: #f5f4f0;
+        --color-surface-sunken: #ebe9e4;
+        --color-surface: #ffffff;
+        --color-surface-elevated: #ffffff;
+        --color-surface-overlay: #f0eee9;
+        --color-border: #e2e0da;
+        --color-text-primary: #16181d;
+        --color-text-secondary: #3a3e48;
+        --color-text-tertiary: #5c616e;
+        --color-text-quaternary: #8b8f9a;
+        --color-accent: #2563eb;
+        --color-accent-hover: #1d4ed8;
+        --color-accent-strong: #1e40af;
+        --color-accent-muted: #2563eb1f;
+        --color-status-success: #15803d;
+        --color-status-warning: #854d0e;
+        --color-status-danger: #b91c1c;
+        --color-sport-running: #15803d;
+        --color-sport-cycling: #ea580c;
+        --color-chart-hr: #dc2626;
+        --color-chart-elevation: #6d28d9;
+        --color-precip-rain: #2563eb;
+        --color-overlay-subtle: rgb(0 0 0 / 0.04);
+        --color-overlay: rgb(0 0 0 / 0.06);
+        --color-overlay-strong: rgb(0 0 0 / 0.1);
+        --color-border-subtle: rgb(0 0 0 / 0.08);
+        --color-border-strong: rgb(0 0 0 / 0.2);
+        --color-divider: rgb(0 0 0 / 0.06);
+        --color-knob-border: #e2e0da;
+        --shadow-floating: 0 8px 24px rgb(0 0 0 / 0.12);
+        --glass-bg: rgb(245 244 240 / 0.92);
+        --floating-bg: rgb(255 255 255 / 0.95);
+        --sheet-bg: rgb(245 244 240 / 0.96);
+        --card-bg: #ffffff;
+        --card-border: transparent;
+        --tile-bg: #f5f4f0;
+        --tile-border: transparent;
+        --elev-fill: color-mix(in srgb, var(--color-chart-elevation) 16%, transparent);
+        --lap-active: rgb(0 0 0 / 0.28);
+        --lap-alt: rgb(0 0 0 / 0.18);
+        --lap-rest: rgb(0 0 0 / 0.08);
+        --lap-hover: rgb(0 0 0 / 0.5);
+        --lap-band-hover: rgb(0 0 0 / 0.05);
+        --lap-selected: #16181d;
+        --grid-line: rgb(0 0 0 / 0.07);
+      }
+
+      /* ---------- C: sunlight ---------- */
+      .ms-screen[data-variant='c'] .app {
+        --color-surface-base: #ffffff;
+        --color-surface-sunken: #eceef1;
+        --color-surface: #ffffff;
+        --color-surface-elevated: #ffffff;
+        --color-surface-overlay: #e5e7eb;
+        --color-border: #8b8f9a;
+        --color-text-primary: #0a0b0f;
+        --color-text-secondary: #252830;
+        --color-text-tertiary: #3a3e48;
+        --color-text-quaternary: #5c616e;
+        --color-accent: #1d4ed8;
+        --color-accent-hover: #1e40af;
+        --color-accent-strong: #1e3a8a;
+        --color-accent-muted: #1d4ed824;
+        --color-status-success: #166534;
+        --color-status-warning: #854d0e;
+        --color-status-danger: #b91c1c;
+        --color-sport-running: #15803d;
+        --color-sport-cycling: #c2410c;
+        --color-chart-hr: #b91c1c;
+        --color-chart-elevation: #5b21b6;
+        --color-precip-rain: #1d4ed8;
+        --color-overlay-subtle: rgb(0 0 0 / 0.04);
+        --color-overlay: rgb(0 0 0 / 0.07);
+        --color-overlay-strong: rgb(0 0 0 / 0.12);
+        --color-border-subtle: #8b8f9a;
+        --color-border-strong: #5c616e;
+        --color-divider: #d1d5db;
+        --color-knob-border: #8b8f9a;
+        --shadow-floating: 0 8px 24px rgb(0 0 0 / 0.12);
+        --glass-bg: #ffffff;
+        --floating-bg: #ffffff;
+        --tile-bg: #ffffff;
+        --num-weight: 600;
+        --elev-fill: color-mix(in srgb, var(--color-chart-elevation) 20%, transparent);
+        --lap-active: rgb(0 0 0 / 0.55);
+        --lap-alt: rgb(0 0 0 / 0.35);
+        --lap-rest: rgb(0 0 0 / 0.15);
+        --lap-hover: rgb(0 0 0 / 0.75);
+        --lap-band-hover: rgb(0 0 0 / 0.06);
+        --lap-selected: #0a0b0f;
+        --grid-line: rgb(0 0 0 / 0.12);
+      }
+
+      /* ---------- light map: voyager (voyager.style.json), multiply tracks ---------- */
+      .ms-screen[data-variant='a'] .app,
+      .ms-screen[data-variant='b'] .app,
+      .ms-screen[data-variant='c'] .app {
+        --map-land: #fbf8f3;
+        --map-park: #e4edd8;
+        --map-water: #b0d0d6;
+        --map-waterway: #cce7ea;
+        --map-building: #e4dcd0;
+        --map-road-minor: #ffffff;
+        --map-road-minor-case: #ece4d6;
+        --map-road-major: #fefdd7;
+        --map-road-major-case: #efdfb4;
+        --map-motorway: #ffe9a5;
+        --map-motorway-case: #fbdb98;
+        --map-path: #d7d7d7;
+        --map-label: #405c78;
+        --map-label-halo: #f2f5f8;
+        --track-run: #16a34a;
+        --track-ride: #ea580c;
+        --track-blend: multiply;
+        --track-faint: 0.549;
+        --track-warm: 0.784;
+        /* A/B: white halo with a 1 px dark edge; C: dark-hue casing */
+        --track-casing-run: #ffffff;
+        --track-casing-ride: #ffffff;
+        --track-casing-edge: #3a3e48;
+        --chip-bg: rgb(255 255 255 / 0.8);
+        --chip-text: #3a3e48;
+      }
+      .ms-screen[data-variant='b'] .app {
+        --track-run: #15803d;
+      }
+      .ms-screen[data-variant='c'] .app {
+        --track-run: #15803d;
+        --track-ride: #c2410c;
+        --track-casing-run: #14532d;
+        --track-casing-ride: #7c2d12;
+        --track-casing-edge: transparent;
+      }
+      /* ---------- glare: reflected light added in linear light (research §1.3 model) ---------- */
+      .ms-screen[data-glare='shade'] .app {
+        filter: url(#glare-shade);
+      }
+      .ms-screen[data-glare='sun'] .app {
+        filter: url(#glare-sun);
+      }
+
+      /* ---------- app shell ---------- */
+      .ms-screen [hidden] {
+        display: none !important;
+      }
+      .app {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        background: var(--map-land);
+        color: var(--color-text-primary);
+        font-family: var(--font-sans);
+        font-size: 14px;
+        line-height: 20px;
+        -webkit-font-smoothing: antialiased;
+      }
+      .app * {
+        box-sizing: border-box;
+      }
+      .app p,
+      .app h2,
+      .app h3,
+      .app h4 {
+        margin: 0;
+      }
+      .map {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .world {
+        transform: translate(430px, 400px) scale(0.8);
+      }
+      [data-device='phone'] .world {
+        transform: translate(195px, 175px) scale(0.55);
+      }
+      .map text {
+        font: 500 15px var(--font-sans);
+        fill: var(--map-label);
+        stroke: var(--map-label-halo);
+        stroke-width: 3.75px;
+        paint-order: stroke;
+        letter-spacing: 0.04em;
+      }
+      .trk {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        mix-blend-mode: var(--track-blend);
+      }
+      .trk.run {
+        stroke: var(--track-run);
+      }
+      .trk.ride {
+        stroke: var(--track-ride);
+      }
+      .trk.faint {
+        stroke-opacity: var(--track-faint);
+      }
+      .trk.warm {
+        stroke-opacity: var(--track-warm);
+      }
+      .cas {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .cas.edge {
+        stroke: var(--track-casing-edge);
+      }
+      .cas.run {
+        stroke: var(--track-casing-run);
+      }
+      .cas.ride {
+        stroke: var(--track-casing-ride);
+      }
+      .pin {
+        stroke: var(--map-dot-stroke);
+        stroke-width: 2px;
+      }
+      .pin.start {
+        fill: var(--track-run);
+      }
+      .pin.end {
+        fill: var(--map-land);
+        stroke: var(--track-run);
+        stroke-width: 3px;
+      }
+      .mapq {
+        position: absolute;
+        top: 24px;
+        left: 72px;
+        display: flex;
+        gap: 8px;
+      }
+      [data-device='phone'] .mapq {
+        top: 12px;
+        left: 12px;
+      }
+      .chip {
+        position: absolute;
+        bottom: 12px;
+        left: 72px;
+        padding: 0 8px;
+        border-radius: 4px;
+        background: var(--chip-bg);
+        color: var(--chip-text);
+      }
+      [data-device='phone'] .chip {
+        bottom: auto;
+        left: auto;
+        top: 12px;
+        right: 12px;
+      }
+
+      /* content column (desktop) / bottom sheet (phone) */
+      .col {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 40%;
+        overflow-y: auto;
+        scrollbar-width: none;
+        padding: 24px 24px 112px 0;
+      }
+      .grab {
+        display: none;
+      }
+      [data-device='phone'] .col {
+        top: 360px;
+        left: 0;
+        width: auto;
+        overflow: hidden;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--sheet-bg);
+        backdrop-filter: blur(24px);
+        border-top: 1px solid var(--card-border);
+        border-radius: 16px 16px 0 0;
+      }
+      [data-device='phone'] .grab {
+        display: flex;
+        height: 24px;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+      }
+      .grab span {
+        width: 40px;
+        height: 4px;
+        border-radius: 9999px;
+        background: var(--color-border-strong);
+      }
+      .scroll {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      [data-device='phone'] .scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        scrollbar-width: none;
+        padding: 12px 24px 96px;
+      }
+      /* phone sheet: cards sit on the sheet, so no glass on glass */
+      [data-device='phone'] .card {
+        backdrop-filter: none;
+      }
+
+      /* ---------- kit look (packages/ui) ---------- */
+      .card {
+        display: flex;
+        flex-direction: column;
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid var(--card-border);
+        background: var(--card-bg);
+        backdrop-filter: blur(24px);
+        box-shadow: var(--card-shadow);
+      }
+      .card--compact {
+        padding: 8px;
+      }
+      .floating {
+        background: var(--floating-bg);
+        backdrop-filter: blur(24px);
+        border: 1px solid var(--card-border);
+        box-shadow: var(--shadow-floating);
+      }
+      .t-h2 {
+        font-size: 20px;
+        line-height: 28px;
+        font-weight: 700;
+      }
+      .t-h3 {
+        font-size: 18px;
+        line-height: 28px;
+        font-weight: 700;
+      }
+      .t-num {
+        font-size: 18px;
+        line-height: 28px;
+        font-weight: var(--num-weight);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .t-title {
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: 500;
+      }
+      .t-body {
+        font-size: 14px;
+        line-height: 20px;
+        font-weight: 400;
+      }
+      .t-sub {
+        font-size: 14px;
+        line-height: 20px;
+        font-weight: 500;
+      }
+      .t-cap {
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 400;
+        color: var(--color-text-secondary);
+      }
+      .t-over {
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-secondary);
+      }
+      .c-pri {
+        color: var(--color-text-primary);
+      }
+      .c-sec {
+        color: var(--color-text-secondary);
+      }
+      .c-ter {
+        color: var(--color-text-tertiary);
+      }
+      .tab {
+        font-variant-numeric: tabular-nums;
+      }
+      .trunc {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        border: 0;
+        border-radius: 8px;
+        font: 500 14px/20px var(--font-sans);
+        cursor: pointer;
+        color: var(--color-text-secondary);
+        background: transparent;
+        transition: background-color 0.15s, color 0.15s;
+      }
+      .btn:hover {
+        background: var(--color-overlay);
+        color: var(--color-text-primary);
+      }
+      .btn--icon {
+        padding: 6px;
+      }
+      .icon {
+        display: block;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .grow {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* dock (Dock.tsx, DockItems.tsx) */
+      .dock {
+        position: absolute;
+        top: 50%;
+        left: 12px;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .seg {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 9999px;
+      }
+      .ditem {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border-radius: 9999px;
+        color: var(--color-text-tertiary);
+      }
+      .ditem.on {
+        background: var(--color-accent-muted);
+        color: var(--color-accent-hover);
+      }
+      .dock .circle {
+        display: none;
+      }
+      [data-device='phone'] .dock {
+        top: auto;
+        transform: none;
+        left: 12px;
+        right: 12px;
+        bottom: 16px;
+        height: 50px;
+        flex-direction: row;
+      }
+      [data-device='phone'] .dock .rail-extra {
+        display: none;
+      }
+      [data-device='phone'] .dock .circle {
+        display: flex;
+        padding: 3px;
+        border-radius: 9999px;
+      }
+      [data-device='phone'] .seg {
+        flex: 1;
+        flex-direction: row;
+        gap: 2px;
+        padding: 3px;
+      }
+      [data-device='phone'] .seg .ditem {
+        flex: 1;
+        height: 44px;
+      }
+      [data-device='phone'] .circle .ditem {
+        width: 44px;
+        height: 44px;
+      }
+
+      /* stat tiles (StatTile.tsx, tileClass Card.tsx:5) */
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      [data-device='phone'] .tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .tile {
+        display: grid;
+        grid-template-rows: 16px 28px 32px;
+        row-gap: 4px;
+        padding: 8px;
+        min-width: 0;
+        border-radius: 12px;
+        border: 1px solid var(--tile-border);
+        background: var(--tile-bg);
+      }
+      .unit {
+        margin-left: 2px;
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 400;
+        color: var(--color-text-secondary);
+      }
+
+      /* chart */
+      .chart {
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        grid-template-rows: 120px 12px 16px;
+        column-gap: 8px;
+      }
+      .chart__y {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-align: right;
+      }
+      .chart__plot {
+        position: relative;
+      }
+      .chart__plot svg,
+      .chart__strip svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      .chart__strip {
+        position: relative;
+        grid-column: 2;
+      }
+      .chart__x {
+        grid-column: 2;
+        display: flex;
+        justify-content: space-between;
+      }
+      .legend {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      .sw {
+        display: inline-block;
+        width: 10px;
+        height: 2px;
+        margin-right: 4px;
+        vertical-align: middle;
+        border-radius: 1px;
+      }
+
+      /* table (DataTable.tsx) */
+      .tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      .tbl th {
+        padding: 8px 12px;
+        text-align: left;
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 500;
+        color: var(--color-text-secondary);
+        border-bottom: 1px solid var(--color-border-subtle);
+      }
+      .tbl td {
+        padding: 8px 12px;
+        font-size: 14px;
+        line-height: 20px;
+        border-bottom: 1px solid var(--color-divider);
+      }
+      [data-device='phone'] .tbl th,
+      [data-device='phone'] .tbl td {
+        padding-left: 6px;
+        padding-right: 6px;
+      }
+      .tbl tr:last-child td {
+        border-bottom-color: transparent;
+      }
+      .tbl tbody tr {
+        cursor: pointer;
+        transition: background-color 0.15s;
+      }
+      .tbl tbody tr:hover,
+      .tbl tbody tr.sel {
+        background: var(--color-overlay-subtle);
+      }
+      .tbl tr.rest td {
+        color: var(--color-text-tertiary);
+      }
+
+      /* weather row */
+      .wx {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+      }
+      [data-device='phone'] .wx {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      /* session list */
+      .list {
+        display: flex;
+        flex-direction: column;
+      }
+      .srow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        border-radius: 8px;
+        border-bottom: 1px solid var(--color-divider);
+        cursor: pointer;
+      }
+      .srow:last-child {
+        border-bottom-color: transparent;
+      }
+      .srow:hover {
+        background: var(--color-overlay-subtle);
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        flex-shrink: 0;
+        border-radius: 9999px;
+      }
+      .dot.run {
+        background: var(--color-sport-running);
+      }
+      .dot.ride {
+        background: var(--color-sport-cycling);
+      }
+      .right {
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      /* settings (Tabs.tsx, RadioGroup.tsx, Select.tsx, Switch.tsx) */
+      .tabs {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 16px;
+      }
+      .tabs .btn {
+        flex: 1;
+        padding: 10px 12px;
+        color: var(--color-text-tertiary);
+      }
+      .tabs .btn.on {
+        background: var(--color-overlay);
+        color: var(--color-text-primary);
+      }
+      .li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .radios {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .radio {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      .radio__c {
+        display: flex;
+        width: 20px;
+        height: 20px;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9999px;
+        border: 1px solid var(--color-border-strong);
+      }
+      .radio__c::after {
+        content: '';
+        width: 10px;
+        height: 10px;
+        border-radius: 9999px;
+        background: var(--color-accent);
+        visibility: hidden;
+      }
+      .radio[aria-checked='true'] .radio__c::after {
+        visibility: visible;
+      }
+      .hint {
+        padding-left: 32px;
+      }
+      .select {
+        display: flex;
+        width: 160px;
+        height: 40px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--color-border-subtle);
+        background: var(--color-overlay-subtle);
+        color: var(--color-text-primary);
+      }
+      .select .icon {
+        color: var(--color-text-tertiary);
+      }
+      .switch {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        flex-shrink: 0;
+        border: 0;
+        padding: 0;
+        border-radius: 9999px;
+        background: var(--color-accent);
+        cursor: pointer;
+      }
+      .switch::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 22px;
+        width: 20px;
+        height: 20px;
+        box-sizing: border-box;
+        border-radius: 9999px;
+        background: var(--color-knob);
+        border: 1px solid var(--color-knob-border);
+      }
+
+      /* skeletons (ValueSkeleton.tsx, WeatherCard.tsx:135) */
+      .sk {
+        border-radius: 4px;
+        background: var(--color-overlay);
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      /* ---------- state-driven bits ---------- */
+      .g-over,
+      .g-session {
+        display: none;
+      }
+      .ms-screen[data-scenario='overview'] .g-over,
+      .ms-screen[data-scenario='settings'] .g-over,
+      .ms-screen[data-scenario='session'] .g-session {
+        display: inline;
+      }
+      [data-device='phone'] .map text {
+        font-size: 22px;
+        stroke-width: 5px;
+      }
+      .app .chip {
+        color: var(--chip-text);
+      }
+      .radio {
+        width: auto;
+      }
+      .sub {
+        height: 16px;
+      }
+      /* Q badges that must not take layout space in the header row */
+      .ph {
+        position: relative;
+      }
+      .qa {
+        position: absolute;
+        top: -10px;
+      }
+      .qa.q1 {
+        left: 16px;
+      }
+      .qa.q3 {
+        right: 56px;
+      }
+      .ditem {
+        transition: none;
+      }
+      .sub > span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+      }
+      /* the selected session track sits on its casing at full opacity: normal blend */
+      .g-session .trk {
+        mix-blend-mode: normal;
+      }
+      .ms-screen[data-variant='dark'] .ico-moon,
+      .ms-screen:not([data-variant='dark']) .ico-sun {
+        display: none;
+      }
+      .ms-screen:not([data-scenario='settings']) .ditem[data-tab='sessions'],
+      .ms-screen[data-scenario='settings'] .ditem[data-tab='settings'] {
+        background: var(--color-accent-muted);
+        color: var(--color-accent-hover);
+      }
+      .band {
+        fill: transparent;
+      }
+      .band.hov {
+        fill: var(--lap-band-hover);
+      }
+      .band.sel {
+        fill: color-mix(in srgb, var(--lap-selected) 6%, transparent);
+        stroke: var(--lap-selected);
+        stroke-width: 1.5px;
+        vector-effect: non-scaling-stroke;
+      }
+      .strip.hov {
+        fill: var(--lap-hover);
+      }
+      .strip.sel {
+        fill: var(--lap-selected);
+      }
+
+      /* ---------- 3D terrain (session): today = TERRAIN_HILLSHADE_PAINT (mapStyle.ts:37-41),
+         white hover/casing (useTerrainLineEffect.ts:64,71), no sky ---------- */
+      .app {
+        --hs-shadow: #000000;
+        --hs-highlight: #ffffff1a;
+        --hs-ex: 0.6;
+        --sky-top: #030712;
+        --sky-horizon: #030712;
+        --fog: transparent;
+        --ridge-far: #161616;
+        --ridge-near: #111111;
+        --t-hover: #ffffff;
+      }
+      .ms-screen:is([data-variant='a'], [data-variant='b'], [data-variant='c']) .app {
+        --hs-shadow: #5a4a3a;
+        --hs-highlight: #ffffff59;
+        --hs-ex: 0.35;
+        --sky-top: #d3e3eb;
+        --sky-horizon: #f4f1ea;
+        --fog: #f4f1ea;
+        --ridge-far: #e2dacb;
+        --ridge-near: #ebe5d9;
+        --t-hover: #1c1917;
+      }
+      .ms-screen:is([data-variant='a'], [data-variant='b'], [data-variant='c'])[data-hillshade='black']
+        .app {
+        --hs-shadow: #000000;
+        --hs-highlight: #ffffff1a;
+        --hs-ex: 0.6;
+        --ridge-far: #cbc5ba;
+        --ridge-near: #ddd8ce;
+      }
+      .ms-screen:is([data-variant='a'], [data-variant='b'], [data-variant='c'])[data-hillshade='off']
+        .app {
+        --hs-ex: 0;
+        --ridge-far: #f1ece3;
+        --ridge-near: #f6f2eb;
+      }
+      /* no sky set (today): the canvas shows the page behind it, body #030712 (index.html:18) */
+      .ms-screen[data-sky='none'] .app {
+        --sky-top: #030712;
+        --sky-horizon: #030712;
+        --fog: transparent;
+      }
+      .terrain,
+      .note3d {
+        display: none;
+      }
+      .ms-screen[data-mapview='3d']:is([data-scenario='session'], [data-scenario='loading']) .terrain {
+        display: block;
+      }
+      .ms-screen[data-mapview='3d']:is([data-scenario='session'], [data-scenario='loading']) .map {
+        display: none;
+      }
+      .ms-screen[data-mapview='3d'] .note3d {
+        display: flex;
+      }
+      .ms-screen[data-scenario='loading'] :is(.t-track, .hpt, [data-for='q9']) {
+        display: none;
+      }
+      .terrain {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 60%;
+        height: 100%;
+        overflow: hidden;
+      }
+      [data-device='phone'] .terrain {
+        width: 100%;
+        height: 380px;
+      }
+      .sky {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(var(--sky-top), var(--sky-horizon) var(--hz, 140px));
+      }
+      .stage3d {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 768px;
+        height: 800px;
+        perspective: 700px;
+        perspective-origin: 50% 25%;
+      }
+      [data-device='phone'] .stage3d {
+        transform: scale(0.51);
+        transform-origin: 0 0;
+      }
+      .plane {
+        position: absolute;
+        left: -1116px;
+        top: -1080px;
+        width: 3000px;
+        height: 2000px;
+        transform-origin: 50% 100%;
+        transform: rotateX(62deg);
+      }
+      .pl,
+      .hs {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .hs {
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+      }
+      .hs-shadow {
+        background: var(--hs-shadow);
+        opacity: var(--hs-ex);
+      }
+      .hs-hi {
+        background: var(--hs-highlight);
+        opacity: calc(var(--hs-ex) / 0.6);
+      }
+      .anc {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        margin: -1px;
+      }
+      .fog {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(var(--hz, 140px) - 2px);
+        height: 140px;
+        background: linear-gradient(var(--fog), transparent);
+      }
+      [data-device='phone'] .fog {
+        height: 72px;
+      }
+      .ridge {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 90px;
+        top: calc(var(--hz, 140px) - 88px);
+      }
+      [data-device='phone'] .ridge {
+        height: 46px;
+        top: calc(var(--hz, 70px) - 44px);
+      }
+      .ov {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        white-space: nowrap;
+      }
+      .lbl {
+        font-size: 12px;
+        line-height: 16px;
+        font-weight: 500;
+        color: var(--map-label);
+        text-shadow:
+          0 0 2px var(--map-label-halo),
+          0 0 2px var(--map-label-halo),
+          0 0 3px var(--map-label-halo);
+      }
+      /* hover point: useTerrainHoverPointEffect.ts:6-7 */
+      .hpt {
+        width: 28px;
+        height: 28px;
+        border-radius: 9999px;
+        border: 4px solid #00000050;
+        background: #ffffff padding-box;
+      }
+      .t-track path {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      /* lap dimming: RGB × LAP_DIMMED_BRIGHTNESS 0.8 (trackColors.ts:18, lapPath.ts:9-14) */
+      .t-dim {
+        stroke: color-mix(in srgb, var(--track-run) 80%, #000000);
+        stroke-width: 8;
+      }
+      .t-hover {
+        stroke: var(--t-hover);
+        stroke-width: 4.5;
+      }
+      .t-cas {
+        stroke: var(--track-casing-run);
+        stroke-width: 14;
+      }
+      .t-cas.edge {
+        stroke: var(--track-casing-edge);
+        stroke-width: 17;
+      }
+      .t-sel {
+        stroke: var(--track-run);
+        stroke-width: 9;
+      }
+      .note3d {
+        position: absolute;
+        top: 24px;
+        left: 0;
+        width: 60%;
+        justify-content: center;
+        pointer-events: none;
+      }
+      [data-device='phone'] .note3d {
+        top: 48px;
+        width: 100%;
+      }
+      .note3d .floating {
+        padding: 4px 12px;
+        border-radius: 9999px;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="application/json" id="mockup-config">
+      {
+        "title": "Light theme",
+        "variants": [
+          { "id": "dark", "label": "Today · dark (reference)" },
+          { "id": "a", "label": "A · Pure white" },
+          { "id": "b", "label": "B · Off-white page, white cards" },
+          { "id": "c", "label": "C · Sunlight" },
+          { "id": "a-darkmap", "label": "A · Light UI over dark map" }
+        ],
+        "scenarios": [
+          { "id": "session", "label": "Session detail" },
+          { "id": "overview", "label": "Overview map" },
+          { "id": "settings", "label": "Settings › Display" },
+          { "id": "loading", "label": "Loading" }
+        ],
+        "extras": [
+          {
+            "id": "glare",
+            "type": "choice",
+            "label": "Glare (sun on the glass)",
+            "default": "off",
+            "options": [
+              { "id": "off", "label": "Off" },
+              { "id": "shade", "label": "Shade · 20 klx" },
+              { "id": "sun", "label": "Direct sun · 100 klx" }
+            ]
+          },
+          {
+            "id": "mapview",
+            "type": "choice",
+            "label": "Map view",
+            "default": "2d",
+            "options": [
+              { "id": "2d", "label": "2D" },
+              { "id": "3d", "label": "3D terrain (session)" }
+            ]
+          },
+          {
+            "id": "hillshade",
+            "type": "choice",
+            "label": "3D hillshade (light)",
+            "default": "warm",
+            "options": [
+              { "id": "warm", "label": "Warm brown" },
+              { "id": "black", "label": "Black (today)" },
+              { "id": "off", "label": "Off" }
+            ]
+          },
+          {
+            "id": "sky",
+            "type": "choice",
+            "label": "3D sky",
+            "default": "proposed",
+            "options": [
+              { "id": "proposed", "label": "Proposed" },
+              { "id": "none", "label": "None (today)" }
+            ]
+          },
+          {
+            "id": "switcher",
+            "type": "choice",
+            "label": "Theme switch",
+            "default": "settings",
+            "options": [
+              { "id": "settings", "label": "Settings only" },
+              { "id": "header", "label": "+ Header button" },
+              { "id": "auto", "label": "+ Auto (sun)" }
+            ]
+          }
+        ],
+        "decisions": [
+          { "id": "Q1", "title": "Which light palette?" },
+          { "id": "Q2", "title": "Map in the light theme?" },
+          { "id": "Q3", "title": "How is the theme chosen?" },
+          { "id": "Q4", "title": "Default on a fresh install?" },
+          { "id": "Q5", "title": "Overlapping tracks on a light map?" },
+          { "id": "Q6", "title": "Order of work?" },
+          { "id": "Q7", "title": "Lift the dark theme's greys too?" },
+          { "id": "Q9", "title": "Casing of the highlighted track on a light map?" },
+          { "id": "Q10", "title": "Hillshade on the light 3D map?" }
+        ]
+      }
+    </script>
+
+    <!-- Glare: reflected light R added to every pixel in linear light, normalised to the screen
+         white W: out = in·(1−k) + k with k = R/(W+R). W 1000 cd/m², 1 % reflectance
+         (research/outdoor-readability.md §1.3): shade 20 klx → k 0.06, sun 100 klx → k 0.24. -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <filter id="glare-shade" color-interpolation-filters="linearRGB" x="0" y="0" width="1" height="1">
+        <feComponentTransfer>
+          <feFuncR type="linear" slope="0.94" intercept="0.06" />
+          <feFuncG type="linear" slope="0.94" intercept="0.06" />
+          <feFuncB type="linear" slope="0.94" intercept="0.06" />
+        </feComponentTransfer>
+      </filter>
+      <filter id="glare-sun" color-interpolation-filters="linearRGB" x="0" y="0" width="1" height="1">
+        <feComponentTransfer>
+          <feFuncR type="linear" slope="0.76" intercept="0.24" />
+          <feFuncG type="linear" slope="0.76" intercept="0.24" />
+          <feFuncB type="linear" slope="0.76" intercept="0.24" />
+        </feComponentTransfer>
+      </filter>
+    </svg>
+
+    <!-- Filled by the script below before the shell clones it into both frames. -->
+    <template id="mockup-screen"></template>
+
+    <template id="mockup-notes">
+      <p>
+        <strong>What this shows.</strong> Today's dark theme next to three light palettes (A, B, C)
+        on a voyager-like map, and palette A over today's dark map. Every variant redefines the
+        same token names (<code>theme.css</code> names plus the proposed overlay tokens), as a
+        <code>[data-theme=light]</code> block in <code>packages/ui/src/theme.css</code> would. Only
+        colours change between variants, never layout.
+      </p>
+      <p>
+        <strong>Glare</strong> adds reflected light to every pixel in linear light, the model of
+        <code>research/outdoor-readability.md</code> §1.3: screen white 1000 cd/m², 1 % reflectance.
+        Shade (20 klx) adds 6 % of white, direct sun (100 klx) 24 %. On dark, the added light is
+        larger than grey text itself; on white it is small against the page.
+      </p>
+
+      <h3>Today · dark (reference)</h3>
+      <p>Current tokens (<code>theme.css:39-96</code>), glass <code>Card.tsx:3,7</code>, additive tracks (<code>trackColors.ts:4-11</code>), dark-matter map.</p>
+      <table>
+        <tr><th>Token</th><th>Hex</th><th>Indoor</th><th>Sun</th></tr>
+        <tr><td>text-primary</td><td>#e5e7eb</td><td>16.3</td><td>3.5</td></tr>
+        <tr><td>text-secondary</td><td>#b0b4be</td><td>9.7</td><td>2.4</td></tr>
+        <tr><td>text-tertiary</td><td>#8b8f9a</td><td>6.2</td><td>1.85</td></tr>
+        <tr><td>text-quaternary</td><td>#5c616e</td><td>3.3</td><td>1.37</td></tr>
+        <tr><td>sport-running</td><td>#4ade80</td><td>11.6</td><td>2.7</td></tr>
+      </table>
+      <p>Glare Direct sun: dates, notes, axis ticks and rest laps (tertiary) fade first; Q7 asks whether to lift them too.</p>
+
+      <h3>A · Pure white</h3>
+      <p>Maximum contrast with a familiar look: white page and cards, 1 px #e5e7eb edges, 600 shades.</p>
+      <table>
+        <tr><th>Token</th><th>Hex</th><th>on white</th></tr>
+        <tr><td>text-primary / secondary</td><td>#111318 / #3a3e48</td><td>18.6 / 10.7</td></tr>
+        <tr><td>text-tertiary / quaternary</td><td>#5c616e / #8b8f9a</td><td>6.2 / 3.2 (deco)</td></tr>
+        <tr><td>accent</td><td>#2563eb</td><td>5.2</td></tr>
+        <tr><td>border, border-subtle</td><td>#e5e7eb</td><td>1.24</td></tr>
+        <tr><td>track running / cycling</td><td>#16a34a / #ea580c</td><td>3.1 / 3.4 on land (full)</td></tr>
+      </table>
+      <p>Glare Direct sun: text holds; card edges (1.24) and the faint track floor disappear, cards blur into the map.</p>
+
+      <h3>B · Off-white page, white cards</h3>
+      <p>Softer indoors: #f5f4f0 sheet, borderless white cards that separate by tone; status and running move to 700 where the page missed 3:1.</p>
+      <table>
+        <tr><th>Token</th><th>Hex</th><th>page / card</th></tr>
+        <tr><td>surface-base</td><td>#f5f4f0</td><td>card sep. 1.10</td></tr>
+        <tr><td>text-primary</td><td>#16181d</td><td>16.1 / 17.8</td></tr>
+        <tr><td>text-tertiary</td><td>#5c616e</td><td>5.6 / 6.2</td></tr>
+        <tr><td>sport-running</td><td>#15803d</td><td>4.6 / 5.0</td></tr>
+        <tr><td>status-danger</td><td>#b91c1c</td><td>5.9 / 6.5</td></tr>
+      </table>
+      <p>Desktop has no page surface (cards float over the map), so B's tone step shows only in the phone sheet. Glare Direct sun: the 1.10 page/card step vanishes first.</p>
+
+      <h3>C · Sunlight</h3>
+      <p>Built to meet every outdoor target: near-black text, 700/800 accents, solid #8b8f9a borders, numbers at weight 600, opaque surfaces, tracks #15803d / #c2410c with a dark-hue casing.</p>
+      <table>
+        <tr><th>Token</th><th>Hex</th><th>on white</th><th>Target</th></tr>
+        <tr><td>text-primary</td><td>#0a0b0f</td><td>19.7</td><td>≥ 16</td></tr>
+        <tr><td>text-secondary</td><td>#252830</td><td>14.7</td><td>≥ 9</td></tr>
+        <tr><td>text-tertiary</td><td>#3a3e48</td><td>10.7</td><td>≥ 6</td></tr>
+        <tr><td>border</td><td>#8b8f9a</td><td>3.2</td><td>solid</td></tr>
+        <tr><td>chart-hr / elevation</td><td>#b91c1c / #5b21b6</td><td>6.5 / 9.0</td><td>≥ 4.5</td></tr>
+        <tr><td>track running / cycling</td><td>#15803d / #c2410c</td><td>4.7 / 4.9 on land</td><td>≥ 4.5</td></tr>
+        <tr><td>casing running / cycling</td><td>#14532d / #7c2d12</td><td>8.6 / 8.9</td><td></td></tr>
+      </table>
+      <p>Glare Direct sun: outlines, ticks and the route still read; the look is flatter (hierarchy by size, not grey steps).</p>
+
+      <h3>A · Light UI over dark map</h3>
+      <p>Cheapest win: palette A for sheet, cards and dock, map and tracks exactly as today. Glass raised to white 94 % (A's 85 % turns grey over the dark map).</p>
+      <p>Glare Direct sun: the cards hold; the map greys out as today, but bright tracks on dark keep their 2.7:1.</p>
+
+      <h3>3D terrain (Map view: 3D)</h3>
+      <p>
+        Session detail and loading only; overview and settings stay 2D with a note. A pitched (62°)
+        plane with computed hillshade masks stands in for MapLibre terrain; the session runs out and
+        back along a contour at the foot of the slope (0 m gain, as the tiles say). Lap 4 is selected,
+        the other laps are dimmed, lap 2 carries the hover line and the hover point sits on lap 4.
+      </p>
+      <table>
+        <tr><th>3D part</th><th>Code</th></tr>
+        <tr><td>Base style (2D theme draped on terrain)</td><td><code>mapStyle.ts:9-13</code>, <code>:65-68</code>, <code>:82-83</code> (voyager commented out)</td></tr>
+        <tr><td>DEM terrain, exaggeration 1</td><td><code>hooks/useMapTerrainEffect.ts:9</code>, <code>:42</code></td></tr>
+        <tr><td>Hillshade layer below the first road layer</td><td><code>hooks/useMapTerrainEffect.ts:33-41</code></td></tr>
+        <tr><td>Hillshade paint (shadow, highlight, accent, exaggeration 0.6)</td><td><code>mapStyle.ts:37-41</code>; tokens <code>packages/ui/src/theme.css:75-77</code>, <code>packages/ui/src/lib/tokens.ts:24-26</code></td></tr>
+        <tr><td>Line widths (12 m, casing × 1.6, min 3 / 9 / 5 px)</td><td><code>SessionTerrain.tsx:18-24</code>, <code>trackColors.ts:14,19</code></td></tr>
+        <tr><td>Lap dimming (RGB × 0.8)</td><td><code>SessionTerrain.tsx:53-54</code>, <code>trackColors.ts:18</code>, <code>lapPath.ts:9-14</code></td></tr>
+        <tr><td>Hover line (3 px, white) and selected-lap casing (white)</td><td><code>hooks/useTerrainLineEffect.ts:29</code>, <code>:64</code>, <code>:71</code></td></tr>
+        <tr><td>Hover point (white dot, #00000050 ring)</td><td><code>hooks/useTerrainHoverPointEffect.ts:6-7</code></td></tr>
+        <tr><td>Sky / horizon</td><td>none set; the canvas shows the page, body #030712 (<code>apps/web/index.html:18</code>)</td></tr>
+      </table>
+      <table>
+        <tr><th>Token (3D)</th><th>Today / A over dark map</th><th>A, B, C (voyager)</th></tr>
+        <tr><td>hillshade shadow + accent</td><td>#000000</td><td>#5a4a3a (warm brown)</td></tr>
+        <tr><td>hillshade highlight</td><td>#ffffff1a</td><td>#ffffff59</td></tr>
+        <tr><td>hillshade exaggeration</td><td>0.6</td><td>0.35</td></tr>
+        <tr><td>selected-lap casing</td><td>#ffffff</td><td>A/B #ffffff + 1 px #3a3e48 edge; C #14532d / #7c2d12</td></tr>
+        <tr><td>hover line</td><td>#ffffff</td><td>#1c1917 (warm near-black)</td></tr>
+        <tr><td>track</td><td>#4ade80 / #f97316</td><td>A #16a34a / #ea580c; B #15803d / #ea580c; C #15803d / #c2410c</td></tr>
+        <tr><td>sky top → horizon, fog</td><td>none (page #030712)</td><td>#d3e3eb → #f4f1ea, fog #f4f1ea</td></tr>
+        <tr><td>hover point</td><td>#ffffff, ring #00000050</td><td>unchanged (the ring holds on cream)</td></tr>
+      </table>
+      <p>
+        <strong>Hillshade extra</strong> (light variants only): Warm brown is the proposal; Black (today)
+        turns the cream slope a dirty grey; Off flattens the slope so the relief is gone.
+        <strong>Sky extra</strong>: None (today) leaves a black band above a cream horizon in every
+        light variant. <strong>Glare</strong> applies to the 3D frame as to 2D.
+      </p>
+      <p>
+        Lap dimming darkens RGB by 0.8: on dark the other laps recede; on cream they get darker and
+        compete with the selected lap (Q11).
+      </p>
+
+      <h3>Component mapping</h3>
+      <ul>
+        <li>Tokens: <code>packages/ui/src/theme.css:39-96</code> + JS mirror <code>packages/ui/src/lib/tokens.ts</code>; light values in a <code>[data-theme=light]</code> block.</li>
+        <li>Surfaces: <code>Card.tsx:3</code> glass, <code>:5</code> tile, <code>:7</code> floating, <code>:13</code> scrim → overlay tokens; one edit, 47 sites.</li>
+        <li>Buttons <code>Button.tsx:16-19</code>, tabs <code>Tabs.tsx:29-30</code>, radio ring <code>RadioGroup.tsx:41</code>, switch track/knob <code>Switch.tsx:19,26</code> (knob needs a border on white), grabber <code>SheetGrabber.tsx:1</code>, select <code>Select.tsx:14</code>, table rules <code>DataTable.tsx:33,49</code>.</li>
+        <li>Lap strip white alphas <code>apps/web/src/components/charts/LapBands.tsx:30-36</code> → per-theme lap tokens (re-tuned, not mirrored).</li>
+        <li>Map: <code>mapStyle.ts:9</code> voyager (vendored, unused); blend <code>DeckGLOverlay.tsx:197</code> + <code>trackColors.ts:4-11</code> → multiply on light; alphas <code>trackColors.ts:21-25</code> → floor 140/200/255; sport colours <code>trackColors.ts:32-35</code>; white lap casing <code>DeckGLOverlay.tsx:54</code> → dark hue.</li>
+        <li>Numbers: <code>StatTile.tsx:27</code> uses <code>h3</code> (700, <code>Typography.tsx:7</code>); C's 600 needs a numeric variant or a per-theme weight token.</li>
+        <li>Settings › Display: the existing card at <code>apps/web/src/pages/SettingsPage.tsx:59-91</code> gets the Theme radio group and the Map row.</li>
+        <li>Shell: <code>apps/web/index.html:2,11,12,18</code> (class, theme-color, status bar style, body bg) per theme, set before first paint.</li>
+      </ul>
+
+      <h3>New components or tokens</h3>
+      <ul>
+        <li>Tokens: overlay-subtle / overlay / overlay-strong, border-subtle / border-strong, divider, knob, knob-border, shadow-floating, lap-strip set, map/track set (colour, casing, blend, alpha floor), glass alpha per theme.</li>
+        <li>Components: none new for A/B/C; the header button (Q3 b) is a ghost icon <code>Button</code>; Auto (sun) needs a sunrise/sunset helper (local, no service).</li>
+      </ul>
+    </template>
+
+    <script>
+      // Builds the screen template before the deferred shell clones it (so data-de, data-when and
+      // data-q in the generated markup are handled by the shell like hand-written markup).
+      (() => {
+        // ---------- helpers ----------
+        let seed = 7;
+        const rnd = () => {
+          seed = (seed + 0x6d2b79f5) | 0;
+          let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const jit = (n) => (rnd() * 2 - 1) * n;
+        // text with its German twin; the shell swaps textContent, so tx() is always a leaf
+        const tx = (en, de, cls = '', tag = 'span') =>
+          `<${tag} class="${cls}" data-de="${de}">${en}</${tag}>`;
+        const ICONS = {
+          'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+          'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+          ellipsis:
+            '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+          sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-15.07 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+          moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+          dashboard:
+            '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+          zap: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+          flask:
+            '<path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>',
+          settings:
+            '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+          funnel:
+            '<path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"/>',
+          locate:
+            '<path d="M2 12h3m14 0h3M12 2v3m0 14v3"/><circle cx="12" cy="12" r="7"/>',
+        };
+        const icon = (name, size = 20, sw = 1.5, cls = '') =>
+          `<svg class="icon ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" stroke-width="${sw}" aria-hidden="true">${ICONS[name]}</svg>`;
+
+        // Catmull-Rom → cubic Bézier through the points
+        const smooth = (pts, closed = false) => {
+          const p = closed ? [pts.at(-1), ...pts, pts[0], pts[1]] : [pts[0], ...pts, pts.at(-1)];
+          let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+          for (let i = 1; i < p.length - 2; i++) {
+            const [p0, p1, p2, p3] = [p[i - 1], p[i], p[i + 1], p[i + 2]];
+            const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+            const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+            d += `C${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+          }
+          return closed ? `${d}Z` : d;
+        };
+        const wobble = (pts, n, shift = 0) => {
+          const dx = jit(shift);
+          const dy = jit(shift);
+          return pts.map(([x, y]) => [x + dx + jit(n), y + dy + jit(n)]);
+        };
+
+        // ---------- map (world coordinates, track centre at 0,0) ----------
+        const RIVER = [
+          [-1200, -440], [-760, -340], [-470, -190], [-230, -120], [40, -160], [320, -270], [640, -310], [1200, -230],
+        ];
+        const BANK = [
+          [-760, -300], [-470, -150], [-230, -82], [40, -120], [300, -224],
+        ];
+        const SESSION = [
+          [-300, 170], [-330, 60], [-400, -60], [-440, -118], [-320, -96], [-200, -78], [-80, -86], [40, -112],
+          [160, -150], [272, -204], [160, -138], [40, -100], [-80, -74], [-200, -66], [-270, -70],
+          [-200, -62], [-80, -66], [40, -92], [120, -60], [64, 20], [52, 150], [-60, 204], [-200, 206], [-292, 176],
+        ];
+        const PARK = [
+          [-320, -20], [-60, -40], [70, 20], [50, 180], [-180, 220], [-340, 130],
+        ];
+        const FOREST = [
+          [60, -760], [700, -760], [720, -440], [420, -390], [120, -450],
+        ];
+        const ROADS_MAJOR = [
+          [[-660, -900], [-610, -200], [-560, 300], [-520, 900]],
+          [[160, -900], [210, -330], [200, 240], [250, 900]],
+          [[-1200, 290], [-560, 300], [0, 300], [480, 250], [1200, 210]],
+        ];
+        const MOTORWAY = [[-1200, 560], [-520, 500], [80, 590], [620, 530], [1200, 580]];
+        const town = [];
+        const blocks = (x0, x1, y0, y1) => {
+          for (let x = x0; x < x1; x += 68)
+            for (let y = y0; y < y1; y += 56) {
+              if (rnd() < 0.25) continue;
+              if (Math.hypot((x - 560) / 170, (y - 330) / 100) < 1) continue;
+              town.push(`<rect x="${x + 6}" y="${y + 6}" width="${50 + jit(6)}" height="${38 + jit(4)}" rx="2"/>`);
+            }
+        };
+        blocks(260, 1000, -160, 470);
+        blocks(-1200, -680, -60, 470);
+        blocks(-480, 120, 330, 470);
+        const minor = [];
+        const grid = (x0, x1, y0, y1) => {
+          for (let x = x0; x <= x1; x += 68) minor.push(`M${x} ${y0}V${y1}`);
+          for (let y = y0; y <= y1; y += 56) minor.push(`M${x0} ${y}H${x1}`);
+        };
+        grid(258, 1006, -162, 470);
+        grid(-1202, -678, -62, 470);
+        grid(-482, 126, 328, 470);
+        const minorD = minor.join('');
+        const label = (x, y, t) => `<text x="${x}" y="${y}" text-anchor="middle">${t}</text>`;
+
+        const base = `
+          <rect x="-1400" y="-1000" width="2800" height="2000" fill="var(--map-land)"/>
+          <path d="${smooth(FOREST, true)}" fill="var(--map-park)"/>
+          <path d="${smooth(PARK, true)}" fill="var(--map-park)"/>
+          <g fill="var(--map-building)">${town.join('')}</g>
+          <path d="${minorD}" stroke="var(--map-road-minor-case)" stroke-width="7" fill="none"/>
+          <path d="${minorD}" stroke="var(--map-road-minor)" stroke-width="4" fill="none"/>
+          <path d="${smooth(RIVER)}" stroke="var(--map-water)" stroke-width="40" fill="none"/>
+          <path d="M-280 900 C-260 400 -220 120 -170 -110" stroke="var(--map-waterway)" stroke-width="9" fill="none"/>
+          <ellipse cx="560" cy="330" rx="140" ry="74" fill="var(--map-water)"/>
+          <path d="${smooth(BANK)}" stroke="var(--map-path)" stroke-width="2" stroke-dasharray="6 4" fill="none"/>
+          ${ROADS_MAJOR.map((r) => `<path d="${smooth(r)}" stroke="var(--map-road-major-case)" stroke-width="11" fill="none"/>`).join('')}
+          ${ROADS_MAJOR.map((r) => `<path d="${smooth(r)}" stroke="var(--map-road-major)" stroke-width="7" fill="none"/>`).join('')}
+          <path d="${smooth(MOTORWAY)}" stroke="var(--map-motorway-case)" stroke-width="14" fill="none"/>
+          <path d="${smooth(MOTORWAY)}" stroke="var(--map-motorway)" stroke-width="10" fill="none"/>
+          ${label(-150, 96, 'Stadtpark')}${label(600, -40, 'Oststadt')}${label(400, -560, 'Hardtwald')}
+          ${label(560, 336, 'Baggersee')}${label(-860, 140, 'Weststadt')}${label(-640, -330, 'Rheinufer')}`;
+
+        // overview: many overlapping runs and rides, all faint, the three latest warm
+        const ride1 = [[200, 900], [205, 300], [205, -100], [280, -230], [520, -330], [900, -340], [1200, -300]];
+        const ride2 = [[-1200, 300], [-560, 300], [-600, -200], [-470, -150], [-230, -82], [40, -120], [300, -224], [700, -290], [1200, -260]];
+        const ride3 = [[-520, 900], [-560, 300], [0, 300], [210, 240], [210, -330], [160, -900]];
+        const runOut = [[-760, -300], [-470, -150], [-230, -82], [40, -120], [300, -224], [40, -112], [-230, -90], [-470, -158], [-760, -308]];
+        const trk = (sport, d, cls) =>
+          `<path class="trk ${sport} ${cls}" d="${d}" stroke-width="4" vector-effect="non-scaling-stroke"/>`;
+        const over = [];
+        for (let i = 0; i < 7; i++) over.push(trk('run', smooth(wobble(SESSION, 5, 4)), i === 0 ? 'warm' : 'faint'));
+        for (let i = 0; i < 6; i++) over.push(trk('run', smooth(wobble(runOut, 5, 4)), i === 0 ? 'warm' : 'faint'));
+        for (let i = 0; i < 5; i++) over.push(trk('run', smooth(wobble(PARK, 6, 6), true), 'faint'));
+        for (let i = 0; i < 4; i++) over.push(trk('ride', smooth(wobble(ride1, 4, 4)), i === 0 ? 'warm' : 'faint'));
+        for (let i = 0; i < 5; i++) over.push(trk('ride', smooth(wobble(ride2, 4, 4)), 'faint'));
+        for (let i = 0; i < 4; i++) over.push(trk('ride', smooth(wobble(ride3, 4, 4)), 'faint'));
+        over.push(trk('ride', smooth(wobble(MOTORWAY, 3, 2)), 'faint'));
+        over.push(trk('ride', smooth(wobble(MOTORWAY, 3, 2)), 'faint'));
+
+        // session: the one track, highlighted (width 12 → 6 here, casing 1.6×, trackColors.ts:14,19)
+        const sd = smooth(SESSION);
+        const nss = 'vector-effect="non-scaling-stroke"';
+        const sessionTrack = `
+          <path class="cas edge" d="${sd}" stroke-width="12" ${nss}/>
+          <path class="cas run" d="${sd}" stroke-width="10" ${nss}/>
+          <path class="trk run" d="${sd}" stroke-width="6" ${nss}/>
+          <circle class="pin start" cx="-300" cy="170" r="7"/>`;
+
+        const MAP = `<svg class="map" aria-hidden="true"><g class="world">${base}
+          <g class="g-over">${over.join('')}</g>
+          <g class="g-session">${sessionTrack}</g></g></svg>`;
+        // ---------- session data: 1 s records, 9 laps (4 × 1 km), 54:13 ----------
+        const LAPS = [
+          // [kind, km, time s, pace, avg HR]
+          ['warmup', 2.0, 670, '5:35', 131],
+          ['active', 1.0, 267, '4:27', 161],
+          ['rest', 0.4, 170, '7:05', 143],
+          ['active', 1.0, 265, '4:25', 165],
+          ['rest', 0.4, 170, '7:05', 146],
+          ['active', 1.0, 266, '4:26', 166],
+          ['rest', 0.4, 170, '7:05', 147],
+          ['active', 1.0, 266, '4:26', 168],
+          ['cooldown', 3.22, 1009, '5:13', 139],
+        ];
+        const TOTAL = LAPS.reduce((a, l) => a + l[2], 0); // 3253 s
+        const TARGET = { warmup: 134, active: 167, rest: 140, cooldown: 137 };
+        const hr = [];
+        const elev = [];
+        let h = 104;
+        let t0 = 0;
+        for (const l of LAPS) {
+          for (let s = 0; s < l[2]; s++) {
+            h += (TARGET[l[0]] - h) / 24 + jit(0.6);
+            const t = t0 + s;
+            // chest strap dropout: 20 s without HR in the cool-down (missing, not 0)
+            hr.push(t >= 2900 && t < 2920 ? null : h);
+            elev.push(112.4 + 0.9 * Math.sin(t / 420) + 0.4 * Math.sin(t / 97));
+          }
+          t0 += l[2];
+        }
+        const X = (t) => ((t / TOTAL) * 1000).toFixed(1);
+        const yHr = (v) => (((180 - v) / 80) * 120).toFixed(1);
+        const yEl = (v) => (((125 - v) / 20) * 120).toFixed(1);
+        let hrD = '';
+        let pen = false;
+        for (let t = 0; t < TOTAL; t += 5) {
+          const v = hr[t];
+          if (v === null) {
+            pen = false;
+            continue;
+          }
+          hrD += `${pen ? 'L' : 'M'}${X(t)} ${yHr(v)}`;
+          pen = true;
+        }
+        let elD = `M0 120`;
+        for (let t = 0; t < TOTAL; t += 5) elD += `L${X(t)} ${yEl(elev[t])}`;
+        elD += `L1000 120Z`;
+        const bands = [];
+        const strip = [];
+        let from = 0;
+        let activeN = 0;
+        LAPS.forEach((l, i) => {
+          const x = X(from);
+          const w = ((l[2] / TOTAL) * 1000).toFixed(1);
+          bands.push(`<rect class="band" data-lap="${i}" x="${x}" y="0" width="${w}" height="120"/>`);
+          let fill = 'var(--lap-rest)';
+          if (l[0] === 'active') fill = activeN++ % 2 === 1 ? 'var(--lap-alt)' : 'var(--lap-active)';
+          strip.push(`<rect class="strip" data-lap="${i}" x="${(+x + 1).toFixed(1)}" y="3" width="${(w - 2).toFixed(1)}" height="4" rx="1" fill="${fill}"/>`);
+          from += l[2];
+        });
+        const xTick = (t, s) =>
+          `<span class="t-cap c-ter" style="position:absolute;left:${((t / TOTAL) * 100).toFixed(1)}%">${s}</span>`;
+        const CHART = `
+          <div class="legend">
+            <span class="t-cap"><i class="sw" style="background:var(--color-chart-hr)"></i>${tx('Heart rate', 'Herzfrequenz')}</span>
+            <span class="t-cap"><i class="sw" style="background:var(--color-chart-elevation)"></i>${tx('Elevation', 'Höhe')}</span>
+          </div>
+          <div class="chart">
+            <div class="chart__y"><span class="t-cap c-ter">180</span><span class="t-cap c-ter">140</span><span class="t-cap c-ter">100</span></div>
+            <div class="chart__plot">
+              <svg viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M0 0H1000M0 60H1000M0 120H1000" stroke="var(--grid-line)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+                <g class="bands">${bands.join('')}</g>
+                <path d="${elD}" fill="var(--elev-fill)" stroke="var(--color-chart-elevation)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+                <path d="${hrD}" fill="none" stroke="var(--color-chart-hr)" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+              </svg>
+            </div>
+            <div class="chart__strip"><svg viewBox="0 0 1000 10" preserveAspectRatio="none" aria-hidden="true">${strip.join('')}</svg></div>
+            <div class="chart__x" style="position:relative">${xTick(0, '0:00')}${xTick(900, '0:15')}${xTick(1800, '0:30')}${xTick(2700, '0:45')}</div>
+          </div>`;
+
+        const fmtT = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+        const LAP_ROWS = LAPS.map(
+          (l, i) => `<tr data-lap="${i}" class="${l[0] === 'active' ? '' : 'rest'}">
+            <td class="t-sub">${i + 1}</td>
+            <td>${tx(`${l[1].toFixed(2)} km`, `${l[1].toFixed(2).replace('.', ',')} km`)}</td>
+            <td>${fmtT(l[2])}</td><td>${l[3]} /km</td><td>${l[4]}</td></tr>`,
+        ).join('');
+
+        // ---------- 3D terrain (session): a pitched plane with hillshade, as MapLibre terrain ----------
+        // Plane units: 3000 × 2000, y = 0 is the far edge. The session runs along a contour at the foot
+        // of the slope (hence 0 m gain), out and back.
+        const PW = 3000;
+        const PH = 2000;
+        const sstep = (t) => {
+          const c = Math.min(1, Math.max(0, t));
+          return c * c * (3 - 2 * c);
+        };
+        const gx = (x) => 40 * Math.sin(x / 300) + 20 * Math.sin(x / 110 + 1);
+        const height = (x, y) =>
+          900 * sstep((1500 - y + gx(x)) / 1200) -
+          170 * sstep((1450 - y) / 500) * Math.max(0, Math.cos(x / 170)) ** 3 +
+          420 * Math.exp(-((x - 1100) ** 2 + (y - 350) ** 2) / (2 * 330 ** 2)) +
+          320 * Math.exp(-((x - 2150) ** 2 + (y - 500) ** 2) / (2 * 300 ** 2)) +
+          12 * Math.sin(x / 53) * Math.sin(y / 61) * sstep((1500 - y) / 600);
+        // hillshade masks (alpha = amount), light from 335° at 45° as MapLibre's default
+        const CELL = 10;
+        const cv = document.createElement('canvas');
+        cv.width = PW / CELL;
+        cv.height = PH / CELL;
+        const ctx = cv.getContext('2d');
+        const shadowImg = ctx.createImageData(cv.width, cv.height);
+        const hiImg = ctx.createImageData(cv.width, cv.height);
+        const az = (335 * Math.PI) / 180;
+        const alt = Math.PI / 4;
+        const L = [Math.sin(az) * Math.cos(alt), Math.cos(az) * Math.cos(alt), Math.sin(alt)];
+        for (let j = 0; j < cv.height; j++)
+          for (let i = 0; i < cv.width; i++) {
+            const x = i * CELL;
+            const y = j * CELL;
+            const dE = (height(x + CELL, y) - height(x - CELL, y)) / (2 * CELL);
+            const dN = -(height(x, y + CELL) - height(x, y - CELL)) / (2 * CELL);
+            const len = Math.hypot(dE, dN, 1);
+            const hill = (-dE * L[0] - dN * L[1] + L[2]) / len;
+            const k = (j * cv.width + i) * 4 + 3;
+            shadowImg.data[k] = Math.round(Math.min(1, Math.max(0, (0.707 - hill) / 0.45)) * 255);
+            hiImg.data[k] = Math.round(Math.min(1, Math.max(0, (hill - 0.707) / 0.25)) * 255);
+          }
+        const toUrl = (img) => {
+          ctx.putImageData(img, 0, 0);
+          return cv.toDataURL('image/png');
+        };
+        const maskCss = document.createElement('style');
+        maskCss.textContent = `.hs-shadow{-webkit-mask-image:url(${toUrl(shadowImg)});mask-image:url(${toUrl(shadowImg)})}
+          .hs-hi{-webkit-mask-image:url(${toUrl(hiImg)});mask-image:url(${toUrl(hiImg)})}`;
+        document.head.append(maskCss);
+
+        // the session line along a contour, laps split by distance
+        const hc = height(1500, 1260);
+        const contourY = (x) => {
+          for (let y = 1990; y > 0; y -= 2) if (height(x, y) >= hc) return y;
+          return 0;
+        };
+        const out = [];
+        for (let x = 1020; x <= 1980; x += 20) out.push([x, contourY(x)]);
+        const back = out.map(([x, y]) => [x, y + 14]).reverse();
+        const route = [[960, 1360], [990, 1310], ...out, ...back, [994, 1322], [962, 1368]];
+        const seg = route.slice(1).map((p, i) => Math.hypot(p[0] - route[i][0], p[1] - route[i][1]));
+        const routeLen = seg.reduce((a, b) => a + b, 0);
+        const pointAt = (d) => {
+          let rest = d;
+          for (let i = 0; i < seg.length; i++) {
+            if (rest <= seg[i]) {
+              const t = rest / seg[i];
+              return [route[i][0] + (route[i + 1][0] - route[i][0]) * t, route[i][1] + (route[i + 1][1] - route[i][1]) * t, i];
+            }
+            rest -= seg[i];
+          }
+          return [...route.at(-1), seg.length - 1];
+        };
+        const lapLine = (fromKm, toKm) => {
+          const a = pointAt((fromKm / 10.42) * routeLen);
+          const b = pointAt((toKm / 10.42) * routeLen);
+          const pts = [a.slice(0, 2), ...route.slice(a[2] + 1, b[2] + 1), b.slice(0, 2)];
+          return `M${pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L')}`;
+        };
+        let km = 0;
+        const lapD = LAPS.map((l) => {
+          const d = lapLine(km, km + l[1]);
+          km += l[1];
+          return d;
+        });
+        const SEL = 3;
+        const HOV = 1;
+        const kmAt = (i) => LAPS.slice(0, i).reduce((a, l) => a + l[1], 0);
+        const hoverPt = pointAt(((kmAt(SEL) + 0.35) / 10.42) * routeLen);
+        const q9Pt = pointAt(((kmAt(SEL) + 0.85) / 10.42) * routeLen);
+        const anc = (id, x, y) => `<i class="anc" data-anc="${id}" style="left:${x.toFixed(0)}px;top:${y.toFixed(0)}px"></i>`;
+        const groundRoads = `
+          <path d="M-100 1720 C600 1690 1200 1750 1800 1700 S2700 1640 3100 1660" stroke="var(--map-road-major-case)" stroke-width="16" fill="none"/>
+          <path d="M-100 1720 C600 1690 1200 1750 1800 1700 S2700 1640 3100 1660" stroke="var(--map-road-major)" stroke-width="10" fill="none"/>
+          <path d="M760 1715 L830 1460 L690 1260 L920 1080 L760 900 L900 700" stroke="var(--map-road-minor-case)" stroke-width="10" fill="none" stroke-linejoin="round"/>
+          <path d="M760 1715 L830 1460 L690 1260 L920 1080 L760 900 L900 700" stroke="var(--map-road-minor)" stroke-width="6" fill="none" stroke-linejoin="round"/>
+          <path d="M1100 1640 C1000 1400 1050 1100 1150 900 S1150 520 1100 380" stroke="var(--map-path)" stroke-width="4" stroke-dasharray="14 10" fill="none"/>`;
+        const TERRAIN = `<div class="terrain" aria-hidden="true">
+          <div class="sky"></div>
+          <div class="stage3d"><div class="plane">
+            <svg class="pl" viewBox="0 0 ${PW} ${PH}">
+              <rect width="${PW}" height="${PH}" fill="var(--map-land)"/>
+              <path d="M0 0H3000V1000C2600 1120 2300 900 1900 1080S1200 980 800 1100S200 950 0 1040Z" fill="var(--map-park)"/>
+              <path d="M-50 1840 C900 1820 1600 1870 3050 1830" stroke="var(--map-water)" stroke-width="44" fill="none"/>
+            </svg>
+            <div class="hs hs-shadow"></div><div class="hs hs-hi"></div>
+            <svg class="pl" viewBox="0 0 ${PW} ${PH}">${groundRoads}
+              <g class="t-track">
+                ${lapD.map((d, i) => (i === SEL ? '' : `<path class="t-dim" d="${d}"/>`)).join('')}
+                <path class="t-hover" d="${lapD[HOV]}"/>
+                <path class="t-cas edge" d="${lapD[SEL]}"/><path class="t-cas" d="${lapD[SEL]}"/><path class="t-sel" d="${lapD[SEL]}"/>
+              </g>
+            </svg>
+            ${anc('far-l', 0, 0)}${anc('far-r', PW, 0)}${anc('peak1', 1100, 350)}${anc('peak2', 2150, 500)}
+            ${anc('valley', 1500, 1690)}${anc('pass', 880, 1160)}${anc('hover', hoverPt[0], hoverPt[1])}
+            ${anc('q9', q9Pt[0], q9Pt[1] - 90)}${anc('q10', 1350, 950)}
+          </div></div>
+          <div class="fog"></div>
+          <svg class="ridge" viewBox="0 0 768 90" preserveAspectRatio="none">
+            <path d="M0 90 L0 52 L60 38 L120 50 L190 22 L250 40 L330 30 L400 8 L470 34 L540 26 L610 44 L690 30 L768 46 L768 90Z" fill="var(--ridge-far)"/>
+            <path d="M0 90 L0 70 L90 56 L170 66 L260 50 L350 64 L450 52 L560 68 L660 58 L768 66 L768 90Z" fill="var(--ridge-near)"/>
+          </svg>
+          ${tx('Hochkopf', 'Hochkopf', 'ov lbl').replace('<span ', '<span data-for="peak1" ')}
+          ${tx('Langer Berg', 'Langer Berg', 'ov lbl').replace('<span ', '<span data-for="peak2" ')}
+          ${tx('Talstraße', 'Talstraße', 'ov lbl').replace('<span ', '<span data-for="valley" ')}
+          ${tx('Passweg', 'Passweg', 'ov lbl').replace('<span ', '<span data-for="pass" ')}
+          <span class="ov hpt" data-for="hover"></span>
+          <span class="ov" data-for="q9"><span data-q="Q9"></span></span>
+          <span class="ov" data-for="q10"><span data-q="Q10"></span></span>
+        </div>
+        <div class="note3d" data-when="mapview:3d"><div class="floating" data-when="scenario:overview|settings">${tx('3D view: session detail only', '3D-Ansicht: nur in einer Einheit', 't-cap')}</div></div>`;
+
+        // ---------- screen parts ----------
+        const themeBtn = `<span class="row" data-when="switcher:header"><span class="qa q3"><span data-q="Q3"></span></span>
+            <button type="button" class="btn btn--icon themebtn" title="Light / dark">
+              ${icon('sun', 20, 1.5, 'ico-sun')}${icon('moon', 20, 1.5, 'ico-moon')}</button></span>`;
+        const pagehead = (o) => `<div class="card ph"><div class="row">
+            ${o.back ? `<button type="button" class="btn btn--icon" aria-label="Back">${icon('chevron-left')}</button>` : ''}
+            <div class="grow">${tx(o.en, o.de, 't-h2 trunc', 'h2')}
+              <p class="t-cap c-ter row sub">${tx(o.subEn, o.subDe)}${o.q7 ? '<span data-when="variant:dark"><span data-q="Q7"></span></span>' : ''}</p></div>
+            <span class="qa q1"><span data-q="Q1"></span></span>${themeBtn}
+            <button type="button" class="btn btn--icon" aria-label="Actions">${icon('ellipsis')}</button>
+          </div></div>`;
+        const tile = (o) => `<div class="tile">${tx(o.en, o.de, 't-over trunc')}
+            <p class="t-num">${tx(o.v, o.vde ?? o.v)}${o.unit ? `<span class="unit">${o.unit}</span>` : ''}</p>
+            ${o.nEn ? tx(o.nEn, o.nDe, 't-cap c-ter tab trunc', 'p') : '<p></p>'}</div>`;
+        const cardTitle = (en, de) => tx(en, de, 't-title', 'h4').replace('class="t-title"', 'class="t-title" style="margin-bottom:16px"');
+
+        const SESSION_VIEW = `<div class="stack" data-when="scenario:session">
+          ${pagehead({ back: true, q7: true, en: 'Intervals 4 × 1 km', de: 'Intervalle 4 × 1 km', subEn: 'Sat 24 Oct 2026 · 09:12 · Running', subDe: 'Sa., 24. Okt. 2026 · 09:12 · Laufen' })}
+          <div class="card"><div class="tiles">
+            ${tile({ en: 'Distance', de: 'Distanz', v: '10.42', vde: '10,42', unit: 'km' })}
+            ${tile({ en: 'Time', de: 'Zeit', v: '54:13', nEn: 'Moving 53:48', nDe: 'In Bewegung 53:48' })}
+            ${tile({ en: 'Avg pace', de: 'Ø Pace', v: '5:12', unit: '/km', nEn: 'Fastest lap 4:25 /km', nDe: 'Schnellste Runde 4:25 /km' })}
+            ${tile({ en: 'Avg HR', de: 'Ø HF', v: '147', unit: 'bpm', nEn: 'Max 171 bpm', nDe: 'Max. 171 bpm' })}
+            ${tile({ en: 'Elevation', de: 'Höhenmeter', v: '0', unit: 'm', nEn: 'Range 111–114 m', nDe: 'Bereich 111–114 m' })}
+            ${tile({ en: 'TSS', de: 'TSS', v: '--', nEn: 'No threshold pace set', nDe: 'Keine Schwellenpace gesetzt' })}
+          </div></div>
+          <div class="card">${cardTitle('Heart rate & elevation', 'Herzfrequenz & Höhe')}${CHART}</div>
+          <div class="card">${cardTitle('Laps', 'Runden')}
+            <table class="tbl"><thead><tr><th>#</th>${tx('Distance', 'Distanz', '', 'th')}${tx('Time', 'Zeit', '', 'th')}<th>Pace</th>${tx('HR', 'HF', '', 'th')}</tr></thead>
+            <tbody>${LAP_ROWS}</tbody></table></div>
+          <div class="card">${cardTitle('Weather', 'Wetter')}<div class="wx">
+            <div>${tx('Sky', 'Himmel', 't-over', 'p')}${tx('Partly cloudy', 'Teils bewölkt', 't-body', 'p')}${tx('09:00 and 10:00', '09:00 und 10:00', 't-cap c-ter', 'p')}</div>
+            <div>${tx('Temp', 'Temp.', 't-over', 'p')}<p class="t-body tab">13 → 14 °C</p></div>
+            <div>${tx('Wind', 'Wind', 't-over', 'p')}<p class="t-body tab">9–12 km/h</p>${tx('Mostly headwind', 'Überwiegend Gegenwind', 't-cap c-ter', 'p')}</div>
+            <div>${tx('Rain', 'Regen', 't-over', 'p')}<p class="t-body tab">0 mm</p></div>
+          </div></div>
+        </div>`;
+
+        const SESSIONS = [
+          ['run', 'Intervals 4 × 1 km', 'Intervalle 4 × 1 km', 'Sat 24 Oct', 'Sa., 24. Okt.', '10.42 km', '10,42 km', '54:13'],
+          ['ride', 'Evening ride', 'Abendrunde', 'Thu 22 Oct', 'Do., 22. Okt.', '48.6 km', '48,6 km', '1:42:05'],
+          ['run', 'Easy run', 'Lockerer Lauf', 'Wed 21 Oct', 'Mi., 21. Okt.', '7.81 km', '7,81 km', '44:30'],
+          ['ride', 'Long ride', 'Lange Ausfahrt', 'Sun 18 Oct', 'So., 18. Okt.', '92.3 km', '92,3 km', '3:18:40'],
+          ['run', 'Long run', 'Langer Lauf', 'Sat 17 Oct', 'Sa., 17. Okt.', '18.06 km', '18,06 km', '1:41:22'],
+          ['ride', 'Indoor ride', 'Indoor-Fahrt', 'Fri 16 Oct', 'Fr., 16. Okt.', '0.0 km', '0,0 km', '1:00:12'],
+          ['ride', 'Recovery ride', 'Regenerationsfahrt', 'Thu 15 Oct', 'Do., 15. Okt.', '31.2 km', '31,2 km', '1:12:48'],
+          ['run', 'Tempo run', 'Tempolauf', 'Tue 13 Oct', 'Di., 13. Okt.', '9.10 km', '9,10 km', '43:05'],
+          ['run', 'Park loops', 'Parkrunden', 'Sun 11 Oct', 'So., 11. Okt.', '12.40 km', '12,40 km', '1:05:31'],
+        ];
+        const OVERVIEW_VIEW = `<div class="stack" data-when="scenario:overview">
+          ${pagehead({ en: 'Sessions', de: 'Einheiten', subEn: '86 sessions in 2026', subDe: '86 Einheiten in 2026', q7: true })}
+          <div class="card card--compact"><div class="list">${SESSIONS.map(
+            (s) => `<div class="srow"><span class="dot ${s[0]}"></span>
+              <div class="grow">${tx(s[1], s[2], 't-sub trunc', 'p')}${tx(s[3], s[4], 't-cap c-ter', 'p')}</div>
+              <div class="right">${tx(s[5], s[6], 't-sub tab', 'p')}<p class="t-cap tab">${s[7]}</p></div></div>`,
+          ).join('')}</div></div>
+        </div>`;
+
+        const radio = (id, en, de, extra = '', when = '') =>
+          `<div class="row"${when}><button type="button" class="radio" role="radio" aria-checked="false" data-opt="${id}">
+            <span class="radio__c"></span>${tx(en, de, 't-body')}</button>${extra}</div>`;
+        const select = (inner) => `<span class="select">${inner}${icon('chevron-down', 12)}</span>`;
+        const SETTINGS_VIEW = `<div class="stack" data-when="scenario:settings">
+          ${pagehead({ en: 'Settings', de: 'Einstellungen', subEn: 'Stored on this device', subDe: 'Auf diesem Gerät gespeichert' })}
+          <div class="tabs floating">${tx('General', 'Allgemein', 'btn on', 'button')}${tx('Data Management', 'Datenverwaltung', 'btn', 'button')}</div>
+          <div class="card">${cardTitle('Display', 'Anzeige')}<div class="stack">
+            <div>
+              <div class="row">${tx('Theme', 'Design', 't-body', 'p')}<span data-q="Q3"></span></div>
+              ${tx('Colours of app and map', 'Farben von App und Karte', 't-cap', 'p')}
+              <div class="radios" role="radiogroup">
+                ${radio('system', 'System', 'System', '<span data-q="Q4"></span>')}
+                ${radio('light', 'Light', 'Hell')}
+                ${radio('dark', 'Dark', 'Dunkel')}
+                ${radio('auto', 'Auto (sun)', 'Automatisch (Sonne)', '', ' data-when="switcher:auto"')}
+                ${tx('Light from sunrise to sunset · today 07:20–17:05', 'Hell von Sonnenaufgang bis Sonnenuntergang · heute 07:20–17:05', 't-cap c-ter hint', 'p').replace('<p ', '<p data-when="switcher:auto" ')}
+              </div>
+            </div>
+            <div class="li"><div>${tx('Map', 'Karte', 't-body', 'p')}${tx('Basemap style', 'Kartenstil', 't-cap', 'p')}</div>
+              <div class="row"><span data-q="Q2"></span>${select(
+                `${tx('Follows theme', 'Wie Design', 't-body').replace('<span ', '<span data-when="variant:dark|a|b|c" ')}${tx('Always dark', 'Immer dunkel', 't-body').replace('<span ', '<span data-when="variant:a-darkmap" ')}`,
+              )}</div></div>
+            <div class="li"><div>${tx('Language', 'Sprache', 't-body', 'p')}${tx('Choose your preferred language', 'Wähle deine bevorzugte Sprache', 't-cap', 'p')}</div>
+              ${select(tx('English', 'Deutsch', 't-body'))}</div>
+            <div class="li"><div>${tx('Show metric explanations', 'Metrik-Erklärungen anzeigen', 't-body', 'p')}${tx('Display info icons next to metrics', 'Info-Symbole neben Metriken einblenden', 't-cap', 'p')}</div>
+              <button type="button" class="switch" role="switch" aria-checked="true" aria-label="Show metric explanations"></button></div>
+          </div></div>
+        </div>`;
+
+        const skTile = (en, de) => `<div class="tile">${tx(en, de, 't-over trunc')}<div style="display:flex;align-items:center"><div class="sk" style="width:64px;height:12px"></div></div><p></p></div>`;
+        const LOADING_VIEW = `<div class="stack" data-when="scenario:loading">
+          <div class="card ph"><div class="row">
+            <button type="button" class="btn btn--icon" aria-label="Back">${icon('chevron-left')}</button>
+            <div class="grow"><div style="height:28px;display:flex;align-items:center"><div class="sk" style="width:192px;height:20px"></div></div>
+              <div style="height:16px;display:flex;align-items:center"><div class="sk" style="width:160px;height:10px"></div></div></div>
+            <span class="qa q1"><span data-q="Q1"></span></span>${themeBtn}
+            <button type="button" class="btn btn--icon" aria-label="Actions">${icon('ellipsis')}</button>
+          </div></div>
+          <div class="card"><div class="tiles">
+            ${skTile('Distance', 'Distanz')}${skTile('Time', 'Zeit')}${skTile('Avg pace', 'Ø Pace')}
+            ${skTile('Avg HR', 'Ø HF')}${skTile('Elevation', 'Höhenmeter')}${skTile('TSS', 'TSS')}
+          </div></div>
+          <div class="card">${cardTitle('Heart rate & elevation', 'Herzfrequenz & Höhe')}<div class="sk" style="height:172px"></div></div>
+          <div class="card">${cardTitle('Weather', 'Wetter')}<div class="sk" style="height:52px"></div></div>
+        </div>`;
+
+        const ditem = (tab, name, label) =>
+          `<button type="button" class="btn btn--icon ditem" data-tab="${tab}" aria-label="${label}">${icon(name)}</button>`;
+        const DOCK = `<nav class="dock">
+          <div class="circle floating">${ditem('locate', 'locate', 'Locate')}</div>
+          <div class="seg floating">${ditem('dashboard', 'dashboard', 'Dashboard')}${ditem('sessions', 'zap', 'Sessions')}${ditem('labs', 'flask', 'Labs')}${ditem('settings', 'settings', 'Settings')}</div>
+          <div class="seg floating rail-extra">${ditem('filter', 'funnel', 'Filter')}${ditem('locate', 'locate', 'Locate')}</div>
+          <div class="circle floating">${ditem('filter', 'funnel', 'Filter')}</div>
+        </nav>`;
+
+        document.getElementById('mockup-screen').innerHTML = `<div class="app">${MAP}${TERRAIN}
+          <div class="mapq"><span data-q="Q2"></span><span data-when="scenario:overview"><span data-q="Q5"></span></span></div>
+          <span class="chip t-cap">© CARTO © OpenStreetMap</span>
+          <div class="col"><div class="grab"><span></span></div>
+            <div class="scroll">${SESSION_VIEW}${OVERVIEW_VIEW}${SETTINGS_VIEW}${LOADING_VIEW}</div></div>
+          ${DOCK}</div>`;
+      })();
+
+      // ---------- in-frame interactions (local to the frame) ----------
+      const lapMark = (app, i, cls, on) => {
+        for (const el of app.querySelectorAll(`.${cls}`)) el.classList.remove(cls);
+        if (on) for (const el of app.querySelectorAll(`[data-lap="${i}"]`)) el.classList.add(cls);
+      };
+      document.addEventListener('mouseover', (e) => {
+        const app = e.target.closest?.('.app');
+        if (!app) return;
+        const tr = e.target.closest('.tbl tbody tr');
+        lapMark(app, tr?.dataset.lap, 'hov', !!tr);
+      });
+      document.addEventListener('click', (e) => {
+        const app = e.target.closest?.('.app');
+        if (!app) return;
+        const tr = e.target.closest('.tbl tbody tr');
+        if (tr) lapMark(app, tr.dataset.lap, 'sel', !tr.classList.contains('sel'));
+        const r = e.target.closest('.radio');
+        if (r) for (const x of app.querySelectorAll('.radio')) x.setAttribute('aria-checked', String(x === r));
+        const sw = e.target.closest('.switch');
+        if (sw) sw.setAttribute('aria-checked', String(sw.getAttribute('aria-checked') !== 'true'));
+      });
+      document.addEventListener('DOMContentLoaded', () => {
+        for (const app of document.querySelectorAll('.ms-screen .app')) lapMark(app, 3, 'sel', true);
+        // 3D overlays (labels, hover point, badges) stay upright like MapLibre symbols and markers:
+        // place them over their anchors on the pitched plane, in unscaled frame pixels
+        const place3d = (screen) => {
+          const terr = screen.querySelector('.terrain');
+          const app = screen.querySelector('.app');
+          if (terr === null || terr.offsetParent === null) return;
+          const k = app.getBoundingClientRect().width / app.offsetWidth;
+          const tr = terr.getBoundingClientRect();
+          const at = (id) => {
+            const r = terr.querySelector(`.anc[data-anc="${id}"]`).getBoundingClientRect();
+            return [(r.left + r.width / 2 - tr.left) / k, (r.top + r.height / 2 - tr.top) / k];
+          };
+          for (const ov of terr.querySelectorAll('.ov[data-for]')) {
+            const p = at(ov.dataset.for);
+            ov.style.left = `${p[0].toFixed(1)}px`;
+            ov.style.top = `${p[1].toFixed(1)}px`;
+          }
+          const hz = (at('far-l')[1] + at('far-r')[1]) / 2;
+          terr.style.setProperty('--hz', `${hz.toFixed(1)}px`);
+        };
+        MockupShell.onChange((state, screens) => {
+          for (const s of screens) place3d(s);
+          let picked = state.variant === 'dark' ? 'dark' : 'light';
+          if (state.switcher === 'auto') picked = 'auto';
+          for (const s of screens)
+            for (const x of s.querySelectorAll('.radio'))
+              x.setAttribute('aria-checked', String(x.dataset.opt === picked));
+        });
+      });
+    </script>
+  </body>
+</html>
