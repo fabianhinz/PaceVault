@@ -100,7 +100,7 @@ None. Several files below are also moved or reshaped by the hook-directory and o
 ## Open items
 
 - R1 already holds: `apps/web/src/lib/intervals.ts` and `apps/web/src/lib/weather.ts` call the platform `fetch` directly; there is no shared client or HTTP library.
-- R2 scope: intervals.icu uses Basic auth with the literal user `API_KEY` (built only in `intervalsAuthorization`); Open-Meteo and the CARTO tiles take no auth header. The CARTO key is a URL parameter read from the env facade (`env-access-through-validated-facade`).
+- R2 scope: intervals.icu uses Basic auth with the literal user `API_KEY` (built only in `intervalsAuthorization`); Open-Meteo and the CARTO tiles take no auth header. The CARTO key is a URL parameter read from `import.meta.env.VITE_CARTO_API_KEY`.
 - Response-body validation stays the Zod `safeParse` + fallback the root `CLAUDE.md:30` prescribes; this record only changes how a non-ok status is signalled.
 
 ## Done

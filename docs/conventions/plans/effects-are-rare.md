@@ -162,7 +162,7 @@ Several items below change what a user sees or when work runs (listener target a
     - `SessionDetailPage.tsx:23-27` -> `apps/web/src/features/sessions/session/hooks/useMarkSessionSeenEffect.ts`, `useMarkSessionSeenEffect(sessionId: string | undefined): void`.
     - `AppLayout.tsx:40-46` -> `apps/web/src/components/layout/useOverscrollLockEffect.ts` (loose: sole consumer in the same directory), `useOverscrollLockEffect(): void`.
     - `ImportProgressOverlay.tsx:116,122-126` -> `apps/web/src/components/useMinOpenTimeReached.ts` (loose), `useMinOpenTimeReached(openedAt: number): boolean` owning the `minTimeReached` state and the timeout.
-    - `OnboardingFlow.tsx:142-144` -> `apps/web/src/features/onboarding/hooks/useRevealOnboardingPreviewEffect.ts`, `useRevealOnboardingPreviewEffect(): void`.
+    - `OnboardingFlow.tsx:142-144` (`features/onboarding/index.tsx` with the component `Onboarding` after component-declaration-shape item 12) -> `apps/web/src/features/onboarding/hooks/useRevealOnboardingPreviewEffect.ts`, `useRevealOnboardingPreviewEffect(): void`.
     - `SessionMapControls.tsx:20-22` -> `apps/web/src/features/sessions/session/hooks/useTrackColorModeEffect.ts`, `useTrackColorModeEffect(mode: <the type of coloring.effective>): void`.
     - `MapBackground.tsx:47-49` -> `apps/web/src/features/map/hooks/useOpenedSessionEffect.ts`, `useOpenedSessionEffect(sessionId: string | null): void` (MapBackground passes `match?.params.id ?? null`, or the routing plan's `useRouteMatch` result once that runs).
     - `RouteChartsExplorer.tsx:79-85` -> `apps/web/src/features/studio/hooks/useClearRouteChartHoverEffect.ts`, `useClearRouteChartHoverEffect(group: string): void`.

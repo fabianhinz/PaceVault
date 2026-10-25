@@ -1,0 +1,6 @@
+## Agent decisions
+
+- [ ] **(scope) Convention plans run one at a time, never in parallel.** Agent: many plans edit the same files (`useMapCameraEffect.ts`, `DeckGLOverlay.tsx`, the kit components); parallel workers would conflict and the `depends_on` order would only hold per pair.
+- [ ] **(scope) A plan whose suite cannot be made green within the plan is reverted and recorded as an open point; plans that depend on it are skipped and the run continues.** Agent: the owner wants "lets dev" to run through without stopping; a reverted plan keeps the tree green for the plans after it.
+- [ ] **(behaviour) On load, an invalid stored rest HR / max HR entry is dropped only while another entry remains in that history; a profile whose only pair is invalid (e.g. 60/60) loads unchanged and the engine treats it silently as today.** Agent: Q27 says no user may land in onboarding, but today an empty required history makes the whole profile `null`; keeping the last entry is the only way both hold (`docs/conventions/plans/domain-error-subclasses.md` item 5).
+- [ ] **(scope) The conventions check (index rebuild + plan/TDR validation) lives in this item's `research/conventionsCheck.mjs`, not in the repo's tooling.** Agent: the pattern-apply scripts are not used (owner); the check is only needed while plans exist and is removed with the item folder.

@@ -1,8 +1,8 @@
 ---
 kind: pattern-apply-tdr-reference
 id: variant-unions-with-default-resolvers
-title: Discrete choice props are named unions resolved by one default function
-summary: A packages/ui component's variant, size or look prop is a named string-literal union declared beside its props, made optional when it has a default, and read everywhere through one resolve<Name>Variant function whose body is a single ?? with the default member.
+title: Discrete choice props are named unions with one inline default
+summary: A packages/ui component's variant, size or look prop is a named string-literal union declared beside its props, made optional when it has a default, and defaulted inline where it is read as props.variant ?? 'primary', once per prop and component; no resolver functions, no destructuring defaults.
 governs:
   - "packages/ui/src/components/**/*.tsx"
   - "packages/ui/src/components/**/types.ts"
@@ -15,19 +15,19 @@ adopted: 2026-10-23
 
 > Anywhere the text below still embeds a source project's own raw parameter — a product prefix, a specific module or identifier name — instead of a structural pattern, it has been rewritten to this project's resolved value, the same adaptation the rule text always gets. No source project's parameter is left in this file, even inside a reference example or a forbidden-practice bullet.
 
-# Discrete choice props are named unions resolved by one default function
+# Discrete choice props are named unions with one inline default
 
 ## 1. Context
 
 This file carries rules R1, R2, R3, R4, R5, R6 and R7.
 
-A kit component's discrete choices — which visual variant, which size, which look — are closed sets of names, and each needs exactly one answer to "what happens when the caller passes nothing?". The set is a named string-literal union (never a TypeScript enum, which `erasableSyntaxOnly` in `packages/ui/tsconfig.json` rejects anyway), and the default is applied by one `resolve<Name>Variant` function, so the default has one home and the class map keyed by the union (exhaustive-record-maps-over-branching) is always indexed with a member, never with `undefined`.
+A kit component's discrete choices — which visual variant, which size, which look — are closed sets of names, and each needs exactly one answer to "what happens when the caller passes nothing?". The set is a named string-literal union (never a TypeScript enum, which `erasableSyntaxOnly` in `packages/ui/tsconfig.json` rejects anyway), and the default is applied inline where the prop is read, `props.variant ?? 'primary'`, so the class map keyed by the union (exhaustive-record-maps-over-branching) is always indexed with a member, never with `undefined`. There are no `resolve<Name>Variant` functions: a one-line function per prop adds an indirection without a second reader. Props are never destructured (root `CLAUDE.md` §2; the kit's strip-destructure in `packages/ui/CLAUDE.md` § Rules only removes props from what is forwarded and carries no defaults), so the default is never a destructuring default either.
 
-Where the union lives follows component-declaration-shape and colocated-types-module: beside the props interface in the component module, or in the component directory's `types.ts` once several modules of the directory (or the kit's consumers) read it. The resolver is a module-local function in the component module that reads the prop: a component module exports only its component (the lint rule `react/only-export-components` and component-declaration-shape), and in a Tailwind kit there is no second style layer that would need to import it. If a second module of the same directory ever reads the same prop, the resolver moves to that directory's `types.ts` with the union.
+Where the union lives follows component-declaration-shape and colocated-types-module: beside the props interface in the component module, or in the component directory's `types.ts` once several modules of the directory (or the kit's consumers) read it. The default stays in the component that reads the prop: one `??` per prop and component. A component that reads the prop in several places binds the defaulted value once at the top (`const variant = props.variant ?? 'primary';`) and reads that local, so the default literal appears once.
 
-Scope: the props of components under `packages/ui/src/components/`. Continuous or open-ended props (numbers, free strings, callbacks), booleans, and token-typed colour props are out of scope. A prop that changes in response to the user is interactive state, not a presentation choice, and gets no resolver.
+Scope: the props of components under `packages/ui/src/components/`. Continuous or open-ended props (numbers, free strings, callbacks), booleans, and token-typed colour props are out of scope. A prop that changes in response to the user is interactive state, not a presentation choice, and is out of scope.
 
-The rules bind the banner page components of `tools/docs` (`tools/docs/banner/page/**/*.tsx`) as well: a discrete choice prop there (`Shot`'s `fit`) is a named union declared beside its props, and a required one gets no resolver.
+The rules bind the banner page components of `tools/docs` (`tools/docs/banner/page/**/*.tsx`) as well: a discrete choice prop there (`Shot`'s `fit`) is a named union declared beside its props, and a required one gets no default.
 
 ## 2. Rules
 
@@ -35,11 +35,11 @@ The rules bind the banner page components of `tools/docs` (`tools/docs/banner/pa
 | :--- | :--- | :--- |
 | R1 | Declare the allowed values of a discrete choice prop as a *named* string-literal union type (`type CardVariant = 'default' \| 'compact'`), beside the props interface or in the directory's `types.ts`. Never a TypeScript enum, never the member list inline in the props interface. | proposed |
 | R2 | Make the prop optional (`variant?: CardVariant`) when the component has a sensible default, required when it does not. Do not add a member that stands for "nothing passed" (`'none'`, `undefined` in the union); a member naming a real look (`'default'`, the neutral toast) is a look, not the absent case. | manual |
-| R3 | For every optional discrete choice prop, declare a `resolve<Name>Variant` (for a size or look: `resolve<Name>Size`, `resolve<Name>Look`) typed `(value?: Union): Union`, whose body is a single `??` with the default member. Keep it module-local in the component module that reads the prop; move it to the directory's `types.ts` together with the union once a second module of the directory reads the prop. | manual |
-| R4 | Read the prop through its resolver at every consumption site. Do not apply the default with a destructuring default (`variant = 'primary'`) or an inline `props.variant ?? '…'`. | manual |
-| R5 | Keep the resolver total over its own union: it returns a union member, never a class string, number or token. Map a resolved member to values with a `Record<Union, T>` keyed by the resolver's output. | manual |
+| R3 | Apply the default of an optional discrete choice prop inline where the prop is read: `props.variant ?? 'primary'`. No `resolve<Name>Variant` (or `…Size`, `…Look`) function, no destructuring default (`variant = 'primary'`, also not inside the kit's strip-destructure). | manual |
+| R4 | One default per prop and component: a component that reads the prop in more than one place binds the defaulted value once at the top (`const variant = props.variant ?? 'primary';`) and reads that local everywhere. A read that does not depend on the default (`props.variant === 'danger'` against a non-default member) needs no `??`. | manual |
+| R5 | The default is a union member, never a class string, number or token. Map the defaulted member to values with a `Record<Union, T>` indexed by it (`CLASSES_BY_BUTTON_VARIANT[props.variant ?? 'primary']`), never default the mapped value (`CLASSES_BY_BUTTON_VARIANT[…] ?? 'bg-accent'`). | manual |
 | R6 | Use the direct form `type Union = 'a' \| 'b'` by default. Derive the union from a runtime value (`keyof typeof CONFIG_BY_TYPOGRAPHY_VARIANT`, `(typeof NAMES)[number]`) only when that runtime list or map exists anyway. | manual |
-| R7 | When a component accepts a subset of another component's union, derive it with `Extract<BaseUnion, 'a' \| 'b'>` and give the derived type its own resolver, rather than restating the members. | proposed |
+| R7 | When a component accepts a subset of another component's union, derive it with `Extract<BaseUnion, 'a' \| 'b'>` and give the derived prop its own inline default, rather than restating the members. | proposed |
 
 ## 3. Detection
 
@@ -57,20 +57,20 @@ R2:
   reason: "Whether a member names a real look or the absent case is a reading of what it renders."
   enforcedBy: null
 R3:
-  type: manual
-  reason: "Requires pairing each optional union prop with its resolver."
-  enforcedBy: null
-R4:
   type: grep
-  pattern: "(variant|size|look)\\s*=\\s*'|props\\.(variant|size|look)\\s*\\?\\?\\s*'"
-  include: ["packages/ui/src/components/**/*.tsx", "tools/docs/banner/page/**/*.tsx"]
+  pattern: "(variant|size|look|fit)\\s*=\\s*'|const resolve[A-Z][A-Za-z]*(Variant|Size|Look)\\s*="
+  include: ["packages/ui/src/components/**/*.tsx", "packages/ui/src/components/**/types.ts", "tools/docs/banner/page/**/*.tsx"]
   exempt: []
   violationWhen: any-match
   enforcedBy: null
-  falsePositives: "Also matches a JSX attribute passing a literal (variant='ghost'), which is a call site, not a default; read each hit."
+  falsePositives: "Also matches a JSX attribute passing a single-quoted literal (variant='ghost'), which is a call site, not a default; read each hit."
+R4:
+  type: manual
+  reason: "Counting the ?? reads of one prop within one component needs the component's scope; a grep cannot tell two components in one module apart."
+  enforcedBy: null
 R5:
   type: manual
-  reason: "Requires reading the resolver's return type."
+  reason: "Requires reading what the ?? expression and the map lookup return."
   enforcedBy: null
 R6:
   type: manual
@@ -88,10 +88,10 @@ R7:
 
 ## 4. Trade-offs
 
-- **Good, because** the default literal appears exactly once per prop, next to the union, so widening the union or changing the default is a one-place edit.
-- **Good, because** a `Record<Union, …>` class map keyed by the resolver's output is exhaustive by construction and can never be indexed with `undefined`.
-- **Bad, because** it is boilerplate — a one-line function per prop expressing what a destructuring default writes in four characters.
-- **Bad, because** the resolver is invisible to a reader of the props interface alone: the effective default sits one indirection away from the `prop?:` line.
+- **Good, because** the default literal appears exactly once per prop and component, at the read, so changing the default is a one-place edit and no helper function sits between the prop and its use.
+- **Good, because** a `Record<Union, …>` class map indexed with `props.variant ?? 'primary'` is exhaustive by construction and can never be indexed with `undefined`.
+- **Bad, because** the default is invisible to a reader of the props interface alone: it sits at the read, not on the `prop?:` line.
+- **Bad, because** a second component reading the same union restates its own default; nothing ties the two literals together.
 - **Neutral, because** the direct and derived union forms coexist by design; the derived form earns its indirection only where the runtime map exists anyway.
 
 ## 5. Reference implementation
@@ -105,8 +105,6 @@ interface ButtonProps {
   variant?: ButtonVariant;
 }
 
-const resolveButtonVariant = (variant?: ButtonVariant): ButtonVariant => variant ?? 'primary';
-
 const CLASSES_BY_BUTTON_VARIANT: Record<ButtonVariant, string> = {
   primary: 'bg-accent text-white',
   secondary: 'bg-white/5 text-text-primary',
@@ -115,16 +113,17 @@ const CLASSES_BY_BUTTON_VARIANT: Record<ButtonVariant, string> = {
 };
 
 export const Button: FC<ButtonProps> = (props) => (
-  <button className={CLASSES_BY_BUTTON_VARIANT[resolveButtonVariant(props.variant)]} />
+  <button className={CLASSES_BY_BUTTON_VARIANT[props.variant ?? 'primary']} />
 );
 ```
 
 ## 6. Forbidden practices
 
 - ❌ A TypeScript `enum` for a choice prop.
-- ❌ The union inline in the props interface (`variant?: 'a' | 'b'`) — unnamed, so neither a resolver nor a `Record<Union, T>` map can refer to it.
-- ❌ `const { variant = 'primary' } = props` or `props.variant ?? 'primary'` as the default.
-- ❌ A destructuring default alongside an existing resolver — two declarations of one default that drift apart.
-- ❌ A `resolve<Name>` function that returns a class string, a number or a token; split it into a resolver and a `Record<Union, T>`.
-- ❌ A union member that stands for "nothing passed" (`'none'`) added to sidestep the resolver.
+- ❌ The union inline in the props interface (`variant?: 'a' | 'b'`) — unnamed, so no `Record<Union, T>` map can refer to it.
+- ❌ `const { variant = 'primary' } = props` (or `variant = 'primary'` inside the kit's strip-destructure) as the default.
+- ❌ A `resolve<Name>Variant` / `…Size` / `…Look` function wrapping the `??`.
+- ❌ `props.variant ?? 'primary'` written at two reads of one component — two declarations of one default that drift apart; bind it once at the top.
+- ❌ Defaulting the mapped value (`CLASSES[props.variant] ?? 'bg-accent'`) instead of the member.
+- ❌ A union member that stands for "nothing passed" (`'none'`) added to sidestep the default.
 - ❌ Restating a subset of another component's union by hand instead of `Extract<…>`.

@@ -22,7 +22,7 @@ This file carries rules R1 through R10.
 
 Some failures cannot be represented in a function's return type — they unwind through a TanStack Query `queryFn`, or interrupt an import partway through — but a caller further up still has to know *which* failure happened to choose what the user sees (a rejected key versus a rate limit). A formatted message cannot carry that: branching on it means parsing text. This convention gives those failures a nominal type: the throwing module declares a class extending `Error`, and the component or hook that decides catches it with `instanceof`.
 
-The rule is narrow. It governs failures that cross a module boundary and are branched on by a consumer. Expected, in-band failures that a caller handles on the normal path are returned as outcome unions instead. Most throws in this app are bare `new Error(...)` and correctly so: a failure every caller treats identically earns no type. A subclass is a claim that someone will branch on it.
+The rule is narrow. It governs failures that cross a module boundary and are branched on by a consumer. Expected, in-band failures that a caller handles on the normal path stay in the return type instead (`undefined`, `null`, or the function's own result shape); there is no separate outcome-union convention. Most throws in this app are bare `new Error(...)` and correctly so: a failure every caller treats identically earns no type. A subclass is a claim that someone will branch on it.
 
 ## 2. Rules
 
@@ -185,6 +185,6 @@ Wrapping with `cause`:
 - ❌ A declared subclass with no throw site anywhere.
 - ❌ Putting structured data into the message for the caller to parse back out instead of exposing it as a field.
 - ❌ Catching a subclass in an intermediate layer only to rethrow it unchanged.
-- ❌ Throwing a subclass for a failure the caller is expected to handle on its normal path — that is an outcome and belongs in the return type.
+- ❌ Throwing a subclass for a failure the caller is expected to handle on its normal path — that belongs in the return type.
 - ❌ Assigning a `name` that differs from the class name, or leaving it unset.
 - ❌ Folding an underlying error's message into a new message (`…: ${err.message}`) instead of passing it as `cause`.

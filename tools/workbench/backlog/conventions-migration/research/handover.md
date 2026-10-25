@@ -2,6 +2,8 @@
 
 Read this before planning the item. It records where the plans came from, every owner decision, the choices agents made on their own, and the blank spots.
 
+> **Superseded in part (2026-10-25).** The owner's answers Q1–Q25 in `../plan.md` win wherever they differ from this file: the migration is defensive (nothing gets worse for a user); no outcome unions anywhere (the TDR `outcome-unions-over-exceptions` is gone; the FIT parser keeps throwing, `parseGpx` keeps `null` with one toast); no env facade (TDR `env-access-through-validated-facade` gone, Q28); the engine neither warns nor throws on broken input (deferred to `conventions-follow-ups` OP-65), thresholds are validated at input and store and invalid stored entries are dropped; no variant resolver functions; banner-only tokens in `tools/docs`; gpx gets `// Sources:` headers. The pattern-apply scripts in §1 are not used: the plan check and the index are rebuilt from the repo's own files. Open or unsure points during implementation go to `conventions-follow-ups/research/open-points.md`.
+
 ## 1. What exists
 
 - `docs/conventions/plans/`: 47 convention plans + `tooling.md` (48 files, ~544 Changes steps). One plan per convention. Each plan is self-contained (Depends on, Changes with exact files / before-after / check, Open items, Done) and is **deleted by the executing agent once its steps check out**. `depends_on` in the frontmatter gives the execution order; `tooling.md` (9 lint gates in the root `vite.config.ts`) depends on every other plan and runs last.

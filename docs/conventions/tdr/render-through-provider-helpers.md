@@ -19,7 +19,7 @@ adopted: 2026-10-23
 
 ## 1. Context
 
-This file carries R1, R2, R4–R9. A component-tree spec that mounts its subject outside the app's provider stack either crashes on the first context read or silently exercises a different component than production runs. Every component and hook spec in `apps/web` therefore mounts through one shared helper module, `apps/web/tests/testUtils/render.ts`, whose wrapper (`apps/web/tests/testUtils/testProviders.tsx`) composes the stack once: `QueryClientProvider` around a `MemoryRouter`, mirroring `apps/web/src/main.tsx`. The stack is declared in one file rather than re-assembled per spec. The query client comes from `createTestQueryClient` (`apps/web/tests/testUtils/queryClient.ts`), built on the app's own factory `createQueryClient` (`apps/web/src/lib/queryClient.ts`). This does not govern specs that mount nothing (plain function, store and parser specs under `apps/web/tests/`), Playwright specs (`apps/web/e2e/`), or `packages/ui`, whose kit has no provider. The result of either helper is bound whole and read through its name (`const view = renderWithProviders(…)`, `view.getByRole(…)`; `const hook = renderHookWithProviders(…)`, `hook.result.current`), never destructured.
+This file carries R1, R2, R4–R9. A component-tree spec that mounts its subject outside the app's provider stack either crashes on the first context read or silently exercises a different component than production runs. Every component and hook spec in `apps/web` therefore mounts through one shared helper module, `apps/web/tests/testUtils/render.ts`, whose wrapper (`apps/web/tests/testUtils/testProviders.tsx`) composes the stack once: `QueryClientProvider` around a `MemoryRouter`, mirroring `apps/web/src/main.tsx`. The stack is declared in one file rather than re-assembled per spec. A spec that asserts behaviour under React's double mount passes `strict: true`, and the wrapper puts the whole stack inside `StrictMode` (the app mounts in `StrictMode` too, `apps/web/src/main.tsx:40`); every other spec mounts without it. The query client comes from `createTestQueryClient` (`apps/web/tests/testUtils/queryClient.ts`), built on the app's own factory `createQueryClient` (`apps/web/src/lib/queryClient.ts`). This does not govern specs that mount nothing (plain function, store and parser specs under `apps/web/tests/`), Playwright specs (`apps/web/e2e/`), or `packages/ui`, whose kit has no provider. The result of either helper is bound whole and read through its name (`const view = renderWithProviders(…)`, `view.getByRole(…)`; `const hook = renderHookWithProviders(…)`, `hook.result.current`), never destructured.
 
 ## 2. Rules
 
@@ -122,7 +122,7 @@ export const createTestQueryClient = (): QueryClient =>
 `apps/web/tests/testUtils/testProviders.tsx`:
 
 ```tsx
-import type { FC, PropsWithChildren } from 'react';
+import { StrictMode, type FC, type PropsWithChildren } from 'react';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { createTestQueryClient } from '@testUtils/queryClient.ts';
@@ -130,16 +130,20 @@ import { createTestQueryClient } from '@testUtils/queryClient.ts';
 export interface ProviderOptions {
   queryClient?: QueryClient;
   initialPath?: string;
+  strict?: boolean;
 }
 
 export const createTestProviders = (options: ProviderOptions = {}): FC<PropsWithChildren> => {
   const queryClient = options.queryClient ?? createTestQueryClient();
   const initialEntries = [options.initialPath ?? '/'];
-  const TestProviders: FC<PropsWithChildren> = (props) => (
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={initialEntries}>{props.children}</MemoryRouter>
-    </QueryClientProvider>
-  );
+  const TestProviders: FC<PropsWithChildren> = (props) => {
+    const stack = (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={initialEntries}>{props.children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+    return options.strict === true ? <StrictMode>{stack}</StrictMode> : stack;
+  };
   return TestProviders;
 };
 ```
@@ -216,6 +220,11 @@ const hook = renderHookWithProviders(() => useMapTracks(gpsData), { initialPath:
 window.matchMedia = createMatchMedia(DESKTOP_MIN_WIDTH, { pointerFine: true });
 const hover = renderHookWithProviders(() => useMapHover('session', 'session-abc'));
 hover.unmount();
+
+const handOver = renderHookWithProviders(
+  (props: { terrain: boolean }) => useMapRendererHandOver({ terrain: props.terrain, mapLoaded: true }),
+  { initialProps: { terrain: false }, strict: true },
+);
 ```
 
 ## 6. Forbidden practices
@@ -226,5 +235,6 @@ hover.unmount();
 - ❌ Exporting a pre-built query client from a test-utility module — one cache shared across specs makes results order-dependent.
 - ❌ Hand-rolling a `window.matchMedia` stub with `vi.fn()` returning a fixed `matches` value — it ignores the query string, so the spec passes for breakpoints it never actually simulated.
 - ❌ Re-assembling the provider stack inline in a spec (a local `MemoryRouter` wrapper) when the helper covers it — the stack then has two definitions and only one gets updated.
+- ❌ A local `StrictMode` wrapper passed as `wrapper` to a bare `renderHook` — pass `strict: true` to the helper instead.
 - ❌ Destructuring the helper's result (`const { result } = renderHookWithProviders(…)`, `const { getByRole } = renderWithProviders(…)`) — bind it whole and read through the name, as every other hook and call result in the project.
 - ❌ Calling a bare render function a second time to simulate a re-render instead of the helper result's `rerender` — it mounts a second tree rather than updating the first.

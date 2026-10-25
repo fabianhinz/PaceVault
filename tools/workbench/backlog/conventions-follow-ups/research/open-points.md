@@ -55,8 +55,8 @@ Collected while planning `docs/conventions/plans/`. None of these is part of the
 - Severity: Low · Source: packages/ui
 - From: plans/variant-unions-with-default-resolvers.md (packages/ui)
 - What: remove the `'default'` member from `CardVariant`, `ToastVariant`, `DropdownMenuItemVariant`.
-- User impact: nothing rendered; the type API changes and those resolvers would have no member left to return.
-- Options: A) keep them as real looks (current plan); B) remove and drop those resolvers; C) drop.
+- User impact: nothing rendered; the type API changes and the inline defaults (`props.variant ?? 'default'`, no resolvers since migration Q4/Q25) would need another member.
+- Options: A) keep them as real looks (current plan); B) remove and make the prop required or pick another default; C) drop.
 
 ## OP-45 · Unify single-failure engine returns on undefined
 - Severity: Low · Source: packages/engine
@@ -125,3 +125,38 @@ Collected while planning `docs/conventions/plans/`. None of these is part of the
 - What: `packages/gpx/src/parseGpx.ts:85` uses `DOMParser`, which exists only on the browser main thread, while packages/gpx counts as pure/shared (any runtime).
 - User impact: none today (only the app parses GPX); a worker or Node caller would fail.
 - Options: A) accept and document gpx parsing as browser-only; B) inject the parser; C) use a runtime-neutral XML parser (new dependency).
+
+## OP-61 · Map feature properties checked with typeof guards instead of Zod
+- Severity: Low · Source: apps/web (3D map)
+- From: conventions-migration fact-check 2026-10-24 (Q22)
+- What: `apps/web/src/features/map/terrainLine.ts:211` `runOfFeature` reads MapLibre feature properties (`unknown`) through `typeof` / `in` guards; root `CLAUDE.md` §2 asks for a Zod schema with `safeParse` for untyped data.
+- User impact: none.
+- Options: A) a `terrainLineRunSchema` with `safeParse`; B) keep the guards (hot path on every pick).
+
+## OP-62 · Dead exports in terrainCamera.ts
+- Severity: Low · Source: apps/web (3D map)
+- From: conventions-migration fact-check 2026-10-24 (Q22)
+- What: `ScreenBox` (`apps/web/src/features/map/terrainCamera.ts:45`) and `FitCorrection` (`:52`) are exported but imported nowhere (root `CLAUDE.md` §2 "Delete dead code").
+- User impact: none.
+- Options: A) drop the `export`; B) keep.
+
+## OP-63 · Lap hover may stay set after leaving 3D (possible bug)
+- Severity: Medium · Source: apps/web (3D map)
+- From: conventions-migration fact-check 2026-10-24 (Q22)
+- What: `apps/web/src/features/map/hooks/useTerrainTrackPickingEffect.ts` sets `hoveredLapIndex` on pointer move (`:74`) and clears it on `mouseout` (`:52`), but its cleanup (`:107-115`) resets only `terrainTrackHovered`. Switching 3D → 2D while the pointer rests on a lap may leave that lap's hover preview drawn in 2D until the next pointer move.
+- User impact: a stale lap highlight after the view switch (unconfirmed; reproduce first).
+- Options: A) also `setHoveredLap(null)` in the cleanup; B) keep if it does not reproduce.
+
+## OP-64 · Boolean helper created by the unit-length plan is not covered by the boolean plan
+- Severity: Low · Source: docs/conventions
+- From: conventions-migration fact-check 2026-10-24 (Q22)
+- What: `docs/conventions/plans/unit-length-discipline.md` item 14 extracts a step from `useMapCameraEffect` that returns a boolean; `boolean-names-without-is-prefix.md` runs earlier and cannot list it, so the new helper may not get an `is…`/`has…` name.
+- User impact: none.
+- Options: A) the executing agent names it per boolean R5 when it creates it; B) a follow-up pass with the boolean check after the migration.
+
+## OP-65 · Engine throws on contract-breaking input (deferred)
+- Severity: Low · Source: packages/engine
+- From: conventions-migration Q1, Q23, Q26 (2026-10-25)
+- What: nine engine branches degrade silently on input that breaks their contract: `ewmaStep` non-finite TSS / load (`metrics.ts`), `predictRaceTime` no root in the solver bracket and `predictRaceTimes` invalid VDOT (`vdot.ts`), `calculateTrainingEffect` max HR ≤ rest HR (`trainingEffect.ts`), `intervalJoules` distance running backwards (`energy.ts`), `intensityFactor` FTP ≤ 0 (`stress.ts`), `referenceOf` FTP / threshold pace ≤ 0 (`effortDetection.ts`). The owner first wanted them to throw (Q1), then deferred it to keep the migration defensive (Q26). The Settings-fed sites cannot trigger once threshold validation (migration Q23) is live; `intervalJoules` sees real device noise and must stay silent.
+- User impact: none today; a throw would put a session page on the error boundary.
+- Options: A) throw at the Settings-fed and engine-internal sites once validation has been live for a while, keep `intervalJoules` silent; B) keep the engine silent.

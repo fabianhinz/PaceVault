@@ -188,7 +188,7 @@ In `packages/engine` there is no R5 carve-out (owner decision): every callable w
 
 21. (packages/gpx) Write the parameter rule into the gpx rules.
    Files: `packages/gpx/CLAUDE.md`
-   Change: add after the **External data through Zod, outcomes for failures** bullet:
+   Change: add after the **External data through Zod** bullet (`packages/gpx/CLAUDE.md:9`):
 
    ```md
    - **Parameters**: A function with two or more inputs takes one destructured object with an inline type (`({ points, startMeters, endMeters }: { points: RoutePoint[]; startMeters: number; endMeters: number })`), the interpolation helpers included; one input stays positional. Only callback contracts (`Array.prototype` callbacks, `sort` comparators) keep positional lists.

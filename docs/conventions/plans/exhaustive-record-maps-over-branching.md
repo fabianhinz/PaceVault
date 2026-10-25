@@ -49,7 +49,7 @@ Every item's Check includes `vp run check` clean and `vp run test` green. A conv
 
 7. (packages/ui) Key the toast map by its union.
    Files: `packages/ui/src/components/Toast.tsx`
-   Change: declare `export type ToastVariant = 'default' | 'success' | 'error' | 'warning';` beside `ToastItem`, type `ToastItem.variant?: ToastVariant` (`:18`), and type the map (`:7`) `const CLASSES_BY_TOAST_VARIANT: Record<ToastVariant, string> = {…}` (was `variantClasses: Record<string, string>`, R6). The lookup at `:41` reads `CLASSES_BY_TOAST_VARIANT[t.variant ?? 'default']` (the variant-unions plan replaces the `??` with a resolver).
+   Change: declare `export type ToastVariant = 'default' | 'success' | 'error' | 'warning';` beside `ToastItem`, type `ToastItem.variant?: ToastVariant` (`:18`), and type the map (`:7`) `const CLASSES_BY_TOAST_VARIANT: Record<ToastVariant, string> = {…}` (was `variantClasses: Record<string, string>`, R6). The lookup at `:41` reads `CLASSES_BY_TOAST_VARIANT[t.variant ?? 'default']` (the inline `??` default stays, variant-unions R3).
    Check: `rg -n "Record<string, string>" packages/ui/src` prints nothing; `vp run check` and `vp run test` pass.
 
 8. (packages/ui) Replace per-variant ternaries with maps.
@@ -387,7 +387,7 @@ run interfaces-missing interfaces.ts '' zz-no-such-item
 
 ## Open items
 
-- `errorMessage` in `apps/web/src/features/intervals/IntervalsConnectionForm.tsx:28-33` becomes the exhaustive `MESSAGE_BY_INTERVALS_ERROR` map in the domain-error-subclasses plan, not here: the map may only be indexed once that plan has typed the code as `IntervalsRequestFailedError.code`, and that plan runs after this one (it depends on outcome-unions-over-exceptions, which depends on colocated-types-module, which depends on this plan).
+- `errorMessage` in `apps/web/src/features/intervals/IntervalsConnectionForm.tsx:28-33` becomes the exhaustive `MESSAGE_BY_INTERVALS_ERROR` map in the domain-error-subclasses plan, not here: the map may only be indexed once that plan has typed the code as `IntervalsRequestFailedError.code`, and that plan runs after this one (it depends on this plan).
 - R9 naming (`VALUE_BY_KEY`) is applied to every map this plan creates or edits; the many existing maps outside these items keep their names until they are next touched.
 - Engine code is covered by items 10–17. `RunningZoneName`, `EnergyMethod` and `EffortSignal` have no separate runtime list (their maps are keyed records, not lists), so R1 leaves them as type aliases. Item 10's pinned spec uses inline snapshots, which R7 of the assertion-vocabulary convention does not allow in a delivered spec; it is scaffolding that item 17 deletes.
 - R1 is applied to unions that have, or are checked against, a runtime list. Closed unions declared only as types with no runtime counterpart (`PBCategory`, `WeatherCondition`, `MapCameraFit`, …) stay type aliases; a later plan can convert them if a runtime list is ever needed.

@@ -1,7 +1,7 @@
 ---
 id: names-spell-out-their-meaning
 tdr_reference: tdr/names-spell-out-their-meaning.md
-depends_on: [outcome-unions-over-exceptions, test-data-from-mock-factories]
+depends_on: [colocated-types-module, test-data-from-mock-factories]
 generated: 2026-10-23
 ---
 
@@ -11,7 +11,7 @@ Read `tdr/names-spell-out-their-meaning.md` first — the binding rule text, det
 
 ## Depends on
 
-- [`outcome-unions-over-exceptions`](outcome-unions-over-exceptions.md) — the last plan that changes engine signatures before this one; every rename here starts from the names and shapes it leaves (`StepLengthOutcome`, `EnergyOutcome`, `BANISTER_BY_GENDER`, `METERS_BY_RACE_DISTANCE`).
+- [`colocated-types-module`](colocated-types-module.md) — the last plan that changes engine code before this one (it settles which engine module owns which type); every rename here starts from the names and shapes it leaves (`BANISTER_BY_GENDER`, `METERS_BY_RACE_DISTANCE`).
 - [`test-data-from-mock-factories`](test-data-from-mock-factories.md) — moves the record, lap and session series into `packages/testing/src/series.ts` under their final names and removes their dead inputs (items 3, 14–17), so item 9 renames each local once, in its final module.
 
 ## Changes
