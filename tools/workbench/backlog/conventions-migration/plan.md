@@ -1,11 +1,11 @@
 ---
 title: Conventions migration
-status: in-review
+status: planned
 created: 2026-10-23
 type: chore
 areas: [app, ui, engine, gpx, i18n, testing, workbench, docs, repo]
 depends-on: [session-3d-map]
-next: 'Owner reviews round 1'
+next: 'Owner sets ready, then "lets dev" (round 2: five plans in docs/conventions/plans/, order in review/run.md)'
 ---
 
 # Bring the whole workspace onto the agreed conventions
@@ -22,6 +22,11 @@ Follow-ups that are not part of this migration: [conventions-follow-ups](../conv
 - **Tooling:** the pattern-apply skill scripts are not needed; the plan ↔ TDR check and the `docs/conventions/CLAUDE.md` index are rebuilt from the repo's own files (owner, 2026-10-25: "why would you need any access to the skills? We already applied to this repo").
 - **Answers Q1–Q30** (below) supersede the handover where they differ: no outcome unions anywhere (Q6, Q24), no env facade (Q28), the engine stays silent on broken input while thresholds are validated at input and store and invalid stored entries are dropped (Q1, Q23, Q26, Q27), no variant resolvers (Q4, Q25), one GPX toast (Q24), `// Sources:` headers in gpx (Q9), banner tokens in `tools/docs` (Q3).
 - **Defensive:** the migration brings the repo closer to the TDRs without making anything worse for a user (owner, 2026-10-25: "the overall goal is to bring this repo closer to our tdrs in a defensive maner"); an adopted behaviour change stays only where the owner confirmed it (Q2, Q29, Q30).
+- **Round 2 (review findings R1–R3, `review/findings.md`, settled 2026-10-26, owner: "lgtm" on the folder structure):** (R1) `features/*` move to `components/*` with an `index.tsx` entry per feature mounted as a unit (no `index.ts` barrels); single-feature and UI-only `lib/` modules move into their component owner; shared UI at the top of `components/` is grouped into topic folders (`charts/`, `metricLabel/`, `importProgress/`, `errors/`, `layout/`); `lib/` keeps only what store/queries/mutations/microcopy/routing also need, in topic folders (`api/`, `storage/`, `analysis/`, `filtering/`, `colors/`, `format/`, `hooks/`, `debug/`); `pages/` unchanged; a gate keeps store/queries/mutations/microcopy from importing `components/`. (R2) the audit's missed sites, incl. ≈40 `X_BY_Y` map renames and merging the filter modules into `lib/filtering/filters.ts`. (R3) delete TDRs `classes-are-server-side-only` and `server-class-role-suffixes`; `signature-parameter-shape` R6 exception for query/mutation fetchers; `QueryResults` payload types into `types.ts`; `toFixed` display numbers through `formatNumber` plus a TDR clause.
+
+## Round 2 order
+
+Five new convention plans in `docs/conventions/plans/`, run like round 1 (one `item-worker` each, sequential, full suite after each, `review/run.md`): 1 `round2-tdr-decisions` (R3) · 2 `round2-missed-sites` (R2 without the filter merge) · 3 `round2-features-into-components` (R1: `features/*` → `components/*`, entries, shared UI groups, five hand-built controls stay feature components) · 4 `round2-lib-topic-folders` (R1: UI-only and single-feature lib modules into components, lib topic folders, filter merge, parsers/queries/routing moves) · 5 `round2-rules-and-gates` (R1: colocation rule and topic folders in `helpers-split-by-reachability`, new paths in TDRs and CLAUDE.md files, boundary gate, index regenerated). Moves come after the small fixes so the fixes are found by symbol at their current place; the rule texts come last so they name the final paths.
 
 ## Approach
 
@@ -101,6 +106,11 @@ The per-file changes live in the convention plans (`docs/conventions/plans/*.md`
 - **Q28** · answered 2026-10-25 · Env facade fails at import (`docs/conventions/plans/env-access-through-validated-facade.md` item 2): the app does not start when `VITE_*` validation fails; `VITE_CARTO_API_KEY` is optional and `VITE_APP_COMMIT` is always set by `apps/web/vite.config.ts:5-12`. (a) keep as planned (b) never throw, log and treat as unset. → neither: no env facade at all; the TDR and plan `env-access-through-validated-facade` go, code keeps reading `import.meta.env` as today. Owner: "we don't need the env fassade. This is providing little to nothing in our monorepo as of now"
 - **Q29** · answered 2026-10-25 · Weather: one failed Open-Meteo cluster request throws `FailedResponseError` and fails the whole lookup, where today the other clusters still give partial weather (`docs/conventions/plans/authenticated-fetch-and-response-parsing.md`). (a) keep partial weather (b) fail the whole lookup. → (b) fail the whole lookup, as planned. Owner: "Fail the whole lookup"
 - **Q30** · answered 2026-10-25 · `void requestPersistentStorage()` without a catch: a rejecting browser logs an unhandled rejection (`docs/conventions/plans/floating-promises-marked-void.md`). (a) catch inside the function (b) as planned. → (b) as planned. Owner: "As planned"
+- **Q31** · answered 2026-10-26 · Round 2: non-UI feature modules that queries/mutations/`types.ts` import would sit under `components/` and break the new gate. (a) proposed homes: `runIntervalsSync` → `lib/api/intervalsSync.ts`, `reprocessSessions` and `recomputeTrainingLoad` → `lib/analysis/`, both workers with their contracts → `lib/workers/`, `demoRecords` and `previewDrawIn` → `lib/demo/`, `useSessionReprocessingActive` → `store/hooks/` (b) relax the gate for queries/mutations. → (a). Owner: "Proposed homes in lib/store (Recommended)"
+- **Q32** · answered 2026-10-26 · Round 2: the map entry `components/map/index.tsx` → `Map` shadows the global `Map`. (a) folder `mapBackground/` → `MapBackground` (b) `mapView/` → `MapView` (c) keep `Map`. → (a). Owner: "Folder mapBackground/ → MapBackground (Recommended)"
+- **Q33** · answered 2026-10-26 · Round 2: coverage measures only `src/store` and `src/lib` (`apps/web/vitest.config.ts`), moved code would drop out of the report. (a) add `src/components/**`, `src/queries/**`, `src/mutations/**` (b) leave. → (a). Owner: "Add src/components (Recommended)"
+- **Q34** · answered 2026-10-27 · Round 2 small calls: (1) the pace calculator's solved field keeps `toFixed`; (2) DockBar and MapControlsBar keep static `style` as an exception; (3) `PvExternalLink` takes its `ref` on the outer span; (4) the engine's `GAP_*` constants keep their names. (a) accept all four (b) one by one. → (1) keep, and the dot-vs-comma inconsistency in German becomes an open point in `conventions-follow-ups`; (2) exception; (3) outer span; (4) keep. Owner: "1. leets keep for now but add as an open point the inconsistency 2. exception 3. lgtm 4. keep"
+- **Q35** · answered 2026-10-27 · Round 2: `sessionTerrain.ts` is UI-only after the moves (imported by `components/charts/chartData.ts` and `components/sessions/railRange.ts`). (a) `components/charts/sessionTerrain.ts` (b) keep in `lib/analysis/` with an exception (c) `components/sessions/`. → (a). Owner: "components/charts/ (Recommended)"
 
 ## Risks
 

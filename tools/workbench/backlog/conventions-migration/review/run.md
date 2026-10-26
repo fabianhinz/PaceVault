@@ -12,6 +12,10 @@ The run implements the convention plans one at a time (plan.md Approach). Everyt
 
 1 authenticated-fetch-and-response-parsing · 2 component-declaration-shape · 3 context-provider-accessor-pairs · 4 engine-holds-domain-logic-only · 5 helpers-as-namespace-objects · 6 hook-results-bound-whole · 7 index-modules-are-not-barrels · 8 hook-directory-placement · 9 library-type-narrowing · 10 component-ref-handling-by-need · 11 mirrored-spec-layout · 12 assertion-vocabulary · 13 collaborators-replaced-with-mocks · 14 comments-cite-sources-and-explain-why · 15 behavioural-constants-hoisted-upper-snake · 16 boolean-names-without-is-prefix · 17 exhaustive-record-maps-over-branching · 18 colocated-types-module · 19 domain-error-subclasses · 20 native-date-and-duration-constants · 21 navigation-through-router-hooks · 22 one-hook-per-file · 23 one-server-call-per-hook-module · 24 hooks-return-the-fitting-shape · 25 render-through-provider-helpers · 26 accessible-queries-in-component-tests · 27 single-zustand-store-of-slices · 28 styled-api-over-sx · 29 test-data-from-mock-factories · 30 names-spell-out-their-meaning · 31 floating-promises-marked-void · 32 effects-are-rare · 33 spec-describe-and-case-titles · 34 user-facing-strings-in-copy-modules · 35 formatting-through-intl-namespace · 36 variant-unions-with-default-resolvers · 37 visible-copy-arrives-as-props · 38 zod-schema-naming-and-inference · 39 helpers-group-by-topic · 40 signature-parameter-shape · 41 cross-boundary-contracts-in-shared · 42 snackbar-feedback-via-feature-maps · 43 unit-length-discipline · 44 ui-primitives-from-react-ui · 45 component-directory-and-file-naming · 46 tooling
 
+## Round 2 order (review findings R1–R3)
+
+47 round2-tdr-decisions · 48 round2-missed-sites · 49 round2-features-into-components · 50 round2-lib-topic-folders · 51 round2-rules-and-gates. Same worker prompt; "Run <N> of 51". After the last one: final suite, conventions check (expect 0 plans), "after" capture, review doc round 2 (R1–R3 entries above Changes).
+
 ## Worker prompt (one `item-worker` per plan; replace `<N>` and `<plan>`)
 
 ```text

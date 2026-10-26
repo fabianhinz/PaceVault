@@ -272,3 +272,10 @@ Collected while planning `docs/conventions/plans/`. None of these is part of the
 - What: the deleted plan listed these as not done: (1) `exhaustive-record-maps-over-branching` R1 (no TypeScript `enum`): the run found no general enum ban in the installed oxlint (`oxc/no-const-enum` covers only `const enum`), so R1 stays manual; (2) `apps/web/src/features/map/map-attribution.css` is on the theme-token allowlist (MapLibre attribution overrides, `rgb(0 0 0 / 0.6)`, `rgb(255 255 255 / 0.5|0.6|0.8)`); four exact-alpha tokens read as `var(--color-…)` would shrink the allowlist to the two theme files; (3) `mirrored-spec-layout` R7 (one setup file per tree) has no lint rule; its `enforcedBy` could name `apps/web/vitest.config.ts`; (4) the theme-token check scans neither `tools/docs/banner/page` (its `banner.css` would join the allowlist) nor the board. Effects R2/R3 stay review-time (owner, Q13).
 - User impact: none.
 - Options: A) handle each point after the migration; B) leave them.
+
+## OP-82 · Pace calculator shows a decimal dot in German
+- Severity: Low · Source: apps/web (labs)
+- From: conventions-migration round 2, Q34 (2026-10-27)
+- What: the pace calculator (`PaceCalculator.tsx`, three `type="text"` fields) writes the solved value with `toFixed` and parses its fields back with `Number(...)`, so German shows `4.5` while the rest of the app shows `4,5` after the `toFixed` → `formatNumber` change of round 2.
+- User impact: inconsistent decimal separator in German, only in this calculator.
+- Options: A) keep; B) format with `formatNumber` and parse the fields locale-aware (comma and dot), with specs.
