@@ -2,50 +2,20 @@ import { v4 } from 'uuid';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import type { GPSBounds } from '@pacevault/engine/types.ts';
-import type { RouteElevationStats } from '@pacevault/gpx/routeGeometry.ts';
-import { idbStorage } from '@/lib/db.ts';
-
-export type StudioRouteColor = 'amber' | 'orange' | 'rose' | 'fuchsia' | 'violet' | 'emerald';
+import { idbStorage } from '@/lib/storage/db.ts';
+import type {
+  PointOfInterestMarker,
+  StudioMarker,
+  StudioRoute,
+  StudioRouteColor,
+} from '@/types.ts';
 
 const REPLACED_ROUTE_COLORS: Record<string, StudioRouteColor> = { sky: 'fuchsia', cyan: 'violet' };
-
-export type StudioMarkerType = 'track_modifier' | 'point_of_interest';
-
-interface StudioMarkerBase {
-  id: string;
-  distanceM: number;
-}
-
-interface TrackModifierMarker extends StudioMarkerBase {
-  type: 'track_modifier';
-}
-
-interface PointOfInterestMarker extends StudioMarkerBase {
-  type: 'point_of_interest';
-  label: string;
-  description?: string;
-}
-
-export type StudioMarker = TrackModifierMarker | PointOfInterestMarker;
 
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
 
 type StudioMarkerInput = DistributiveOmit<StudioMarker, 'id'>;
 type StudioPoiFields = Pick<PointOfInterestMarker, 'distanceM' | 'label' | 'description'>;
-
-export interface StudioRoute {
-  id: string;
-  name: string;
-  sourceFileName: string;
-  importedAt: number;
-  color: StudioRouteColor;
-  encodedPolylines: string[];
-  bounds: GPSBounds;
-  distance: number;
-  elevation?: RouteElevationStats;
-  markers: StudioMarker[];
-}
 
 interface StudioState {
   routes: StudioRoute[];

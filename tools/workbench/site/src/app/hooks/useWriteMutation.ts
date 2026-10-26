@@ -20,7 +20,7 @@ type WriteName =
   | 'flaky.remove'
   | 'item.delete';
 
-const WRITES: Record<WriteName, FormWrite> = {
+const ACTION_BY_WRITE_NAME: Record<WriteName, FormWrite> = {
   'plan.setStatus': actions.plan.setStatus,
   'plan.toggleCheck': actions.plan.toggleCheck,
   'plan.deleteCheck': actions.plan.deleteCheck,
@@ -39,16 +39,18 @@ type WriteInput = { name: WriteName; fields: Record<string, string> };
 const runWrite = async (input: WriteInput): Promise<WriteResult> => {
   const form = new FormData();
   for (const entry of Object.entries(input.fields)) form.set(entry[0], entry[1]);
-  const reply = await WRITES[input.name](form);
+  const reply = await ACTION_BY_WRITE_NAME[input.name](form);
   if (reply.error !== undefined) throw reply.error;
   return reply.data;
 };
 
-export const useWriteMutation = (
-  options: { inline?: boolean } = {},
-): UseMutationResult<WriteResult, unknown, WriteInput> => {
+export const useWriteMutation = ({ inline }: { inline?: boolean } = {}): UseMutationResult<
+  WriteResult,
+  unknown,
+  WriteInput
+> => {
   const queryClient = useQueryClient();
-  const meta: WriteMeta = { inline: options.inline === true };
+  const meta: WriteMeta = { inline: inline === true };
   return useMutation({
     mutationKey: ['write'],
     mutationFn: runWrite,

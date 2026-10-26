@@ -1,4 +1,4 @@
-import { DESKTOP_MEDIA_QUERY, FINE_POINTER_QUERY } from '@pacevault/ui/hooks/useDevice.ts';
+import { DESKTOP_MEDIA_QUERY, FINE_POINTER_QUERY } from '@pacevault/ui/lib/mediaQueries.ts';
 
 const minWidthOf = (query: string): number | undefined => {
   const match = /min-width:\s*(\d+)px/.exec(query);

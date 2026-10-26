@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { z } from 'zod';
-import { idbStorage } from '@/lib/db.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
 
 const mobileSheetPositionSchema = z.number().min(0).max(1);
 

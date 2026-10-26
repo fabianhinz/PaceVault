@@ -4,7 +4,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { TrainingSession } from '@pacevault/engine/types.ts';
 import { isSessionOutdated } from '@pacevault/engine/sessionDerivation.ts';
-import { createGuardedSessionsStorage } from '@/lib/guardedSessionsStorage.ts';
+import { createGuardedSessionsStorage } from '@/lib/storage/guardedSessionsStorage.ts';
 import { useSessionReprocessingStore } from './sessionReprocessing.ts';
 
 const persistedSessionsSchema = z.looseObject({ sessions: z.array(z.unknown()) });

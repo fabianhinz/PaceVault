@@ -4,13 +4,20 @@ import { cn } from '../../lib/cn.ts';
 import type { TokenColor } from '../../lib/tokens.ts';
 import { PvListItemHeader } from '../pvListItemHeader/PvListItemHeader.tsx';
 
+type ChartRowSize = 'compact' | 'tall';
+
+const CLASSES_BY_CHART_ROW_SIZE: Record<ChartRowSize, string> = {
+  compact: 'h-140px',
+  tall: 'h-64',
+};
+
 interface PvChartRowProps {
   title: string;
   secondary?: string;
   icon?: LucideIcon;
   color?: TokenColor;
   info?: ReactNode;
-  height?: string;
+  size?: ChartRowSize;
   rail?: ReactNode;
   above?: ReactNode;
   footer?: ReactNode;
@@ -36,7 +43,7 @@ export const PvChartRow: FC<PvChartRowProps> = (props) => {
         {props.above}
         <div
           className={cn(
-            props.height ?? 'h-140px',
+            CLASSES_BY_CHART_ROW_SIZE[props.size ?? 'compact'],
             props.rail !== undefined && 'grid grid-cols-chart-rail gap-3',
           )}
         >

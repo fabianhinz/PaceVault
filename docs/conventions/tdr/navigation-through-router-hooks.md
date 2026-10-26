@@ -29,11 +29,11 @@ Scope: all modules under `apps/web/src`. React Router v7 (`react-router-dom`) is
 | # | Rule (as adapted for this project) | Enforcement |
 | :--- | :--- | :--- |
 | R1 | Navigate by calling `usePageRouting().open({ page, params })` with a page **name** and its typed parameter object — never by building a path string and handing it to `navigate`. | proposed |
-| R2 | Register every destination in `apps/web/src/routing/pageRegistry.ts`: the `SUPPORTED_PAGES` const object, the `SupportedPage` union derived from it, `PAGE_PATTERNS` (name -> route pattern) and `PAGE_TO_URL` (name -> `(params) => string`), both constrained by `satisfies Record<SupportedPage, …>`. Adding a route means adding an entry there; `AppRoutes` takes its paths from `PAGE_PATTERNS`. | manual |
+| R2 | Register every destination in `apps/web/src/routing/pageRegistry.ts`: the `SUPPORTED_PAGES` const object, the `SupportedPage` union derived from it, `PATTERN_BY_PAGE` (name -> route pattern) and `URL_BY_PAGE` (name -> `(params) => string`), both constrained by `satisfies Record<SupportedPage, …>`. Adding a route means adding an entry there; `AppRoutes` takes its paths from `PATTERN_BY_PAGE`. | manual |
 | R3 | Read a single piece of URL state — a path param or a search param — through `useRouterParam(key)`, keyed by a member of `SupportedQuery`, not by `useParams()`, `useSearchParams()` or a bare string. | proposed |
 | R4 | Register every URL key in the `SUPPORTED_QUERY` const object in `apps/web/src/routing/urlQuery.ts` and derive the key union from it; a key that is not in that object does not exist. | manual |
 | R5 | Write URL state through `useRouterQuery().push(key, value)`, never by calling `setSearchParams` outside `apps/web/src/routing/`. `push` replaces the whole query with the one key, as the app's tab switches always have. | proposed |
-| R6 | Answer "which page am I on" with `useCurrentPage()` or `useRouteMatch(page)`, both of which resolve against `PAGE_PATTERNS`, rather than comparing `location.pathname` or prefixes by hand. | manual |
+| R6 | Answer "which page am I on" with `useCurrentPage()` or `useRouteMatch(page)`, both of which resolve against `PATTERN_BY_PAGE`, rather than comparing `location.pathname` or prefixes by hand. | manual |
 | R7 | Import `react-router-dom` only inside `apps/web/src/routing/`. Everywhere else, consume routing through a hook or component from that directory. | proposed |
 | R8 | Never import the framework's link components (`Link`, `NavLink`) — not even inside `apps/web/src/routing/`. Render in-app navigation affordances with `PageLink` (`apps/web/src/routing/PageLink.tsx`: a native anchor with `href={pageUrl(to)}`, styled through `className` or `Button asChild`) whose plain left click makes the explicit `usePageRouting().open(to)` call; modified clicks keep the browser's behaviour. Active state (`aria-current`, highlight) comes from `useCurrentPage()`, not from `NavLink`. External links keep `@pacevault/ui/components/ExternalLink.tsx`. | proposed |
 | R9 | When a module needs a routing capability the hooks do not expose yet (the raw path for an error-boundary reset key became `useCurrentPath`), widen the routing directory rather than reaching past it from a feature module. `apps/web/src/routing/` is the only place allowed to hold a lint suppression for a restricted router import. | manual |
@@ -146,20 +146,22 @@ export const SUPPORTED_PAGES = {
 } as const;
 export type SupportedPage = (typeof SUPPORTED_PAGES)[keyof typeof SUPPORTED_PAGES];
 
-export const PAGE_TO_URL = {
+export const URL_BY_PAGE = {
   dashboard: (_params: NoParams) => '/',
-  sessions: (params: { tab?: SessionsTab }) => withTab('/sessions', params.tab),
+  sessions: (params: { tab?: SessionsTab }) => withTab({ path: '/sessions', tab: params.tab }),
   sessionDetail: (params: { sessionId: string }) =>
     `/sessions/${encodeURIComponent(params.sessionId)}`,
   tripDetail: (params: { tripId: string }) => `/trips/${encodeURIComponent(params.tripId)}`,
   studioDetail: (params: { routeId: string; tab?: StudioDetailTab }) =>
-    withTab(`/studio/${encodeURIComponent(params.routeId)}`, params.tab),
-  labs: (params: { tab?: LabsTab }) => withTab('/labs', params.tab),
-  settings: (params: { tab?: SettingsTab }) => withTab('/settings', params.tab),
+    withTab({ path: `/studio/${encodeURIComponent(params.routeId)}`, tab: params.tab }),
+  labs: (params: { tab?: LabsTab }) => withTab({ path: '/labs', tab: params.tab }),
+  settings: (params: { tab?: SettingsTab }) => withTab({ path: '/settings', tab: params.tab }),
 } satisfies Record<SupportedPage, (params: never) => string>;
 
+export type ResolvePageParams<P extends SupportedPage> = Parameters<(typeof URL_BY_PAGE)[P]>[0];
+
 export type PageTarget = {
-  [P in SupportedPage]: { page: P; params: Parameters<(typeof PAGE_TO_URL)[P]>[0] };
+  [P in SupportedPage]: { page: P; params: ResolvePageParams<P> };
 }[SupportedPage];
 
 export interface PageRouting {

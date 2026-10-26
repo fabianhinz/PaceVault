@@ -1,11 +1,11 @@
 ---
 title: Conventions migration
-status: planned
+status: done
 created: 2026-10-23
 type: chore
 areas: [app, ui, engine, gpx, i18n, testing, workbench, docs, repo]
 depends-on: [session-3d-map]
-next: 'Owner sets ready, then "lets dev" (round 2: five plans in docs/conventions/plans/, order in review/run.md)'
+next: 'Owner reviews round 2'
 ---
 
 # Bring the whole workspace onto the agreed conventions

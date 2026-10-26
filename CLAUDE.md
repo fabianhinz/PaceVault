@@ -7,7 +7,7 @@
 
 | Path               | Package                | What it is                                                                                          |
 | ------------------ | ---------------------- | --------------------------------------------------------------------------------------------------- |
-| `apps/web`         | `@pacevault/web`       | The PWA: React 19, routes, features, stores, e2e and app tests. Rules: `apps/web/CLAUDE.md`         |
+| `apps/web`         | `@pacevault/web`       | The PWA: React 19, routes, components, stores, e2e and app tests. Rules: `apps/web/CLAUDE.md`       |
 | `packages/engine`  | `@pacevault/engine`    | Pure domain logic (metrics, zones, stress, geodesy). Rules: `packages/engine/CLAUDE.md`             |
 | `packages/gpx`     | `@pacevault/gpx`       | Pure GPX parsing, building and route geometry. Rules: `packages/gpx/CLAUDE.md`                      |
 | `packages/testing` | `@pacevault/testing`   | Test factories (`createMock<Entity>`) and record/session series for app and package tests           |
@@ -31,7 +31,7 @@
 - **No non-null assertion `!`**: Narrow with guards, defaults, optional chaining, `for…of` or type-guard filters, or early returns. `!` silences `noUncheckedIndexedAccess` without handling the missing case (lint: `no-non-null-assertion`).
 - **No ternary operators in `.ts` files** (convention, not linter-enforced): Prefer `if/else` over `condition ? a : b` in `.ts` files (engine, lib, stores, hooks, scripts). Single-level ternaries are allowed in `.tsx` (JSX). Nested ternaries are banned everywhere.
 - **No `Object.assign`**: Change state by assigning fields on the immer draft or by replacing the object outright. Store updates go through intent-named actions, never a generic partial patch.
-- **Pure packages**: `packages/engine` and `packages/gpx` hold domain logic only: no React, no state, no app imports (see their CLAUDE.md). Presentation aggregations (e.g. per-sport TSS for chart colours), serialization, format conversion and I/O stay out of the engine even when pure: they go to feature hooks or `apps/web/src/lib/`. The GPX file format (parse and build) lives in `packages/gpx`; route polylines, display rounding and export file names stay in `apps/web/src/lib/`.
+- **Pure packages**: `packages/engine` and `packages/gpx` hold domain logic only: no React, no state, no app imports (see their CLAUDE.md). Presentation aggregations (e.g. per-sport TSS for chart colours), serialization, format conversion and I/O stay out of the engine even when pure: they go to the owning component folder or `apps/web/src/lib/` (`docs/conventions/tdr/helpers-split-by-reachability.md`). The GPX file format (parse and build) lives in `packages/gpx`; route polylines, display rounding and export file names stay in the app.
 - **Syntax & Formatting**: Defer to Oxlint and Oxfmt (via Vite+, configured in the root `vite.config.ts`). Do not waste time manually formatting code or enforcing linting rules; focus on logic.
 
 ## 3. File Naming Conventions
@@ -54,7 +54,7 @@
 Read the CLAUDE.md of the area you work in:
 
 - `@apps/web/CLAUDE.md`: app stack, local-first rule, external services, 0-is-data, FIT rules, colour palette, surfaces.
-- `@apps/web/src/features/CLAUDE.md`: feature-level hooks and store colocation.
+- `@apps/web/src/components/CLAUDE.md`: component folders, colocation, hook placement and store subscriptions.
 - `@apps/web/src/store/CLAUDE.md`: Zustand store scope-naming and persist middleware.
 - `@apps/web/tests/CLAUDE.md`: the testing strategy (packages and lib vs. integration vs. e2e).
 - `@packages/i18n/CLAUDE.md`: translation tone, placeholder rules, microcopy and how messages are compiled.

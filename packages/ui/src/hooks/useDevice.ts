@@ -1,8 +1,5 @@
+import { DESKTOP_MEDIA_QUERY, FINE_POINTER_QUERY } from '../lib/mediaQueries.ts';
 import { useMediaQuery } from './useMediaQuery.ts';
-
-export const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';
-
-export const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
 interface Device {
   desktop: boolean;

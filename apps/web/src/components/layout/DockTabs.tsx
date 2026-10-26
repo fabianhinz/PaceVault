@@ -8,7 +8,11 @@ import { PvSlidingHighlight } from '@pacevault/ui/components/pvSlidingHighlight/
 import { PageLink } from '@/routing/PageLink.tsx';
 import type { SupportedPage } from '@/routing/pageRegistry.ts';
 import { useCurrentPage } from '@/routing/useCurrentPage.ts';
-import { itemClass, itemClasses, segmentClass } from '@/components/layout/dockItemClasses.ts';
+import {
+  itemClass,
+  CLASSES_BY_DOCK_ITEM_SHAPE,
+  segmentClass,
+} from '@/components/layout/dockItemClasses.ts';
 
 type DockTabPage = 'dashboard' | 'sessions' | 'labs' | 'settings';
 
@@ -29,12 +33,12 @@ const TAB_BY_PAGE = {
   settings: 'settings',
 } satisfies Record<SupportedPage, DockTabPage>;
 
-const tracks: Record<'rail' | 'pill', HighlightTrack> = {
+const HIGHLIGHT_TRACK_BY_DOCK_LAYOUT: Record<'rail' | 'pill', HighlightTrack> = {
   rail: { count: tabs.length, padding: 4, gap: 4, itemSize: 40 },
   pill: { count: tabs.length, padding: 3, gap: 2, itemSize: 'share' },
 };
 
-const trackClasses: Record<'rail' | 'pill', string> = {
+const CLASSES_BY_DOCK_LAYOUT: Record<'rail' | 'pill', string> = {
   rail: 'flex-col gap-1 p-1',
   pill: 'min-w-0 flex-1 gap-0.5 p-3px',
 };
@@ -50,9 +54,9 @@ export const DockTabs: FC<DockTabsProps> = (props) => {
     (tab) => currentPage !== null && TAB_BY_PAGE[currentPage] === tab.page,
   );
   return (
-    <nav className={cn(segmentClass, 'relative', trackClasses[props.kind])}>
+    <nav className={cn(segmentClass, 'relative', CLASSES_BY_DOCK_LAYOUT[props.kind])}>
       <PvSlidingHighlight
-        track={tracks[props.kind]}
+        track={HIGHLIGHT_TRACK_BY_DOCK_LAYOUT[props.kind]}
         axis={props.kind === 'rail' ? 'y' : 'x'}
         index={activeIndex}
       />
@@ -64,7 +68,7 @@ export const DockTabs: FC<DockTabsProps> = (props) => {
           size="icon"
           className={cn(
             itemClass,
-            itemClasses[props.kind],
+            CLASSES_BY_DOCK_ITEM_SHAPE[props.kind],
             index === activeIndex &&
               'cursor-default text-accent-hover hover:bg-transparent hover:text-accent-hover',
           )}

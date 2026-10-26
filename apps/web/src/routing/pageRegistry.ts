@@ -1,4 +1,4 @@
-import type { LabsTab } from '@/lib/labsTab.ts';
+import type { LabsTab } from '@/routing/labsTab.ts';
 
 export const SUPPORTED_PAGES = {
   dashboard: 'dashboard',
@@ -16,7 +16,7 @@ export type StudioDetailTab = 'overview' | 'tools';
 export type SettingsTab = 'general' | 'data';
 type NoParams = Record<string, never>;
 
-export const PAGE_PATTERNS = {
+export const PATTERN_BY_PAGE = {
   dashboard: '/',
   sessions: '/sessions',
   sessionDetail: '/sessions/:id',
@@ -31,7 +31,7 @@ const withTab = ({ path, tab }: { path: string; tab: string | undefined }): stri
   return `${path}?${new URLSearchParams({ tab }).toString()}`;
 };
 
-export const PAGE_TO_URL = {
+export const URL_BY_PAGE = {
   dashboard: (_params: NoParams) => '/',
   sessions: (params: { tab?: SessionsTab }) => withTab({ path: '/sessions', tab: params.tab }),
   sessionDetail: (params: { sessionId: string }) =>
@@ -43,13 +43,13 @@ export const PAGE_TO_URL = {
   settings: (params: { tab?: SettingsTab }) => withTab({ path: '/settings', tab: params.tab }),
 } satisfies Record<SupportedPage, (params: never) => string>;
 
-export type ResolvePageParams<P extends SupportedPage> = Parameters<(typeof PAGE_TO_URL)[P]>[0];
+export type ResolvePageParams<P extends SupportedPage> = Parameters<(typeof URL_BY_PAGE)[P]>[0];
 
 export type PageTarget = {
   [P in SupportedPage]: { page: P; params: ResolvePageParams<P> };
 }[SupportedPage];
 
 export const pageUrl = (target: PageTarget): string => {
-  const build = PAGE_TO_URL[target.page] as (params: PageTarget['params']) => string;
+  const build = URL_BY_PAGE[target.page] as (params: PageTarget['params']) => string;
   return build(target.params);
 };

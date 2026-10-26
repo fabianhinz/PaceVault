@@ -1,16 +1,18 @@
-import type { FC } from 'react';
+import type { FC, Ref } from 'react';
 import { cn } from '../../lib/cn.ts';
 import type { ActionsMenuItem } from './types.ts';
 
 interface PvActionsMenuSheetRowProps {
   item: ActionsMenuItem;
   onSelect: () => void;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export const PvActionsMenuSheetRow: FC<PvActionsMenuSheetRowProps> = (props) => {
   const Icon = props.item.icon;
   return (
     <button
+      ref={props.ref}
       type="button"
       role="menuitem"
       disabled={props.item.disabled}

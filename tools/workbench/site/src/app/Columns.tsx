@@ -61,7 +61,7 @@ export const Columns: FC<ColumnsProps> = (props) => {
       className="flex min-h-0 flex-1 overflow-auto overscroll-none p-4 [scrollbar-width:none]"
     >
       {/* 8 columns × 14rem + 7 gaps + 4 phase gaps of 0.5rem */}
-      <div className="flex min-w-[117.5rem] flex-[0_0_100%] gap-2">
+      <div className="flex min-w-board-columns flex-[0_0_100%] gap-2">
         <Column
           bucket="needs-you"
           phase={undefined}

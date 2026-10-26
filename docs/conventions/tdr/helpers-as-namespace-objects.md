@@ -24,7 +24,7 @@ This file carries rules R1–R6.
 
 The rules also bind `packages/ui` (`packages/ui/src`, specs in `packages/ui/tests`); where the text below names an `apps/web` path, the kit's counterpart is meant.
 
-A topic module that groups several helpers has two ways to publish them: loose named exports, or one exported object that gathers module-local functions under a single name. This convention governs when the second form is used and how it is shaped — the module keeps every function private and exports one plain object, so call sites read `statFormat.duration(...)` and carry the topic at the point of use. It applies to helper, formatting, parsing, transform and debug-command modules in `apps/web/src`; it does not govern constant tables, config literals or union-keyed maps, which take the same syntactic shape but are a different thing (exhaustive-record-maps-over-branching). What belongs in a module is helpers-group-by-topic; where a module sits is helpers-split-by-reachability. `apps/web/src/lib/formatters.ts` keeps loose named exports by owner decision.
+A topic module that groups several helpers has two ways to publish them: loose named exports, or one exported object that gathers module-local functions under a single name. This convention governs when the second form is used and how it is shaped — the module keeps every function private and exports one plain object, so call sites read `statFormat.duration(...)` and carry the topic at the point of use. It applies to helper, formatting, parsing, transform and debug-command modules in `apps/web/src`; it does not govern constant tables, config literals or union-keyed maps, which take the same syntactic shape but are a different thing (exhaustive-record-maps-over-branching). What belongs in a module is helpers-group-by-topic; where a module sits is helpers-split-by-reachability. `apps/web/src/lib/format/formatters.ts` keeps loose named exports by owner decision.
 
 ## 2. Rules
 
@@ -93,7 +93,7 @@ R6:
 ## 5. Reference implementation
 
 ```ts
-import { formatRaceTime } from '@/lib/formatters.ts';
+import { formatRaceTime } from '@/lib/format/formatters.ts';
 import { getLocale } from '@pacevault/i18n/runtime.js';
 
 const integerFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });

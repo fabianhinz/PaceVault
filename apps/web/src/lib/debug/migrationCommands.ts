@@ -1,5 +1,5 @@
-import { getDB } from '@/lib/db.ts';
-import { SESSIONS_DERIVATION_MARKER_KEY } from '@/lib/guardedSessionsStorage.ts';
+import { getDB } from '@/lib/storage/db.ts';
+import { SESSIONS_DERIVATION_MARKER_KEY } from '@/lib/storage/guardedSessionsStorage.ts';
 import {
   markSessionsOutdated,
   OUTDATED_VERSION,
@@ -7,7 +7,7 @@ import {
   SESSIONS_PERSIST_KEY,
 } from './outdatedSessions.ts';
 
-const rerunMigration = async (options?: { count?: number }) => {
+const rerunMigration = async ({ count }: { count?: number } = {}) => {
   const db = await getDB();
   const tx = db.transaction('kv', 'readwrite');
   const parsed = persistedSessionsSchema.safeParse(
@@ -18,7 +18,7 @@ const rerunMigration = async (options?: { count?: number }) => {
     console.warn('pvDebug: no persisted sessions found, nothing to migrate');
     return;
   }
-  const result = markSessionsOutdated(parsed.data, { count: options?.count });
+  const result = markSessionsOutdated(parsed.data, { count });
   await tx.store.put(JSON.stringify(result.persisted), SESSIONS_PERSIST_KEY);
   await tx.store.put(String(OUTDATED_VERSION), SESSIONS_DERIVATION_MARKER_KEY);
   await tx.done;

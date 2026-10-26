@@ -21,7 +21,7 @@ export const NewerVersionOverlay: FC = () => {
           {m.ui_newer_version_desc()}
         </PvTypography>
         <PvButton autoFocus className="mt-3" onClick={() => window.location.reload()}>
-          {m.ui_newer_version_reload()}
+          {m.ui_btn_reload()}
         </PvButton>
       </div>
     </div>,

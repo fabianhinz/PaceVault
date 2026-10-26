@@ -120,9 +120,9 @@ R10:
 The convention is path arithmetic, so the mapping table is the implementation:
 
 ```text
-apps/web/src/lib/chartData.ts
-  -> apps/web/tests/lib/chartData.spec.ts
-  -> apps/web/tests/lib/chartData.integration.spec.ts           (one subject, several specs)
+apps/web/src/components/charts/chartData.ts
+  -> apps/web/tests/components/charts/chartData.spec.ts
+  -> apps/web/tests/components/charts/chartData.integration.spec.ts   (one subject, several specs)
 
 apps/web/src/parsers/fit.ts
   -> apps/web/tests/parsers/fit.spec.ts
@@ -132,8 +132,8 @@ apps/web/src/parsers/fit.ts
 apps/web/src/store/sessions.ts
   -> apps/web/tests/store/sessions.integration.spec.ts
 
-apps/web/src/features/map/hooks/useMapTracks.ts
-  -> apps/web/tests/features/map/hooks/useMapTracks.integration.spec.ts
+apps/web/src/components/mapBackground/hooks/useMapTracks.ts
+  -> apps/web/tests/components/mapBackground/hooks/useMapTracks.integration.spec.ts
 ```
 
 Fixed points, none of which mirror anything:

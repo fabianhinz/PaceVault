@@ -3,7 +3,7 @@ import { type Page } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { SESSION_DERIVATION_VERSION } from '@pacevault/engine/sessionDerivation.ts';
-import { DB_NAME, DB_VERSION } from '../../src/lib/db.ts';
+import { DB_NAME, DB_VERSION } from '../../src/lib/storage/db.ts';
 import { stressFromSummary } from '@pacevault/engine/stress.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

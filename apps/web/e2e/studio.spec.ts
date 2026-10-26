@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises';
 import { test, expect, type Download, type Page } from './helpers/test';
 import { MAP_LAUNCH_OPTIONS, findPickableTrack } from './helpers/map';
 import { seedOnboardingComplete, FIXTURES_DIR } from './helpers/seed';
-import { DB_NAME } from '../src/lib/db.ts';
+import { DB_NAME } from '../src/lib/storage/db.ts';
 
 const ROUTE_GPX = path.join(FIXTURES_DIR, 'route.gpx');
 

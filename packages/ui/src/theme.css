@@ -176,10 +176,13 @@
   --spacing-104px: 104px;
   --spacing-140px: 140px;
   --spacing-160px: 160px;
+  --spacing-180px: 180px;
   --spacing-252px: 252px;
   --spacing-300px: 300px;
   --spacing-380px: 380px;
   --spacing-440px: 440px;
+  --spacing-5rem: 5rem;
+  --spacing-board-columns: 117.5rem;
   --spacing-dock-footprint: calc(max(12px, calc(env(safe-area-inset-bottom) - 6px)) + 60px);
 
   --text-2xs: 11px;

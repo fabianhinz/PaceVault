@@ -23,7 +23,7 @@ interface PvSegmentedControlProps {
   onValueChange: (value: string) => void;
   options: Option[];
   size?: SegmentedControlSize;
-  'aria-label'?: string;
+  'aria-label': string;
   className?: string;
 }
 

@@ -2,7 +2,7 @@
 // See packages/engine/SOURCES.md for full citations.
 
 import type { SessionRecord, Gender, Sport, StressThresholds } from './types.ts';
-import { activeSeconds } from './recordPairs.ts';
+import { activeDurationSec } from './recordPairs.ts';
 import { normalizedPowerFromRecords } from './normalizedEffort.ts';
 
 interface StressSummary {
@@ -183,7 +183,7 @@ export const hrReserveSamples = ({
     const previous = records[i - 1];
     const current = records[i];
     if (!previous || current?.hr === undefined) continue;
-    const durationSec = activeSeconds({ previous, current });
+    const durationSec = activeDurationSec({ previous, current });
     if (durationSec === 0) continue;
     samples.push({
       durationMin: durationSec / 60,

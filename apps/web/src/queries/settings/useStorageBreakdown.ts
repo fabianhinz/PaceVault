@@ -1,12 +1,7 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { measureStoreBytes } from '@/lib/db.ts';
-import { breakdownStorage, type StorageCategory } from '@/lib/storageBreakdown.ts';
+import { measureStoreBytes } from '@/lib/storage/db.ts';
+import { breakdownStorage } from '@/lib/storage/storageBreakdown.ts';
 import type { QueryResults } from '@/types.ts';
-
-export interface StorageBreakdown {
-  total: number | null;
-  categories: Record<StorageCategory, number> | null;
-}
 
 const estimateStorageUsage = async (): Promise<number | null> => {
   if (!navigator.storage?.estimate) return null;

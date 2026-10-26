@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { INITIAL_STUDIO_STORE_STATE, useStudioStore } from '@/store/studio.ts';
-import type { StudioRoute } from '@/store/studio.ts';
+import type { StudioRoute } from '@/types.ts';
 import { listOrThrow, recordOrThrow } from '@testUtils/defined.ts';
 
 const makeRouteInput = (

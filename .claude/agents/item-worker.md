@@ -8,7 +8,7 @@ You are a worker on the PaceVault repo: the app (`apps/web`, a local-first PWA i
 
 ## Read first
 
-- `CLAUDE.md` (all sections) and the deeper `CLAUDE.md` files it points to for the area you touch (`apps/web/` and its `src/features/`, `src/store/`, `tests/`; `packages/*`, translations in `packages/i18n/`; `tools/*`).
+- `CLAUDE.md` (all sections) and the deeper `CLAUDE.md` files it points to for the area you touch (`apps/web/` and its `src/components/`, `src/store/`, `tests/`; `packages/*`, translations in `packages/i18n/`; `tools/*`).
 - `tools/workbench/backlog/<item>/plan.md`: the plan is the contract. `## Decisions (settled)` and answered `## Open questions` are binding.
 - `tools/workbench/backlog/flaky.md` before you run any test suite.
 
@@ -33,7 +33,7 @@ You are a worker on the PaceVault repo: the app (`apps/web`, a local-first PWA i
 - No non-null assertion `!`; narrow with guards, defaults or early returns.
 - Zustand actions via `useStore.getState().action()`; selectors only for rendered state. A bumped persisted store version gets a `migrate` function.
 - No ternaries in `.ts` files; single-level only in `.tsx`; no nested ternaries. No `Object.assign`.
-- Reuse `packages/ui/src/components/` (`@pacevault/ui`) before inlining UI; surfaces from `Card.tsx` (`packages/ui/CLAUDE.md` § Surfaces); map colours per `apps/web/CLAUDE.md` §3.
+- Reuse `packages/ui/src/components/` (`@pacevault/ui`) before inlining UI; surfaces from `@pacevault/ui/lib/surfaces.ts` (`packages/ui/CLAUDE.md` § Surfaces); map colours per `apps/web/CLAUDE.md` §3.
 - UI text through Paraglide (`@pacevault/i18n/messages.js`) in English and German, tone per `packages/i18n/CLAUDE.md`; facts, never marketing.
 - Delete dead code your change creates.
 

@@ -26,6 +26,8 @@ Rendered UI in `apps/web` is assembled from the workspace kit `@pacevault/ui` (`
 
 Scope: rendered modules under `apps/web/src` and the workbench board (`tools/workbench/site/src`, including the DOM its scripts build, which mounts kit components through `createRoot`). Inside `packages/ui`, R1 applies to the kit's own text: an element whose type classes a `Typography` variant and colour express renders through `Typography` (`as` takes the element or the Radix part); form fields, labels and containers whose type size no variant expresses keep their classes. Importing Radix directly is the kit's whole point, so R3 does not reach `packages/ui`. Tests are out of scope.
 
+Accepted exception (owner, 2026-10-26): five controls are built in `apps/web` from kit parts and plain elements because they are specific to one feature, not part of the shared visual language, so R1 and R5 do not move them into the kit: `StepButton` (`components/sessions/session/StepButton.tsx`), `TripFormDialog` (`components/trips/TripFormDialog.tsx`), `PaceEstimateButton` (`components/settings/PaceEstimateButton.tsx`), `StudioColorPicker` (`components/studio/StudioColorPicker.tsx`) and `StudioMarkerPins` (`components/studio/markers/StudioMarkerPins.tsx`). They stay feature components in `components/<feature>/`. A sixth control of the same kind is not covered by this list; it goes through R5.
+
 ## 2. Rules
 
 | # | Rule (as adapted for this project) | Enforcement |
@@ -62,7 +64,7 @@ R3:
     earlier; `rg -n "@radix-ui" apps/web/package.json` catches it.
 R5:
   type: manual
-  reason: "'Belongs to the shared visual language' is a design judgement, not a property of a file."
+  reason: "'Belongs to the shared visual language' is a design judgement, not a property of a file. The five controls listed in §1 are accepted exceptions."
   enforcedBy: null
 R6:
   type: manual

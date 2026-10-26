@@ -6,7 +6,7 @@ import type {
   PBSessionMeta,
   WorkerMessageIn,
   WorkerMessageOut,
-} from '@/features/records/personalBestsContract.ts';
+} from '@/lib/workers/personalBestsContract.ts';
 
 export const personalBestsQueryKey = (): string[] => ['personal-bests'];
 
@@ -27,7 +27,7 @@ export const computePersonalBests = (options: {
 }): Promise<QueryResults['personalBests']> => {
   return new Promise((resolve, reject) => {
     const worker = new Worker(
-      new URL('../../features/records/personalBests.worker.ts', import.meta.url),
+      new URL('../../lib/workers/personalBests.worker.ts', import.meta.url),
       {
         type: 'module',
       },

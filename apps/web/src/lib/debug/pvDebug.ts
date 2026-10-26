@@ -8,7 +8,7 @@ const commands = {
   ...migrationCommands,
 };
 
-const commandDocs: Record<keyof typeof commands, string> = {
+const DOC_BY_COMMAND: Record<keyof typeof commands, string> = {
   crashRoot: 'Root card — Reload + Report bug',
   crashRoute: 'Route card — Try again or navigate away',
   crashMap: 'Map vanishes, content keeps working',
@@ -31,8 +31,8 @@ const COMMAND_STYLE = `color:${tokens.accent};font-family:monospace;font-weight:
 const DESCRIPTION_STYLE = `color:${tokens.textSecondary}`;
 
 const printHelp = () => {
-  const names = Object.keys(commandDocs) as Array<keyof typeof commandDocs>;
-  const blocks = names.map((name) => `\n\n%cpvDebug.${name}()\n%c  ${commandDocs[name]}`);
+  const names = Object.keys(DOC_BY_COMMAND) as Array<keyof typeof DOC_BY_COMMAND>;
+  const blocks = names.map((name) => `\n\n%cpvDebug.${name}()\n%c  ${DOC_BY_COMMAND[name]}`);
   const styles = names.flatMap(() => [COMMAND_STYLE, DESCRIPTION_STYLE]);
   console.info(
     `%cPaceVault%c debug tools${blocks.join('')}\n\n%cpvDebug.help()%c prints this again`,

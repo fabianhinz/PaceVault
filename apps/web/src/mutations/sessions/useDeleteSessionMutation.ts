@@ -5,7 +5,7 @@ import {
   deleteSessionGPS,
   deleteFitFile,
   deleteSessionWeather,
-} from '@/lib/db.ts';
+} from '@/lib/storage/db.ts';
 import { sessionGpsQueryKey } from '@/queries/sessions/useSessionGps.ts';
 
 const deleteSessionData = async (options: { sessionId: string }): Promise<void> => {

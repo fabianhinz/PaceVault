@@ -4,7 +4,7 @@ import {
   invalidateStudioRoutePoints,
   useStudioRoutePoints,
 } from '@/queries/studio/useStudioRoutePoints.ts';
-import { saveStudioRoutePoints } from '@/lib/db.ts';
+import { saveStudioRoutePoints } from '@/lib/storage/db.ts';
 import { createMockRoutePoint } from '@pacevault/testing/route.ts';
 import { createTestQueryClient } from '@testUtils/queryClient.ts';
 import { renderHookWithProviders } from '@testUtils/render.ts';

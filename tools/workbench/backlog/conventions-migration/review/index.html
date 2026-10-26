@@ -10,8 +10,15 @@
   <body class="rv">
     <main class="rv-doc">
       <header class="rv-text">
-        <p class="rv-over">Review · round 1</p>
+        <p class="rv-over">Review · round 2</p>
         <h1>Bring the whole workspace onto the agreed conventions</h1>
+        <p>
+          Round 2 (plans 47–51) fixes R1–R3: features now live under
+          <code>components/</code>, <code>lib/</code> is split into topic folders, the sites the
+          first run missed are done, and German shows decimal commas. Two new gates in
+          <code>vp run check</code> keep the layout. Only the German decimal commas are visible;
+          the rest is moves and renames.
+        </p>
         <p>
           All 46 convention plans ran, one worker each, in dependency order; none was reverted or
           skipped. Mostly refactoring: 19 of 24 screenshots are pixel-identical, the other 5 differ
@@ -21,6 +28,131 @@
           <a href="carryover.md"><code>review/carryover.md</code></a>.
         </p>
       </header>
+
+      <h2>Review round 2</h2>
+      <p class="rv-text">
+        "Before" is the round-1 "after"; 12 of 24 shots are identical. The German shots differ only
+        by decimal commas (R3), the dashboard by the demo-data date shift, one English 2D session
+        shot by button shading noise. Log: <a href="progress.md"><code>review/progress.md</code></a>
+        "Round 2 log".
+      </p>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R1</span><span class="rv-chip">fixed</span>One home per concept: features in <code>components/</code>, <code>lib/</code> by topic</h3>
+        <div class="rv-text">
+          <p>
+            <code>features/</code> is gone: every feature sits in <code>components/&lt;feature&gt;/</code>
+            with an <code>index.tsx</code> entry (dashboard, sessions, session, trips, studio, labs,
+            settings; the map is <code>components/mapBackground/</code>), and pages only mount these
+            entries. Shared UI is grouped (<code>charts/</code>, <code>metricLabel/</code>,
+            <code>importProgress/</code>, <code>errors/</code>, <code>layout/</code>).
+          </p>
+          <p>
+            <code>lib/</code> holds ten topic folders and no file at its root; the three filter
+            modules are one <code>filters.ts</code>. Two gates in <code>vp run check</code>
+            (store/queries/mutations/microcopy never import <code>components/</code>; a
+            <code>lib/</code> module only one feature uses fails) keep it that way. No visible UI
+            change.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/dashboard/index.tsx</code>;
+            <code>apps/web/src/components/sessions/session/index.tsx</code>;
+            <code>apps/web/src/lib/filtering/filters.ts</code>;
+            <code>tools/workbench/.dependency-cruiser.cjs:15</code>;
+            <code>tools/workbench/scripts/colocation.ts</code>;
+            <code>docs/conventions/tdr/helpers-split-by-reachability.md:54</code> (new R8).
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R2</span><span class="rv-chip">fixed</span>Sites the first run missed</h3>
+        <div class="rv-text">
+          <p>
+            The audit list is done: spec renames, mock factories, query-key prefixes, react-use
+            timers, boolean names, <code>switch</code> chains, kit refs and labels, about 59
+            record maps renamed to <code>X_BY_Y</code>, and the five hand-built controls moved into
+            their features. Two timers stay <code>useEffect</code> (OP-83). No visible UI change.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/settings/</code>;
+            <code>apps/web/src/components/sessions/session/windRoseSectors.ts</code> (OP-84).
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R3</span><span class="rv-chip">fixed</span>TDR decisions; German decimal commas</h3>
+        <div class="rv-text">
+          <p>
+            The two server TDRs are deleted (47 TDRs), fetchers keep their <code>options</code>
+            object, <code>QueryResults</code> payload types live in <code>types.ts</code>. Display
+            numbers go through <code>formatNumber</code> instead of <code>toFixed</code>, so German
+            shows <code>127,1 km</code> where it showed <code>127.1 km</code>.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/dashboard/ACWRGauge.tsx:46</code>;
+            <code>apps/web/src/lib/format/formatters.ts:79</code>;
+            <code>docs/conventions/tdr/formatting-through-intl-namespace.md:35</code> (R9).
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · de · sessions</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img
+                src="before/d-de-sessions.png"
+                alt="R3 before · Desktop"
+                width="1280"
+                height="800"
+                loading="lazy"
+              />
+              <img
+                class="rv-after"
+                src="after/d-de-sessions.png"
+                alt="R3 after · Desktop"
+                width="1280"
+                height="800"
+                loading="lazy"
+              />
+              <span class="rv-tag rv-tag--before">Before</span
+              ><span class="rv-tag rv-tag--after">After</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value="50"
+                aria-label="R3 desktop: before / after split"
+              />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · de · sessions</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img
+                src="before/p-de-sessions.png"
+                alt="R3 before · Phone"
+                width="390"
+                height="844"
+                loading="lazy"
+              />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img
+                src="after/p-de-sessions.png"
+                alt="R3 after · Phone"
+                width="390"
+                height="844"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
+      </article>
 
       <h2>Changes</h2>
       <p class="rv-text">
@@ -646,6 +778,35 @@
       <h2>Deviations</h2>
       <ol class="rv-text">
         <li>
+          <strong>Round 2: the boundary rules were blind to <code>@/</code> imports.</strong>
+          dependency-cruiser resolved no <code>@/…</code> import before plan 51, so the round-1
+          rules <code>engine-is-pure</code> and <code>store-no-features</code> never saw aliased
+          imports and passed regardless. Fixed by the <code>@</code> alias; both gates now proven to
+          fire. <code>@pacevault/*</code> imports are still unresolved (OP-86).
+          <code>tools/workbench/depcruise.aliases.cjs:10</code>.
+        </li>
+        <li>
+          <strong>Round 2: half-way values now round up in English too</strong>
+          (<code>formatNumber</code> instead of <code>toFixed</code>): ACWR 1.15 shows
+          <code>1.2</code>, 1150 m shows <code>1.2 km</code>.
+          <code>apps/web/src/components/dashboard/ACWRGauge.tsx:46</code>.
+        </li>
+        <li>
+          <strong>Round 2: two timers kept as <code>useEffect</code></strong>
+          (<code>useCoachPlan</code>, <code>useHeldReprocess</code>): the react-use version breaks
+          a lint rule or would not restart (OP-83).
+        </li>
+        <li>
+          <strong>Round 2: <code>windRose.ts</code> moved as <code>windRoseSectors.ts</code></strong>:
+          beside <code>WindRose.tsx</code> the case-insensitive file system breaks the type-aware
+          lint (OP-84).
+          <code>apps/web/src/components/sessions/session/windRoseSectors.ts</code>.
+        </li>
+        <li>
+          <strong>Round 2: 59 record maps renamed to <code>X_BY_Y</code></strong> (the audit
+          estimated about 40).
+        </li>
+        <li>
           <strong>intervals.icu connect race fixed.</strong> The first e2e run of plan 23 showed
           "Nothing new" instead of "2 new sessions"; the connect mutation now starts first (N10).
           <code>apps/web/src/features/intervals/hooks/useIntervalsImport.ts:61</code>.
@@ -700,8 +861,21 @@
       <h2>Open points</h2>
       <ol class="rv-text">
         <li>
+          <strong>Round 2 follow-ups</strong> in
+          <a href="../../conventions-follow-ups/research/open-points.md"
+            ><code>conventions-follow-ups/research/open-points.md</code></a
+          >:
+          <ul>
+            <li>OP-82 Pace calculator still shows a decimal dot in German</li>
+            <li>OP-83 Two hand-rolled timers kept as <code>useEffect</code></li>
+            <li>OP-84 <code>windRose.ts</code> renamed <code>windRoseSectors.ts</code></li>
+            <li>OP-85 Gaps the two new layout gates leave</li>
+            <li>OP-86 depcruise does not resolve <code>@pacevault/*</code> imports</li>
+          </ul>
+        </li>
+        <li>
           <strong>Your steps.</strong> Commit and branch (Claude never commits; everything is in the
-          working tree). Tick the agent decisions on the Review tab
+          working tree). Tick the agent decisions on the Review tab, including the new round-2 ones
           (<code>review/decisions.md</code>). Run the four real-data checks in
           <code>plan.md</code>: own profile loads, weather online and offline, FIT and GPX import,
           intervals.icu sync.
@@ -756,11 +930,52 @@
         </li>
         <li>
           <strong>No new test failures</strong> and no boundary violations
-          (<code>engine-is-pure</code>, <code>store-no-features</code>).
+          (round 2: <code>engine-is-pure</code>, <code>state-no-components</code>).
         </li>
       </ol>
 
       <h2>Verification</h2>
+      <p class="rv-text">Round 2 (after plan 51):</p>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp run check</code></td>
+          <td class="rv-pass">pass · 12/12 tasks (now with <code>state-no-components</code> and the colocation check)</td>
+        </tr>
+        <tr>
+          <td><code>vp run test</code></td>
+          <td class="rv-pass">
+            pass · files/tests: engine 20/255, ui 9/31, gpx 5/54, workbench 18/83 (+1/+10), web
+            110/1063
+          </td>
+        </tr>
+        <tr>
+          <td><code>vp run e2e</code></td>
+          <td class="rv-pass">pass · 86/86, no flakes</td>
+        </tr>
+        <tr>
+          <td><code>vp run build</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td>Conventions check</td>
+          <td class="rv-pass">pass · 47 TDRs, 0 plans, 0 errors</td>
+        </tr>
+        <tr>
+          <td><code>vp run workbench:deps</code></td>
+          <td class="rv-pass">
+            958 modules · 3435 imports drawn · 12 added · 5 missing; 341 components · 852 imports;
+            files 1142 changed and planned · 3 changed not planned · 7 planned untouched (base
+            <code>1b3f839</code>); interfaces 609 planned files · 1114 exports, 2 not planned files
+            · 0 exports, 6 missing; boundaries <code>engine-is-pure</code>,
+            <code>state-no-components</code>: no violations (868 modules, 3510 dependencies)
+          </td>
+        </tr>
+      </table>
+      <p class="rv-text">Round 1:</p>
       <table>
         <tr>
           <th>Command</th>
@@ -804,6 +1019,15 @@
 
       <h2>How to check</h2>
       <ol class="rv-text">
+        <li>
+          Round 2 (R1, R2): open each page (dashboard, sessions, a session in 2D and 3D, a trip,
+          studio, labs, settings). Nothing looks or behaves differently from round 1.
+        </li>
+        <li>
+          Round 2 (R3): switch the language to German. Distances, gauges and chart values show
+          decimal commas (<code>127,1 km</code>); the pace calculator in labs still shows a dot
+          (OP-82).
+        </li>
         <li>
           Settings → thresholds: enter FTP 0, then a max HR below your rest HR. Both are refused;
           the stored values stay.

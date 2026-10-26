@@ -1,7 +1,7 @@
 /**
  * Standalone Node script that builds the bundled demo routes.
  * Run with: vp run -F @pacevault/web generate-demo-routes
- * Output: src/features/demo/demoRoutes.json
+ * Output: src/lib/demo/demoRoutes.json
  *
  * Network is used only here, at generation time: OSRM (FOSSGIS instance with real
  * foot and bike profiles) for the geometry, Open-Meteo's elevation API for the DEM.
@@ -449,7 +449,7 @@ const main = async () => {
     await sleep(500);
     output[config.group].push(await buildRoute(config));
   }
-  const outPath = resolve(scriptDir, '..', 'src', 'features', 'demo', 'demoRoutes.json');
+  const outPath = resolve(scriptDir, '..', 'src', 'lib', 'demo', 'demoRoutes.json');
   if (DRY_RUN) return;
   writeFileSync(outPath, JSON.stringify(output) + '\n');
   console.log(`\nWrote ${ROUTE_CONFIGS.length} routes to ${outPath}`);

@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from 'react';
+import type { FC, ReactNode, Ref } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/cn.ts';
 
@@ -8,10 +8,12 @@ interface PvCollapsibleHeaderProps {
   trailing?: ReactNode;
   className?: string;
   children: ReactNode;
+  ref?: Ref<HTMLButtonElement>;
 }
 
 export const PvCollapsibleHeader: FC<PvCollapsibleHeaderProps> = (props) => (
   <button
+    ref={props.ref}
     type="button"
     aria-expanded={props.open}
     onClick={props.onClick}

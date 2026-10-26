@@ -6,7 +6,7 @@ import { useGeolocationStore } from '@/store/geolocation.ts';
 import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { PvIconBadge } from '@pacevault/ui/components/pvIconBadge/PvIconBadge.tsx';
 import { DockCircle } from '@/components/layout/DockCircle.tsx';
-import { itemClass, itemClasses } from '@/components/layout/dockItemClasses.ts';
+import { itemClass, CLASSES_BY_DOCK_ITEM_SHAPE } from '@/components/layout/dockItemClasses.ts';
 import type { DockItemKind } from '@/components/layout/types.ts';
 
 interface DockLocateButtonProps {
@@ -26,7 +26,7 @@ export const DockLocateButton: FC<DockLocateButtonProps> = (props) => {
     <PvButton
       variant="ghost"
       size="icon"
-      className={cn(itemClass, itemClasses[props.kind])}
+      className={cn(itemClass, CLASSES_BY_DOCK_ITEM_SHAPE[props.kind])}
       onClick={() => useGeolocationStore.getState().toggleTracking()}
       aria-label={m.ui_dock_locate_me()}
     >

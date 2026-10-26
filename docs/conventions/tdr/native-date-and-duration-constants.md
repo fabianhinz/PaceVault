@@ -72,7 +72,7 @@ R3:
   type: grep
   pattern: "(setTimeout|setInterval)\\([^)]*, *[0-9][0-9_]{2,}\\)|(staleTime|gcTime|refetchInterval|retryDelay|timeout|duration|maximumAge|[Dd]elay|ttl) *: *[0-9][0-9_]{2,}|\\}, *[0-9][0-9_]{3,}\\);"
   include: ["apps/web/src/**/*.ts", "apps/web/src/**/*.tsx", "apps/web/tests/**/*.ts", "packages/ui/src/**/*.ts", "packages/ui/src/**/*.tsx", "packages/ui/tests/**/*.ts", "packages/testing/src/**/*.ts", "tools/docs/banner/**/*.ts", "tools/docs/*.config.ts"]
-  exempt: ["apps/web/src/features/demo/**"]
+  exempt: ["apps/web/src/lib/demo/**", "apps/web/src/components/demo/**"]
   violationWhen: any-match
   enforcedBy: null
   falsePositives: "Noisy. `duration` is also a seconds field on workout and demo data. A literal on the right-hand side of a named-constant declaration is the sanctioned form. Treat every hit as a question, not a finding."

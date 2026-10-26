@@ -1,5 +1,5 @@
 import { m } from '@pacevault/i18n/messages.js';
-import type { ThresholdKey } from '@/store/user.ts';
+import type { ThresholdKey } from '@/types.ts';
 
 export const ADD_CAPTION_BY_THRESHOLD: Record<ThresholdKey, () => string> = {
   restHr: m.ui_thresholds_add_rest_hr,

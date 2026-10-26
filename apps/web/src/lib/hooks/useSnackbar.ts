@@ -1,5 +1,5 @@
 import { useToastStore } from '@/store/toast.ts';
-import type { SnackbarEntry } from '@/lib/snackbar.ts';
+import type { SnackbarEntry } from '@/lib/format/snackbar.ts';
 
 export interface Snackbar {
   enqueueSnackbar: (entry: SnackbarEntry) => void;

@@ -1,5 +1,5 @@
 import { m } from '@pacevault/i18n/messages.js';
-import type { SnackbarMap } from '@/lib/snackbar.ts';
+import type { SnackbarMap } from '@/lib/format/snackbar.ts';
 
 export const COMMON_SNACKBARS = {
   exportFailed: {

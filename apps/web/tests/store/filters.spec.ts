@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { migrateFilters, useFiltersStore } from '@/store/filters.ts';
-import { type FilterCriteria, emptyCriteria } from '@/lib/savedFilters.ts';
+import { type FilterCriteria, emptyCriteria } from '@/lib/filtering/filters.ts';
 
 const criteria = (overrides: Partial<FilterCriteria>): FilterCriteria => ({
   ...emptyCriteria(),

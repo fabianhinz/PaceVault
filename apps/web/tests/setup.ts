@@ -18,7 +18,7 @@ import {
   INITIAL_SESSION_REPROCESSING_STORE_STATE,
   useSessionReprocessingStore,
 } from '@/store/sessionReprocessing.ts';
-import { resetDBInstance } from '@/lib/db.ts';
+import { resetDBInstance } from '@/lib/storage/db.ts';
 import { enableMapSet } from 'immer';
 
 enableMapSet();

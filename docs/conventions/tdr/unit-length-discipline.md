@@ -132,10 +132,10 @@ A handful of statements, no nesting, one wide statement carrying the bulk of the
 ```tsx
 import type { FC } from 'react';
 import { ChartRow } from '@pacevault/ui/components/ChartsCard.tsx';
-import { LegendLine } from '@/features/dashboard/LegendLine.tsx';
-import { useDashboardAxis } from '@/features/dashboard/hooks/useDashboardAxis.ts';
-import { useVolumeChartRails } from '@/features/dashboard/hooks/useVolumeChartRails.ts';
-import { useVolumeSeries } from '@/features/dashboard/hooks/useVolumeSeries.ts';
+import { LegendLine } from '@/components/dashboard/LegendLine.tsx';
+import { useDashboardAxis } from '@/components/dashboard/hooks/useDashboardAxis.ts';
+import { useVolumeChartRails } from '@/components/dashboard/hooks/useVolumeChartRails.ts';
+import { useVolumeSeries } from '@/components/dashboard/hooks/useVolumeSeries.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 
 export const VolumeChart: FC = () => {

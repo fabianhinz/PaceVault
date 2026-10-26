@@ -5,7 +5,7 @@ title: Helper modules are named for a topic and hold that topic's functions
 summary: A plain .ts helper module is named for its subject and holds every function, constant and small type of that subject; a topic is never split across several sibling modules.
 governs:
   - "apps/web/src/lib/**/*.ts"
-  - "apps/web/src/features/**/*.ts"
+  - "apps/web/src/components/**/*.ts"
   - "apps/web/src/parsers/**/*.ts"
   - "packages/ui/src/lib/**/*.ts"
   - "packages/engine/src/**/*.ts"
@@ -32,9 +32,9 @@ The rules also bind `packages/ui` (`packages/ui/src`, specs in `packages/ui/test
 
 `packages/gpx/src` is read the same way: each of its modules is a topic module (`parseGpx.ts`, `buildGpx.ts`, `routeCut.ts`, `routeGeometry.ts`, `routeProfile.ts`), and a helper two of them need (`groupBySegment`, `segmentGradients`) lives in the module of its subject, `routeGeometry.ts`.
 
-This is a boundary convention. Hooks and components follow a one-symbol-per-file discipline (one-hook-per-file, component-declaration-shape); this convention says where that discipline stops. A helper module is a unit of *subject matter*, not a unit of one function: it is named after the topic it covers and holds however many related functions, constants and small types that topic currently needs — one today, six later, without a rename or a new file. In this app that also means a topic is never cut into several sibling modules that import each other in a chain: the laps of a session live in `apps/web/src/lib/laps.ts`, the IndexedDB database in `apps/web/src/lib/db.ts`, weather in `apps/web/src/lib/weather.ts`.
+This is a boundary convention. Hooks and components follow a one-symbol-per-file discipline (one-hook-per-file, component-declaration-shape); this convention says where that discipline stops. A helper module is a unit of *subject matter*, not a unit of one function: it is named after the topic it covers and holds however many related functions, constants and small types that topic currently needs — one today, six later, without a rename or a new file. In this app that also means a topic is never cut into several sibling modules that import each other in a chain: the laps of a session live in `apps/web/src/lib/analysis/laps.ts`, the IndexedDB database in `apps/web/src/lib/storage/db.ts`, weather in `apps/web/src/lib/api/weather.ts`.
 
-Scope: plain `.ts` helper modules — the central `apps/web/src/lib/` directory and feature-local helper modules beside the code they serve (`apps/web/src/features/**/<topic>.ts`), plus `apps/web/src/parsers/`. Out of scope: hooks and components, store modules, and worker entry modules. Which directory a helper belongs in is helpers-split-by-reachability; exporting helpers as one namespace object is helpers-as-namespace-objects.
+Scope: plain `.ts` helper modules — the `apps/web/src/lib/<topic>/` folders and the helper modules in feature folders (`apps/web/src/components/<feature>/**/<topic>.ts`), plus `apps/web/src/parsers/`. A topic folder in `lib/` is not a split topic: it holds several topic modules of one area (`lib/filtering/filters.ts` beside `lib/filtering/timeRange.ts`). Out of scope: hooks and components, store modules, and worker entry modules. Which directory a helper belongs in is helpers-split-by-reachability; exporting helpers as one namespace object is helpers-as-namespace-objects.
 
 `tools/docs/banner/` is read the same way: its plain `.ts` modules are topic modules — the locales (`locales.ts`), the banner content (`bannerContent.ts`), the environment hand-off (`env.ts`) and the capture's steps by subject (`messages.ts`, `stillness.ts`, `png.ts`, `clip.ts`, `appPage.ts`, `shots.ts`); the Playwright test file `capture.ts` and the runner `run.ts` are entry modules, not helper modules.
 
@@ -112,18 +112,30 @@ R7:
 
 ## 5. Reference implementation
 
-Good — `apps/web/src/lib/intervals.ts`, one subject with every function of it:
+Good — `apps/web/src/lib/api/intervals.ts`, one subject with every function of it (`:84-92`, `:144`, `:153-161`, bodies elided):
 
 ```ts
 export const FULL_HISTORY_OLDEST = '1990-01-01';
 
+export const listIntervalsActivities = async ({
+  apiKey,
+  oldest = FULL_HISTORY_OLDEST,
+}: {
+  apiKey: string;
+  oldest?: string;
+}): Promise<IntervalsActivity[]> => {
+
 const BUFFER_DAYS = 14;
 
-export const listIntervalsActivities = async (apiKey: string, oldest: string) =>
-  fetchActivities(apiKey, oldest);
-
-export const intervalsSyncWindowOldest = (sessions: TrainingSession[]): string | undefined =>
-  newestIntervalsDate(sessions, BUFFER_DAYS);
+export const intervalsSyncWindowOldest = (sessions: TrainingSession[]): string | undefined => {
+  let newest: number | undefined = undefined;
+  for (const session of sessions) {
+    if (session.source.kind !== 'intervals') continue;
+    if (newest === undefined || session.date > newest) newest = session.date;
+  }
+  if (newest === undefined) return undefined;
+  return toLocalDate(newest - BUFFER_DAYS * MS_PER_DAY);
+};
 ```
 
 Bad — `intervals.ts` plus `intervalsSyncWindow.ts`: two sibling modules with one subject (the intervals.icu listing window), the second holding one function named after itself. That is one `intervals.ts`.

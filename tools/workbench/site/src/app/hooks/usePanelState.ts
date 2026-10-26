@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import type { BoardItem } from '@site/lib/board.ts';
-import { SLOTS, type Slot } from '@site/lib/vocabulary.ts';
+import type { Slot } from '@site/lib/vocabulary.ts';
+import { tabFor } from '@site/app/panelTabs.ts';
 
 export type PanelContent =
   | { kind: 'item'; folder: string; tab: Slot }
   | { kind: 'guide' }
   | undefined;
-
-export const tabFor = ({ item, asked }: { item: BoardItem; asked: Slot | undefined }): Slot => {
-  if (asked !== undefined && item.present[asked]) return asked;
-  const first = SLOTS.find((slot) => item.present[slot]);
-  if (first === undefined) return 'plan';
-  return first;
-};
 
 interface PanelState {
   panel: PanelContent;
@@ -24,7 +18,7 @@ interface PanelState {
   close: () => void;
 }
 
-export const usePanelState = ({ items }: { items: BoardItem[] | undefined }): PanelState => {
+export const usePanelState = (items: BoardItem[] | undefined): PanelState => {
   const [panel, setPanel] = useState<PanelContent>(undefined);
   const [expanded, setExpanded] = useState(false);
 

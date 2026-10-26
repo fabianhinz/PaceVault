@@ -4,10 +4,8 @@ import {
   type QueryClient,
   type UseMutationResult,
 } from '@tanstack/react-query';
-import {
-  runIntervalsSync,
-  type IntervalsSyncSummary,
-} from '@/features/intervals/runIntervalsSync.ts';
+import { runIntervalsSync } from '@/lib/api/intervalsSync.ts';
+import type { IntervalsSyncSummary } from '@/types.ts';
 import { intervalsSyncQueryKey } from '@/queries/intervals/useIntervalsSync.ts';
 
 const syncAfterConnect = async (options: {

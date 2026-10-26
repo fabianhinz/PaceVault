@@ -4,7 +4,7 @@ import { useLayoutStore } from '@/store/layout.ts';
 import { m } from '@pacevault/i18n/messages.js';
 import { PvBanner } from '@pacevault/ui/components/pvBanner/PvBanner.tsx';
 import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
-import { DeleteAllDataDialog } from '@/features/settings/DeleteAllDataDialog.tsx';
+import { DeleteAllDataDialog } from '@/components/settings/DeleteAllDataDialog.tsx';
 
 export const DemoBanner: FC = () => {
   const demoMode = useLayoutStore((s) => s.demoMode);

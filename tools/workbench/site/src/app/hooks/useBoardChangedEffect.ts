@@ -1,11 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import type { ChangedPayload } from '@site/lib/devPlugin.ts';
+import type { BoardChangedPayload } from '@site/lib/boardChangedContract.ts';
 import { boardQueryKey } from './useBoard.ts';
 
 declare module 'vite/types/customEvent.d.ts' {
   interface CustomEventMap {
-    'wb:changed': ChangedPayload;
+    'wb:changed': BoardChangedPayload;
   }
 }
 

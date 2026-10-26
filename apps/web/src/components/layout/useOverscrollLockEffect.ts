@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
+import { useEffectOnce } from 'react-use';
 
 export const useOverscrollLockEffect = (): void => {
-  useEffect(() => {
+  useEffectOnce(() => {
     const root = document.documentElement;
     root.style.overscrollBehavior = 'none';
     return () => {
       root.style.overscrollBehavior = '';
     };
-  }, []);
+  });
 };

@@ -1,6 +1,6 @@
 import type { FC } from 'react';
-import { useFileUpload } from '@/features/sessions/hooks/useFileUpload.ts';
-import { useFileDropEffect } from '@/features/sessions/hooks/useFileDropEffect.ts';
+import { useFileUpload } from '@/components/sessions/hooks/useFileUpload.ts';
+import { useFileDropEffect } from '@/components/sessions/hooks/useFileDropEffect.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import { useDockList } from '@/components/layout/useDockList.ts';
 import { DockBar } from '@/components/layout/DockBar.tsx';

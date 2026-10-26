@@ -89,10 +89,10 @@ R6:
 import { describe, expect, it, vi } from 'vite-plus/test';
 import { fireEvent, waitFor, within } from '@testing-library/react';
 import { renderWithProviders } from '@testUtils/render.ts';
-import { Subject } from '@/features/subject/Subject.tsx';
-import type { ChildProps } from '@/features/subject/Child.tsx';
+import { Subject } from '@/components/subject/Subject.tsx';
+import type { ChildProps } from '@/components/subject/Child.tsx';
 
-vi.mock('@/features/subject/Child.tsx', () => ({
+vi.mock('@/components/subject/Child.tsx', () => ({
   Child: (props: ChildProps) => <div data-testid={`child-${props.id}`} />,
 }));
 

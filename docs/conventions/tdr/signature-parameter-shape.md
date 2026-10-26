@@ -32,7 +32,7 @@ This file carries rules R1 through R8.
 
 The rules also bind `packages/ui` (`packages/ui/src`, specs in `packages/ui/tests`); where the text below names an `apps/web` path, the kit's counterpart is meant.
 
-The rules bind `packages/engine/src` too, with one difference set by the owner: R5 does not apply there. Every engine callable with two or more inputs takes one destructured object — per-record and per-second helpers inside hot loops included (`activeSeconds({ previous, current })`, `meanOf({ series, from, to })`) — and an anonymous pair gets field names (`{ from, to }`). R6 has no subject (the engine threads no infrastructure handle) and R8 keeps only callback contracts (`Array.prototype` callbacks, `sort` comparators) positional.
+The rules bind `packages/engine/src` too, with one difference set by the owner: R5 does not apply there. Every engine callable with two or more inputs takes one destructured object — per-record and per-second helpers inside hot loops included (`activeDurationSec({ previous, current })`, `meanOf({ series, from, to })`) — and an anonymous pair gets field names (`{ from, to }`). R6 has no subject (the engine threads no infrastructure handle) and R8 keeps only callback contracts (`Array.prototype` callbacks, `sort` comparators) positional.
 
 `packages/gpx/src` has no R5 carve-out either: its interpolation helpers take one object like every other callable there (`interpolateLinear({ from, to, fraction })`, `sliceRoute({ points, startMeters, endMeters })`).
 
@@ -46,6 +46,8 @@ The rules bind `tools/docs/banner/` as well. Its capture helpers thread the Play
 
 The rules bind `tools/workbench` (`scripts/`, `site/src/`) as well. In `scripts/interfaces.ts` the printing context (`{ checker, file }`) is the R6 handle the printers only thread onward, so it trails the domain input positionally; the Connect middleware `handle(req, res, next)` keeps its list (R8).
 
+One exception to R6, set by the owner: the fetcher of a read module in `apps/web/src/queries/` and the function of a write module in `apps/web/src/mutations/` (and the feature functions they forward to) take one `options` object that carries `queryClient` and `signal` as fields beside the domain inputs (`one-server-call-per-hook-module` R4 wins). Examples: `loadSessionGpsTracks(options: { detailedSessionIds; signal; queryClient; onSettled })` in `queries/sessions/useSessionGpsTracks.ts:42`, `syncAfterConnect(options: { queryClient; apiKey })` in `mutations/intervals/useConnectIntervalsMutation.ts:13`, `reprocessOutdated(options: { queryClient })` in `queries/sessions/useOutdatedSessionsReprocessing.ts:8`. Cache helpers that only take the client (`invalidatePersonalBests(queryClient)`) and helpers with a domain input plus the client (`invalidatePersonalBestsOfSession(sessionId, queryClient)`) keep R6.
+
 ## 2. Rules
 
 | # | Rule (as adapted for this project) | Enforcement |
@@ -55,7 +57,7 @@ The rules bind `tools/workbench` (`scripts/`, `site/src/`) as well. In `scripts/
 | R3 | Type the destructured object with an **inline object type literal** right after the pattern. Introduce a named type only when a second declaration in the same module must share it or derive from it with `Omit`, `Pick` or `Partial`. | proposed |
 | R4 | When every field of the object is optional, make the whole parameter optional with the default `= {}` and mark each field optional. Never `= { … }` with seeded values, and never a `?`-marked named parameter in place of the pattern. | proposed |
 | R5 | Keep parameters positional when they are the anonymous inputs of a **generic utility** — a subject value plus a factor, a comparator pair, a callback, a ref — none of which carries an identity worth naming at the call site (`clamp(value, min, max)`, `byNewestFirst(a, b)`). Express a utility's tuning knobs, and the knobs of a subject-plus-options operation, as a trailing optional `options` object rather than further positional parameters. | manual |
-| R6 | An infrastructure handle a callable accepts only to thread onward — a TanStack `QueryClient`, an `AbortSignal` — stays a **trailing positional parameter after** the domain input(s). It is not a field of the object. | manual |
+| R6 | An infrastructure handle a callable accepts only to thread onward — a TanStack `QueryClient`, an `AbortSignal` — stays a **trailing positional parameter after** the domain input(s). It is not a field of the object. Exception: query and mutation fetchers carry `queryClient` and `signal` inside their single `options` object (§1). | manual |
 | R7 | Where a destructuring pattern cannot be written — the parameter is a union of shapes, or optional with no default — declare it as a named parameter with an inline object type. Do not use that form anywhere a pattern would work. | proposed |
 | R8 | A signature whose parameter list is imposed by a library or callback contract keeps that list verbatim: deck.gl `onClick(info, event)`, `idb`'s `upgrade(db, oldVersion)`, Zustand `StateStorage.setItem(name, value)`, persist `migrate(persisted, version)` / `merge(persisted, current)` and the helpers that mirror them. It is exempt only while an external caller dictates it. | manual |
 
@@ -125,6 +127,8 @@ R6:
     Flags existing object-shaped entry points that carry `queryClient` as a field by design
     (`runIntervalsSync({ queryClient, … })`, `createIngestBatcher({ queryClient })`), where the client
     is the operation's main collaborator rather than a threaded handle. Read each hit.
+    Also flags the query/mutation fetchers in `apps/web/src/queries/**` and `apps/web/src/mutations/**`,
+    which carry the client in their `options` object by design (§1).
 R7:
   type: grep
   pattern: "\\(\\s*(args|arg|input|data|params|parameters|payload|options|opts)\\??\\s*:\\s*\\{"
@@ -197,5 +201,5 @@ const clamp = (value: number, min: number, max: number): number => Math.min(max,
 - ❌ `args: { … }`, `input: { … }`, `data: { … }` as a substitute for a destructuring pattern — it forces the body to re-prefix every field.
 - ❌ A named interface or type alias declared solely to shorten one signature's parameter list.
 - ❌ Expressing an all-optional object as `obj?: { … }` instead of `{ … }: { … } = {}`.
-- ❌ A `QueryClient`, abort signal or other thread-through handle declared as a field of the operation's object.
+- ❌ A `QueryClient`, abort signal or other thread-through handle declared as a field of the operation's object. — outside the query/mutation fetchers of §1.
 - ❌ A boolean appended positionally to an existing signature to switch behaviour (`ingestBatch(parsed, markNew)`). If it belongs to the operation it is an object field; if the signature is an R5 utility it belongs in the trailing `options` object.

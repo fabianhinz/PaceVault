@@ -30,7 +30,7 @@ The rules bind `packages/engine` as well, whose directory is the flat `packages/
 
 When several modules in `apps/web/src` need the same type, union or constant table, that declaration has two possible homes: whichever component or hook happened to declare it first, or a dedicated `types.ts` beside its readers. This project uses the second. The cost of the first is directional: a module that needs only the name ends up importing a component or a hook, which drags its implementation, its transitive imports and its evolution into the reader's dependency graph for a name.
 
-Scope: shared declarations inside `apps/web/src` feature, component, page, store and parser directories — the union describing a feature's states, the shape its modules pass between each other, the field vocabulary a form hook and its consumers share. Out of scope: a declaration used by exactly one module, which stays in that module; a component's own props, which stay module-local (component-declaration-shape); a type inferred from a zod schema, which stays with the schema (zod-schema-naming-and-inference); worker message contracts (cross-boundary-contracts-in-shared); and helper topic modules (`apps/web/src/lib/*.ts` and feature-local topic modules such as `features/map/zoneColoredPath.ts`), whose small types stay with the functions that consume them (helpers-group-by-topic R4).
+Scope: shared declarations inside `apps/web/src` feature, component, page, store and parser directories — the union describing a feature's states, the shape its modules pass between each other, the field vocabulary a form hook and its consumers share. Out of scope: a declaration used by exactly one module, which stays in that module; a component's own props, which stay module-local (component-declaration-shape); a type inferred from a zod schema, which stays with the schema (zod-schema-naming-and-inference); worker message contracts (cross-boundary-contracts-in-shared); and helper topic modules (`apps/web/src/lib/**/*.ts` and feature-local topic modules such as `components/mapBackground/zoneColoredPath.ts`), whose small types stay with the functions that consume them (helpers-group-by-topic R4).
 
 The app-wide registry `apps/web/src/types.ts` (user profile, coaching and plan shapes) is the one cross-cutting instance; it is governed here only insofar as it stays a leaf.
 
@@ -126,7 +126,7 @@ export const ONBOARDING_SHELLS = ['card', 'dialog'] as const;
 export type OnboardingShell = (typeof ONBOARDING_SHELLS)[number];
 ```
 
-A leaf that only names shapes its readers pass around (`apps/web/src/features/map/hooks/types.ts` after its fix):
+A leaf that only names shapes its readers pass around (`apps/web/src/components/mapBackground/hooks/types.ts:2-9`):
 
 ```ts
 import type { SessionGPS, Sport, TrainingSession } from '@pacevault/engine/types.ts';

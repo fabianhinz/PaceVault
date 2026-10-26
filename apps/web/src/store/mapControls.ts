@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { ColorMode } from '@/lib/colorModes.ts';
-import type { LapSet } from '@/lib/laps.ts';
+import type { ColorMode } from '@/lib/colors/colorModes.ts';
+import type { LapSet } from '@/lib/analysis/laps.ts';
 
 export const MAP_VIEWS = ['2d', '3d'] as const;
 

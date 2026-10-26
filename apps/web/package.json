@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./demo/schedule": "./src/features/demo/demoSchedule.ts",
+    "./demo/schedule": "./src/lib/demo/demoSchedule.ts",
     "./store/layout": "./src/store/layout.ts",
     "./e2e/openMeteo": "./e2e/helpers/openMeteo.ts"
   },

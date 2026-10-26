@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { z } from 'zod';
-import { idbStorage } from '@/lib/db.ts';
-import { COLOR_MODES, type ColorMode } from '@/lib/colorModes.ts';
-import { LAP_SOURCES, type LapSource } from '@/lib/laps.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
+import { COLOR_MODES, type ColorMode } from '@/lib/colors/colorModes.ts';
+import { LAP_SOURCES, type LapSource } from '@/lib/analysis/laps.ts';
 import { SPORTS, type Sport } from '@pacevault/engine/types.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 

@@ -3,8 +3,8 @@ import { compareFiles, parseChanges } from '@scripts/changedFiles.ts';
 import type { FileChange } from '@scripts/reviewArtifactsContract.ts';
 
 const PLANNED = [
-  'apps/web/src/features/splits/SplitsTable.tsx',
-  'apps/web/src/features/splits/hooks/',
+  'apps/web/src/components/splits/SplitsTable.tsx',
+  'apps/web/src/components/splits/hooks/',
   'packages/engine/src/splits.ts',
   'tools/workbench/backlog/demo/review/capture.spec.ts',
   'apps/web/src/lib/untouched.ts',
@@ -12,10 +12,10 @@ const PLANNED = [
 
 const CHANGES: FileChange[] = [
   { path: 'packages/engine/src/splits.ts', status: 'added' },
-  { path: 'apps/web/src/features/splits/SplitsTable.tsx', status: 'modified' },
-  { path: 'apps/web/src/features/splits/hooks/useSplits.ts', status: 'added' },
-  { path: 'apps/web/src/features/splits/hooks/useLaps.ts', status: 'deleted' },
-  { path: 'apps/web/src/features/splits/hooksHelper.ts', status: 'added' },
+  { path: 'apps/web/src/components/splits/SplitsTable.tsx', status: 'modified' },
+  { path: 'apps/web/src/components/splits/hooks/useSplits.ts', status: 'added' },
+  { path: 'apps/web/src/components/splits/hooks/useLaps.ts', status: 'deleted' },
+  { path: 'apps/web/src/components/splits/hooksHelper.ts', status: 'added' },
   { path: 'pnpm-lock.yaml', status: 'modified' },
   { path: 'tools/workbench/backlog/demo/plan.md', status: 'modified' },
   { path: 'tools/workbench/backlog/demo/review/capture.spec.ts', status: 'added' },
@@ -25,14 +25,14 @@ describe('changedFiles', () => {
   it('sorts changed files into planned and not planned, and lists planned paths nobody touched', () => {
     expect(compareFiles({ changes: CHANGES, plannedPaths: PLANNED })).toEqual({
       planned: [
-        { path: 'apps/web/src/features/splits/SplitsTable.tsx', status: 'modified' },
-        { path: 'apps/web/src/features/splits/hooks/useLaps.ts', status: 'deleted' },
-        { path: 'apps/web/src/features/splits/hooks/useSplits.ts', status: 'added' },
+        { path: 'apps/web/src/components/splits/SplitsTable.tsx', status: 'modified' },
+        { path: 'apps/web/src/components/splits/hooks/useLaps.ts', status: 'deleted' },
+        { path: 'apps/web/src/components/splits/hooks/useSplits.ts', status: 'added' },
         { path: 'packages/engine/src/splits.ts', status: 'added' },
         { path: 'tools/workbench/backlog/demo/review/capture.spec.ts', status: 'added' },
       ],
       notPlanned: [
-        { path: 'apps/web/src/features/splits/hooksHelper.ts', status: 'added' },
+        { path: 'apps/web/src/components/splits/hooksHelper.ts', status: 'added' },
         { path: 'pnpm-lock.yaml', status: 'modified' },
       ],
       untouched: ['apps/web/src/lib/untouched.ts'],

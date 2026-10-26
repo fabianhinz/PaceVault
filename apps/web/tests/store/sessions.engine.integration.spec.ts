@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { dailyMetricsFromSessions } from '@pacevault/engine/metrics.ts';
-import { getCoachingRecommendation } from '@/lib/coachingMessages.ts';
+import { getCoachingRecommendation } from '@/components/dashboard/coachingMessages.ts';
 import { createMockUserProfile } from '@tests/factories/profiles.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 import { MS_PER_DAY } from '@pacevault/engine/time.ts';

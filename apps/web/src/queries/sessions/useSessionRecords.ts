@@ -1,15 +1,15 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { getSessionRecords } from '@/lib/db.ts';
+import { getSessionRecords } from '@/lib/storage/db.ts';
 import type { QueryResults } from '@/types.ts';
 
 export const loadSessionRecords = async (options: {
   sessionId: string;
 }): Promise<QueryResults['sessionRecords']> => getSessionRecords(options.sessionId);
 
-export const sessionRecordsQueryKey = (options: { sessionId: string }): string[] => [
-  'session-records',
-  options.sessionId,
-];
+export const sessionRecordsQueryKey = (options: { sessionId?: string } = {}): string[] => {
+  if (options.sessionId === undefined) return ['session-records'];
+  return ['session-records', options.sessionId];
+};
 
 export const useSessionRecords = (options: {
   sessionId: string;

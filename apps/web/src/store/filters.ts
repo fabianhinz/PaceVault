@@ -3,17 +3,17 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { v4 } from 'uuid';
 import { z } from 'zod';
-import { idbStorage } from '@/lib/db.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
 import {
   type FilterCriteria,
   type SavedFilter,
   createDefaultSavedFilters,
   emptyCriteria,
   filterKey,
-} from '@/lib/savedFilters.ts';
-import type { LoadGroupBy } from '@/lib/loadAxis.ts';
-import { VOLUME_METRICS, type VolumeMetric } from '@/lib/dashboardVolume.ts';
-import type { FilterTime } from '@/lib/timeRange.ts';
+} from '@/lib/filtering/filters.ts';
+import type { LoadGroupBy } from '@/lib/filtering/loadAxis.ts';
+import { VOLUME_METRICS, type VolumeMetric } from '@/lib/filtering/dashboardVolume.ts';
+import type { FilterTime } from '@/lib/filtering/timeRange.ts';
 import { SPORTS } from '@pacevault/engine/types.ts';
 
 interface FiltersState {

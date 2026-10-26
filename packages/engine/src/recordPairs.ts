@@ -2,7 +2,7 @@ import type { SessionRecord } from './types.ts';
 
 export const MAX_MOVING_PAIR_GAP_SEC = 10;
 
-export const activeSeconds = ({
+export const activeDurationSec = ({
   previous,
   current,
 }: {
@@ -21,7 +21,7 @@ export const isMovingPair = ({
   previous: SessionRecord;
   current: SessionRecord;
 }): boolean => {
-  if (activeSeconds({ previous, current }) === 0) return false;
+  if (activeDurationSec({ previous, current }) === 0) return false;
   if (previous.speed === undefined || previous.speed <= 0) return false;
   return current.speed !== undefined && current.speed > 0;
 };

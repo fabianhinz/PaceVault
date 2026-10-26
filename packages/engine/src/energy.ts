@@ -1,5 +1,5 @@
 import type { Gender, SessionRecord, Sport } from './types.ts';
-import { activeSeconds } from './recordPairs.ts';
+import { activeDurationSec } from './recordPairs.ts';
 import { gradeAdjustedPaceFactor } from './normalizedEffort.ts';
 
 type EnergyMethod = 'power' | 'running' | 'heartRate';
@@ -178,7 +178,7 @@ const intervalJoules = ({
   gradient: number | undefined;
   body: EnergyBody;
 }): number | null => {
-  const elapsedSec = activeSeconds({ previous, current });
+  const elapsedSec = activeDurationSec({ previous, current });
   if (elapsedSec === 0) return null;
   switch (method) {
     case 'power':
@@ -206,7 +206,7 @@ const recordCoverage = ({
     const previous = records[i - 1];
     const current = records[i];
     if (!previous || !current) continue;
-    const elapsedSec = activeSeconds({ previous, current });
+    const elapsedSec = activeDurationSec({ previous, current });
     if (elapsedSec === 0) continue;
     activeSec += elapsedSec;
     if (isCoveredByRecords({ method, previous, current, gradient: gradients[i] }))

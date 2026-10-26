@@ -5,6 +5,7 @@ import sirv from 'sirv';
 import type { Plugin, ViteDevServer } from 'vite';
 import { readQuestions } from '../../../scripts/frontmatter.ts';
 import { WORKBENCH_DIR } from '../../../scripts/paths.ts';
+import type { BoardChangedPayload } from './boardChangedContract.ts';
 
 /**
  * Server code: Astro memoizes the actions module and clears it only when a file under
@@ -15,8 +16,6 @@ import { WORKBENCH_DIR } from '../../../scripts/paths.ts';
  */
 
 type QuestionJson = { id: string; state: 'open' | 'answered'; date?: string; text: string };
-
-export type ChangedPayload = { path: string };
 
 const ARTIFACT = /^\/[a-z0-9-]+\/(mockup|review)\//;
 const QUESTIONS = /^\/([a-z0-9-]+)\/questions\.json(?:\?.*)?$/;
@@ -82,8 +81,14 @@ const reloadActions = (server: ViteDevServer) => {
 
 type Next = () => void;
 
-export const workbenchFiles = (options: { root: string; guideFile: string }): Plugin => {
-  const backlogFiles = sirv(options.root, { dev: true });
+export const workbenchFiles = ({
+  root,
+  guideFile,
+}: {
+  root: string;
+  guideFile: string;
+}): Plugin => {
+  const backlogFiles = sirv(root, { dev: true });
   const sharedFiles = sirv(WORKBENCH_DIR, { dev: true });
   const handle = (req: IncomingMessage, res: ServerResponse, next: Next) => {
     const url = req.url ?? '';
@@ -92,7 +97,7 @@ export const workbenchFiles = (options: { root: string; guideFile: string }): Pl
     if (questions && req.method === 'GET') {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.setHeader('Cache-Control', 'no-store');
-      res.end(JSON.stringify(questionsJson({ root: options.root, folder: questions[1] })));
+      res.end(JSON.stringify(questionsJson({ root, folder: questions[1] })));
       return undefined;
     }
     if (ARTIFACT.test(url)) return backlogFiles(req, res, next);
@@ -100,19 +105,19 @@ export const workbenchFiles = (options: { root: string; guideFile: string }): Pl
   };
   const configureServer = (server: ViteDevServer) => {
     server.middlewares.use(handle);
-    server.watcher.add([options.root, options.guideFile]);
+    server.watcher.add([root, guideFile]);
     server.watcher.add(serverDirs(WORKBENCH_DIR));
     server.watcher.on('all', (_event: string, path: string) => {
       const module = serverModulePath({ workbench: WORKBENCH_DIR, path });
       if (module !== undefined) {
         reloadActions(server);
-        const payload: ChangedPayload = { path: module };
+        const payload: BoardChangedPayload = { path: module };
         server.ws.send('wb:changed', payload);
         return;
       }
-      const changed = changedPath({ root: options.root, guideFile: options.guideFile, path });
+      const changed = changedPath({ root, guideFile, path });
       if (changed === undefined) return;
-      const payload: ChangedPayload = { path: changed };
+      const payload: BoardChangedPayload = { path: changed };
       server.ws.send('wb:changed', payload);
     });
   };

@@ -14,8 +14,8 @@ import {
   SESSION_DERIVATION_VERSION,
   deriveSessionFieldsFromRecords,
 } from '@pacevault/engine/sessionDerivation.ts';
-import { extractSessionName } from '@/lib/filename.ts';
-import { generateFingerprint } from '@/lib/fingerprint.ts';
+import { extractSessionName } from '@/parsers/filename.ts';
+import { generateFingerprint } from '@/parsers/fingerprint.ts';
 import {
   fitFileIdSchema,
   fitRecordsSchema,

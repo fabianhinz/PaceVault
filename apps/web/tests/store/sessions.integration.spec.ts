@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
-import { SESSIONS_DERIVATION_MARKER_KEY } from '@/lib/guardedSessionsStorage.ts';
+import { SESSIONS_DERIVATION_MARKER_KEY } from '@/lib/storage/guardedSessionsStorage.ts';
 import { SESSION_DERIVATION_VERSION } from '@pacevault/engine/sessionDerivation.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 import { listOrThrow, recordOrThrow } from '@testUtils/defined.ts';
-import { getDB } from '@/lib/db';
+import { getDB } from '@/lib/storage/db.ts';
 
 describe('sessions store', () => {
   it('deleteSession removes it', () => {

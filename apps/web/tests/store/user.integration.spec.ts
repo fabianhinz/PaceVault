@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { useUserStore } from '@/store/user.ts';
 import { createMockUserProfile } from '@tests/factories/profiles.ts';
-import { getDB } from '@/lib/db';
-import { thresholdsAt } from '@/lib/thresholdsAt.ts';
+import { getDB } from '@/lib/storage/db.ts';
+import { thresholdsAt } from '@/lib/analysis/thresholdsAt.ts';
 
 const flatProfile = (thresholds: Record<string, number>) => ({
   id: 'p',

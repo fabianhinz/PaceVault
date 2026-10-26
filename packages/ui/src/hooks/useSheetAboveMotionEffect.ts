@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import type { MotionValue } from 'motion/react';
-import type { SheetAboveMotion } from '../components/pvBottomSheet/PvBottomSheetProvider.tsx';
+import type { SheetAboveMotion } from '../components/pvBottomSheet/types.ts';
 
 export const useSheetAboveMotionEffect = ({
   registerMotion,

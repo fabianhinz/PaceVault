@@ -36,7 +36,7 @@ Scope: specs under `apps/web/tests/` that exercise a function, a hook or a pure 
 | R1 | Call or construct the subject under test directly in the spec, passing substitutes for every collaborator it receives. Never obtain it from the production wiring or a module that assembles its own graph. | manual |
 | R2 | Produce substitutes with `mock<T>()` or `mockDeep<T>()` from `vitest-mock-extended` and type the binding `MockProxy<T>` / `DeepMockProxy<T>`. Do not hand-roll an object literal of `vi.fn()`s, or a partial object literal, to stand in for an interface. | manual |
 | R3 | Declare each substitute as a `let` at describe scope and reassign it in `beforeEach`, then rebuild any subject state from the fresh substitutes in the same block. The reassignment exists to discard stubbed implementations, not call history. | manual |
-| R5 | Mock at the seam one layer below the subject. A spec over a function that receives a `QueryClient` substitutes that client, not the cache it wraps; a spec over a lib function that calls `@/lib/indexeddb.ts` substitutes that module, not `idb`. | manual |
+| R5 | Mock at the seam one layer below the subject. A spec over a function that receives a `QueryClient` substitutes that client, not the cache it wraps; a spec over a lib function that calls `@/lib/storage/db.ts` substitutes that module, not `idb`. | manual |
 | R6 | Reach a module-mocked value through `vi.mocked(x)`. Never cast with `as Mock` or `as unknown as MockProxy<T>` to get at mock methods. | proposed |
 | R7 | Name the top-level describe block with the subject's symbol — `describe(subject.name, ...)` — so a rename carries into the test report. Use a string literal only where the subject has no symbol whose `name` prints it: a behaviour spanning several functions, a zustand store hook (its `name` is the library's `useBoundStore`), a zod schema (no `name`). | manual |
 | R8 | Do not add `vi.resetAllMocks()` / `mockReset()` to compensate for state between tests; `clearMocks` plus the `beforeEach` rebuild already covers it. | manual |
@@ -81,7 +81,7 @@ R5:
   violationWhen: any-match
   enforcedBy: null
   falsePositives: >
-    Flags a spec over `apps/web/src/lib/db.ts` itself, which owns the `idb` boundary and is the one
+    Flags a spec over `apps/web/src/lib/storage/db.ts` itself, which owns the `idb` boundary and is the one
     place mocking it is correct. Does not flag the inverse leak — a spec using a real collaborator
     instead of a substitute.
 R6:
@@ -135,9 +135,10 @@ import { beforeEach, describe, expect, it } from 'vite-plus/test';
 import { mock, type MockProxy } from 'vitest-mock-extended';
 import type { QueryClient } from '@tanstack/react-query';
 import {
-  PERSONAL_BESTS_KEY,
+  personalBestsQueryKey,
   invalidatePersonalBestsOfSession,
-} from '@/features/records/hooks/usePersonalBests.ts';
+} from '@/queries/records/usePersonalBests.ts';
+import { createMockPersonalBest } from '@pacevault/testing/personalBests.ts';
 
 describe(invalidatePersonalBestsOfSession.name, () => {
   let queryClient: MockProxy<QueryClient>;
@@ -147,13 +148,12 @@ describe(invalidatePersonalBestsOfSession.name, () => {
     queryClient.isFetching.mockReturnValue(0);
   });
 
-  it('invalidates while a computation is in flight', () => {
+  it('invalidates while a computation is in flight', async () => {
+    queryClient.getQueryData.mockReturnValue([createMockPersonalBest({ sessionId: 'a' })]);
     queryClient.isFetching.mockReturnValue(1);
-
-    invalidatePersonalBestsOfSession(queryClient, 'b');
-
+    await invalidatePersonalBestsOfSession('b', queryClient);
     expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
-      queryKey: PERSONAL_BESTS_KEY,
+      queryKey: personalBestsQueryKey(),
       refetchType: 'all',
     });
   });
@@ -163,7 +163,7 @@ describe(invalidatePersonalBestsOfSession.name, () => {
 The subject imports its collaborator, so the module is mocked and reached through `vi.mocked`:
 
 ```ts
-vi.mock('@/lib/indexeddb.ts');
+vi.mock('@/lib/storage/db.ts');
 
 describe(recomputeTrainingLoad.name, () => {
   beforeEach(() => {
@@ -175,7 +175,7 @@ describe(recomputeTrainingLoad.name, () => {
 ## 6. Forbidden practices
 
 - ❌ Letting a unit spec use a real collaborator it could have received as a substitute — the spec then fails for that collaborator's reasons, and its title lies about what is under test.
-- ❌ Reaching past a layer to mock what it encapsulates (mocking `idb` in a spec over a function that talks to `@/lib/indexeddb.ts`). The spec then encodes the storage layer's shape and breaks on refactors that change nothing observable.
+- ❌ Reaching past a layer to mock what it encapsulates (mocking `idb` in a spec over a function that talks to `@/lib/storage/db.ts`). The spec then encodes the storage layer's shape and breaks on refactors that change nothing observable.
 - ❌ A describe-scope `const` substitute with no `beforeEach` reassignment — `clearMocks` will not discard its stubbed return values, so tests leak into each other in file order.
 - ❌ Adding `vi.resetAllMocks()` in a lifecycle hook to paper over that leak instead of rebuilding the substitutes; it also wipes mocks the setup file `apps/web/tests/setup.ts` installed.
 - ❌ Hand-rolled `{ method: vi.fn() }` or `{ ok, json: async () => body }` stand-ins for a typed collaborator — they compile after the real interface gains a member, and the spec keeps passing against a shape that no longer exists.

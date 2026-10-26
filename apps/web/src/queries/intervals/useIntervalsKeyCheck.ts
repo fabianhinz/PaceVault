@@ -1,5 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { verifyIntervalsKey } from '@/lib/intervals.ts';
+import { verifyIntervalsKey } from '@/lib/api/intervals.ts';
 import type { QueryResults } from '@/types.ts';
 
 export const intervalsKeyCheckQueryKey = (options: { apiKey: string }): string[] => [

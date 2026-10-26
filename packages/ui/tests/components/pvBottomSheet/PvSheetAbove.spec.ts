@@ -1,15 +1,11 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it, vi } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import { PvSheetAbove } from '../../../src/components/pvBottomSheet/PvSheetAbove.tsx';
 import { PvBottomSheetProvider } from '../../../src/components/pvBottomSheet/PvBottomSheetProvider.tsx';
 
-describe('PvSheetAbove', () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
+describe(PvSheetAbove.name, () => {
   it('warns and renders nothing outside PvBottomSheetProvider', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(renderToString(createElement(PvSheetAbove, null, 'controls'))).toBe('');

@@ -2,7 +2,7 @@
 kind: pattern-apply-tdr-reference
 id: engine-holds-domain-logic-only
 title: The engine returns domain values; presentation and serialization live in the app
-summary: packages/engine returns numbers, union keys and thresholds only and has no runtime dependency, packages/gpx keeps only the GPX file format; colours, labels, display strings, display rounding, file names, rendering order and storage encoding are mapped from those keys in apps/web/src/lib.
+summary: packages/engine returns numbers, union keys and thresholds only and has no runtime dependency, packages/gpx keeps only the GPX file format; colours, labels, display strings, display rounding, file names, rendering order and storage encoding are mapped from those keys in apps/web.
 governs:
   - "packages/engine/src/**/*.ts"
   - "packages/gpx/src/**/*.ts"
@@ -26,16 +26,16 @@ This file carries rules R1 through R4.
 
 The boundary this record draws: the engine answers *what the data means* — a number, a member of a closed union, a threshold. The app decides *how that looks or is stored*, keyed by the engine's union. Scope: `packages/engine/src` and its `package.json`.
 
-The rules bind `packages/gpx/src` as well, with one difference: GPX is a file format, and reading and writing it (`parseGpx.ts`, `buildGpx.ts`) is that package's purpose. R2 there allows the GPX parse and build and forbids every other encoding — the route polylines and their simplification for storage live in `apps/web/src/lib/gpsTrack.ts` (`encodedSegmentPolylines`). R1 and R4 hold unchanged: rounding a route profile for a chart and naming an export file are presentation and live in `apps/web/src/lib/` (`routeChartProfile` in `chartData.ts`, `buildGpxFilename` in `gpxExport.ts`). R3 there reads: `packages/gpx/package.json` declares `@pacevault/engine` and `zod` as its only runtime dependencies.
+The rules bind `packages/gpx/src` as well, with one difference: GPX is a file format, and reading and writing it (`parseGpx.ts`, `buildGpx.ts`) is that package's purpose. R2 there allows the GPX parse and build and forbids every other encoding — the route polylines and their simplification for storage live in `apps/web/src/lib/analysis/gpsTrack.ts` (`encodedSegmentPolylines`). R1 and R4 hold unchanged: rounding a route profile for a chart and naming an export file are presentation and live in the app (`routeChartProfile` in `apps/web/src/components/charts/chartData.ts`, `buildGpxFilename` in `apps/web/src/components/sessions/gpxExport.ts`). R3 there reads: `packages/gpx/package.json` declares `@pacevault/engine` and `zod` as its only runtime dependencies.
 
 ## 2. Rules
 
 | # | Rule (as adapted for this project) | Enforcement |
 | :--- | :--- | :--- |
 | R1 | An engine function returns domain values only: numbers, members of closed unions, thresholds, structures of those. It returns no colour (hex, token name or colour word), no label or other copy, and no display-formatted string. | manual |
-| R2 | The engine does no serialization: no encoding or decoding for storage or transport (polyline codecs, compression) and no reordering for a rendering library (`[lng, lat]` tuples for a map layer). That code lives in `apps/web/src/lib/` (`apps/web/src/lib/gpsTrack.ts`). In `packages/gpx` the GPX file format itself (parse and build) is the one serialization allowed. | proposed |
+| R2 | The engine does no serialization: no encoding or decoding for storage or transport (polyline codecs, compression) and no reordering for a rendering library (`[lng, lat]` tuples for a map layer). That code lives in the app (`apps/web/src/lib/analysis/gpsTrack.ts`). In `packages/gpx` the GPX file format itself (parse and build) is the one serialization allowed. | proposed |
 | R3 | `packages/engine/package.json` declares no runtime `dependencies`; engine modules import only other engine modules. `packages/gpx/package.json` declares only `@pacevault/engine` and `zod`. | proposed |
-| R4 | When the app needs presentation for an engine result, the engine exposes the key or threshold (`RunningZoneName`, `ACWR_MODERATE_THRESHOLD`) and the app maps it with an exhaustive `Record<Union, T>` in `apps/web/src/lib/` (`COLOR_BY_RUNNING_ZONE` in `apps/web/src/lib/zoneColors.ts`). The engine never ships a presentational wrapper around its own key. | manual |
+| R4 | When the app needs presentation for an engine result, the engine exposes the key or threshold (`RunningZoneName`, `ACWR_MODERATE_THRESHOLD`) and the app maps it with an exhaustive `Record<Union, T>` in the app (`apps/web/src/lib/colors/` or the component owner; `COLOR_BY_RUNNING_ZONE` in `apps/web/src/lib/colors/zoneColors.ts`). The engine never ships a presentational wrapper around its own key. | manual |
 
 ## 3. Detection
 
@@ -73,7 +73,7 @@ R4:
 ## 4. Trade-offs
 
 - **Good, because** the engine stays importable from every runtime — workers, Node tools, other packages — without dragging a palette, copy or a codec along.
-- **Good, because** a colour or label change is an app change: it touches one map in `apps/web/src/lib/`, not a package API.
+- **Good, because** a colour or label change is an app change: it touches one map in the app (`apps/web/src/lib/colors/` or the component owner), not a package API.
 - **Good, because** keying the app's maps by the engine's union makes a new zone or band a compile error in the app until it has a colour.
 - **Bad, because** a consumer that needs both the value and its look now reads two modules, and the zone's colour no longer travels with the zone object.
 - **Neutral, because** the stored GPS shape (`SessionGPS`) stays an engine type; only the code that produces it moves.

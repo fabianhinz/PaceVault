@@ -30,11 +30,11 @@ The rule is narrow. It governs failures that cross a module boundary and are bra
 | :--- | :--- | :--- |
 | R1 | Throw an `Error` instance, never a string, object literal, or other non-`Error` value. | proposed |
 | R2 | Introduce a subclass of `Error` only when a consumer branches on that specific failure, or when the failure carries data the consumer needs. Otherwise throw a bare `Error` with a formatted message. | manual |
-| R3 | Declare the subclass in the module that throws it, above the code that throws it. Do not collect subclasses into a central errors module. A subclass thrown on behalf of many callers belongs in the module that owns the operation producing it (`apps/web/src/lib/intervals.ts` for intervals.icu requests), and only that module throws it. | manual |
+| R3 | Declare the subclass in the module that throws it, above the code that throws it. Do not collect subclasses into a central errors module. A subclass thrown on behalf of many callers belongs in the module that owns the operation producing it (`apps/web/src/lib/api/intervals.ts` for intervals.icu requests), and only that module throws it. | manual |
 | R4 | Name the subclass after the *condition* that failed, as a noun phrase plus the `Error` suffix (`IntervalsRequestFailedError`), not after the subsystem that raised it. | proposed |
 | R5 | Put the structured context a consumer needs on the instance as a `public readonly` field, assigned in the constructor. Do not encode it in the message for the consumer to parse back out. | manual |
 | R6 | Give the constructor the raw inputs and let it compose the message, so every throw of that condition produces the same wording. | manual |
-| R7 | Set `this.name` to the class name in the constructor, so `apps/web/src/lib/crashReport.ts` and the console report the subclass rather than `Error`. | proposed |
+| R7 | Set `this.name` to the class name in the constructor, so `apps/web/src/lib/debug/crashReport.ts` and the console report the subclass rather than `Error`. | proposed |
 | R8 | When re-throwing or wrapping an underlying failure, pass it through the standard `cause` option rather than folding its message into the new message. | proposed |
 | R9 | Catch by type at the boundary that makes the decision — the component or hook that maps the failure to UI state or copy — and convert there into that boundary's own vocabulary. Do not catch by type in intermediate layers merely to re-throw. | manual |
 | R10 | Delete a subclass that has no throw site, and collapse one that has no `instanceof` consumer and no fields back into a bare `Error`. | proposed |

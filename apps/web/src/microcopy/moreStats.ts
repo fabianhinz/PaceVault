@@ -1,7 +1,7 @@
 import { m } from '@pacevault/i18n/messages.js';
 import type { EnergyBlocker } from '@pacevault/engine/energy.ts';
 import type { TrainingSession } from '@pacevault/engine/types.ts';
-import type { MoreStatsTopic } from '@/lib/moreStats.ts';
+import type { MoreStatsTopic } from '@/lib/analysis/moreStats.ts';
 
 export const LABEL_BY_MORE_STATS_TOPIC: Record<MoreStatsTopic, () => string> = {
   load: m.ui_more_stats_topic_load,

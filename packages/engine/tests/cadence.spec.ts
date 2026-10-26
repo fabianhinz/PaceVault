@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { coastingSeconds, stepLength } from '../src/cadence.ts';
+import { coastingDurationSec, stepLength } from '../src/cadence.ts';
 import type { SessionRecord } from '../src/types.ts';
 import { createMockSessionRecord } from '../../testing/src/records.ts';
 
@@ -9,13 +9,13 @@ const ride = (powers: number[], cadences?: number[]): SessionRecord[] =>
   );
 
 describe('cadence', () => {
-  describe(coastingSeconds.name, () => {
+  describe(coastingDurationSec.name, () => {
     it('counts 0 W while moving, and 0 rpm where cadence is recorded', () => {
-      expect(coastingSeconds(ride([200, 0, 0, 200, 150], [90, 0, 0, 90, 0]))).toBe(3);
+      expect(coastingDurationSec(ride([200, 0, 0, 200, 150], [90, 0, 0, 90, 0]))).toBe(3);
     });
 
     it('counts 0 W intervals on a power-only ride', () => {
-      expect(coastingSeconds(ride([200, 0, 0, 200, 200]))).toBe(2);
+      expect(coastingDurationSec(ride([200, 0, 0, 200, 200]))).toBe(2);
     });
 
     it('skips stopped intervals and a 30 s gap', () => {
@@ -26,12 +26,12 @@ describe('cadence', () => {
         createMockSessionRecord({ timestamp: 32, speed: 8, power: 0 }),
         createMockSessionRecord({ timestamp: 33, speed: 8, power: 0 }),
       ];
-      expect(coastingSeconds(records)).toBe(1);
+      expect(coastingDurationSec(records)).toBe(1);
     });
 
     it('is undefined without power', () => {
       expect(
-        coastingSeconds([
+        coastingDurationSec([
           createMockSessionRecord({ timestamp: 0, speed: 8 }),
           createMockSessionRecord({ timestamp: 1, speed: 8 }),
         ]),

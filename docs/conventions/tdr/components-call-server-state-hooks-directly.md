@@ -22,7 +22,7 @@ This file carries rules R1–R5.
 
 Every I/O call (IndexedDB, Open-Meteo, intervals.icu) gets its own module exporting one React Query hook (`tdr/one-server-call-per-hook-module.md`), and hooks live in the `hooks/` directory of the concept they are about (`tdr/hook-directory-placement.md`). Read together, those invite a wrong inference: that data access must always be routed through a feature-local hook, so each component gets a wrapper that forwards one call and returns its result unchanged. This convention states the boundary — a component that needs server state is permitted, and expected, to call the query or mutation hook itself, and a wrapper is written only when it does work of its own.
 
-"Server-state hook" means a module whose hook is a `useQuery`/`useMutation` call. Today these sit in feature `hooks/` directories (`apps/web/src/features/sessions/session/hooks/useSessionWeather.ts:28-40`, `apps/web/src/features/records/hooks/usePersonalBests.ts:48-55`, `apps/web/src/features/intervals/hooks/useIntervalsKeyCheck.ts:12-20`); the one-server-call-per-hook-module plan moves them to `apps/web/src/queries/` and `apps/web/src/mutations/`, and this rule then reads those trees as the server-state hooks. The code conforms: every feature hook that calls a server-state hook adds work of its own (`useSessionColorModes`, `useSessionDetailPath`), and components such as `SportsRecords`, `WeatherCard` and `IntervalsConnectionForm` call the server-state hook directly.
+"Server-state hook" means a module whose hook is a `useQuery`/`useMutation` call. They sit in `apps/web/src/queries/` and `apps/web/src/mutations/` (`apps/web/src/queries/weather/useSessionWeather.ts:37-48`, `apps/web/src/queries/records/usePersonalBests.ts:55-65`, `apps/web/src/queries/intervals/useIntervalsKeyCheck.ts:17-27`), and this rule reads those trees as the server-state hooks. The code conforms: every feature hook that calls a server-state hook adds work of its own (`useSessionColorModes`, `useSessionDetailPath`, `useIntervalsKeyInput`), and components such as `Records`, `WeatherCard` and `DataManagementSection` call the server-state hook directly.
 
 Scope: components under `apps/web/src/**/*.tsx` and the `hooks/` modules beside them. Out of scope: the server-state modules themselves, and hooks that wrap non-server concerns such as a store, context, routing or browser APIs.
 
@@ -50,7 +50,7 @@ R1:
 R2:
   type: grep
   pattern: "export const use\\w+ = [^{]*=>\\s*use(?!Memo|Callback|State|Ref|Effect|LayoutEffect|Context|SyncExternalStore|Reducer)[A-Z]\\w*\\("
-  include: ["apps/web/src/features/**/hooks/*.ts", "apps/web/src/components/**/*.ts", "apps/web/src/lib/hooks/*.ts"]
+  include: ["apps/web/src/components/**/*.ts", "apps/web/src/lib/hooks/*.ts"]
   exempt: ["apps/web/src/queries/**", "apps/web/src/mutations/**"]
   violationWhen: any-match
   enforcedBy: null
@@ -89,33 +89,46 @@ R5:
 
 ## 5. Reference implementation
 
-A component calling the server-state hook itself, with the small shaping it needs kept inline — `apps/web/src/features/intervals/IntervalsConnectionForm.tsx:57`:
+A component calling the server-state hook itself, with the small shaping it needs kept inline — `apps/web/src/components/records/index.tsx:9-10`:
 
 ```tsx
-const keyCheck = useIntervalsKeyCheck(candidateKey, storedKey);
+const personalBests = usePersonalBests();
+const groupedPBs = useMemo(() => groupPBsBySport(personalBests.data ?? []), [personalBests.data]);
 ```
 
-The hook it calls owns its `enabled` and `retry` conditions, so there is no wrapper between them — `apps/web/src/features/intervals/hooks/useIntervalsKeyCheck.ts:12-20`:
+A server-state hook owns its `enabled` and `retry` conditions, so no wrapper sits between it and its callers — `apps/web/src/queries/intervals/useIntervalsKeyCheck.ts:17-27`:
 
 ```ts
-export const useIntervalsKeyCheck = (apiKey: string, savedKey: string | null) => {
-  return useQuery({
-    queryKey: intervalsVerifyQueryKey(apiKey),
-    queryFn: () => verifyIntervalsKeyOrThrow(apiKey),
-    enabled: apiKey !== '' && apiKey !== savedKey,
+export const useIntervalsKeyCheck = (options: {
+  apiKey: string;
+  savedKey: string | null;
+}): UseQueryResult<QueryResults['intervalsKeyCheck']> =>
+  useQuery({
+    queryKey: intervalsKeyCheckQueryKey({ apiKey: options.apiKey }),
+    queryFn: () => checkIntervalsKey({ apiKey: options.apiKey }),
+    enabled: options.apiKey !== '' && options.apiKey !== options.savedKey,
     retry: false,
     staleTime: Infinity,
   });
-};
 ```
 
-A wrapper that earns its place under R3 — it coordinates the weather query with thresholds and a store selection and derives memoised colour-mode options from them — `apps/web/src/features/sessions/session/hooks/useSessionColorModes.ts:10-13`:
+A wrapper that earns its place under R3 — it coordinates the weather query with thresholds and a store selection and derives memoised colour-mode options from them — `apps/web/src/components/sessions/session/hooks/useSessionColorModes.ts:22-35`:
 
 ```ts
-export const useSessionColorModes = (session: TrainingSession, records: SessionRecord[]) => {
+export const useSessionColorModes = ({
+  session,
+  records,
+}: {
+  session: TrainingSession;
+  records: SessionRecord[];
+}): SessionColorModes => {
   const thresholds = useThresholdsAt(session.date);
   const chosen = useMapPreferencesStore((s) => s.bySport[session.sport].colorMode);
-  const weather = useSessionWeather(session.id, session.date, session.duration);
+  const weather = useSessionWeather({
+    sessionId: session.id,
+    sessionDateMs: session.date,
+    durationSec: session.duration,
+  });
 ```
 
 ## 6. Forbidden practices

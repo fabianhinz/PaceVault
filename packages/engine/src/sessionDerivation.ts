@@ -1,5 +1,5 @@
 import type { SessionRecord, Sport } from './types.ts';
-import { activeSeconds } from './recordPairs.ts';
+import { activeDurationSec } from './recordPairs.ts';
 import { gradeAdjustedPaceFromRecords } from './normalizedEffort.ts';
 
 interface RecordDerivedFields {
@@ -58,7 +58,7 @@ export const timeWeightedMean = ({
     const current = records[i];
     const value = current?.[field];
     if (!previous || !current || value === undefined) continue;
-    const elapsedSec = activeSeconds({ previous, current });
+    const elapsedSec = activeDurationSec({ previous, current });
     if (elapsedSec === 0) continue;
     weighted += value * elapsedSec;
     durationSec += elapsedSec;

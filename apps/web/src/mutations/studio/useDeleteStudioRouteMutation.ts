@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
-import { deleteStudioRoutePoints } from '@/lib/db.ts';
+import { deleteStudioRoutePoints } from '@/lib/storage/db.ts';
 import { studioRoutePointsQueryKey } from '@/queries/studio/useStudioRoutePoints.ts';
 
 const deleteStudioRouteData = async (options: { routeId: string }): Promise<void> => {

@@ -1,14 +1,9 @@
 import { createContext, useContext, useState, type FC, type PropsWithChildren } from 'react';
-import type { MotionValue } from 'motion/react';
+import type { SheetAboveMotion } from './types.ts';
 
 interface SheetScrollContextValue {
   element: HTMLDivElement | null;
   register: (element: HTMLDivElement | null) => void;
-}
-
-export interface SheetAboveMotion {
-  y: MotionValue<number>;
-  height: number;
 }
 
 interface SheetAboveContextValue {

@@ -4,11 +4,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { DatedValue, Gender } from '@pacevault/engine/types.ts';
-import type { UserProfile } from '@/types.ts';
+import type { ThresholdKey, UserProfile } from '@/types.ts';
 import { upsertDatedValue, valueAt } from '@pacevault/engine/datedValue.ts';
-import { idbStorage } from '@/lib/db.ts';
-
-export type ThresholdKey = 'restHr' | 'maxHr' | 'thresholdHr' | 'ftp' | 'thresholdPace' | 'weight';
+import { idbStorage } from '@/lib/storage/db.ts';
 
 const persistedUserSchema = z.looseObject({ profile: z.looseObject({}).nullable() });
 

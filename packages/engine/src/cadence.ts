@@ -10,7 +10,7 @@ const STEPS_PER_STRIDE = 2;
 
 export const stepsPerMinute = (strideCadence: number): number => strideCadence * STEPS_PER_STRIDE;
 
-export const coastingSeconds = (records: SessionRecord[]): number | undefined => {
+export const coastingDurationSec = (records: SessionRecord[]): number | undefined => {
   if (!records.some((record) => record.power !== undefined)) return undefined;
   let durationSec = 0;
   for (let i = 1; i < records.length; i++) {

@@ -19,7 +19,7 @@ adopted: 2026-10-23
 
 ## 1. Context
 
-This file carries R1, R2, R4–R9. A component-tree spec that mounts its subject outside the app's provider stack either crashes on the first context read or silently exercises a different component than production runs. Every component and hook spec in `apps/web` therefore mounts through one shared helper module, `apps/web/tests/testUtils/render.ts`, whose wrapper (`apps/web/tests/testUtils/testProviders.tsx`) composes the stack once: `QueryClientProvider` around a `MemoryRouter`, mirroring `apps/web/src/main.tsx`. The stack is declared in one file rather than re-assembled per spec. A spec that asserts behaviour under React's double mount passes `strict: true`, and the wrapper puts the whole stack inside `StrictMode` (the app mounts in `StrictMode` too, `apps/web/src/main.tsx:40`); every other spec mounts without it. The query client comes from `createTestQueryClient` (`apps/web/tests/testUtils/queryClient.ts`), built on the app's own factory `createQueryClient` (`apps/web/src/lib/queryClient.ts`). This does not govern specs that mount nothing (plain function, store and parser specs under `apps/web/tests/`), Playwright specs (`apps/web/e2e/`), or `packages/ui`, whose kit has no provider. The result of either helper is bound whole and read through its name (`const view = renderWithProviders(…)`, `view.getByRole(…)`; `const hook = renderHookWithProviders(…)`, `hook.result.current`), never destructured.
+This file carries R1, R2, R4–R9. A component-tree spec that mounts its subject outside the app's provider stack either crashes on the first context read or silently exercises a different component than production runs. Every component and hook spec in `apps/web` therefore mounts through one shared helper module, `apps/web/tests/testUtils/render.ts`, whose wrapper (`apps/web/tests/testUtils/testProviders.tsx`) composes the stack once: `QueryClientProvider` around a `MemoryRouter`, mirroring `apps/web/src/main.tsx`. The stack is declared in one file rather than re-assembled per spec. A spec that asserts behaviour under React's double mount passes `strict: true`, and the wrapper puts the whole stack inside `StrictMode` (the app mounts in `StrictMode` too, `apps/web/src/main.tsx:41`); every other spec mounts without it. The query client comes from `createTestQueryClient` (`apps/web/tests/testUtils/queryClient.ts`), built on the app's own factory `createQueryClient` (`apps/web/src/queries/queryClient.ts`). This does not govern specs that mount nothing (plain function, store and parser specs under `apps/web/tests/`), Playwright specs (`apps/web/e2e/`), or `packages/ui`, whose kit has no provider. The result of either helper is bound whole and read through its name (`const view = renderWithProviders(…)`, `view.getByRole(…)`; `const hook = renderHookWithProviders(…)`, `hook.result.current`), never destructured.
 
 ## 2. Rules
 
@@ -98,7 +98,7 @@ R9:
 
 ## 5. Reference implementation
 
-`apps/web/src/lib/queryClient.ts`:
+`apps/web/src/queries/queryClient.ts`:
 
 ```ts
 import { QueryClient, type QueryClientConfig } from '@tanstack/react-query';
@@ -111,7 +111,7 @@ export const createQueryClient = (config: QueryClientConfig = {}): QueryClient =
 
 ```ts
 import type { QueryClient } from '@tanstack/react-query';
-import { createQueryClient } from '@/lib/queryClient.ts';
+import { createQueryClient } from '@/queries/queryClient.ts';
 
 export const createTestQueryClient = (): QueryClient =>
   createQueryClient({

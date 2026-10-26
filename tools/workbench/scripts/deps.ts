@@ -56,9 +56,11 @@ type DepsGraph = {
 const LAYERS = ['page', 'ui', 'feature', 'store', 'lib', 'engine', 'other'] as const;
 type Layer = (typeof LAYERS)[number];
 
-const BOUNDARY_RULES = ['engine-is-pure', 'store-no-features'];
+const BOUNDARY_RULES = ['engine-is-pure', 'state-no-components'];
 
 const APP_SRC = 'apps/web/src/';
+
+const SHARED_UI_GROUPS = new Set(['charts', 'metricLabel', 'importProgress', 'errors', 'layout']);
 
 const appPath = (path: string): string | undefined => {
   if (!path.startsWith(APP_SRC)) return undefined;
@@ -81,8 +83,11 @@ export const layerOf = (path: string): Layer => {
   if (appRelative === undefined) return 'other';
   if (appRelative.startsWith('lib/') || appRelative === 'lib') return 'lib';
   if (appRelative.startsWith('store/')) return 'store';
-  if (appRelative.startsWith('features/')) return 'feature';
-  if (appRelative.startsWith('components/')) return 'ui';
+  if (appRelative.startsWith('components/')) {
+    const group = appRelative.split('/')[1] ?? '';
+    if (CODE.test(group) || SHARED_UI_GROUPS.has(group)) return 'ui';
+    return 'feature';
+  }
   if (appRelative.startsWith('pages/')) return 'page';
   return 'other';
 };
@@ -107,7 +112,7 @@ const collapseFolder = (path: string): string | undefined => {
   if (parts.length < 2) return undefined;
   const top = parts[0];
   if (top === 'store' || top === 'pages') return undefined;
-  if (top === 'features' || top === 'components') {
+  if (top === 'components') {
     if (parts.length < 3) return undefined;
     return APP_SRC + parts.slice(0, 2).join('/');
   }
@@ -129,7 +134,7 @@ const nodeOf = ({ path, focus }: { path: string; focus: string[] }) => {
 const TITLE_BY_LAYER: Record<Layer, string> = {
   page: 'pages',
   ui: 'components',
-  feature: 'features',
+  feature: 'components/#lt;feature#gt;',
   store: 'store',
   lib: 'lib',
   engine: 'engine',

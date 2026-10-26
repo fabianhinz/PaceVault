@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { idbStorage } from '@/lib/db.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
 
 interface IntervalsState {
   apiKey: string | null;

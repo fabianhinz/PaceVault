@@ -9,7 +9,8 @@ import { Panel } from './Panel.tsx';
 import { Prose } from './Prose.tsx';
 import { useBoard } from '@site/app/hooks/useBoard.ts';
 import { useBoardChangedEffect } from '@site/app/hooks/useBoardChangedEffect.ts';
-import { tabFor, usePanelState } from '@site/app/hooks/usePanelState.ts';
+import { usePanelState } from '@site/app/hooks/usePanelState.ts';
+import { tabFor } from '@site/app/panelTabs.ts';
 import { messageOf } from './writeErrors.ts';
 import { WriteCard } from './WriteCard.tsx';
 
@@ -19,7 +20,7 @@ export const BoardPage: FC = () => {
   useBoardChangedEffect();
   const board = useBoard();
   const boardView = board.data;
-  const panelState = usePanelState({ items: boardView?.items });
+  const panelState = usePanelState(boardView?.items);
 
   let item: BoardItem | undefined = undefined;
   if (panelState.panel?.kind === 'item') {

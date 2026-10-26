@@ -148,7 +148,7 @@ export const fitRecordsSchema = z.array(fitRecordInputSchema);
 export type FitRecordInput = z.infer<typeof fitRecordInputSchema>;
 ```
 
-Module-local, inferred but not exported (`apps/web/src/lib/weather.ts`):
+Module-local, inferred but not exported (`apps/web/src/lib/api/weather.ts`):
 
 ```ts
 const openMeteoResponseSchema = z.object({ hourly: z.object({ time: z.array(z.number()) }) });

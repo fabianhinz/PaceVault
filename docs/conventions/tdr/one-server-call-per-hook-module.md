@@ -22,7 +22,7 @@ adopted: 2026-10-23
 
 This file carries rules R1–R12.
 
-PaceVault has no backend, but it has I/O boundaries that behave like one: IndexedDB (`apps/web/src/lib/indexeddb.ts`, `apps/web/src/lib/weatherDb.ts`), Open-Meteo (`apps/web/src/lib/weather.ts`) and intervals.icu (`apps/web/src/lib/intervals.ts`). Every call React code makes across one of them is one module, and that module is the whole unit: the request, the cache key that identifies it, and the hook that binds it to React Query. Reads live under `apps/web/src/queries/<domain>/`, writes under `apps/web/src/mutations/<domain>/`, and nothing else in the app calls `useQuery`, `useInfiniteQuery` or `useMutation`. Given a call you want to change there is exactly one file to open, and given a cache entry you want to invalidate there is exactly one named builder that produces its key.
+PaceVault has no backend, but it has I/O boundaries that behave like one: IndexedDB (`apps/web/src/lib/storage/db.ts`), Open-Meteo (`apps/web/src/lib/api/weather.ts`) and intervals.icu (`apps/web/src/lib/api/intervals.ts`). Every call React code makes across one of them is one module, and that module is the whole unit: the request, the cache key that identifies it, and the hook that binds it to React Query. Reads live under `apps/web/src/queries/<domain>/`, writes under `apps/web/src/mutations/<domain>/`, and nothing else in the app calls `useQuery`, `useInfiniteQuery` or `useMutation`. Given a call you want to change there is exactly one file to open, and given a cache entry you want to invalidate there is exactly one named builder that produces its key.
 
 Without the split the request body, the key array and the store reads fuse into a hook body. The request then cannot be reused from `queryClient.fetchQuery`, an invalidation helper or another module without re-entering React, and the key array gets retyped at every invalidation site, where a divergent copy is a silent cache miss rather than a compile error.
 
@@ -36,7 +36,7 @@ In `tools/workbench` the board island's one read (`board.read`, key builder `boa
 | :--- | :--- | :--- |
 | R1 | One module describes exactly one I/O call. A second call — even a near-identical variant differing by a filter — gets its own module. | manual |
 | R2 | Reads live under `apps/web/src/queries/`, writes under `apps/web/src/mutations/`. No module outside those two trees calls `useQuery`, `useInfiniteQuery` or `useMutation`. | proposed |
-| R3 | The request is a named top-level `async` function, separate from the hook — defined in the module, or imported from the `apps/web/src/lib/` or feature module that owns the transport. Never an anonymous body inlined into `queryFn` or `mutationFn`; a forwarding arrow (`(ctx) => runIntervalsSync({ ... })`) is fine. | proposed |
+| R3 | The request is a named top-level `async` function, separate from the hook — defined in the module, or imported from the `apps/web/src/lib/storage/` or `lib/api/` module that owns the transport. Never an anonymous body inlined into `queryFn` or `mutationFn`; a forwarding arrow (`(ctx) => runIntervalsSync({ ... })`) is fine. | proposed |
 | R4 | That function takes a single options object and every input is explicit in it, including ambient values such as the intervals.icu API key, the session list or the query client. It calls no hook and reads no store, so it is callable outside a render. | manual |
 | R5 | The hook is the only export that touches ambient state: it reads store values (via selectors, or `getState()` inside `queryFn` when the value must be read at fetch time) and forwards them into the function. | manual |
 | R6 | A read module always defines a named key builder `<name>QueryKey(...)`, even without parameters, taking the same identifying inputs as the fetcher in an options object and returning the key array. The hook and every invalidation, reset, `isFetching` or `fetchQuery` site call it; nobody writes the array inline. | proposed |
@@ -44,7 +44,7 @@ In `tools/workbench` the board island's one read (`board.read`, key builder `boa
 | R8 | Name a read hook `use<Name>` and a write hook `use<Name>Mutation`; one hook per module, and the file is named after that hook. | proposed |
 | R9 | Anything two sibling modules share — a fetcher covering several shapes of one store, a key builder, a refetch policy, a cache-shaping helper — moves into a `shared.ts` beside them, not into whichever module needed it first. | manual |
 | R10 | A hook that only composes other query hooks and issues no request of its own still belongs in this tree, next to what it composes, and defines no key and no fetcher. | manual |
-| R11 | Annotate the hook's return type explicitly as `UseQueryResult<QueryResults['<name>']>` / `UseMutationResult<…>`, sourcing the read payload type from the `QueryResults` registry in `apps/web/src/types/index.ts` rather than restating a structural type per module. | proposed |
+| R11 | Annotate the hook's return type explicitly as `UseQueryResult<QueryResults['<name>']>` / `UseMutationResult<…>`, sourcing the read payload type from the `QueryResults` registry in `apps/web/src/types.ts` rather than restating a structural type per module. | proposed |
 | R12 | No barrel: these trees contain no `index.ts`, and consumers import the module path directly. | proposed |
 
 ## 3. Detection

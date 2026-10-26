@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { Funnel } from 'lucide-react';
-import { Filters } from '@/features/filters/index.tsx';
+import { Filters } from '@/components/filters/index.tsx';
 import { DOCK_ROW_BOTTOM_CSS, DOCK_ROW_HEIGHT } from '@pacevault/ui/lib/dockGeometry.ts';
 import { PvResponsivePopover } from '@pacevault/ui/components/pvResponsivePopover/PvResponsivePopover.tsx';
 import { m } from '@pacevault/i18n/messages.js';

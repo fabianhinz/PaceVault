@@ -1,4 +1,4 @@
-import { buildIssueUrl } from '@/lib/crashReport.ts';
+import { buildIssueUrl } from '@/lib/debug/crashReport.ts';
 import { requestBootCrash, triggerCrash } from './crashSignal.ts';
 
 const crashRoot = () => triggerCrash('root');

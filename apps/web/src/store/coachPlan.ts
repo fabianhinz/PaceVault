@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type { WeeklyPlan } from '@/types.ts';
-import { idbStorage } from '@/lib/db.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
 
 interface CoachPlanState {
   cachedPlan: WeeklyPlan | null;

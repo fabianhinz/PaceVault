@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { formatPace } from '@/lib/formatters.ts';
+import { formatPace } from '@/lib/format/formatters.ts';
 
 interface PaceRangeProps {
   minPace: number;

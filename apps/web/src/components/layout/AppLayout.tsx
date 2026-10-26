@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { useLayoutStore } from '@/store/layout.ts';
-import { MapBackground } from '@/features/map/MapBackground.tsx';
+import { MapBackground } from '@/components/mapBackground/index.tsx';
 import { Dock } from './Dock.tsx';
 import { OnboardingPage } from '@/pages/OnboardingPage.tsx';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -9,11 +9,11 @@ import { PvBottomSheetProvider } from '@pacevault/ui/components/pvBottomSheet/Pv
 import { DebugCrashTrigger } from '@/lib/debug/DebugCrashTrigger.tsx';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import { useIntervalsSync } from '@/queries/intervals/useIntervalsSync.ts';
-import { ImportProgressOverlay } from '@/components/ImportProgressOverlay.tsx';
+import { ImportProgress } from '@/components/importProgress/index.tsx';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { useOutdatedSessionsReprocessing } from '@/queries/sessions/useOutdatedSessionsReprocessing.ts';
 import { useTrainingLoadRecompute } from '@/queries/sessions/useTrainingLoadRecompute.ts';
-import { useSessionReprocessingActive } from '@/features/sessions/hooks/useSessionReprocessingActive.ts';
+import { useSessionReprocessingActive } from '@/store/hooks/useSessionReprocessingActive.ts';
 import { NewerVersionOverlay } from './NewerVersionOverlay.tsx';
 import { MobileSheet } from '@/components/layout/MobileSheet.tsx';
 import { RouteContent } from '@/components/layout/RouteContent.tsx';
@@ -61,7 +61,7 @@ export const AppLayout: FC = () => {
         </PvBottomSheetProvider>
       )}
       {!onboardingComplete && <OnboardingPage />}
-      <ImportProgressOverlay />
+      <ImportProgress />
       <NewerVersionOverlay />
     </div>
   );

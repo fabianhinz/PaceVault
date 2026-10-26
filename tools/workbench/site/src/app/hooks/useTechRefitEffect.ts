@@ -1,14 +1,15 @@
 import { useEffect, type RefObject } from 'react';
 import { refitTech } from '@site/scripts/tech.ts';
 
-export const useTechRefitEffect = (options: {
+export const useTechRefitEffect = ({
+  pane,
+  expanded,
+  active,
+}: {
   pane: RefObject<HTMLDivElement | null>;
   expanded: boolean;
   active: boolean;
 }): void => {
-  const pane = options.pane;
-  const expanded = options.expanded;
-  const active = options.active;
   useEffect(() => {
     const element = pane.current;
     if (element === null || !active) return undefined;

@@ -1,6 +1,6 @@
 import type { SessionRecord } from './types.ts';
 import { windowedGradients } from './gradient.ts';
-import { activeSeconds, isMovingPair } from './recordPairs.ts';
+import { activeDurationSec, isMovingPair } from './recordPairs.ts';
 
 /** @see [CogganAllen2010] */
 const NP_ROLLING_WINDOW_SEC = 30;
@@ -15,7 +15,7 @@ export const powerPerSecond = (records: SessionRecord[]): number[] => {
     const previous = records[i - 1];
     const current = records[i];
     if (!previous || current?.power === undefined) continue;
-    const durationSec = Math.round(activeSeconds({ previous, current }));
+    const durationSec = Math.round(activeDurationSec({ previous, current }));
     for (let second = 0; second < durationSec; second++) {
       samples.push(current.power);
     }

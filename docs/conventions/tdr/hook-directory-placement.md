@@ -24,7 +24,7 @@ This file carries rules R1–R8.
 
 Hooks in `apps/web/src` sit in `hooks/` directories, and which `hooks/` directory a hook sits in is the only thing that tells a reader where it belongs. Without a placement rule, a hook that several screens need gets copied, or lands in whichever directory happened to need it first, and the next reader cannot tell whether calling it from elsewhere is normal or a layering mistake.
 
-The rule is ownership, not reach. A hook lives with the concept it is *about* — the entity it reads, the surface it drives, the capability it wraps — and that directory owns it regardless of how many other parts of the app call it. Being imported from another feature is the expected outcome of putting a hook in the right place. The app-wide `apps/web/src/lib/hooks/` is therefore not "the shared ones"; it holds hooks that are about nothing in this product — generic React, DOM, browser, timing and chart-interaction primitives.
+The rule is ownership, not reach. A hook lives with the concept it is *about* — the entity it reads, the surface it drives, the capability it wraps — and that directory owns it regardless of how many other parts of the app call it. Being imported from another feature is the expected outcome of putting a hook in the right place. The app-wide `apps/web/src/lib/hooks/` is therefore not "the shared ones"; it holds hooks that are about nothing in this product — generic React, DOM, browser and timing primitives. Chart interaction is a concept of the shared chart group, so its hooks (`useChartZoom`, `useSyncedChartZoom`, `useZoomSelectionState`) live in `apps/web/src/components/charts/hooks/`.
 
 Scope: hook modules under `apps/web/src`. Out of scope: hooks exported by workspace packages (`packages/ui/src/hooks/`), test helpers under `apps/web/tests/`, and the zustand store modules in `apps/web/src/store/` whose `use<Name>Store` accessors are store definitions, not placed hooks. This record governs placement only; one hook per module is `one-hook-per-file`, the shape of a server-call module is `one-server-call-per-hook-module`.
 
@@ -34,11 +34,11 @@ In `tools/workbench` the board island's hooks live in `site/src/app/hooks/` (R1,
 
 | # | Rule (as adapted for this project) | Enforcement |
 | :--- | :--- | :--- |
-| R1 | Place a hook in the `hooks/` directory of the module that owns the concept it is about — the entity it reads, the surface it drives, or the capability it wraps (e.g. `apps/web/src/features/map/hooks/`, `apps/web/src/store/hooks/`). Never place it under the module that happens to call it. | manual |
-| R2 | Reserve `apps/web/src/lib/hooks/` for hooks that are about no domain concept: React, DOM, browser, viewport, timing and chart-interaction primitives. A hook named after or acting on a domain entity (sessions, thresholds, metrics, the map) belongs in that entity's directory even when every part of the app calls it. | proposed |
+| R1 | Place a hook in the `hooks/` directory of the module that owns the concept it is about — the entity it reads, the surface it drives, or the capability it wraps (e.g. `apps/web/src/components/mapBackground/hooks/`, `apps/web/src/store/hooks/`); a shared UI group such as `components/charts/` owns the hooks about its interaction. Never place it under the module that happens to call it. | manual |
+| R2 | Reserve `apps/web/src/lib/hooks/` for hooks that are about no domain concept: React, DOM, browser, viewport and timing primitives. A hook named after or acting on a domain entity (sessions, thresholds, metrics, the map) belongs in that entity's directory even when every part of the app calls it. | proposed |
 | R3 | Treat importing another module's hook by its full path as ordinary use. Cross-feature reach is not a placement error and is never a reason to copy a hook, re-export it, or move it into `apps/web/src/lib/hooks/`. | manual |
 | R4 | Server reads live in `apps/web/src/queries/`, server writes (IndexedDB, Open-Meteo, intervals.icu) in `apps/web/src/mutations/`, routing in `apps/web/src/routing/`. Those directories are hook directories in their own right; a hook of one of those kinds goes there and never into a feature `hooks/` directory, and no `hooks/` subdirectory is created inside them. | proposed |
-| R5 | Nest a `hooks/` directory at whatever depth owns the concept. A sub-surface with hooks of its own gets its own `hooks/` beside its components (`features/sessions/session/hooks/` next to `features/sessions/hooks/`). Do not hoist a hook to the feature root to avoid nesting. | manual |
+| R5 | Nest a `hooks/` directory at whatever depth owns the concept. A sub-surface with hooks of its own gets its own `hooks/` beside its components (`components/sessions/session/hooks/` next to `components/sessions/hooks/`). Do not hoist a hook to the feature root to avoid nesting. | manual |
 | R6 | A hook may sit loose beside a component only while that component, in the same directory, is its sole consumer. The first import from any other directory moves it into a `hooks/` directory. | proposed |
 | R7 | A directory holds either a `hooks/` subdirectory or loose `use*` siblings, never both. Introducing `hooks/` means moving the loose siblings into it in the same change. | proposed |
 | R8 | A `hooks/` directory may also hold pure non-hook modules that only its hooks use — a types module, a predicate table, a formatter. Name each for what it computes; a `helpers.ts` or `utils.ts` is not a name. | proposed |
@@ -125,7 +125,7 @@ Nothing in the toolchain (root `vite.config.ts` lint block) fails on any of this
 
 ## 4. Trade-offs
 
-- **Good, because** the path answers the question a reader actually has. `features/sessions/session/hooks/` says the hook is about the session detail surface, which is stable, rather than who calls it, which changes every iteration.
+- **Good, because** the path answers the question a reader actually has. `components/sessions/session/hooks/` says the hook is about the session detail surface, which is stable, rather than who calls it, which changes every iteration.
 - **Good, because** a hook never has to move when a second or a fifth consumer appears. Placement is decided once, from the hook's own subject, and reach can grow without churn.
 - **Good, because** the app-wide directory stays small and legible: it holds primitives, so a newcomer scanning it learns the platform layer rather than wading through product logic.
 - **Bad, because** ownership is a judgement call with no signal behind it. Two reasonable people place the same hook in two directories, and nothing in CI will tell them apart — the rule is only as good as review.
@@ -142,7 +142,6 @@ apps/web/src/
   lib/hooks/                      about nothing in the product: primitives only
     useDebouncedValue.ts
     useDismiss.ts
-    useChartZoom.ts
   queries/                        server reads, a hook directory in its own right (R4)
     weather/useSessionWeather.ts  no hooks/ subdirectory inside
   mutations/                      server writes, same shape
@@ -151,9 +150,12 @@ apps/web/src/
     usePageRouting.ts
   store/
     hooks/useStoresHydrated.ts    about the store, so it lives with the store (R1)
-  features/
-    map/
-      MapBackground.tsx
+    hooks/useSessionReprocessingActive.ts
+  components/
+    charts/
+      hooks/useChartZoom.ts       chart interaction: the shared chart group owns it (R1)
+    mapBackground/
+      index.tsx
       hooks/                      hooks about the map; sessions and studio import them freely (R3)
         useMapHover.ts
         useWatchPositionEffect.ts
@@ -162,7 +164,6 @@ apps/web/src/
       hooks/useSessionTitle.ts
       session/
         hooks/useSessionColorModes.ts   nested: the detail surface owns its own hooks (R5)
-  components/
     layout/
       Dock.tsx
       useDockList.ts              loose is allowed: sole consumer is its sibling (R6),

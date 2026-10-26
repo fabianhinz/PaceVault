@@ -5,12 +5,12 @@ import { useTrainingLoadRecompute } from '@/queries/sessions/useTrainingLoadReco
 import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
-import { idbStorage, bulkSaveSessionData } from '@/lib/db.ts';
+import { idbStorage, bulkSaveSessionData } from '@/lib/storage/db.ts';
 import {
   sessionStressAt,
   sessionStressFromRecordsAt,
   trainingLoadHrSignature,
-} from '@/lib/sessionStress.ts';
+} from '@/lib/analysis/sessionStress.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 import { runningRecordSeries } from '@pacevault/testing/series.ts';
 import { createMockUserProfile } from '@tests/factories/profiles.ts';

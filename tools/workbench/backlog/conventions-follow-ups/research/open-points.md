@@ -279,3 +279,31 @@ Collected while planning `docs/conventions/plans/`. None of these is part of the
 - What: the pace calculator (`PaceCalculator.tsx`, three `type="text"` fields) writes the solved value with `toFixed` and parses its fields back with `Number(...)`, so German shows `4.5` while the rest of the app shows `4,5` after the `toFixed` → `formatNumber` change of round 2.
 - User impact: inconsistent decimal separator in German, only in this calculator.
 - Options: A) keep; B) format with `formatNumber` and parse the fields locale-aware (comma and dot), with specs.
+
+## OP-83 · Two hand-rolled timers kept as `useEffect` (`useCoachPlan`, `useHeldReprocess`)
+- Severity: Low · Source: apps/web
+- From: conventions-migration round 2, plan 48 (`round2-missed-sites` item 8), 2026-10-26
+- What: effects-are-rare R3 asks for `useTimeoutFn`, which restarts only when its delay changes. (1) `features/labs/hooks/useCoachPlan.ts`: the planned `useMemo(() => msUntilMidnight, [today])` fails `react-hooks/exhaustive-deps` (an error: `today` is not read inside the memo), so the midnight timer stays a `useEffect` over `today`. (2) `components/useHeldReprocess.ts`: with the planned delay (`held === null` → 0), a held reprocess whose overlay was open longer than `MIN_OPEN_MS` also gives 0, so `null → held` would not restart the timer and the overlay would stay held; the effect is kept. `useMinOpenTimeReached` and the two mount-only effects did move to react-use.
+- User impact: none; behaviour unchanged.
+- Options: A) leave both effects (they synchronise with a timer, R2 allows that); B) `useCoachPlan`: derive the delay from the `today` string (next local midnight after `today` minus `Date.now()`); `useHeldReprocess`: give `held === null` the delay `-1` (held always alternates with `null`, so every transition changes the delay); C) a small `useTimeoutFn` variant keyed by an identity instead of the delay.
+
+## OP-84 · `windRose.ts` renamed `windRoseSectors.ts` beside `WindRose.tsx`
+- Severity: Low · Source: apps/web
+- From: conventions-migration round 2, plan 50 (`round2-lib-topic-folders` item 15), 2026-10-26
+- What: the plan moves `lib/windRose.ts` into `components/sessions/session/`, where `WindRose.tsx` already lives. The two names differ only in case and extension; on the case-insensitive macOS file system the type-aware lint (`tsgolint` inside `vp check`) then fails to resolve `@/components/sessions/session/Wedges.tsx` from `WindRose.tsx` (TS2307), while `tsc` passes. The module was moved as `components/sessions/session/windRoseSectors.ts` (spec `tests/components/sessions/session/windRoseSectors.spec.ts`); exports unchanged (`WIND_ROSE_SECTOR_DEG`, `windRoseSectorAngle`, `windRoseShares`).
+- User impact: none; behaviour unchanged.
+- Options: A) keep `windRoseSectors.ts` (recommended: no two files in a folder differ only by case); B) another name (`windRoseMath.ts`); C) fold the three helpers into `hooks/useWindRose.ts` and `Wedges.tsx`, their only consumers.
+
+## OP-85 · Gaps of the round-2 layout gates (`state-no-components`, colocation)
+- Severity: Low · Source: tools/workbench (gates), apps/web
+- From: conventions-migration round 2, plan 51 (`round2-rules-and-gates`, Open items 2–4), 2026-10-26
+- What: (1) the UI-only half of `helpers-split-by-reachability` R8 has no gate: a `lib/` module that only `components/` and `pages/` of several owners import belongs with one component owner, but picking the owner is a judgement; a later check could report such modules as warnings. (2) Both gates read direct imports only: a `lib/` module only another `lib/` module imports is never reported (`lib/analysis/webLock.ts`, `lib/storage/persistentStorage.ts`), and `lib/ → components/` imports are not gated; `lib/storage/createIngestBatcher.ts` imports `queries/records/usePersonalBests.ts` (`invalidatePersonalBests`), a `lib/ → queries/` edge no rule covers. Adding `lib/` and `parsers/` to the rule's `from` would close the second (`routing/` cannot join, it mounts the layout). (3) `tools/workbench/scripts/deps.ts` tells a shared UI group from a feature folder through the constant `SHARED_UI_GROUPS` (`charts`, `metricLabel`, `importProgress`, `errors`, `layout`); a new group means editing it (a folder without `index.tsx` is no reliable signal: non-UI and multi-entry feature folders have none either).
+- User impact: none.
+- Options: A) leave as review-time; B) warn-only check for (1), widen `from` for (2), keep (3).
+
+## OP-86 · depcruise does not resolve workspace package imports
+- Severity: Low · Source: tools/workbench (`.dependency-cruiser.cjs`)
+- From: conventions-migration round 2, plan 51, 2026-10-26
+- What: until plan 51, depcruise resolved no `@/…` import (the app tsconfig `paths` has no `baseUrl`, which its tsconfig resolver needs), so `store-no-features`/`store-no-components` matched nothing for aliased imports and the review graphs showed phantom `@/…` modules. Plan 51 added the `@` alias to `tools/workbench/depcruise.aliases.cjs` (both gates now proven to fire). Still unresolved: every `@pacevault/<pkg>/…` import (≈ 930 edges: ui, engine, i18n, gpx), plus `react-router-dom`, `uuid`, `react-map-gl/maplibre`, `vite-plus/test`. `deps.ts` maps them to `packages/<pkg>/src/…` for drawing, but no boundary rule sees them, e.g. an engine import of `@pacevault/ui/…` would pass `engine-is-pure`.
+- User impact: none.
+- Options: A) add the four workspace packages as aliases (`@pacevault/engine` → `packages/engine/src`, …) and re-prove `engine-is-pure`; B) leave.

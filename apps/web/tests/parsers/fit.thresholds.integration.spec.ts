@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { readE2eFixture } from '@testUtils/fixtures.ts';
 import { parseFitFile } from '@/parsers/fit.ts';
-import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
+import { toFitParseProfile } from '@/parsers/fitParseProfile.ts';
 import { createMockUserProfile } from '@tests/factories/profiles.ts';
 import { MS_PER_DAY } from '@pacevault/engine/time.ts';
 

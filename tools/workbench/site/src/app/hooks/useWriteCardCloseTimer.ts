@@ -7,17 +7,20 @@ interface WriteCardHoverHandlers {
   onMouseLeave: () => void;
 }
 
-export const useWriteCardCloseTimer = (options: {
+export const useWriteCardCloseTimer = ({
+  latestId,
+  hide,
+}: {
   latestId: number | undefined;
   hide: (id: number) => void;
 }): WriteCardHoverHandlers => {
   const timeout = useTimeoutFn(() => {
-    if (options.latestId !== undefined) options.hide(options.latestId);
+    if (latestId !== undefined) hide(latestId);
   }, SHOW_MS);
   const cancel = timeout[1];
   const restart = timeout[2];
   useUpdateEffect(() => {
     restart();
-  }, [options.latestId]);
+  }, [latestId]);
   return { onMouseEnter: cancel, onMouseLeave: restart };
 };

@@ -1,8 +1,8 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { trainingLoadFtpSignature, trainingLoadHrSignature } from '@/lib/sessionStress.ts';
+import { trainingLoadFtpSignature, trainingLoadHrSignature } from '@/lib/analysis/sessionStress.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
-import { recomputeTrainingLoad } from '@/features/sessions/recomputeTrainingLoad.ts';
+import { recomputeTrainingLoad } from '@/lib/analysis/recomputeTrainingLoad.ts';
 import type { QueryResults } from '@/types.ts';
 
 export const recomputeTrainingLoadOnce = async (): Promise<

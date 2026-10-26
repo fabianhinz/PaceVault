@@ -1,5 +1,5 @@
 import type { SessionRecord, Sport } from './types.ts';
-import { activeSeconds, isMovingPair } from './recordPairs.ts';
+import { activeDurationSec, isMovingPair } from './recordPairs.ts';
 import { gradeAdjustedPaceFactor } from './normalizedEffort.ts';
 
 type DecouplingRatio = 'powerHr' | 'gapHr' | 'speedHr';
@@ -33,7 +33,7 @@ const rideIntervals = (records: SessionRecord[]): CountedInterval[] => {
     const previous = records[i - 1];
     const current = records[i];
     if (!previous || current?.hr === undefined || current.power === undefined) continue;
-    const durationSec = activeSeconds({ previous, current });
+    const durationSec = activeDurationSec({ previous, current });
     if (durationSec === 0) continue;
     intervals.push({ durationSec, output: current.power, hr: current.hr });
   }

@@ -6,7 +6,11 @@ import { useFiltersStore } from '@/store/filters.ts';
 import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { PvIconBadge } from '@pacevault/ui/components/pvIconBadge/PvIconBadge.tsx';
 import { DockCircle } from '@/components/layout/DockCircle.tsx';
-import { activeItemClass, itemClass, itemClasses } from '@/components/layout/dockItemClasses.ts';
+import {
+  activeItemClass,
+  itemClass,
+  CLASSES_BY_DOCK_ITEM_SHAPE,
+} from '@/components/layout/dockItemClasses.ts';
 import type { DockItemKind } from '@/components/layout/types.ts';
 
 interface DockFilterButtonProps {
@@ -21,7 +25,11 @@ export const DockFilterButton: FC<DockFilterButtonProps> = (props) => {
     <PvButton
       variant="ghost"
       size="icon"
-      className={cn(itemClass, itemClasses[props.kind], props.open && activeItemClass)}
+      className={cn(
+        itemClass,
+        CLASSES_BY_DOCK_ITEM_SHAPE[props.kind],
+        props.open && activeItemClass,
+      )}
       onClick={props.onClick}
       aria-label={m.ui_dock_filter()}
       aria-expanded={props.open}

@@ -1,5 +1,5 @@
 import { m } from '@pacevault/i18n/messages.js';
-import type { ColorMode, ColorModeUnavailableReason } from '@/lib/colorModes.ts';
+import type { ColorMode, ColorModeUnavailableReason } from '@/lib/colors/colorModes.ts';
 
 export const LABEL_BY_COLOR_MODE: Record<ColorMode, () => string> = {
   sport: m.ui_color_by_sport,

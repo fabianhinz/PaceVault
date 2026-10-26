@@ -22,7 +22,7 @@ adopted: 2026-10-23
 
 This file carries rules R1, R2, R6 and R7.
 
-`apps/web` has no server, but it has a boundary with the same failure mode: `postMessage` between the main thread and a Web Worker (`apps/web/src/features/map/gpsBuild.worker.ts`, `apps/web/src/features/records/personalBests.worker.ts`). The hook that starts the worker writes a message the worker reads, and the worker writes a reply the hook reads. When each side declares its own shape — or one side imports the other side's module for a type — they drift silently or couple a worker bundle to main-thread code. This convention puts every shape that crosses that boundary in one contract module, `<worker>Contract.ts` beside the worker, as a zod schema; both the worker and the hook import that module. Naming follows zod-schema-naming-and-inference (the type is the schema name minus `Schema`). Parsing incoming data follows the project's general rule: `safeParse`, safe fallback on failure, never throw.
+`apps/web` has no server, but it has a boundary with the same failure mode: `postMessage` between the main thread and a Web Worker (`apps/web/src/lib/workers/gpsBuild.worker.ts`, `apps/web/src/lib/workers/personalBests.worker.ts`). The hook that starts the worker writes a message the worker reads, and the worker writes a reply the hook reads. When each side declares its own shape — or one side imports the other side's module for a type — they drift silently or couple a worker bundle to main-thread code. This convention puts every shape that crosses that boundary in one contract module, `<worker>Contract.ts` beside the worker, as a zod schema; both the worker and the hook import that module. Naming follows zod-schema-naming-and-inference (the type is the schema name minus `Schema`). Parsing incoming data follows the project's general rule: `safeParse`, safe fallback on failure, never throw.
 
 The same failure mode exists in `tools/workbench` across files: `scripts/deps.ts` writes `review/deps.json` and `review/files.json`, and the board (`site/src/lib/techActual.ts`) parses them. Their shapes are declared once in `tools/workbench/scripts/reviewArtifactsContract.ts` (R1), types via `z.infer` (R2), importing only `zod` (R6), with the reader's required and optional fields, so every existing artefact parses as before.
 
@@ -117,7 +117,7 @@ self.onmessage = async (e: MessageEvent<unknown>) => {
 The caller imports the same module to build the request:
 
 ```ts
-import type { WorkerMessageIn } from '@/features/map/gpsBuildContract.ts';
+import type { WorkerMessageIn } from '@/lib/workers/gpsBuildContract.ts';
 
 worker.postMessage({ type: 'build', sessionIds } satisfies WorkerMessageIn);
 ```

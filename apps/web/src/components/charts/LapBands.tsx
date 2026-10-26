@@ -1,11 +1,9 @@
 import { useDeferredValue, useMemo } from 'react';
 import { ReferenceArea } from 'recharts';
-import { bandsOnRows } from '@/lib/laps.ts';
+import { bandsOnRows } from '@/lib/analysis/laps.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { LapBandShape } from '@/components/charts/LapBandShape.tsx';
 import type { AreaShapeProps } from '@/components/charts/types.ts';
-
-export const LAP_STRIP_TICK_MARGIN = 12;
 
 interface LapBandsProps<K extends string, T extends Record<K, number>> {
   rows: readonly T[];

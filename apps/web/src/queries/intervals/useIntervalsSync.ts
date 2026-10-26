@@ -2,7 +2,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
-import { runIntervalsSync } from '@/features/intervals/runIntervalsSync.ts';
+import { runIntervalsSync } from '@/lib/api/intervalsSync.ts';
 import { MS_PER_MINUTE } from '@pacevault/engine/time.ts';
 import type { QueryResults } from '@/types.ts';
 

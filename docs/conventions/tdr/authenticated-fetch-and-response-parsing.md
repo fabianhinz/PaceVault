@@ -4,9 +4,9 @@ id: authenticated-fetch-and-response-parsing
 title: Authenticated fetch and response parsing
 summary: External requests use the platform fetch with the API's own auth header built in one place, take the API key as an argument, and throw FailedResponseError carrying the Response on a non-ok status.
 governs:
-  - "apps/web/src/lib/intervals.ts"
-  - "apps/web/src/lib/weather.ts"
-  - "apps/web/src/lib/fetchResponse.ts"
+  - "apps/web/src/lib/api/intervals.ts"
+  - "apps/web/src/lib/api/weather.ts"
+  - "apps/web/src/lib/api/fetchResponse.ts"
   - "apps/web/src/queries/**/*.ts"
   - "apps/web/src/mutations/**/*.ts"
 adopted_rules: [R1, R2, R3, R4, R5, R6]
@@ -23,9 +23,9 @@ adopted: 2026-10-23
 
 This file carries rules R1–R6.
 
-PaceVault talks to two HTTP APIs: intervals.icu (opt-in, authenticated with the user's own API key, `apps/web/src/lib/intervals.ts`) and Open-Meteo (anonymous, `apps/web/src/lib/weather.ts`). There is deliberately no shared HTTP client, interceptor or global key holder. Each transport module calls the platform `fetch` itself and repeats the same small sequence: attach the API's auth header (built in one place per API) from a key handed to it as an argument, guard the non-ok response, and throw an error that still carries the `Response`. Without that sequence the failure modes are silent: a request goes out with a stale key read from a store at the wrong moment, or a 4xx/5xx is turned into `undefined` and the UI renders emptiness as if it were the API's answer.
+PaceVault talks to two HTTP APIs: intervals.icu (opt-in, authenticated with the user's own API key, `apps/web/src/lib/api/intervals.ts`) and Open-Meteo (anonymous, `apps/web/src/lib/api/weather.ts`). There is deliberately no shared HTTP client, interceptor or global key holder. Each transport module calls the platform `fetch` itself and repeats the same small sequence: attach the API's auth header (built in one place per API) from a key handed to it as an argument, guard the non-ok response, and throw an error that still carries the `Response`. Without that sequence the failure modes are silent: a request goes out with a stale key read from a store at the wrong moment, or a 4xx/5xx is turned into `undefined` and the UI renders emptiness as if it were the API's answer.
 
-Scope: the transport modules in `apps/web/src/lib/` that call `fetch` (intervals.icu and Open-Meteo alike), and the read/write modules in `apps/web/src/queries/` and `apps/web/src/mutations/` that hand them the key. Body validation stays the Zod `safeParse` with a safe fallback from the root `CLAUDE.md` code rules; user-facing failure copy is mapped from the error's `reason` at the component boundary.
+Scope: the transport modules in `apps/web/src/lib/api/` that call `fetch` (intervals.icu and Open-Meteo alike), and the read/write modules in `apps/web/src/queries/` and `apps/web/src/mutations/` that hand them the key. Body validation stays the Zod `safeParse` with a safe fallback from the root `CLAUDE.md` code rules; user-facing failure copy is mapped from the error's `reason` at the component boundary.
 
 ## 2. Rules
 
@@ -35,7 +35,7 @@ Scope: the transport modules in `apps/web/src/lib/` that call `fetch` (intervals
 | R2 | Send the API's own auth header on every call to an authenticated endpoint, built in exactly one function per API: intervals.icu `Authorization: Basic base64("API_KEY:<key>")` via `intervalsAuthorization(apiKey)`, with `credentials: 'omit'`. Anonymous APIs (Open-Meteo) send none. | manual |
 | R3 | Take the API key as an explicit argument on every non-React function that needs it (`listIntervalsActivities(apiKey, ...)`, `runIntervalsSync({ apiKey, ... })`); read it from `useIntervalsStore` only in the React hook that calls them. Never read it from a store `getState()`, module scope or a global inside the fetching function. | manual |
 | R4 | Guard `!response.ok` and throw from that branch, for intervals.icu and Open-Meteo alike. A failed Open-Meteo cluster request fails the whole weather lookup; it is not caught per cluster. Never return, parse or ignore a response that was not checked, and never turn a failed status into `undefined`, `[]` or a result union. | manual |
-| R5 | In intervals.icu and Open-Meteo requests, throw `FailedResponseError` (`apps/web/src/lib/fetchResponse.ts`), which carries the originating `Response` and its `reason`, so a caller can branch on status. A bare `Error` is only for pre-flight guards that fail before a request is made; a network failure is the platform's own `TypeError`, rethrown untouched. | manual |
+| R5 | In intervals.icu and Open-Meteo requests, throw `FailedResponseError` (`apps/web/src/lib/api/fetchResponse.ts`), which carries the originating `Response` and its `reason`, so a caller can branch on status. A bare `Error` is only for pre-flight guards that fail before a request is made; a network failure is the platform's own `TypeError`, rethrown untouched. | manual |
 | R6 | Derive the failure reason with the shared parser `failedResponseReason(response)` (inside `FailedResponseError`'s constructor), not a per-module status switch or a hand-written static message. Map reasons to copy at the UI boundary through `intervalsErrorCode(error)`. | manual |
 
 ## 3. Detection
@@ -58,11 +58,11 @@ R2:
   enforcedBy: null
   falsePositives: >
     Expect exactly one header construction per authenticated API (today: one, in
-    apps/web/src/lib/intervals.ts). A second hit means the header is being rebuilt elsewhere.
+    apps/web/src/lib/api/intervals.ts). A second hit means the header is being rebuilt elsewhere.
 R3:
   type: grep
   pattern: "getState\\(\\)\\.apiKey"
-  include: ["apps/web/src/lib/**/*.ts", "apps/web/src/features/**/*.ts", "apps/web/src/queries/**/*.ts", "apps/web/src/mutations/**/*.ts"]
+  include: ["apps/web/src/lib/**/*.ts", "apps/web/src/components/**/*.ts", "apps/web/src/queries/**/*.ts", "apps/web/src/mutations/**/*.ts"]
   exempt: []
   violationWhen: any-match
   enforcedBy: null
@@ -81,7 +81,7 @@ R4:
 R5:
   type: grep
   pattern: "throw new FailedResponseError\\("
-  include: ["apps/web/src/lib/intervals.ts", "apps/web/src/lib/weather.ts"]
+  include: ["apps/web/src/lib/api/intervals.ts", "apps/web/src/lib/api/weather.ts"]
   exempt: []
   violationWhen: no-match
   enforcedBy: null
@@ -90,7 +90,7 @@ R6:
   type: grep
   pattern: "status === (401|403|429)"
   include: ["apps/web/src/**/*.ts", "apps/web/src/**/*.tsx"]
-  exempt: ["apps/web/src/lib/fetchResponse.ts"]
+  exempt: ["apps/web/src/lib/api/fetchResponse.ts"]
   violationWhen: any-match
   enforcedBy: null
   falsePositives: >

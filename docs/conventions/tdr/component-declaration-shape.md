@@ -24,7 +24,7 @@ This file carries rules R1–R7.
 
 Every component in `apps/web` is declared the same way: an arrow function assigned to a `const`, annotated `FC` (imported as a type from `react`), with its prop shape in a named `interface` directly above it, alone in a file whose name is the component's name. That uniformity makes the tree navigable without a search: a path maps to a component name, a component name maps back to a path, and the prop surface is always the declaration immediately above the render tree. The root code rules already require arrow functions, named exports and a non-destructured `props`; this convention pins the annotation, the props form, the one-component-per-module rule (strict: extracted markup becomes its own module, never an unexported sibling in the same file) and the file naming.
 
-Scope: component modules under `apps/web/src` (`components/`, `features/`, `pages/`, `App.tsx`, debug triggers) and under `packages/ui/src/components/`. In the kit, wrappers may rest-destructure `props` to strip their own props before forwarding the rest to a primitive (`packages/ui/CLAUDE.md` § Rules); R3 forbids every other destructuring there too. Out of scope: hook modules, non-component modules colocated with components (stores, helpers, tables), tests. How many modules a feature is split into and where shared types live belong to unit-length-discipline, index-modules-are-not-barrels and colocated-types-module.
+Scope: component modules under `apps/web/src` (`components/` (feature folders and shared UI groups), `pages/`, `App.tsx`, debug triggers) and under `packages/ui/src/components/`. In the kit, wrappers may rest-destructure `props` to strip their own props before forwarding the rest to a primitive (`packages/ui/CLAUDE.md` § Rules); R3 forbids every other destructuring there too. Out of scope: hook modules, non-component modules colocated with components (stores, helpers, tables), tests. How many modules a feature is split into and where shared types live belong to unit-length-discipline, index-modules-are-not-barrels and colocated-types-module.
 
 The rules bind the banner page of `tools/docs` (`tools/docs/banner/page/**/*.tsx`) as well: every page component is `FC<XProps>` with its non-exported interface above it, alone in a PascalCase module named after it (R4, R5); `main.tsx` is the entry module R7 names, and R6 has no subject there.
 
@@ -39,7 +39,7 @@ The rules bind the board island of `tools/workbench` (`tools/workbench/site/src/
 | R3 | Name the props parameter `props` and read fields through it; do not destructure in the parameter list. | manual |
 | R4 | A module declares exactly one component, and the file is named after it. A second component — exported or not — is moved to its own module, even when only one module renders it. | manual |
 | R5 | Name a component file in PascalCase, matching the exported component. The name may drop the prefix the containing directory already supplies, so that path plus filename reads as the full component name without repeating a segment. In `packages/ui` the file always carries the full `Pv`-prefixed component name, also inside its family directory (`pvDialog/PvDialogHeader.tsx`, per component-directory-and-file-naming). | manual |
-| R6 | Put a directory's entry component in `index.tsx`, named for the directory in PascalCase, when the directory is mounted from outside through that one component (`features/onboarding/index.tsx` → `Onboarding`). Importers then name the directory's index, not a file inside it. Not in `packages/ui`, which has no index modules: importers address `pv<Name>/Pv<Name>.tsx`. | manual |
+| R6 | Put a directory's entry component in `index.tsx`, named for the directory in PascalCase, when the directory is mounted from outside through that one component (`components/onboarding/index.tsx` → `Onboarding`). Importers then name the directory's index, not a file inside it. Not in `packages/ui`, which has no index modules: importers address `pv<Name>/Pv<Name>.tsx`. | manual |
 | R7 | Reserve lowerCamelCase `.tsx` filenames for modules that are not components: hook modules whose hook returns JSX (`useZoneLineStroke.tsx`), the app entry `main.tsx`, and data tables whose values are JSX. A lowerCamelCase file is never the home of an exported component, and a PascalCase file never holds only a hook. | manual |
 
 ## 3. Detection
@@ -125,8 +125,8 @@ A feature entry module, named for its directory:
 
 ```tsx
 import type { FC } from 'react';
-import { OnboardingStep } from '@/features/onboarding/OnboardingStep.tsx';
-import type { ThresholdsForm } from '@/features/settings/hooks/useThresholdsForm.ts';
+import { OnboardingStep } from '@/components/onboarding/OnboardingStep.tsx';
+import type { ThresholdsForm } from '@/components/settings/hooks/types.ts';
 
 interface OnboardingProps {
   thresholds: ThresholdsForm;

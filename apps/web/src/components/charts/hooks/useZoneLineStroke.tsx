@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from 'react';
-import { zoneLineStroke, type ColorScale } from '@/lib/zoneColors.ts';
+import { zoneLineStroke, type ColorScale } from '@/lib/colors/zoneColors.ts';
 
 interface ZoneLineStroke {
   stroke: string | undefined;

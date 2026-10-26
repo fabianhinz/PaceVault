@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { Filters } from '@/features/filters/index.tsx';
+import { Filters } from '@/components/filters/index.tsx';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { useDismiss } from '@/lib/hooks/useDismiss.ts';
 import { FLOATING_CLASS } from '@pacevault/ui/lib/surfaces.ts';

@@ -2,7 +2,7 @@
 // See packages/engine/SOURCES.md for full citations.
 
 import type { RunningZone, RunningZoneName, SessionRecord } from './types.ts';
-import { activeSeconds } from './recordPairs.ts';
+import { activeDurationSec } from './recordPairs.ts';
 
 const RUNNING_ZONE_PACE_FACTORS: {
   name: RunningZoneName;
@@ -76,7 +76,7 @@ export const secondsInZones = ({
     const previous = records[i - 1];
     const current = records[i];
     if (!previous || current?.hr === undefined) continue;
-    const elapsedSec = activeSeconds({ previous, current });
+    const elapsedSec = activeDurationSec({ previous, current });
     if (elapsedSec === 0) continue;
     const zone = zoneIndexAt(current.hr);
     const zoneSec = durationSecByZone[zone];

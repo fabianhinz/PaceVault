@@ -73,10 +73,10 @@ R3:
   enforcedBy: null
   falsePositives: >
     Run with `rg -nUP`. Flags `getBoundingClientRect()`-style DOM reads; check whether the call is
-    one of `apps/web/src/lib/indexeddb.ts`, `apps/web/src/lib/weatherDb.ts`, `apps/web/src/lib/weather.ts`
-    or `apps/web/src/lib/intervals.ts`. Misses I/O hidden behind a feature helper
+    one of `apps/web/src/lib/storage/db.ts`, `apps/web/src/lib/api/weather.ts`
+    or `apps/web/src/lib/api/intervals.ts`. Misses I/O hidden behind a feature helper
     (`reprocessOutdatedSessions()`) and bodies longer than the window. For the invalidation half,
-    read each caller of a write helper in `apps/web/src/lib/` and confirm the flow invalidates or
+    read each caller of a write helper in `apps/web/src/lib/storage/` or `lib/api/` and confirm the flow invalidates or
     removes the read modules that cache the same data.
 R4:
   type: grep

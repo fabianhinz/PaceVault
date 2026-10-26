@@ -20,8 +20,8 @@ flowchart TB
 
 ### New
 
-- \`src/features/x/A.tsx\`: flow state, \`not this\`
-- \`src/features/x/hooks/\`
+- \`src/components/x/A.tsx\`: flow state, \`not this\`
+- \`src/components/x/hooks/\`
 
 ### Changed
 
@@ -38,7 +38,7 @@ flowchart TB
 - \`src/also/ignored.ts\`
 `;
     expect(readTechPaths(tech)).toEqual({
-      added: ['src/features/x/A.tsx', 'src/features/x/hooks/'],
+      added: ['src/components/x/A.tsx', 'src/components/x/hooks/'],
       changed: ['src/store/user.ts'],
     });
   });
@@ -58,7 +58,7 @@ flowchart TB
 
 ### New
 
-- \`src/features/x/A.tsx\`: new
+- \`src/components/x/A.tsx\`: new
 
 ### Changed
 
@@ -71,7 +71,7 @@ flowchart TB
 - \`src/also/ignored.ts\`
 `;
     expect(readTechPaths(tech)).toEqual({
-      added: ['src/features/x/A.tsx'],
+      added: ['src/components/x/A.tsx'],
       changed: ['src/store/user.ts'],
     });
   });

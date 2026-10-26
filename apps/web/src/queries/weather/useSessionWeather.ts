@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { getSessionRecords, getSessionWeather, saveSessionWeather } from '@/lib/db.ts';
-import { fetchSessionWeather } from '@/lib/weather.ts';
+import { getSessionRecords, getSessionWeather, saveSessionWeather } from '@/lib/storage/db.ts';
+import { fetchSessionWeather } from '@/lib/api/weather.ts';
 import type { QueryResults } from '@/types.ts';
 
 export const loadSessionWeather = async (options: {

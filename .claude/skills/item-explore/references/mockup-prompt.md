@@ -33,10 +33,10 @@ You are building an interactive design mockup for PaceVault, a local-first PWA (
 
 Copy classes, spacing, radii and colours from these files rather than inventing them:
 
-- `packages/ui/src/components/Card.tsx` (`glassClass`, `floatingClass`, `tileClass`), `packages/ui/src/components/Typography.tsx`, `packages/ui/src/components/Button.tsx`, `packages/ui/src/components/Label.tsx`, `packages/ui/src/components/Input.tsx`, `packages/ui/src/components/FloatingPill.tsx`, `packages/ui/src/components/RadioGroup.tsx`, `packages/ui/src/components/ResponsivePopover.tsx`, `packages/ui/src/components/Popover.tsx`, `packages/ui/src/components/Dialog.tsx`
-- forms as the app builds them: `apps/web/src/features/studio/StudioRouteFormDialog.tsx`, `apps/web/src/features/settings/ThresholdsSection.tsx`
+- `packages/ui/src/lib/surfaces.ts` (`GLASS_CLASS`, `FLOATING_CLASS`, `TILE_CLASS`), `packages/ui/src/components/pvCard/PvCard.tsx`, `packages/ui/src/components/pvTypography/PvTypography.tsx`, `packages/ui/src/components/pvButton/PvButton.tsx`, `packages/ui/src/components/pvLabel/PvLabel.tsx`, `packages/ui/src/components/pvInput/PvInput.tsx`, `packages/ui/src/components/pvFloatingPill/PvFloatingPill.tsx`, `packages/ui/src/components/pvRadioGroup/PvRadioGroup.tsx`, `packages/ui/src/components/pvResponsivePopover/PvResponsivePopover.tsx`, `packages/ui/src/components/pvPopover/PvPopover.tsx`, `packages/ui/src/components/pvDialog/PvDialog.tsx`
+- forms as the app builds them: `apps/web/src/components/studio/StudioRouteFormDialog.tsx`, `apps/web/src/components/settings/ThresholdsSection.tsx`
 - `tools/workbench/shared/tokens.css` (the app's tokens as CSS custom properties, same names as `packages/ui/src/theme.css`)
-- the app shell: `apps/web/src/components/layout/AppLayout.tsx`, `apps/web/src/components/layout/Dock.tsx`, `packages/ui/src/components/BottomSheet.tsx`
+- the app shell: `apps/web/src/components/layout/AppLayout.tsx`, `apps/web/src/components/layout/Dock.tsx`, `packages/ui/src/components/pvBottomSheet/PvBottomSheet.tsx`
 - {components the idea touches}
 - `apps/web/CLAUDE.md` §2 "0 is data", §3 colour palette, §4 surfaces
 
@@ -76,9 +76,9 @@ The page is `tools/workbench/backlog/{item}/mockup/index.html`. Start from the w
 - Phone frame content: map on top, glass bottom sheet, dock at the bottom. Tap interactions.
 - Plausible fake data at the resolution PaceVault really has ({data resolution}); no more precision than the data supports.
 - Use existing components and copy their classes exactly; map every part to its component (`path:line`) in the notes and flag anything that would need a new component.
-- Text only through the `Typography` variants (with their colour tokens); no ad-hoc font sizes or weights. English and German for every string.
-- Buttons only with the `Button` variants and sizes, pills only via `FloatingPill`; the same role gets the same size everywhere.
-- Form fields as the app builds them: a `Label` above every `Input`, hints and errors through Input's `helperText`/`error`.
+- Text only through the `PvTypography` variants (with their colour tokens); no ad-hoc font sizes or weights. English and German for every string.
+- Buttons only with the `PvButton` variants and sizes, pills only via `PvFloatingPill`; the same role gets the same size everywhere.
+- Form fields as the app builds them: a `PvLabel` above every `PvInput`, hints and errors through PvInput's `helperText`/`error`.
 - Spacing from the app's existing components, not one-off values.
 - No layout shift: nothing visible moves while the user types, hovers, or when hints, counts, previews, chips or lists appear and disappear. Reserve fixed slots, give lists a max height and scroll inside.
 - No `prefers-reduced-motion` handling. Copy states facts and never sells. Banners sit at the very top of the page, above any header.
@@ -96,7 +96,7 @@ Load the file in headless Chromium through the repo's Playwright (`@playwright/t
 - switch through every variant, scenario, language and extra; no console errors; look at screenshots of both frames;
 - every `data-q` badge renders and every `decisions[]` ID matches the brief's Q list;
 - **layout shift:** record the bounding boxes of the main containers, headers, inputs and first list items, then type, hover, add and remove items and open and close lists; every box stays within ±0.5 px;
-- **typography:** the computed font size, weight and line height of every visible text node is one of the `Typography` variants' values.
+- **typography:** the computed font size, weight and line height of every visible text node is one of the `PvTypography` variants' values.
 
 Fix what fails, then delete the temporary script and screenshots.
 

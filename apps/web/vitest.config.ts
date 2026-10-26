@@ -17,7 +17,13 @@ export default defineConfig({
     clearMocks: true,
     coverage: {
       provider: 'v8',
-      include: ['src/store/**/*.ts', 'src/lib/**/*.{ts,tsx}'],
+      include: [
+        'src/store/**/*.ts',
+        'src/lib/**/*.{ts,tsx}',
+        'src/components/**/*.{ts,tsx}',
+        'src/queries/**/*.{ts,tsx}',
+        'src/mutations/**/*.{ts,tsx}',
+      ],
     },
   },
 });

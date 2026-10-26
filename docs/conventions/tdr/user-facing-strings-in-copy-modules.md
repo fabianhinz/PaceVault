@@ -21,7 +21,7 @@ adopted: 2026-10-23
 
 This file carries rules R5, R6 and R7.
 
-All user-facing copy is a Paraglide message in `packages/i18n/messages/{en,de}.json`, called as `m.<key>()` from `@pacevault/i18n/messages.js`. That already gives wording one reviewable home and keeps assertions and renders on the same key. What remains is how keys are named, where state-dependent copy tables live, and keeping dead keys out. A key is a flat snake_case identifier naming the role and place of the copy. A table that picks copy by state (`Record<Sport, () => string>`) is declared once in a topic module under `apps/web/src/microcopy/`, not beside the component that renders it, so sibling components showing the same state share one table and a missing state shows up at the declaration. Feedback toasts are out of scope here; runtime value formatting goes through `apps/web/src/lib/formatters.ts`.
+All user-facing copy is a Paraglide message in `packages/i18n/messages/{en,de}.json`, called as `m.<key>()` from `@pacevault/i18n/messages.js`. That already gives wording one reviewable home and keeps assertions and renders on the same key. What remains is how keys are named, where state-dependent copy tables live, and keeping dead keys out. A key is a flat snake_case identifier naming the role and place of the copy. A table that picks copy by state (`Record<Sport, () => string>`) is declared once in a topic module under `apps/web/src/microcopy/`, not beside the component that renders it, so sibling components showing the same state share one table and a missing state shows up at the declaration. Feedback toasts are out of scope here; runtime value formatting goes through `apps/web/src/lib/format/formatters.ts`.
 
 ## 2. Rules
 

@@ -45,7 +45,7 @@ The rules bind `tools/workbench` as well (`scripts/`, `site/src/`, `tests/`). It
 | R1 | An `index.ts` / `index.tsx` declares its own contents: at least one declaration of its own — in this app, the entry component of the directory. | proposed |
 | R2 | Never write `export *`. A module's exports are written out by name at the point they are declared. | proposed |
 | R3 | Never create a module whose body is re-export statements, and do not forward another module's names (`export type { X } from '…'`) from a module that also declares things. Importers address the module that declares the symbol. | proposed |
-| R4 | Import a module by its own path under the `@/` alias, down to the file that declares the symbol (`@/types.ts`, `@/features/map/trackPicking.ts`). Reaching a nested module through an ancestor directory's index is forbidden even where an index exists. | proposed |
+| R4 | Import a module by its own path under the `@/` alias, down to the file that declares the symbol (`@/types.ts`, `@/components/mapBackground/trackPicking.ts`). Reaching a nested module through an ancestor directory's index is forbidden even where an index exists. | proposed |
 | R5 | Give a directory an `index.tsx` only when the directory is rendered as a unit — its index then declares the single entry component, named for the directory, that parents mount. A directory that is a collection of peers (hooks, types, queries, mutations, routing helpers, helper topic modules) gets no index at all. | proposed |
 | R8 | Use the `@/` alias for every cross-directory import; a relative path is allowed only for a module in the same folder (`./x.ts`), never `../`. | proposed |
 
@@ -118,7 +118,7 @@ A rendered directory's index declares its entry component and nothing else:
 
 ```tsx
 import type { FC } from 'react';
-import { OnboardingStep } from '@/features/onboarding/OnboardingStep.tsx';
+import { OnboardingStep } from '@/components/onboarding/OnboardingStep.tsx';
 import { useOnboardingStore } from '@/store/onboarding.ts';
 
 export const Onboarding: FC = () => {

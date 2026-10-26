@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
-import { getDB } from '@/lib/db';
+import { getDB } from '@/lib/storage/db.ts';
 
 const rehydrateFrom = async (state: unknown) => {
   const db = await getDB();

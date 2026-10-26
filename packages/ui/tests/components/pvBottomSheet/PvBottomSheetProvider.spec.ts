@@ -11,7 +11,7 @@ import {
 const ThrowingProbe = () => String(useSheetPeekContext().active);
 const UnstableProbe = () => String(useUnstableSheetPeekContext() === undefined);
 
-describe('PvBottomSheetProvider', () => {
+describe(PvBottomSheetProvider.name, () => {
   it('throws from useSheetPeekContext outside the provider', () => {
     expect(() => renderToString(createElement(ThrowingProbe))).toThrow(
       'useSheetPeekContext must be used inside PvBottomSheetProvider',

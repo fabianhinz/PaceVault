@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { StudioMarkerType } from './studio.ts';
+import type { StudioMarkerType } from '@/types.ts';
 
 /**
  * Which marker the shared dialog is editing. Map pins and the Tools-tab cards

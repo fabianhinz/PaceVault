@@ -20,7 +20,7 @@ interface OnboardingState {
   revealOnboardingPreview: () => void;
 }
 
-const NEXT_STEP: Record<OnboardingStep, OnboardingStep> = {
+const NEXT_STEP_BY_STEP: Record<OnboardingStep, OnboardingStep> = {
   intro: 'source',
   source: 'you',
   you: 'thresholds',
@@ -28,7 +28,7 @@ const NEXT_STEP: Record<OnboardingStep, OnboardingStep> = {
   import: 'import',
 };
 
-const PREVIOUS_STEP: Record<OnboardingStep, OnboardingStep> = {
+const PREVIOUS_STEP_BY_STEP: Record<OnboardingStep, OnboardingStep> = {
   intro: 'intro',
   source: 'intro',
   you: 'source',
@@ -49,15 +49,15 @@ export const useOnboardingStore = create<OnboardingState>()(
     chooseOnboardingSource: (source) =>
       set((state) => {
         state.source = source;
-        state.step = NEXT_STEP.source;
+        state.step = NEXT_STEP_BY_STEP.source;
       }),
     nextOnboardingStep: () =>
       set((state) => {
-        state.step = NEXT_STEP[state.step];
+        state.step = NEXT_STEP_BY_STEP[state.step];
       }),
     previousOnboardingStep: () =>
       set((state) => {
-        state.step = PREVIOUS_STEP[state.step];
+        state.step = PREVIOUS_STEP_BY_STEP[state.step];
       }),
     setOnboardingCardOpen: (open) =>
       set((state) => {

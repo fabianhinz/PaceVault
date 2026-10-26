@@ -3,8 +3,8 @@ import type { TokenColor } from '@pacevault/ui/lib/tokens.ts';
 import { PvStatRail } from '@pacevault/ui/components/pvStatRail/PvStatRail.tsx';
 import type { StatRailRow } from '@pacevault/ui/components/pvStatRail/types.ts';
 import { useChartHoverX, type ChartHoverX } from '@/store/chartHover.ts';
-import type { MetricId } from '@/lib/explanations.ts';
-import { MetricLabel } from '@/components/MetricLabel.tsx';
+import type { MetricId } from '@/components/metricLabel/explanations.ts';
+import { MetricLabel } from '@/components/metricLabel/index.tsx';
 import type { RailReading } from '@/components/charts/types.ts';
 
 interface MultiSeriesRailRow {

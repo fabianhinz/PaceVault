@@ -5,12 +5,12 @@ import {
   type QueryClient,
   type UseQueryResult,
 } from '@tanstack/react-query';
-import { getAllSessionGPS } from '@/lib/db.ts';
+import { getAllSessionGPS } from '@/lib/storage/db.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
-import { useSessionReprocessingActive } from '@/features/sessions/hooks/useSessionReprocessingActive.ts';
+import { useSessionReprocessingActive } from '@/store/hooks/useSessionReprocessingActive.ts';
 import { invalidateSessionGps } from '@/queries/sessions/useSessionGps.ts';
-import type { WorkerMessageIn } from '@/features/map/gpsBuildContract.ts';
+import type { WorkerMessageIn } from '@/lib/workers/gpsBuildContract.ts';
 import type { QueryResults } from '@/types.ts';
 
 const buildMissingGps = (options: {
@@ -18,7 +18,7 @@ const buildMissingGps = (options: {
   signal: AbortSignal;
 }): Promise<boolean> =>
   new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('../../features/map/gpsBuild.worker.ts', import.meta.url), {
+    const worker = new Worker(new URL('../../lib/workers/gpsBuild.worker.ts', import.meta.url), {
       type: 'module',
     });
     options.signal.addEventListener('abort', () => {
@@ -66,10 +66,12 @@ export const loadSessionGpsTracks = async (options: {
   return gps;
 };
 
-export const sessionGpsTracksQueryKey = (options: { detailedSessionIds: string[] }): string[] => [
-  'session-gps-tracks',
-  options.detailedSessionIds.join(','),
-];
+export const sessionGpsTracksQueryKey = (
+  options: { detailedSessionIds?: string[] } = {},
+): string[] => {
+  if (options.detailedSessionIds === undefined) return ['session-gps-tracks'];
+  return ['session-gps-tracks', options.detailedSessionIds.join(',')];
+};
 
 export const useSessionGpsTracks = (): UseQueryResult<QueryResults['sessionGpsTracks']> => {
   const sessions = useSessionsStore((s) => s.sessions);

@@ -10,19 +10,19 @@ const CRUISE: DepsInput = {
   modules: [
     mod(
       'apps/web/src/pages/OnboardingPage.tsx',
-      'apps/web/src/features/onboarding/OnboardingFlow.tsx',
+      'apps/web/src/components/onboarding/OnboardingFlow.tsx',
     ),
     mod(
-      'apps/web/src/features/onboarding/OnboardingFlow.tsx',
+      'apps/web/src/components/onboarding/OnboardingFlow.tsx',
       'apps/web/src/store/onboarding.ts',
-      'apps/web/src/features/settings/AboutSection.tsx',
-      'apps/web/src/features/settings/hooks/useThresholdsForm.ts',
+      'apps/web/src/components/settings/AboutSection.tsx',
+      'apps/web/src/components/settings/hooks/useThresholdsForm.ts',
       'node_modules/.pnpm/react@19.2.4/node_modules/react/index.js',
     ),
     mod('apps/web/src/store/onboarding.ts', 'apps/web/src/lib/moreStats.ts'),
-    mod('apps/web/src/features/settings/AboutSection.tsx', 'apps/web/src/lib/moreStats.ts'),
+    mod('apps/web/src/components/settings/AboutSection.tsx', 'apps/web/src/lib/moreStats.ts'),
     mod(
-      'apps/web/src/features/settings/hooks/useThresholdsForm.ts',
+      'apps/web/src/components/settings/hooks/useThresholdsForm.ts',
       'packages/engine/src/types.ts',
     ),
     mod('apps/web/src/lib/moreStats.ts', 'packages/engine/src/types.ts'),
@@ -31,7 +31,7 @@ const CRUISE: DepsInput = {
   ],
 };
 
-const FOCUS = ['apps/web/src/features/onboarding/', 'apps/web/src/store/onboarding.ts'];
+const FOCUS = ['apps/web/src/components/onboarding/', 'apps/web/src/store/onboarding.ts'];
 
 const labelLines = (mermaid: string) =>
   mermaid.split('\n').filter((line) => /^(subgraph|n\d+\[)/.test(line));
@@ -43,9 +43,11 @@ describe('deps', () => {
     expect(layerOf('apps/web/src/lib/db.ts')).toBe('lib');
     expect(layerOf('packages/ui/src/hooks/useDevice.ts')).toBe('ui');
     expect(layerOf('apps/web/src/store/user.ts')).toBe('store');
-    expect(layerOf('apps/web/src/features/map/DeckGLOverlay.tsx')).toBe('feature');
+    expect(layerOf('apps/web/src/components/mapBackground/DeckGLOverlay.tsx')).toBe('feature');
     expect(layerOf('packages/ui/src/components/Card.tsx')).toBe('ui');
     expect(layerOf('apps/web/src/components/layout/Dock.tsx')).toBe('ui');
+    expect(layerOf('apps/web/src/components/PaceRange.tsx')).toBe('ui');
+    expect(layerOf('apps/web/src/components/settings')).toBe('feature');
     expect(layerOf('apps/web/src/pages/OnboardingPage.tsx')).toBe('page');
     expect(layerOf('apps/web/src/parsers/fit.ts')).toBe('other');
   });
@@ -55,10 +57,10 @@ describe('deps', () => {
     expect(labelLines(graph.mermaid)).toEqual([
       'subgraph L_page["pages"]',
       'n3["OnboardingPage.tsx"]',
-      'subgraph L_feature["features"]',
+      'subgraph L_feature["components/#lt;feature#gt;"]',
       'subgraph F_onboarding["onboarding/"]',
       'n0["OnboardingFlow.tsx"]',
-      'n1["features/settings/"]',
+      'n1["components/settings/"]',
       'subgraph L_store["store"]',
       'n4["onboarding.ts"]',
       'subgraph L_lib["lib"]',
@@ -77,7 +79,7 @@ describe('deps', () => {
       planned: [...FOCUS, 'apps/web/src/store/user.ts', 'messages/en.json'],
     });
     expect(graph.added).toEqual([
-      'apps/web/src/features/settings',
+      'apps/web/src/components/settings',
       'apps/web/src/lib',
       'apps/web/src/pages/OnboardingPage.tsx',
     ]);
@@ -140,12 +142,12 @@ describe('deps', () => {
         planned: [
           'packages/ui/src/components/Checkbox.tsx',
           'tools/workbench/tests/boardRead.spec.ts',
-          'apps/web/src/features/x/',
+          'apps/web/src/components/x/',
           'tools/workbench/GUIDE.md',
         ],
       }),
     ).toEqual([
-      'apps/web/src/features/x',
+      'apps/web/src/components/x',
       'packages/ui/src',
       'tools/workbench/scripts',
       'tools/workbench/site/src',

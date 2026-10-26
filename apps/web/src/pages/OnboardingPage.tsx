@@ -1,4 +1,4 @@
 import type { FC } from 'react';
-import { Onboarding } from '@/features/onboarding/index.tsx';
+import { Onboarding } from '@/components/onboarding/index.tsx';
 
 export const OnboardingPage: FC = () => <Onboarding />;

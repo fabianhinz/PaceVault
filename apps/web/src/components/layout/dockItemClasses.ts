@@ -1,7 +1,7 @@
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { FLOATING_CLASS } from '@pacevault/ui/lib/surfaces.ts';
 
-export const itemClasses: Record<'rail' | 'pill' | 'circle', string> = {
+export const CLASSES_BY_DOCK_ITEM_SHAPE: Record<'rail' | 'pill' | 'circle', string> = {
   rail: 'size-10',
   pill: 'h-11 min-w-0 flex-1',
   circle: 'size-11',
