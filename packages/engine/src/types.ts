@@ -1,7 +1,3 @@
-// ---------------------------------------------------------------------------
-// Engine-owned types — all pure data definitions used by engine functions
-// ---------------------------------------------------------------------------
-
 export const SPORTS = ['running', 'cycling'] as const;
 export type Sport = (typeof SPORTS)[number];
 export type Gender = 'male' | 'female';
@@ -20,13 +16,10 @@ export type LoadState =
 
 export type RunningZoneName = 'recovery' | 'easy' | 'tempo' | 'threshold' | 'vo2max';
 
-export type RaceDistance = '5k' | '10k' | 'half-marathon' | 'marathon';
+export const RACE_DISTANCES = ['5k', '10k', 'half-marathon', 'marathon'] as const;
+export type RaceDistance = (typeof RACE_DISTANCES)[number];
 
 export type PBCategory = 'peak-power' | 'fastest-distance' | 'longest' | 'most-elevation';
-
-// ---------------------------------------------------------------------------
-// Interfaces
-// ---------------------------------------------------------------------------
 
 export type SessionSource =
   | { kind: 'file' }
@@ -101,10 +94,8 @@ export interface DailyMetrics {
 
 export interface RunningZone {
   name: RunningZoneName;
-  label: string;
-  minPace: number; // sec/km (slower = higher number)
-  maxPace: number; // sec/km (faster = lower number)
-  color: string;
+  slowestPaceSecPerKm: number;
+  fastestPaceSecPerKm: number;
 }
 
 export interface PersonalBest {
@@ -115,10 +106,6 @@ export interface PersonalBest {
   sessionId: string;
   date: number;
 }
-
-// ---------------------------------------------------------------------------
-// GPS types
-// ---------------------------------------------------------------------------
 
 export interface GPSPoint {
   lat: number;
@@ -137,4 +124,17 @@ export interface SessionGPS {
   encodedPolyline: string;
   pointCount: number;
   bounds: GPSBounds;
+}
+
+export interface DatedValue<T> {
+  date: number;
+  value: T;
+}
+
+export interface StressThresholds {
+  restHr: number;
+  maxHr: number;
+  gender: Gender;
+  ftp?: number;
+  thresholdHr?: number;
 }

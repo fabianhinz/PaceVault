@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import {
   LineChart,
   Line,
@@ -13,7 +14,7 @@ import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
 import type { ZoneScale } from '@/lib/zoneColors.ts';
-import { useZoneLineStroke } from '@/components/charts/ZoneGradient.tsx';
+import { useZoneLineStroke } from '@/components/charts/hooks/useZoneLineStroke.tsx';
 import type { PowerPoint } from '@/lib/chartData.ts';
 import { m } from '@pacevault/i18n/messages.js';
 
@@ -25,18 +26,18 @@ interface PowerChartProps {
   zoneScale?: ZoneScale;
 }
 
-export const PowerChart = (props: PowerChartProps) => {
+export const PowerChart: FC<PowerChartProps> = (props) => {
   const zoom = useChartZoom({
     data: props.data,
     xKey: 'time',
     onZoomComplete: props.onZoomComplete,
     onClick: (x) => props.onSelectTime?.(Number(x)),
   });
-  const zoneLine = useZoneLineStroke(
-    props.zoneScale,
-    zoom.zoomedData.map((d) => d.power),
-    false,
-  );
+  const zoneLine = useZoneLineStroke({
+    scale: props.zoneScale,
+    values: zoom.zoomedData.map((d) => d.power),
+    reversed: false,
+  });
 
   return (
     <ResponsiveContainer width="100%" height="100%">

@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { summarizeWeather } from '@/lib/weatherSummary.ts';
-import type { WeatherSnapshot } from '@/lib/weather.ts';
+import { summarizeWeather, type WeatherSnapshot } from '@/lib/weather.ts';
+import { MS_PER_HOUR } from '@pacevault/engine/time.ts';
 
-const HOUR_MS = 3_600_000;
 const START_HOUR = Date.UTC(2026, 9, 4, 8);
 const CLEAR = 0;
 const CLOUDY = 3;
@@ -15,7 +14,7 @@ const snapshot = (
   feelsLike: number,
   weatherCode: number,
 ): WeatherSnapshot => ({
-  time: START_HOUR + hour * HOUR_MS,
+  time: START_HOUR + hour * MS_PER_HOUR,
   lat: 48,
   lng: 11,
   temperature,
@@ -27,7 +26,7 @@ const snapshot = (
   weatherCode,
 });
 
-describe('summarizeWeather', () => {
+describe(summarizeWeather.name, () => {
   it('includes the start hour in the ranges and finds the first condition change', () => {
     const snapshots = [
       snapshot(0, 9, 6, CLOUDY),
@@ -42,7 +41,7 @@ describe('summarizeWeather', () => {
     expect(summary?.windSpeed).toEqual({ min: 20, max: 20 });
     expect(summary?.firstChange).toEqual({
       weatherCode: HEAVY_RAIN,
-      time: START_HOUR + 2 * HOUR_MS,
+      time: START_HOUR + 2 * MS_PER_HOUR,
     });
   });
 

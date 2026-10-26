@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { nextRouteColor, routeColorOrder } from '@/features/studio/routeColors.ts';
 
-describe('nextRouteColor', () => {
+describe(nextRouteColor.name, () => {
   it('walks the palette in order while colours are free', () => {
     expect(nextRouteColor(['fuchsia'])).toBe('emerald');
     expect(nextRouteColor(['fuchsia', 'emerald'])).toBe('amber');

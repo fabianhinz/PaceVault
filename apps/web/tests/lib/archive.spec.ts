@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vite-plus/test';
 import { gzipSync, zipSync } from 'fflate';
 import { extractArchiveEntry, isArchiveFile, listActivityEntries } from '@/lib/archive.ts';
 
-describe('isArchiveFile', () => {
+describe(isArchiveFile.name, () => {
   it('returns true for .zip files', () => {
     expect(isArchiveFile('activities.zip')).toBe(true);
     expect(isArchiveFile('ACTIVITIES.ZIP')).toBe(true);
@@ -16,9 +16,9 @@ describe('isArchiveFile', () => {
   });
 });
 
-describe('listActivityEntries', () => {
+describe(listActivityEntries.name, () => {
   const makeZip = (entries: Record<string, Uint8Array>): ArrayBuffer => {
-    return zipSync(entries).buffer as ArrayBuffer;
+    return new Uint8Array(zipSync(entries)).buffer;
   };
 
   const dummyFit = new Uint8Array([0x2e, 0x46, 0x49, 0x54]);
@@ -32,7 +32,9 @@ describe('listActivityEntries', () => {
     expect(result).toEqual([
       { path: 'exports/activity.fit', fileName: 'activity.fit', extension: '.fit' },
     ]);
-    expect(new Uint8Array(extractArchiveEntry(zip, 'exports/activity.fit'))).toEqual(dummyFit);
+    expect(
+      new Uint8Array(extractArchiveEntry({ archive: zip, path: 'exports/activity.fit' })),
+    ).toEqual(dummyFit);
   });
 
   it('extracts FIT and TCX files with correct extensions', () => {
@@ -121,7 +123,9 @@ describe('listActivityEntries', () => {
     expect(result).toEqual([
       { path: 'activities/123.fit.gz', fileName: '123.fit', extension: '.fit' },
     ]);
-    expect(new Uint8Array(extractArchiveEntry(zip, 'activities/123.fit.gz'))).toEqual(dummyFit);
+    expect(
+      new Uint8Array(extractArchiveEntry({ archive: zip, path: 'activities/123.fit.gz' })),
+    ).toEqual(dummyFit);
   });
 
   it('throws on invalid ZIP data', () => {

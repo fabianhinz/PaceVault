@@ -5,26 +5,17 @@ import {
   getFormMessageDetailed,
 } from '@/lib/coachingMessages.ts';
 import type { FormStatus } from '@pacevault/engine/types.ts';
-import type { CoachingRecommendation } from '@/types/index.ts';
+import type { CoachingRecommendation } from '@/types.ts';
+import { createMockCoachingRecommendation } from '@tests/factories/coaching.ts';
 
 const ALL_STATUSES: FormStatus[] = ['detraining', 'fresh', 'neutral', 'optimal', 'overload'];
 
-const makeRec = (overrides: Partial<CoachingRecommendation> = {}): CoachingRecommendation => ({
-  status: 'neutral',
-  message: '',
-  tsb: 0,
-  acwr: 1.0,
-  injuryRisk: 'low',
-  dataMaturityDays: 42,
-  ...overrides,
-});
-
-describe('getFormMessageDetailed', () => {
+describe(getFormMessageDetailed.name, () => {
   describe('immature data (< 28 days)', () => {
     it.each(ALL_STATUSES)(
       '"%s" returns an immature-data message mentioning stabilizing',
       (status) => {
-        const rec = makeRec({ status, dataMaturityDays: 10 });
+        const rec = createMockCoachingRecommendation({ status, dataMaturityDays: 10 });
         const msg = getFormMessageDetailed(rec);
         expect(msg).toContain('stabilizing');
         expect(msg.length).toBeGreaterThan(0);
@@ -32,7 +23,12 @@ describe('getFormMessageDetailed', () => {
     );
 
     it('immature data message does not reference ACWR-specific risk language', () => {
-      const rec = makeRec({ status: 'fresh', dataMaturityDays: 5, acwr: 2.0, injuryRisk: 'high' });
+      const rec = createMockCoachingRecommendation({
+        status: 'fresh',
+        dataMaturityDays: 5,
+        acwr: 2.0,
+        injuryRisk: 'high',
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg).not.toContain('injury risk');
       expect(msg).not.toContain('danger zone');
@@ -40,9 +36,19 @@ describe('getFormMessageDetailed', () => {
     });
 
     it('boundary: 20 days is immature, 21-27 transitioning (same messages), 28 is mature', () => {
-      const immature = makeRec({ status: 'neutral', dataMaturityDays: 20 });
-      const transitioning = makeRec({ status: 'neutral', dataMaturityDays: 25 });
-      const mature = makeRec({ status: 'neutral', dataMaturityDays: 28, acwr: 1.0 });
+      const immature = createMockCoachingRecommendation({
+        status: 'neutral',
+        dataMaturityDays: 20,
+      });
+      const transitioning = createMockCoachingRecommendation({
+        status: 'neutral',
+        dataMaturityDays: 25,
+      });
+      const mature = createMockCoachingRecommendation({
+        status: 'neutral',
+        dataMaturityDays: 28,
+        acwr: 1.0,
+      });
       expect(getFormMessageDetailed(immature)).toContain('stabilizing');
       expect(getFormMessageDetailed(transitioning)).toContain('stabilizing');
       expect(getFormMessageDetailed(mature)).not.toContain('stabilizing');
@@ -51,19 +57,32 @@ describe('getFormMessageDetailed', () => {
 
   describe('undertraining (ACWR < 0.8, mature data)', () => {
     it.each(ALL_STATUSES)('"%s" returns an undertraining message', (status) => {
-      const rec = makeRec({ status, acwr: 0.5, injuryRisk: 'low', dataMaturityDays: 42 });
+      const rec = createMockCoachingRecommendation({
+        status,
+        acwr: 0.5,
+        injuryRisk: 'low',
+        dataMaturityDays: 42,
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg.length).toBeGreaterThan(0);
     });
 
     it('detraining + undertraining mentions deconditioning', () => {
-      const rec = makeRec({ status: 'detraining', acwr: 0.3, dataMaturityDays: 42 });
+      const rec = createMockCoachingRecommendation({
+        status: 'detraining',
+        acwr: 0.3,
+        dataMaturityDays: 42,
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg).toContain('deconditioning');
     });
 
     it('fresh + undertraining mentions below baseline', () => {
-      const rec = makeRec({ status: 'fresh', acwr: 0.6, dataMaturityDays: 42 });
+      const rec = createMockCoachingRecommendation({
+        status: 'fresh',
+        acwr: 0.6,
+        dataMaturityDays: 42,
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg).toContain('below');
     });
@@ -73,7 +92,12 @@ describe('getFormMessageDetailed', () => {
     it.each(ALL_STATUSES)(
       '"%s" returns a sweet-spot message that differs from standard',
       (status) => {
-        const rec = makeRec({ status, acwr: 1.0, injuryRisk: 'low', dataMaturityDays: 42 });
+        const rec = createMockCoachingRecommendation({
+          status,
+          acwr: 1.0,
+          injuryRisk: 'low',
+          dataMaturityDays: 42,
+        });
         const detailed = getFormMessageDetailed(rec);
         const standard = getFormMessage(status);
         expect(detailed).not.toBe(standard);
@@ -84,13 +108,18 @@ describe('getFormMessageDetailed', () => {
 
   describe('moderate risk (mature data)', () => {
     it.each(ALL_STATUSES)('"%s" with moderate risk returns a risk-aware message', (status) => {
-      const rec = makeRec({ status, acwr: 1.4, injuryRisk: 'moderate', dataMaturityDays: 42 });
+      const rec = createMockCoachingRecommendation({
+        status,
+        acwr: 1.4,
+        injuryRisk: 'moderate',
+        dataMaturityDays: 42,
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg.length).toBeGreaterThan(0);
     });
 
     it('fresh + moderate risk warns about ramp', () => {
-      const rec = makeRec({
+      const rec = createMockCoachingRecommendation({
         status: 'fresh',
         acwr: 1.4,
         injuryRisk: 'moderate',
@@ -103,13 +132,18 @@ describe('getFormMessageDetailed', () => {
 
   describe('high risk (mature data)', () => {
     it.each(ALL_STATUSES)('"%s" with high risk returns a strong warning', (status) => {
-      const rec = makeRec({ status, acwr: 1.8, injuryRisk: 'high', dataMaturityDays: 42 });
+      const rec = createMockCoachingRecommendation({
+        status,
+        acwr: 1.8,
+        injuryRisk: 'high',
+        dataMaturityDays: 42,
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg.length).toBeGreaterThan(0);
     });
 
     it('overload + high risk is the strongest warning', () => {
-      const rec = makeRec({
+      const rec = createMockCoachingRecommendation({
         status: 'overload',
         acwr: 2.0,
         injuryRisk: 'high',
@@ -120,7 +154,12 @@ describe('getFormMessageDetailed', () => {
     });
 
     it('fresh + high risk does not suggest racing', () => {
-      const rec = makeRec({ status: 'fresh', acwr: 1.8, injuryRisk: 'high', dataMaturityDays: 42 });
+      const rec = createMockCoachingRecommendation({
+        status: 'fresh',
+        acwr: 1.8,
+        injuryRisk: 'high',
+        dataMaturityDays: 42,
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg).not.toContain('ideal state for racing');
     });
@@ -128,26 +167,36 @@ describe('getFormMessageDetailed', () => {
 
   describe('priority order', () => {
     it('immature data takes priority over high ACWR risk', () => {
-      const rec = makeRec({ status: 'fresh', acwr: 2.0, injuryRisk: 'high', dataMaturityDays: 10 });
+      const rec = createMockCoachingRecommendation({
+        status: 'fresh',
+        acwr: 2.0,
+        injuryRisk: 'high',
+        dataMaturityDays: 10,
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg).toContain('stabilizing');
     });
 
     it('transitioning with extreme ACWR returns risk message, not immature', () => {
-      const rec = makeRec({ status: 'fresh', acwr: 1.8, injuryRisk: 'high', dataMaturityDays: 25 });
+      const rec = createMockCoachingRecommendation({
+        status: 'fresh',
+        acwr: 1.8,
+        injuryRisk: 'high',
+        dataMaturityDays: 25,
+      });
       const msg = getFormMessageDetailed(rec);
       expect(msg).not.toContain('stabilizing');
       expect(msg.length).toBeGreaterThan(0);
     });
 
     it('undertraining takes priority over low-risk sweet-spot message', () => {
-      const sweetSpot = makeRec({
+      const sweetSpot = createMockCoachingRecommendation({
         status: 'neutral',
         acwr: 1.0,
         injuryRisk: 'low',
         dataMaturityDays: 42,
       });
-      const undertraining = makeRec({
+      const undertraining = createMockCoachingRecommendation({
         status: 'neutral',
         acwr: 0.5,
         injuryRisk: 'low',
@@ -175,7 +224,7 @@ describe('message uniqueness', () => {
 
     for (const config of loadConfigs) {
       for (const status of ALL_STATUSES) {
-        const rec = makeRec({ status, ...config });
+        const rec = createMockCoachingRecommendation({ status, ...config });
         const msg = getFormMessageDetailed(rec);
         expect(msg.length).toBeGreaterThan(50);
         messages.add(msg);
@@ -186,9 +235,9 @@ describe('message uniqueness', () => {
   });
 });
 
-describe('getCoachingRecommendation', () => {
+describe(getCoachingRecommendation.name, () => {
   it('returns neutral recommendation for undefined metrics', () => {
-    const rec = getCoachingRecommendation(undefined, 0);
+    const rec = getCoachingRecommendation({ metrics: undefined, historyDays: 0 });
     expect(rec.status).toBe('neutral');
     expect(rec.tsb).toBe(0);
     expect(rec.acwr).toBe(0);
@@ -196,8 +245,8 @@ describe('getCoachingRecommendation', () => {
   });
 
   it('maps high TSB to detraining', () => {
-    const rec = getCoachingRecommendation(
-      {
+    const rec = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 50,
@@ -205,14 +254,14 @@ describe('getCoachingRecommendation', () => {
         tsb: 30,
         acwr: 0.4,
       },
-      42,
-    );
+      historyDays: 42,
+    });
     expect(rec.status).toBe('detraining');
   });
 
   it('maps positive TSB (5-25) to fresh', () => {
-    const rec = getCoachingRecommendation(
-      {
+    const rec = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 60,
@@ -220,14 +269,14 @@ describe('getCoachingRecommendation', () => {
         tsb: 10,
         acwr: 0.83,
       },
-      42,
-    );
+      historyDays: 42,
+    });
     expect(rec.status).toBe('fresh');
   });
 
   it('maps TSB near zero (-10 to 5) to neutral', () => {
-    const rec = getCoachingRecommendation(
-      {
+    const rec = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 50,
@@ -235,14 +284,14 @@ describe('getCoachingRecommendation', () => {
         tsb: -2,
         acwr: 1.04,
       },
-      42,
-    );
+      historyDays: 42,
+    });
     expect(rec.status).toBe('neutral');
   });
 
   it('maps negative TSB (-30 to -10) to optimal', () => {
-    const rec = getCoachingRecommendation(
-      {
+    const rec = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 50,
@@ -250,14 +299,14 @@ describe('getCoachingRecommendation', () => {
         tsb: -20,
         acwr: 1.4,
       },
-      42,
-    );
+      historyDays: 42,
+    });
     expect(rec.status).toBe('optimal');
   });
 
   it('maps very negative TSB (< -30) to overload', () => {
-    const rec = getCoachingRecommendation(
-      {
+    const rec = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 40,
@@ -265,14 +314,14 @@ describe('getCoachingRecommendation', () => {
         tsb: -40,
         acwr: 2.0,
       },
-      42,
-    );
+      historyDays: 42,
+    });
     expect(rec.status).toBe('overload');
   });
 
   it('sets injury risk based on ACWR', () => {
-    const low = getCoachingRecommendation(
-      {
+    const low = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 50,
@@ -280,12 +329,12 @@ describe('getCoachingRecommendation', () => {
         tsb: -5,
         acwr: 1.1,
       },
-      42,
-    );
+      historyDays: 42,
+    });
     expect(low.injuryRisk).toBe('low');
 
-    const moderate = getCoachingRecommendation(
-      {
+    const moderate = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 50,
@@ -293,12 +342,12 @@ describe('getCoachingRecommendation', () => {
         tsb: -20,
         acwr: 1.4,
       },
-      42,
-    );
+      historyDays: 42,
+    });
     expect(moderate.injuryRisk).toBe('moderate');
 
-    const high = getCoachingRecommendation(
-      {
+    const high = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 40,
@@ -306,14 +355,14 @@ describe('getCoachingRecommendation', () => {
         tsb: -40,
         acwr: 2.0,
       },
-      42,
-    );
+      historyDays: 42,
+    });
     expect(high.injuryRisk).toBe('high');
   });
 
   it('stores dataMaturityDays from historyDays argument', () => {
-    const rec = getCoachingRecommendation(
-      {
+    const rec = getCoachingRecommendation({
+      metrics: {
         date: '2024-01-01',
         tss: 0,
         ctl: 50,
@@ -321,8 +370,8 @@ describe('getCoachingRecommendation', () => {
         tsb: 0,
         acwr: 1.0,
       },
-      15,
-    );
+      historyDays: 15,
+    });
     expect(rec.dataMaturityDays).toBe(15);
   });
 });

@@ -1,12 +1,13 @@
+import type { FC } from 'react';
 import { FlaskConical } from 'lucide-react';
-import { IconTile } from '@pacevault/ui/components/IconTile.tsx';
-import { SheetPeek } from '@pacevault/ui/components/SheetPeek.tsx';
+import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
+import { PvSheetPeek } from '@pacevault/ui/components/pvBottomSheet/PvSheetPeek.tsx';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { m } from '@pacevault/i18n/messages.js';
 
-export const LabsPeek = () => (
-  <SheetPeek
-    icon={<IconTile icon={FlaskConical} />}
+export const LabsPeek: FC = () => (
+  <PvSheetPeek
+    icon={<PvIconTile icon={FlaskConical} />}
     primary={m.ui_nav_labs()}
     secondary={[
       m.ui_labs_tab_studio(),

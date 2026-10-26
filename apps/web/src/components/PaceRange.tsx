@@ -1,6 +1,12 @@
+import type { FC } from 'react';
 import { formatPace } from '@/lib/formatters.ts';
 
-export const PaceRange = (props: { minPace: number; maxPace: number }) => {
+interface PaceRangeProps {
+  minPace: number;
+  maxPace: number;
+}
+
+export const PaceRange: FC<PaceRangeProps> = (props) => {
   return (
     <span className="text-text-quaternary">
       {formatPace(props.maxPace)} – {formatPace(props.minPace)}

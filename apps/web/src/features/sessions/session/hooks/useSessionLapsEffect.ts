@@ -1,14 +1,19 @@
 import { useDeferredValue, useEffect, useMemo } from 'react';
-import { recordedDistance } from '@/lib/dynamicLaps.ts';
-import { buildLapSet, effectiveSplitDistance } from '@/lib/lapSet.ts';
-import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
+import { recordedDistance, buildLapSet, effectiveSplitDistance } from '@/lib/laps.ts';
+import { useThresholdsAt } from '@/features/settings/hooks/useThresholdsAt.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import type { SessionLap, SessionRecord } from '@pacevault/engine/types.ts';
 
-export const useSessionLapsEffect = (records: SessionRecord[], laps: SessionLap[]) => {
+export const useSessionLapsEffect = ({
+  records,
+  laps,
+}: {
+  records: SessionRecord[];
+  laps: SessionLap[];
+}): void => {
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const sport = useSessionsStore(
     (s) => s.sessions.find((session) => session.id === openedSessionId)?.sport,
@@ -28,8 +33,18 @@ export const useSessionLapsEffect = (records: SessionRecord[], laps: SessionLap[
 
   const lapSet = useMemo(() => {
     if (sport === undefined || sportPreferences === undefined) return null;
-    const metres = effectiveSplitDistance(sportPreferences.splitDistance, sport, sessionMetres);
-    return buildLapSet(records, laps, sportPreferences.lapSource, metres, { sport, thresholds });
+    const metres = effectiveSplitDistance({
+      splitDistance: sportPreferences.splitDistance,
+      sport,
+      sessionMetres,
+    });
+    return buildLapSet({
+      records,
+      laps,
+      source: sportPreferences.lapSource,
+      splitDistance: metres,
+      effortContext: { sport, thresholds },
+    });
   }, [records, laps, sportPreferences, sport, sessionMetres, thresholds]);
 
   useEffect(() => {

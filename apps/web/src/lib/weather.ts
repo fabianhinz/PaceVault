@@ -1,7 +1,9 @@
 import { z } from 'zod';
-import { haversineM } from '@pacevault/engine/gps.ts';
+import { haversineDistanceMeters } from '@pacevault/engine/geodesy.ts';
 import type { SessionRecord } from '@pacevault/engine/types.ts';
 import type { WindSample } from '@pacevault/engine/windExposure.ts';
+import { FailedResponseError } from '@/lib/fetchResponse.ts';
+import { MS_PER_HOUR, MS_PER_SECOND } from '@pacevault/engine/time.ts';
 
 export type WeatherCondition =
   | 'clear'
@@ -161,13 +163,16 @@ const DOTS_BY_INTENSITY: Record<PrecipitationIntensity, PrecipitationDots> = {
 
 const FREEZING_CODES: ReadonlySet<number> = new Set([56, 57, 66, 67]);
 
+const PRECIPITATION_BY_CONDITION: Partial<Record<WeatherCondition, PrecipitationType>> = {
+  drizzle: 'rain',
+  rain: 'rain',
+  snow: 'snow',
+  thunderstorm: 'thunderstorm',
+};
+
 const precipitationType = (code: number): PrecipitationType | undefined => {
   if (FREEZING_CODES.has(code)) return 'freezing';
-  const condition = wmoToCondition(code);
-  if (condition === 'drizzle' || condition === 'rain') return 'rain';
-  if (condition === 'snow') return 'snow';
-  if (condition === 'thunderstorm') return 'thunderstorm';
-  return undefined;
+  return PRECIPITATION_BY_CONDITION[wmoToCondition(code)];
 };
 
 export const wmoToPrecipitationMark = (code: number): PrecipitationMark => {
@@ -183,25 +188,28 @@ interface Waypoint {
   lng: number;
 }
 
-export const computeHourlyWaypoints = (
-  sessionDateMs: number,
-  durationSec: number,
-  records: SessionRecord[],
-): Waypoint[] => {
+export const computeHourlyWaypoints = ({
+  sessionDateMs,
+  durationSec,
+  records,
+}: {
+  sessionDateMs: number;
+  durationSec: number;
+  records: SessionRecord[];
+}): Waypoint[] => {
   const gpsRecords = records.filter((r) => r.lat !== undefined && r.lng !== undefined);
   if (gpsRecords.length === 0) return [];
 
-  const sessionEndMs = sessionDateMs + durationSec * 1000;
+  const sessionEndMs = sessionDateMs + durationSec * MS_PER_SECOND;
 
-  const hourMs = 3600 * 1000;
-  const firstHour = Math.floor(sessionDateMs / hourMs) * hourMs;
+  const firstHour = Math.floor(sessionDateMs / MS_PER_HOUR) * MS_PER_HOUR;
   const hours: number[] = [];
   let h = firstHour;
   while (h <= sessionEndMs) {
-    if (h >= sessionDateMs - hourMs) {
+    if (h >= sessionDateMs - MS_PER_HOUR) {
       hours.push(h);
     }
-    h += hourMs;
+    h += MS_PER_HOUR;
   }
 
   if (hours.length === 0) {
@@ -210,7 +218,7 @@ export const computeHourlyWaypoints = (
 
   const waypoints: Waypoint[] = [];
   for (const hourTimestamp of hours) {
-    const elapsedTarget = (hourTimestamp - sessionDateMs) / 1000;
+    const elapsedTarget = (hourTimestamp - sessionDateMs) / MS_PER_SECOND;
     let closest = gpsRecords[0];
     if (closest === undefined) continue;
     let closestDiff = Math.abs(closest.timestamp - elapsedTarget);
@@ -241,10 +249,13 @@ interface WaypointCluster {
   waypointIndices: number[];
 }
 
-export const deduplicateWaypoints = (
-  waypoints: Waypoint[],
-  thresholdKm: number,
-): WaypointCluster[] => {
+export const deduplicateWaypoints = ({
+  waypoints,
+  thresholdKm,
+}: {
+  waypoints: Waypoint[];
+  thresholdKm: number;
+}): WaypointCluster[] => {
   const clusters: WaypointCluster[] = [];
 
   for (let i = 0; i < waypoints.length; i++) {
@@ -253,7 +264,7 @@ export const deduplicateWaypoints = (
 
     let merged = false;
     for (const cluster of clusters) {
-      if (haversineM(wp, cluster) < thresholdKm * 1000) {
+      if (haversineDistanceMeters({ from: wp, to: cluster }) < thresholdKm * 1000) {
         cluster.waypointIndices.push(i);
         merged = true;
         break;
@@ -278,12 +289,17 @@ const toUtcDateStr = (ms: number): string => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-export const buildWeatherUrl = (
-  lat: number,
-  lng: number,
-  startDate: string,
-  endDate: string,
-): string => {
+export const buildWeatherUrl = ({
+  lat,
+  lng,
+  startDate,
+  endDate,
+}: {
+  lat: number;
+  lng: number;
+  startDate: string;
+  endDate: string;
+}): string => {
   const params = new URLSearchParams({
     latitude: String(lat),
     longitude: String(lng),
@@ -315,29 +331,42 @@ const openMeteoResponseSchema = z.object({
 
 type OpenMeteoResponse = z.infer<typeof openMeteoResponseSchema>;
 
-const fetchClusterWeather = async (
-  lat: number,
-  lng: number,
-  startDate: string,
-  endDate: string,
-): Promise<OpenMeteoResponse | undefined> => {
-  const url = buildWeatherUrl(lat, lng, startDate, endDate);
+const fetchClusterWeather = async ({
+  lat,
+  lng,
+  startDate,
+  endDate,
+}: {
+  lat: number;
+  lng: number;
+  startDate: string;
+  endDate: string;
+}): Promise<OpenMeteoResponse | undefined> => {
+  const url = buildWeatherUrl({ lat, lng, startDate, endDate });
   const response = await fetch(url);
-  if (!response.ok) return undefined;
+  if (!response.ok) {
+    throw new FailedResponseError({ operation: 'Open-Meteo GET archive', response });
+  }
   const json: unknown = await response.json();
   const result = openMeteoResponseSchema.safeParse(json);
   if (!result.success) return undefined;
   return result.data;
 };
 
-const pickHourIndex = (targetMs: number, timesEpochSec: number[]): number => {
+const pickHourIndex = ({
+  targetMs,
+  timesEpochSec,
+}: {
+  targetMs: number;
+  timesEpochSec: number[];
+}): number => {
   let bestIdx = 0;
   let bestDiff = Number.POSITIVE_INFINITY;
 
   for (let i = 0; i < timesEpochSec.length; i++) {
     const timeSec = timesEpochSec[i];
     if (timeSec === undefined) continue;
-    const diff = Math.abs(timeSec * 1000 - targetMs);
+    const diff = Math.abs(timeSec * MS_PER_SECOND - targetMs);
     if (diff < bestDiff) {
       bestIdx = i;
       bestDiff = diff;
@@ -347,26 +376,64 @@ const pickHourIndex = (targetMs: number, timesEpochSec: number[]): number => {
   return bestIdx;
 };
 
-export const fetchSessionWeather = async (
-  sessionId: string,
-  sessionDateMs: number,
-  durationSec: number,
-  records: SessionRecord[],
-): Promise<SessionWeather | undefined> => {
-  const waypoints = computeHourlyWaypoints(sessionDateMs, durationSec, records);
-  if (waypoints.length === 0) return undefined;
+const snapshotAt = ({
+  waypoint,
+  data,
+}: {
+  waypoint: Waypoint;
+  data: OpenMeteoResponse;
+}): WeatherSnapshot | undefined => {
+  const hourIdx = pickHourIndex({ targetMs: waypoint.time, timesEpochSec: data.hourly.time });
+  const temperature = data.hourly.temperature_2m[hourIdx];
+  const feelsLike = data.hourly.apparent_temperature[hourIdx];
+  const humidity = data.hourly.relative_humidity_2m[hourIdx];
+  const windSpeed = data.hourly.wind_speed_10m[hourIdx];
+  const windGusts = data.hourly.wind_gusts_10m[hourIdx];
+  const windDirection = data.hourly.wind_direction_10m[hourIdx];
+  const weatherCode = data.hourly.weather_code[hourIdx];
 
-  const clusters = deduplicateWaypoints(waypoints, 10);
-  if (clusters.length === 0) return undefined;
+  if (
+    temperature === null ||
+    temperature === undefined ||
+    feelsLike === null ||
+    feelsLike === undefined ||
+    humidity === null ||
+    humidity === undefined ||
+    windSpeed === null ||
+    windSpeed === undefined ||
+    windGusts === null ||
+    windGusts === undefined ||
+    windDirection === null ||
+    windDirection === undefined ||
+    weatherCode === null ||
+    weatherCode === undefined
+  ) {
+    return undefined;
+  }
 
-  const sessionEndMs = sessionDateMs + durationSec * 1000;
-  const startDate = toUtcDateStr(sessionDateMs);
-  const endDate = toUtcDateStr(sessionEndMs);
+  return {
+    time: waypoint.time,
+    lat: waypoint.lat,
+    lng: waypoint.lng,
+    temperature,
+    feelsLike,
+    humidity,
+    windSpeed,
+    windGusts,
+    windDirection,
+    weatherCode,
+  };
+};
 
-  const clusterResults = await Promise.all(
-    clusters.map((c) => fetchClusterWeather(c.lat, c.lng, startDate, endDate)),
-  );
-
+const snapshotsFromClusters = ({
+  clusters,
+  clusterResults,
+  waypoints,
+}: {
+  clusters: WaypointCluster[];
+  clusterResults: Array<OpenMeteoResponse | undefined>;
+  waypoints: Waypoint[];
+}): WeatherSnapshot[] => {
   const snapshots: WeatherSnapshot[] = [];
 
   for (let ci = 0; ci < clusters.length; ci++) {
@@ -377,49 +444,39 @@ export const fetchSessionWeather = async (
     for (const wpIdx of cluster.waypointIndices) {
       const wp = waypoints[wpIdx];
       if (!wp) continue;
-
-      const hourIdx = pickHourIndex(wp.time, data.hourly.time);
-      const temperature = data.hourly.temperature_2m[hourIdx];
-      const feelsLike = data.hourly.apparent_temperature[hourIdx];
-      const humidity = data.hourly.relative_humidity_2m[hourIdx];
-      const windSpeed = data.hourly.wind_speed_10m[hourIdx];
-      const windGusts = data.hourly.wind_gusts_10m[hourIdx];
-      const windDirection = data.hourly.wind_direction_10m[hourIdx];
-      const weatherCode = data.hourly.weather_code[hourIdx];
-
-      if (
-        temperature === null ||
-        temperature === undefined ||
-        feelsLike === null ||
-        feelsLike === undefined ||
-        humidity === null ||
-        humidity === undefined ||
-        windSpeed === null ||
-        windSpeed === undefined ||
-        windGusts === null ||
-        windGusts === undefined ||
-        windDirection === null ||
-        windDirection === undefined ||
-        weatherCode === null ||
-        weatherCode === undefined
-      ) {
-        continue;
-      }
-
-      snapshots.push({
-        time: wp.time,
-        lat: wp.lat,
-        lng: wp.lng,
-        temperature,
-        feelsLike,
-        humidity,
-        windSpeed,
-        windGusts,
-        windDirection,
-        weatherCode,
-      });
+      const snapshot = snapshotAt({ waypoint: wp, data });
+      if (snapshot) snapshots.push(snapshot);
     }
   }
+  return snapshots;
+};
+
+export const fetchSessionWeather = async ({
+  sessionId,
+  sessionDateMs,
+  durationSec,
+  records,
+}: {
+  sessionId: string;
+  sessionDateMs: number;
+  durationSec: number;
+  records: SessionRecord[];
+}): Promise<SessionWeather | undefined> => {
+  const waypoints = computeHourlyWaypoints({ sessionDateMs, durationSec, records });
+  if (waypoints.length === 0) return undefined;
+
+  const clusters = deduplicateWaypoints({ waypoints, thresholdKm: 10 });
+  if (clusters.length === 0) return undefined;
+
+  const sessionEndMs = sessionDateMs + durationSec * MS_PER_SECOND;
+  const startDate = toUtcDateStr(sessionDateMs);
+  const endDate = toUtcDateStr(sessionEndMs);
+
+  const clusterResults = await Promise.all(
+    clusters.map((c) => fetchClusterWeather({ lat: c.lat, lng: c.lng, startDate, endDate })),
+  );
+
+  const snapshots = snapshotsFromClusters({ clusters, clusterResults, waypoints });
 
   if (snapshots.length === 0) return undefined;
 
@@ -433,4 +490,49 @@ export const fetchSessionWeather = async (
 };
 
 export const toWindSamples = (weather: SessionWeather): WindSample[] =>
-  weather.snapshots.map((s) => ({ time: s.time, direction: s.windDirection }));
+  weather.snapshots.map((s) => ({ timeMs: s.time, directionDegrees: s.windDirection }));
+
+export interface ValueRange {
+  min: number;
+  max: number;
+}
+
+interface ConditionChange {
+  weatherCode: number;
+  time: number;
+}
+
+export interface WeatherSummary {
+  weatherCode: number;
+  temperature: ValueRange;
+  feelsLike: ValueRange;
+  windSpeed: ValueRange;
+  firstChange: ConditionChange | undefined;
+}
+
+const rangeOf = (values: number[]): ValueRange => ({
+  min: Math.min(...values),
+  max: Math.max(...values),
+});
+
+export const summarizeWeather = (snapshots: WeatherSnapshot[]): WeatherSummary | undefined => {
+  const first = snapshots[0];
+  if (first === undefined) return undefined;
+
+  const firstCondition = wmoToCondition(first.weatherCode);
+  let firstChange: ConditionChange | undefined;
+  const changed = snapshots.find(
+    (snapshot) => wmoToCondition(snapshot.weatherCode) !== firstCondition,
+  );
+  if (changed !== undefined) {
+    firstChange = { weatherCode: changed.weatherCode, time: changed.time };
+  }
+
+  return {
+    weatherCode: first.weatherCode,
+    temperature: rangeOf(snapshots.map((snapshot) => snapshot.temperature)),
+    feelsLike: rangeOf(snapshots.map((snapshot) => snapshot.feelsLike)),
+    windSpeed: rangeOf(snapshots.map((snapshot) => snapshot.windSpeed)),
+    firstChange,
+  };
+};

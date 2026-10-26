@@ -3,7 +3,7 @@ import { formatSessionName, formatSessionZoneLabel } from '@/lib/sessionTitleFor
 
 const atHour = (hour: number): number => new Date(2025, 0, 15, hour, 0, 0).getTime();
 
-describe('formatSessionName', () => {
+describe(formatSessionName.name, () => {
   it('returns the name when available', () => {
     expect(formatSessionName({ sport: 'running', date: atHour(8), name: 'My Custom Name' })).toBe(
       'My Custom Name',
@@ -25,16 +25,16 @@ describe('formatSessionName', () => {
   });
 });
 
-describe('formatSessionZoneLabel', () => {
+describe(formatSessionZoneLabel.name, () => {
   it('returns correct zone for valid input', () => {
-    expect(formatSessionZoneLabel(160, 200, 50)).toBe('Tempo');
+    expect(formatSessionZoneLabel({ avgHr: 160, maxHr: 200, restHr: 50 })).toBe('Tempo');
   });
 
   it('returns undefined when input is missing', () => {
-    expect(formatSessionZoneLabel(undefined, 200, 50)).toBeUndefined();
+    expect(formatSessionZoneLabel({ avgHr: undefined, maxHr: 200, restHr: 50 })).toBeUndefined();
   });
 
   it('returns undefined when maxHr <= restHr', () => {
-    expect(formatSessionZoneLabel(150, 50, 60)).toBeUndefined();
+    expect(formatSessionZoneLabel({ avgHr: 150, maxHr: 50, restHr: 60 })).toBeUndefined();
   });
 });

@@ -1,15 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
-import { useMapControlsStore } from '@/store/mapControls.ts';
+import { INITIAL_MAP_CONTROLS_STORE_STATE, useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 
 describe('useMapControlsStore', () => {
   beforeEach(() => {
-    useMapControlsStore.setState({
-      trackColorMode: 'sport',
-      selectedLapIndex: null,
-      hoveredLapIndex: null,
-      sessionMapView: '2d',
-    });
+    useMapControlsStore.setState(INITIAL_MAP_CONTROLS_STORE_STATE);
   });
 
   it('defaults trackColorMode to sport', () => {
@@ -19,11 +14,11 @@ describe('useMapControlsStore', () => {
   it('changing the lap source or split distance clears the selected and hovered lap', () => {
     useMapControlsStore.getState().selectLap(2);
     useMapControlsStore.getState().setHoveredLap(1);
-    useMapPreferencesStore.getState().setSessionLapSource('running', 'device');
+    useMapPreferencesStore.getState().setSessionLapSource({ sport: 'running', source: 'device' });
     expect(useMapControlsStore.getState().selectedLapIndex).toBeNull();
     expect(useMapControlsStore.getState().hoveredLapIndex).toBeNull();
     useMapControlsStore.getState().selectLap(2);
-    useMapPreferencesStore.getState().setSessionSplitDistance('running', 1500);
+    useMapPreferencesStore.getState().setSessionSplitDistance({ sport: 'running', metres: 1500 });
     expect(useMapControlsStore.getState().selectedLapIndex).toBeNull();
     expect(useMapPreferencesStore.getState().bySport.running.lapSource).toBe('splits');
   });

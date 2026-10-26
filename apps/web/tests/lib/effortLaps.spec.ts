@@ -1,20 +1,18 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { effortPattern, effortWorkAverage } from '@/lib/effortLaps.ts';
+import { effortPattern, effortWorkAverage, type LapAnalysis, type LapSet } from '@/lib/laps.ts';
 import type { EffortBlock, EffortKind } from '@pacevault/engine/effortDetection.ts';
-import type { LapAnalysis } from '@/lib/laps.ts';
-import type { LapSet } from '@/lib/lapSet.ts';
 
-const lap = (lapIndex: number, movingTime: number, isInterval: boolean): LapAnalysis => {
+const lap = (lapIndex: number, movingTime: number, interval: boolean): LapAnalysis => {
   let intensity = 'rest';
-  if (isInterval) intensity = 'active';
+  if (interval) intensity = 'active';
   return {
     lapIndex,
     paceSecPerKm: undefined,
     distance: undefined,
     movingTime,
     intensity,
-    isInterval,
-    isPartial: false,
+    interval,
+    partial: false,
   };
 };
 
@@ -33,7 +31,7 @@ const setOf = (workTimes: number[]): LapSet => {
   };
 };
 
-describe('effortPattern', () => {
+describe(effortPattern.name, () => {
   it('reads five work blocks within ±10 % as "5 × mean", ignoring recoveries', () => {
     const pattern = effortPattern(setOf([241, 238, 243, 240, 239]));
 
@@ -48,19 +46,19 @@ describe('effortPattern', () => {
 
 const block = (
   kind: EffortKind,
-  movingTime: number,
+  movingSec: number,
   signalMean: number | undefined,
 ): EffortBlock => ({
   kind,
-  start: 0,
-  end: movingTime,
+  startSec: 0,
+  endSec: movingSec,
   startIndex: 0,
   endIndex: 0,
-  movingTime,
+  movingSec,
   signalMean,
 });
 
-describe('effortWorkAverage', () => {
+describe(effortWorkAverage.name, () => {
   it('weights work-block power by moving time and ignores recoveries', () => {
     const blocks = [
       block('warmup', 900, 150),
@@ -69,27 +67,34 @@ describe('effortWorkAverage', () => {
       block('work', 120, 270),
     ];
 
-    expect(effortWorkAverage(blocks, 'power')).toBeCloseTo(290, 6);
+    expect(effortWorkAverage({ blocks, signal: 'power' })).toBeCloseTo(290, 6);
   });
 
   it('turns the averaged grade-adjusted speed into sec/km, time-weighted', () => {
     // 2 × 100 s at 4 m/s and 1 × 200 s at 5 m/s: 4.5 m/s → 222.2 s/km
     const blocks = [block('work', 100, 4), block('work', 100, 4), block('work', 200, 5)];
 
-    expect(effortWorkAverage(blocks, 'pace')).toBeCloseTo(1000 / 4.5, 6);
+    expect(effortWorkAverage({ blocks, signal: 'pace' })).toBeCloseTo(1000 / 4.5, 6);
   });
 
   it('averages heart rate in bpm', () => {
-    expect(effortWorkAverage([block('work', 180, 165), block('work', 180, 171)], 'hr')).toBe(168);
+    expect(
+      effortWorkAverage({
+        blocks: [block('work', 180, 165), block('work', 180, 171)],
+        signal: 'hr',
+      }),
+    ).toBe(168);
   });
 
   it('keeps a recorded 0 W average as 0', () => {
-    expect(effortWorkAverage([block('work', 60, 0), block('work', 60, 0)], 'power')).toBe(0);
+    expect(
+      effortWorkAverage({ blocks: [block('work', 60, 0), block('work', 60, 0)], signal: 'power' }),
+    ).toBe(0);
   });
 
   it('has no value when no work block has samples', () => {
     const blocks = [block('work', 60, undefined), block('rest', 60, 120)];
 
-    expect(effortWorkAverage(blocks, 'power')).toBeUndefined();
+    expect(effortWorkAverage({ blocks, signal: 'power' })).toBeUndefined();
   });
 });

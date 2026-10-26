@@ -1,13 +1,11 @@
-import type { ItemType, Status } from '../../../scripts/frontmatter.ts';
+import { tokens } from '@pacevault/ui/lib/tokens.ts';
+import type { ItemType, Status } from '@scripts/frontmatter.ts';
 
-/**
- * The board's words and fixed colours, shared by the server (`board.ts`) and the React island:
- * no node imports here.
- */
+/** Shared by the server and the React island: no node imports here. */
 
 export type Bucket = Status | 'needs-you';
 
-export const LABELS: Record<Bucket, string> = {
+export const LABEL_BY_BUCKET: Record<Bucket, string> = {
   'needs-you': 'Needs you',
   idea: 'Idea',
   exploring: 'Exploring',
@@ -18,34 +16,31 @@ export const LABELS: Record<Bucket, string> = {
   done: 'Done',
 };
 
-/** Fixed colours of the item types (card and panel icon): feature sky, bug rose, chore lime. */
-export const TYPE_COLOR: Record<ItemType, string> = {
-  feature: '#38bdf8',
-  bug: '#fb7185',
-  chore: '#a3e635',
+export const COLOR_BY_ITEM_TYPE: Record<ItemType, string> = {
+  feature: tokens.typeFeature,
+  bug: tokens.typeBug,
+  chore: tokens.typeChore,
 };
 
 export const SLOTS = ['mockup', 'plan', 'tech', 'review'] as const;
 export type Slot = (typeof SLOTS)[number];
-export const SLOT_LABEL: Record<Slot, string> = {
+export const LABEL_BY_SLOT: Record<Slot, string> = {
   mockup: 'Mockup',
   plan: 'Plan',
   tech: 'Tech',
   review: 'Review',
 };
 
-/** Why a card waits on the owner (Q2), in the order of the Needs you groups; in-review cards have their own column (R1). */
 export const REASONS = ['questions', 'decisions', 'findings'] as const;
 export type Reason = (typeof REASONS)[number];
 
-export const REASON_LABEL: Record<Reason, string> = {
+export const LABEL_BY_REASON: Record<Reason, string> = {
   questions: 'Open questions',
   decisions: 'Agent decisions',
   findings: 'Open findings',
 };
 
-/** The panel tab an entry opens on (Q8): questions live in the Plan, the rest in the Review. */
-export const REASON_TAB: Record<Reason, Slot> = {
+export const SLOT_BY_REASON: Record<Reason, Slot> = {
   questions: 'plan',
   decisions: 'review',
   findings: 'review',

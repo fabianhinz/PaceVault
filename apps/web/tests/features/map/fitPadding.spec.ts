@@ -10,7 +10,7 @@ const lapFit = (viewportHeight: number) => {
     canvasHeight: viewportHeight,
     insets: {
       top: 0,
-      bottom: sheetFitHeight(layout, 0.5, 0.85) + CONTROLS_ROW,
+      bottom: sheetFitHeight(layout, 0.5, { cap: 0.85 }) + CONTROLS_ROW,
       left: 0,
       right: 0,
     },
@@ -19,7 +19,7 @@ const lapFit = (viewportHeight: number) => {
   return { padding, box: viewportHeight - padding.top - padding.bottom };
 };
 
-describe('fitPadding', () => {
+describe(fitPadding.name, () => {
   it('lap fit keeps a visible box on short phones', () => {
     expect(lapFit(520).box).toBe(MIN_FIT_BOX);
     expect(lapFit(548).box).toBe(MIN_FIT_BOX);

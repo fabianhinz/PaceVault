@@ -1,32 +1,39 @@
 import { useState } from 'react';
-import { m } from '@pacevault/i18n/messages.js';
-import { toast } from '@/store/toast.ts';
-import { getSessionRecords } from '@/lib/indexeddb.ts';
-import { buildSessionGpx } from '@/lib/gpxExport.ts';
-import { buildGpxFilename } from '@pacevault/gpx/buildGpx.ts';
+import { useSnackbar } from '@/lib/hooks/useSnackbar.ts';
+import { COMMON_SNACKBARS } from '@/commonSnackbars.ts';
+import { SESSIONS_SNACKBARS } from '@/features/sessions/sessionsSnackbars.ts';
+import { getSessionRecords } from '@/lib/db.ts';
+import { buildGpxFilename, buildSessionGpx } from '@/lib/gpxExport.ts';
 import type { TrainingSession } from '@pacevault/engine/types.ts';
 import { downloadFile } from '@/lib/downloadFile';
 
-export const useSessionExport = (session: TrainingSession) => {
+interface SessionExport {
+  exporting: boolean;
+  exportable: boolean;
+  exportGpx: () => Promise<void>;
+}
+
+export const useSessionExport = (session: TrainingSession): SessionExport => {
   const [exporting, setExporting] = useState(false);
+  const snackbar = useSnackbar();
 
   const exportGpx = async () => {
     setExporting(true);
     try {
       const records = await getSessionRecords(session.id);
-      const gpxString = buildSessionGpx(session, records);
+      const gpxString = buildSessionGpx({ session, records });
 
       if (gpxString === null) {
-        toast(m.toast_export_no_gps(), undefined, 'error');
+        snackbar.enqueueSnackbar(SESSIONS_SNACKBARS.exportNoGps);
         return;
       }
 
-      const filename = buildGpxFilename(session.sport, session.date);
+      const filename = buildGpxFilename({ sport: session.sport, dateMs: session.date });
       const file = new File([gpxString], filename, { type: 'application/gpx+xml' });
 
       downloadFile(file);
     } catch {
-      toast(m.toast_export_failed(), undefined, 'error');
+      snackbar.enqueueSnackbar(COMMON_SNACKBARS.exportFailed);
     } finally {
       setExporting(false);
     }
@@ -34,7 +41,7 @@ export const useSessionExport = (session: TrainingSession) => {
 
   return {
     exporting,
-    canExport: session.hasDetailedRecords,
+    exportable: session.hasDetailedRecords,
     exportGpx,
   };
 };

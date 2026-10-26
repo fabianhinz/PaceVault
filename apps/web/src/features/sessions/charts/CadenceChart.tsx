@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import {
   LineChart,
   Line,
@@ -22,7 +23,7 @@ interface CadenceChartProps {
   onSelectTime?: (time: number) => void;
 }
 
-export const CadenceChart = (props: CadenceChartProps) => {
+export const CadenceChart: FC<CadenceChartProps> = (props) => {
   const zoom = useChartZoom({
     data: props.data,
     xKey: 'time',

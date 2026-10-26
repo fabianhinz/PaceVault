@@ -1,22 +1,44 @@
 import { useMemo } from 'react';
 import type { SessionRecord, TrainingSession } from '@pacevault/engine/types.ts';
-import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
+import { useThresholdsAt } from '@/features/settings/hooks/useThresholdsAt.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
-import { colorModeOptions, effectiveColorMode, type WindInput } from '@/lib/colorModes.ts';
-import { speedScale } from '@/lib/speedScale.ts';
+import {
+  colorModeOptions,
+  effectiveColorMode,
+  type ColorMode,
+  type ColorModeOption,
+  type WindInput,
+} from '@/lib/colorModes.ts';
+import { speedScale, type SpeedScale } from '@/lib/speedScale.ts';
 import { toWindSamples } from '@/lib/weather.ts';
-import { useSessionWeather } from './useSessionWeather.ts';
+import { useSessionWeather } from '@/queries/weather/useSessionWeather.ts';
 
-export const useSessionColorModes = (session: TrainingSession, records: SessionRecord[]) => {
+interface SessionColorModes {
+  options: ColorModeOption[];
+  speedScale: SpeedScale | undefined;
+  effective: ColorMode;
+}
+
+export const useSessionColorModes = ({
+  session,
+  records,
+}: {
+  session: TrainingSession;
+  records: SessionRecord[];
+}): SessionColorModes => {
   const thresholds = useThresholdsAt(session.date);
   const chosen = useMapPreferencesStore((s) => s.bySport[session.sport].colorMode);
-  const weather = useSessionWeather(session.id, session.date, session.duration);
-  const isWeatherLoading = weather.isLoading;
+  const weather = useSessionWeather({
+    sessionId: session.id,
+    sessionDateMs: session.date,
+    durationSec: session.duration,
+  });
+  const weatherLoading = weather.isLoading;
   const weatherData = weather.data;
 
   const options = useMemo(() => {
     let wind: WindInput = { state: 'ready', samples: [] };
-    if (isWeatherLoading) {
+    if (weatherLoading) {
       wind = { state: 'loading' };
     } else if (weatherData) {
       wind = { state: 'ready', samples: toWindSamples(weatherData) };
@@ -27,7 +49,7 @@ export const useSessionColorModes = (session: TrainingSession, records: SessionR
       thresholds: thresholds ?? {},
       wind,
     });
-  }, [session.sport, records, thresholds, isWeatherLoading, weatherData]);
+  }, [session.sport, records, thresholds, weatherLoading, weatherData]);
 
   const speed = useMemo(() => {
     if (session.sport === 'running') return undefined;

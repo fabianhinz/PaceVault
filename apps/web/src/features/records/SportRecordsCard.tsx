@@ -1,37 +1,30 @@
-import { Link } from 'react-router-dom';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import { ValueSkeleton } from '@pacevault/ui/components/ValueSkeleton.tsx';
+import type { FC } from 'react';
+import { PageLink } from '@/routing/PageLink.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvCardHeader } from '@pacevault/ui/components/pvCardHeader/PvCardHeader.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import { PvValueSkeleton } from '@pacevault/ui/components/pvValueSkeleton/PvValueSkeleton.tsx';
 import { SportBadge } from '@/features/sessions/SportBadge.tsx';
 import { pbLabel, formatPBValue, formatDate } from '@/lib/formatters.ts';
 import { PB_SLOTS } from '@/lib/records.ts';
 import type { PersonalBest, Sport } from '@pacevault/engine/types.ts';
-import { m } from '@pacevault/i18n/messages.js';
+import { LABEL_BY_SPORT, RECORDS_SUBTITLE_BY_SPORT } from '@/microcopy/sports.ts';
 
-const SPORT_NAMES: Record<Sport, () => string> = {
-  running: m.ui_sport_running,
-  cycling: m.ui_sport_cycling,
-};
-
-const sportSubtitle: Record<Sport, () => string> = {
-  running: m.ui_records_running_subtitle,
-  cycling: m.ui_records_cycling_subtitle,
-};
-
-export const SportRecordsCard = (props: {
+interface SportRecordsCardProps {
   sport: Sport;
   pbs: PersonalBest[] | undefined;
   loading: boolean;
-}) => {
+}
+
+export const SportRecordsCard: FC<SportRecordsCardProps> = (props) => {
   const slots = PB_SLOTS[props.sport];
 
   return (
-    <Card>
-      <CardHeader
+    <PvCard>
+      <PvCardHeader
         icon={<SportBadge sport={props.sport} />}
-        titleSlot={<Typography>{SPORT_NAMES[props.sport]()}</Typography>}
-        subtitle={sportSubtitle[props.sport]()}
+        titleSlot={<PvTypography>{LABEL_BY_SPORT[props.sport]()}</PvTypography>}
+        subtitle={RECORDS_SUBTITLE_BY_SPORT[props.sport]()}
       />
       <div className="space-y-1">
         {slots.map((slot) => {
@@ -53,22 +46,22 @@ export const SportRecordsCard = (props: {
               className={`flex items-center gap-3 rounded-lg px-3 py-2${pb ? ' transition-colors hover:bg-white/10' : ''}`}
             >
               <div className="flex-1 min-w-0">
-                <Typography variant="body1" color={pb ? 'textPrimary' : 'textSecondary'}>
+                <PvTypography variant="body1" color={pb ? 'textPrimary' : 'textSecondary'}>
                   {label}
-                </Typography>
+                </PvTypography>
               </div>
               {props.loading ? (
                 <div className="text-right">
-                  <ValueSkeleton />
+                  <PvValueSkeleton />
                 </div>
               ) : (
                 <div className="text-right">
-                  <Typography variant="subtitle1" color={pb ? 'textPrimary' : 'textTertiary'}>
+                  <PvTypography variant="subtitle1" color={pb ? 'textPrimary' : 'textTertiary'}>
                     {pb ? formatPBValue(pb) : '--'}
-                  </Typography>
-                  <Typography variant="caption" as="p" className={pb ? '' : 'invisible'}>
+                  </PvTypography>
+                  <PvTypography variant="caption" as="p" className={pb ? '' : 'invisible'}>
                     {pb ? formatDate(pb.date) : '\u00a0'}
-                  </Typography>
+                  </PvTypography>
                 </div>
               )}
             </div>
@@ -76,19 +69,19 @@ export const SportRecordsCard = (props: {
 
           if (pb) {
             return (
-              <Link
+              <PageLink
                 key={`${slot.category}-${slot.window}`}
-                to={`/sessions/${pb.sessionId}`}
+                to={{ page: 'sessionDetail', params: { sessionId: pb.sessionId } }}
                 className="block"
               >
                 {row}
-              </Link>
+              </PageLink>
             );
           }
 
           return <div key={`${slot.category}-${slot.window}`}>{row}</div>;
         })}
       </div>
-    </Card>
+    </PvCard>
   );
 };

@@ -1,12 +1,18 @@
 import { useMemo } from 'react';
 import { buildMoreStats, type MoreStats } from '@/lib/moreStats.ts';
-import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
+import { useThresholdsAt } from '@/features/settings/hooks/useThresholdsAt.ts';
 import type { SessionRecord, TrainingSession } from '@pacevault/engine/types.ts';
 
-export const useMoreStats = (session: TrainingSession, records: SessionRecord[]): MoreStats => {
+export const useMoreStats = ({
+  session,
+  records,
+}: {
+  session: TrainingSession;
+  records: SessionRecord[];
+}): MoreStats => {
   const thresholds = useThresholdsAt(session.date);
   return useMemo(
-    () => buildMoreStats(session, records, thresholds),
+    () => buildMoreStats({ session, records, thresholds }),
     [session, records, thresholds],
   );
 };

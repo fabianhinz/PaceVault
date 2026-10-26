@@ -1,30 +1,31 @@
-import { StatTile } from '@pacevault/ui/components/StatTile.tsx';
+import type { FC } from 'react';
+import { PvStatTile } from '@pacevault/ui/components/pvStatTile/PvStatTile.tsx';
 import { MetricLabel } from '@/components/MetricLabel.tsx';
 import { pickPeak, type MoreStats } from '@/lib/moreStats.ts';
 import type { Sport } from '@pacevault/engine/types.ts';
 import { m } from '@pacevault/i18n/messages.js';
 import { useMiniRailHover } from './hooks/useMiniRailHover.ts';
 import { PeakBars } from './PeakBars.tsx';
-import { peakWindow, watts } from './statFormat.ts';
+import { statFormat } from './statFormat.ts';
 
 interface PeakPowerCellProps {
   sport: Sport;
   peaks: NonNullable<MoreStats['peaks']>;
 }
 
-export const PeakPowerCell = (props: PeakPowerCellProps) => {
+export const PeakPowerCell: FC<PeakPowerCellProps> = (props) => {
   const rail = useMiniRailHover();
-  const pick = pickPeak(props.peaks, rail.index);
+  const pick = pickPeak({ peaks: props.peaks, hovered: rail.index });
   if (!pick) return null;
 
   return (
-    <StatTile
+    <PvStatTile
       title={m.ui_more_stats_peaks()}
       stat="peakPower"
       info={<MetricLabel metricId="peakPower" size="sm" iconOnly className="self-center" />}
-      value={watts(pick.watts)}
+      value={statFormat.watts(pick.watts)}
       unit="W"
-      note={peakWindow(pick.seconds)}
+      note={statFormat.peakWindow(pick.seconds)}
     >
       <PeakBars
         sport={props.sport}
@@ -33,6 +34,6 @@ export const PeakPowerCell = (props: PeakPowerCellProps) => {
         railProps={rail.railProps}
         segmentProps={rail.segmentProps}
       />
-    </StatTile>
+    </PvStatTile>
   );
 };

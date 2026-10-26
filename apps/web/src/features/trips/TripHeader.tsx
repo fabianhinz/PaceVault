@@ -1,17 +1,19 @@
-import type { ElementType, ReactNode } from 'react';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import type { TypographyVariants } from '@pacevault/ui/components/Typography.tsx';
+import type { ElementType, FC, ReactNode } from 'react';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import type { TypographyVariants } from '@pacevault/ui/components/pvTypography/types.ts';
 import type { Trip } from '@/store/trips.ts';
 import { TripBadge } from './TripBadge.tsx';
 import { useTripSessions } from './hooks/useTripSessions.ts';
 import { computeTripTotals, formatTripStatsLine } from './tripStats.ts';
 
-export const TripHeader = (props: {
+interface TripHeaderProps {
   trip: Trip;
   titleVariant?: TypographyVariants;
   titleAs?: ElementType;
   children?: ReactNode;
-}) => {
+}
+
+export const TripHeader: FC<TripHeaderProps> = (props) => {
   const tripSessions = useTripSessions(props.trip);
   const statsLine = formatTripStatsLine(computeTripTotals(tripSessions));
 
@@ -20,12 +22,12 @@ export const TripHeader = (props: {
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <TripBadge />
         <div className="min-w-0">
-          <Typography variant={props.titleVariant ?? 'subtitle1'} as={props.titleAs} noWrap>
+          <PvTypography variant={props.titleVariant ?? 'subtitle1'} as={props.titleAs} noWrap>
             {props.trip.name}
-          </Typography>
-          <Typography variant="caption" as="p" color="textSecondary">
+          </PvTypography>
+          <PvTypography variant="caption" as="p" color="textSecondary">
             {statsLine}
-          </Typography>
+          </PvTypography>
         </div>
       </div>
       {props.children}

@@ -14,20 +14,30 @@ export const getMonthKey = (dateStr: string): string => {
   return `${d.getFullYear()}-${month}`;
 };
 
-export const loadBucketDayRange = (
-  key: string,
-  groupBy: 'day' | 'week' | 'month',
-): { from: string; to: string } => {
+export const loadBucketDayRange = ({
+  key,
+  groupBy,
+}: {
+  key: string;
+  groupBy: 'day' | 'week' | 'month';
+}): { from: string; to: string } => {
   if (groupBy === 'month') {
     const start = parseDayKey(`${key}-01`);
     return {
       from: `${key}-01`,
-      to: toDayKey(start.getFullYear(), start.getMonth() + 1, 0),
+      to: toDayKey({ year: start.getFullYear(), monthIndex: start.getMonth() + 1, day: 0 }),
     };
   }
   if (groupBy === 'week') {
     const start = parseDayKey(key);
-    return { from: key, to: toDayKey(start.getFullYear(), start.getMonth(), start.getDate() + 6) };
+    return {
+      from: key,
+      to: toDayKey({
+        year: start.getFullYear(),
+        monthIndex: start.getMonth(),
+        day: start.getDate() + 6,
+      }),
+    };
   }
   return { from: key, to: key };
 };
@@ -46,5 +56,12 @@ const loadDigest = (loads: number[]): string => {
  * The Labs week plan is kept per week, session count, threshold pace and stored loads: a
  * recompute or reprocess that moves the loads refreshes it, otherwise it stays for the week.
  */
-export const buildPlanCacheKey = (weekOf: string, loads: number[], thresholdPace: number): string =>
-  `${weekOf}:${loads.length}:${thresholdPace}:${loadDigest(loads)}`;
+export const buildPlanCacheKey = ({
+  weekOf,
+  loads,
+  thresholdPace,
+}: {
+  weekOf: string;
+  loads: number[];
+  thresholdPace: number;
+}): string => `${weekOf}:${loads.length}:${thresholdPace}:${loadDigest(loads)}`;

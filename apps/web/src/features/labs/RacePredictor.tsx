@@ -1,72 +1,69 @@
+import type { FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
-import type { RaceDistance } from '@pacevault/engine/types.ts';
-import { RACE_DISTANCE_METERS } from '@pacevault/engine/vdot.ts';
-import { DISTANCE_OPTIONS, usesLongFormat } from '@/lib/raceTime.ts';
+import { RACE_DISTANCES } from '@pacevault/engine/types.ts';
+import { DISTANCE_OPTIONS, isLongFormat } from '@/lib/raceTime.ts';
 import { formatPaceInput, formatRaceTime } from '@/lib/formatters.ts';
 import { useRacePredictor } from '@/features/labs/hooks/useRacePredictor.ts';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
-import { Input } from '@pacevault/ui/components/Input.tsx';
-import { Label } from '@pacevault/ui/components/Label.tsx';
-import { DataTable } from '@pacevault/ui/components/DataTable.tsx';
-import { List, ListItem } from '@pacevault/ui/components/List.tsx';
-import {
-  SelectRoot,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@pacevault/ui/components/Select.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvCardHeader } from '@pacevault/ui/components/pvCardHeader/PvCardHeader.tsx';
+import { PvInput } from '@pacevault/ui/components/pvInput/PvInput.tsx';
+import { PvLabel } from '@pacevault/ui/components/pvLabel/PvLabel.tsx';
+import { PvDataTable } from '@pacevault/ui/components/pvDataTable/PvDataTable.tsx';
+import { PvList } from '@pacevault/ui/components/pvList/PvList.tsx';
+import { PvListItem } from '@pacevault/ui/components/pvList/PvListItem.tsx';
+import { PvSelect } from '@pacevault/ui/components/pvSelect/PvSelect.tsx';
+import { PvSelectTrigger } from '@pacevault/ui/components/pvSelect/PvSelectTrigger.tsx';
+import { PvSelectValue } from '@pacevault/ui/components/pvSelect/PvSelectValue.tsx';
+import { PvSelectContent } from '@pacevault/ui/components/pvSelect/PvSelectContent.tsx';
+import { PvSelectItem } from '@pacevault/ui/components/pvSelect/PvSelectItem.tsx';
 import { MetricLabel } from '@/components/MetricLabel.tsx';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 
-const DISTANCE_KEYS = Object.keys(RACE_DISTANCE_METERS) as RaceDistance[];
-
-export const RacePredictor = () => {
+export const RacePredictor: FC = () => {
   const predictor = useRacePredictor();
 
   return (
-    <Card>
-      <CardHeader title={m.ui_labs_predictor_title()} subtitle={m.ui_labs_predictor_subtitle()} />
+    <PvCard>
+      <PvCardHeader title={m.ui_labs_predictor_title()} subtitle={m.ui_labs_predictor_subtitle()} />
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label>{m.ui_pace_est_distance()}</Label>
-            <SelectRoot value={predictor.distance} onValueChange={predictor.handleDistanceChange}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
+            <PvLabel>{m.ui_pace_est_distance()}</PvLabel>
+            <PvSelect value={predictor.distance} onValueChange={predictor.handleDistanceChange}>
+              <PvSelectTrigger>
+                <PvSelectValue />
+              </PvSelectTrigger>
+              <PvSelectContent>
                 {DISTANCE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
+                  <PvSelectItem key={opt.value} value={opt.value}>
                     {opt.label}
-                  </SelectItem>
+                  </PvSelectItem>
                 ))}
-              </SelectContent>
-            </SelectRoot>
+              </PvSelectContent>
+            </PvSelect>
           </div>
 
           <div>
-            <Label>{m.ui_pace_est_race_time_short()}</Label>
-            <Input
+            <PvLabel>{m.ui_pace_est_race_time_short()}</PvLabel>
+            <PvInput
               type="text"
-              placeholder={usesLongFormat(predictor.distance) ? '1:45:00' : '20:00'}
-              helperText={usesLongFormat(predictor.distance) ? 'h:mm:ss' : 'mm:ss'}
+              placeholder={isLongFormat(predictor.distance) ? '1:45:00' : '20:00'}
+              helperText={isLongFormat(predictor.distance) ? 'h:mm:ss' : 'mm:ss'}
               value={predictor.timeInput}
               onChange={(e) => predictor.setTimeInput(e.target.value)}
             />
           </div>
         </div>
 
-        <DataTable
-          data={DISTANCE_KEYS.map((key) => ({ key, pred: predictor.predictions?.[key] }))}
+        <PvDataTable
+          data={RACE_DISTANCES.map((key) => ({ key, pred: predictor.predictions?.[key] }))}
           rowKey={(row) => row.key}
           rowLabel={(row) => DISTANCE_OPTIONS.find((opt) => opt.value === row.key)?.label}
           fields={[
             {
               label: m.ui_labs_predictor_time(),
-              value: (row) => (row.pred ? formatRaceTime(row.pred.timeSeconds) : '--'),
+              value: (row) => (row.pred ? formatRaceTime(row.pred.timeSec) : '--'),
             },
             {
               label: m.ui_labs_predictor_pace(),
@@ -75,8 +72,8 @@ export const RacePredictor = () => {
           ]}
         />
 
-        <List>
-          <ListItem
+        <PvList>
+          <PvListItem
             primary={
               <span className="inline-flex items-center gap-1">
                 VDOT <MetricLabel metricId="vdot" size="sm" contextLabel="VDOT" />
@@ -85,9 +82,9 @@ export const RacePredictor = () => {
             secondary={METRIC_EXPLANATIONS.vdot.oneLiner}
           >
             {predictor.vdot?.toFixed(1) ?? '--'}
-          </ListItem>
-        </List>
+          </PvListItem>
+        </PvList>
       </div>
-    </Card>
+    </PvCard>
   );
 };

@@ -4,6 +4,7 @@ import type {
   FormStatus,
   RunningZone,
   RunningZoneName,
+  TrainingSession,
 } from '@pacevault/engine/types.ts';
 import type {
   PrescribedWorkout,
@@ -11,10 +12,15 @@ import type {
   WorkoutStep,
   WorkoutType,
   PlanContext,
-} from '@/types/index.ts';
+} from '@/types.ts';
 import { toDateString } from './formatters.ts';
-import { getFormStatus, getInjuryRisk, getLoadState } from '@pacevault/engine/coaching.ts';
-import { getZoneMidPace } from '@pacevault/engine/zones.ts';
+import {
+  formStatusFromTsb,
+  injuryRiskFromAcwr,
+  loadStateFromAcwr,
+} from '@pacevault/engine/coaching.ts';
+import { zoneMidPace } from '@pacevault/engine/zones.ts';
+import { dailyMetricsFromSessions } from '@pacevault/engine/metrics.ts';
 
 // --- TSS per hour by workout type ---
 
@@ -39,23 +45,32 @@ const DAY_NAMES = [
   m.coach_day_sunday,
 ];
 
-const zoneRange = (
-  zoneName: RunningZoneName,
-  zones: RunningZone[],
-): { min: number; max: number } => {
+const zoneRange = ({
+  zoneName,
+  zones,
+}: {
+  zoneName: RunningZoneName;
+  zones: RunningZone[];
+}): { min: number; max: number } => {
   const zone = zones.find((z) => z.name === zoneName);
   if (!zone) return { min: 0, max: 0 };
-  return { min: zone.minPace, max: zone.maxPace };
+  return { min: zone.slowestPaceSecPerKm, max: zone.fastestPaceSecPerKm };
 };
 
-const step = (
-  type: WorkoutStep['type'],
-  durationSec: number,
-  zoneName: RunningZoneName,
-  zones: RunningZone[],
-  repeat?: number,
-): WorkoutStep => {
-  const range = zoneRange(zoneName, zones);
+const step = ({
+  type,
+  durationSec,
+  zoneName,
+  zones,
+  repeat,
+}: {
+  type: WorkoutStep['type'];
+  durationSec: number;
+  zoneName: RunningZoneName;
+  zones: RunningZone[];
+  repeat?: number;
+}): WorkoutStep => {
+  const range = zoneRange({ zoneName, zones });
   let spreadRepeat: { repeat: number } | Record<string, never> = {};
   if (repeat !== undefined) {
     spreadRepeat = { repeat };
@@ -70,55 +85,61 @@ const step = (
   };
 };
 
-const buildWorkout = (
-  type: WorkoutType,
-  zones: RunningZone[],
-): { title: string; steps: WorkoutStep[] } => {
+const buildWorkout = ({
+  type,
+  zones,
+}: {
+  type: WorkoutType;
+  zones: RunningZone[];
+}): { title: string; steps: WorkoutStep[] } => {
   switch (type) {
     case 'rest':
       return { title: m.coach_workout_rest(), steps: [] };
     case 'recovery':
       return {
         title: m.coach_workout_recovery(),
-        steps: [step('work', 25 * 60, 'recovery', zones)],
+        steps: [step({ type: 'work', durationSec: 25 * 60, zoneName: 'recovery', zones })],
       };
     case 'easy':
       return {
         title: m.coach_workout_easy(),
-        steps: [step('work', 45 * 60, 'easy', zones)],
+        steps: [step({ type: 'work', durationSec: 45 * 60, zoneName: 'easy', zones })],
       };
     case 'long-run':
       return {
         title: m.coach_workout_long_run(),
-        steps: [step('work', 75 * 60, 'easy', zones), step('work', 15 * 60, 'tempo', zones)],
+        steps: [
+          step({ type: 'work', durationSec: 75 * 60, zoneName: 'easy', zones }),
+          step({ type: 'work', durationSec: 15 * 60, zoneName: 'tempo', zones }),
+        ],
       };
     case 'tempo':
       return {
         title: m.coach_workout_tempo(),
         steps: [
-          step('warmup', 10 * 60, 'easy', zones),
-          step('work', 25 * 60, 'tempo', zones),
-          step('cooldown', 10 * 60, 'easy', zones),
+          step({ type: 'warmup', durationSec: 10 * 60, zoneName: 'easy', zones }),
+          step({ type: 'work', durationSec: 25 * 60, zoneName: 'tempo', zones }),
+          step({ type: 'cooldown', durationSec: 10 * 60, zoneName: 'easy', zones }),
         ],
       };
     case 'threshold-intervals':
       return {
         title: m.coach_workout_threshold(),
         steps: [
-          step('warmup', 10 * 60, 'easy', zones),
-          step('work', 5 * 60, 'threshold', zones, 5),
-          step('recovery', 2 * 60, 'recovery', zones, 5),
-          step('cooldown', 10 * 60, 'easy', zones),
+          step({ type: 'warmup', durationSec: 10 * 60, zoneName: 'easy', zones }),
+          step({ type: 'work', durationSec: 5 * 60, zoneName: 'threshold', zones, repeat: 5 }),
+          step({ type: 'recovery', durationSec: 2 * 60, zoneName: 'recovery', zones, repeat: 5 }),
+          step({ type: 'cooldown', durationSec: 10 * 60, zoneName: 'easy', zones }),
         ],
       };
     case 'vo2max-intervals':
       return {
         title: m.coach_workout_vo2max(),
         steps: [
-          step('warmup', 15 * 60, 'easy', zones),
-          step('work', 3 * 60, 'vo2max', zones, 5),
-          step('recovery', 3 * 60, 'recovery', zones, 5),
-          step('cooldown', 10 * 60, 'easy', zones),
+          step({ type: 'warmup', durationSec: 15 * 60, zoneName: 'easy', zones }),
+          step({ type: 'work', durationSec: 3 * 60, zoneName: 'vo2max', zones, repeat: 5 }),
+          step({ type: 'recovery', durationSec: 3 * 60, zoneName: 'recovery', zones, repeat: 5 }),
+          step({ type: 'cooldown', durationSec: 10 * 60, zoneName: 'easy', zones }),
         ],
       };
   }
@@ -136,16 +157,19 @@ const computeStepsDuration = (steps: WorkoutStep[]): number => {
   return steps.reduce((total, s) => total + s.durationSec * (s.repeat ?? 1), 0);
 };
 
-export const estimateWorkoutDistance = (
-  workout: PrescribedWorkout,
-  zones: RunningZone[],
-): number => {
+export const estimateWorkoutDistance = ({
+  workout,
+  zones,
+}: {
+  workout: PrescribedWorkout;
+  zones: RunningZone[];
+}): number => {
   if (workout.type === 'rest') return 0;
   let meters = 0;
   for (const s of workout.steps) {
     const zone = zones.find((z) => z.name === s.zone);
     if (!zone) continue;
-    const midPace = getZoneMidPace(zone); // sec/km
+    const midPace = zoneMidPace(zone); // sec/km
     const reps = s.repeat ?? 1;
     meters += ((s.durationSec * reps) / midPace) * 1000;
   }
@@ -199,7 +223,7 @@ const getRationale = (context: PlanContext): string => {
       daysToRace: String(context.daysToRace),
     });
   }
-  const risk = getInjuryRisk(context.acwr);
+  const risk = injuryRiskFromAcwr(context.acwr);
   let tsbSign = '';
   if (context.tsb > 0) {
     tsbSign = '+';
@@ -250,12 +274,16 @@ const upgradeForUndertraining = (template: WeekTemplate): WeekTemplate => {
   return result;
 };
 
-const applyLoadGuards = (
-  template: WeekTemplate,
-  acwr: number,
-  dataMaturityDays: number,
-): WeekTemplate => {
-  const state = getLoadState(acwr, dataMaturityDays);
+const applyLoadGuards = ({
+  template,
+  acwr,
+  dataMaturityDays,
+}: {
+  template: WeekTemplate;
+  acwr: number;
+  dataMaturityDays: number;
+}): WeekTemplate => {
+  const state = loadStateFromAcwr({ acwr, dataMaturityDays });
   switch (state) {
     case 'immature':
     case 'transitioning':
@@ -306,18 +334,23 @@ const getDayOfWeek = (dateStr: string): number => {
   return (d.getDay() + 6) % 7;
 };
 
-export const generateWeeklyPlan = (
-  currentMetrics: DailyMetrics | undefined,
-  zones: RunningZone[],
-  today: string,
-  historyDays: number,
-): WeeklyPlan => {
+export const generateWeeklyPlan = ({
+  currentMetrics,
+  zones,
+  today,
+  historyDays,
+}: {
+  currentMetrics: DailyMetrics | undefined;
+  zones: RunningZone[];
+  today: string;
+  historyDays: number;
+}): WeeklyPlan => {
   // Determine context
   let context: PlanContext = { mode: 'no-data' };
   if (currentMetrics) {
     context = {
       mode: 'normal',
-      formStatus: getFormStatus(currentMetrics.tsb),
+      formStatus: formStatusFromTsb(currentMetrics.tsb),
       tsb: currentMetrics.tsb,
       acwr: currentMetrics.acwr,
       dataMaturityDays: historyDays,
@@ -333,7 +366,11 @@ export const generateWeeklyPlan = (
   let template = WEEK_TEMPLATES[formKey];
 
   if (context.mode === 'normal') {
-    template = applyLoadGuards(template, context.acwr, context.dataMaturityDays);
+    template = applyLoadGuards({
+      template,
+      acwr: context.acwr,
+      dataMaturityDays: context.dataMaturityDays,
+    });
     template = fixBackToBackIntensity(template);
   }
 
@@ -344,7 +381,7 @@ export const generateWeeklyPlan = (
   // Build workouts
   const workouts: PrescribedWorkout[] = template.map((type, i) => {
     const date = addDays(monday, i);
-    const built = buildWorkout(type, zones);
+    const built = buildWorkout({ type, zones });
     const durationSec = computeStepsDuration(built.steps);
     let tssRate = 0;
     if (type !== 'rest') {
@@ -372,4 +409,26 @@ export const generateWeeklyPlan = (
     totalEstimatedTss: workouts.reduce((sum, w) => sum + w.estimatedTss, 0),
     context,
   };
+};
+
+export const generateFreshPlan = ({
+  sessions,
+  zones,
+  today,
+}: {
+  sessions: TrainingSession[];
+  zones: RunningZone[];
+  today: string;
+}): WeeklyPlan => {
+  const history = dailyMetricsFromSessions({ sessions });
+  let current = undefined;
+  if (history.length > 0) {
+    current = history[history.length - 1];
+  }
+  return generateWeeklyPlan({
+    currentMetrics: current,
+    zones,
+    today,
+    historyDays: history.length,
+  });
 };

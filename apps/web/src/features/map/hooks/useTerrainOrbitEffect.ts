@@ -1,7 +1,11 @@
 import { useEffect } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { ORBIT_DRAG_THRESHOLD_PX, orbitCamera, type OrbitDrag } from '../terrainCamera.ts';
+import {
+  ORBIT_DRAG_THRESHOLD_PX,
+  orbitCamera,
+  type OrbitDrag,
+} from '@/features/map/terrainCamera.ts';
 
 const LEFT_BUTTON = 0;
 
@@ -20,12 +24,12 @@ const holdHandlers = (map: MapLibreMap) => {
   map.dragRotate.disable();
 };
 
-const restoreHandlers = (map: MapLibreMap, gesture: OrbitGesture) => {
+const restoreHandlers = ({ map, gesture }: { map: MapLibreMap; gesture: OrbitGesture }) => {
   if (gesture.dragPanEnabled) map.dragPan.enable();
   if (gesture.dragRotateEnabled) map.dragRotate.enable();
 };
 
-const startGesture = (map: MapLibreMap, event: MouseEvent): OrbitGesture => {
+const startGesture = ({ map, event }: { map: MapLibreMap; event: MouseEvent }): OrbitGesture => {
   const rect = map.getCanvas().getBoundingClientRect();
   const point: [number, number] = [event.clientX - rect.left, event.clientY - rect.top];
   return {
@@ -52,7 +56,7 @@ export const useTerrainOrbitEffect = (): void => {
     let gesture: OrbitGesture | null = null;
     const onMouseDown = (event: MouseEvent) => {
       if (event.button !== LEFT_BUTTON || !hasOrbitModifier(event)) return;
-      gesture = startGesture(map, event);
+      gesture = startGesture({ map, event });
       holdHandlers(map);
     };
     const onMouseMove = (event: MouseEvent) => {
@@ -66,7 +70,7 @@ export const useTerrainOrbitEffect = (): void => {
     };
     const onMouseUp = () => {
       if (gesture === null) return;
-      restoreHandlers(map, gesture);
+      restoreHandlers({ map, gesture });
       gesture = null;
     };
     const onContextMenu = (event: MouseEvent) => {
@@ -83,7 +87,7 @@ export const useTerrainOrbitEffect = (): void => {
       container.removeEventListener('contextmenu', onContextMenu, true);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-      if (gesture !== null) restoreHandlers(map, gesture);
+      if (gesture !== null) restoreHandlers({ map, gesture });
     };
   }, [map]);
 };

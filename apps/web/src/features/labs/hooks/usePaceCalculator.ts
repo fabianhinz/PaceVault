@@ -8,7 +8,19 @@ import {
 
 type Field = 'pace' | 'distance' | 'time';
 
-export const usePaceCalculator = () => {
+interface PaceCalculatorForm {
+  paceInput: string;
+  distanceInput: string;
+  timeInput: string;
+  computed: { value: string } | undefined;
+  solveFor: Field;
+  setSolveFor: (field: Field) => void;
+  handlePaceChange: (value: string) => void;
+  handleDistanceChange: (value: string) => void;
+  handleTimeChange: (value: string) => void;
+}
+
+export const usePaceCalculator = (): PaceCalculatorForm => {
   const [paceInput, setPaceInput] = useState('');
   const [distanceInput, setDistanceInput] = useState('');
   const [timeInput, setTimeInput] = useState('');
@@ -23,13 +35,23 @@ export const usePaceCalculator = () => {
     const time = parseTimeHMS(timeInput);
 
     if (solveFor === 'time' && pace !== undefined && distance !== undefined && distance > 0) {
-      return { value: formatTimeHMS(timeFromPaceAndDistance(pace, distance)) };
+      return {
+        value: formatTimeHMS(
+          timeFromPaceAndDistance({ paceSecPerKm: pace, distanceMeters: distance }),
+        ),
+      };
     }
     if (solveFor === 'pace' && distance !== undefined && distance > 0 && time !== undefined) {
-      return { value: formatPaceInput(paceFromDistanceAndTime(distance, time)) };
+      return {
+        value: formatPaceInput(
+          paceFromDistanceAndTime({ distanceMeters: distance, timeSec: time }),
+        ),
+      };
     }
     if (solveFor === 'distance' && pace !== undefined && pace > 0 && time !== undefined) {
-      return { value: (distanceFromPaceAndTime(pace, time) / 1000).toFixed(2) };
+      return {
+        value: (distanceFromPaceAndTime({ paceSecPerKm: pace, timeSec: time }) / 1000).toFixed(2),
+      };
     }
     return undefined;
   }, [paceInput, distanceInput, timeInput, solveFor]);

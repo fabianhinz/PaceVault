@@ -1,38 +1,40 @@
-import { useEffect, useRef } from 'react';
+import { useRef, type RefObject } from 'react';
+import { useEvent } from 'react-use';
 
 interface DismissOptions {
   escapeEnabled?: boolean;
   outsideEnabled?: boolean;
 }
 
-export const useDismiss = (onClose: () => void, options?: DismissOptions) => {
+export const useDismiss = (
+  onClose: () => void,
+  options?: DismissOptions,
+): RefObject<HTMLDivElement | null> => {
   const escapeEnabled = options?.escapeEnabled ?? true;
   const outsideEnabled = options?.outsideEnabled ?? true;
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!ref.current || !(e.target instanceof Element)) {
-        return;
-      }
-      if (ref.current.contains(e.target)) {
-        return;
-      }
-      if (e.target.closest('[data-radix-popper-content-wrapper]')) {
-        return;
-      }
-      onClose();
-    };
-    if (escapeEnabled) document.addEventListener('keydown', handleKeyDown);
-    if (outsideEnabled) document.addEventListener('pointerdown', handleClickOutside);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('pointerdown', handleClickOutside);
-    };
-  }, [onClose, escapeEnabled, outsideEnabled]);
+  const handleKeyDown = (e: Event) => {
+    if (e instanceof KeyboardEvent && e.key === 'Escape') onClose();
+  };
+  const handleClickOutside = (e: Event) => {
+    if (!ref.current || !(e.target instanceof Element)) {
+      return;
+    }
+    if (ref.current.contains(e.target)) {
+      return;
+    }
+    if (e.target.closest('[data-radix-popper-content-wrapper]')) {
+      return;
+    }
+    onClose();
+  };
+  let keyTarget: Document | null = null;
+  if (escapeEnabled) keyTarget = document;
+  let pointerTarget: Document | null = null;
+  if (outsideEnabled) pointerTarget = document;
+  useEvent('keydown', handleKeyDown, keyTarget);
+  useEvent('pointerdown', handleClickOutside, pointerTarget);
 
   return ref;
 };

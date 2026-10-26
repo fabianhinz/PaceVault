@@ -1,6 +1,6 @@
 import { m } from '@pacevault/i18n/messages.js';
 import type { Sport } from '@pacevault/engine/types.ts';
-import { HR_ZONE_DEFS } from '@pacevault/engine/zoneDistribution.ts';
+import { HEART_RATE_ZONES, type HeartRateZoneName } from '@pacevault/engine/zones.ts';
 
 const getTimeOfDayLabel = (hour: number): string => {
   if (hour >= 5 && hour <= 11) {
@@ -31,7 +31,7 @@ const SUB_SPORT_PREFIX_MAP: Record<string, () => string> = {
   mountain: m.ui_sub_sport_mountain,
 };
 
-const ZONE_LABEL_MAP: Record<string, () => string> = {
+const ZONE_LABEL_MAP: Record<HeartRateZoneName, () => string> = {
   recovery: m.ui_zone_recovery,
   aerobic: m.ui_zone_aerobic,
   tempo: m.ui_zone_tempo,
@@ -61,11 +61,15 @@ export const formatSessionName = (input: SessionNameInput): string => {
   return buildFallbackName(input);
 };
 
-export const formatSessionZoneLabel = (
-  avgHr: number | undefined,
-  maxHr: number | undefined,
-  restHr: number | undefined,
-): string | undefined => {
+export const formatSessionZoneLabel = ({
+  avgHr,
+  maxHr,
+  restHr,
+}: {
+  avgHr: number | undefined;
+  maxHr: number | undefined;
+  restHr: number | undefined;
+}): string | undefined => {
   if (!avgHr || !maxHr || !restHr) {
     return undefined;
   }
@@ -75,16 +79,10 @@ export const formatSessionZoneLabel = (
   const hrReserve = maxHr - restHr;
   const pct = (avgHr - restHr) / hrReserve;
 
-  for (let i = HR_ZONE_DEFS.length - 1; i >= 0; i--) {
-    const zoneDef = HR_ZONE_DEFS[i];
+  for (let i = HEART_RATE_ZONES.length - 1; i >= 0; i--) {
+    const zoneDef = HEART_RATE_ZONES[i];
     if (!zoneDef) continue;
-    if (pct >= zoneDef.minPct) {
-      const labelFn = ZONE_LABEL_MAP[zoneDef.name];
-      if (labelFn) {
-        return labelFn();
-      }
-      return undefined;
-    }
+    if (pct >= zoneDef.minPct) return ZONE_LABEL_MAP[zoneDef.name]();
   }
   return undefined;
 };

@@ -15,7 +15,7 @@ const ride = (steps: Array<[number, number]>): SessionRecord[] => {
   ];
 };
 
-describe('movingSeconds', () => {
+describe(movingSeconds.name, () => {
   it('session chart shows a gap while the rider stands still', () => {
     const records = ride([
       [4, 30],
@@ -50,7 +50,7 @@ describe('movingSeconds', () => {
   });
 });
 
-describe('sessionMovingTime', () => {
+describe(sessionMovingTime.name, () => {
   it('a timer pause keeps moving time below elapsed time', () => {
     const records: SessionRecord[] = [
       { timestamp: 0, timerTime: 0, distance: 0 },

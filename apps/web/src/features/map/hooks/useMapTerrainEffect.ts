@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { TERRAIN_HILLSHADE_PAINT, terrainDemSource } from '../mapStyle.ts';
+import { TERRAIN_HILLSHADE_PAINT, terrainDemSource } from '@/features/map/mapStyle.ts';
 
 const TERRAIN_SOURCE_ID = 'terrain-dem';
 const HILLSHADE_SOURCE_ID = 'terrain-hillshade-dem';

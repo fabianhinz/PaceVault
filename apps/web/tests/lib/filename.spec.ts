@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { extractSessionName } from '@/lib/filename.ts';
 
-describe('extractSessionName', () => {
+describe(extractSessionName.name, () => {
   it('extracts single-word name', () => {
     expect(extractSessionName('15482335959_Abendradfahrt.fit')).toBe('Abendradfahrt');
   });

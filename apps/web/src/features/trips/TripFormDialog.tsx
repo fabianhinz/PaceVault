@@ -1,58 +1,35 @@
-import { useEffect, useMemo, useState } from 'react';
+import type { ComponentProps, FC } from 'react';
 import { Check } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { useTripsStore } from '@/store/trips.ts';
-import { useSessionsStore } from '@/store/sessions.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { tileClass } from '@pacevault/ui/components/Card.tsx';
-import { Input } from '@pacevault/ui/components/Input.tsx';
-import { Textarea } from '@pacevault/ui/components/Textarea.tsx';
-import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  DialogDescription,
-} from '@pacevault/ui/components/Dialog.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { TILE_CLASS } from '@pacevault/ui/lib/surfaces.ts';
+import { PvInput } from '@pacevault/ui/components/pvInput/PvInput.tsx';
+import { PvTextarea } from '@pacevault/ui/components/pvTextarea/PvTextarea.tsx';
+import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
+import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
+import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
+import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
+import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
+import { PvDialogDescription } from '@pacevault/ui/components/pvDialog/PvDialogDescription.tsx';
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import type { Trip } from '@/store/trips.ts';
+import { useTripDraft } from '@/features/trips/hooks/useTripDraft.ts';
+import { useTripSessionPicker } from '@/features/trips/hooks/useTripSessionPicker.ts';
 
-const UNVIRTUALIZED_LIST_CAP = 30;
-
-export const TripFormDialog = (props: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface TripFormDialogProps extends Required<
+  Pick<ComponentProps<typeof PvDialog>, 'open' | 'onOpenChange'>
+> {
   trip?: Trip;
-}) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showAll, setShowAll] = useState(false);
-  const sessions = useSessionsStore((s) => s.sessions);
+}
 
-  const selectableSessions = useMemo(
-    () => sessions.filter((s) => !s.isPlanned).sort((a, b) => b.date - a.date),
-    [sessions],
-  );
-
-  const visibleSessions = showAll
-    ? selectableSessions
-    : selectableSessions.slice(0, UNVIRTUALIZED_LIST_CAP);
-  const hiddenCount = selectableSessions.length - visibleSessions.length;
-
-  useEffect(() => {
-    if (props.open) {
-      setName(props.trip?.name ?? '');
-      setDescription(props.trip?.description ?? '');
-      setSelectedIds(new Set(props.trip?.sessionIds ?? []));
-      setShowAll(false);
-    }
-  }, [props.open, props.trip]);
+export const TripFormDialog: FC<TripFormDialogProps> = (props) => {
+  const draft = useTripDraft({ open: props.open, trip: props.trip });
+  const picker = useTripSessionPicker(draft.showAll);
 
   const toggle = (id: string) => {
-    setSelectedIds((prev) => {
+    draft.setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -64,38 +41,46 @@ export const TripFormDialog = (props: {
   };
 
   const handleSave = () => {
-    const trimmed = name.trim();
-    if (!trimmed || selectedIds.size === 0) return;
-    const trimmedDescription = description.trim() || undefined;
+    const trimmed = draft.name.trim();
+    if (!trimmed || draft.selectedIds.size === 0) return;
+    const trimmedDescription = draft.description.trim() || undefined;
     if (props.trip) {
-      useTripsStore
-        .getState()
-        .updateTrip(props.trip.id, trimmed, [...selectedIds], trimmedDescription);
+      useTripsStore.getState().updateTrip({
+        id: props.trip.id,
+        name: trimmed,
+        sessionIds: [...draft.selectedIds],
+        description: trimmedDescription,
+      });
     } else {
-      const id = useTripsStore.getState().createTrip(trimmed, trimmedDescription);
-      for (const sessionId of selectedIds) {
-        useTripsStore.getState().assignSession(sessionId, id);
+      const id = useTripsStore
+        .getState()
+        .createTrip({ name: trimmed, description: trimmedDescription });
+      for (const sessionId of draft.selectedIds) {
+        useTripsStore.getState().assignSession({ sessionId, tripId: id });
       }
     }
     props.onOpenChange(false);
   };
 
   return (
-    <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
-      <DialogContent className="lg:flex lg:flex-col lg:overflow-y-hidden lg:max-h-[calc(100dvh-12rem)] lg:min-h-[min(32rem,calc(100dvh-12rem))]">
-        <DialogHeader title={props.trip ? m.ui_trips_edit_title() : m.ui_trips_new_title()} />
-        <DialogBody>
-          <DialogDescription className="shrink-0">{m.ui_trips_nudge_desc()}</DialogDescription>
+    <PvDialog open={props.open} onOpenChange={() => props.onOpenChange(false)}>
+      <PvDialogContent
+        closeLabel={m.ui_sheet_drag_close()}
+        className="lg:flex lg:flex-col lg:overflow-y-hidden lg:max-h-[calc(100dvh-12rem)] lg:min-h-[min(32rem,calc(100dvh-12rem))]"
+      >
+        <PvDialogHeader title={props.trip ? m.ui_trips_edit_title() : m.ui_trips_new_title()} />
+        <PvDialogBody>
+          <PvDialogDescription className="shrink-0">{m.ui_trips_nudge_desc()}</PvDialogDescription>
 
           <div className="mt-4 flex shrink-0 flex-col gap-2">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+            <PvInput
+              value={draft.name}
+              onChange={(e) => draft.setName(e.target.value)}
               placeholder={m.ui_trips_name_placeholder()}
             />
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+            <PvTextarea
+              value={draft.description}
+              onChange={(e) => draft.setDescription(e.target.value)}
               placeholder={m.ui_trips_notes_placeholder()}
               rows={6}
               className="resize-none"
@@ -103,8 +88,8 @@ export const TripFormDialog = (props: {
           </div>
 
           <div className="mt-4 flex flex-col gap-2 border-t border-white/10 pt-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-            {visibleSessions.map((session) => {
-              const selected = selectedIds.has(session.id);
+            {picker.visibleSessions.map((session) => {
+              const selected = draft.selectedIds.has(session.id);
               return (
                 <button
                   key={session.id}
@@ -112,7 +97,7 @@ export const TripFormDialog = (props: {
                   aria-pressed={selected}
                   onClick={() => toggle(session.id)}
                   className={cn(
-                    tileClass,
+                    TILE_CLASS,
                     'flex cursor-pointer items-center gap-3 p-3 text-left transition-colors hover:bg-white/10',
                     selected && 'bg-white/10',
                   )}
@@ -134,23 +119,26 @@ export const TripFormDialog = (props: {
               );
             })}
 
-            {hiddenCount > 0 && (
-              <Button variant="secondary" onClick={() => setShowAll(true)}>
-                {m.ui_trips_show_more({ count: String(hiddenCount) })}
-              </Button>
+            {picker.hiddenCount > 0 && (
+              <PvButton variant="secondary" onClick={() => draft.setShowAll(true)}>
+                {m.ui_trips_show_more({ count: String(picker.hiddenCount) })}
+              </PvButton>
             )}
           </div>
-        </DialogBody>
+        </PvDialogBody>
 
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
+        <PvDialogFooter>
+          <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>
             {m.ui_btn_cancel()}
-          </Button>
-          <Button disabled={!name.trim() || selectedIds.size === 0} onClick={handleSave}>
+          </PvButton>
+          <PvButton
+            disabled={!draft.name.trim() || draft.selectedIds.size === 0}
+            onClick={handleSave}
+          >
             {m.ui_btn_save()}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </DialogRoot>
+          </PvButton>
+        </PvDialogFooter>
+      </PvDialogContent>
+    </PvDialog>
   );
 };

@@ -25,7 +25,7 @@ const zoomStops = (expression: unknown): unknown[] => {
   return [expression[3], expression[5], expression[7]];
 };
 
-describe('terrainLineRuns', () => {
+describe(terrainLineRuns.name, () => {
   it('merges a single-coloured path into one run', () => {
     expect(terrainLineRuns({ path, colors: red, breaks: [] })).toEqual([{ first: 0, last: 4 }]);
   });
@@ -53,7 +53,7 @@ describe('terrainLineRuns', () => {
   });
 });
 
-describe('buildTerrainLineFeatures', () => {
+describe(buildTerrainLineFeatures.name, () => {
   it('builds one feature per run, keyed by the run index, carrying its vertex range', () => {
     const runs = terrainLineRuns({ path, colors: red, breaks: [2] });
     const lines = buildTerrainLineFeatures({ path, runs, colors: red, dimFactor: 0.8 });
@@ -87,7 +87,7 @@ describe('buildTerrainLineFeatures', () => {
   });
 });
 
-describe('terrainLineRunIdsWithin', () => {
+describe(terrainLineRunIdsWithin.name, () => {
   it('lists the runs that lie inside a vertex range', () => {
     const runs = terrainLineRuns({ path, colors: red, breaks: [1, 3] });
     expect(terrainLineRunIdsWithin({ runs, first: 1, last: 3 })).toEqual([1]);
@@ -96,7 +96,7 @@ describe('terrainLineRunIdsWithin', () => {
   });
 });
 
-describe('terrainHoverLine', () => {
+describe(terrainHoverLine.name, () => {
   it('draws a path as one line and nothing without a path', () => {
     expect(terrainHoverLine(path.slice(0, 2))).toEqual({
       type: 'Feature',
@@ -107,7 +107,7 @@ describe('terrainHoverLine', () => {
   });
 });
 
-describe('nearestLineVertex', () => {
+describe(nearestLineVertex.name, () => {
   it('picks the vertex closest to the pointer across hit runs where start and finish of a loop overlap', () => {
     const loop: [number, number][] = [
       [8.4, 49],
@@ -134,7 +134,7 @@ describe('nearestLineVertex', () => {
   });
 });
 
-describe('terrainLineWidthExpression', () => {
+describe(terrainLineWidthExpression.name, () => {
   it('keeps its zoom stops ascending at a low and a high latitude', () => {
     for (const latitude of [5, 78]) {
       const stops = zoomStops(terrainLineWidthExpression({ metres: 12, minPixels: 3, latitude }));

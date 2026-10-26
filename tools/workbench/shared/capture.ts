@@ -90,7 +90,7 @@ export const loadDemoData = async (page: Page) => {
     .click({ timeout: 30_000 });
   const summary = page.getByTestId('import-summary');
   await expect(summary).toBeVisible({ timeout: 60_000 });
-  await summary.getByRole('button', { name: t(locale, 'ui_import_close'), exact: true }).click();
+  await summary.getByRole('button', { name: t(locale, 'ui_btn_close'), exact: true }).click();
   await expect(summary).toBeHidden();
   await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30_000 });
 };

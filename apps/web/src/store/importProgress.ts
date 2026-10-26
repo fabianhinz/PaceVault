@@ -37,12 +37,19 @@ interface ImportProgressState {
   abandonTrackBuildAfterMapCrash: () => void;
 }
 
+export const INITIAL_IMPORT_PROGRESS_STORE_STATE: Pick<
+  ImportProgressState,
+  'runningImports' | 'foreground' | 'awaitingTrackBuild' | 'mapCrashed'
+> = {
+  runningImports: 0,
+  foreground: null,
+  awaitingTrackBuild: false,
+  mapCrashed: false,
+};
+
 export const useImportProgressStore = create<ImportProgressState>()(
   immer((set) => ({
-    runningImports: 0,
-    foreground: null,
-    awaitingTrackBuild: false,
-    mapCrashed: false,
+    ...INITIAL_IMPORT_PROGRESS_STORE_STATE,
 
     beginImport: (options) =>
       set((draft) => {

@@ -2,14 +2,8 @@ import type { FC } from 'react';
 import { useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { Layer, type LayersList } from '@deck.gl/core';
-import { PICK_RADIUS } from './hooks/types.ts';
-
-interface DeckOverlayControlProps {
-  layers: LayersList;
-  interleaved: boolean;
-  hoveringTrack: boolean;
-  onDrawn: (() => void) | undefined;
-}
+import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
+import { PICK_RADIUS } from './trackPicking.ts';
 
 const NOTHING_DRAWN = () => {};
 
@@ -20,9 +14,16 @@ const freshLayers = (layers: LayersList): LayersList =>
     return layer;
   });
 
+interface DeckOverlayControlProps {
+  layers: LayersList;
+  hoveringTrack: boolean;
+  onDrawn: (() => void) | undefined;
+}
+
 export const DeckOverlayControl: FC<DeckOverlayControlProps> = (props) => {
+  const interleaved = !useDevice().pointerFine;
   const overlay = useControl<MapboxOverlay>(
-    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS, interleaved: props.interleaved }),
+    () => new MapboxOverlay({ pickingRadius: PICK_RADIUS, interleaved }),
   );
 
   overlay.setProps({

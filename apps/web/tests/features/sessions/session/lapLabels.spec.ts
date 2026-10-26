@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { lapsRowLabels } from '@/features/sessions/session/lapLabels.ts';
 
-describe('lapsRowLabels', () => {
+describe(lapsRowLabels.name, () => {
   it('disables the laps row when splits are chosen but the session has no distance data', () => {
-    expect(lapsRowLabels('splits', null, 'running')).toEqual({
+    expect(lapsRowLabels({ source: 'splits', set: null, sport: 'running' })).toEqual({
       disabled: true,
       primary: 'Splits unavailable',
       secondary: 'This session has no distance data',

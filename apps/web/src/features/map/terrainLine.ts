@@ -47,7 +47,13 @@ const toCss = (color: LineColor): string =>
 const isColorList = (colors: LineColor | LineColor[]): colors is LineColor[] =>
   Array.isArray(colors[0]);
 
-const colorAt = (colors: LineColor | LineColor[], vertex: number): LineColor | undefined => {
+const colorAt = ({
+  colors,
+  vertex,
+}: {
+  colors: LineColor | LineColor[];
+  vertex: number;
+}): LineColor | undefined => {
   if (isColorList(colors)) return colors[vertex];
   return colors;
 };
@@ -58,10 +64,10 @@ const dimmedLineColor = (color: LineColor, dimFactor: number): LineColor => {
   return dimmed;
 };
 
-const sameColor = (a: LineColor, b: LineColor): boolean =>
+const isSameColor = (a: LineColor, b: LineColor): boolean =>
   a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3];
 
-const startsRun = ({
+const isRunStart = ({
   colors,
   segment,
   breaks,
@@ -71,10 +77,10 @@ const startsRun = ({
   breaks: Set<number>;
 }): boolean => {
   if (breaks.has(segment)) return true;
-  const previous = colorAt(colors, segment - 1);
-  const current = colorAt(colors, segment);
+  const previous = colorAt({ colors, vertex: segment - 1 });
+  const current = colorAt({ colors, vertex: segment });
   if (previous === undefined || current === undefined) return true;
-  return !sameColor(previous, current);
+  return !isSameColor(previous, current);
 };
 
 export const terrainLineRuns = ({
@@ -90,11 +96,11 @@ export const terrainLineRuns = ({
   const runs: TerrainLineRun[] = [];
   let current: TerrainLineRun | null = null;
   for (let segment = 0; segment < path.length - 1; segment++) {
-    if (colorAt(colors, segment) === undefined) {
+    if (colorAt({ colors, vertex: segment }) === undefined) {
       current = null;
       continue;
     }
-    if (current === null || startsRun({ colors, segment, breaks: cuts })) {
+    if (current === null || isRunStart({ colors, segment, breaks: cuts })) {
       current = { first: segment, last: segment + 1 };
       runs.push(current);
       continue;
@@ -117,7 +123,7 @@ export const buildTerrainLineFeatures = ({
 }): TerrainLineFeatureCollection => {
   const features: TerrainLineFeature[] = [];
   runs.forEach((run, id) => {
-    const color = colorAt(colors, run.first);
+    const color = colorAt({ colors, vertex: run.first });
     if (color === undefined) return;
     features.push({
       type: 'Feature',

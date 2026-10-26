@@ -1,13 +1,13 @@
 import { Info } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
-import { ResponsivePopover } from '@pacevault/ui/components/ResponsivePopover.tsx';
-import { METRIC_EXPLANATIONS, type MetricExplanation, type MetricId } from '@/lib/explanations.ts';
+import { PvResponsivePopover } from '@pacevault/ui/components/pvResponsivePopover/PvResponsivePopover.tsx';
+import { METRIC_EXPLANATIONS, type MetricId } from '@/lib/explanations.ts';
+import { ExplanationBody } from '@/components/ExplanationBody.tsx';
 import { useUserStore } from '@/store/user.ts';
 import { cn } from '@pacevault/ui/lib/cn.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Chip } from '@pacevault/ui/components/Chip.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import type { ReactNode } from 'react';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import type { FC, ReactNode } from 'react';
 
 interface MetricLabelProps {
   metricId: MetricId;
@@ -20,29 +20,7 @@ interface MetricLabelProps {
   alwaysShowLabel?: boolean;
 }
 
-const ExplanationBody = (props: { explanation: MetricExplanation; primary: boolean }) => (
-  <div className={cn('space-y-2', !props.primary && 'border-t border-white/10 pt-3')}>
-    <div className={cn('flex items-baseline gap-2', props.primary && 'max-lg:hidden')}>
-      <Typography variant="subtitle1" className="font-semibold">
-        {props.explanation.friendlyName}
-      </Typography>
-      {props.explanation.shortLabel && <Chip>{props.explanation.shortLabel}</Chip>}
-    </div>
-
-    <Typography>{props.explanation.oneLiner}</Typography>
-
-    <Typography
-      variant="caption"
-      as="p"
-      color="textTertiary"
-      className="border-t border-white/10 pt-2"
-    >
-      {props.explanation.range}
-    </Typography>
-  </div>
-);
-
-export const MetricLabel = (props: MetricLabelProps) => {
+export const MetricLabel: FC<MetricLabelProps> = (props) => {
   const explanation = METRIC_EXPLANATIONS[props.metricId];
   const related = (props.relatedMetricIds ?? []).map((id) => METRIC_EXPLANATIONS[id]);
   const showHelp = useUserStore((s) => s.profile?.showMetricHelp ?? true);
@@ -62,16 +40,16 @@ export const MetricLabel = (props: MetricLabelProps) => {
   } else if (size === 'default') {
     labelContent = (
       <>
-        <Typography variant="subtitle2">{explanation.friendlyName}</Typography>
+        <PvTypography variant="subtitle2">{explanation.friendlyName}</PvTypography>
         {explanation.shortLabel && (
-          <Typography variant="caption" color="textTertiary">
+          <PvTypography variant="caption" color="textTertiary">
             ({explanation.shortLabel})
-          </Typography>
+          </PvTypography>
         )}
       </>
     );
   } else if (explanation.shortLabel && !hideShortLabel) {
-    labelContent = <Typography variant="caption">{explanation.shortLabel}</Typography>;
+    labelContent = <PvTypography variant="caption">{explanation.shortLabel}</PvTypography>;
   }
 
   return (
@@ -85,19 +63,20 @@ export const MetricLabel = (props: MetricLabelProps) => {
         {labelContent}
 
         {props.showValue && (
-          <Typography variant="subtitle1" as="span">
+          <PvTypography variant="subtitle1" as="span">
             {props.showValue}
-          </Typography>
+          </PvTypography>
         )}
       </span>
 
       {showHelp && (
-        <ResponsivePopover
+        <PvResponsivePopover
+          closeLabel={m.ui_sheet_drag_close()}
           title={explanation.friendlyName}
           chip={explanation.shortLabel}
           side="top"
           trigger={
-            <Button
+            <PvButton
               variant="ghost"
               size="icon"
               className="cursor-help text-text-quaternary hover:text-accent focus-visible:text-accent"
@@ -105,7 +84,7 @@ export const MetricLabel = (props: MetricLabelProps) => {
               aria-haspopup="dialog"
             >
               <Info size={size === 'sm' ? 14 : 16} strokeWidth={1.5} className="shrink-0" />
-            </Button>
+            </PvButton>
           }
         >
           <div className="space-y-3">
@@ -114,7 +93,7 @@ export const MetricLabel = (props: MetricLabelProps) => {
               <ExplanationBody key={entry.id} explanation={entry} primary={false} />
             ))}
           </div>
-        </ResponsivePopover>
+        </PvResponsivePopover>
       )}
     </span>
   );

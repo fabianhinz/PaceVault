@@ -1,7 +1,15 @@
 import { useEffect, type RefObject } from 'react';
 import { scrollFadeEdges } from '../lib/scrollFade.ts';
 
-const toggleAttribute = (element: HTMLElement, name: string, on: boolean) => {
+const toggleAttribute = ({
+  element,
+  name,
+  on,
+}: {
+  element: HTMLElement;
+  name: string;
+  on: boolean;
+}) => {
   if (on) {
     element.setAttribute(name, '');
   } else {
@@ -9,7 +17,7 @@ const toggleAttribute = (element: HTMLElement, name: string, on: boolean) => {
   }
 };
 
-export const useScrollFadeEffect = (ref: RefObject<HTMLElement | null>) => {
+export const useScrollFadeEffect = (ref: RefObject<HTMLElement | null>): void => {
   useEffect(() => {
     const element = ref.current;
     if (!element) {
@@ -17,8 +25,8 @@ export const useScrollFadeEffect = (ref: RefObject<HTMLElement | null>) => {
     }
     const update = () => {
       const edges = scrollFadeEdges(element);
-      toggleAttribute(element, 'data-fade-top', edges.top);
-      toggleAttribute(element, 'data-fade-bottom', edges.bottom);
+      toggleAttribute({ element, name: 'data-fade-top', on: edges.top });
+      toggleAttribute({ element, name: 'data-fade-bottom', on: edges.bottom });
     };
     const observeChildren = (observer: ResizeObserver) => {
       for (const child of element.children) {

@@ -1,15 +1,11 @@
 import { useState, useTransition } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import type { Gender } from '@pacevault/engine/types.ts';
-import type { UserProfile } from '@/types/index.ts';
+import type { UserProfile } from '@/types.ts';
 import { useUserStore, type ThresholdKey } from '@/store/user.ts';
 import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 import { parsePaceInput, formatPaceInput } from '@/lib/formatters.ts';
-
-export type NumberField = 'restHr' | 'maxHr' | 'thresholdHr' | 'ftp' | 'weight' | 'birthYear';
-export type TextField = NumberField | 'thresholdPace';
-/** A field that can show an error: the text fields plus the gender pick. */
-export type FormField = TextField | 'gender';
+import type { FormField, NumberField, TextField } from './types.ts';
 
 interface FormValues {
   gender: Gender | null;
@@ -58,7 +54,7 @@ const storedForm = (profile: UserProfile | null): FormValues => {
       weight: '',
     };
   }
-  const today = thresholdsAt(profile, Date.now());
+  const today = thresholdsAt({ profile, date: Date.now() });
   return {
     gender: profile.gender,
     birthYear: numberText(profile.birthYear),
@@ -99,7 +95,7 @@ const thresholdHrRange = (form: FormValues): Range => {
   };
 };
 
-const rangeFor = (field: NumberField, form: FormValues): Range => {
+const rangeFor = ({ field, form }: { field: NumberField; form: FormValues }): Range => {
   if (field === 'thresholdHr') return thresholdHrRange(form);
   if (field === 'restHr') {
     return {
@@ -141,16 +137,16 @@ const rangeFor = (field: NumberField, form: FormValues): Range => {
   return { min: MIN_BIRTH_YEAR, max: maxYear, minLabel: label, maxLabel: label };
 };
 
-const isRequired = (field: TextField, stored: FormValues): boolean => {
+const isRequired = ({ field, stored }: { field: TextField; stored: FormValues }): boolean => {
   if (field === 'restHr' || field === 'maxHr') return true;
   if (field === 'birthYear') return false;
   return stored[field] !== '';
 };
 
-const numberError = (field: NumberField, form: FormValues): string => {
+const numberError = ({ field, form }: { field: NumberField; form: FormValues }): string => {
   const value = Number(form[field]);
   if (Number.isNaN(value)) return m.ui_thresholds_required();
-  const range = rangeFor(field, form);
+  const range = rangeFor({ field, form });
   if (value < range.min) return range.minLabel;
   if (value > range.max) return range.maxLabel;
   if (field === 'birthYear' && !Number.isInteger(value)) return range.minLabel;
@@ -165,35 +161,64 @@ const numberError = (field: NumberField, form: FormValues): string => {
   return '';
 };
 
-const fieldError = (field: TextField, form: FormValues, stored: FormValues): string => {
+const fieldError = ({
+  field,
+  form,
+  stored,
+}: {
+  field: TextField;
+  form: FormValues;
+  stored: FormValues;
+}): string => {
   if (form[field].trim() === '') {
-    if (isRequired(field, stored)) return m.ui_thresholds_required();
+    if (isRequired({ field, stored })) return m.ui_thresholds_required();
     return '';
   }
   if (field === 'thresholdPace') {
     if (parsePaceInput(form.thresholdPace) === undefined) return m.ui_thresholds_pace_format();
     return '';
   }
-  return numberError(field, form);
+  return numberError({ field, form });
 };
 
-const formFieldError = (field: FormField, form: FormValues, stored: FormValues): string => {
-  if (field !== 'gender') return fieldError(field, form, stored);
+const formFieldError = ({
+  field,
+  form,
+  stored,
+}: {
+  field: FormField;
+  form: FormValues;
+  stored: FormValues;
+}): string => {
+  if (field !== 'gender') return fieldError({ field, form, stored });
   if (form.gender === null) return m.ui_thresholds_required();
   return '';
 };
 
-export const fieldErrorFor = (field: TextField, draft: string, values: FormValues): string =>
-  fieldError(field, { ...values, [field]: draft }, values);
+export const fieldErrorFor = ({
+  field,
+  draft,
+  values,
+}: {
+  field: TextField;
+  draft: string;
+  values: FormValues;
+}): string => fieldError({ field, form: { ...values, [field]: draft }, stored: values });
 
-const formErrors = (form: FormValues, stored: FormValues): Record<TextField, string> => ({
-  birthYear: fieldError('birthYear', form, stored),
-  restHr: fieldError('restHr', form, stored),
-  maxHr: fieldError('maxHr', form, stored),
-  thresholdHr: fieldError('thresholdHr', form, stored),
-  ftp: fieldError('ftp', form, stored),
-  thresholdPace: fieldError('thresholdPace', form, stored),
-  weight: fieldError('weight', form, stored),
+const formErrors = ({
+  form,
+  stored,
+}: {
+  form: FormValues;
+  stored: FormValues;
+}): Record<TextField, string> => ({
+  birthYear: fieldError({ field: 'birthYear', form, stored }),
+  restHr: fieldError({ field: 'restHr', form, stored }),
+  maxHr: fieldError({ field: 'maxHr', form, stored }),
+  thresholdHr: fieldError({ field: 'thresholdHr', form, stored }),
+  ftp: fieldError({ field: 'ftp', form, stored }),
+  thresholdPace: fieldError({ field: 'thresholdPace', form, stored }),
+  weight: fieldError({ field: 'weight', form, stored }),
 });
 
 const isGender = (value: string): value is Gender => value === 'male' || value === 'female';
@@ -203,7 +228,7 @@ const epochHistory = (value: number | undefined) => {
   return [{ date: 0, value }];
 };
 
-const createProfile = (form: FormValues, gender: Gender) => {
+const thresholdsFromForm = (form: FormValues): UserProfile['thresholds'] => {
   const restHr = Number(form.restHr);
   const maxHr = Number(form.maxHr);
   const thresholds: UserProfile['thresholds'] = {
@@ -216,24 +241,42 @@ const createProfile = (form: FormValues, gender: Gender) => {
   if (ftp) thresholds.ftp = ftp;
   const thresholdPace = epochHistory(parsePaceInput(form.thresholdPace));
   if (thresholdPace) thresholds.thresholdPace = thresholdPace;
+  return thresholds;
+};
+
+const optionalProfileFields = (
+  form: FormValues,
+): Partial<Pick<UserProfile, 'weight' | 'birthYear'>> => {
+  const fields: Partial<Pick<UserProfile, 'weight' | 'birthYear'>> = {};
+  const weight = epochHistory(optionalNumber(form.weight));
+  if (weight) fields.weight = weight;
+  const birthYear = optionalNumber(form.birthYear);
+  if (birthYear !== undefined) fields.birthYear = birthYear;
+  return fields;
+};
+
+const createProfile = ({ form, gender }: { form: FormValues; gender: Gender }) => {
   const profile: Omit<UserProfile, 'id' | 'createdAt'> = {
     gender,
-    thresholds,
+    thresholds: thresholdsFromForm(form),
     showMetricHelp: true,
+    ...optionalProfileFields(form),
   };
-  const weight = epochHistory(optionalNumber(form.weight));
-  if (weight) profile.weight = weight;
-  const birthYear = optionalNumber(form.birthYear);
-  if (birthYear !== undefined) profile.birthYear = birthYear;
   useUserStore.getState().setProfile(profile);
 };
 
-const parsedThreshold = (field: ThresholdKey, value: string): number | undefined => {
+const parsedThreshold = ({
+  field,
+  value,
+}: {
+  field: ThresholdKey;
+  value: string;
+}): number | undefined => {
   if (field === 'thresholdPace') return parsePaceInput(value);
   return optionalNumber(value);
 };
 
-const saveChanges = (form: FormValues, stored: FormValues) => {
+const saveChanges = ({ form, stored }: { form: FormValues; stored: FormValues }) => {
   if (form.gender !== null && form.gender !== stored.gender) {
     useUserStore.getState().setProfileGender(form.gender);
   }
@@ -242,19 +285,27 @@ const saveChanges = (form: FormValues, stored: FormValues) => {
   }
 };
 
-export interface ProfileGate {
-  ready: boolean;
-  save: () => void;
+interface FormErrorState {
+  stored: FormValues;
+  current: FormValues;
+  dirty: boolean;
+  valid: boolean;
+  visibleError: (field: FormField) => string;
 }
 
-export const useThresholdsForm = (mode: 'create' | 'update') => {
-  const profile = useUserStore((s) => s.profile);
-  const [, startTransition] = useTransition();
-  const [form, setForm] = useState<FormValues>(() => storedForm(profile));
-  const [revealed, setRevealed] = useState<FormField[]>([]);
-
+const formErrorState = ({
+  form,
+  profile,
+  mode,
+  revealed,
+}: {
+  form: FormValues;
+  profile: UserProfile | null;
+  mode: 'create' | 'update';
+  revealed: FormField[];
+}): FormErrorState => {
   const stored = storedForm(profile);
-  const errors = formErrors(form, stored);
+  const errors = formErrors({ form, stored });
   let fields = TEXT_FIELDS;
   let current = form;
   if (mode === 'update') {
@@ -269,24 +320,57 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
   // and hides as soon as the value is valid again, so typing never flags a half-entered value.
   const visibleError = (field: FormField): string => {
     if (!revealed.includes(field)) return '';
-    return formFieldError(field, form, stored);
+    return formFieldError({ field, form, stored });
   };
+  return { stored, current, dirty, valid, visibleError };
+};
+
+export interface ThresholdsForm {
+  form: FormValues;
+  current: FormValues;
+  dirty: boolean;
+  valid: boolean;
+  visibleError: (field: FormField) => string;
+  revealErrors: (targets: FormField[]) => FormField[];
+  setField: ({ field, value }: { field: TextField; value: string }) => void;
+  saveField: ({ field, value }: { field: ThresholdKey; value: string }) => ThresholdKey | undefined;
+  setGender: (value: string) => void;
+  save: () => void;
+}
+
+export const useThresholdsForm = (mode: 'create' | 'update'): ThresholdsForm => {
+  const profile = useUserStore((s) => s.profile);
+  const [, startTransition] = useTransition();
+  const [form, setForm] = useState<FormValues>(() => storedForm(profile));
+  const [revealed, setRevealed] = useState<FormField[]>([]);
+
+  const errorState = formErrorState({ form, profile, mode, revealed });
+  const stored = errorState.stored;
 
   /** Shows the errors of the invalid `targets` and returns them, in the order given. */
   const revealErrors = (targets: FormField[]): FormField[] => {
-    const invalid = targets.filter((field) => formFieldError(field, form, stored) !== '');
+    const invalid = targets.filter((field) => formFieldError({ field, form, stored }) !== '');
     setRevealed((current) => [...current, ...invalid.filter((field) => !current.includes(field))]);
     return invalid;
   };
 
-  const setField = (field: TextField, value: string) => {
+  const setField = ({ field, value }: { field: TextField; value: string }) => {
     const next = { ...form, [field]: value };
     setForm(next);
-    setRevealed((current) => current.filter((shown) => formFieldError(shown, next, stored) !== ''));
+    setRevealed((current) =>
+      current.filter((shown) => formFieldError({ field: shown, form: next, stored }) !== ''),
+    );
   };
 
-  const saveField = (field: ThresholdKey, value: string): ThresholdKey | undefined => {
-    const parsed = parsedThreshold(field, value);
+  const saveField = ({
+    field,
+    value,
+  }: {
+    field: ThresholdKey;
+    value: string;
+  }): ThresholdKey | undefined => {
+    if (fieldErrorFor({ field, draft: value, values: stored }) !== '') return undefined;
+    const parsed = parsedThreshold({ field, value });
     if (parsed === undefined) return undefined;
     useUserStore.getState().saveTodaysThresholds({ [field]: parsed });
     return field;
@@ -300,12 +384,12 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
 
   const save = () => {
     const gender = form.gender;
-    if (!valid || gender === null) return;
+    if (!errorState.valid || gender === null) return;
     startTransition(() => {
       if (mode === 'create' || !profile) {
-        createProfile(form, gender);
+        createProfile({ form, gender });
       } else {
-        saveChanges(form, stored);
+        saveChanges({ form, stored });
       }
       setForm(storedForm(useUserStore.getState().profile));
     });
@@ -313,10 +397,10 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
 
   return {
     form,
-    current,
-    dirty,
-    valid,
-    visibleError,
+    current: errorState.current,
+    dirty: errorState.dirty,
+    valid: errorState.valid,
+    visibleError: errorState.visibleError,
     revealErrors,
     setField,
     saveField,
@@ -324,5 +408,3 @@ export const useThresholdsForm = (mode: 'create' | 'update') => {
     save,
   };
 };
-
-export type ThresholdsForm = ReturnType<typeof useThresholdsForm>;

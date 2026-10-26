@@ -4,9 +4,9 @@ import { useLayoutStore } from '@/store/layout.ts';
 import { useOnboardingStore } from '@/store/onboarding.ts';
 import { DESKTOP_MEDIA_QUERY } from '@pacevault/ui/hooks/useDevice.ts';
 import { readSafeAreaInset } from '@pacevault/ui/lib/sheetPosition.ts';
-import { fitPadding, PHONE_FIT_MARGIN, type MapPadding } from '../fitPadding.ts';
-import { MAP_FIT_MARGIN } from '../mapPadding.ts';
-import { useOnboardingPreviewRoutes } from './useOnboardingPreviewRoutes.ts';
+import { fitPadding, PHONE_FIT_MARGIN, type MapPadding } from '@/features/map/fitPadding.ts';
+import { MAP_FIT_MARGIN } from '@/features/map/mapPadding.ts';
+import { useOnboardingPreviewRoutes } from '@/queries/onboarding/useOnboardingPreviewRoutes.ts';
 
 const PHONE_REFIT_MS = 900;
 
@@ -40,7 +40,7 @@ const previewPadding = (cardOpen: boolean): MapPadding => {
  * It does not wait for the map's `load` event (that waits for tiles): the camera works before it,
  * and fitting first means the tiles for the preview area are the ones that load.
  */
-export const useOnboardingPreviewCameraEffect = () => {
+export const useOnboardingPreviewCameraEffect = (): void => {
   const map = useMap().current;
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
   const revealed = useOnboardingStore((s) => s.onboardingPreviewRevealed);

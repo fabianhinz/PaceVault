@@ -1,22 +1,26 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { Check, CircleCheck, type LucideIcon } from 'lucide-react';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Chip } from '@pacevault/ui/components/Chip.tsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@pacevault/ui/components/Tabs.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvChip } from '@pacevault/ui/components/pvChip/PvChip.tsx';
+import { PvTabs } from '@pacevault/ui/components/pvTabs/PvTabs.tsx';
+import { PvTabsContent } from '@pacevault/ui/components/pvTabs/PvTabsContent.tsx';
+import { PvTabsList } from '@pacevault/ui/components/pvTabs/PvTabsList.tsx';
+import { PvTabsTrigger } from '@pacevault/ui/components/pvTabs/PvTabsTrigger.tsx';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import { cn } from '@pacevault/ui/lib/cn.ts';
-import type { Status } from '../../../scripts/frontmatter.ts';
-import type { BoardItem } from '../lib/board.ts';
-import { LABELS, SLOTS, SLOT_LABEL, type Slot } from '../lib/vocabulary.ts';
-import { StatusIcon, TypeIcon } from './icons.tsx';
+import type { Status } from '@scripts/frontmatter.ts';
+import type { BoardItem } from '@site/lib/board.ts';
+import { LABEL_BY_BUCKET, SLOTS, LABEL_BY_SLOT, type Slot } from '@site/lib/vocabulary.ts';
+import { StatusIcon } from './StatusIcon.tsx';
+import { TypeIcon } from './TypeIcon.tsx';
 import { MockupPane } from './MockupPane.tsx';
 import { Panel } from './Panel.tsx';
 import { PlanPane } from './PlanPane.tsx';
 import { ReviewPane } from './ReviewPane.tsx';
 import { TechPane } from './TechPane.tsx';
-import { useWrite } from './useWrite.ts';
+import { useWriteMutation } from '@site/app/hooks/useWriteMutation.ts';
 
-const SLOT_MISSING: Record<Slot, string> = {
+const MISSING_TITLE_BY_SLOT: Record<Slot, string> = {
   mockup: 'No mockup yet',
   plan: 'No plan yet',
   tech: 'No tech.md yet',
@@ -25,41 +29,37 @@ const SLOT_MISSING: Record<Slot, string> = {
 
 type StatusAction = { to: Status; label: string; icon: LucideIcon };
 
-/** The owner gates (Q14): Mark ready on a planned item without open questions, Mark done in review. */
 const statusAction = (item: BoardItem): StatusAction | undefined => {
-  const status = item.data.status;
+  const status = item.frontmatter.status;
   if (status === 'in-review') return { to: 'done', label: 'Mark done', icon: Check };
-  const open = item.questions.some((question) => question.open);
-  if (status === 'planned' && !open) return { to: 'ready', label: 'Mark ready', icon: CircleCheck };
+  const questionsOpen = item.questions.some((question) => question.open);
+  if (status === 'planned' && !questionsOpen)
+    return { to: 'ready', label: 'Mark ready', icon: CircleCheck };
   return undefined;
 };
 
-type ItemPanelProps = {
+interface ItemPanelProps {
   item: BoardItem;
   tab: Slot;
   onTabChange: (tab: Slot) => void;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   onClose: () => void;
-};
+}
 
 /**
- * One item in the panel: type icon, title, status chip and areas; tabs Mockup · Plan · Tech ·
- * Review (a missing one disabled); footer with Delete item left and the status action right.
  * A tab stays mounted once shown (hidden while inactive: Radix drops `hidden` under
  * `forceMount`), so an iframe keeps its page and the diagrams stay drawn.
  */
-export const ItemPanel = (props: ItemPanelProps) => {
+export const ItemPanel: FC<ItemPanelProps> = (props) => {
   const device = useDevice();
-  const remove = useWrite();
-  const status = useWrite();
-  // tabs shown once stay mounted; a new tab joins during render (derived state)
+  const remove = useWriteMutation();
+  const status = useWriteMutation();
   const [seen, setSeen] = useState<ReadonlySet<Slot>>(() => new Set([props.tab]));
   if (!seen.has(props.tab)) setSeen(new Set([...seen, props.tab]));
   const item = props.item;
   const action = statusAction(item);
-  const wide = props.expanded && device.isDesktop;
-  // the review doc beside its sections fills the body; without a doc the column scrolls (Q18)
+  const wide = props.expanded && device.desktop;
   const reviewStage = wide && item.reviewDoc;
   const keep = (slot: Slot): true | undefined => {
     if (seen.has(slot)) return true;
@@ -67,7 +67,7 @@ export const ItemPanel = (props: ItemPanelProps) => {
   };
   const footer = (
     <div className="flex items-center gap-2">
-      <Button
+      <PvButton
         variant="danger"
         size="sm"
         title="Delete item (its folder, no trash; Undo in the write card)"
@@ -80,9 +80,9 @@ export const ItemPanel = (props: ItemPanelProps) => {
         }
       >
         Delete item
-      </Button>
+      </PvButton>
       {action !== undefined && (
-        <Button
+        <PvButton
           size="sm"
           className="ml-auto"
           title={`Sets status: ${action.to}`}
@@ -90,25 +90,25 @@ export const ItemPanel = (props: ItemPanelProps) => {
           onClick={() =>
             status.mutate({
               name: 'plan.setStatus',
-              fields: { item: item.folder, expected: item.lines.status, to: action.to },
+              fields: { item: item.folder, expected: item.statusLine, to: action.to },
             })
           }
         >
           <action.icon className="size-4" />
           {action.label}
-        </Button>
+        </PvButton>
       )}
     </div>
   );
   return (
     <Panel
-      title={item.data.title}
+      title={item.frontmatter.title}
       icon={item.type !== undefined && <TypeIcon type={item.type} />}
       chip={
-        <Chip className="inline-flex shrink-0 items-center gap-1">
-          <StatusIcon bucket={item.data.status} className="size-3 text-text-secondary" />
-          {LABELS[item.data.status]}
-        </Chip>
+        <PvChip className="inline-flex shrink-0 items-center gap-1">
+          <StatusIcon bucket={item.frontmatter.status} className="size-3 text-text-secondary" />
+          {LABEL_BY_BUCKET[item.frontmatter.status]}
+        </PvChip>
       }
       meta={item.areas.length > 0 ? item.areas.join(' · ') : undefined}
       footer={footer}
@@ -116,7 +116,7 @@ export const ItemPanel = (props: ItemPanelProps) => {
       onExpandedChange={props.onExpandedChange}
       onClose={props.onClose}
     >
-      <Tabs
+      <PvTabs
         value={props.tab}
         onValueChange={(value) => {
           const slot = SLOTS.find((candidate) => candidate === value);
@@ -124,40 +124,42 @@ export const ItemPanel = (props: ItemPanelProps) => {
         }}
         className="min-h-0 flex-1"
       >
-        <TabsList aria-label="Sections" className="shrink-0">
+        <PvTabsList aria-label="Sections" className="shrink-0">
           {SLOTS.map((slot) => (
-            <TabsTrigger
+            <PvTabsTrigger
               key={slot}
               value={slot}
-              disabled={!item.has[slot]}
-              title={item.has[slot] ? undefined : SLOT_MISSING[slot]}
+              disabled={!item.present[slot]}
+              title={item.present[slot] ? undefined : MISSING_TITLE_BY_SLOT[slot]}
             >
-              {SLOT_LABEL[slot]}
-            </TabsTrigger>
+              {LABEL_BY_SLOT[slot]}
+            </PvTabsTrigger>
           ))}
-        </TabsList>
-        <TabsContent
+        </PvTabsList>
+        <PvTabsContent
           value="mockup"
           forceMount={keep('mockup')}
           className="min-h-0 flex-1 flex-col data-[state=active]:flex data-[state=inactive]:hidden"
         >
-          {item.has.mockup && <MockupPane item={item} />}
-        </TabsContent>
-        <TabsContent
+          {item.present.mockup && <MockupPane item={item} />}
+        </PvTabsContent>
+        <PvTabsContent
           value="plan"
           forceMount={keep('plan')}
           className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden"
         >
           <PlanPane item={item} />
-        </TabsContent>
-        <TabsContent
+        </PvTabsContent>
+        <PvTabsContent
           value="tech"
           forceMount={keep('tech')}
           className="min-h-0 flex-1 overflow-y-auto data-[state=inactive]:hidden"
         >
-          {item.has.tech && <TechPane item={item} expanded={wide} active={props.tab === 'tech'} />}
-        </TabsContent>
-        <TabsContent
+          {item.present.tech && (
+            <TechPane item={item} expanded={wide} active={props.tab === 'tech'} />
+          )}
+        </PvTabsContent>
+        <PvTabsContent
           value="review"
           forceMount={keep('review')}
           className={cn(
@@ -166,9 +168,9 @@ export const ItemPanel = (props: ItemPanelProps) => {
             !reviewStage && 'overflow-y-auto',
           )}
         >
-          {item.has.review && <ReviewPane item={item} wide={wide} />}
-        </TabsContent>
-      </Tabs>
+          {item.present.review && <ReviewPane item={item} wide={wide} />}
+        </PvTabsContent>
+      </PvTabs>
     </Panel>
   );
 };

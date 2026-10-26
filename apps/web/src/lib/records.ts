@@ -1,5 +1,5 @@
 import type { SessionRecord, PersonalBest, PBCategory, Sport } from '@pacevault/engine/types.ts';
-import { powerPerSecond } from '@pacevault/engine/normalize.ts';
+import { powerPerSecond } from '@pacevault/engine/normalizedEffort.ts';
 
 /**
  * Rolling power-window durations (in seconds) used for peak-power PB detection.
@@ -74,16 +74,48 @@ export const extractPeakPower = (records: SessionRecord[]): Map<number, number> 
   return peaks;
 };
 
+const fastestTimeFor = ({
+  withDistance,
+  meters,
+}: {
+  withDistance: SessionRecord[];
+  meters: number;
+}): number | undefined => {
+  let bestTime = Infinity;
+  let left = 0;
+
+  for (let right = 1; right < withDistance.length; right++) {
+    const rightRec = withDistance[right];
+    if (!rightRec) continue;
+    while (left < right) {
+      const leftRec = withDistance[left];
+      if (!leftRec) break;
+      if ((rightRec.distance ?? 0) - (leftRec.distance ?? 0) < meters) break;
+      const time = rightRec.timestamp - leftRec.timestamp;
+      if (time > 0 && time < bestTime) {
+        bestTime = time;
+      }
+      left++;
+    }
+  }
+
+  if (bestTime < Infinity) return bestTime;
+  return undefined;
+};
+
 /**
  * Extract the fastest elapsed time for each target distance using a two-pointer scan over cumulative distance.
  * @param records - Time-series session records with cumulative `distance` (metres) and `timestamp` (seconds) fields.
  * @param targets - Array of distance targets (in metres) to find best times for.
  * @returns Map keyed by target distance in metres, valued by fastest elapsed time in seconds; targets not covered by the data are omitted.
  */
-const extractFastestDistances = (
-  records: SessionRecord[],
-  targets: ReadonlyArray<{ meters: number }>,
-): Map<number, number> => {
+const extractFastestDistances = ({
+  records,
+  targets,
+}: {
+  records: SessionRecord[];
+  targets: ReadonlyArray<{ meters: number }>;
+}): Map<number, number> => {
   const results = new Map<number, number>();
 
   // Need cumulative distance data
@@ -91,27 +123,8 @@ const extractFastestDistances = (
   if (withDistance.length < 2) return results;
 
   for (const target of targets) {
-    let bestTime = Infinity;
-    let left = 0;
-
-    for (let right = 1; right < withDistance.length; right++) {
-      const rightRec = withDistance[right];
-      if (!rightRec) continue;
-      while (left < right) {
-        const leftRec = withDistance[left];
-        if (!leftRec) break;
-        if ((rightRec.distance ?? 0) - (leftRec.distance ?? 0) < target.meters) break;
-        const time = rightRec.timestamp - leftRec.timestamp;
-        if (time > 0 && time < bestTime) {
-          bestTime = time;
-        }
-        left++;
-      }
-    }
-
-    if (bestTime < Infinity) {
-      results.set(target.meters, bestTime);
-    }
+    const time = fastestTimeFor({ withDistance, meters: target.meters });
+    if (time !== undefined) results.set(target.meters, time);
   }
 
   return results;
@@ -131,11 +144,15 @@ interface SessionPeak {
  * @param sessionMeta - Optional session-level metadata providing total distance and elevation gain.
  * @returns Array of peaks, each carrying its category, window, raw value, and whether a higher value is better.
  */
-const extractSessionPeaks = (
-  sport: Sport,
-  records: SessionRecord[],
-  sessionMeta?: { distance?: number; elevationGain?: number },
-): SessionPeak[] => {
+const extractSessionPeaks = ({
+  sport,
+  records,
+  sessionMeta,
+}: {
+  sport: Sport;
+  records: SessionRecord[];
+  sessionMeta?: { distance?: number; elevationGain?: number };
+}): SessionPeak[] => {
   const peaks: SessionPeak[] = [];
 
   if (sport === 'cycling') {
@@ -147,7 +164,7 @@ const extractSessionPeaks = (
   }
 
   if (sport === 'running') {
-    const distances = extractFastestDistances(records, RUNNING_DISTANCES);
+    const distances = extractFastestDistances({ records, targets: RUNNING_DISTANCES });
     for (const [meters, time] of distances) {
       peaks.push({
         category: 'fastest-distance',
@@ -216,16 +233,23 @@ const isSameSlot = (a: PersonalBest, b: PersonalBest): boolean =>
  * @param existing - Personal bests to start from; a session only replaces one it beats.
  * @returns Flat array of personal bests — one entry per unique sport+category+window combination — reflecting the best value seen across all sessions.
  */
-export const computePBsForSessions = (
-  sessions: PBSessionInput[],
-  existing: PersonalBest[] = [],
-): PersonalBest[] => {
+export const computePBsForSessions = ({
+  sessions,
+  existing = [],
+}: {
+  sessions: PBSessionInput[];
+  existing?: PersonalBest[];
+}): PersonalBest[] => {
   const bests = [...existing];
 
   for (const session of sessions) {
-    const peaks = extractSessionPeaks(session.sport, session.records, {
-      distance: session.distance,
-      elevationGain: session.elevationGain,
+    const peaks = extractSessionPeaks({
+      sport: session.sport,
+      records: session.records,
+      sessionMeta: {
+        distance: session.distance,
+        elevationGain: session.elevationGain,
+      },
     });
 
     for (const peak of peaks) {
@@ -239,11 +263,11 @@ export const computePBsForSessions = (
       };
       const index = bests.findIndex((best) => isSameSlot(best, pb));
       const current = bests[index];
-      let isBetter = !current || pb.value < current.value;
+      let better = !current || pb.value < current.value;
       if (peak.higherIsBetter) {
-        isBetter = !current || pb.value > current.value;
+        better = !current || pb.value > current.value;
       }
-      if (!isBetter) continue;
+      if (!better) continue;
       if (current) {
         bests[index] = pb;
       } else {

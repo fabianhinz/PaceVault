@@ -7,7 +7,7 @@ import {
   sheetFitHeight,
 } from '@pacevault/ui/lib/sheetPosition.ts';
 import { DESKTOP_MEDIA_QUERY } from '@pacevault/ui/hooks/useDevice.ts';
-import { SHEET_ABOVE_GAP } from '@pacevault/ui/components/sheetAboveContext.ts';
+import { SHEET_ABOVE_GAP } from '@pacevault/ui/lib/sheetPosition.ts';
 import { fitPadding, PHONE_FIT_MARGIN, type MapPadding } from './fitPadding.ts';
 
 export const MAP_FIT_MARGIN = 80;
@@ -41,11 +41,9 @@ const desktopInsets = (): MapPadding => {
 };
 
 const phoneInsets = (sheetCap: number | undefined): MapPadding => {
-  let covered = sheetFitHeight(
-    readSheetLayout(),
-    useLayoutStore.getState().mobileSheetPosition,
-    sheetCap,
-  );
+  let covered = sheetFitHeight(readSheetLayout(), useLayoutStore.getState().mobileSheetPosition, {
+    cap: sheetCap,
+  });
   if (hasMapControls()) {
     covered += SHEET_ABOVE_GAP + MAP_CONTROLS_HEIGHT;
   }

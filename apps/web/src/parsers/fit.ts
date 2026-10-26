@@ -9,7 +9,7 @@ import {
   type Sport,
   type Gender,
 } from '@pacevault/engine/types.ts';
-import { calculateSessionStress } from '@pacevault/engine/stress.ts';
+import { stressFromRecords } from '@pacevault/engine/stress.ts';
 import {
   SESSION_DERIVATION_VERSION,
   deriveSessionFieldsFromRecords,
@@ -23,6 +23,7 @@ import {
   type FitLapInput,
   type FitRecordInput,
 } from './fitSchemas.ts';
+import { MS_PER_SECOND } from '@pacevault/engine/time.ts';
 
 export interface ParsedFitResult {
   session: SessionFields;
@@ -85,7 +86,7 @@ export const mapFitLaps = (fitLaps: FitLapInput[]): SessionLap[] => {
     const startTime = new Date(lap.start_time).getTime();
     let endTime = new Date(lap.timestamp).getTime();
     if (endTime <= startTime) {
-      endTime = startTime + lap.total_elapsed_time * 1000;
+      endTime = startTime + lap.total_elapsed_time * MS_PER_SECOND;
     }
 
     return {
@@ -102,6 +103,9 @@ export const mapFitLaps = (fitLaps: FitLapInput[]): SessionLap[] => {
   });
 };
 
+type FitData = Awaited<ReturnType<FitParser['parseAsync']>>;
+type FitSession = NonNullable<FitData['sessions']>[number];
+
 export interface FitParseProfile {
   restHr: number;
   maxHr: number;
@@ -110,12 +114,13 @@ export interface FitParseProfile {
   thresholdHr?: number;
 }
 
-export const parseFitFile = async (
-  arrayBuffer: ArrayBuffer,
-  fileName: string,
-  profileAt: (date: number) => FitParseProfile,
-  meta?: { name?: string },
-): Promise<ParsedFitResult> => {
+const decodeFit = async ({
+  arrayBuffer,
+  fileName,
+}: {
+  arrayBuffer: ArrayBuffer;
+  fileName: string;
+}): Promise<FitData> => {
   const parser = new FitParser({
     force: true,
     speedUnit: 'm/s',
@@ -124,18 +129,29 @@ export const parseFitFile = async (
     elapsedRecordField: true,
     mode: 'list',
   });
-
-  let data;
   try {
-    data = await parser.parseAsync(arrayBuffer);
+    return await parser.parseAsync(arrayBuffer);
   } catch (err) {
-    let errorDetail = 'unknown error';
-    if (err instanceof Error) {
-      errorDetail = err.message;
-    }
-    throw new Error(`Failed to parse FIT file "${fileName}": ${errorDetail}`);
+    throw new Error(`Failed to parse FIT file "${fileName}": the decoder rejected it`, {
+      cause: err,
+    });
   }
+};
 
+interface RequiredSessionFields {
+  fitSession: FitSession;
+  sport: Sport;
+  sessionDate: number;
+  sessionDuration: number;
+}
+
+const requiredSessionFields = ({
+  data,
+  fileName,
+}: {
+  data: FitData;
+  fileName: string;
+}): RequiredSessionFields => {
   const fitSession = data.sessions?.[0];
   if (!fitSession) {
     throw new Error(`Failed to parse FIT file "${fileName}": session is missing`);
@@ -155,7 +171,16 @@ export const parseFitFile = async (
   if (sessionDuration === undefined) {
     throw new Error(`Failed to parse FIT file "${fileName}": total_timer_time is missing`);
   }
+  return { fitSession, sport, sessionDate, sessionDuration };
+};
 
+const parseRecordsAndLaps = ({
+  data,
+  fileName,
+}: {
+  data: FitData;
+  fileName: string;
+}): { records: SessionRecord[]; laps: SessionLap[] } => {
   const recordsResult = fitRecordsSchema.safeParse(data.records ?? []);
   if (!recordsResult.success) {
     throw new Error(
@@ -171,64 +196,103 @@ export const parseFitFile = async (
     );
   }
   const laps = mapFitLaps(lapsResult.data);
+  return { records, laps };
+};
 
-  const derived = deriveSessionFieldsFromRecords(sport, records);
-  const avgHr = fitSession.avg_heart_rate ?? derived.avgHr;
-
-  const stressResult = calculateSessionStress(
-    sport,
-    records,
-    { durationSec: sessionDuration, avgHr },
-    profileAt(sessionDate),
-  );
-
-  const avgSpeed = fitSession.enhanced_avg_speed ?? fitSession.avg_speed;
-  const name = meta?.name ?? extractSessionName(fileName);
-
+const sessionFingerprint = ({
+  data,
+  required,
+  sessionDistance,
+}: {
+  data: FitData;
+  required: RequiredSessionFields;
+  sessionDistance: number | undefined;
+}): string => {
   const fileIdResult = fitFileIdSchema.safeParse(data.file_ids?.[0]);
-  const sessionDistance = derived.distance ?? fitSession.total_distance;
-
-  let fileIdData: Parameters<typeof generateFingerprint>[0] = undefined;
+  let fileIdData: Parameters<typeof generateFingerprint>[0]['fileId'] = undefined;
   if (fileIdResult.success) {
     fileIdData = fileIdResult.data;
   }
-  const fingerprint = generateFingerprint(fileIdData, {
-    sport,
-    date: sessionDate,
-    duration: sessionDuration,
-    distance: sessionDistance,
+  return generateFingerprint({
+    fileId: fileIdData,
+    fallback: {
+      sport: required.sport,
+      date: required.sessionDate,
+      duration: required.sessionDuration,
+      distance: sessionDistance,
+    },
   });
+};
 
-  let avgPace: number | undefined = undefined;
+const averagePace = ({
+  sport,
+  avgSpeed,
+}: {
+  sport: Sport;
+  avgSpeed: number | undefined;
+}): number | undefined => {
   if (sport === 'running' && avgSpeed && avgSpeed > 0) {
-    avgPace = 1000 / avgSpeed;
+    return 1000 / avgSpeed;
   }
+  return undefined;
+};
+
+export const parseFitFile = async ({
+  arrayBuffer,
+  fileName,
+  profileAt,
+  meta,
+}: {
+  arrayBuffer: ArrayBuffer;
+  fileName: string;
+  profileAt: (date: number) => FitParseProfile;
+  meta?: { name?: string };
+}): Promise<ParsedFitResult> => {
+  const data = await decodeFit({ arrayBuffer, fileName });
+  const required = requiredSessionFields({ data, fileName });
+  const parsed = parseRecordsAndLaps({ data, fileName });
+  const derived = deriveSessionFieldsFromRecords({
+    sport: required.sport,
+    records: parsed.records,
+  });
+  const avgHr = required.fitSession.avg_heart_rate ?? derived.avgHr;
+  const stressResult = stressFromRecords({
+    sport: required.sport,
+    records: parsed.records,
+    summary: { durationSec: required.sessionDuration, avgHr },
+    thresholds: profileAt(required.sessionDate),
+  });
+  const avgSpeed = required.fitSession.enhanced_avg_speed ?? required.fitSession.avg_speed;
+  const name = meta?.name ?? extractSessionName(fileName);
+  const sessionDistance = derived.distance ?? required.fitSession.total_distance;
+  const fingerprint = sessionFingerprint({ data, required, sessionDistance });
 
   const session: SessionFields = {
     ...(name !== undefined && { name }),
-    sport,
-    date: sessionDate,
-    duration: sessionDuration,
+    sport: required.sport,
+    date: required.sessionDate,
+    duration: required.sessionDuration,
     distance: sessionDistance,
     avgHr,
-    maxHr: fitSession.max_heart_rate ?? derived.maxHr,
-    avgPower: derived.avgPower ?? fitSession.avg_power,
+    maxHr: required.fitSession.max_heart_rate ?? derived.maxHr,
+    avgPower: derived.avgPower ?? required.fitSession.avg_power,
     normalizedPower: stressResult.normalizedPower,
-    avgCadence: derived.avgCadence ?? fitSession.avg_cadence,
+    avgCadence: derived.avgCadence ?? required.fitSession.avg_cadence,
     avgSpeed,
-    avgPace,
-    elevationGain: fitSession.total_ascent,
-    elevationLoss: fitSession.total_descent,
-    subSport: fitSession.sub_sport,
-    maxSpeed: fitSession.enhanced_max_speed ?? fitSession.max_speed ?? derived.maxSpeed,
+    avgPace: averagePace({ sport: required.sport, avgSpeed }),
+    elevationGain: required.fitSession.total_ascent,
+    elevationLoss: required.fitSession.total_descent,
+    subSport: required.fitSession.sub_sport,
+    maxSpeed:
+      required.fitSession.enhanced_max_speed ?? required.fitSession.max_speed ?? derived.maxSpeed,
     ...(derived.gap !== undefined && { gap: derived.gap }),
     tss: stressResult.tss,
     stressMethod: stressResult.stressMethod,
     isPlanned: false,
-    hasDetailedRecords: records.length > 0,
+    hasDetailedRecords: parsed.records.length > 0,
     fingerprint,
     derivationVersion: SESSION_DERIVATION_VERSION,
   };
 
-  return { session, records, laps, fingerprint };
+  return { session, records: parsed.records, laps: parsed.laps, fingerprint };
 };

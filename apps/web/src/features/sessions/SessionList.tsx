@@ -1,17 +1,17 @@
-import { Fragment, useCallback, useMemo, useState } from 'react';
+import { Fragment, useCallback, useMemo, useState, type FC } from 'react';
 import { useVirtualizer, useWindowVirtualizer } from '@tanstack/react-virtual';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { SessionItem } from './SessionItem.tsx';
-import { useSheetScrollElement } from '@pacevault/ui/hooks/useSheetScrollElement.ts';
+import { useUnstableSheetScrollContext } from '@pacevault/ui/components/pvBottomSheet/PvBottomSheetProvider.tsx';
 import { matchesFilters } from '@/lib/savedFilters.ts';
 
 const ESTIMATED_ROW_SIZE = 82;
 
-export const SessionList = () => {
+export const SessionList: FC = () => {
   const sessions = useSessionsStore((s) => s.sessions);
   const activeFilter = useFiltersStore((s) => s.activeFilter);
-  const sheetScroller = useSheetScrollElement();
+  const sheetScroller = useUnstableSheetScrollContext()?.element ?? null;
   const [scrollMargin, setScrollMargin] = useState(0);
   const listRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -31,7 +31,7 @@ export const SessionList = () => {
   const filtered = useMemo(() => {
     const now = Date.now();
     return sessions
-      .filter((s) => !s.isPlanned && matchesFilters(s, activeFilter, now))
+      .filter((s) => !s.isPlanned && matchesFilters({ session: s, criteria: activeFilter, now }))
       .sort((a, b) => b.date - a.date);
   }, [sessions, activeFilter]);
 

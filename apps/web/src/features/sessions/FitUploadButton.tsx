@@ -1,8 +1,8 @@
-import { useRef } from 'react';
+import { useRef, type FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
-import { Button } from '@pacevault/ui/components/Button.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { UPLOAD_EXTENSIONS } from '@/lib/archive.ts';
-import type { ProfileGate } from '@/features/settings/hooks/useThresholdsForm.ts';
+import type { ProfileGate } from '@/features/settings/hooks/types.ts';
 import { useFileUpload } from './hooks/useFileUpload.ts';
 
 interface FitUploadButtonProps {
@@ -10,16 +10,23 @@ interface FitUploadButtonProps {
   onUploaded?: () => void;
 }
 
-export const FitUploadButton = (props: FitUploadButtonProps) => {
+export const FitUploadButton: FC<FitUploadButtonProps> = (props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const upload = useFileUpload();
 
   let ready = upload.profile !== null;
   if (props.profileGate) ready = props.profileGate.ready;
 
+  const handleChange = async (input: HTMLInputElement) => {
+    if (!input.files) return;
+    await upload.handleFiles(input.files);
+    input.value = '';
+    props.onUploaded?.();
+  };
+
   return (
     <>
-      <Button
+      <PvButton
         disabled={!ready || upload.uploading}
         onClick={() => {
           props.profileGate?.save();
@@ -27,20 +34,14 @@ export const FitUploadButton = (props: FitUploadButtonProps) => {
         }}
       >
         {m.ui_fit_files_upload()}
-      </Button>
+      </PvButton>
       <input
         ref={fileInputRef}
         type="file"
         accept={UPLOAD_EXTENSIONS.join(',')}
         multiple
         className="hidden"
-        onChange={async (e) => {
-          const input = e.currentTarget;
-          if (!input.files) return;
-          await upload.handleFiles(input.files);
-          input.value = '';
-          props.onUploaded?.();
-        }}
+        onChange={(e) => void handleChange(e.currentTarget)}
         disabled={upload.uploading}
       />
     </>

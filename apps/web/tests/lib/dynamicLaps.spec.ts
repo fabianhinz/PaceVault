@@ -1,29 +1,29 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { computeDynamicLaps, splitDistanceRange } from '@/lib/dynamicLaps.ts';
+import { computeDynamicLaps, splitDistanceRange } from '@/lib/laps.ts';
 import type { SessionRecord } from '@pacevault/engine/types.ts';
-import { makeRunningRecords, makeCyclingRecords } from '@pacevault/testing/records.ts';
+import { runningRecordSeries, cyclingRecordSeries } from '@pacevault/testing/series.ts';
 
-describe('computeDynamicLaps', () => {
+describe(computeDynamicLaps.name, () => {
   it('returns empty for empty records', () => {
-    const result = computeDynamicLaps([], 1000);
+    const result = computeDynamicLaps({ records: [], splitDistanceMetres: 1000 });
     expect(result.analysis).toEqual([]);
   });
 
   it('returns empty for single record', () => {
     const records: SessionRecord[] = [{ timestamp: 0, distance: 0 }];
-    const result = computeDynamicLaps(records, 1000);
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 1000 });
     expect(result.analysis).toEqual([]);
   });
 
   it('returns empty for records without distance', () => {
     const records: SessionRecord[] = [{ timestamp: 0 }, { timestamp: 1 }, { timestamp: 2 }];
-    const result = computeDynamicLaps(records, 1000);
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 1000 });
     expect(result.analysis).toEqual([]);
   });
 
   it('produces correct split count for running records with 1km splits', () => {
-    const records = makeRunningRecords(1000);
-    const result = computeDynamicLaps(records, 1000);
+    const records = runningRecordSeries({ count: 1000 });
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 1000 });
     expect(result.analysis.length).toBeGreaterThanOrEqual(3);
     result.analysis.forEach((lap, i) => {
       expect(lap.lapIndex).toBe(i);
@@ -31,8 +31,8 @@ describe('computeDynamicLaps', () => {
   });
 
   it('produces correct split count for cycling records with 5km splits', () => {
-    const records = makeCyclingRecords(2000);
-    const result = computeDynamicLaps(records, 5000);
+    const records = cyclingRecordSeries({ count: 2000 });
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 5000 });
     expect(result.analysis.length).toBeGreaterThanOrEqual(3);
     result.analysis.forEach((lap, i) => {
       expect(lap.lapIndex).toBe(i);
@@ -40,24 +40,24 @@ describe('computeDynamicLaps', () => {
   });
 
   it('handles partial final lap', () => {
-    const records = makeRunningRecords(715);
-    const result = computeDynamicLaps(records, 1000);
-    expect(result.analysis.length).toBe(3);
+    const records = runningRecordSeries({ count: 715 });
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 1000 });
+    expect(result.analysis).toHaveLength(3);
     const lastLap = result.analysis[result.analysis.length - 1];
     expect(lastLap.distance).toBeLessThan(1000);
     expect(lastLap.distance).toBeGreaterThan(0);
   });
 
   it('returns 1 partial lap when split distance exceeds total distance', () => {
-    const records = makeRunningRecords(100);
-    const result = computeDynamicLaps(records, 1000);
+    const records = runningRecordSeries({ count: 100 });
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 1000 });
     expect(result.analysis).toHaveLength(1);
     expect(result.analysis[0].distance).toBeLessThan(1000);
   });
 
   it('computes pace correctly for running', () => {
-    const records = makeRunningRecords(1000);
-    const result = computeDynamicLaps(records, 1000);
+    const records = runningRecordSeries({ count: 1000 });
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 1000 });
     result.analysis.forEach((lap) => {
       expect(lap.paceSecPerKm).toBeDefined();
       expect(lap.paceSecPerKm ?? 0).toBeGreaterThan(180);
@@ -65,12 +65,12 @@ describe('computeDynamicLaps', () => {
     });
   });
 
-  it('all laps have intensity active and isInterval false', () => {
-    const records = makeRunningRecords(1000);
-    const result = computeDynamicLaps(records, 1000);
+  it('all laps have intensity active and interval false', () => {
+    const records = runningRecordSeries({ count: 1000 });
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 1000 });
     result.analysis.forEach((lap) => {
       expect(lap.intensity).toBe('active');
-      expect(lap.isInterval).toBe(false);
+      expect(lap.interval).toBe(false);
     });
   });
 });
@@ -84,7 +84,7 @@ describe('computeDynamicLaps splits', () => {
 
   it('split pace includes a stop', () => {
     const records: SessionRecord[] = [...steady(0, 126, 0), ...steady(245, 200, 500)];
-    const lap = computeDynamicLaps(records, 1000).analysis[0];
+    const lap = computeDynamicLaps({ records, splitDistanceMetres: 1000 }).analysis[0];
     expect(lap?.distance).toBe(1000);
     expect(lap?.movingTime).toBe(251);
     expect(lap?.paceSecPerKm).toBe(251);
@@ -92,13 +92,13 @@ describe('computeDynamicLaps splits', () => {
 
   it('marks only the last split as partial', () => {
     const records = steady(0, 700, 0);
-    const result = computeDynamicLaps(records, 1000);
-    expect(result.analysis.map((lap) => lap.isPartial)).toEqual([false, false, true]);
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 1000 });
+    expect(result.analysis.map((lap) => lap.partial)).toEqual([false, false, true]);
   });
 
   it('cuts 400 m splits with record spans that share their boundaries', () => {
     const records = steady(0, 301, 0);
-    const result = computeDynamicLaps(records, 400);
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 400 });
     expect(result.analysis.map((lap) => lap.distance)).toEqual([400, 400, 400]);
     expect(result.spans).toEqual([
       { lapIndex: 0, startRecord: 0, endRecord: 100 },
@@ -112,19 +112,35 @@ describe('computeDynamicLaps splits', () => {
       timestamp: i * 3,
       distance: i * 30,
     }));
-    const result = computeDynamicLaps(records, 400);
+    const result = computeDynamicLaps({ records, splitDistanceMetres: 400 });
     expect(result.analysis).toHaveLength(83);
     const full = result.analysis.slice(0, -1).map((lap) => lap.distance ?? 0);
     expect(full.reduce((sum, distance) => sum + distance, 0) / full.length).toBeCloseTo(400, 0);
-    expect(result.analysis.at(-1)?.isPartial).toBe(true);
+    expect(result.analysis.at(-1)?.partial).toBe(true);
   });
 });
 
-describe('splitDistanceRange', () => {
+describe(splitDistanceRange.name, () => {
   it('caps the split slider at the session length, never below the sport minimum', () => {
-    expect(splitDistanceRange('running', 42_195)).toEqual({ min: 500, max: 10_000, step: 500 });
-    expect(splitDistanceRange('running', 3_240)).toEqual({ min: 500, max: 3_000, step: 500 });
-    expect(splitDistanceRange('cycling', 23_700)).toEqual({ min: 1000, max: 23_000, step: 1000 });
-    expect(splitDistanceRange('cycling', 400)).toEqual({ min: 1000, max: 1000, step: 1000 });
+    expect(splitDistanceRange({ sport: 'running', sessionMetres: 42_195 })).toEqual({
+      min: 500,
+      max: 10_000,
+      step: 500,
+    });
+    expect(splitDistanceRange({ sport: 'running', sessionMetres: 3_240 })).toEqual({
+      min: 500,
+      max: 3_000,
+      step: 500,
+    });
+    expect(splitDistanceRange({ sport: 'cycling', sessionMetres: 23_700 })).toEqual({
+      min: 1000,
+      max: 23_000,
+      step: 1000,
+    });
+    expect(splitDistanceRange({ sport: 'cycling', sessionMetres: 400 })).toEqual({
+      min: 1000,
+      max: 1000,
+      step: 1000,
+    });
   });
 });

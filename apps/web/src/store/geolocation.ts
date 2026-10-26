@@ -12,15 +12,22 @@ interface GeolocationState {
   error: GeolocationError | null;
   toggleTracking: () => void;
   setError: (error: GeolocationError) => void;
-  setFix: (position: [number, number], accuracy: number) => void;
+  setFix: ({ position, accuracy }: { position: [number, number]; accuracy: number }) => void;
 }
+
+export const INITIAL_GEOLOCATION_STORE_STATE: Pick<
+  GeolocationState,
+  'tracking' | 'position' | 'accuracy' | 'error'
+> = {
+  tracking: false,
+  position: null,
+  accuracy: null,
+  error: null,
+};
 
 export const useGeolocationStore = create<GeolocationState>()(
   immer((set) => ({
-    tracking: false,
-    position: null,
-    accuracy: null,
-    error: null,
+    ...INITIAL_GEOLOCATION_STORE_STATE,
     toggleTracking: () =>
       set((draft) => {
         const next = !draft.tracking;
@@ -35,7 +42,7 @@ export const useGeolocationStore = create<GeolocationState>()(
       set((draft) => {
         draft.error = error;
       }),
-    setFix: (position, accuracy) =>
+    setFix: ({ position, accuracy }) =>
       set((draft) => {
         draft.position = position;
         draft.accuracy = accuracy;

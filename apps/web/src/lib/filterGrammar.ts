@@ -91,7 +91,15 @@ interface Segment {
 
 const isBoundary = (char: string | undefined): boolean => char === undefined || /\s/.test(char);
 
-const closingIndex = (text: string, from: number, pair: QuotePair): number => {
+const closingIndex = ({
+  text,
+  from,
+  pair,
+}: {
+  text: string;
+  from: number;
+  pair: QuotePair;
+}): number => {
   for (let i = from; i < text.length; i++) {
     if (text[i] === pair.close && (!pair.bounded || isBoundary(text[i + 1]))) {
       return i;
@@ -112,7 +120,7 @@ const splitQuoted = (text: string): Segment[] => {
       i++;
       continue;
     }
-    const end = closingIndex(text, i + 1, pair);
+    const end = closingIndex({ text, from: i + 1, pair });
     segments.push({ text: plain, quoted: false });
     segments.push({ text: text.slice(i + 1, end), quoted: true });
     plain = '';
@@ -196,11 +204,15 @@ const isRelativeUnit = (unit: Unit | null): unit is 'd' | 'w' | 'm' | 'y' =>
 const isQuantityUnit = (unit: Unit | null): unit is QuantityUnit =>
   unit === 'km' || unit === 'mi' || unit === 'h' || unit === 'min' || unit === 'hm';
 
-const relativeTime = (
-  amount: number,
-  unit: FilterTimeUnit,
-  limits: Record<FilterTimeUnit, number>,
-): FilterTime | null => {
+const relativeTime = ({
+  amount,
+  unit,
+  limits,
+}: {
+  amount: number;
+  unit: FilterTimeUnit;
+  limits: Record<FilterTimeUnit, number>;
+}): FilterTime | null => {
   if (!Number.isInteger(amount) || amount <= 0 || amount > limits[unit]) {
     return null;
   }
@@ -212,27 +224,35 @@ const relativeTime = (
 
 const yearRange = (year: number): FilterTime => ({
   kind: 'range',
-  from: toDayKey(year, 0, 1),
-  to: toDayKey(year, 11, 31),
+  from: toDayKey({ year, monthIndex: 0, day: 1 }),
+  to: toDayKey({ year, monthIndex: 11, day: 31 }),
   source: 'year',
 });
 
-const monthRange = (year: number, month: number): FilterTime => ({
+const monthRange = ({ year, month }: { year: number; month: number }): FilterTime => ({
   kind: 'range',
-  from: toDayKey(year, month, 1),
-  to: toDayKey(year, month + 1, 0),
+  from: toDayKey({ year, monthIndex: month, day: 1 }),
+  to: toDayKey({ year, monthIndex: month + 1, day: 0 }),
   source: 'month',
 });
 
-const monthsRange = (year: number, first: number, last: number): FilterTime => {
+const monthsRange = ({
+  year,
+  first,
+  last,
+}: {
+  year: number;
+  first: number;
+  last: number;
+}): FilterTime => {
   let fromYear = year;
   if (last < first) {
     fromYear = year - 1;
   }
   return {
     kind: 'range',
-    from: toDayKey(fromYear, first, 1),
-    to: toDayKey(year, last + 1, 0),
+    from: toDayKey({ year: fromYear, monthIndex: first, day: 1 }),
+    to: toDayKey({ year, monthIndex: last + 1, day: 0 }),
     source: 'months',
   };
 };
@@ -244,7 +264,7 @@ interface Quantity {
   target: number;
 }
 
-const toQuantity = (unit: QuantityUnit, n: number): Quantity => {
+const toQuantity = ({ unit, n }: { unit: QuantityUnit; n: number }): Quantity => {
   if (unit === 'km') {
     return { kind: 'distance', target: Math.round(n * 10) * 100 };
   }
@@ -260,21 +280,29 @@ const toQuantity = (unit: QuantityUnit, n: number): Quantity => {
   return { kind: 'elevationGain', target: Math.round(n) };
 };
 
-const guessQuantity = (unit: QuantityUnit, n: number): Quantity | null => {
+const guessQuantity = ({ unit, n }: { unit: QuantityUnit; n: number }): Quantity | null => {
   if (!GUESS_LIMITS[unit](n)) {
     return null;
   }
-  return toQuantity(unit, n);
+  return toQuantity({ unit, n });
 };
 
-const explicitQuantity = (unit: QuantityUnit, n: number, unitWord: string): Quantity | null => {
+const explicitQuantity = ({
+  unit,
+  n,
+  unitWord,
+}: {
+  unit: QuantityUnit;
+  n: number;
+  unitWord: string;
+}): Quantity | null => {
   if (n <= 0) {
     return null;
   }
   if (unitWord === 'm' && n < 50) {
     return null;
   }
-  const parsed = toQuantity(unit, n);
+  const parsed = toQuantity({ unit, n });
   if (parsed.target <= 0) {
     return null;
   }
@@ -288,7 +316,13 @@ interface Ambiguous {
 
 type Alternative = { kind: 'time'; time: FilterTime } | Quantity;
 
-const withAlternative = (criteria: FilterCriteria, alternative: Alternative): FilterCriteria => {
+const withAlternative = ({
+  criteria,
+  alternative,
+}: {
+  criteria: FilterCriteria;
+  alternative: Alternative;
+}): FilterCriteria => {
   const next = { ...criteria };
   if (alternative.kind === 'time') {
     next.time = alternative.time;
@@ -298,31 +332,42 @@ const withAlternative = (criteria: FilterCriteria, alternative: Alternative): Fi
   return next;
 };
 
-const isFree = (criteria: FilterCriteria, kind: Alternative['kind']): boolean =>
-  criteria[kind] === null;
+const isFree = ({
+  criteria,
+  kind,
+}: {
+  criteria: FilterCriteria;
+  kind: Alternative['kind'];
+}): boolean => criteria[kind] === null;
 
-const alternativesFor = (ambiguous: Ambiguous, criteria: FilterCriteria): Alternative[] => {
+const alternativesFor = ({
+  ambiguous,
+  criteria,
+}: {
+  ambiguous: Ambiguous;
+  criteria: FilterCriteria;
+}): Alternative[] => {
   const out: Alternative[] = [];
   const addTime = (time: FilterTime | null) => {
-    if (time !== null && isFree(criteria, 'time')) {
+    if (time !== null && isFree({ criteria, kind: 'time' })) {
       out.push({ kind: 'time', time });
     }
   };
   const addQuantity = (unit: QuantityUnit) => {
-    const parsed = guessQuantity(unit, ambiguous.n);
-    if (parsed !== null && isFree(criteria, parsed.kind)) {
+    const parsed = guessQuantity({ unit, n: ambiguous.n });
+    if (parsed !== null && isFree({ criteria, kind: parsed.kind })) {
       out.push(parsed);
     }
   };
   if (ambiguous.relative) {
-    addTime(relativeTime(ambiguous.n, 'day', GUESS_RELATIVE_LIMITS));
-    addTime(relativeTime(ambiguous.n, 'week', GUESS_RELATIVE_LIMITS));
-    addTime(relativeTime(ambiguous.n, 'month', GUESS_RELATIVE_LIMITS));
+    addTime(relativeTime({ amount: ambiguous.n, unit: 'day', limits: GUESS_RELATIVE_LIMITS }));
+    addTime(relativeTime({ amount: ambiguous.n, unit: 'week', limits: GUESS_RELATIVE_LIMITS }));
+    addTime(relativeTime({ amount: ambiguous.n, unit: 'month', limits: GUESS_RELATIVE_LIMITS }));
     return out;
   }
   addQuantity('km');
   addQuantity('h');
-  addTime(relativeTime(ambiguous.n, 'day', GUESS_RELATIVE_LIMITS));
+  addTime(relativeTime({ amount: ambiguous.n, unit: 'day', limits: GUESS_RELATIVE_LIMITS }));
   if (ambiguous.n > 24) {
     addQuantity('min');
   }
@@ -330,10 +375,13 @@ const alternativesFor = (ambiguous: Ambiguous, criteria: FilterCriteria): Altern
   return out;
 };
 
-const compoundMinutes = (
-  words: string[],
-  index: number,
-): { value: number; consumed: number } | null => {
+const compoundMinutes = ({
+  words,
+  index,
+}: {
+  words: string[];
+  index: number;
+}): { value: number; consumed: number } | null => {
   const word = words[index];
   if (word === undefined || !/^\d{1,2}$/.test(word)) {
     return null;
@@ -357,7 +405,257 @@ interface ParseResult {
   names: string[];
 }
 
-const parse = (text: string, now: number): ParseResult => {
+interface ParseState {
+  fixed: FilterCriteria;
+  ambiguous: Ambiguous[];
+  months: number[];
+  years: Token[];
+  names: string[];
+  currentYear: number;
+  currentMonth: number;
+}
+
+const createParseState = (now: number): ParseState => ({
+  fixed: emptyCriteria(),
+  ambiguous: [],
+  months: [],
+  years: [],
+  names: [],
+  currentYear: new Date(now).getFullYear(),
+  currentMonth: new Date(now).getMonth(),
+});
+
+const setTime = ({ state, time }: { state: ParseState; time: FilterTime | null }): void => {
+  if (time !== null && state.fixed.time === null) {
+    state.fixed.time = time;
+  }
+};
+
+const setQuantity = ({ state, parsed }: { state: ParseState; parsed: Quantity | null }): void => {
+  if (parsed !== null && state.fixed[parsed.kind] === null) {
+    state.fixed[parsed.kind] = parsed.target;
+  }
+};
+
+const inferYear = ({ state, month }: { state: ParseState; month: number }): number => {
+  if (month > state.currentMonth) {
+    return state.currentYear - 1;
+  }
+  return state.currentYear;
+};
+
+const isPastYear = ({ state, word }: { state: ParseState; word: string | undefined }): boolean => {
+  if (word === undefined || !/^\d{4}$/.test(word)) {
+    return false;
+  }
+  const n = Number(word);
+  return n >= 1990 && n <= state.currentYear;
+};
+
+interface ReaderInput {
+  state: ParseState;
+  words: string[];
+  i: number;
+}
+
+const readClock = ({
+  state,
+  words,
+  i,
+  clock,
+}: ReaderInput & { clock: RegExpExecArray }): number => {
+  let index = i;
+  if (unitOf(words[index + 1]) === 'h') {
+    index++;
+  }
+  const seconds = Number(clock[1]) * 3600 + Number(clock[2]) * 60;
+  let parsed: Quantity | null = null;
+  if (seconds > 0) {
+    parsed = { kind: 'duration', target: seconds };
+  }
+  setQuantity({ state, parsed });
+  return index;
+};
+
+const readNumberWithUnit = ({
+  state,
+  words,
+  i,
+  n,
+  unit,
+  unitWord,
+}: ReaderInput & { n: number; unit: Unit; unitWord: string }): number => {
+  let index = i + 1;
+  if (isRelativeUnit(unit)) {
+    setTime({
+      state,
+      time: relativeTime({
+        amount: n,
+        unit: RELATIVE_UNITS[unit],
+        limits: EXPLICIT_RELATIVE_LIMITS,
+      }),
+    });
+    return index;
+  }
+  if (unit === 'h' && Number.isInteger(n) && n > 0) {
+    const minutes = compoundMinutes({ words, index: index + 1 });
+    if (minutes !== null) {
+      index += minutes.consumed;
+      setQuantity({ state, parsed: { kind: 'duration', target: n * 3600 + minutes.value * 60 } });
+      return index;
+    }
+  }
+  if (isQuantityUnit(unit)) {
+    setQuantity({ state, parsed: explicitQuantity({ unit, n, unitWord }) });
+  }
+  return index;
+};
+
+const readNumber = ({ state, words, i, token }: ReaderInput & { token: Token }): number => {
+  const n = toNumber(token.word);
+  const unitWord = words[i + 1];
+  const unit = unitOf(unitWord);
+  if (unit !== null && unitWord !== undefined) {
+    return readNumberWithUnit({ state, words, i, n, unit, unitWord });
+  }
+  if (isPastYear({ state, word: token.word })) {
+    state.years.push(token);
+    return i;
+  }
+  state.ambiguous.push({
+    n,
+    relative: KEYWORDS.relative.includes(words[i - 1] ?? ''),
+  });
+  return i;
+};
+
+const readThis = ({ state, words, i }: ReaderInput): number => {
+  const next = words[i + 1];
+  const unit = unitOf(next);
+  if (isYearWord(next)) {
+    setTime({ state, time: { kind: 'calendarYear', yearsAgo: 0 } });
+    return i + 1;
+  }
+  if (unit === 'w' || unit === 'm') {
+    let calendarUnit: 'week' | 'month' = 'month';
+    if (unit === 'w') {
+      calendarUnit = 'week';
+    }
+    setTime({ state, time: { kind: 'calendar', unit: calendarUnit, ago: 0 } });
+    return i + 1;
+  }
+  return i;
+};
+
+const readRelative = ({ state, words, i }: ReaderInput): number => {
+  const next = words[i + 1];
+  const unit = unitOf(next);
+  if (isYearWord(next)) {
+    setTime({ state, time: { kind: 'relative', amount: 365, unit: 'day' } });
+    return i + 1;
+  }
+  if (isRelativeUnit(unit)) {
+    setTime({ state, time: { kind: 'relative', amount: ROLLING_DAYS[unit], unit: 'day' } });
+    return i + 1;
+  }
+  return i;
+};
+
+const readSince = ({ state, words, i }: ReaderInput): number => {
+  const next = words[i + 1];
+  const month = monthOf(next);
+  if (month >= 0) {
+    let index = i + 1;
+    let year = inferYear({ state, month });
+    const yearWord = words[index + 1];
+    if (isPastYear({ state, word: yearWord })) {
+      year = Number(yearWord);
+      index++;
+    }
+    setTime({
+      state,
+      time: { kind: 'since', from: toDayKey({ year, monthIndex: month, day: 1 }) },
+    });
+    return index;
+  }
+  if (isPastYear({ state, word: next })) {
+    setTime({
+      state,
+      time: { kind: 'since', from: toDayKey({ year: Number(next), monthIndex: 0, day: 1 }) },
+    });
+    return i + 1;
+  }
+  return i;
+};
+
+const readWord = ({ state, word }: { state: ParseState; word: string }): void => {
+  const month = monthOf(word);
+  if (month >= 0) {
+    state.months.push(month);
+    return;
+  }
+  const sport = sportOf(word);
+  if (sport !== null && state.fixed.sport === null) {
+    state.fixed.sport = sport;
+  }
+};
+
+const readToken = ({ state, words, i, token }: ReaderInput & { token: Token }): number => {
+  const word = token.word;
+  const clock = CLOCK_PATTERN.exec(word);
+  if (clock !== null) return readClock({ state, words, i, clock });
+  if (isNumberWord(word)) return readNumber({ state, words, i, token });
+  if (KEYWORDS.today.includes(word)) {
+    setTime({ state, time: { kind: 'calendar', unit: 'day', ago: 0 } });
+    return i;
+  }
+  if (KEYWORDS.yesterday.includes(word)) {
+    setTime({ state, time: { kind: 'calendar', unit: 'day', ago: 1 } });
+    return i;
+  }
+  if (KEYWORDS.this.includes(word)) return readThis({ state, words, i });
+  if (KEYWORDS.relative.includes(word)) return readRelative({ state, words, i });
+  if (KEYWORDS.since.includes(word)) return readSince({ state, words, i });
+  readWord({ state, word });
+  return i;
+};
+
+const applyMonthRange = (state: ParseState): void => {
+  const firstMonth = state.months[0];
+  const lastMonth = state.months[state.months.length - 1];
+  const lastYear = state.years[state.years.length - 1];
+  if (firstMonth !== undefined && lastMonth !== undefined) {
+    let year = inferYear({ state, month: lastMonth });
+    if (lastYear !== undefined) {
+      year = Number(lastYear.word);
+    }
+    let time = monthRange({ year, month: lastMonth });
+    if (state.months.length >= 2) {
+      time = monthsRange({ year, first: firstMonth, last: lastMonth });
+    }
+    setTime({ state, time });
+  } else if (lastYear !== undefined) {
+    const firstYear = state.years[0] ?? lastYear;
+    setTime({ state, time: yearRange(Number(firstYear.word)) });
+  }
+};
+
+const combineAmbiguous = (state: ParseState): FilterCriteria[] => {
+  let combos: FilterCriteria[] = [state.fixed];
+  for (const entry of state.ambiguous) {
+    const next = combos.flatMap((criteria) =>
+      alternativesFor({ ambiguous: entry, criteria }).map((alternative) =>
+        withAlternative({ criteria, alternative }),
+      ),
+    );
+    if (next.length > 0) {
+      combos = next;
+    }
+  }
+  return combos;
+};
+
+const parse = ({ text, now }: { text: string; now: number }): ParseResult => {
   const tokens = tokenize(text);
   const words = tokens.map((token) => {
     if (token.quoted) {
@@ -365,208 +663,33 @@ const parse = (text: string, now: number): ParseResult => {
     }
     return token.word;
   });
-  const fixed = emptyCriteria();
-  const ambiguous: Ambiguous[] = [];
-  const months: number[] = [];
-  const years: Token[] = [];
-  const names: string[] = [];
-  const currentYear = new Date(now).getFullYear();
-  const currentMonth = new Date(now).getMonth();
-
-  const setTime = (time: FilterTime | null) => {
-    if (time !== null && fixed.time === null) {
-      fixed.time = time;
-    }
-  };
-
-  const setQuantity = (parsed: Quantity | null) => {
-    if (parsed !== null && fixed[parsed.kind] === null) {
-      fixed[parsed.kind] = parsed.target;
-    }
-  };
-
-  const inferYear = (month: number): number => {
-    if (month > currentMonth) {
-      return currentYear - 1;
-    }
-    return currentYear;
-  };
-
-  const isPastYear = (word: string | undefined): boolean => {
-    if (word === undefined || !/^\d{4}$/.test(word)) {
-      return false;
-    }
-    const n = Number(word);
-    return n >= 1990 && n <= currentYear;
-  };
-
+  const state = createParseState(now);
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
     if (token === undefined) {
       continue;
     }
     if (token.quoted) {
-      names.push(token.word);
+      state.names.push(token.word);
       continue;
     }
-    const word = token.word;
-    if (KEYWORDS.approx.includes(word) || word === '-') {
+    if (KEYWORDS.approx.includes(token.word) || token.word === '-') {
       continue;
     }
-
-    const clock = CLOCK_PATTERN.exec(word);
-    if (clock !== null) {
-      if (unitOf(words[i + 1]) === 'h') {
-        i++;
-      }
-      const seconds = Number(clock[1]) * 3600 + Number(clock[2]) * 60;
-      let parsed: Quantity | null = null;
-      if (seconds > 0) {
-        parsed = { kind: 'duration', target: seconds };
-      }
-      setQuantity(parsed);
-      continue;
-    }
-
-    if (isNumberWord(word)) {
-      const n = toNumber(word);
-      const unitWord = words[i + 1];
-      const unit = unitOf(unitWord);
-      if (unit !== null && unitWord !== undefined) {
-        i++;
-        if (isRelativeUnit(unit)) {
-          setTime(relativeTime(n, RELATIVE_UNITS[unit], EXPLICIT_RELATIVE_LIMITS));
-          continue;
-        }
-        if (unit === 'h' && Number.isInteger(n) && n > 0) {
-          const minutes = compoundMinutes(words, i + 1);
-          if (minutes !== null) {
-            i += minutes.consumed;
-            setQuantity({ kind: 'duration', target: n * 3600 + minutes.value * 60 });
-            continue;
-          }
-        }
-        if (isQuantityUnit(unit)) {
-          setQuantity(explicitQuantity(unit, n, unitWord));
-        }
-        continue;
-      }
-      if (isPastYear(word)) {
-        years.push(token);
-        continue;
-      }
-      ambiguous.push({
-        n,
-        relative: KEYWORDS.relative.includes(words[i - 1] ?? ''),
-      });
-      continue;
-    }
-
-    if (KEYWORDS.today.includes(word)) {
-      setTime({ kind: 'calendar', unit: 'day', ago: 0 });
-      continue;
-    }
-    if (KEYWORDS.yesterday.includes(word)) {
-      setTime({ kind: 'calendar', unit: 'day', ago: 1 });
-      continue;
-    }
-
-    const next = words[i + 1];
-    if (KEYWORDS.this.includes(word)) {
-      const unit = unitOf(next);
-      if (isYearWord(next)) {
-        i++;
-        setTime({ kind: 'calendarYear', yearsAgo: 0 });
-        continue;
-      }
-      if (unit === 'w' || unit === 'm') {
-        i++;
-        let calendarUnit: 'week' | 'month' = 'month';
-        if (unit === 'w') {
-          calendarUnit = 'week';
-        }
-        setTime({ kind: 'calendar', unit: calendarUnit, ago: 0 });
-      }
-      continue;
-    }
-
-    if (KEYWORDS.relative.includes(word)) {
-      const unit = unitOf(next);
-      if (isYearWord(next)) {
-        i++;
-        setTime({ kind: 'relative', amount: 365, unit: 'day' });
-        continue;
-      }
-      if (isRelativeUnit(unit)) {
-        i++;
-        setTime({ kind: 'relative', amount: ROLLING_DAYS[unit], unit: 'day' });
-      }
-      continue;
-    }
-
-    if (KEYWORDS.since.includes(word)) {
-      const month = monthOf(next);
-      if (month >= 0) {
-        i++;
-        let year = inferYear(month);
-        const yearWord = words[i + 1];
-        if (isPastYear(yearWord)) {
-          year = Number(yearWord);
-          i++;
-        }
-        setTime({ kind: 'since', from: toDayKey(year, month, 1) });
-        continue;
-      }
-      if (isPastYear(next)) {
-        i++;
-        setTime({ kind: 'since', from: toDayKey(Number(next), 0, 1) });
-      }
-      continue;
-    }
-
-    const month = monthOf(word);
-    if (month >= 0) {
-      months.push(month);
-      continue;
-    }
-    const sport = sportOf(word);
-    if (sport !== null && fixed.sport === null) {
-      fixed.sport = sport;
-    }
+    i = readToken({ state, words, i, token });
   }
-
-  const firstMonth = months[0];
-  const lastMonth = months[months.length - 1];
-  const lastYear = years[years.length - 1];
-  if (firstMonth !== undefined && lastMonth !== undefined) {
-    let year = inferYear(lastMonth);
-    if (lastYear !== undefined) {
-      year = Number(lastYear.word);
-    }
-    let time = monthRange(year, lastMonth);
-    if (months.length >= 2) {
-      time = monthsRange(year, firstMonth, lastMonth);
-    }
-    setTime(time);
-  } else if (lastYear !== undefined) {
-    const firstYear = years[0] ?? lastYear;
-    setTime(yearRange(Number(firstYear.word)));
-  }
-
-  let combos: FilterCriteria[] = [fixed];
-  for (const entry of ambiguous) {
-    const next = combos.flatMap((criteria) =>
-      alternativesFor(entry, criteria).map((alternative) => withAlternative(criteria, alternative)),
-    );
-    if (next.length > 0) {
-      combos = next;
-    }
-  }
-  return { combos, names };
+  applyMonthRange(state);
+  return { combos: combineAmbiguous(state), names: state.names };
 };
 
-export const interpretFilterText = (text: string, now: number): FilterCriteria[] => {
-  const parsed = parse(text, now);
+export const interpretFilterText = ({
+  text,
+  now,
+}: {
+  text: string;
+  now: number;
+}): FilterCriteria[] => {
+  const parsed = parse({ text, now });
   let name: string | null = null;
   if (parsed.names.length > 0) {
     name = parsed.names.join(' ');

@@ -28,7 +28,7 @@ const movingSpeedsKmh = (records: SessionRecord[]): number[] => {
   return speeds.sort((a, b) => a - b);
 };
 
-const evenDomain = (slow: number, fast: number): number[] => {
+const evenDomain = ({ slow, fast }: { slow: number; fast: number }): number[] => {
   const steps = SPEED_PALETTE.length - 1;
   return SPEED_PALETTE.map((_, index) => slow + ((fast - slow) * index) / steps);
 };
@@ -45,7 +45,7 @@ export const speedScale = (records: SessionRecord[]): SpeedScale | undefined => 
     const middle = SPEED_PALETTE[Math.floor(SPEED_PALETTE.length / 2)] ?? SPEED_PALETTE[0] ?? '';
     return { slowKmh, fastKmh, domain: [slowKmh], colorAt: () => middle };
   }
-  const domain = evenDomain(slowKmh, fastKmh);
+  const domain = evenDomain({ slow: slowKmh, fast: fastKmh });
   const blend = scaleLinear<string>().domain(domain).range(SPEED_PALETTE).clamp(true);
   return { slowKmh, fastKmh, domain, colorAt: (value) => blend(value) };
 };

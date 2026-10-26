@@ -3,7 +3,7 @@ import { pickBoundsFromCorners, filterTracksByPickBounds } from '@/features/map/
 import type { PickableTrack } from '@/features/map/trackPicking.ts';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
 
-describe('pickBoundsFromCorners', () => {
+describe(pickBoundsFromCorners.name, () => {
   it('normalizes corners regardless of order', () => {
     const a = { lat: 50, lng: 10 };
     const b = { lat: 48, lng: 12 };
@@ -36,7 +36,7 @@ describe('pickBoundsFromCorners', () => {
   });
 });
 
-describe('filterTracksByPickBounds', () => {
+describe(filterTracksByPickBounds.name, () => {
   const pickBounds: GPSBounds = {
     minLat: 48,
     maxLat: 50,
@@ -55,7 +55,7 @@ describe('filterTracksByPickBounds', () => {
       [11, 47],
       [11, 51],
     ]);
-    expect(filterTracksByPickBounds([track], pickBounds)).toEqual(['s1']);
+    expect(filterTracksByPickBounds({ tracks: [track], pickBounds })).toEqual(['s1']);
   });
 
   it('returns empty for a track that misses the pick bounds', () => {
@@ -63,7 +63,7 @@ describe('filterTracksByPickBounds', () => {
       [11, 52],
       [11, 54],
     ]);
-    expect(filterTracksByPickBounds([track], pickBounds)).toEqual([]);
+    expect(filterTracksByPickBounds({ tracks: [track], pickBounds })).toEqual([]);
   });
 
   it('returns empty when bounds overlap but no segment intersects', () => {
@@ -73,7 +73,7 @@ describe('filterTracksByPickBounds', () => {
       [9.5, 47.5],
       [9.5, 47.8],
     ]);
-    expect(filterTracksByPickBounds([track], pickBounds)).toEqual([]);
+    expect(filterTracksByPickBounds({ tracks: [track], pickBounds })).toEqual([]);
   });
 
   it('deduplicates multiple tracks with the same sessionId', () => {
@@ -85,12 +85,12 @@ describe('filterTracksByPickBounds', () => {
       [11.5, 48],
       [11.5, 50],
     ]);
-    const result = filterTracksByPickBounds([trackA, trackB], pickBounds);
+    const result = filterTracksByPickBounds({ tracks: [trackA, trackB], pickBounds });
     expect(result).toEqual(['s1']);
   });
 
   it('returns empty for empty tracks array', () => {
-    expect(filterTracksByPickBounds([], pickBounds)).toEqual([]);
+    expect(filterTracksByPickBounds({ tracks: [], pickBounds })).toEqual([]);
   });
 
   it('returns multiple session ids for multiple hitting tracks', () => {
@@ -102,7 +102,7 @@ describe('filterTracksByPickBounds', () => {
       [10.5, 49],
       [11.5, 49],
     ]);
-    const result = filterTracksByPickBounds([trackA, trackB], pickBounds);
+    const result = filterTracksByPickBounds({ tracks: [trackA, trackB], pickBounds });
     expect(result).toEqual(['s1', 's2']);
   });
 });

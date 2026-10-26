@@ -1,62 +1,38 @@
-import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import type { FC, ReactNode } from 'react';
+import { PageLink } from '@/routing/PageLink.tsx';
 import { ChartNoAxesColumn, Pause, Timer, Wind } from 'lucide-react';
-import { CollapsibleListItem } from '@pacevault/ui/components/Collapsible.tsx';
-import { Crumbs, IconFact, StatTile } from '@pacevault/ui/components/StatTile.tsx';
-import {
-  moreStatsTopics,
-  pickPeak,
-  pickZone,
-  type MoreStats,
-  type MoreStatsTopic,
-} from '@/lib/moreStats.ts';
+import { PvCollapsibleListItem } from '@pacevault/ui/components/pvCollapsibleListItem/PvCollapsibleListItem.tsx';
+import { PvCrumbs } from '@pacevault/ui/components/pvCrumbs/PvCrumbs.tsx';
+import { PvIconFact } from '@pacevault/ui/components/pvIconFact/PvIconFact.tsx';
+import { PvStatTile } from '@pacevault/ui/components/pvStatTile/PvStatTile.tsx';
+import { moreStatsTopics, pickPeak, pickZone, type MoreStats } from '@/lib/moreStats.ts';
 import { METRIC_EXPLANATIONS, type MetricId } from '@/lib/explanations.ts';
+import { formatNumber } from '@/lib/formatters.ts';
 import { MetricLabel } from '@/components/MetricLabel.tsx';
 import { DECOUPLING_SCALE_PCT, DECOUPLING_WELL_PACED_PCT } from '@pacevault/engine/decoupling.ts';
-import type { EnergyBlocker } from '@pacevault/engine/energy.ts';
 import type { SessionRecord, TrainingSession } from '@pacevault/engine/types.ts';
 import { m } from '@pacevault/i18n/messages.js';
-import { getLocale } from '@pacevault/i18n/runtime.js';
 import { useMoreStats } from './hooks/useMoreStats.ts';
 import { MeterBar } from './MeterBar.tsx';
 import { HrZonesCell } from './HrZonesCell.tsx';
 import { PeakPowerCell } from './PeakPowerCell.tsx';
-import { duration, integerFmt, percent, watts } from './statFormat.ts';
-
-const twoDecimalFmt = new Intl.NumberFormat(getLocale(), {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-const decouplingFmt = new Intl.NumberFormat(getLocale(), {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-  signDisplay: 'negative',
-});
+import { statFormat } from './statFormat.ts';
+import {
+  LABEL_BY_ENERGY_BLOCKER,
+  LABEL_BY_MORE_STATS_TOPIC,
+  LABEL_BY_STRESS_METHOD,
+} from '@/microcopy/moreStats.ts';
 
 const RANGE_TRACK_SPAN = 0.3;
 const INTENSITY_SCALE = 1.2;
 
-const TOPIC_LABELS: Record<MoreStatsTopic, () => string> = {
-  load: m.ui_more_stats_topic_load,
-  calories: m.ui_more_stats_topic_calories,
-  power: m.ui_more_stats_topic_power,
-  stride: m.ui_more_stats_topic_stride,
-  zones: m.ui_more_stats_topic_zones,
-};
-
-const LOAD_SOURCES: Record<TrainingSession['stressMethod'], () => string> = {
-  tss: m.ui_more_stats_load_from_power,
-  trimp: m.ui_more_stats_load_from_hr,
-  duration: m.ui_more_stats_load_from_duration,
-};
-
-const BLOCKER_LABELS: Record<EnergyBlocker, () => string> = {
-  weight: m.ui_more_stats_add_weight,
-  age: m.ui_more_stats_add_birth_year,
-  weightAndAge: m.ui_more_stats_add_weight_birth_year,
-};
-
-const tileInfo = (metricId: MetricId, relatedMetricIds?: MetricId[]): ReactNode => (
+const tileInfo = ({
+  metricId,
+  relatedMetricIds,
+}: {
+  metricId: MetricId;
+  relatedMetricIds?: MetricId[];
+}): ReactNode => (
   <MetricLabel
     metricId={metricId}
     relatedMetricIds={relatedMetricIds}
@@ -70,22 +46,28 @@ const roundToTen = (value: number): number => Math.round(value / 10) * 10;
 const rangeFraction = (factor: number): number =>
   (factor - (1 - RANGE_TRACK_SPAN)) / (2 * RANGE_TRACK_SPAN);
 
-const loadNote = (stats: MoreStats, session: TrainingSession): string => {
+const loadNote = ({ stats, session }: { stats: MoreStats; session: TrainingSession }): string => {
   if (session.stressMethod === 'trimp' && stats.thresholdHrEstimated) {
     return m.ui_more_stats_load_from_hr_estimated();
   }
-  return LOAD_SOURCES[session.stressMethod]();
+  return LABEL_BY_STRESS_METHOD[session.stressMethod]();
 };
 
-const loadCell = (stats: MoreStats, session: TrainingSession): ReactNode => (
-  <StatTile
+const loadCell = ({
+  stats,
+  session,
+}: {
+  stats: MoreStats;
+  session: TrainingSession;
+}): ReactNode => (
+  <PvStatTile
     key="load"
     title={m.ui_more_stats_load()}
     stat={session.stressMethod}
-    info={tileInfo(session.stressMethod)}
+    info={tileInfo({ metricId: session.stressMethod })}
     unit={METRIC_EXPLANATIONS[session.stressMethod].shortLabel}
-    value={integerFmt.format(session.tss)}
-    note={loadNote(stats, session)}
+    value={statFormat.integer(session.tss)}
+    note={loadNote({ stats, session })}
   />
 );
 
@@ -95,30 +77,30 @@ const caloriesCell = (stats: MoreStats): ReactNode => {
   const title = m.ui_more_stats_calories();
   if ('blockedBy' in calories) {
     return (
-      <StatTile
+      <PvStatTile
         key="calories"
         title={title}
         stat="calories"
-        info={tileInfo('calories')}
+        info={tileInfo({ metricId: 'calories' })}
         value="--"
         unit="kcal"
         note={
-          <Link to="/settings" className="text-accent hover:underline">
-            {BLOCKER_LABELS[calories.blockedBy]()}
-          </Link>
+          <PageLink to={{ page: 'settings', params: {} }} className="text-accent hover:underline">
+            {LABEL_BY_ENERGY_BLOCKER[calories.blockedBy]()}
+          </PageLink>
         }
       />
     );
   }
   return (
-    <StatTile
+    <PvStatTile
       key="calories"
       title={title}
       stat="calories"
-      info={tileInfo('calories')}
-      value={integerFmt.format(roundToTen(calories.kcal))}
+      info={tileInfo({ metricId: 'calories' })}
+      value={statFormat.integer(roundToTen(calories.kcal))}
       unit="kcal"
-      note={`±${percent(calories.uncertainty)} %`}
+      note={`±${statFormat.percent(calories.uncertainty)} %`}
     >
       <MeterBar
         sport={stats.sport}
@@ -129,7 +111,7 @@ const caloriesCell = (stats: MoreStats): ReactNode => {
         }}
         tick={rangeFraction(1)}
       />
-    </StatTile>
+    </PvStatTile>
   );
 };
 
@@ -137,33 +119,37 @@ const movingTimeCell = (stats: MoreStats): ReactNode => {
   const moving = stats.movingTime;
   if (moving === undefined) return null;
   const crumbs: ReactNode[] = [
-    <IconFact
+    <PvIconFact
       key="elapsed"
       icon={Timer}
       label={m.ui_more_stats_elapsed_label()}
-      time={duration(moving.elapsedS)}
+      time={statFormat.duration(moving.elapsedS)}
     />,
   ];
   if (moving.coastingS !== undefined) {
     crumbs.push(
-      <IconFact icon={Wind} label={m.ui_more_stats_coasting()} time={duration(moving.coastingS)} />,
+      <PvIconFact
+        icon={Wind}
+        label={m.ui_more_stats_coasting()}
+        time={statFormat.duration(moving.coastingS)}
+      />,
     );
   }
   crumbs.push(
-    <IconFact
+    <PvIconFact
       icon={Pause}
       label={m.ui_more_stats_stopped_label()}
-      time={duration(moving.stoppedS)}
+      time={statFormat.duration(moving.stoppedS)}
     />,
   );
   return (
-    <StatTile
+    <PvStatTile
       key="moving"
       title={m.ui_more_stats_moving()}
       stat="movingTime"
-      info={tileInfo('movingTime')}
-      value={duration(moving.movingS)}
-      note={<Crumbs items={crumbs} />}
+      info={tileInfo({ metricId: 'movingTime' })}
+      value={statFormat.duration(moving.movingS)}
+      note={<PvCrumbs items={crumbs} />}
     />
   );
 };
@@ -175,16 +161,16 @@ const intensityCell = (stats: MoreStats): ReactNode => {
   if (intensity !== undefined) {
     let secondary: { value: string; unit: string } | undefined = undefined;
     if (variability !== undefined) {
-      secondary = { unit: 'VI', value: twoDecimalFmt.format(variability.index) };
+      secondary = { unit: 'VI', value: formatNumber(variability.index, 'fixed-two-decimals') };
     }
     return (
-      <StatTile
+      <PvStatTile
         key="intensity"
         title={title}
         stat="intensityFactor"
-        info={tileInfo('intensityFactor', ['variabilityIndex'])}
+        info={tileInfo({ metricId: 'intensityFactor', relatedMetricIds: ['variabilityIndex'] })}
         unit="IF"
-        value={twoDecimalFmt.format(intensity.factor)}
+        value={formatNumber(intensity.factor, 'fixed-two-decimals')}
         secondary={secondary}
       >
         <MeterBar
@@ -193,23 +179,23 @@ const intensityCell = (stats: MoreStats): ReactNode => {
           fill={{ to: intensity.factor / INTENSITY_SCALE }}
           mark={1 / INTENSITY_SCALE}
         />
-      </StatTile>
+      </PvStatTile>
     );
   }
   if (variability === undefined) return null;
   return (
-    <StatTile
+    <PvStatTile
       key="intensity"
       title={title}
       stat="variabilityIndex"
-      info={tileInfo('variabilityIndex')}
+      info={tileInfo({ metricId: 'variabilityIndex' })}
       unit="VI"
-      value={twoDecimalFmt.format(variability.index)}
+      value={formatNumber(variability.index, 'fixed-two-decimals')}
       note={
-        <Crumbs
+        <PvCrumbs
           items={[
-            m.ui_more_stats_np({ watts: watts(variability.np) }),
-            m.ui_more_stats_avg_power({ watts: watts(variability.avgPower) }),
+            m.ui_more_stats_np({ watts: statFormat.watts(variability.np) }),
+            m.ui_more_stats_avg_power({ watts: statFormat.watts(variability.avgPower) }),
           ]}
         />
       }
@@ -219,7 +205,7 @@ const intensityCell = (stats: MoreStats): ReactNode => {
 
 const peaksCell = (stats: MoreStats): ReactNode => {
   const peaks = stats.peaks;
-  if (peaks === undefined || !pickPeak(peaks, null)) return null;
+  if (peaks === undefined || !pickPeak({ peaks, hovered: null })) return null;
   return <PeakPowerCell key="peaks" sport={stats.sport} peaks={peaks} />;
 };
 
@@ -227,21 +213,21 @@ const stepLengthCell = (stats: MoreStats): ReactNode => {
   const step = stats.stepLength;
   if (step === undefined) return null;
   return (
-    <StatTile
+    <PvStatTile
       key="step"
       title={m.ui_more_stats_step()}
       stat="stepLength"
-      info={tileInfo('stepLength')}
-      value={twoDecimalFmt.format(step.metres)}
+      info={tileInfo({ metricId: 'stepLength' })}
+      value={formatNumber(step.metres, 'fixed-two-decimals')}
       unit="m"
-      note={`${integerFmt.format(step.stepsPerMinute)} spm`}
+      note={`${statFormat.integer(step.stepsPerMinute)} spm`}
     />
   );
 };
 
 const hrZonesCell = (stats: MoreStats): ReactNode => {
   const zones = stats.hrZones;
-  if (zones === undefined || !pickZone(zones, null)) return null;
+  if (zones === undefined || !pickZone({ zones, hovered: null })) return null;
   return <HrZonesCell key="zones" zones={zones} />;
 };
 
@@ -251,12 +237,12 @@ const decouplingCell = (stats: MoreStats): ReactNode => {
   let verdict = m.ui_more_stats_drifting();
   if (decoupling.pct < DECOUPLING_WELL_PACED_PCT) verdict = m.ui_more_stats_well_paced();
   return (
-    <StatTile
+    <PvStatTile
       key="decoupling"
       title={m.ui_more_stats_decoupling()}
       stat="decoupling"
-      info={tileInfo('decoupling')}
-      value={decouplingFmt.format(decoupling.pct)}
+      info={tileInfo({ metricId: 'decoupling' })}
+      value={formatNumber(decoupling.pct, 'signed-fixed-one-decimal')}
       unit="%"
       note={verdict}
     >
@@ -266,12 +252,11 @@ const decouplingCell = (stats: MoreStats): ReactNode => {
         fill={{ to: decoupling.pct / DECOUPLING_SCALE_PCT }}
         mark={DECOUPLING_WELL_PACED_PCT / DECOUPLING_SCALE_PCT}
       />
-    </StatTile>
+    </PvStatTile>
   );
 };
 
-const CELLS = [
-  loadCell,
+const STATS_CELLS = [
   caloriesCell,
   movingTimeCell,
   intensityCell,
@@ -286,19 +271,22 @@ interface MoreStatsRowProps {
   records: SessionRecord[];
 }
 
-export const MoreStatsRow = (props: MoreStatsRowProps) => {
-  const stats = useMoreStats(props.session, props.records);
-  const cells = CELLS.map((cell) => cell(stats, props.session)).filter((cell) => cell !== null);
-  const topics = moreStatsTopics(stats).map((topic) => TOPIC_LABELS[topic]());
+export const MoreStatsRow: FC<MoreStatsRowProps> = (props) => {
+  const stats = useMoreStats({ session: props.session, records: props.records });
+  const cells = [
+    loadCell({ stats, session: props.session }),
+    ...STATS_CELLS.map((cell) => cell(stats)),
+  ].filter((cell) => cell !== null);
+  const topics = moreStatsTopics(stats).map((topic) => LABEL_BY_MORE_STATS_TOPIC[topic]());
 
   return (
-    <CollapsibleListItem
+    <PvCollapsibleListItem
       testId="session-stats-row"
       avatar={<ChartNoAxesColumn size={20} aria-hidden className="shrink-0 text-text-secondary" />}
       primary={m.ui_more_stats_title()}
       secondary={topics.join(' · ')}
     >
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">{cells}</div>
-    </CollapsibleListItem>
+    </PvCollapsibleListItem>
   );
 };

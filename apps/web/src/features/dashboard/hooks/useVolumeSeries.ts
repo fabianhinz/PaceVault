@@ -20,7 +20,7 @@ export interface VolumeRow {
   cycling: number | null;
 }
 
-interface VolumeSeries {
+export interface VolumeSeries {
   rows: VolumeRow[];
   current: VolumeTotal[];
   before: VolumeTotal[] | null;
@@ -36,22 +36,22 @@ export const useVolumeSeries = (axis: DashboardAxis): VolumeSeries => {
 
   return useMemo((): VolumeSeries => {
     const through = axis.history.map((d) => d.date);
-    const totals = volumeTotals(axis.sessions, metric, time, days, through);
+    const totals = volumeTotals({ sessions: axis.sessions, metric, time, range: days, through });
     const from = days?.from ?? through[0] ?? '';
     const bySport = new Map(
       SPORTS.map((sport) => [
         sport,
-        cumulativeVolume(
-          axis.sessions.filter((s) => s.sport === sport),
+        cumulativeVolume({
+          sessions: axis.sessions.filter((s) => s.sport === sport),
           metric,
           from,
           through,
-        ),
+        }),
       ]),
     );
     const display = (total: VolumeTotal | undefined) => {
       if (total === undefined || total.value === undefined) return null;
-      return toVolumeDisplay(metric, total.value);
+      return toVolumeDisplay({ metric, value: total.value });
     };
     const rows = through.map((date, i): VolumeRow => ({
       date,

@@ -1,14 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useDebounce } from 'react-use';
 
 export const INPUT_DEBOUNCE_MS = 600;
 
 export const useDebouncedValue = <T>(value: T, delayMs: number): T => {
   const [debounced, setDebounced] = useState(value);
 
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(id);
-  }, [value, delayMs]);
+  useDebounce(() => setDebounced(value), delayMs, [value]);
 
   return debounced;
 };

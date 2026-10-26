@@ -17,7 +17,13 @@ export type SensorWarning =
   | { code: 'power_above_max'; limit: number; count: number }
   | { code: 'speed_above_max'; limit: number; count: number };
 
-export const validateRecords = (records: SessionRecord[], sport: Sport): SensorWarning[] => {
+export const validateRecords = ({
+  records,
+  sport,
+}: {
+  records: SessionRecord[];
+  sport: Sport;
+}): SensorWarning[] => {
   const warnings: SensorWarning[] = [];
 
   const hrValues = records.map((r) => r.hr).filter((v): v is number => v !== undefined);

@@ -1,15 +1,14 @@
-import { getSessionRecords, saveSessionGPS } from '@/lib/indexeddb.ts';
-import { buildSessionGPS } from '@pacevault/engine/gps.ts';
+import { getSessionRecords, saveSessionGPS } from '@/lib/db.ts';
+import { buildSessionGPS } from '@/lib/gpsTrack.ts';
+import { workerMessageInSchema, type WorkerMessageOut } from './gpsBuildContract.ts';
 
-export type WorkerMessageIn = { type: 'build'; sessionIds: string[] };
-
-export type WorkerMessageOut = { type: 'done' };
-
-self.onmessage = async (e: MessageEvent<WorkerMessageIn>) => {
-  for (const sid of e.data.sessionIds) {
+self.onmessage = async (e: MessageEvent<unknown>) => {
+  const message = workerMessageInSchema.safeParse(e.data);
+  if (!message.success) return;
+  for (const sid of message.data.sessionIds) {
     try {
       const records = await getSessionRecords(sid);
-      const gpsData = buildSessionGPS(sid, records);
+      const gpsData = buildSessionGPS({ sessionId: sid, records });
       if (gpsData) await saveSessionGPS(gpsData);
     } catch (err) {
       console.error(`GPS build failed for ${sid}:`, err);

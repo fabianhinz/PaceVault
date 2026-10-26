@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { useGeolocationStore } from '@/store/geolocation.ts';
-import { mapPadding } from '../mapPadding.ts';
+import { mapPadding } from '@/features/map/mapPadding.ts';
 
-export const useGeolocationCameraEffect = (mapRef: React.RefObject<MapRef | null>) => {
+const GEOLOCATION_FLY_DURATION_MS = 800;
+
+export const useGeolocationCameraEffect = (mapRef: React.RefObject<MapRef | null>): void => {
   const tracking = useGeolocationStore((s) => s.tracking);
   const position = useGeolocationStore((s) => s.position);
   const flownRef = useRef(false);
@@ -22,7 +24,7 @@ export const useGeolocationCameraEffect = (mapRef: React.RefObject<MapRef | null
       center: position,
       zoom: 15,
       padding: mapPadding(0),
-      duration: 800,
+      duration: GEOLOCATION_FLY_DURATION_MS,
     });
   }, [tracking, position, mapRef]);
 };

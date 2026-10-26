@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMap, type MapRef } from 'react-map-gl/maplibre';
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl';
-import { densestClusterBounds, unionBounds } from '@pacevault/engine/gps.ts';
+import { densestClusterBounds, unionBounds } from '@pacevault/engine/bounds.ts';
 import type { GPSBounds, SessionGPS } from '@pacevault/engine/types.ts';
 import {
   initialMapCameraState,
-  mapCameraFitBlocked,
+  isMapCameraFitBlocked,
   nextMapCamera,
   sessionMinZoom,
   settleMapCameraFit,
@@ -13,18 +13,14 @@ import {
   type MapCameraObservation,
   type MapCameraTarget,
 } from '@/lib/mapCamera.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { useMapControlsStore } from '@/store/mapControls.ts';
-import { useFiltersStore } from '@/store/filters.ts';
-import { useImportProgressStore } from '@/store/importProgress.ts';
-import { useSessionReprocessingActive } from '@/features/sessions/hooks/useSessionReprocessingActive.ts';
-import type { MapTrack } from './useMapTracks.ts';
-import { useStudioMapTracks } from './useStudioMapTracks.ts';
-import { useSessionFitBounds } from './useSessionFitBounds.ts';
-import { pathBounds } from '../lapPath.ts';
-import { MAP_FIT_MARGIN, mapPadding } from '../mapPadding.ts';
-import type { MapPadding } from '../fitPadding.ts';
-import type { DetailPath } from '../zoneColoredPath.ts';
+import type { MapTrack } from './types.ts';
+import { useCameraRuns } from './useCameraRuns.ts';
+import { useMapCameraInputs } from './useMapCameraInputs.ts';
+import { cancelRunning, clearZoomLimit, type CameraRuns } from './cameraRuns.ts';
+import { pathBounds } from '@/features/map/lapPath.ts';
+import { MAP_FIT_MARGIN, mapPadding } from '@/features/map/mapPadding.ts';
+import type { MapPadding } from '@/features/map/fitPadding.ts';
+import type { DetailPath } from '@/features/map/zoneColoredPath.ts';
 import {
   DEM_SETTLE_TIMEOUT_MS,
   ENTRY_PITCH,
@@ -37,10 +33,11 @@ import {
   terrainTiltTarget,
   whenTerrainSettled,
   type TerrainCamera,
-} from '../terrainCamera.ts';
+} from '@/features/map/terrainCamera.ts';
+import { MS_PER_SECOND } from '@pacevault/engine/time.ts';
 
 const OVERVIEW_FIT_MARGIN = 50;
-const OVERVIEW_FIT_DURATION_MS = 1000;
+const OVERVIEW_FIT_DURATION_MS = MS_PER_SECOND;
 const LAP_MAX_ZOOM = 16;
 const LAP_SHEET_CAP = 0.85;
 
@@ -57,12 +54,6 @@ interface FitOptions {
   padding: MapPadding;
   duration: number;
   maxZoom?: number;
-}
-
-interface CameraRuns {
-  token: number;
-  cancelEase: (() => void) | null;
-  limit: { sessionId: string; off: () => void } | null;
 }
 
 interface CameraFit {
@@ -83,15 +74,29 @@ const tripBounds = (sources: FitSources): GPSBounds | null => {
   );
 };
 
-const fitBoundsOf = (fit: MapCameraFit, sources: FitSources): GPSBounds | null => {
-  if (fit === 'overview') return densestClusterBounds(sources.tracks.map((t) => t.gps.bounds));
-  if (fit === 'trip') return tripBounds(sources);
-  if (fit === 'lap') {
-    if (sources.lapPath === null) return null;
-    return pathBounds(sources.lapPath);
+const fitBoundsOf = ({
+  fit,
+  sources,
+}: {
+  fit: MapCameraFit;
+  sources: FitSources;
+}): GPSBounds | null => {
+  switch (fit) {
+    case 'overview':
+      return densestClusterBounds(sources.tracks.map((t) => t.gps.bounds));
+    case 'trip':
+      return tripBounds(sources);
+    case 'lap':
+      if (sources.lapPath === null) return null;
+      return pathBounds(sources.lapPath);
+    case 'studio':
+      return sources.studioBounds;
+    case 'session':
+    case 'lapClose':
+    case 'tilt':
+    case 'flatten':
+      return sources.sessionBounds;
   }
-  if (fit === 'studio') return sources.studioBounds;
-  return sources.sessionBounds;
 };
 
 const fitOptions = (fit: MapCameraFit): FitOptions => {
@@ -113,21 +118,13 @@ const boundsArray = (bounds: GPSBounds): LngLatBoundsLike => [
   [bounds.maxLng, bounds.maxLat],
 ];
 
-const cancelRunning = (runs: CameraRuns) => {
-  runs.token += 1;
-  runs.cancelEase?.();
-  runs.cancelEase = null;
-};
-
-const clearZoomLimit = (map: MapLibreMap, runs: CameraRuns) => {
-  if (runs.limit === null) return;
-  runs.limit.off();
-  runs.limit = null;
-  map.setMinZoom(null);
-};
-
-const keepsZoomLimit = (target: MapCameraTarget | null, runs: CameraRuns): boolean =>
-  target?.kind === 'session' && target.sessionId === runs.limit?.sessionId;
+const isZoomLimitKept = ({
+  target,
+  runs,
+}: {
+  target: MapCameraTarget | null;
+  runs: CameraRuns;
+}): boolean => target?.kind === 'session' && target.sessionId === runs.limit?.sessionId;
 
 const armZoomLimit = ({
   map,
@@ -148,7 +145,7 @@ const armZoomLimit = ({
     if (fit?.zoom === undefined) return;
     map.setMinZoom(sessionMinZoom({ fitZoom: fit.zoom, currentZoom: map.getZoom() }));
   };
-  map.once('moveend', onMoveEnd);
+  void map.once('moveend', onMoveEnd);
   runs.limit = { sessionId, off: () => map.off('moveend', onMoveEnd) };
 };
 
@@ -172,29 +169,37 @@ const runTerrainFit = async ({
   runs.cancelEase = easeTerrainCamera({ map, target, duration });
 };
 
-const flattenCamera = (map: MapLibreMap, runs: CameraRuns) => {
+const flattenCamera = ({ map, runs }: { map: MapLibreMap; runs: CameraRuns }) => {
   cancelRunning(runs);
   map.easeTo({ pitch: 0, bearing: 0, duration: TILT_DURATION_MS });
 };
 
 const applyCameraOnlyFit = ({ fit, map, runs, target, median }: CameraFit): boolean => {
-  if (fit === 'flatten') {
-    clearZoomLimit(map, runs);
-    flattenCamera(map, runs);
-    return true;
+  switch (fit) {
+    case 'flatten':
+      clearZoomLimit({ map, runs });
+      flattenCamera({ map, runs });
+      return true;
+    case 'tilt':
+      if (target.kind !== 'session' || target.view === '2d') {
+        flattenCamera({ map, runs });
+        return true;
+      }
+      void runTerrainFit({
+        map,
+        runs,
+        duration: TILT_DURATION_MS,
+        camera: (settled) => terrainTiltTarget({ map, pitch: ENTRY_PITCH, median, settled }),
+      });
+      return true;
+    case 'overview':
+    case 'session':
+    case 'lap':
+    case 'lapClose':
+    case 'trip':
+    case 'studio':
+      return false;
   }
-  if (fit !== 'tilt') return false;
-  if (target.kind !== 'session' || target.view === '2d') {
-    flattenCamera(map, runs);
-    return true;
-  }
-  void runTerrainFit({
-    map,
-    runs,
-    duration: TILT_DURATION_MS,
-    camera: (settled) => terrainTiltTarget({ map, pitch: ENTRY_PITCH, median, settled }),
-  });
-  return true;
 };
 
 const applyBoundsFit = ({
@@ -246,8 +251,20 @@ const fitPathOf = ({
   lapPath: DetailPath | null;
   sessionPath: DetailPath | null;
 }): DetailPath | null => {
-  if (fit === 'lap' || (fit === 'tilt' && lapPath !== null)) return lapPath;
-  return sessionPath;
+  switch (fit) {
+    case 'lap':
+      return lapPath;
+    case 'tilt':
+      if (lapPath !== null) return lapPath;
+      return sessionPath;
+    case 'overview':
+    case 'session':
+    case 'lapClose':
+    case 'flatten':
+    case 'trip':
+    case 'studio':
+      return sessionPath;
+  }
 };
 
 const fitMedian = (path: DetailPath | null): number | undefined => {
@@ -255,53 +272,42 @@ const fitMedian = (path: DetailPath | null): number | undefined => {
   return medianElevation(path.elevations);
 };
 
-const useMapCameraTarget = (): MapCameraTarget => {
-  const studio = useStudioMapTracks();
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const selectedLapIndex = useMapControlsStore((s) => s.selectedLapIndex);
-  const sessionMapView = useMapControlsStore((s) => s.sessionMapView);
-  const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
-  const tripKey = useMemo(
-    () => [...focusedTripSessionIds].sort().join(','),
-    [focusedTripSessionIds],
-  );
-
-  return useMemo((): MapCameraTarget => {
-    if (studio.active) {
-      if (studio.routeId !== null) return { kind: 'studioRoute', routeId: studio.routeId };
-      return { kind: 'studioTab' };
-    }
-    if (openedSessionId !== null) {
-      return {
-        kind: 'session',
-        sessionId: openedSessionId,
-        lapIndex: selectedLapIndex,
-        view: sessionMapView,
-      };
-    }
-    if (tripKey !== '') return { kind: 'trip', tripKey };
-    return { kind: 'overview' };
-  }, [studio.active, studio.routeId, openedSessionId, selectedLapIndex, sessionMapView, tripKey]);
-};
-
-const useCameraRuns = (map: MapLibreMap | undefined): RefObject<CameraRuns> => {
-  const runs = useRef<CameraRuns>({ token: 0, cancelEase: null, limit: null });
-
-  useEffect(() => {
-    if (map === undefined) return;
-    const current = runs.current;
-    const onMoveStart = (event: { originalEvent?: unknown }) => {
-      if (event.originalEvent !== undefined) current.token += 1;
-    };
-    map.on('movestart', onMoveStart);
-    return () => {
-      map.off('movestart', onMoveStart);
-      cancelRunning(current);
-      clearZoomLimit(map, current);
-    };
-  }, [map]);
-
-  return runs;
+const runPendingFit = ({
+  pending,
+  mapRef,
+  map,
+  runs,
+  target,
+  lapPath,
+  sessionPath,
+  sources,
+}: {
+  pending: MapCameraFit;
+  mapRef: MapRef;
+  map: MapLibreMap;
+  runs: CameraRuns;
+  target: MapCameraTarget;
+  lapPath: DetailPath | null;
+  sessionPath: DetailPath | null;
+  sources: FitSources;
+}): boolean => {
+  const fitPath = fitPathOf({ fit: pending, lapPath, sessionPath });
+  const fit: CameraFit = {
+    fit: pending,
+    mapRef,
+    map,
+    runs,
+    target,
+    median: fitMedian(fitPath),
+    path: fitPath?.path ?? NO_FIT_PATH,
+  };
+  if (applyCameraOnlyFit(fit)) {
+    return true;
+  }
+  const bounds = fitBoundsOf({ fit: pending, sources });
+  if (bounds === null) return false;
+  applyBoundsFit({ ...fit, bounds });
+  return true;
 };
 
 export const useMapCameraEffect = ({
@@ -319,82 +325,67 @@ export const useMapCameraEffect = ({
 }): void => {
   const mapRef = useMap().current;
   const map = mapRef?.getMap();
-  const target = useMapCameraTarget();
-  const studioBounds = useStudioMapTracks().bounds;
-  const tripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const lapCloseCount = useMapControlsStore((s) => s.lapCloseCount);
-  const refitRequest = useMapFocusStore((s) => s.mapRefitRequest);
-  const filter = useFiltersStore((s) => s.activeFilter);
-  const sessionDataBlocked = useSessionReprocessingActive();
-  const progressOverlayOpen = useImportProgressStore(
-    (s) => s.foreground !== null || s.awaitingTrackBuild,
-  );
-  const sessionBounds = useSessionFitBounds(gpsData, openedSessionId);
-  const visibleKey = useMemo(() => tracks.map((t) => t.sessionId).join(','), [tracks]);
+  const inputs = useMapCameraInputs({ gpsData, tracks });
   const state = useRef(initialMapCameraState);
   const runs = useCameraRuns(map);
 
   useEffect(() => {
     const observation: MapCameraObservation = {
-      target,
-      visibleKey,
+      target: inputs.target,
+      visibleKey: inputs.visibleKey,
       visibleCount: tracks.length,
-      filter,
-      lapCloseCount,
-      refitRequest,
-      studioHasBounds: studioBounds !== null,
-      sessionDataBlocked,
-      progressOverlayOpen,
+      filter: inputs.filter,
+      lapCloseCount: inputs.lapCloseCount,
+      refitRequest: inputs.refitRequest,
+      studioHasBounds: inputs.studioBounds !== null,
+      sessionDataBlocked: inputs.sessionDataBlocked,
+      progressOverlayOpen: inputs.progressOverlayOpen,
     };
-    state.current = nextMapCamera(state.current, observation);
+    state.current = nextMapCamera({ state: state.current, obs: observation });
     if (mapRef === undefined || map === undefined) return;
-    if (!keepsZoomLimit(target, runs.current)) clearZoomLimit(map, runs.current);
+    if (!isZoomLimitKept({ target: inputs.target, runs: runs.current }))
+      clearZoomLimit({ map, runs: runs.current });
     const pending = state.current.pending;
     if (pending === null || !mapLoaded) return;
-    if (mapCameraFitBlocked(pending, observation)) return;
-    const fitPath = fitPathOf({ fit: pending, lapPath, sessionPath });
-    const fit: CameraFit = {
-      fit: pending,
-      mapRef,
-      map,
-      runs: runs.current,
-      target,
-      median: fitMedian(fitPath),
-      path: fitPath?.path ?? NO_FIT_PATH,
-    };
-    if (applyCameraOnlyFit(fit)) {
-      state.current = settleMapCameraFit(state.current);
+    if (isMapCameraFitBlocked({ fit: pending, obs: observation })) return;
+    if (
+      !runPendingFit({
+        pending,
+        mapRef,
+        map,
+        runs: runs.current,
+        target: inputs.target,
+        lapPath,
+        sessionPath,
+        sources: {
+          tracks,
+          gpsData,
+          tripSessionIds: inputs.tripSessionIds,
+          sessionBounds: inputs.sessionBounds,
+          lapPath: lapPath?.path ?? null,
+          studioBounds: inputs.studioBounds,
+        },
+      })
+    )
       return;
-    }
-    const bounds = fitBoundsOf(pending, {
-      tracks,
-      gpsData,
-      tripSessionIds,
-      sessionBounds,
-      lapPath: lapPath?.path ?? null,
-      studioBounds,
-    });
-    if (bounds === null) return;
-    applyBoundsFit({ ...fit, bounds });
     state.current = settleMapCameraFit(state.current);
   }, [
     mapRef,
     map,
     mapLoaded,
     runs,
-    target,
-    visibleKey,
+    inputs.target,
+    inputs.visibleKey,
     tracks,
-    filter,
-    lapCloseCount,
-    refitRequest,
-    studioBounds,
-    sessionDataBlocked,
-    progressOverlayOpen,
+    inputs.filter,
+    inputs.lapCloseCount,
+    inputs.refitRequest,
+    inputs.studioBounds,
+    inputs.sessionDataBlocked,
+    inputs.progressOverlayOpen,
     gpsData,
-    tripSessionIds,
-    sessionBounds,
+    inputs.tripSessionIds,
+    inputs.sessionBounds,
     lapPath,
     sessionPath,
   ]);

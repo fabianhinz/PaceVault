@@ -1,96 +1,113 @@
 import { z } from 'zod';
 
-export interface ParsedGpxPoint {
-  lat: number;
-  lng: number;
-  ele?: number;
-  time?: number;
-  seg: number;
-}
-
 interface ParsedGpx {
   name?: string;
   points: ParsedGpxPoint[];
 }
 
-const pointSchema = z.object({
+const parsedGpxPointSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
   ele: z.number().optional(),
   time: z.number().optional(),
+  seg: z.number(),
 });
 
-const parseElevation = (el: Element): number | undefined => {
-  const eleEl = el.getElementsByTagNameNS('*', 'ele')[0];
-  if (!eleEl?.textContent) return undefined;
-  const value = Number(eleEl.textContent.trim());
+export type ParsedGpxPoint = z.infer<typeof parsedGpxPointSchema>;
+
+const parseElevation = (element: Element): number | undefined => {
+  const elevationElement = element.getElementsByTagNameNS('*', 'ele')[0];
+  if (!elevationElement?.textContent) return undefined;
+  const value = Number(elevationElement.textContent.trim());
   if (Number.isNaN(value)) return undefined;
   return value;
 };
 
-const parseTime = (el: Element): number | undefined => {
-  const timeEl = el.getElementsByTagNameNS('*', 'time')[0];
-  if (!timeEl?.textContent) return undefined;
-  const value = Date.parse(timeEl.textContent.trim());
+const parseTimeMs = (element: Element): number | undefined => {
+  const timeElement = element.getElementsByTagNameNS('*', 'time')[0];
+  if (!timeElement?.textContent) return undefined;
+  const value = Date.parse(timeElement.textContent.trim());
   if (Number.isNaN(value)) return undefined;
   return value;
 };
 
-const parseCoordAttribute = (el: Element, attribute: string): number | undefined => {
-  const raw = el.getAttribute(attribute);
-  if (raw === null || raw.trim() === '') return undefined;
-  const value = Number(raw);
+const parseCoordinateAttribute = ({
+  element,
+  attribute,
+}: {
+  element: Element;
+  attribute: string;
+}): number | undefined => {
+  const attributeText = element.getAttribute(attribute);
+  if (attributeText === null || attributeText.trim() === '') return undefined;
+  const value = Number(attributeText);
   if (Number.isNaN(value)) return undefined;
   return value;
 };
 
-const parsePoint = (el: Element, seg: number): ParsedGpxPoint | null => {
-  const result = pointSchema.safeParse({
-    lat: parseCoordAttribute(el, 'lat'),
-    lng: parseCoordAttribute(el, 'lon'),
-    ele: parseElevation(el),
-    time: parseTime(el),
+const parsePoint = ({
+  element,
+  segmentIndex,
+}: {
+  element: Element;
+  segmentIndex: number;
+}): ParsedGpxPoint | null => {
+  const parsedPoint = parsedGpxPointSchema.safeParse({
+    lat: parseCoordinateAttribute({ element, attribute: 'lat' }),
+    lng: parseCoordinateAttribute({ element, attribute: 'lon' }),
+    ele: parseElevation(element),
+    time: parseTimeMs(element),
+    seg: segmentIndex,
   });
-  if (!result.success) return null;
-  return { ...result.data, seg };
+  if (!parsedPoint.success) return null;
+  return parsedPoint.data;
 };
 
-const collectPoints = (
-  containers: ArrayLike<Element>,
-  pointTag: 'trkpt' | 'rtept',
-): ParsedGpxPoint[] => {
+const collectPoints = ({
+  containers,
+  pointTag,
+}: {
+  containers: ArrayLike<Element>;
+  pointTag: 'trkpt' | 'rtept';
+}): ParsedGpxPoint[] => {
   const points: ParsedGpxPoint[] = [];
-  for (let seg = 0; seg < containers.length; seg++) {
-    const container = containers[seg];
+  for (let segmentIndex = 0; segmentIndex < containers.length; segmentIndex++) {
+    const container = containers[segmentIndex];
     if (!container) continue;
-    const pointEls = container.getElementsByTagNameNS('*', pointTag);
-    for (let i = 0; i < pointEls.length; i++) {
-      const el = pointEls[i];
-      if (!el) continue;
-      const point = parsePoint(el, seg);
+    const pointElements = container.getElementsByTagNameNS('*', pointTag);
+    for (let i = 0; i < pointElements.length; i++) {
+      const element = pointElements[i];
+      if (!element) continue;
+      const point = parsePoint({ element, segmentIndex });
       if (point) points.push(point);
     }
   }
   return points;
 };
 
-const parseName = (doc: Document): string | undefined => {
-  const nameEl = doc.getElementsByTagNameNS('*', 'name')[0];
-  const name = nameEl?.textContent?.trim();
+const parseName = (gpxDocument: Document): string | undefined => {
+  const nameElement = gpxDocument.getElementsByTagNameNS('*', 'name')[0];
+  const name = nameElement?.textContent?.trim();
   if (!name) return undefined;
   return name;
 };
 
 export const parseGpx = (gpxText: string): ParsedGpx | null => {
-  const doc = new DOMParser().parseFromString(gpxText, 'application/xml');
-  if (doc.getElementsByTagName('parsererror').length > 0) return null;
-  if (doc.documentElement.localName !== 'gpx') return null;
+  const gpxDocument = new DOMParser().parseFromString(gpxText, 'application/xml');
+  if (gpxDocument.getElementsByTagName('parsererror').length > 0) return null;
+  if (gpxDocument.documentElement.localName !== 'gpx') return null;
 
-  let points = collectPoints(doc.getElementsByTagNameNS('*', 'trkseg'), 'trkpt');
+  let points = collectPoints({
+    containers: gpxDocument.getElementsByTagNameNS('*', 'trkseg'),
+    pointTag: 'trkpt',
+  });
   if (points.length === 0) {
-    points = collectPoints(doc.getElementsByTagNameNS('*', 'rte'), 'rtept');
+    points = collectPoints({
+      containers: gpxDocument.getElementsByTagNameNS('*', 'rte'),
+      pointTag: 'rtept',
+    });
   }
   if (points.length < 2) return null;
 
-  return { name: parseName(doc), points };
+  return { name: parseName(gpxDocument), points };
 };

@@ -1,59 +1,28 @@
+import type { FC } from 'react';
 import { Download } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
-import { useStudioStore } from '@/store/studio.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { MapPickPopup } from '@/features/map/MapPickPopup.tsx';
-import { toKm } from '@/lib/formatters.ts';
 import { AddMarkerButton } from './AddMarkerButton.tsx';
-import { segmentAtDistance } from './routeSegments.ts';
-import { useStudioRouteExport } from '@/features/studio/hooks/useStudioRouteExport.ts';
-import { useStudioRoutePoints } from '@/features/studio/hooks/useStudioRoutePoints.ts';
-import { sliceRoute } from '@pacevault/gpx/routeCut.ts';
+import type { StudioTrackPickInfo } from '@/features/studio/types.ts';
+import { useStudioTrackPickSegment } from '@/features/studio/hooks/useStudioTrackPickSegment.ts';
 
-export interface StudioTrackPickInfo {
-  x: number;
-  y: number;
-  routeId: string;
-  distanceM: number;
+interface StudioTrackPickPopupProps {
+  info: StudioTrackPickInfo;
+  onClose: () => void;
 }
 
-export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose: () => void }) => {
-  const route = useStudioStore((s) => s.routes.find((r) => r.id === props.info.routeId));
-  const routeExport = useStudioRouteExport();
-  const routePoints = useStudioRoutePoints(props.info.routeId);
-
-  const splitDistances = (route?.markers ?? [])
-    .filter((mk) => mk.type === 'track_modifier')
-    .map((mk) => mk.distanceM);
-  const hasSplits = splitDistances.length > 0;
-
-  const segment = route
-    ? segmentAtDistance(splitDistances, route.distance, props.info.distanceM)
-    : null;
-
-  let segmentPointCount = 0;
-  if (segment && routePoints.points) {
-    segmentPointCount = sliceRoute(routePoints.points, segment.startM, segment.endM).length;
-  }
-  const segmentTooShort = routePoints.points !== null && segmentPointCount < 2;
-
-  let exportLabel = m.ui_studio_export_segment();
-  if (!hasSplits) exportLabel = m.ui_studio_export_route();
-  else if (segmentTooShort) exportLabel = m.ui_studio_export_segment_too_short();
-
-  const subtitleParts = [m.ui_studio_pick_from_start({ km: toKm(props.info.distanceM) })];
-  if (segment && segment.startSplit !== null) {
-    subtitleParts.push(
-      m.ui_studio_pick_from_split({ km: toKm(props.info.distanceM - segment.startM) }),
-    );
-  }
+export const StudioTrackPickPopup: FC<StudioTrackPickPopupProps> = (props) => {
+  const pick = useStudioTrackPickSegment(props.info);
+  const route = pick.route;
+  const segment = pick.segment;
 
   return (
     <MapPickPopup
       x={props.info.x}
       y={props.info.y}
       title={m.ui_studio_pick_title()}
-      subtitle={subtitleParts.join(' · ')}
+      subtitle={pick.subtitleParts.join(' · ')}
       onClose={props.onClose}
     >
       <AddMarkerButton
@@ -70,22 +39,27 @@ export const StudioTrackPickPopup = (props: { info: StudioTrackPickInfo; onClose
       />
 
       {route && segment && (
-        <Button
+        <PvButton
           variant="secondary"
           className="w-full"
-          disabled={segmentPointCount < 2 || routeExport.exporting}
+          disabled={pick.segmentPointCount < 2 || pick.routeExport.exporting}
           onClick={() => {
-            if (hasSplits) {
-              routeExport.exportSegment(route, segment.startM, segment.endM, segment.index);
+            if (pick.splitsPresent) {
+              void pick.routeExport.exportSegment({
+                route,
+                startM: segment.startM,
+                endM: segment.endM,
+                index: segment.index,
+              });
             } else {
-              routeExport.exportRoute(route);
+              void pick.routeExport.exportRoute(route);
             }
             props.onClose();
           }}
         >
           <Download className="size-4" />
-          {exportLabel}
-        </Button>
+          {pick.exportLabel}
+        </PvButton>
       )}
     </MapPickPopup>
   );

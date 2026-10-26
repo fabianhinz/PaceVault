@@ -1,41 +1,40 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type ComponentProps, type FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import type { RaceDistance } from '@pacevault/engine/types.ts';
-import { RACE_DISTANCE_METERS, thresholdPaceFromRace } from '@pacevault/engine/vdot.ts';
-import { DISTANCE_OPTIONS, usesLongFormat, parseRaceTime } from '@/lib/raceTime.ts';
-import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  DialogDescription,
-} from '@pacevault/ui/components/Dialog.tsx';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Input } from '@pacevault/ui/components/Input.tsx';
-import { Label } from '@pacevault/ui/components/Label.tsx';
-import {
-  SelectRoot,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@pacevault/ui/components/Select.tsx';
+import { METERS_BY_RACE_DISTANCE, thresholdPaceFromRace } from '@pacevault/engine/vdot.ts';
+import { DISTANCE_OPTIONS, isLongFormat, parseRaceTime } from '@/lib/raceTime.ts';
+import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
+import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
+import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
+import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
+import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
+import { PvDialogDescription } from '@pacevault/ui/components/pvDialog/PvDialogDescription.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvInput } from '@pacevault/ui/components/pvInput/PvInput.tsx';
+import { PvLabel } from '@pacevault/ui/components/pvLabel/PvLabel.tsx';
+import { PvSelect } from '@pacevault/ui/components/pvSelect/PvSelect.tsx';
+import { PvSelectTrigger } from '@pacevault/ui/components/pvSelect/PvSelectTrigger.tsx';
+import { PvSelectValue } from '@pacevault/ui/components/pvSelect/PvSelectValue.tsx';
+import { PvSelectContent } from '@pacevault/ui/components/pvSelect/PvSelectContent.tsx';
+import { PvSelectItem } from '@pacevault/ui/components/pvSelect/PvSelectItem.tsx';
 
-interface PaceEstimatorDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface PaceEstimatorDialogProps extends Required<
+  Pick<ComponentProps<typeof PvDialog>, 'open' | 'onOpenChange'>
+> {
   onSave: (paceSecPerKm: number) => void;
 }
 
-export const PaceEstimatorDialog = (props: PaceEstimatorDialogProps) => {
+export const PaceEstimatorDialog: FC<PaceEstimatorDialogProps> = (props) => {
   const [distance, setDistance] = useState<RaceDistance>('5k');
   const [timeInput, setTimeInput] = useState('');
 
-  const result = useMemo(() => {
-    const minutes = parseRaceTime(timeInput, distance);
+  const estimatedPace = useMemo(() => {
+    const minutes = parseRaceTime({ input: timeInput, distance });
     if (minutes === undefined) return undefined;
-    const pace = thresholdPaceFromRace(RACE_DISTANCE_METERS[distance], minutes);
+    const pace = thresholdPaceFromRace({
+      distanceMeters: METERS_BY_RACE_DISTANCE[distance],
+      timeMin: minutes,
+    });
     if (pace < 150 || pace > 540) return undefined;
     return pace;
   }, [timeInput, distance]);
@@ -54,60 +53,60 @@ export const PaceEstimatorDialog = (props: PaceEstimatorDialogProps) => {
   };
 
   const handleSave = () => {
-    if (result === undefined) return;
-    props.onSave(result);
+    if (estimatedPace === undefined) return;
+    props.onSave(estimatedPace);
     handleOpenChange(false);
   };
 
   return (
-    <DialogRoot open={props.open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader title={m.ui_pace_est_title()} />
-        <DialogBody>
-          <DialogDescription>{m.ui_pace_est_desc()}</DialogDescription>
+    <PvDialog open={props.open} onOpenChange={handleOpenChange}>
+      <PvDialogContent closeLabel={m.ui_sheet_drag_close()}>
+        <PvDialogHeader title={m.ui_pace_est_title()} />
+        <PvDialogBody>
+          <PvDialogDescription>{m.ui_pace_est_desc()}</PvDialogDescription>
 
           <div className="mt-4 flex flex-col gap-3">
             <div>
-              <Label>{m.ui_pace_est_distance()}</Label>
-              <SelectRoot value={distance} onValueChange={handleDistanceChange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
+              <PvLabel>{m.ui_pace_est_distance()}</PvLabel>
+              <PvSelect value={distance} onValueChange={handleDistanceChange}>
+                <PvSelectTrigger>
+                  <PvSelectValue />
+                </PvSelectTrigger>
+                <PvSelectContent>
                   {DISTANCE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
+                    <PvSelectItem key={opt.value} value={opt.value}>
                       {opt.label}
-                    </SelectItem>
+                    </PvSelectItem>
                   ))}
-                </SelectContent>
-              </SelectRoot>
+                </PvSelectContent>
+              </PvSelect>
             </div>
 
             <div>
-              <Label>
+              <PvLabel>
                 {m.ui_pace_est_race_time({
-                  format: usesLongFormat(distance) ? 'h:mm:ss' : 'mm:ss',
+                  format: isLongFormat(distance) ? 'h:mm:ss' : 'mm:ss',
                 })}
-              </Label>
-              <Input
+              </PvLabel>
+              <PvInput
                 type="text"
-                placeholder={usesLongFormat(distance) ? '1:45:00' : '20:00'}
+                placeholder={isLongFormat(distance) ? '1:45:00' : '20:00'}
                 value={timeInput}
                 onChange={(e) => setTimeInput(e.target.value)}
               />
             </div>
           </div>
-        </DialogBody>
+        </PvDialogBody>
 
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => handleOpenChange(false)}>
+        <PvDialogFooter>
+          <PvButton variant="secondary" onClick={() => handleOpenChange(false)}>
             {m.ui_btn_cancel()}
-          </Button>
-          <Button disabled={result === undefined} onClick={handleSave}>
+          </PvButton>
+          <PvButton disabled={estimatedPace === undefined} onClick={handleSave}>
             {m.ui_btn_save()}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </DialogRoot>
+          </PvButton>
+        </PvDialogFooter>
+      </PvDialogContent>
+    </PvDialog>
   );
 };

@@ -1,34 +1,37 @@
+import type { ComponentProps, FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import { useTripsStore } from '@/store/trips.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  DialogDescription,
-} from '@pacevault/ui/components/Dialog.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
+import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
+import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
+import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
+import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
+import { PvDialogDescription } from '@pacevault/ui/components/pvDialog/PvDialogDescription.tsx';
 
-export const DeleteTripDialog = (props: {
+interface DeleteTripDialogProps extends Required<
+  Pick<ComponentProps<typeof PvDialog>, 'open' | 'onOpenChange'>
+> {
   tripId: string;
   tripName: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onDeleted?: () => void;
-}) => {
+}
+
+export const DeleteTripDialog: FC<DeleteTripDialogProps> = (props) => {
   return (
-    <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
-      <DialogContent>
-        <DialogHeader title={m.ui_trips_delete_title()} />
-        <DialogBody>
-          <DialogDescription>{m.ui_trips_delete_desc({ name: props.tripName })}</DialogDescription>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
+    <PvDialog open={props.open} onOpenChange={() => props.onOpenChange(false)}>
+      <PvDialogContent closeLabel={m.ui_sheet_drag_close()}>
+        <PvDialogHeader title={m.ui_trips_delete_title()} />
+        <PvDialogBody>
+          <PvDialogDescription>
+            {m.ui_trips_delete_desc({ name: props.tripName })}
+          </PvDialogDescription>
+        </PvDialogBody>
+        <PvDialogFooter>
+          <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>
             {m.ui_btn_cancel()}
-          </Button>
-          <Button
+          </PvButton>
+          <PvButton
             variant="danger"
             onClick={() => {
               useTripsStore.getState().deleteTrip(props.tripId);
@@ -37,9 +40,9 @@ export const DeleteTripDialog = (props: {
             }}
           >
             {m.ui_btn_delete()}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </DialogRoot>
+          </PvButton>
+        </PvDialogFooter>
+      </PvDialogContent>
+    </PvDialog>
   );
 };

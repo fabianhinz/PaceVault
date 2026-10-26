@@ -1,4 +1,4 @@
-import type { IdbStoreName } from './indexeddb.ts';
+import type { IdbStoreName } from './db.ts';
 
 export type StorageCategory = 'heatmap' | 'fitFiles' | 'weather' | 'appData';
 
@@ -14,10 +14,13 @@ const STORE_CATEGORIES: [IdbStoreName, StorageCategory][] = [
   ['studio-route-points', 'appData'],
 ];
 
-export const breakdownStorage = (
-  storeBytes: Partial<Record<IdbStoreName, number>>,
-  totalBytes: number | undefined,
-): Record<StorageCategory, number> => {
+export const breakdownStorage = ({
+  storeBytes,
+  totalBytes,
+}: {
+  storeBytes: Partial<Record<IdbStoreName, number>>;
+  totalBytes: number | undefined;
+}): Record<StorageCategory, number> => {
   const categories: Record<StorageCategory, number> = {
     heatmap: 0,
     fitFiles: 0,

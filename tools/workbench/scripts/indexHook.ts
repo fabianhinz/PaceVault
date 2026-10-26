@@ -11,7 +11,7 @@ import { checkWorkbench } from './check.ts';
  * nothing; the board (`vp run workbench`) reads the files.
  */
 
-const hookInputSchema = z.object({
+const editedFileInputSchema = z.object({
   tool_input: z.object({ file_path: z.string() }),
 });
 
@@ -19,13 +19,13 @@ const ITEM_FILE = /\/tools\/workbench\/backlog\/[^/]+\/(?:plan|tech)\.md$/;
 const DECISIONS_FILE = /\/tools\/workbench\/backlog\/[^/]+\/review\/decisions\.md$/;
 
 const main = () => {
-  let raw: unknown;
+  let hookJson: unknown;
   try {
-    raw = JSON.parse(readFileSync(0, 'utf8'));
+    hookJson = JSON.parse(readFileSync(0, 'utf8'));
   } catch {
     return;
   }
-  const input = hookInputSchema.safeParse(raw);
+  const input = editedFileInputSchema.safeParse(hookJson);
   if (!input.success) return;
   const filePath = input.data.tool_input.file_path;
   let root: string | undefined = undefined;

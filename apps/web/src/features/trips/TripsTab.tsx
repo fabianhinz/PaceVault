@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { Compass } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
 import { useTripsStore } from '@/store/trips.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { TripItem } from './TripItem.tsx';
 import { TripFormDialog } from './TripFormDialog.tsx';
 
-export const TripsTab = () => {
+export const TripsTab: FC = () => {
   const trips = useTripsStore((s) => s.trips);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
@@ -19,20 +19,20 @@ export const TripsTab = () => {
       ))}
 
       {trips.length === 0 && (
-        <Card className="flex-row items-center gap-3">
+        <PvCard className="flex-row items-center gap-3">
           <Compass size={18} className="shrink-0 text-primary" />
           <div className="min-w-0">
-            <Typography>{m.ui_trips_nudge_title()}</Typography>
-            <Typography variant="caption" as="p">
+            <PvTypography>{m.ui_trips_nudge_title()}</PvTypography>
+            <PvTypography variant="caption" as="p">
               {m.ui_trips_nudge_desc()}
-            </Typography>
+            </PvTypography>
           </div>
-        </Card>
+        </PvCard>
       )}
 
-      <Button variant="primary" onClick={() => setShowCreateDialog(true)}>
+      <PvButton variant="primary" onClick={() => setShowCreateDialog(true)}>
         {m.ui_trips_cta_title()}
-      </Button>
+      </PvButton>
 
       <TripFormDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
     </div>

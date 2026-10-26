@@ -1,4 +1,4 @@
-interface RouteSegment {
+export interface RouteSegment {
   /** 1-based number of the segment the distance falls into. */
   index: number;
   startM: number;
@@ -12,11 +12,15 @@ interface RouteSegment {
  * Split points at or beyond the route ends are ignored. A click exactly on a
  * split belongs to the segment that starts there.
  */
-export const segmentAtDistance = (
-  splitDistancesM: number[],
-  totalM: number,
-  distanceM: number,
-): RouteSegment => {
+export const segmentAtDistance = ({
+  splitDistancesM,
+  totalM,
+  distanceM,
+}: {
+  splitDistancesM: number[];
+  totalM: number;
+  distanceM: number;
+}): RouteSegment => {
   const splits = splitDistancesM.filter((d) => d > 0 && d < totalM).sort((a, b) => a - b);
 
   let splitsBefore = 0;

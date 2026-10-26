@@ -1,11 +1,16 @@
-import type { ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { SheetAbove } from '@pacevault/ui/components/SheetAbove.tsx';
+import { PvSheetAbove } from '@pacevault/ui/components/pvBottomSheet/PvSheetAbove.tsx';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { MAP_CONTROLS_BOTTOM, MAP_CONTROLS_HEIGHT } from './mapPadding.ts';
 
-export const MapControlsBar = (props: { testId: string; children: ReactNode }) => {
+interface MapControlsBarProps {
+  testId: string;
+  children: ReactNode;
+}
+
+export const MapControlsBar: FC<MapControlsBarProps> = (props) => {
   const device = useDevice();
 
   const pills = (
@@ -18,7 +23,7 @@ export const MapControlsBar = (props: { testId: string; children: ReactNode }) =
     </div>
   );
 
-  if (device.isDesktop) {
+  if (device.desktop) {
     return createPortal(
       <div
         className="pointer-events-none fixed left-[calc(30dvw+2.375rem)] z-20 mb-0 -translate-x-1/2"
@@ -30,7 +35,7 @@ export const MapControlsBar = (props: { testId: string; children: ReactNode }) =
     );
   }
   return (
-    <SheetAbove>
+    <PvSheetAbove>
       <div
         className={cn(
           'pointer-events-auto max-w-full touch-pan-x overflow-x-auto overscroll-x-contain px-4',
@@ -39,6 +44,6 @@ export const MapControlsBar = (props: { testId: string; children: ReactNode }) =
       >
         {pills}
       </div>
-    </SheetAbove>
+    </PvSheetAbove>
   );
 };

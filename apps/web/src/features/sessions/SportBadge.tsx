@@ -1,9 +1,15 @@
+import type { FC } from 'react';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { sportColorClass } from '@/lib/statusColors.ts';
 import { sportIcon } from '@/lib/sportIcons.ts';
 import type { Sport } from '@pacevault/engine/types.ts';
 
-export const SportBadge = (props: { sport: Sport; size?: 'sm' | 'md' }) => {
+interface SportBadgeProps {
+  sport: Sport;
+  size?: 'sm' | 'md';
+}
+
+export const SportBadge: FC<SportBadgeProps> = (props) => {
   const Icon = sportIcon[props.sport];
 
   return (

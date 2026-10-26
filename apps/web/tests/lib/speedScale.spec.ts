@@ -16,7 +16,7 @@ const rgbOf = (hex: string) => {
 const range = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, index) => from + index);
 
-describe('percentile', () => {
+describe(percentile.name, () => {
   it('interpolates between the neighbouring sorted values', () => {
     expect(percentile([10, 20, 30, 40, 50], 0.5)).toBe(30);
     expect(percentile([10, 20], 0.25)).toBe(12.5);
@@ -24,7 +24,7 @@ describe('percentile', () => {
   });
 });
 
-describe('speedScale', () => {
+describe(speedScale.name, () => {
   it('spans the 5th to 99th percentile of moving speed', () => {
     const scale = speedScale(rideAtKmh(range(0, 100)));
     expect(scale?.slowKmh).toBeCloseTo(5.95, 6);

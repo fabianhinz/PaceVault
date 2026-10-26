@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import type { Sport } from '@pacevault/engine/types.ts';
 
@@ -8,6 +9,8 @@ const FILL_CLASS: Record<Sport, Record<MeterAlpha, string>> = {
   cycling: { 50: 'bg-sport-cycling/50', 75: 'bg-sport-cycling/75' },
 };
 
+const percent = (fraction: number): string => `${Math.max(0, Math.min(1, fraction)) * 100}%`;
+
 interface MeterBarProps {
   sport: Sport;
   fill: { from?: number; to: number };
@@ -16,9 +19,7 @@ interface MeterBarProps {
   alpha: MeterAlpha;
 }
 
-const percent = (fraction: number): string => `${Math.max(0, Math.min(1, fraction)) * 100}%`;
-
-export const MeterBar = (props: MeterBarProps) => {
+export const MeterBar: FC<MeterBarProps> = (props) => {
   const from = props.fill.from ?? 0;
   return (
     <div className="relative h-1.5 w-full rounded-full bg-white/5">

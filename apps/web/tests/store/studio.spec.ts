@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
-import { useStudioStore } from '@/store/studio.ts';
+import { INITIAL_STUDIO_STORE_STATE, useStudioStore } from '@/store/studio.ts';
 import type { StudioRoute } from '@/store/studio.ts';
+import { listOrThrow, recordOrThrow } from '@testUtils/defined.ts';
 
 const makeRouteInput = (
   overrides: Partial<Omit<StudioRoute, 'id' | 'importedAt' | 'markers'>> = {},
@@ -17,7 +18,7 @@ const makeRouteInput = (
 
 describe('useStudioStore', () => {
   beforeEach(() => {
-    useStudioStore.setState({ routes: [] });
+    useStudioStore.setState(INITIAL_STUDIO_STORE_STATE);
   });
 
   it('imports a route with a generated id and importedAt', () => {
@@ -32,19 +33,19 @@ describe('useStudioStore', () => {
 
   it('renames a route', () => {
     const id = useStudioStore.getState().importStudioRoute(makeRouteInput());
-    useStudioStore.getState().renameStudioRoute(id, 'Renamed loop');
+    useStudioStore.getState().renameStudioRoute({ id, name: 'Renamed loop' });
     expect(useStudioStore.getState().routes[0]?.name).toBe('Renamed loop');
   });
 
   it('ignores rename for an unknown id', () => {
     useStudioStore.getState().importStudioRoute(makeRouteInput());
-    useStudioStore.getState().renameStudioRoute('missing', 'Nope');
+    useStudioStore.getState().renameStudioRoute({ id: 'missing', name: 'Nope' });
     expect(useStudioStore.getState().routes[0]?.name).toBe('Alpine loop');
   });
 
   it('sets the route color', () => {
     const id = useStudioStore.getState().importStudioRoute(makeRouteInput());
-    useStudioStore.getState().setStudioRouteColor(id, 'rose');
+    useStudioStore.getState().setStudioRouteColor({ id, color: 'rose' });
     expect(useStudioStore.getState().routes[0]?.color).toBe('rose');
   });
 
@@ -68,7 +69,7 @@ describe('useStudioStore', () => {
     const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
     const markerId = useStudioStore
       .getState()
-      .addStudioMarker(routeId, { type: 'track_modifier', distanceM: 5000 });
+      .addStudioMarker({ routeId, marker: { type: 'track_modifier', distanceM: 5000 } });
     const markers = useStudioStore.getState().routes[0]?.markers;
     expect(markers).toHaveLength(1);
     expect(markers?.[0]?.id).toBe(markerId);
@@ -79,31 +80,35 @@ describe('useStudioStore', () => {
     const routeId = useStudioStore.getState().importStudioRoute(makeRouteInput());
     const markerId = useStudioStore
       .getState()
-      .addStudioMarker(routeId, { type: 'track_modifier', distanceM: 3000 });
-    useStudioStore.getState().deleteStudioMarker(routeId, markerId);
+      .addStudioMarker({ routeId, marker: { type: 'track_modifier', distanceM: 3000 } });
+    useStudioStore.getState().deleteStudioMarker({ routeId, markerId });
     expect(useStudioStore.getState().routes[0]?.markers).toEqual([]);
   });
 
   it('moves routes off the retired sky and cyan colours, the old default onto the new one', () => {
     const options = useStudioStore.persist.getOptions();
-    const migrated = options.migrate?.(
-      {
-        routes: [
-          { id: 'a', color: 'sky', markers: [] },
-          { id: 'b', color: 'cyan', markers: [] },
-          { id: 'c', color: 'rose', markers: [] },
-        ],
-      },
-      2,
-    ) as { routes: Array<{ color: string }> };
-    expect(migrated.routes.map((r) => r.color)).toEqual(['fuchsia', 'violet', 'rose']);
+    const migrated = recordOrThrow(
+      options.migrate?.(
+        {
+          routes: [
+            { id: 'a', color: 'sky', markers: [] },
+            { id: 'b', color: 'cyan', markers: [] },
+            { id: 'c', color: 'rose', markers: [] },
+          ],
+        },
+        2,
+      ),
+    );
+    expect(listOrThrow(migrated.routes).map((r) => recordOrThrow(r).color)).toEqual([
+      'fuchsia',
+      'violet',
+      'rose',
+    ]);
   });
 
   it('backfills markers on routes migrated from version 1', () => {
     const options = useStudioStore.persist.getOptions();
-    const migrated = options.migrate?.({ routes: [{ id: 'x', name: 'Old' }] }, 1) as {
-      routes: Array<{ markers: unknown[] }>;
-    };
-    expect(migrated.routes[0]?.markers).toEqual([]);
+    const migrated = recordOrThrow(options.migrate?.({ routes: [{ id: 'x', name: 'Old' }] }, 1));
+    expect(recordOrThrow(listOrThrow(migrated.routes)[0]).markers).toEqual([]);
   });
 });

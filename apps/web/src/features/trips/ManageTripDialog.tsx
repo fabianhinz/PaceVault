@@ -1,72 +1,80 @@
+import type { ComponentProps, FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import { useTripsStore } from '@/store/trips.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { tileClass } from '@pacevault/ui/components/Card.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { TILE_CLASS } from '@pacevault/ui/lib/surfaces.ts';
 import { cn } from '@pacevault/ui/lib/cn.ts';
-import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  DialogDescription,
-} from '@pacevault/ui/components/Dialog.tsx';
-import { RadioGroup, RadioGroupItem } from '@pacevault/ui/components/RadioGroup.tsx';
+import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
+import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
+import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
+import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
+import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
+import { PvDialogDescription } from '@pacevault/ui/components/pvDialog/PvDialogDescription.tsx';
+import { PvRadioGroup } from '@pacevault/ui/components/pvRadioGroup/PvRadioGroup.tsx';
+import { PvRadioGroupItem } from '@pacevault/ui/components/pvRadioGroup/PvRadioGroupItem.tsx';
 import { TripHeader } from './TripHeader.tsx';
 
-export const ManageTripDialog = (props: {
+interface ManageTripDialogProps extends Required<
+  Pick<ComponentProps<typeof PvDialog>, 'open' | 'onOpenChange'>
+> {
   sessionId: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) => {
+}
+
+export const ManageTripDialog: FC<ManageTripDialogProps> = (props) => {
   const trips = useTripsStore((s) => s.trips);
   const currentTrip = trips.find((t) => t.sessionIds.includes(props.sessionId));
 
   const handleSelect = (tripId: string) => {
-    useTripsStore.getState().assignSession(props.sessionId, tripId);
+    useTripsStore.getState().assignSession({ sessionId: props.sessionId, tripId });
   };
 
   const handleRemove = () => {
     if (currentTrip) {
-      useTripsStore.getState().removeSessionFromTrip(props.sessionId, currentTrip.id);
+      useTripsStore
+        .getState()
+        .removeSessionFromTrip({ sessionId: props.sessionId, tripId: currentTrip.id });
     }
     props.onOpenChange(false);
   };
 
   return (
-    <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
-      <DialogContent className="lg:flex lg:flex-col lg:overflow-y-hidden">
-        <DialogHeader title={m.ui_trips_dialog_title()} />
-        <DialogBody>
-          <DialogDescription className="shrink-0">{m.ui_trips_dialog_desc()}</DialogDescription>
+    <PvDialog open={props.open} onOpenChange={() => props.onOpenChange(false)}>
+      <PvDialogContent
+        closeLabel={m.ui_sheet_drag_close()}
+        className="lg:flex lg:flex-col lg:overflow-y-hidden"
+      >
+        <PvDialogHeader title={m.ui_trips_dialog_title()} />
+        <PvDialogBody>
+          <PvDialogDescription className="shrink-0">{m.ui_trips_dialog_desc()}</PvDialogDescription>
 
           <div className="mt-4 border-t border-white/10 pt-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-            <RadioGroup value={currentTrip?.id} onValueChange={handleSelect}>
+            <PvRadioGroup value={currentTrip?.id} onValueChange={handleSelect}>
               {trips.map((trip) => (
-                <RadioGroupItem
+                <PvRadioGroupItem
                   key={trip.id}
                   value={trip.id}
+                  aria-label={trip.name}
                   className={cn(
-                    tileClass,
+                    TILE_CLASS,
                     'cursor-pointer p-3 transition-colors hover:bg-white/10 data-[state=checked]:bg-white/10',
                   )}
                 >
                   <TripHeader trip={trip} />
-                </RadioGroupItem>
+                </PvRadioGroupItem>
               ))}
-            </RadioGroup>
+            </PvRadioGroup>
           </div>
-        </DialogBody>
+        </PvDialogBody>
 
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
+        <PvDialogFooter>
+          <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>
             {m.ui_btn_cancel()}
-          </Button>
-          <Button variant="danger" disabled={!currentTrip} onClick={handleRemove}>
+          </PvButton>
+          <PvButton variant="danger" disabled={!currentTrip} onClick={handleRemove}>
             {m.ui_trips_remove()}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </DialogRoot>
+          </PvButton>
+        </PvDialogFooter>
+      </PvDialogContent>
+    </PvDialog>
   );
 };

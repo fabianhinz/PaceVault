@@ -17,17 +17,30 @@ const medianStep = (records: SessionRecord[]): number => {
   return steps[Math.floor(steps.length / 2)] ?? 0;
 };
 
-const timerPause = (current: SessionRecord, previous: SessionRecord, step: number): number => {
+const timerPause = ({
+  current,
+  previous,
+  step,
+}: {
+  current: SessionRecord;
+  previous: SessionRecord;
+  step: number;
+}): number => {
   if (current.timerTime === undefined || previous.timerTime === undefined) return 0;
   return Math.max(0, step - (current.timerTime - previous.timerTime));
 };
 
-const standingGap = (
-  current: SessionRecord,
-  previous: SessionRecord,
-  step: number,
-  typical: number,
-): number => {
+const standingGap = ({
+  current,
+  previous,
+  step,
+  typical,
+}: {
+  current: SessionRecord;
+  previous: SessionRecord;
+  step: number;
+  typical: number;
+}): number => {
   if (step <= typical * STOP_GAP_FACTOR) return 0;
   if (current.distance === undefined || previous.distance === undefined) return 0;
   if (current.distance - previous.distance >= STOP_DISTANCE_M) return 0;
@@ -43,8 +56,8 @@ export const movingSeconds = (records: SessionRecord[]): number[] => {
     if (previous) {
       const step = current.timestamp - previous.timestamp;
       const stop = Math.max(
-        timerPause(current, previous, step),
-        standingGap(current, previous, step, typical),
+        timerPause({ current, previous, step }),
+        standingGap({ current, previous, step, typical }),
       );
       if (stop > 0) {
         moving += Math.max(step - stop, typical);

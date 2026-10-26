@@ -11,15 +11,22 @@ interface DashboardChartZoom {
   onMouseUp: () => void;
 }
 
+interface DashboardChartEvents extends ReturnType<typeof categoryHoverHandlers> {
+  syncId: string;
+  onMouseDown: (e: MouseHandlerDataParam) => void;
+  onMouseMove: (e: MouseHandlerDataParam) => void;
+  onMouseUp: () => void;
+}
+
 const onHover = (x: string | null) => {
   if (x === null) {
     useChartHoverStore.getState().clearChartHover(DASHBOARD_HOVER_GROUP);
     return;
   }
-  useChartHoverStore.getState().setChartHover(DASHBOARD_HOVER_GROUP, x);
+  useChartHoverStore.getState().setChartHover({ group: DASHBOARD_HOVER_GROUP, x });
 };
 
-export const useDashboardChartEvents = (zoom: DashboardChartZoom) => {
+export const useDashboardChartEvents = (zoom: DashboardChartZoom): DashboardChartEvents => {
   useEffect(() => () => onHover(null), []);
 
   const zoomMouseMove = zoom.onMouseMove;

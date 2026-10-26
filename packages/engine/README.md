@@ -1,13 +1,13 @@
 # @pacevault/engine
 
-PaceVault's domain logic as pure TypeScript functions: training load and stress, zones and zone distribution, training effect, VDOT and pace calculation, decoupling, climbs and gradient, wind exposure, GPS track encoding and simplification. No React, no state, no browser API.
+PaceVault's domain logic as pure TypeScript functions: record pairs and normalized effort, training load and stress, zones, training effect, VDOT and pace calculation, decoupling, climbs and gradient, wind exposure, geodesy and bounding boxes, effort detection and change points. No React, no state, no browser API.
 
 How each metric is calculated, and the research behind it: [`SOURCES.md`](./SOURCES.md).
 
 ## Use
 
 ```ts
-import { calculateSummaryStress } from '@pacevault/engine/stress.ts';
+import { stressFromSummary } from '@pacevault/engine/stress.ts';
 import type { Sport } from '@pacevault/engine/types.ts';
 ```
 

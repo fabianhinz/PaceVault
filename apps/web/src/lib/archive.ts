@@ -45,7 +45,13 @@ export const listActivityEntries = (archive: ArrayBuffer): ArchiveEntry[] => {
   return entries;
 };
 
-export const extractArchiveEntry = (archive: ArrayBuffer, path: string): ArrayBuffer => {
+export const extractArchiveEntry = ({
+  archive,
+  path,
+}: {
+  archive: ArrayBuffer;
+  path: string;
+}): ArrayBuffer => {
   const files = unzipSync(new Uint8Array(archive), { filter: (file) => file.name === path });
   const data = files[path];
   if (!data) throw new Error(`Archive entry "${path}" not found`);
@@ -53,4 +59,50 @@ export const extractArchiveEntry = (archive: ArrayBuffer, path: string): ArrayBu
     return gunzipSync(data).buffer as ArrayBuffer;
   }
   return data.buffer as ArrayBuffer;
+};
+
+export interface UploadSource {
+  file: File;
+  archiveEntries?: ArchiveEntry[];
+}
+
+const archiveFitEntries = async (file: File): Promise<ArchiveEntry[] | undefined> => {
+  try {
+    const archiveEntries = listActivityEntries(await file.arrayBuffer()).filter(
+      (e) => e.extension === '.fit',
+    );
+    if (archiveEntries.length === 0) return undefined;
+    return archiveEntries;
+  } catch {
+    return undefined;
+  }
+};
+
+export const collectUploadSources = async (
+  files: File[],
+): Promise<{ sources: UploadSource[]; fitCount: number; failed: number }> => {
+  const sources: UploadSource[] = [];
+  let fitCount = 0;
+  let failed = 0;
+
+  for (const file of files) {
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith('.fit')) {
+      sources.push({ file });
+      fitCount++;
+      continue;
+    }
+    if (!isArchiveFile(file.name)) {
+      failed++;
+      continue;
+    }
+    const archiveEntries = await archiveFitEntries(file);
+    if (archiveEntries === undefined) {
+      failed++;
+      continue;
+    }
+    sources.push({ file, archiveEntries });
+    fitCount += archiveEntries.length;
+  }
+  return { sources, fitCount, failed };
 };

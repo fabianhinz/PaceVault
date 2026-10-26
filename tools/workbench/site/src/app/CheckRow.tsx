@@ -1,97 +1,102 @@
+import type { FC } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Checkbox } from '@pacevault/ui/components/Checkbox.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvCheckbox } from '@pacevault/ui/components/pvCheckbox/PvCheckbox.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { cn } from '@pacevault/ui/lib/cn.ts';
-import type { CheckItem } from '../../../scripts/frontmatter.ts';
-import { Inline } from './Prose.tsx';
-import { useWrite } from './useWrite.ts';
+import type { CheckItem } from '@scripts/frontmatter.ts';
+import { checkRowText } from '@site/lib/checkText.ts';
+import { Inline } from './Inline.tsx';
+import { useWriteMutation } from '@site/app/hooks/useWriteMutation.ts';
 
-type CheckRowProps = {
+interface CheckRowProps {
   folder: string;
   check: CheckItem;
-  /** `check`: a real-data check in plan.md; `agent`: an agent decision in review/decisions.md. */
   kind: 'check' | 'agent';
-  /** false: no delete (the Accept section repeats the checks). */
   removable?: boolean;
+}
+
+const WRITES_BY_CHECK_KIND: Record<
+  CheckRowProps['kind'],
+  {
+    toggle: 'plan.toggleCheck' | 'review.toggleDecision';
+    remove: 'plan.deleteCheck' | 'review.deleteDecision';
+    removeLabel: string;
+  }
+> = {
+  check: {
+    toggle: 'plan.toggleCheck',
+    remove: 'plan.deleteCheck',
+    removeLabel: 'Delete this real-data check',
+  },
+  agent: {
+    toggle: 'review.toggleDecision',
+    remove: 'review.deleteDecision',
+    removeLabel: 'Delete this agent decision',
+  },
 };
 
-/**
- * One real-data check or agent decision: tick box, text (an agent's reason muted), delete. A
- * superseded decision (`[~]`, R17) has no tick box: struck through and muted, with what replaced it.
- */
-export const CheckRow = (props: CheckRowProps) => {
-  const toggle = useWrite();
-  const remove = useWrite();
+export const CheckRow: FC<CheckRowProps> = (props) => {
+  const toggle = useWriteMutation();
+  const remove = useWriteMutation();
   const check = props.check;
   const first = check.raw.split('\n')[0];
   const agent = props.kind === 'agent';
-  let body = check.text;
-  let pointer: string | undefined = undefined;
-  const replaced = /\s*\bSuperseded by:\s*([\s\S]*)$/.exec(check.text);
-  if (check.superseded && replaced) {
-    body = check.text.slice(0, replaced.index);
-    pointer = replaced[1];
-  }
-  const why = /\s(Agent:[\s\S]*)$/.exec(body);
-  let what = body;
-  if (agent && why) what = body.slice(0, why.index);
-  let toggleName: 'plan.toggleCheck' | 'review.toggleDecision' = 'plan.toggleCheck';
-  let removeName: 'plan.deleteCheck' | 'review.deleteDecision' = 'plan.deleteCheck';
-  let removeLabel = 'Delete this real-data check';
-  if (agent) {
-    toggleName = 'review.toggleDecision';
-    removeName = 'review.deleteDecision';
-    removeLabel = 'Delete this agent decision';
-  }
+  const checkText = checkRowText({ text: check.text, superseded: check.superseded, agent });
+  const writes = WRITES_BY_CHECK_KIND[props.kind];
   let tickLabel = 'Tick';
   if (check.checked) tickLabel = 'Untick';
   return (
     <li className="flex items-start gap-2">
       {!check.superseded && (
-        <Checkbox
+        <PvCheckbox
           checked={check.checked}
           disabled={toggle.isPending}
           aria-label={tickLabel}
           className="mt-0.5"
           onCheckedChange={(checked) =>
             toggle.mutate({
-              name: toggleName,
+              name: writes.toggle,
               fields: { item: props.folder, expected: first, checked: String(checked) },
             })
           }
         />
       )}
-      <Typography
+      <PvTypography
         as="span"
         className={cn(
           'min-w-0 flex-1',
           (check.checked || check.superseded) && 'text-text-tertiary',
         )}
       >
-        <Inline markdown={what} className={cn(check.superseded && 'line-through')} />
-        {agent && why && <Inline markdown={why[1]} className="block text-xs text-text-tertiary" />}
-        {pointer !== undefined && (
+        <Inline markdown={checkText.what} className={cn(check.superseded && 'line-through')} />
+        {checkText.why !== undefined && (
+          <Inline markdown={checkText.why} className="block text-xs text-text-tertiary" />
+        )}
+        {checkText.pointer !== undefined && (
           <Inline
-            markdown={`Superseded by: ${pointer}`}
+            markdown={`Superseded by: ${checkText.pointer}`}
             className="block text-xs text-text-secondary"
           />
         )}
-      </Typography>
+      </PvTypography>
       {props.removable !== false && (
-        <Button
+        <PvButton
           variant="ghost"
           size="icon"
-          aria-label={removeLabel}
-          title={removeLabel}
+          aria-label={writes.removeLabel}
+          title={writes.removeLabel}
           loading={remove.isPending}
           className="-mt-1 hover:text-status-danger"
           onClick={() =>
-            remove.mutate({ name: removeName, fields: { item: props.folder, expected: check.raw } })
+            remove.mutate({
+              name: writes.remove,
+              fields: { item: props.folder, expected: check.raw },
+            })
           }
         >
           <Trash2 className="size-4" />
-        </Button>
+        </PvButton>
       )}
     </li>
   );

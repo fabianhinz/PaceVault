@@ -1,4 +1,4 @@
-import { tokens } from '@pacevault/ui/lib/tokens.ts';
+import { fontSizes, tokens } from '@pacevault/ui/lib/tokens.ts';
 
 export const formatChartTime = (minutes: number): string => {
   const totalSec = Math.round(minutes * 60);
@@ -23,31 +23,46 @@ export const niceStep = (rough: number): number => {
 
 const roundToStep = (value: number): number => Number(value.toPrecision(12));
 
-export const niceAxis = (
-  values: Array<number | null | undefined>,
-  tickCount: number = DEFAULT_TICK_COUNT,
-): { domain: [number, number]; ticks: number[] } | undefined => {
-  const present = values.filter((v): v is number => v !== null && v !== undefined);
-  if (present.length === 0) return undefined;
+const paddedRange = (present: number[]): { low: number; high: number } => {
   const min = Math.min(...present);
   const max = Math.max(...present);
   let padding = (max - min) * PADDING_RATIO;
   if (padding === 0) {
     padding = Math.max(Math.abs(max) * FLAT_PADDING_RATIO, 1);
   }
-  const low = min - padding;
-  const high = max + padding;
-  const step = niceStep((high - low) / Math.max(1, tickCount - 1));
-  const start = roundToStep(Math.floor(low / step) * step);
-  const end = roundToStep(Math.ceil(high / step) * step);
+  return { low: min - padding, high: max + padding };
+};
+
+const axisTicks = ({
+  start,
+  end,
+  step,
+}: {
+  start: number;
+  end: number;
+  step: number;
+}): number[] => {
   const ticks: number[] = [];
   for (let tick = start; tick <= end + step / 2; tick += step) {
     ticks.push(roundToStep(tick));
   }
-  return { domain: [start, end], ticks };
+  return ticks;
 };
 
-export const formatTick = (v: number, unit?: string): string => {
+export const niceAxis = (
+  values: Array<number | null | undefined>,
+  { tickCount = DEFAULT_TICK_COUNT }: { tickCount?: number } = {},
+): { domain: [number, number]; ticks: number[] } | undefined => {
+  const present = values.filter((v): v is number => v !== null && v !== undefined);
+  if (present.length === 0) return undefined;
+  const range = paddedRange(present);
+  const step = niceStep((range.high - range.low) / Math.max(1, tickCount - 1));
+  const start = roundToStep(Math.floor(range.low / step) * step);
+  const end = roundToStep(Math.ceil(range.high / step) * step);
+  return { domain: [start, end], ticks: axisTicks({ start, end, step }) };
+};
+
+export const formatTick = (v: number, { unit }: { unit?: string } = {}): string => {
   const rounded = Math.round(v * 10) / 10;
   const label = `${rounded}`;
   if (unit) {
@@ -74,11 +89,11 @@ export const routeDistanceXAxis: ChartXAxis<'dist'> = {
   key: 'dist',
   syncId: 'studio-detail',
   type: 'number',
-  tickFormatter: (v: number) => formatTick(v, 'km'),
+  tickFormatter: (v: number) => formatTick(v, { unit: 'km' }),
 };
 
 export const chartTheme = {
-  tick: { fill: tokens.textTertiary, fontSize: 11 },
+  tick: { fill: tokens.textTertiary, fontSize: fontSizes['2xs'] },
   compactYAxisWidth: 36,
   axisLine: { stroke: tokens.border },
 } as const;

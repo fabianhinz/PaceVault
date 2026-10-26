@@ -1,12 +1,17 @@
-import { SheetPeek } from '@pacevault/ui/components/SheetPeek.tsx';
+import type { FC } from 'react';
+import { PvSheetPeek } from '@pacevault/ui/components/pvBottomSheet/PvSheetPeek.tsx';
 import type { StudioRoute } from '@/store/studio.ts';
 import { Route } from 'lucide-react';
-import { IconTile } from '@pacevault/ui/components/IconTile.tsx';
+import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
 import { formatRouteStatsLine } from './routeStats.ts';
 
-export const StudioRoutePeek = (props: { route: StudioRoute }) => (
-  <SheetPeek
-    icon={<IconTile icon={Route} />}
+interface StudioRoutePeekProps {
+  route: StudioRoute;
+}
+
+export const StudioRoutePeek: FC<StudioRoutePeekProps> = (props) => (
+  <PvSheetPeek
+    icon={<PvIconTile icon={Route} />}
     primary={props.route.name}
     secondary={formatRouteStatsLine(props.route)}
   />

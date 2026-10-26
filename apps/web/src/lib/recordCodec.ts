@@ -3,20 +3,20 @@ import type { SessionRecord } from '@pacevault/engine/types.ts';
 
 export type EncodedRecords = { format: 'gzip-json'; data: ArrayBuffer };
 
-const optNum = z.number().optional();
+const optNumSchema = z.number().optional();
 
 const sessionRecordsSchema = z.array(
   z.object({
     timestamp: z.number(),
-    hr: optNum,
-    power: optNum,
-    cadence: optNum,
-    speed: optNum,
-    lat: optNum,
-    lng: optNum,
-    elevation: optNum,
-    distance: optNum,
-    timerTime: optNum,
+    hr: optNumSchema,
+    power: optNumSchema,
+    cadence: optNumSchema,
+    speed: optNumSchema,
+    lat: optNumSchema,
+    lng: optNumSchema,
+    elevation: optNumSchema,
+    distance: optNumSchema,
+    timerTime: optNumSchema,
   }),
 );
 

@@ -1,6 +1,6 @@
 import { Moon, Footprints, Route, Gauge, Timer, Flame, BedDouble } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { WorkoutType } from '@/types/index.ts';
+import type { WorkoutType } from '@/types.ts';
 import { m } from '@pacevault/i18n/messages.js';
 
 export const WORKOUT_ICONS: Record<WorkoutType, LucideIcon> = {

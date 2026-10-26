@@ -1,25 +1,34 @@
 import { useState, useMemo } from 'react';
 import type { RaceDistance } from '@pacevault/engine/types.ts';
-import { RACE_DISTANCE_METERS, calculateVdot, predictRaceTimes } from '@pacevault/engine/vdot.ts';
+import { METERS_BY_RACE_DISTANCE, vdotFromRace, predictRaceTimes } from '@pacevault/engine/vdot.ts';
 import { parseRaceTime } from '@/lib/raceTime.ts';
 
-export const useRacePredictor = () => {
+interface RacePredictorForm {
+  distance: RaceDistance;
+  timeInput: string;
+  setTimeInput: (value: string) => void;
+  handleDistanceChange: (value: string) => void;
+  vdot: number | undefined;
+  predictions: ReturnType<typeof predictRaceTimes>;
+}
+
+export const useRacePredictor = (): RacePredictorForm => {
   const [distance, setDistance] = useState<RaceDistance>('5k');
   const [timeInput, setTimeInput] = useState('');
-  const result = useMemo(() => {
-    const minutes = parseRaceTime(timeInput, distance);
+  const prediction = useMemo(() => {
+    const minutes = parseRaceTime({ input: timeInput, distance });
     if (minutes === undefined) return undefined;
 
-    const distMeters = RACE_DISTANCE_METERS[distance];
-    const predictions = predictRaceTimes(distMeters, minutes * 60);
+    const distMeters = METERS_BY_RACE_DISTANCE[distance];
+    const predictions = predictRaceTimes({ distanceMeters: distMeters, timeSec: minutes * 60 });
     if (!predictions) return undefined;
 
-    const vdot = calculateVdot(distMeters, minutes);
+    const vdot = vdotFromRace({ distanceMeters: distMeters, timeMin: minutes });
     return { vdot, predictions };
   }, [distance, timeInput]);
 
   const handleDistanceChange = (v: string) => {
-    if (!(v in RACE_DISTANCE_METERS)) return;
+    if (!(v in METERS_BY_RACE_DISTANCE)) return;
     setDistance(v as RaceDistance);
     setTimeInput('');
   };
@@ -29,7 +38,7 @@ export const useRacePredictor = () => {
     timeInput,
     setTimeInput,
     handleDistanceChange,
-    vdot: result?.vdot,
-    predictions: result?.predictions,
+    vdot: prediction?.vdot,
+    predictions: prediction?.predictions,
   };
 };

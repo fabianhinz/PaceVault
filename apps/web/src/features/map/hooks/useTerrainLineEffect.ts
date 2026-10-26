@@ -7,7 +7,7 @@ import type {
   MapSourceDataEvent,
 } from 'maplibre-gl';
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
-import { pathBounds } from '../lapPath.ts';
+import { pathBounds } from '@/features/map/lapPath.ts';
 import {
   EMPTY_TERRAIN_LINE,
   buildTerrainLineFeatures,
@@ -16,7 +16,7 @@ import {
   terrainLineWidthExpression,
   type LineColor,
   type TerrainLineRun,
-} from '../terrainLine.ts';
+} from '@/features/map/terrainLine.ts';
 
 interface TerrainLineWidths {
   metres: number;
@@ -41,7 +41,7 @@ const pathLatitude = (path: [number, number][]): number => {
   return (bounds.minLat + bounds.maxLat) / 2;
 };
 
-const addTerrainLine = (map: MapLibreMap, id: string) => {
+const addTerrainLine = ({ map, id }: { map: MapLibreMap; id: string }) => {
   const layers = terrainLineLayerIds(id);
   map.addSource(id, { type: 'geojson', tolerance: 0, data: EMPTY_TERRAIN_LINE });
   map.addSource(terrainLineHoverSourceId(id), {
@@ -79,7 +79,7 @@ const addTerrainLine = (map: MapLibreMap, id: string) => {
   });
 };
 
-const removeTerrainLine = (map: MapLibreMap, id: string) => {
+const removeTerrainLine = ({ map, id }: { map: MapLibreMap; id: string }) => {
   for (const layerId of Object.values(terrainLineLayerIds(id))) {
     if (map.getLayer(layerId) !== undefined) map.removeLayer(layerId);
   }
@@ -100,18 +100,25 @@ const paintWidths = ({
   latitude: number;
 }) => {
   const layers = terrainLineLayerIds(id);
-  const widthOf = (metres: number, minPixels: number) =>
+  const widthOf = ({ metres, minPixels }: { metres: number; minPixels: number }) =>
     terrainLineWidthExpression({ metres, minPixels, latitude });
-  map.setPaintProperty(layers.line, 'line-width', widthOf(width.metres, width.minPixels));
+  map.setPaintProperty(
+    layers.line,
+    'line-width',
+    widthOf({ metres: width.metres, minPixels: width.minPixels }),
+  );
   map.setPaintProperty(
     layers.casing,
     'line-width',
-    widthOf(width.casingMetres, width.casingMinPixels),
+    widthOf({ metres: width.casingMetres, minPixels: width.casingMinPixels }),
   );
   map.setPaintProperty(
     layers.selected,
     'line-width',
-    widthOf(width.metres, Math.max(width.selectedMinPixels, width.minPixels)),
+    widthOf({
+      metres: width.metres,
+      minPixels: Math.max(width.selectedMinPixels, width.minPixels),
+    }),
   );
 };
 
@@ -129,7 +136,7 @@ const whenLineRendered = ({
     if (event.sourceId !== id || map.getSource(id) === undefined) return;
     if (!map.isSourceLoaded(id)) return;
     map.off('sourcedata', onData);
-    map.once('render', onRender);
+    void map.once('render', onRender);
   };
   map.on('sourcedata', onData);
   return () => {
@@ -167,8 +174,8 @@ export const useTerrainLineEffect = ({
 
   useEffect(() => {
     if (map === undefined) return;
-    addTerrainLine(map, id);
-    return () => removeTerrainLine(map, id);
+    addTerrainLine({ map, id });
+    return () => removeTerrainLine({ map, id });
   }, [map, id]);
 
   useEffect(() => {

@@ -1,6 +1,7 @@
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
-import { crashCommandDocs, crashCommands, throwIfBootCrashRequested } from './crashCommands.ts';
-import { migrationCommandDocs, migrationCommands } from './migrationCommands.ts';
+import { crashCommands } from './crashCommands.ts';
+import { throwIfBootCrashRequested } from './crashSignal.ts';
+import { migrationCommands } from './migrationCommands.ts';
 
 const commands = {
   ...crashCommands,
@@ -8,8 +9,12 @@ const commands = {
 };
 
 const commandDocs: Record<keyof typeof commands, string> = {
-  ...crashCommandDocs,
-  ...migrationCommandDocs,
+  crashRoot: 'Root card — Reload + Report bug',
+  crashRoute: 'Route card — Try again or navigate away',
+  crashMap: 'Map vanishes, content keeps working',
+  crashBoot: 'Reload + fail during boot — root card',
+  reportUrl: 'GitHub issue URL for an optional error',
+  rerunMigration: 'Mark sessions outdated + reload — real reprocess ({ count } = newest N only)',
 };
 
 type PvDebug = typeof commands & { help: () => void };
@@ -20,7 +25,7 @@ declare global {
   }
 }
 
-const BADGE_STYLE = `background:${tokens.accent};color:#fff;font-weight:700;padding:2px 8px;border-radius:4px`;
+const BADGE_STYLE = `background:${tokens.accent};color:${tokens.white};font-weight:700;padding:2px 8px;border-radius:4px`;
 const TITLE_STYLE = `color:${tokens.accent};font-weight:700`;
 const COMMAND_STYLE = `color:${tokens.accent};font-family:monospace;font-weight:600`;
 const DESCRIPTION_STYLE = `color:${tokens.textSecondary}`;

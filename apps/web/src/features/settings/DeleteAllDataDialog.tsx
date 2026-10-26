@@ -1,112 +1,96 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import type { ComponentProps, FC } from 'react';
+import { usePageRouting } from '@/routing/usePageRouting.ts';
 import { useQueryClient } from '@tanstack/react-query';
 import { m } from '@pacevault/i18n/messages.js';
-import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  DialogDescription,
-} from '@pacevault/ui/components/Dialog.tsx';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import { toast } from '@/store/toast.ts';
+import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
+import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
+import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
+import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
+import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
+import { PvDialogDescription } from '@pacevault/ui/components/pvDialog/PvDialogDescription.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import { formatPlural } from '@/lib/formatters.ts';
+import { useSnackbar } from '@/lib/hooks/useSnackbar.ts';
+import { SETTINGS_SNACKBARS } from '@/features/settings/settingsSnackbars.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { useTripsStore } from '@/store/trips.ts';
-import { useStudioStore } from '@/store/studio.ts';
 import { useUserStore } from '@/store/user.ts';
-import { useCoachPlanStore } from '@/store/coachPlan.ts';
-import { useLayoutStore } from '@/store/layout.ts';
-import { useFiltersStore } from '@/store/filters.ts';
-import { useIntervalsStore } from '@/store/intervals.ts';
-import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
-import { resetPersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
-import { clearAllRecords } from '@/lib/indexeddb.ts';
-interface DeleteAllDataDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+import { useClearAllDataMutation } from '@/mutations/settings/useClearAllDataMutation.ts';
+import { clearAllAppState } from '@/features/settings/deleteAllData.ts';
 
-export const DeleteAllDataDialog = (props: DeleteAllDataDialogProps) => {
-  const [isDeleting, setIsDeleting] = useState(false);
+interface DeleteAllDataDialogProps extends Required<
+  Pick<ComponentProps<typeof PvDialog>, 'open' | 'onOpenChange'>
+> {}
+
+export const DeleteAllDataDialog: FC<DeleteAllDataDialogProps> = (props) => {
+  const clearAllData = useClearAllDataMutation();
   const sessionCount = useSessionsStore((s) => s.sessions.length);
-  const hasProfile = useUserStore((s) => s.profile !== null);
-  const navigate = useNavigate();
+  const profilePresent = useUserStore((s) => s.profile !== null);
+  const pageRouting = usePageRouting();
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
 
   const handleDelete = async () => {
-    setIsDeleting(true);
-    useSessionsStore.getState().clearAll();
-    useTripsStore.getState().clearAll();
-    useStudioStore.getState().clearAll();
-    useUserStore.getState().resetProfile();
-    useCoachPlanStore.getState().clearPlan();
-    resetPersonalBests(queryClient);
-    useIntervalsStore.getState().disconnectIntervals();
-    useLayoutStore.setState({ onboardingComplete: false, demoMode: false });
-    useFiltersStore.getState().resetFilters();
-    useMapPreferencesStore.getState().resetMapPreferences();
-    await clearAllRecords();
-    setIsDeleting(false);
+    clearAllAppState(queryClient);
+    await clearAllData.mutateAsync();
     props.onOpenChange(false);
-    toast(m.ui_delete_dialog_toast(), undefined, 'success');
-    navigate('/');
+    snackbar.enqueueSnackbar(SETTINGS_SNACKBARS.allDataDeleted);
+    pageRouting.open({ page: 'dashboard', params: {} });
   };
 
   const handleOpenChange = (open: boolean) => {
-    if (isDeleting) return;
+    if (clearAllData.isPending) return;
     props.onOpenChange(open);
   };
 
   return (
-    <DialogRoot open={props.open} onOpenChange={handleOpenChange}>
-      <DialogContent
+    <PvDialog open={props.open} onOpenChange={handleOpenChange}>
+      <PvDialogContent
+        closeLabel={m.ui_sheet_drag_close()}
         onEscapeKeyDown={(e) => {
-          if (isDeleting) e.preventDefault();
+          if (clearAllData.isPending) e.preventDefault();
         }}
         onPointerDownOutside={(e) => {
-          if (isDeleting) e.preventDefault();
+          if (clearAllData.isPending) e.preventDefault();
         }}
       >
-        <DialogHeader title={m.ui_delete_dialog_title()} />
-        <DialogBody>
-          <DialogDescription>{m.ui_delete_dialog_desc()}</DialogDescription>
+        <PvDialogHeader title={m.ui_delete_dialog_title()} />
+        <PvDialogBody>
+          <PvDialogDescription>{m.ui_delete_dialog_desc()}</PvDialogDescription>
 
           <div className="mt-4">
-            <Typography variant="body1" color="textSecondary">
+            <PvTypography variant="body1" color="textSecondary">
               {m.ui_delete_dialog_count({
                 summary:
-                  (sessionCount === 1
-                    ? m.ui_count_sessions_one()
-                    : m.ui_count_sessions_other({ count: String(sessionCount) })) +
-                  (hasProfile ? ` ${m.ui_delete_dialog_and_profile()}` : ''),
+                  formatPlural(sessionCount, {
+                    one: () => m.ui_count_sessions_one(),
+                    other: () => m.ui_count_sessions_other({ count: String(sessionCount) }),
+                  }) + (profilePresent ? ` ${m.ui_delete_dialog_and_profile()}` : ''),
               })}
-            </Typography>
+            </PvTypography>
           </div>
-        </DialogBody>
+        </PvDialogBody>
 
-        <DialogFooter>
-          <Button
+        <PvDialogFooter>
+          <PvButton
             type="button"
             variant="secondary"
             onClick={() => props.onOpenChange(false)}
-            disabled={isDeleting}
+            disabled={clearAllData.isPending}
           >
             {m.ui_btn_cancel()}
-          </Button>
-          <Button
+          </PvButton>
+          <PvButton
             type="button"
             variant="danger"
-            onClick={handleDelete}
-            loading={isDeleting}
+            onClick={() => void handleDelete()}
+            loading={clearAllData.isPending}
             aria-label={m.ui_delete_dialog_confirm()}
           >
-            {isDeleting ? m.ui_delete_dialog_deleting() : m.ui_delete_dialog_confirm()}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </DialogRoot>
+            {clearAllData.isPending ? m.ui_delete_dialog_deleting() : m.ui_delete_dialog_confirm()}
+          </PvButton>
+        </PvDialogFooter>
+      </PvDialogContent>
+    </PvDialog>
   );
 };

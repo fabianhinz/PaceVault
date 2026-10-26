@@ -3,9 +3,9 @@ import { segmentAtDistance } from '@/features/studio/markers/routeSegments.ts';
 
 const TOTAL = 10_000;
 
-describe('segmentAtDistance', () => {
+describe(segmentAtDistance.name, () => {
   it('treats a route with no splits as one whole segment', () => {
-    const seg = segmentAtDistance([], TOTAL, 4000);
+    const seg = segmentAtDistance({ splitDistancesM: [], totalM: TOTAL, distanceM: 4000 });
     expect(seg).toMatchObject({
       index: 1,
       startM: 0,
@@ -15,7 +15,11 @@ describe('segmentAtDistance', () => {
   });
 
   it('resolves the segment before the first split', () => {
-    const seg = segmentAtDistance([3000, 7000], TOTAL, 1000);
+    const seg = segmentAtDistance({
+      splitDistancesM: [3000, 7000],
+      totalM: TOTAL,
+      distanceM: 1000,
+    });
     expect(seg).toMatchObject({
       index: 1,
       startM: 0,
@@ -25,12 +29,20 @@ describe('segmentAtDistance', () => {
   });
 
   it('resolves a middle segment between two splits', () => {
-    const seg = segmentAtDistance([3000, 7000], TOTAL, 5000);
+    const seg = segmentAtDistance({
+      splitDistancesM: [3000, 7000],
+      totalM: TOTAL,
+      distanceM: 5000,
+    });
     expect(seg).toMatchObject({ index: 2, startM: 3000, endM: 7000, startSplit: 1 });
   });
 
   it('resolves the segment after the last split', () => {
-    const seg = segmentAtDistance([3000, 7000], TOTAL, 9000);
+    const seg = segmentAtDistance({
+      splitDistancesM: [3000, 7000],
+      totalM: TOTAL,
+      distanceM: 9000,
+    });
     expect(seg).toMatchObject({
       index: 3,
       startM: 7000,
@@ -40,12 +52,20 @@ describe('segmentAtDistance', () => {
   });
 
   it('assigns a click exactly on a split to the segment starting there', () => {
-    const seg = segmentAtDistance([3000, 7000], TOTAL, 3000);
+    const seg = segmentAtDistance({
+      splitDistancesM: [3000, 7000],
+      totalM: TOTAL,
+      distanceM: 3000,
+    });
     expect(seg).toMatchObject({ index: 2, startM: 3000, endM: 7000 });
   });
 
   it('ignores unsorted splits and splits at or beyond the route ends', () => {
-    const seg = segmentAtDistance([7000, 0, 3000, TOTAL], TOTAL, 5000);
+    const seg = segmentAtDistance({
+      splitDistancesM: [7000, 0, 3000, TOTAL],
+      totalM: TOTAL,
+      distanceM: 5000,
+    });
     expect(seg).toMatchObject({ index: 2, startM: 3000, endM: 7000 });
   });
 });

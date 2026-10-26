@@ -1,7 +1,11 @@
 import { m } from '@pacevault/i18n/messages.js';
 import type { DailyMetrics, FormStatus, InjuryRisk } from '@pacevault/engine/types.ts';
-import type { CoachingRecommendation } from '@/types/index.ts';
-import { getFormStatus, getInjuryRisk, getLoadState } from '@pacevault/engine/coaching.ts';
+import type { CoachingRecommendation } from '@/types.ts';
+import {
+  formStatusFromTsb,
+  injuryRiskFromAcwr,
+  loadStateFromAcwr,
+} from '@pacevault/engine/coaching.ts';
 
 export const getFormMessage = (status: FormStatus): string => {
   switch (status) {
@@ -70,7 +74,7 @@ const RISK_MESSAGES: Record<FormStatus, Record<Exclude<InjuryRisk, 'low'>, () =>
 };
 
 export const getFormMessageDetailed = (rec: CoachingRecommendation): string => {
-  const state = getLoadState(rec.acwr, rec.dataMaturityDays);
+  const state = loadStateFromAcwr({ acwr: rec.acwr, dataMaturityDays: rec.dataMaturityDays });
 
   switch (state) {
     case 'immature':
@@ -86,10 +90,13 @@ export const getFormMessageDetailed = (rec: CoachingRecommendation): string => {
   }
 };
 
-export const getCoachingRecommendation = (
-  metrics: DailyMetrics | undefined,
-  historyDays: number,
-): CoachingRecommendation => {
+export const getCoachingRecommendation = ({
+  metrics,
+  historyDays,
+}: {
+  metrics: DailyMetrics | undefined;
+  historyDays: number;
+}): CoachingRecommendation => {
   if (!metrics) {
     return {
       status: 'neutral',
@@ -101,9 +108,9 @@ export const getCoachingRecommendation = (
     };
   }
 
-  const status = getFormStatus(metrics.tsb);
+  const status = formStatusFromTsb(metrics.tsb);
   const message = getFormMessage(status);
-  const injuryRisk = getInjuryRisk(metrics.acwr);
+  const injuryRisk = injuryRiskFromAcwr(metrics.acwr);
 
   return {
     status,

@@ -15,9 +15,15 @@ export interface ClimbSpan {
   vam: number;
 }
 
-export const buildSessionTerrain = (sport: Sport, records: SessionRecord[]): SessionTerrain => {
+export const buildSessionTerrain = ({
+  sport,
+  records,
+}: {
+  sport: Sport;
+  records: SessionRecord[];
+}): SessionTerrain => {
   const gradients = windowedGradients(records);
-  const climbs = detectClimbs(sport, records, gradients);
+  const climbs = detectClimbs({ sport, records, gradients });
   const inClimb = records.map(() => false);
   for (const climb of climbs) {
     for (let i = climb.startIndex; i <= climb.endIndex; i++) inClimb[i] = true;
@@ -25,7 +31,13 @@ export const buildSessionTerrain = (sport: Sport, records: SessionRecord[]): Ses
   return { gradients, climbs, inClimb };
 };
 
-export const climbSpansInMinutes = (records: SessionRecord[], climbs: Climb[]): ClimbSpan[] => {
+export const climbSpansInMinutes = ({
+  records,
+  climbs,
+}: {
+  records: SessionRecord[];
+  climbs: Climb[];
+}): ClimbSpan[] => {
   const moving = movingSeconds(records);
   return climbs.map((climb) => ({
     from: (moving[climb.startIndex] ?? 0) / 60,
@@ -34,5 +46,10 @@ export const climbSpansInMinutes = (records: SessionRecord[], climbs: Climb[]): 
   }));
 };
 
-export const climbSpanAt = (spans: ClimbSpan[], minute: number): ClimbSpan | undefined =>
-  spans.find((span) => minute >= span.from && minute <= span.to);
+export const climbSpanAt = ({
+  spans,
+  minute,
+}: {
+  spans: ClimbSpan[];
+  minute: number;
+}): ClimbSpan | undefined => spans.find((span) => minute >= span.from && minute <= span.to);

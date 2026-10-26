@@ -1,48 +1,51 @@
+import type { ComponentProps, FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import { useStudioStore } from '@/store/studio.ts';
-import { deleteStudioRoutePoints } from '@/lib/indexeddb.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  DialogDescription,
-} from '@pacevault/ui/components/Dialog.tsx';
+import { useDeleteStudioRouteMutation } from '@/mutations/studio/useDeleteStudioRouteMutation.ts';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
+import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
+import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
+import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
+import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
+import { PvDialogDescription } from '@pacevault/ui/components/pvDialog/PvDialogDescription.tsx';
 
-export const DeleteStudioRouteDialog = (props: {
+interface DeleteStudioRouteDialogProps extends Required<
+  Pick<ComponentProps<typeof PvDialog>, 'open' | 'onOpenChange'>
+> {
   routeId: string;
   routeName: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onDeleted?: () => void;
-}) => {
+}
+
+export const DeleteStudioRouteDialog: FC<DeleteStudioRouteDialogProps> = (props) => {
+  const deleteStudioRoute = useDeleteStudioRouteMutation();
+
   const handleDelete = async () => {
     useStudioStore.getState().deleteStudioRoute(props.routeId);
-    await deleteStudioRoutePoints(props.routeId).catch(() => undefined);
+    await deleteStudioRoute.mutateAsync({ routeId: props.routeId }).catch(() => undefined);
     props.onOpenChange(false);
     props.onDeleted?.();
   };
 
   return (
-    <DialogRoot open={props.open} onOpenChange={() => props.onOpenChange(false)}>
-      <DialogContent>
-        <DialogHeader title={m.ui_studio_delete_title()} />
-        <DialogBody>
-          <DialogDescription>
+    <PvDialog open={props.open} onOpenChange={() => props.onOpenChange(false)}>
+      <PvDialogContent closeLabel={m.ui_sheet_drag_close()}>
+        <PvDialogHeader title={m.ui_studio_delete_title()} />
+        <PvDialogBody>
+          <PvDialogDescription>
             {m.ui_studio_delete_desc({ name: props.routeName })}
-          </DialogDescription>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="secondary" onClick={() => props.onOpenChange(false)}>
+          </PvDialogDescription>
+        </PvDialogBody>
+        <PvDialogFooter>
+          <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>
             {m.ui_btn_cancel()}
-          </Button>
-          <Button variant="danger" onClick={handleDelete}>
+          </PvButton>
+          <PvButton variant="danger" onClick={() => void handleDelete()}>
             {m.ui_btn_delete()}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </DialogRoot>
+          </PvButton>
+        </PvDialogFooter>
+      </PvDialogContent>
+    </PvDialog>
   );
 };

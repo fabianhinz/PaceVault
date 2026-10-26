@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { scrollFadeEdges } from '../../src/lib/scrollFade.ts';
 
-describe('scrollFadeEdges', () => {
+describe(scrollFadeEdges.name, () => {
   it('fades only the bottom at the top of a long list', () => {
     expect(scrollFadeEdges({ scrollTop: 0, scrollHeight: 1000, clientHeight: 300 })).toEqual({
       top: false,

@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { windRoseShares } from '@/lib/windRose.ts';
 
-describe('windRoseShares', () => {
+describe(windRoseShares.name, () => {
   it('splits moving time into sectors that sum to 100 %', () => {
     const shares = windRoseShares([
       undefined,
-      { angle: 0, seconds: 30 },
-      { angle: 90, seconds: 10 },
-      { angle: -90, seconds: 10 },
-      { angle: -180, seconds: 50 },
+      { angle: 0, durationSec: 30 },
+      { angle: 90, durationSec: 10 },
+      { angle: -90, durationSec: 10 },
+      { angle: -180, durationSec: 50 },
     ]);
     expect(shares).not.toBeNull();
     if (shares === null) return;

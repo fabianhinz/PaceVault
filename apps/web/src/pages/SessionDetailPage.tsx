@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { FC } from 'react';
+import { useRouterParam } from '@/routing/useRouterParam.ts';
 import { m } from '@pacevault/i18n/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { getSessionRecords, getSessionLaps } from '@/lib/indexeddb.ts';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
+import { useSessionRecords } from '@/queries/sessions/useSessionRecords.ts';
+import { useSessionLaps } from '@/queries/sessions/useSessionLaps.ts';
+import { useMarkSessionSeenEffect } from '@/features/sessions/session/hooks/useMarkSessionSeenEffect.ts';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { SessionHeader } from '@/features/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/features/sessions/session/SessionActionsMenu.tsx';
 import { SensorWarningBanner } from '@/features/sessions/session/SensorWarningBanner.tsx';
@@ -14,24 +16,19 @@ import { SessionPeek } from '@/features/sessions/SessionPeek.tsx';
 import { SessionMapControls } from '@/features/sessions/session/SessionMapControls.tsx';
 import type { SessionRecord, SessionLap } from '@pacevault/engine/types.ts';
 
-export const SessionDetailPage = () => {
-  const params = useParams<{ id: string }>();
-  const session = useSessionsStore((s) => s.sessions.find((session) => session.id === params.id));
-  const [records, setRecords] = useState<SessionRecord[]>([]);
-  const [laps, setLaps] = useState<SessionLap[]>([]);
+const NO_RECORDS: SessionRecord[] = [];
+const NO_LAPS: SessionLap[] = [];
 
-  useEffect(() => {
-    if (params.id) {
-      useSessionsStore.getState().markSessionSeen(params.id);
-    }
-  }, [params.id]);
+export const SessionDetailPage: FC = () => {
+  const id = useRouterParam('id');
+  const session = useSessionsStore((s) => s.sessions.find((session) => session.id === id));
+  const enabled = id !== undefined && session?.hasDetailedRecords === true;
+  const sessionRecords = useSessionRecords({ sessionId: id ?? '', enabled });
+  const sessionLaps = useSessionLaps({ sessionId: id ?? '', enabled });
+  const records = sessionRecords.data ?? NO_RECORDS;
+  const laps = sessionLaps.data ?? NO_LAPS;
 
-  useEffect(() => {
-    if (params.id && session?.hasDetailedRecords) {
-      getSessionRecords(params.id).then(setRecords);
-      getSessionLaps(params.id).then(setLaps);
-    }
-  }, [params.id, session?.hasDetailedRecords]);
+  useMarkSessionSeenEffect(id);
 
   const lapSetSync = <SessionLapSetSync records={records} laps={laps} />;
 
@@ -39,9 +36,9 @@ export const SessionDetailPage = () => {
     return (
       <>
         {lapSetSync}
-        <Typography variant="body1" color="textSecondary">
+        <PvTypography variant="body1" color="textSecondary">
           {m.ui_session_not_found()}
-        </Typography>
+        </PvTypography>
       </>
     );
   }

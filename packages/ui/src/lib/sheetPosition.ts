@@ -6,7 +6,7 @@ interface SheetMetrics {
   safeBottom: number;
 }
 
-interface SheetLayout {
+export interface SheetLayout {
   sheetHeight: number;
   bottomInset: number;
   peekOffset: number;
@@ -14,10 +14,12 @@ interface SheetLayout {
   peekContentHeight: number;
 }
 
-export const SHEET_HANDLE_HEIGHT = 48;
+const SHEET_HANDLE_HEIGHT = 48;
+export const SHEET_ABOVE_GAP = 12;
 const PEEK_CONTENT_HEIGHT = 66;
 const PEEK_HEIGHT = SHEET_HANDLE_HEIGHT + PEEK_CONTENT_HEIGHT;
 const PEEK_FADE_RANGE = 0.15;
+const SETTLE_OPACITY_THRESHOLD = 0.5;
 const FULL_TOP_GAP_RATIO = 0.08;
 const FULL_TOP_GAP_MIN = 12;
 
@@ -64,14 +66,14 @@ export const settlePosition = (position: number): number => {
     return position;
   }
   const summaryOpacity = 1 - position / PEEK_FADE_RANGE;
-  if (summaryOpacity > 0.5) {
+  if (summaryOpacity > SETTLE_OPACITY_THRESHOLD) {
     return 0;
   }
   return PEEK_FADE_RANGE;
 };
 
 export const sheetTapTarget = (position: number): number => {
-  if (position <= 0.5) {
+  if (position <= MIDDLE_POSITION) {
     return 1;
   }
   return 0;
@@ -83,8 +85,8 @@ const sheetVisibleHeight = (layout: SheetLayout, position: number): number =>
 export const sheetFitHeight = (
   layout: SheetLayout,
   position: number,
-  cap: number = MIDDLE_POSITION,
-): number => sheetVisibleHeight(layout, Math.min(position, cap));
+  options: { cap?: number } = {},
+): number => sheetVisibleHeight(layout, Math.min(position, options.cap ?? MIDDLE_POSITION));
 
 export const readSafeAreaInset = (side: 'top' | 'bottom'): number => {
   const probe = document.createElement('div');

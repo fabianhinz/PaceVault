@@ -29,7 +29,7 @@ const displayMode = () => {
   return 'browser tab';
 };
 
-const buildBody = (parts: ErrorParts, stackLines: string[]) =>
+const buildBody = ({ parts, stackLines }: { parts: ErrorParts; stackLines: string[] }) =>
   [
     `**${parts.name}:** ${parts.message}`,
     '',
@@ -43,7 +43,7 @@ const buildBody = (parts: ErrorParts, stackLines: string[]) =>
     `- Display: ${displayMode()}`,
   ].join('\n');
 
-const toUrl = (title: string, body: string) =>
+const toUrl = ({ title, body }: { title: string; body: string }) =>
   `${NEW_ISSUE_URL}?${new URLSearchParams({ title, body }).toString()}`;
 
 export const buildIssueUrl = (error: unknown) => {
@@ -56,10 +56,10 @@ export const buildIssueUrl = (error: unknown) => {
   const title = `Crash: ${parts.name}: ${parts.message}`.slice(0, MAX_TITLE_LENGTH);
   const stackLines = parts.stack.split('\n');
 
-  let url = toUrl(title, buildBody(parts, stackLines));
+  let url = toUrl({ title, body: buildBody({ parts, stackLines }) });
   while (url.length > MAX_URL_LENGTH && stackLines.length > 1) {
     stackLines.pop();
-    url = toUrl(title, buildBody(parts, stackLines));
+    url = toUrl({ title, body: buildBody({ parts, stackLines }) });
   }
   return url;
 };

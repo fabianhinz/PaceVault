@@ -1,6 +1,6 @@
 import type { TrainingSession } from '@pacevault/engine/types.ts';
 import { m } from '@pacevault/i18n/messages.js';
-import { formatDistance, formatDuration } from '@/lib/formatters.ts';
+import { formatDistance, formatDuration, formatPlural } from '@/lib/formatters.ts';
 
 interface TripTotals {
   count: number;
@@ -46,10 +46,10 @@ export const computeTripTotals = (sessions: TrainingSession[]): TripTotals => {
 };
 
 export const formatTripStatsLine = (totals: TripTotals): string => {
-  let count = m.ui_count_sessions_other({ count: String(totals.count) });
-  if (totals.count === 1) {
-    count = m.ui_count_sessions_one();
-  }
+  const count = formatPlural(totals.count, {
+    one: () => m.ui_count_sessions_one(),
+    other: () => m.ui_count_sessions_other({ count: String(totals.count) }),
+  });
   const stats: string[] = [count];
   if (totals.count > 0) {
     stats.push(formatDistance(totals.distance));

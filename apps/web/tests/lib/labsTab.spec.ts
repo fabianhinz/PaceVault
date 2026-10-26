@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { resolveLabsTab } from '@/lib/labsTab.ts';
 
-describe('resolveLabsTab', () => {
+describe(resolveLabsTab.name, () => {
   it('returns each valid tab as-is', () => {
     expect(resolveLabsTab('studio')).toBe('studio');
     expect(resolveLabsTab('tools')).toBe('tools');

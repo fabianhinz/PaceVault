@@ -1,5 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import type { MouseHandlerDataParam } from 'recharts/types/synchronisation/types';
+import { zoomSelection } from '@/lib/chartZoom.ts';
+import { useZoomSelectionState } from './useZoomSelectionState.ts';
 
 interface UseChartZoomOptions<T> {
   data: T[];
@@ -12,47 +14,42 @@ interface UseChartZoomReturn<T> {
   zoomedData: T[];
   refAreaLeft: string | number | null;
   refAreaRight: string | number | null;
-  isZoomed: boolean;
+  zoomed: boolean;
   onMouseDown: (e: MouseHandlerDataParam) => void;
   onMouseMove: (e: MouseHandlerDataParam) => void;
   onMouseUp: () => void;
   resetZoom: () => void;
 }
 
-export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomReturn<T> => {
-  const data = options.data;
-  const xKey = options.xKey;
-  const onZoomComplete = options.onZoomComplete;
-  const onClick = options.onClick;
-  const [refAreaLeft, setRefAreaLeft] = useState<string | number | null>(null);
-  const [refAreaRight, setRefAreaRight] = useState<string | number | null>(null);
-  const [startIndex, setStartIndex] = useState<number | null>(null);
-  const [endIndex, setEndIndex] = useState<number | null>(null);
-  const [prevData, setPrevData] = useState(data);
+export const useChartZoom = <T>({
+  data,
+  xKey,
+  onZoomComplete,
+  onClick,
+}: UseChartZoomOptions<T>): UseChartZoomReturn<T> => {
+  const selection = useZoomSelectionState(data);
   const pressedLabel = useRef<string | number | null>(null);
 
-  if (data !== prevData) {
-    setPrevData(data);
-    setStartIndex(null);
-    setEndIndex(null);
-    setRefAreaLeft(null);
-    setRefAreaRight(null);
-  }
+  const updates = selection.updates;
+  const refAreaLeft = selection.refAreaLeft;
+  const refAreaRight = selection.refAreaRight;
 
-  const onMouseDown = useCallback((e: MouseHandlerDataParam) => {
-    if (e.activeLabel == null) return;
-    pressedLabel.current = e.activeLabel;
-    setRefAreaLeft(e.activeLabel);
-    setRefAreaRight(null);
-  }, []);
+  const onMouseDown = useCallback(
+    (e: MouseHandlerDataParam) => {
+      if (e.activeLabel == null) return;
+      pressedLabel.current = e.activeLabel;
+      updates.press(e.activeLabel);
+    },
+    [updates],
+  );
 
   const onMouseMove = useCallback(
     (e: MouseHandlerDataParam) => {
       if (refAreaLeft !== null && e.activeLabel != null) {
-        setRefAreaRight(e.activeLabel);
+        updates.drag(e.activeLabel);
       }
     },
-    [refAreaLeft],
+    [refAreaLeft, updates],
   );
 
   const onMouseUp = useCallback(() => {
@@ -60,56 +57,35 @@ export const useChartZoom = <T>(options: UseChartZoomOptions<T>): UseChartZoomRe
     pressedLabel.current = null;
     if (pressed === null) return;
     if (refAreaRight === null || refAreaRight === pressed) {
-      setRefAreaLeft(null);
-      setRefAreaRight(null);
+      updates.clear();
       onClick?.(pressed);
       return;
     }
-
-    let leftIdx = data.findIndex((d) => d[xKey] === pressed);
-    let rightIdx = data.findIndex((d) => d[xKey] === refAreaRight);
-
-    if (leftIdx < 0 || rightIdx < 0) {
-      setRefAreaLeft(null);
-      setRefAreaRight(null);
-      return;
-    }
-
-    if (leftIdx > rightIdx) {
-      [leftIdx, rightIdx] = [rightIdx, leftIdx];
-    }
-
-    setStartIndex(leftIdx);
-    setEndIndex(rightIdx);
-    setRefAreaLeft(null);
-    setRefAreaRight(null);
-
-    const leftItem = data[leftIdx];
-    const rightItem = data[rightIdx];
+    const range = zoomSelection({ data, xKey, pressed, released: refAreaRight });
+    updates.clear();
+    if (range === null) return;
+    updates.zoomTo(range);
+    const leftItem = data[range.left];
+    const rightItem = data[range.right];
     if (leftItem && rightItem) {
       onZoomComplete?.(String(leftItem[xKey]), String(rightItem[xKey]));
     }
-  }, [data, xKey, refAreaRight, onZoomComplete, onClick]);
+  }, [data, xKey, refAreaRight, updates, onZoomComplete, onClick]);
 
-  const resetZoom = useCallback(() => {
-    setStartIndex(null);
-    setEndIndex(null);
-  }, []);
-
-  const isZoomed = startIndex !== null;
+  const zoomed = selection.startIndex !== null;
   let zoomedData = data;
-  if (isZoomed && endIndex !== null) {
-    zoomedData = data.slice(startIndex, endIndex + 1);
+  if (selection.startIndex !== null && selection.endIndex !== null) {
+    zoomedData = data.slice(selection.startIndex, selection.endIndex + 1);
   }
 
   return {
     zoomedData,
     refAreaLeft,
     refAreaRight,
-    isZoomed,
+    zoomed,
     onMouseDown,
     onMouseMove,
     onMouseUp,
-    resetZoom,
+    resetZoom: updates.reset,
   };
 };

@@ -1,47 +1,49 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type RefObject } from 'react';
+import { useKeyPressEvent } from 'react-use';
 import { interpretFilterText } from '@/lib/filterGrammar.ts';
-import { INPUT_DEBOUNCE_MS, useDebouncedValue } from '@/lib/hooks/useDebouncedValue.ts';
 import type { FilterCriteria } from '@/lib/savedFilters.ts';
 import { useFiltersStore } from '@/store/filters.ts';
+import { useNotUnderstoodHint } from './useNotUnderstoodHint.ts';
 
-export const useFilterBuilder = (open: boolean, onClose: () => void) => {
+interface FilterBuilder {
+  text: string;
+  setText: (text: string) => void;
+  interpretations: FilterCriteria[];
+  showNotUnderstood: boolean;
+  select: (criteria: FilterCriteria) => void;
+  handleKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  tilesRef: RefObject<HTMLDivElement | null>;
+  listRef: RefObject<HTMLDivElement | null>;
+}
+
+export const useFilterBuilder = ({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}): FilterBuilder => {
   const [text, setText] = useState('');
   const tilesRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const interpretations = useMemo(() => interpretFilterText(text, Date.now()), [text]);
-  const notUnderstood = text !== '' && interpretations.length === 0;
-  let notUnderstoodText = '';
-  if (notUnderstood) {
-    notUnderstoodText = text;
+  const interpretations = useMemo(() => interpretFilterText({ text, now: Date.now() }), [text]);
+  const showNotUnderstood = useNotUnderstoodHint({ text, interpretations });
+
+  const [seenOpen, setSeenOpen] = useState(open);
+  if (open !== seenOpen) {
+    setSeenOpen(open);
+    if (!open) setText('');
   }
-  const pausedNotUnderstoodText = useDebouncedValue(notUnderstoodText, INPUT_DEBOUNCE_MS);
-  const showNotUnderstood = notUnderstood && pausedNotUnderstoodText !== '';
 
-  useEffect(() => {
-    if (!open) {
+  useKeyPressEvent('Escape', () => {
+    if (!open) return;
+    if (text !== '') {
+      setText('');
       return;
     }
-    return () => setText('');
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') {
-        return;
-      }
-      if (text !== '') {
-        setText('');
-        return;
-      }
-      onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, text, onClose]);
+    onClose();
+  });
 
   const select = (criteria: FilterCriteria) => {
     useFiltersStore.getState().saveBuilderFilter(criteria);

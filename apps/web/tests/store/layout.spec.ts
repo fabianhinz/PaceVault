@@ -1,21 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
-import { useLayoutStore } from '@/store/layout.ts';
+import { INITIAL_LAYOUT_STORE_STATE, useLayoutStore } from '@/store/layout.ts';
+import { recordOrThrow } from '@testUtils/defined.ts';
 
 const migrate = (persisted: Record<string, unknown>, version: number) => {
   const options = useLayoutStore.persist.getOptions();
   if (!options.migrate) {
     throw new Error('migrate missing');
   }
-  return options.migrate(persisted, version) as Record<string, unknown>;
+  return recordOrThrow(options.migrate(persisted, version));
 };
 
 describe('useLayoutStore', () => {
   beforeEach(() => {
-    useLayoutStore.setState({
-      onboardingComplete: false,
-      demoMode: false,
-      mobileSheetPosition: 0.5,
-    });
+    useLayoutStore.setState(INITIAL_LAYOUT_STORE_STATE);
   });
 
   it('defaults onboardingComplete to false', () => {

@@ -1,13 +1,15 @@
 import type { QueryClient } from '@tanstack/react-query';
 import {
   downloadActivityFit,
+  intervalsErrorCode,
   type IntervalsActivity,
   type IntervalsErrorCode,
 } from '@/lib/intervals.ts';
+import { FailedResponseError } from '@/lib/fetchResponse.ts';
 import { parseFitFile } from '@/parsers/fit.ts';
 import { createIngestBatcher } from '@/features/sessions/createIngestBatcher.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
-import type { UserProfile } from '@/types/index.ts';
+import type { UserProfile } from '@/types.ts';
 
 interface IntervalsImportResult {
   imported: number;
@@ -16,52 +18,73 @@ interface IntervalsImportResult {
   fatal?: IntervalsErrorCode;
 }
 
-export const runIntervalsImport = async (
-  apiKey: string,
-  profile: UserProfile,
-  activities: IntervalsActivity[],
-  onProgress: (processed: number) => void,
-  options: {
-    queryClient: QueryClient;
-    markNew?: boolean;
-    onSaving?: () => void;
-    onChunkIngested: (activityIds: string[]) => void;
-  },
-): Promise<IntervalsImportResult> => {
+export const runIntervalsImport = async ({
+  apiKey,
+  profile,
+  activities,
+  onProgress,
+  queryClient,
+  markNew,
+  onSaving,
+  onChunkIngested,
+}: {
+  apiKey: string;
+  profile: UserProfile;
+  activities: IntervalsActivity[];
+  onProgress: (processed: number) => void;
+  queryClient: QueryClient;
+  markNew?: boolean;
+  onSaving?: () => void;
+  onChunkIngested: (activityIds: string[]) => void;
+}): Promise<IntervalsImportResult> => {
   let processed = 0;
   let failed = 0;
   let fatal: IntervalsErrorCode | undefined = undefined;
 
   const batcher = createIngestBatcher({
-    queryClient: options.queryClient,
-    markNew: options.markNew,
+    queryClient,
+    markNew,
     onFlushed: (stored) => {
       const ids: string[] = [];
       for (const entry of stored) {
         if (entry.source.kind === 'intervals') ids.push(entry.source.activityId);
       }
-      options.onChunkIngested(ids);
+      onChunkIngested(ids);
     },
   });
 
   for (const activity of activities) {
-    const download = await downloadActivityFit(apiKey, activity);
-
-    if (!download.ok) {
-      if (download.code === 'rate-limited' || download.code === 'unauthorized') {
-        fatal = download.code;
+    let data: ArrayBuffer | undefined = undefined;
+    try {
+      data = await downloadActivityFit({ apiKey, activity });
+    } catch (error) {
+      const isRequestFailure =
+        error instanceof FailedResponseError ||
+        error instanceof TypeError ||
+        error instanceof DOMException;
+      if (!isRequestFailure) throw error;
+      const code = intervalsErrorCode(error);
+      if (code === 'rate-limited' || code === 'unauthorized') {
+        fatal = code;
         break;
       }
       failed++;
-    } else {
+    }
+
+    if (data !== undefined) {
       try {
         const fileName = `${activity.id}.fit`;
-        const result = await parseFitFile(download.data, fileName, toFitParseProfile(profile), {
-          name: activity.name ?? undefined,
+        const result = await parseFitFile({
+          arrayBuffer: data,
+          fileName,
+          profileAt: toFitParseProfile(profile),
+          meta: {
+            name: activity.name ?? undefined,
+          },
         });
         await batcher.add({
           ...result,
-          rawData: download.data,
+          rawData: data,
           fileName,
           source: { kind: 'intervals', activityId: activity.id },
         });
@@ -74,7 +97,7 @@ export const runIntervalsImport = async (
     onProgress(processed);
   }
 
-  options.onSaving?.();
+  onSaving?.();
   const outcome = await batcher.finish();
   return {
     imported: outcome.importedCount,

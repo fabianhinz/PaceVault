@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type FC } from 'react';
 import {
   ComposedChart,
   Line,
@@ -9,8 +9,8 @@ import {
   ResponsiveContainer,
   ReferenceArea,
 } from 'recharts';
-import { ChartRow } from '@pacevault/ui/components/ChartsCard.tsx';
-import { MultiSeriesRail } from '@/components/charts/ChartRail.tsx';
+import { PvChartRow } from '@pacevault/ui/components/pvChartsCard/PvChartRow.tsx';
+import { MultiSeriesRail } from '@/components/charts/MultiSeriesRail.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
 import { chartTheme } from '@/lib/chartTheme.ts';
 import { hoverOnlyTooltip, indexByX } from '@/lib/chartHover.ts';
@@ -29,7 +29,7 @@ const SERIES = [
   { key: 'tsb', color: tokens.chartForm },
 ] as const;
 
-export const PerformanceChart = () => {
+export const PerformanceChart: FC = () => {
   const axis = useDashboardAxis();
   const filtered = axis.history;
   const latest = filtered[filtered.length - 1];
@@ -43,7 +43,7 @@ export const PerformanceChart = () => {
   const events = useDashboardChartEvents(zoom);
 
   return (
-    <ChartRow
+    <PvChartRow
       title={m.ui_metrics_chart_title()}
       secondary={m.ui_metrics_chart_subtitle()}
       height="h-64"
@@ -135,6 +135,6 @@ export const PerformanceChart = () => {
           </ComposedChart>
         </ResponsiveContainer>
       ) : null}
-    </ChartRow>
+    </PvChartRow>
   );
 };

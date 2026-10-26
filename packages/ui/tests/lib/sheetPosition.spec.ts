@@ -51,8 +51,10 @@ describe('sheet position', () => {
     const middle = sheetFitHeight(layout, 0.5);
     expect(sheetFitHeight(layout, 0.8)).toBe(middle);
     expect(sheetFitHeight(layout, 1)).toBe(middle);
-    expect(sheetFitHeight(layout, 1, 0.85)).toBe(sheetFitHeight(layout, 0.85, 0.85));
-    expect(sheetFitHeight(layout, 1, 0.85)).toBeGreaterThan(middle);
+    expect(sheetFitHeight(layout, 1, { cap: 0.85 })).toBe(
+      sheetFitHeight(layout, 0.85, { cap: 0.85 }),
+    );
+    expect(sheetFitHeight(layout, 1, { cap: 0.85 })).toBeGreaterThan(middle);
   });
 
   it('keeps the peek content at 66 px under the taller handle', () => {

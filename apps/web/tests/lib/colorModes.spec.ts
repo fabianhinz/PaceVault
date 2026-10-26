@@ -7,12 +7,12 @@ const records: SessionRecord[] = [
   { timestamp: 1, lat: 48, lng: 11.001, hr: 142, speed: 3 },
 ];
 
-const ready = { state: 'ready' as const, samples: [{ time: 0, direction: 90 }] };
+const ready = { state: 'ready' as const, samples: [{ timeMs: 0, directionDegrees: 90 }] };
 
 const statusOf = (options: ColorModeOption[], mode: ColorModeOption['mode']) =>
   options.find((option) => option.mode === mode)?.status;
 
-describe('colorModeOptions', () => {
+describe(colorModeOptions.name, () => {
   it('explains why a mode is unavailable', () => {
     const options = colorModeOptions({
       sport: 'cycling',
@@ -56,7 +56,7 @@ describe('colorModeOptions', () => {
   });
 });
 
-describe('effectiveColorMode', () => {
+describe(effectiveColorMode.name, () => {
   it('shows sport colour while the remembered mode is unavailable for this session', () => {
     const options = colorModeOptions({
       sport: 'running',

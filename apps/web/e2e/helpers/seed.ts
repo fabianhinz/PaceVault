@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { SESSION_DERIVATION_VERSION } from '@pacevault/engine/sessionDerivation.ts';
 import { DB_NAME, DB_VERSION } from '../../src/lib/db.ts';
-import { calculateSummaryStress } from '@pacevault/engine/stress.ts';
+import { stressFromSummary } from '@pacevault/engine/stress.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,17 +15,17 @@ const COACH_FTP = 250;
 
 // The load the app's own startup recompute gives, so seeding never triggers a migration.
 const seededLoad = (sport: 'running' | 'cycling', durationSec: number) =>
-  calculateSummaryStress(sport, { durationSec }, SEED_THRESHOLDS);
+  stressFromSummary({ sport, summary: { durationSec }, thresholds: SEED_THRESHOLDS });
 
 // A one-hour ride with TSS = (NP / FTP)² × 100, so a seeded TSS survives the recompute.
 const seededTssLoad = (tss: number) => {
   const normalizedPower = COACH_FTP * Math.sqrt(tss / 100);
   return {
-    ...calculateSummaryStress(
-      'cycling',
-      { durationSec: 3600, normalizedPower },
-      { ...SEED_THRESHOLDS, ftp: COACH_FTP },
-    ),
+    ...stressFromSummary({
+      sport: 'cycling',
+      summary: { durationSec: 3600, normalizedPower },
+      thresholds: { ...SEED_THRESHOLDS, ftp: COACH_FTP },
+    }),
     normalizedPower,
   };
 };

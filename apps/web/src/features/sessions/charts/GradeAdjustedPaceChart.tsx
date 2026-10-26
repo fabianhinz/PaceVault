@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import {
   LineChart,
   Line,
@@ -23,7 +24,7 @@ interface GradeAdjustedPaceChartProps {
   onSelectTime?: (time: number) => void;
 }
 
-export const GradeAdjustedPaceChart = (props: GradeAdjustedPaceChartProps) => {
+export const GradeAdjustedPaceChart: FC<GradeAdjustedPaceChartProps> = (props) => {
   const zoom = useChartZoom({
     data: props.data,
     xKey: 'time',

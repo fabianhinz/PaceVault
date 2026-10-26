@@ -1,17 +1,19 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { Trash2 } from 'lucide-react';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
-import { List, ListItem } from '@pacevault/ui/components/List.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvCardHeader } from '@pacevault/ui/components/pvCardHeader/PvCardHeader.tsx';
+import { PvList } from '@pacevault/ui/components/pvList/PvList.tsx';
+import { PvListItem } from '@pacevault/ui/components/pvList/PvListItem.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { DeleteAllDataDialog } from './DeleteAllDataDialog.tsx';
-import { InlineSkeleton } from '@pacevault/ui/components/InlineSkeleton.tsx';
-import { SplitBar, type SplitBarSegment } from '@pacevault/ui/components/SplitBar.tsx';
+import { PvInlineSkeleton } from '@pacevault/ui/components/pvInlineSkeleton/PvInlineSkeleton.tsx';
+import { PvSplitBar } from '@pacevault/ui/components/pvSplitBar/PvSplitBar.tsx';
+import type { SplitBarSegment } from '@pacevault/ui/components/pvSplitBar/types.ts';
 import { formatBytes, formatDate } from '@/lib/formatters.ts';
 import { type StorageCategory } from '@/lib/storageBreakdown.ts';
-import { useStorageBreakdown } from './hooks/useStorageBreakdown.ts';
+import { useStorageBreakdown } from '@/queries/settings/useStorageBreakdown.ts';
 
 const STORAGE_SEGMENTS: Array<{
   category: StorageCategory;
@@ -24,7 +26,7 @@ const STORAGE_SEGMENTS: Array<{
   { category: 'appData', label: () => m.ui_data_storage_app(), colorClass: 'bg-text-tertiary' },
 ];
 
-export const DataManagementSection = () => {
+export const DataManagementSection: FC = () => {
   const sessionCount = useSessionsStore((s) => s.sessions.length);
   const fileCount = useSessionsStore(
     (s) => s.sessions.filter((session) => session.source.kind === 'file').length,
@@ -37,7 +39,9 @@ export const DataManagementSection = () => {
     s.sessions.length > 0 ? Math.max(...s.sessions.map((session) => session.createdAt)) : null,
   );
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const storage = useStorageBreakdown(sessionCount);
+  const storage = useStorageBreakdown({ sessionCount });
+  const storageCategories = storage.data?.categories ?? null;
+  const storageTotal = storage.data?.total ?? null;
 
   const sourceSegments: SplitBarSegment[] = [
     {
@@ -57,62 +61,62 @@ export const DataManagementSection = () => {
   ];
 
   const storageSegments: SplitBarSegment[] = STORAGE_SEGMENTS.map((segment) => {
-    const bytes = storage.categories?.[segment.category] ?? 0;
+    const bytes = storageCategories?.[segment.category] ?? 0;
     return {
       key: segment.category,
       label: segment.label(),
       value: bytes,
-      display: storage.categories === null ? null : formatBytes(bytes),
+      display: storageCategories === null ? null : formatBytes(bytes),
       colorClass: segment.colorClass,
     };
   });
 
   return (
     <>
-      <Card>
-        <CardHeader title={m.ui_data_storage()} subtitle={m.ui_data_storage_desc()} />
-        <List>
-          <ListItem
+      <PvCard>
+        <PvCardHeader title={m.ui_data_storage()} subtitle={m.ui_data_storage_desc()} />
+        <PvList>
+          <PvListItem
             primary={m.ui_data_sessions()}
             secondary={
               lastUpdated !== null
-                ? m.ui_data_last_updated({ date: formatDate(lastUpdated, { includeTime: true }) })
+                ? m.ui_data_last_updated({ date: formatDate(lastUpdated, 'date-time') })
                 : undefined
             }
           >
-            <Typography variant="body1">{sessionCount}</Typography>
-          </ListItem>
+            <PvTypography variant="body1">{sessionCount}</PvTypography>
+          </PvListItem>
           {sourcedCount > 0 && (
             <li className="pl-3">
-              <SplitBar segments={sourceSegments} />
+              <PvSplitBar segments={sourceSegments} />
             </li>
           )}
-          <ListItem primary={m.ui_data_storage_usage()}>
+          <PvListItem primary={m.ui_data_storage_usage()}>
             <div className="flex h-5 items-center">
-              {storage.total === null ? (
-                <InlineSkeleton className="w-16" />
+              {storageTotal === null ? (
+                <PvInlineSkeleton className="w-16" />
               ) : (
-                <Typography variant="body1">{formatBytes(storage.total)}</Typography>
+                <PvTypography variant="body1">{formatBytes(storageTotal)}</PvTypography>
               )}
             </div>
-          </ListItem>
+          </PvListItem>
           <li className="pl-3">
-            <SplitBar segments={storageSegments} />
+            <PvSplitBar segments={storageSegments} />
           </li>
-        </List>
-      </Card>
+        </PvList>
+      </PvCard>
 
-      <Card>
-        <CardHeader title={m.ui_data_danger_zone()} />
-        <List>
-          <ListItem
+      <PvCard>
+        <PvCardHeader title={m.ui_data_danger_zone()} />
+        <PvList>
+          <PvListItem
             primary={m.ui_data_delete_all()}
             secondary={m.ui_data_delete_all_desc()}
             icon={<Trash2 size={16} />}
             onClick={() => setDeleteOpen(true)}
           />
-        </List>
-      </Card>
+        </PvList>
+      </PvCard>
 
       <DeleteAllDataDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </>

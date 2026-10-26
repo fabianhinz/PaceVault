@@ -3,14 +3,14 @@ import { PathLayer } from '@deck.gl/layers';
 import type { Sport } from '@pacevault/engine/types.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { useOnboardingStore } from '@/store/onboarding.ts';
-import { previewDrawInEnd, slicePath, type PreviewPass } from '../previewDrawIn.ts';
+import { previewDrawInEnd, slicePath, type PreviewPass } from '@/features/map/previewDrawIn.ts';
 import {
   ADDITIVE_BLEND,
   sportTrackColor,
   trackIntensityAlpha,
   trackModifiers,
-} from '../trackColors.ts';
-import { useOnboardingPreviewRoutes } from './useOnboardingPreviewRoutes.ts';
+} from '@/features/map/trackColors.ts';
+import { useOnboardingPreviewRoutes } from '@/queries/onboarding/useOnboardingPreviewRoutes.ts';
 
 interface PreviewSlice {
   sport: Sport;
@@ -46,7 +46,10 @@ export const useOnboardingPreviewLayer = (): PathLayer<PreviewSlice> | null => {
     if (!active) return null;
     return new PathLayer<PreviewSlice>({
       id: 'onboarding-preview',
-      data: passes.map((pass) => ({ sport: pass.sport, path: slicePath(pass, elapsed) })),
+      data: passes.map((pass) => ({
+        sport: pass.sport,
+        path: slicePath({ pass, elapsedMs: elapsed }),
+      })),
       getPath: (d) => d.path,
       getColor: (d) => [...sportTrackColor[d.sport], trackIntensityAlpha.faint],
       getWidth: trackModifiers.width.default,

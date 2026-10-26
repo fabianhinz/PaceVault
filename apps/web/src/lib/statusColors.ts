@@ -1,7 +1,14 @@
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
+import {
+  ACWR_HIGH_THRESHOLD,
+  ACWR_MODERATE_THRESHOLD,
+  ACWR_UNDERTRAINING_THRESHOLD,
+} from '@pacevault/engine/coaching.ts';
+import type { FormStatus, Sport } from '@pacevault/engine/types.ts';
 
-/** Tailwind text classes for coaching status */
-export const statusTextClass: Record<string, string> = {
+export type AcwrColor = 'green' | 'yellow' | 'red';
+
+export const statusTextClass: Record<FormStatus, string> = {
   detraining: 'text-status-warning',
   fresh: 'text-status-success',
   neutral: 'text-text-secondary',
@@ -9,8 +16,7 @@ export const statusTextClass: Record<string, string> = {
   overload: 'text-status-danger',
 };
 
-/** Raw hex fills for Recharts (coaching status) */
-export const statusFill: Record<string, string> = {
+export const statusFill: Record<FormStatus, string> = {
   detraining: tokens.statusWarning,
   fresh: tokens.statusSuccessStrong,
   neutral: tokens.statusNeutral,
@@ -18,7 +24,6 @@ export const statusFill: Record<string, string> = {
   overload: tokens.statusDangerStrong,
 };
 
-/** ACWR traffic-light color sets */
 export const acwrColorMap = {
   green: {
     bg: 'bg-status-success-strong',
@@ -35,14 +40,20 @@ export const acwrColorMap = {
     text: 'text-status-danger',
     ring: 'ring-status-danger-strong/20',
   },
+} satisfies Record<AcwrColor, { bg: string; text: string; ring: string }>;
+
+export const acwrColor = (acwr: number): AcwrColor => {
+  if (acwr < ACWR_UNDERTRAINING_THRESHOLD) return 'yellow';
+  if (acwr <= ACWR_MODERATE_THRESHOLD) return 'green';
+  if (acwr <= ACWR_HIGH_THRESHOLD) return 'yellow';
+  return 'red';
 };
 
-/** Raw hex fills for Recharts (ACWR traffic-light) */
 export const acwrFill = {
   green: tokens.statusSuccessStrong,
   yellow: tokens.statusWarningStrong,
   red: tokens.statusDangerStrong,
-};
+} satisfies Record<AcwrColor, string>;
 
 /** Gauge arc zones for the ACWR dial */
 export const ACWR_ZONES = [
@@ -52,8 +63,7 @@ export const ACWR_ZONES = [
   { from: 1.5, to: 2.0, color: tokens.statusDangerStrong },
 ];
 
-/** Sport identification colors — Tailwind classes */
-export const sportColorClass: Record<string, string> = {
+export const sportColorClass: Record<Sport, string> = {
   running: 'bg-sport-running-muted text-sport-running',
   cycling: 'bg-sport-cycling-muted text-sport-cycling',
 };

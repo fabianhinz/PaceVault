@@ -41,3 +41,5 @@ export const geoAccuracyFill: [number, number, number, number] = [255, 255, 255,
 export const geoAccuracyLine: [number, number, number, number] = [255, 255, 255, 38];
 export const geoDotFill: [number, number, number, number] = [80, 140, 255, 255];
 export const geoDotLine: [number, number, number, number] = [255, 255, 255, 255];
+
+export const HIGHLIGHT_TRANSITIONS = { getWidth: 300, getColor: 300 };

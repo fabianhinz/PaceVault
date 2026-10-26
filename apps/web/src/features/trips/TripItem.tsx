@@ -1,26 +1,31 @@
-import { useNavigate } from 'react-router-dom';
-import { Card } from '@pacevault/ui/components/Card.tsx';
+import type { FC } from 'react';
+import { usePageRouting } from '@/routing/usePageRouting.ts';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
 import type { Trip } from '@/store/trips.ts';
 import { TripHeader } from './TripHeader.tsx';
 
-export const TripItem = (props: { trip: Trip }) => {
-  const navigate = useNavigate();
+interface TripItemProps {
+  trip: Trip;
+}
+
+export const TripItem: FC<TripItemProps> = (props) => {
+  const pageRouting = usePageRouting();
 
   return (
-    <Card
+    <PvCard
       role="button"
       tabIndex={0}
       aria-label={props.trip.name}
-      onClick={() => navigate(`/trips/${props.trip.id}`)}
+      onClick={() => pageRouting.open({ page: 'tripDetail', params: { tripId: props.trip.id } })}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          navigate(`/trips/${props.trip.id}`);
+          pageRouting.open({ page: 'tripDetail', params: { tripId: props.trip.id } });
         }
       }}
       className="cursor-pointer hover:bg-white/10"
     >
       <TripHeader trip={props.trip} />
-    </Card>
+    </PvCard>
   );
 };

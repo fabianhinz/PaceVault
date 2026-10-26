@@ -12,7 +12,7 @@ const trkpt = (lat: number, lon: number, ele?: number): string => {
   return `<trkpt lat="${lat}" lon="${lon}"/>`;
 };
 
-describe('parseGpx', () => {
+describe(parseGpx.name, () => {
   it('parses track points with elevation and name', () => {
     const result = parseGpx(
       gpx(

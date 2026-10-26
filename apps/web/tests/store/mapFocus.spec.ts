@@ -1,21 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { useMapControlsStore } from '@/store/mapControls.ts';
+import { INITIAL_MAP_FOCUS_STORE_STATE, useMapFocusStore } from '@/store/mapFocus.ts';
+import { INITIAL_MAP_CONTROLS_STORE_STATE, useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 
 describe('useMapFocusStore', () => {
   beforeEach(() => {
-    useMapFocusStore.setState({
-      openedSessionId: null,
-      hoveredSessionId: null,
-      hoveredPoint: null,
-      pickCircle: null,
-    });
-    useMapControlsStore.setState({
-      trackColorMode: 'sport',
-      selectedLapIndex: null,
-      hoveredLapIndex: null,
-    });
+    useMapFocusStore.setState(INITIAL_MAP_FOCUS_STORE_STATE);
+    useMapControlsStore.setState(INITIAL_MAP_CONTROLS_STORE_STATE);
   });
 
   it('defaults openedSessionId to null', () => {
@@ -72,8 +63,8 @@ describe('useMapFocusStore', () => {
 
   it('opening another session keeps color by and laps preferences but clears the lap selection', () => {
     useMapFocusStore.getState().setOpenedSession('first');
-    useMapPreferencesStore.getState().setSessionColorMode('running', 'hr');
-    useMapPreferencesStore.getState().setSessionSplitDistance('running', 2500);
+    useMapPreferencesStore.getState().setSessionColorMode({ sport: 'running', mode: 'hr' });
+    useMapPreferencesStore.getState().setSessionSplitDistance({ sport: 'running', metres: 2500 });
     useMapControlsStore.getState().selectLap(3);
     useMapFocusStore.getState().setOpenedSession('first');
     expect(useMapControlsStore.getState().selectedLapIndex).toBe(3);

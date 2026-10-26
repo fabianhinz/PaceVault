@@ -1,5 +1,5 @@
 import { useMemo, type FC } from 'react';
-import type { LapSpan } from '@/lib/lapRanges.ts';
+import type { LapSpan } from '@/lib/laps.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapTerrainEffect } from './hooks/useMapTerrainEffect.ts';
 import { useTerrainLineEffect } from './hooks/useTerrainLineEffect.ts';
@@ -23,7 +23,13 @@ const SESSION_LINE_WIDTH = {
   selectedMinPixels: 5,
 };
 
-const sessionLineBreaks = (detailPath: DetailPath | null, spans: LapSpan[] | undefined) => {
+const sessionLineBreaks = ({
+  detailPath,
+  spans,
+}: {
+  detailPath: DetailPath | null;
+  spans: LapSpan[] | undefined;
+}) => {
   if (detailPath === null || spans === undefined) return [];
   return lapVertexBreaks({ detailPath, spans });
 };
@@ -39,7 +45,12 @@ export const SessionTerrain: FC<SessionTerrainProps> = (props) => {
   const path = props.detailPath?.path ?? NO_PATH;
   const colors = props.detailPath?.color ?? NO_COLORS;
   const runs = useMemo(
-    () => terrainLineRuns({ path, colors, breaks: sessionLineBreaks(props.detailPath, spans) }),
+    () =>
+      terrainLineRuns({
+        path,
+        colors,
+        breaks: sessionLineBreaks({ detailPath: props.detailPath, spans }),
+      }),
     [path, colors, props.detailPath, spans],
   );
 

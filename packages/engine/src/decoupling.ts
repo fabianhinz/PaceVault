@@ -1,8 +1,8 @@
 import type { SessionRecord, Sport } from './types.ts';
-import { windowedGradients } from './gradient.ts';
-import { activeSeconds, gradeAdjustedPaceFactor, isMovingPair } from './normalize.ts';
+import { activeSeconds, isMovingPair } from './recordPairs.ts';
+import { gradeAdjustedPaceFactor } from './normalizedEffort.ts';
 
-export type DecouplingRatio = 'powerHr' | 'gapHr' | 'speedHr';
+type DecouplingRatio = 'powerHr' | 'gapHr' | 'speedHr';
 
 export interface Decoupling {
   ratio: DecouplingRatio;
@@ -11,14 +11,8 @@ export interface Decoupling {
   pct: number;
 }
 
-/** @see [Friel-Decoupling] */
-export const DECOUPLING_WELL_PACED_PCT = 5;
-export const DECOUPLING_SCALE_PCT = 10;
-export const DECOUPLING_MIN_SECONDS = 3600;
-export const MIN_GRADIENT_COVERAGE = 0.9;
-
 interface CountedInterval {
-  seconds: number;
+  durationSec: number;
   output: number;
   hr: number;
 }
@@ -27,57 +21,66 @@ interface RunInterval extends CountedInterval {
   gradient: number | undefined;
 }
 
+/** @see [Friel-Decoupling] */
+export const DECOUPLING_WELL_PACED_PCT = 5;
+export const DECOUPLING_SCALE_PCT = 10;
+const DECOUPLING_MIN_SEC = 3600;
+const MIN_GRADIENT_COVERAGE = 0.9;
+
 const rideIntervals = (records: SessionRecord[]): CountedInterval[] => {
   const intervals: CountedInterval[] = [];
   for (let i = 1; i < records.length; i++) {
     const previous = records[i - 1];
     const current = records[i];
     if (!previous || current?.hr === undefined || current.power === undefined) continue;
-    const seconds = activeSeconds(previous, current);
-    if (seconds === 0) continue;
-    intervals.push({ seconds, output: current.power, hr: current.hr });
+    const durationSec = activeSeconds({ previous, current });
+    if (durationSec === 0) continue;
+    intervals.push({ durationSec, output: current.power, hr: current.hr });
   }
   return intervals;
 };
 
-const runIntervals = (
-  records: SessionRecord[],
-  gradients: Array<number | undefined>,
-): { ratio: DecouplingRatio; intervals: CountedInterval[] } => {
+const runIntervals = ({
+  records,
+  gradients,
+}: {
+  records: SessionRecord[];
+  gradients: Array<number | undefined>;
+}): { ratio: DecouplingRatio; intervals: CountedInterval[] } => {
   const candidates: RunInterval[] = [];
   for (let i = 1; i < records.length; i++) {
     const previous = records[i - 1];
     const current = records[i];
     if (!previous || current?.hr === undefined) continue;
     if (previous.distance === undefined || current.distance === undefined) continue;
-    if (!isMovingPair(previous, current)) continue;
-    const dx = current.distance - previous.distance;
-    if (dx < 0) continue;
-    const seconds = current.timestamp - previous.timestamp;
+    if (!isMovingPair({ previous, current })) continue;
+    const distanceDeltaMeters = current.distance - previous.distance;
+    if (distanceDeltaMeters < 0) continue;
+    const durationSec = current.timestamp - previous.timestamp;
     candidates.push({
-      seconds,
-      output: (dx / seconds) * 60,
+      durationSec,
+      output: (distanceDeltaMeters / durationSec) * 60,
       hr: current.hr,
       gradient: gradients[i],
     });
   }
 
-  const totalSeconds = candidates.reduce((sum, c) => sum + c.seconds, 0);
-  const gradedSeconds = candidates.reduce((sum, c) => {
-    if (c.gradient === undefined) return sum;
-    return sum + c.seconds;
+  const totalSec = candidates.reduce((sum, candidate) => sum + candidate.durationSec, 0);
+  const gradedSec = candidates.reduce((sum, candidate) => {
+    if (candidate.gradient === undefined) return sum;
+    return sum + candidate.durationSec;
   }, 0);
-  if (totalSeconds === 0 || gradedSeconds / totalSeconds < MIN_GRADIENT_COVERAGE) {
+  if (totalSec === 0 || gradedSec / totalSec < MIN_GRADIENT_COVERAGE) {
     return { ratio: 'speedHr', intervals: candidates };
   }
 
   const intervals: CountedInterval[] = [];
-  for (const c of candidates) {
-    if (c.gradient === undefined) continue;
+  for (const candidate of candidates) {
+    if (candidate.gradient === undefined) continue;
     intervals.push({
-      seconds: c.seconds,
-      output: c.output * gradeAdjustedPaceFactor(c.gradient),
-      hr: c.hr,
+      durationSec: candidate.durationSec,
+      output: candidate.output * gradeAdjustedPaceFactor(candidate.gradient),
+      hr: candidate.hr,
     });
   }
   return { ratio: 'gapHr', intervals };
@@ -87,46 +90,72 @@ const halfRatio = (intervals: CountedInterval[]): number | null => {
   let output = 0;
   let hr = 0;
   for (const interval of intervals) {
-    output += interval.output * interval.seconds;
-    hr += interval.hr * interval.seconds;
+    output += interval.output * interval.durationSec;
+    hr += interval.hr * interval.durationSec;
   }
   if (hr <= 0) return null;
   return output / hr;
 };
 
-/** @see [Friel-Decoupling], [Strava2017] */
-export const aerobicDecoupling = (
-  records: SessionRecord[],
-  sport: Sport,
-  gradients: Array<number | undefined> = windowedGradients(records),
-): Decoupling | undefined | null => {
-  let ratio: DecouplingRatio = 'powerHr';
-  let intervals: CountedInterval[] = [];
-  if (sport === 'cycling') {
-    intervals = rideIntervals(records);
-  } else {
-    const run = runIntervals(records, gradients);
-    ratio = run.ratio;
-    intervals = run.intervals;
+const sportIntervals = ({
+  records,
+  sport,
+  gradients,
+}: {
+  records: SessionRecord[];
+  sport: Sport;
+  gradients: Array<number | undefined>;
+}): { ratio: DecouplingRatio; intervals: CountedInterval[] } => {
+  switch (sport) {
+    case 'cycling':
+      return { ratio: 'powerHr', intervals: rideIntervals(records) };
+    case 'running':
+      return runIntervals({ records, gradients });
   }
+};
 
-  const totalSeconds = intervals.reduce((sum, interval) => sum + interval.seconds, 0);
-  if (totalSeconds < DECOUPLING_MIN_SECONDS) return undefined;
-
+const splitHalves = ({
+  intervals,
+  totalSec,
+}: {
+  intervals: CountedInterval[];
+  totalSec: number;
+}): { first: CountedInterval[]; second: CountedInterval[] } => {
   const first: CountedInterval[] = [];
   const second: CountedInterval[] = [];
-  let counted = 0;
+  let countedSec = 0;
   for (const interval of intervals) {
-    counted += interval.seconds;
-    if (counted <= totalSeconds / 2) {
+    countedSec += interval.durationSec;
+    if (countedSec <= totalSec / 2) {
       first.push(interval);
     } else {
       second.push(interval);
     }
   }
+  return { first, second };
+};
 
-  const firstHalf = halfRatio(first);
-  const secondHalf = halfRatio(second);
+/** @see [Friel-Decoupling], [Strava2017] */
+export const aerobicDecoupling = ({
+  records,
+  sport,
+  gradients,
+}: {
+  records: SessionRecord[];
+  sport: Sport;
+  gradients: Array<number | undefined>;
+}): Decoupling | undefined | null => {
+  const sportSeries = sportIntervals({ records, sport, gradients });
+  const ratio = sportSeries.ratio;
+  const intervals = sportSeries.intervals;
+
+  const totalSec = intervals.reduce((sum, interval) => sum + interval.durationSec, 0);
+  if (totalSec < DECOUPLING_MIN_SEC) return undefined;
+
+  const halves = splitHalves({ intervals, totalSec });
+
+  const firstHalf = halfRatio(halves.first);
+  const secondHalf = halfRatio(halves.second);
   if (firstHalf === null || secondHalf === null || firstHalf <= 0) return null;
 
   return {

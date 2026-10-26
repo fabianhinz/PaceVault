@@ -12,7 +12,7 @@
 
 ## Adding a key
 
-1. Add the key to `messages/en.json`, then the same key with the same placeholders to `messages/de.json`.
+1. Add the key to `messages/en.json`, then the same key with the same placeholders to `messages/de.json`. Keys are flat snake_case (`ui_color_by_reason_no_gps`, never a camelCase segment), one level, prefixed by the surface that shows the copy (`ui_`, `toast_`, `exp_`, `coach_`), never by the package that computes the value. A count-dependent message is a pair `<key>_one` / `<key>_other` (`ui_laps_pill_one`, `ui_laps_pill_other`), never `_count` or `_plural`. A label with the same role and the same text in every locale is one key (`ui_btn_close`), not one key per screen.
 2. Use it as `m.key_name()` with `import { m } from '@pacevault/i18n/messages.js'`.
 
 ## Translation rules

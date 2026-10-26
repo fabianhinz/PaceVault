@@ -24,13 +24,25 @@ export default defineConfig({
     ],
   },
   lint: {
-    plugins: ['oxc', 'typescript', 'unicorn', 'react'],
+    plugins: ['oxc', 'typescript', 'unicorn', 'react', 'import'],
     categories: {
       correctness: 'warn',
     },
     rules: {
-      'typescript/no-floating-promises': 'off',
+      'typescript/no-floating-promises': 'error',
+      'typescript/no-misused-promises': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
+      'func-style': ['error', 'expression'],
+      'import/no-relative-parent-imports': 'error',
+      'no-restricted-imports': [
+        'error',
+        { paths: [{ name: 'react-router-dom', importNames: ['Link', 'NavLink'] }] },
+      ],
+      'typescript/switch-exhaustiveness-check': [
+        'error',
+        { considerDefaultExhaustiveForUnions: false },
+      ],
+      'typescript/only-throw-error': 'error',
     },
     ignorePatterns: [
       '**/dist',
@@ -55,7 +67,7 @@ export default defineConfig({
             },
           ],
           'react-hooks/rules-of-hooks': 'error',
-          'react-hooks/exhaustive-deps': 'warn',
+          'react-hooks/exhaustive-deps': 'error',
           'react/only-export-components': [
             'error',
             {
@@ -68,6 +80,49 @@ export default defineConfig({
           es2022: true,
           browser: true,
         },
+      },
+      {
+        files: ['**/*Provider.tsx'],
+        rules: {
+          'react/only-export-components': [
+            'error',
+            {
+              allowConstantExport: true,
+              allowExportNames: [
+                'useSheetScrollContext',
+                'useSheetAboveContext',
+                'useSheetPeekContext',
+                'useUnstableSheetScrollContext',
+                'useUnstableSheetAboveContext',
+                'useUnstableSheetPeekContext',
+              ],
+            },
+          ],
+        },
+      },
+      {
+        files: [
+          'apps/web/src/**/use*.ts',
+          'apps/web/src/**/use*.tsx',
+          'packages/ui/src/**/use*.ts',
+          'packages/ui/src/**/use*.tsx',
+        ],
+        rules: {
+          'typescript/explicit-module-boundary-types': 'error',
+        },
+      },
+      {
+        files: [
+          'packages/**',
+          'tools/docs/**',
+          'tools/workbench/site/astro.config.mjs',
+          'tools/workbench/site/src/lib/devPlugin.ts',
+        ],
+        rules: { 'import/no-relative-parent-imports': 'off' },
+      },
+      {
+        files: ['apps/web/tests/**'],
+        rules: { 'typescript/no-unsafe-type-assertion': 'error' },
       },
     ],
     options: {

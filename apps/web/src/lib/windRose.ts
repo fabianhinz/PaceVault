@@ -16,8 +16,8 @@ export const windRoseShares = (relative: Array<RelativeWind | undefined>): numbe
     if (entry === undefined) continue;
     const clockwise = (entry.angle + 360) % 360;
     const sector = Math.round(clockwise / WIND_ROSE_SECTOR_DEG) % WIND_ROSE_SECTORS;
-    seconds[sector] = (seconds[sector] ?? 0) + entry.seconds;
-    total += entry.seconds;
+    seconds[sector] = (seconds[sector] ?? 0) + entry.durationSec;
+    total += entry.durationSec;
   }
   if (total <= 0) return null;
   return seconds.map((value) => value / total);

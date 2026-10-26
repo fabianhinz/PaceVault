@@ -46,10 +46,13 @@ interface SessionsState {
    * HR loads were computed with; `null` until the first records recompute.
    */
   appliedHrSignature: string | null;
-  addSessions: (
-    sessions: Omit<TrainingSession, 'createdAt' | 'isNew'>[],
-    options?: { markNew?: boolean },
-  ) => void;
+  addSessions: ({
+    sessions,
+    markNew,
+  }: {
+    sessions: Omit<TrainingSession, 'createdAt' | 'isNew'>[];
+    markNew?: boolean;
+  }) => void;
   deleteSession: (id: string) => void;
   commitReprocessedSessions: (sessions: TrainingSession[]) => void;
   applyRecomputedTrainingLoad: (changes: RecomputedTrainingLoad[]) => void;
@@ -58,27 +61,32 @@ interface SessionsState {
   clearAll: () => void;
 }
 
-const canPersistSessions = (): boolean => {
+const isSessionsWriteAllowed = (): boolean => {
   if (useSessionReprocessingStore.getState().phase === 'running') return true;
   return !useSessionsStore.getState().sessions.some(isSessionOutdated);
 };
 
 export const guardedSessionsStorage = createGuardedSessionsStorage({
-  canWrite: canPersistSessions,
+  isWriteAllowed: isSessionsWriteAllowed,
   onNewerVersion: () => useSessionReprocessingStore.getState().markNewerVersionInOtherTab(),
 });
+
+export const INITIAL_SESSIONS_STORE_STATE: Pick<SessionsState, 'sessions' | 'appliedHrSignature'> =
+  {
+    sessions: [],
+    appliedHrSignature: null,
+  };
 
 export const useSessionsStore = create<SessionsState>()(
   immer(
     persist(
       (set) => ({
-        sessions: [],
-        appliedHrSignature: null,
-        addSessions: (sessionsData, options) => {
-          const newSessions = sessionsData.map((s) => ({
+        ...INITIAL_SESSIONS_STORE_STATE,
+        addSessions: ({ sessions, markNew }) => {
+          const newSessions = sessions.map((s) => ({
             ...s,
             createdAt: Date.now(),
-            isNew: options?.markNew === true,
+            isNew: markNew === true,
           }));
           set((draft) => {
             draft.sessions.push(...newSessions);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { bucketSeries } from '@/lib/chartBuckets.ts';
+import { bucketSeries } from '@/lib/chartData.ts';
 
 interface Sample {
   t: number;
@@ -27,7 +27,7 @@ const bucket = (rows: Sample[], targetRows = 100, range?: { from: number; to: nu
     targetRows,
   });
 
-describe('bucketSeries', () => {
+describe(bucketSeries.name, () => {
   it('keeps a single-sample spike that every-nth sampling would drop', () => {
     const rows = series(3600, (i) => ({ t: i, power: i === 1801 ? 391 : 200 }));
     const out = bucket(rows);
@@ -37,16 +37,16 @@ describe('bucketSeries', () => {
   it('puts every channel on the same grid', () => {
     const rows = series(1000, (i) => ({ t: i, power: 200, hr: 140 }));
     const out = bucket(rows);
-    expect(out.length).toBe(100);
+    expect(out).toHaveLength(100);
     const times = out.map((r) => r.time);
     expect([...times].sort((a, b) => a - b)).toEqual(times);
-    expect(out.every((r) => 'power' in r && 'hr' in r)).toBe(true);
+    expect(out.filter((r) => !('power' in r && 'hr' in r))).toEqual([]);
   });
 
   it('draws a channel recorded every other sample without gaps', () => {
     const rows = series(1000, (i) => ({ t: i, hr: 140, power: i % 2 === 0 ? 200 : undefined }));
     const out = bucket(rows, 2000);
-    expect(out.some((r) => r.power === null)).toBe(false);
+    expect(out.filter((r) => r.power === null)).toEqual([]);
   });
 
   it('produces no gaps for smart recording with varying 1–8 s intervals, also when zoomed', () => {
@@ -56,14 +56,14 @@ describe('bucketSeries', () => {
       t += intervals[(i * 5) % intervals.length] ?? 1;
       return { t, hr: 140 };
     });
-    expect(bucket(rows, 1500).some((r) => r.hr === null)).toBe(false);
-    expect(bucket(rows, 1500, { from: 1000, to: 2000 }).some((r) => r.hr === null)).toBe(false);
+    expect(bucket(rows, 1500).filter((r) => r.hr === null)).toEqual([]);
+    expect(bucket(rows, 1500, { from: 1000, to: 2000 }).filter((r) => r.hr === null)).toEqual([]);
   });
 
   it('produces no gaps for regular but sparse samples', () => {
     const rows = series(200, (i) => ({ t: i * 20, hr: 140 }));
     const out = bucket(rows, 2000);
-    expect(out.some((r) => r.hr === null)).toBe(false);
+    expect(out.filter((r) => r.hr === null)).toEqual([]);
   });
 
   it('turns a pause into null rows of the matching width', () => {
@@ -79,8 +79,8 @@ describe('bucketSeries', () => {
   it('keeps a recorded 0 and leaves pace missing at speed 0', () => {
     const rows = series(100, (i) => ({ t: i, power: 0, speed: 0 }));
     const out = bucket(rows);
-    expect(out.every((r) => r.power === 0)).toBe(true);
-    expect(out.every((r) => r.pace === null)).toBe(true);
+    expect(out.filter((r) => !(r.power === 0))).toEqual([]);
+    expect(out.filter((r) => !(r.pace === null))).toEqual([]);
   });
 
   it('writes min and max in the order they occurred', () => {
@@ -123,8 +123,8 @@ describe('bucketSeries', () => {
       range: { from: 4, to: 9 },
       targetRows: 100,
     });
-    expect(out.every((r) => r.delta === null || r.delta === 10)).toBe(true);
-    expect(out.some((r) => r.delta === 10)).toBe(true);
+    expect(out.filter((r) => !(r.delta === null || r.delta === 10))).toEqual([]);
+    expect(out.filter((r) => r.delta === 10)).not.toEqual([]);
   });
 
   it('returns no rows for empty input', () => {

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { intervalsSyncWindowOldest } from '@/lib/intervalsSyncWindow.ts';
-import { makeSession } from '@pacevault/testing/sessions.ts';
+import { intervalsSyncWindowOldest } from '@/lib/intervals.ts';
+import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 
 const intervals = (date: number) =>
-  makeSession({ date, source: { kind: 'intervals', activityId: `i${date}` } });
+  createMockTrainingSession({ date, source: { kind: 'intervals', activityId: `i${date}` } });
 
-describe('intervalsSyncWindowOldest', () => {
+describe(intervalsSyncWindowOldest.name, () => {
   it('starts 14 days before the newest intervals.icu session, as a local date', () => {
     const sessions = [
       intervals(new Date(2026, 8, 1, 10).getTime()),
@@ -18,8 +18,14 @@ describe('intervalsSyncWindowOldest', () => {
   it('ignores newer sessions from other sources', () => {
     const sessions = [
       intervals(new Date(2026, 8, 20, 10).getTime()),
-      makeSession({ date: new Date(2026, 9, 30, 10).getTime(), source: { kind: 'file' } }),
-      makeSession({ date: new Date(2026, 10, 30, 10).getTime(), source: { kind: 'demo' } }),
+      createMockTrainingSession({
+        date: new Date(2026, 9, 30, 10).getTime(),
+        source: { kind: 'file' },
+      }),
+      createMockTrainingSession({
+        date: new Date(2026, 10, 30, 10).getTime(),
+        source: { kind: 'demo' },
+      }),
     ];
     expect(intervalsSyncWindowOldest(sessions)).toBe('2026-09-06');
   });

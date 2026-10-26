@@ -1,16 +1,18 @@
 import { useMemo } from 'react';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-import { computeMetrics } from '@pacevault/engine/metrics.ts';
+import { dailyMetricsFromSessions } from '@pacevault/engine/metrics.ts';
 import { toDateString } from '@/lib/formatters.ts';
 import { emptyCriteria, matchesFilters } from '@/lib/savedFilters.ts';
 import type { DailyMetrics, TrainingSession } from '@pacevault/engine/types.ts';
 
-export const useFilteredMetrics = (): {
+export interface FilteredMetrics {
   history: DailyMetrics[];
   sportTss: Map<string, Record<string, number>>;
   sessions: TrainingSession[];
-} => {
+}
+
+export const useFilteredMetrics = (): FilteredMetrics => {
   const sessions = useSessionsStore((s) => s.sessions);
   const activeFilter = useFiltersStore((s) => s.activeFilter);
 
@@ -21,11 +23,15 @@ export const useFilteredMetrics = (): {
         return true;
       }
       if (s.isPlanned) {
-        return matchesFilters(s, { ...emptyCriteria(), sport: activeFilter.sport }, now);
+        return matchesFilters({
+          session: s,
+          criteria: { ...emptyCriteria(), sport: activeFilter.sport },
+          now,
+        });
       }
-      return matchesFilters(s, { ...activeFilter, time: null }, now);
+      return matchesFilters({ session: s, criteria: { ...activeFilter, time: null }, now });
     });
-    const history = computeMetrics(filtered);
+    const history = dailyMetricsFromSessions({ sessions: filtered });
     const completed = filtered.filter((s) => !s.isPlanned);
     const sportTss = new Map<string, Record<string, number>>();
     for (const s of completed) {

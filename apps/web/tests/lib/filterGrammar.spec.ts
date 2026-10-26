@@ -10,9 +10,9 @@ import {
 import type { Sport } from '@pacevault/engine/types.ts';
 import { resolveFilterRange } from '@/lib/timeRange.ts';
 import { overwriteGetLocale } from '@pacevault/i18n/runtime.js';
+import { MS_PER_DAY } from '@pacevault/engine/time.ts';
 
 const NOW = new Date(2026, 9, 8, 18, 0).getTime();
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 const session = (
   sport: Sport,
@@ -28,10 +28,10 @@ const criteria = (overrides: Partial<FilterCriteria>): FilterCriteria => ({
   ...overrides,
 });
 
-const interpret = (text: string) => interpretFilterText(text, NOW);
+const interpret = (text: string) => interpretFilterText({ text, now: NOW });
 const understood = (text: string) => interpret(text)[0] ?? null;
 
-describe('interpretFilterText', () => {
+describe(interpretFilterText.name, () => {
   it('reads a German sport with a relative range', () => {
     expect(interpret('laufen 30 tage')).toEqual([
       criteria({ sport: 'running', time: { kind: 'relative', amount: 30, unit: 'day' } }),
@@ -135,11 +135,15 @@ describe('interpretFilterText', () => {
         criteria({ time: { kind: 'calendar', unit: 'month', ago: 0 } }),
       );
     }
-    expect(resolveFilterRange({ kind: 'calendar', unit: 'week', ago: 0 }, NOW)).toEqual({
+    expect(
+      resolveFilterRange({ time: { kind: 'calendar', unit: 'week', ago: 0 }, now: NOW }),
+    ).toEqual({
       from: new Date(2026, 9, 5).getTime(),
       to: new Date(2026, 9, 8, 23, 59, 59, 999).getTime(),
     });
-    expect(resolveFilterRange({ kind: 'calendar', unit: 'day', ago: 1 }, NOW)).toEqual({
+    expect(
+      resolveFilterRange({ time: { kind: 'calendar', unit: 'day', ago: 1 }, now: NOW }),
+    ).toEqual({
       from: new Date(2026, 9, 7).getTime(),
       to: new Date(2026, 9, 7, 23, 59, 59, 999).getTime(),
     });
@@ -158,7 +162,7 @@ describe('interpretFilterText', () => {
     expect(understood('since 2025')).toEqual(
       criteria({ time: { kind: 'since', from: '2025-01-01' } }),
     );
-    expect(resolveFilterRange({ kind: 'since', from: '2026-03-01' }, NOW)).toEqual({
+    expect(resolveFilterRange({ time: { kind: 'since', from: '2026-03-01' }, now: NOW })).toEqual({
       from: new Date(2026, 2, 1).getTime(),
       to: new Date(2026, 9, 8, 23, 59, 59, 999).getTime(),
     });
@@ -232,12 +236,14 @@ describe('interpretFilterText', () => {
 
   describe('quoted text', () => {
     const NAMED = [
-      session('cycling', NOW - 2 * DAY_MS, 50000, 7200, 400, 'Isar Loop'),
-      session('running', NOW - 10 * DAY_MS, 12000, 4200, 20, 'Interval Karlsruhe Rheinhafen'),
-      session('running', NOW - 12 * DAY_MS, 7000, 2400, 30, 'Zürich Seerunde'),
+      session('cycling', NOW - 2 * MS_PER_DAY, 50000, 7200, 400, 'Isar Loop'),
+      session('running', NOW - 10 * MS_PER_DAY, 12000, 4200, 20, 'Interval Karlsruhe Rheinhafen'),
+      session('running', NOW - 12 * MS_PER_DAY, 7000, 2400, 30, 'Zürich Seerunde'),
     ];
     const matchingNames = (text: string) =>
-      NAMED.filter((s) => matchesFilters(s, understood(text), NOW)).map((s) => s.name);
+      NAMED.filter((s) => matchesFilters({ session: s, criteria: understood(text), now: NOW })).map(
+        (s) => s.name,
+      );
 
     it('searches the session name with single, double and typographic quotes', () => {
       for (const text of [

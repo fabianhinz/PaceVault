@@ -6,11 +6,15 @@ export const TRACK_SMOOTHING_SEC = {
   wind: 10,
 } as const;
 
-export const rollingMean = (
-  times: number[],
-  values: Array<number | undefined>,
-  windowSec: number,
-): Array<number | undefined> => {
+export const rollingMean = ({
+  times,
+  values,
+  windowSec,
+}: {
+  times: number[];
+  values: Array<number | undefined>;
+  windowSec: number;
+}): Array<number | undefined> => {
   const half = windowSec / 2;
   const result: Array<number | undefined> = [];
   let start = 0;

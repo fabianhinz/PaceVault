@@ -1,11 +1,14 @@
+import type { FC } from 'react';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import type { StudioRouteColor } from '@/store/studio.ts';
 import { routeColorOrder, routeColors } from './routeColors.ts';
 
-export const StudioColorPicker = (props: {
+interface StudioColorPickerProps {
   value: StudioRouteColor;
   onChange: (color: StudioRouteColor) => void;
-}) => {
+}
+
+export const StudioColorPicker: FC<StudioColorPickerProps> = (props) => {
   return (
     <div role="radiogroup" className="flex gap-3">
       {routeColorOrder.map((color) => {

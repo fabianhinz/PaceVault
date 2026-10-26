@@ -1,25 +1,15 @@
-import type { ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { ArrowUp, Cloud, Droplets, Thermometer, Wind, type LucideIcon } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
-import { getLocale } from '@pacevault/i18n/runtime.js';
 import { cn } from '@pacevault/ui/lib/cn.ts';
-import { tokens } from '@pacevault/ui/lib/tokens.ts';
 import {
   wmoToPrecipitationMark,
   type PrecipitationMark,
-  type PrecipitationType,
   type WeatherSnapshot,
 } from '@/lib/weather.ts';
+import { formatDate, formatNumber, formatUnit } from '@/lib/formatters.ts';
 import { weatherIcon, weatherLabel } from './weatherConditions.ts';
-
-const hourFmt = new Intl.DateTimeFormat(getLocale(), { hour: 'numeric', minute: '2-digit' });
-const integerFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });
-const celsiusFmt = new Intl.NumberFormat(getLocale(), {
-  style: 'unit',
-  unit: 'celsius',
-  maximumFractionDigits: 0,
-});
-const percentFmt = new Intl.NumberFormat(getLocale(), { style: 'percent' });
+import { PrecipitationDots } from '@/features/sessions/session/PrecipitationDots.tsx';
 
 interface Row {
   key: string;
@@ -29,49 +19,19 @@ interface Row {
   cell: (snapshot: WeatherSnapshot) => ReactNode;
 }
 
-const cellClass = 'h-8 min-w-[50px] whitespace-nowrap px-1 text-center';
+const cellClass = 'h-8 min-w-50px whitespace-nowrap px-1 text-center';
 
-const PRECIPITATION_COLORS: Record<PrecipitationType, string> = {
-  rain: tokens.precipRain,
-  freezing: tokens.precipFreezing,
-  snow: tokens.precipSnow,
-  thunderstorm: tokens.precipThunderstorm,
-};
-
-const PrecipitationDots = (props: { mark: PrecipitationMark }) => {
-  const dots = props.mark.dots;
-  if (dots === undefined) {
-    return (
-      <svg width={12} height={6} viewBox="0 0 12 6" aria-hidden className="stroke-text-tertiary">
-        <path d="M0 3h5M7 3h5" strokeWidth={1.5} />
-      </svg>
-    );
-  }
-  if (dots === 0 || props.mark.type === undefined) return null;
-  const color = PRECIPITATION_COLORS[props.mark.type];
-  return (
-    <svg width={14} height={4} viewBox="0 0 14 4" aria-hidden>
-      {[0, 1, 2].map((index) => (
-        <circle
-          key={index}
-          cx={2 + index * 5}
-          cy={2}
-          r={1.6}
-          fill={index < dots ? color : undefined}
-          className={cn(index >= dots && 'fill-white/15')}
-        />
-      ))}
-    </svg>
-  );
-};
-
-const skyCellLabel = (weatherCode: number, mark: PrecipitationMark) => {
+const skyCellLabel = ({ weatherCode, mark }: { weatherCode: number; mark: PrecipitationMark }) => {
   const label = weatherLabel(weatherCode);
   if (mark.dots === undefined) return m.ui_weather_intensity_unknown({ condition: label });
   return label;
 };
 
-export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
+interface WeatherHourlyTableProps {
+  snapshots: WeatherSnapshot[];
+}
+
+export const WeatherHourlyTable: FC<WeatherHourlyTableProps> = (props) => {
   const rows: Row[] = [
     {
       key: 'weather',
@@ -80,12 +40,12 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
       cell: (snapshot) => {
         const Icon = weatherIcon(snapshot.weatherCode);
         const mark = wmoToPrecipitationMark(snapshot.weatherCode);
-        const label = skyCellLabel(snapshot.weatherCode, mark);
+        const label = skyCellLabel({ weatherCode: snapshot.weatherCode, mark });
         return (
           <span
             role="img"
             aria-label={label}
-            className="inline-flex flex-col items-center gap-[3px] align-middle"
+            className="inline-flex flex-col items-center gap-3px align-middle"
           >
             <Icon size={16} aria-hidden className="block" />
             <span className="flex h-1.5 items-center justify-center">
@@ -99,21 +59,21 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
       key: 'temperature',
       icon: Thermometer,
       label: m.ui_weather_row_temperature(),
-      cell: (snapshot) => celsiusFmt.format(snapshot.temperature),
+      cell: (snapshot) => formatUnit(snapshot.temperature, 'celsius'),
     },
     {
       key: 'feels-like',
       icon: Thermometer,
       label: m.ui_weather_row_feels_like(),
       cell: (snapshot) => (
-        <span className="text-text-tertiary">{celsiusFmt.format(snapshot.feelsLike)}</span>
+        <span className="text-text-tertiary">{formatUnit(snapshot.feelsLike, 'celsius')}</span>
       ),
     },
     {
       key: 'humidity',
       icon: Droplets,
       label: m.ui_weather_row_humidity(),
-      cell: (snapshot) => percentFmt.format(snapshot.humidity / 100),
+      cell: (snapshot) => formatNumber(snapshot.humidity / 100, 'percent'),
     },
     {
       key: 'wind',
@@ -127,7 +87,7 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
             aria-hidden
             style={{ transform: `rotate(${(snapshot.windDirection + 180) % 360}deg)` }}
           />
-          {integerFmt.format(snapshot.windSpeed)}
+          {formatNumber(snapshot.windSpeed)}
         </span>
       ),
     },
@@ -137,7 +97,7 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
       label: m.ui_weather_gusts(),
       unit: 'km/h',
       cell: (snapshot) => (
-        <span className="text-text-tertiary">{integerFmt.format(snapshot.windGusts)}</span>
+        <span className="text-text-tertiary">{formatNumber(snapshot.windGusts)}</span>
       ),
     },
   ];
@@ -171,7 +131,7 @@ export const WeatherHourlyTable = (props: { snapshots: WeatherSnapshot[] }) => {
                   scope="col"
                   className={cn(cellClass, 'font-medium text-text-tertiary')}
                 >
-                  {hourFmt.format(snapshot.time)}
+                  {formatDate(snapshot.time, 'hour-minute')}
                 </th>
               ))}
             </tr>

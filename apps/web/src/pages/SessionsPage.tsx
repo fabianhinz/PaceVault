@@ -1,42 +1,47 @@
-import { useSearchParams } from 'react-router-dom';
+import type { FC } from 'react';
+import { useRouterParam } from '@/routing/useRouterParam.ts';
+import { useRouterQuery } from '@/routing/useRouterQuery.ts';
 import { m } from '@pacevault/i18n/messages.js';
 import { SessionList } from '@/features/sessions/SessionList.tsx';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@pacevault/ui/components/Tabs.tsx';
-import { SportsRecords } from '@/features/records/SportsRecords';
+import { PvTabs } from '@pacevault/ui/components/pvTabs/PvTabs.tsx';
+import { PvTabsList } from '@pacevault/ui/components/pvTabs/PvTabsList.tsx';
+import { PvTabsTrigger } from '@pacevault/ui/components/pvTabs/PvTabsTrigger.tsx';
+import { PvTabsContent } from '@pacevault/ui/components/pvTabs/PvTabsContent.tsx';
+import { Records } from '@/features/records/index.tsx';
 import { TripsTab } from '@/features/trips/TripsTab.tsx';
 import { SessionsPeek } from '@/features/sessions/SessionsPeek.tsx';
 
 const validTabs = new Set(['log', 'trips', 'records']);
 
-export const SessionsPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get('tab');
+export const SessionsPage: FC = () => {
+  const rawTab = useRouterParam('tab') ?? null;
+  const routerQuery = useRouterQuery();
   const tab = rawTab && validTabs.has(rawTab) ? rawTab : 'log';
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    routerQuery.push({ key: 'tab', value });
   };
 
   return (
-    <Tabs value={tab} onValueChange={handleTabChange}>
+    <PvTabs value={tab} onValueChange={handleTabChange}>
       <SessionsPeek />
-      <TabsList>
-        <TabsTrigger value="log">{m.ui_sessions_tab_log()}</TabsTrigger>
-        <TabsTrigger value="trips">{m.ui_sessions_tab_trips()}</TabsTrigger>
-        <TabsTrigger value="records">{m.ui_sessions_tab_records()}</TabsTrigger>
-      </TabsList>
+      <PvTabsList>
+        <PvTabsTrigger value="log">{m.ui_sessions_tab_log()}</PvTabsTrigger>
+        <PvTabsTrigger value="trips">{m.ui_sessions_tab_trips()}</PvTabsTrigger>
+        <PvTabsTrigger value="records">{m.ui_sessions_tab_records()}</PvTabsTrigger>
+      </PvTabsList>
 
-      <TabsContent value="log">
+      <PvTabsContent value="log">
         <SessionList />
-      </TabsContent>
+      </PvTabsContent>
 
-      <TabsContent value="trips">
+      <PvTabsContent value="trips">
         <TripsTab />
-      </TabsContent>
+      </PvTabsContent>
 
-      <TabsContent value="records">
-        <SportsRecords />
-      </TabsContent>
-    </Tabs>
+      <PvTabsContent value="records">
+        <Records />
+      </PvTabsContent>
+    </PvTabs>
   );
 };

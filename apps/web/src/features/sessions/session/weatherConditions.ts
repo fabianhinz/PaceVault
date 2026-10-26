@@ -16,6 +16,7 @@ import {
   type WeatherCondition,
   type WeatherDescription,
 } from '@/lib/weather.ts';
+import type { WindExposure } from '@pacevault/engine/windExposure.ts';
 
 const CONDITION_ICONS: Record<WeatherCondition, LucideIcon> = {
   clear: Sun,
@@ -66,3 +67,24 @@ export const weatherIcon = (weatherCode: number): LucideIcon =>
 
 export const weatherLabel = (weatherCode: number): string =>
   DESCRIPTION_LABELS[wmoToDescription(weatherCode)]();
+
+export const WIND_LEGEND = [
+  {
+    key: 'head',
+    label: m.ui_weather_headwind,
+    mostly: m.ui_weather_wind_mostly_head,
+    pct: (exposure: WindExposure) => exposure.headwindPct,
+  },
+  {
+    key: 'cross',
+    label: m.ui_weather_crosswind,
+    mostly: m.ui_weather_wind_mostly_cross,
+    pct: (exposure: WindExposure) => exposure.crosswindPct,
+  },
+  {
+    key: 'tail',
+    label: m.ui_weather_tailwind,
+    mostly: m.ui_weather_wind_mostly_tail,
+    pct: (exposure: WindExposure) => exposure.tailwindPct,
+  },
+] as const;

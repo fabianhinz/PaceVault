@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useState, type PointerEvent, type FC } from 'react';
+import { useMeasure } from 'react-use';
 import { SPARKLINE_PAD, sparklineDateAt, sparklinePath } from '@/lib/profileHistory.ts';
 
 interface ThresholdSparklineProps {
@@ -10,33 +11,29 @@ interface ThresholdSparklineProps {
   onScrub: (date: number | null) => void;
 }
 
-export const ThresholdSparkline = (props: ThresholdSparklineProps) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [box, setBox] = useState({ width: 0, height: 0 });
+export const ThresholdSparkline: FC<ThresholdSparklineProps> = (props) => {
+  const [ref, box] = useMeasure<HTMLDivElement>();
   const [guideX, setGuideX] = useState<number | null>(null);
 
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    const observer = new ResizeObserver(() => {
-      setBox({ width: element.clientWidth, height: element.clientHeight });
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-
-  const path = sparklinePath(props.points, props.domain, box, props.today);
-  const hasHistory = path.lastDot !== undefined;
+  const path = sparklinePath({
+    points: props.points,
+    domain: props.domain,
+    box,
+    today: props.today,
+  });
+  const historyPresent = path.lastDot !== undefined;
 
   const handleMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!hasHistory || box.width === 0) return;
+    if (!historyPresent || box.width === 0) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const x = Math.max(
       SPARKLINE_PAD,
       Math.min(box.width - SPARKLINE_PAD, event.clientX - rect.left),
     );
     setGuideX(x);
-    props.onScrub(sparklineDateAt(x, props.domain, box.width, props.today));
+    props.onScrub(
+      sparklineDateAt({ x, domain: props.domain, width: box.width, today: props.today }),
+    );
   };
 
   const handleLeave = () => {
@@ -54,32 +51,38 @@ export const ThresholdSparkline = (props: ThresholdSparklineProps) => {
       onPointerMove={handleMove}
       onPointerLeave={handleLeave}
       onClick={(event) => {
-        if (hasHistory) event.stopPropagation();
+        if (historyPresent) event.stopPropagation();
       }}
     >
       {box.width > 0 && (
         <svg width={box.width} height={box.height} className="block overflow-visible" aria-hidden>
-          {!hasHistory && (
+          {!historyPresent && (
             <line
               x1={0}
               x2={box.width}
               y1={box.height - 1}
               y2={box.height - 1}
-              stroke="#ffffff1a"
+              className="stroke-guide-baseline"
               strokeDasharray="2 3"
             />
           )}
-          {hasHistory && (
+          {historyPresent && (
             <>
               {guideX !== null && (
-                <line x1={guideX} x2={guideX} y1={0} y2={box.height} stroke="#ffffff40" />
+                <line
+                  x1={guideX}
+                  x2={guideX}
+                  y1={0}
+                  y2={box.height}
+                  className="stroke-guide-hover"
+                />
               )}
               <line
                 x1={path.todayX}
                 x2={path.todayX}
                 y1={0}
                 y2={box.height}
-                stroke="#ffffff14"
+                className="stroke-guide-today"
                 strokeDasharray="1 2"
               />
               <path

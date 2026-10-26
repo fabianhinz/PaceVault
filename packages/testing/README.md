@@ -1,12 +1,12 @@
 # @pacevault/testing
 
-Test factories shared by the app and the packages: record streams (`records.ts`), GPS records (`gps.ts`) and sessions (`sessions.ts`). Built on `@pacevault/engine` types.
+Test factories shared by the app and the packages: `createMock<Entity>` factories per entity (`sessions.ts`, `records.ts`, `gps.ts`, `personalBests.ts`, `dailyMetrics.ts`, `route.ts`) and record, lap and session series (`series.ts`). Built on `@pacevault/engine` and `@pacevault/gpx` types.
 
 ## Use
 
 ```ts
-import { makeSession } from '@pacevault/testing/sessions.ts';
-import { makeRunningRecords } from '@pacevault/testing/records.ts';
+import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
+import { runningRecordSeries } from '@pacevault/testing/series.ts';
 ```
 
 Engine tests import the same files by relative path (`../../testing/src/sessions.ts`), because this package depends on the engine.

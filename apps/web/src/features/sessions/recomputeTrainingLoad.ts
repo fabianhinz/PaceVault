@@ -1,12 +1,12 @@
 import type { TrainingSession } from '@pacevault/engine/types.ts';
-import type { UserProfile } from '@/types/index.ts';
+import type { UserProfile } from '@/types.ts';
 import {
   sessionStressAt,
   sessionStressFromRecordsAt,
   trainingLoadHrSignature,
   type StoredSessionStress,
 } from '@/lib/sessionStress.ts';
-import { getSessionRecords } from '@/lib/indexeddb.ts';
+import { getSessionRecords } from '@/lib/db.ts';
 import { withExclusiveLock } from '@/lib/webLock.ts';
 import {
   guardedSessionsStorage,
@@ -17,10 +17,13 @@ import { useUserStore } from '@/store/user.ts';
 import { useImportProgressStore } from '@/store/importProgress.ts';
 import { REPROCESS_BATCH_SIZE, SESSION_REPROCESSING_LOCK } from './reprocessSessions.ts';
 
-const changedLoad = (
-  session: TrainingSession,
-  stress: StoredSessionStress,
-): RecomputedTrainingLoad | undefined => {
+const changedLoad = ({
+  session,
+  stress,
+}: {
+  session: TrainingSession;
+  stress: StoredSessionStress;
+}): RecomputedTrainingLoad | undefined => {
   if (
     stress.tss === session.tss &&
     stress.stressMethod === session.stressMethod &&
@@ -32,16 +35,16 @@ const changedLoad = (
 };
 
 /** FTP path: rides with a stored NP; every HR or duration load stays as stored. */
-const scoresFromPower = (session: TrainingSession): boolean =>
+const isPowerScored = (session: TrainingSession): boolean =>
   session.sport === 'cycling' && session.normalizedPower !== undefined;
 
 const powerChanges = (profile: UserProfile): RecomputedTrainingLoad[] => {
   const changes: RecomputedTrainingLoad[] = [];
   for (const session of useSessionsStore.getState().sessions) {
-    if (!scoresFromPower(session)) continue;
-    const stress = sessionStressAt(session, profile);
+    if (!isPowerScored(session)) continue;
+    const stress = sessionStressAt({ session, profile });
     if (stress.stressMethod !== 'tss') continue;
-    const change = changedLoad(session, stress);
+    const change = changedLoad({ session, stress });
     if (change) changes.push(change);
   }
   return changes;
@@ -68,7 +71,10 @@ const recomputeHrLoads = async (profile: UserProfile): Promise<number> => {
     const changes: RecomputedTrainingLoad[] = [];
     for (const session of hrScored.slice(start, start + REPROCESS_BATCH_SIZE)) {
       const records = await getSessionRecords(session.id);
-      const change = changedLoad(session, sessionStressFromRecordsAt(session, records, profile));
+      const change = changedLoad({
+        session,
+        stress: sessionStressFromRecordsAt({ session, records, profile }),
+      });
       if (change) changes.push(change);
       useImportProgressStore.getState().advanceImport();
     }

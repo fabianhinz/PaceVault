@@ -1,5 +1,4 @@
-import { formatPaceTick } from '@/lib/formatters.ts';
-import { getLocale } from '@pacevault/i18n/runtime.js';
+import { formatNumber, formatPaceTick } from '@/lib/formatters.ts';
 
 export const MISSING = '--';
 
@@ -40,5 +39,4 @@ export const railPaceFromSecPerKm = (secPerKm: number | null | undefined): strin
   return formatPaceTick(secPerKm / 60);
 };
 
-export const railVam = (metresPerHour: number): string =>
-  new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 }).format(metresPerHour);
+export const railVam = (metresPerHour: number): string => formatNumber(metresPerHour);

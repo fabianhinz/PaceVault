@@ -51,7 +51,7 @@ export const initialMapCameraState: MapCameraState = {
   refitRequest: 0,
 };
 
-const sameSubject = (a: MapCameraTarget | null, b: MapCameraTarget): boolean => {
+const isSameSubject = (a: MapCameraTarget | null, b: MapCameraTarget): boolean => {
   if (a === null) return false;
   if (a.kind === 'session' && b.kind === 'session') return a.sessionId === b.sessionId;
   if (a.kind === 'trip' && b.kind === 'trip') return a.tripKey === b.tripKey;
@@ -69,32 +69,44 @@ const overviewRefit = (obs: MapCameraObservation): MapCameraFit | null => {
   return null;
 };
 
-const arrivalFit = (
-  previous: MapCameraTarget | null,
-  obs: MapCameraObservation,
-  refitRequested: boolean,
-): MapCameraFit | null => {
+const arrivalFit = ({
+  previous,
+  obs,
+  refitRequested,
+}: {
+  previous: MapCameraTarget | null;
+  obs: MapCameraObservation;
+  refitRequested: boolean;
+}): MapCameraFit | null => {
   const target = obs.target;
-  if (target.kind === 'session') {
-    if (target.lapIndex !== null) return 'lap';
-    return 'session';
+  switch (target.kind) {
+    case 'session':
+      if (target.lapIndex !== null) return 'lap';
+      return 'session';
+    case 'trip':
+      return 'trip';
+    case 'studioRoute':
+      return studioFit(obs);
+    case 'studioTab':
+      if (previous?.kind === 'studioRoute' && !refitRequested) return null;
+      return studioFit(obs);
+    case 'overview':
+      if (refitRequested) return overviewRefit(obs);
+      return null;
   }
-  if (target.kind === 'trip') return 'trip';
-  if (target.kind === 'studioRoute') return studioFit(obs);
-  if (target.kind === 'studioTab') {
-    if (previous?.kind === 'studioRoute' && !refitRequested) return null;
-    return studioFit(obs);
-  }
-  if (refitRequested) return overviewRefit(obs);
-  return null;
 };
 
-const lapChangeFit = (
-  state: MapCameraState,
-  previousLap: number | null,
-  lapIndex: number | null,
-  lapCloseCount: number,
-): MapCameraFit | null => {
+const lapChangeFit = ({
+  state,
+  previousLap,
+  lapIndex,
+  lapCloseCount,
+}: {
+  state: MapCameraState;
+  previousLap: number | null;
+  lapIndex: number | null;
+  lapCloseCount: number;
+}): MapCameraFit | null => {
   if (previousLap === lapIndex) return state.pending;
   if (lapIndex !== null) return 'lap';
   if (lapCloseCount > state.lapCloseCount) return 'lapClose';
@@ -102,16 +114,26 @@ const lapChangeFit = (
   return state.pending;
 };
 
-const sameTargetFit = (
-  state: MapCameraState,
-  previous: MapCameraTarget,
-  obs: MapCameraObservation,
-  refitRequested: boolean,
-): MapCameraFit | null => {
+const sameTargetFit = ({
+  state,
+  previous,
+  obs,
+  refitRequested,
+}: {
+  state: MapCameraState;
+  previous: MapCameraTarget;
+  obs: MapCameraObservation;
+  refitRequested: boolean;
+}): MapCameraFit | null => {
   const target = obs.target;
   if (target.kind === 'session' && previous.kind === 'session') {
     if (target.view !== previous.view) return 'tilt';
-    return lapChangeFit(state, previous.lapIndex, target.lapIndex, obs.lapCloseCount);
+    return lapChangeFit({
+      state,
+      previousLap: previous.lapIndex,
+      lapIndex: target.lapIndex,
+      lapCloseCount: obs.lapCloseCount,
+    });
   }
   if (target.kind === 'studioTab' && refitRequested) return studioFit(obs);
   if (target.kind !== 'overview') return state.pending;
@@ -120,24 +142,30 @@ const sameTargetFit = (
   return state.pending;
 };
 
-const refitHandledBy = (target: MapCameraTarget): boolean =>
+const isRefitHandledBy = (target: MapCameraTarget): boolean =>
   target.kind === 'overview' || target.kind === 'studioTab';
 
-export const nextMapCamera = (state: MapCameraState, obs: MapCameraObservation): MapCameraState => {
+export const nextMapCamera = ({
+  state,
+  obs,
+}: {
+  state: MapCameraState;
+  obs: MapCameraObservation;
+}): MapCameraState => {
   const previous = state.target;
   const refitRequested = previous !== null && obs.refitRequest > state.refitRequest;
   let pending: MapCameraFit | null;
   let refitRequest = state.refitRequest;
 
-  if (previous === null || !sameSubject(previous, obs.target)) {
-    pending = arrivalFit(previous, obs, refitRequested);
+  if (previous === null || !isSameSubject(previous, obs.target)) {
+    pending = arrivalFit({ previous, obs, refitRequested });
     refitRequest = obs.refitRequest;
     if (pending === null && previous?.kind === 'session' && previous.view === '3d') {
       pending = 'flatten';
     }
   } else {
-    pending = sameTargetFit(state, previous, obs, refitRequested);
-    if (refitHandledBy(obs.target)) refitRequest = obs.refitRequest;
+    pending = sameTargetFit({ state, previous, obs, refitRequested });
+    if (isRefitHandledBy(obs.target)) refitRequest = obs.refitRequest;
   }
 
   const startFit =
@@ -159,7 +187,13 @@ export const nextMapCamera = (state: MapCameraState, obs: MapCameraObservation):
   };
 };
 
-export const mapCameraFitBlocked = (fit: MapCameraFit, obs: MapCameraObservation): boolean => {
+export const isMapCameraFitBlocked = ({
+  fit,
+  obs,
+}: {
+  fit: MapCameraFit;
+  obs: MapCameraObservation;
+}): boolean => {
   if (fit === 'studio' || fit === 'tilt' || fit === 'flatten') return false;
   return obs.sessionDataBlocked || obs.progressOverlayOpen;
 };

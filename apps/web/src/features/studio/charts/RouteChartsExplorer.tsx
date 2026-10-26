@@ -1,92 +1,52 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useMemo, type FC } from 'react';
 import { Mountain, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ChartRow, ChartsCard, ZoomResetPill } from '@pacevault/ui/components/ChartsCard.tsx';
+import { PvChartRow } from '@pacevault/ui/components/pvChartsCard/PvChartRow.tsx';
+import { PvChartsCard } from '@pacevault/ui/components/pvChartsCard/PvChartsCard.tsx';
+import { PvZoomResetPill } from '@pacevault/ui/components/pvChartsCard/PvZoomResetPill.tsx';
 import { ElevationChart } from '@/components/charts/ElevationChart.tsx';
 import { GradeChart } from '@/components/charts/GradeChart.tsx';
-import { buildRouteProfile } from '@pacevault/gpx/routeProfile.ts';
-import type { RouteElevationStats, RoutePoint } from '@pacevault/gpx/routeGeometry.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { useChartHoverStore, type ChartHoverX } from '@/store/chartHover.ts';
-import { indexByX } from '@/lib/chartHover.ts';
+import type { RouteElevationStats } from '@pacevault/gpx/routeGeometry.ts';
+import type { RoutePoint } from '@pacevault/gpx/types.ts';
+import type { ChartHoverX } from '@/store/chartHover.ts';
 import { summarizeValues } from '@/lib/seriesSummary.ts';
 import { railGain, railInt, railLoss, railSigned1 } from '@/lib/railFormat.ts';
 import type { MetricId } from '@/lib/explanations.ts';
-import { SeriesRail } from '@/components/charts/ChartRail.tsx';
-import { buildRouteChartRows, gpsByX } from '@/lib/chartData.ts';
+import { SeriesRail } from '@/components/charts/SeriesRail.tsx';
 import { routeDistanceXAxis } from '@/lib/chartTheme.ts';
 import { useSyncedChartZoom } from '@/lib/hooks/useSyncedChartZoom.ts';
-import { tokens } from '@pacevault/ui/lib/tokens.ts';
+import { tokens, type TokenColor } from '@pacevault/ui/lib/tokens.ts';
 import { m } from '@pacevault/i18n/messages.js';
 import { MetricLabel } from '@/components/MetricLabel.tsx';
+import { HOVER_GROUP } from '@/features/studio/types.ts';
+import { useRouteChartRows } from '@/features/studio/hooks/useRouteChartRows.ts';
+import { useRouteChartHover } from '@/features/studio/hooks/useRouteChartHover.ts';
 
 interface ChartEntry {
   key: string;
   title: string;
   icon: LucideIcon;
-  color: string;
-  hasData: boolean;
+  color: TokenColor;
+  dataPresent: boolean;
   metricId?: MetricId;
   rail: React.ReactNode;
   chart: React.ReactNode;
 }
+
+const formatHoverDist = (x: ChartHoverX) => routeDistanceXAxis.tickFormatter(Number(x));
 
 interface RouteChartsExplorerProps {
   points: RoutePoint[];
   elevation: RouteElevationStats | undefined;
 }
 
-const HOVER_GROUP = 'studio-detail';
-
-const formatHoverDist = (x: ChartHoverX) => routeDistanceXAxis.tickFormatter(Number(x));
-
-export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
-  const profile = useMemo(() => buildRouteProfile(props.points), [props.points]);
-
+export const RouteChartsExplorer: FC<RouteChartsExplorerProps> = (props) => {
   const zoom = useSyncedChartZoom();
-  const zoomRange = zoom.zoomRange;
-
-  const rows = useMemo(() => buildRouteChartRows(profile), [profile]);
-  const compactRows = useMemo(
-    () => (zoomRange ? buildRouteChartRows(profile, zoomRange) : rows),
-    [profile, zoomRange, rows],
-  );
-  const byDist = useMemo(
-    () => new Map([...indexByX(rows, 'dist'), ...indexByX(compactRows, 'dist')]),
-    [rows, compactRows],
-  );
-  const gpsLookup = useMemo(
-    () => new Map([...gpsByX(rows, 'dist'), ...gpsByX(compactRows, 'dist')]),
-    [rows, compactRows],
-  );
-
-  const onHover = useCallback(
-    (dist: number | null) => {
-      if (dist == null) {
-        useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
-        useMapFocusStore.getState().clearHoveredPoint();
-        return;
-      }
-      useChartHoverStore.getState().setChartHover(HOVER_GROUP, dist);
-      const point = gpsLookup.get(dist);
-      if (point) {
-        useMapFocusStore.getState().setHoveredPoint(point);
-      }
-    },
-    [gpsLookup],
-  );
-
-  useEffect(
-    () => () => {
-      useMapFocusStore.getState().clearHoveredPoint();
-      useChartHoverStore.getState().clearChartHover(HOVER_GROUP);
-    },
-    [],
-  );
-
+  const chartRows = useRouteChartRows({ points: props.points, zoomRange: zoom.zoomRange });
+  const onHover = useRouteChartHover(chartRows.gpsLookup);
   const gradeSummary = useMemo(
-    () => summarizeValues(profile.grade.map((p) => p.grade)),
-    [profile.grade],
+    () => summarizeValues(chartRows.profile.grade.map((p) => p.grade)),
+    [chartRows.profile.grade],
   );
   const elevation = props.elevation;
 
@@ -97,7 +57,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       icon: Mountain,
       color: tokens.chartElevation,
       metricId: 'elevation',
-      hasData: profile.elevation.length > 1,
+      dataPresent: chartRows.profile.elevation.length > 1,
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -109,7 +69,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
             secondary: `${railLoss(elevation?.loss)} m`,
           }}
           readingAt={(x) => {
-            const point = byDist.get(x);
+            const point = chartRows.byDist.get(x);
             if (!point) return undefined;
             return {
               value: railInt(point.elevation),
@@ -120,7 +80,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       ),
       chart: (
         <ElevationChart
-          data={compactRows}
+          data={chartRows.compactRows}
           xAxis={routeDistanceXAxis}
           onActiveXChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
@@ -132,7 +92,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       title: m.ui_chart_title_grade(),
       icon: TrendingUp,
       color: tokens.chartGrade,
-      hasData: profile.grade.filter((p) => p.grade !== undefined).length > 1,
+      dataPresent: chartRows.profile.grade.filter((p) => p.grade !== undefined).length > 1,
       rail: (
         <SeriesRail
           group={HOVER_GROUP}
@@ -144,7 +104,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
             secondary: `${m.ui_rail_min()} ${railSigned1(gradeSummary.min)}`,
           }}
           readingAt={(x) => {
-            const point = byDist.get(x);
+            const point = chartRows.byDist.get(x);
             if (!point) return undefined;
             return {
               value: railSigned1(point.grade),
@@ -155,7 +115,7 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
       ),
       chart: (
         <GradeChart
-          data={compactRows}
+          data={chartRows.compactRows}
           xAxis={routeDistanceXAxis}
           onActiveXChange={onHover}
           onZoomComplete={zoom.onZoomComplete}
@@ -164,14 +124,22 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
     },
   ];
 
-  const visibleCharts = charts.filter((c) => c.hasData);
+  const visibleCharts = charts.filter((c) => c.dataPresent);
 
   if (visibleCharts.length === 0) return null;
 
   return (
-    <ChartsCard zoomReset={<ZoomResetPill isZoomed={zoom.isZoomed} onReset={zoom.resetZoom} />}>
+    <PvChartsCard
+      zoomReset={
+        <PvZoomResetPill
+          label={m.ui_chart_reset_zoom()}
+          zoomed={zoom.zoomed}
+          onReset={zoom.resetZoom}
+        />
+      }
+    >
       {visibleCharts.map((chart) => (
-        <ChartRow
+        <PvChartRow
           key={chart.key}
           title={chart.title}
           icon={chart.icon}
@@ -184,8 +152,8 @@ export const RouteChartsExplorer = (props: RouteChartsExplorerProps) => {
           rail={chart.rail}
         >
           {chart.chart}
-        </ChartRow>
+        </PvChartRow>
       ))}
-    </ChartsCard>
+    </PvChartsCard>
   );
 };

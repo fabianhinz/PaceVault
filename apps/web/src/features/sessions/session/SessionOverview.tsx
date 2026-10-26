@@ -1,4 +1,5 @@
-import { PageGrid } from '@pacevault/ui/components/PageGrid.tsx';
+import type { FC } from 'react';
+import { PvPageGrid } from '@pacevault/ui/components/pvPageGrid/PvPageGrid.tsx';
 import { SessionChartsExplorer } from '@/features/sessions/charts/SessionChartsExplorer.tsx';
 import { SessionSummaryCard } from '@/features/sessions/session/SessionSummaryCard.tsx';
 import type { TrainingSession, SessionRecord, SessionLap } from '@pacevault/engine/types.ts';
@@ -9,8 +10,8 @@ interface SessionOverviewProps {
   laps: SessionLap[];
 }
 
-export const SessionOverview = (props: SessionOverviewProps) => (
-  <PageGrid>
+export const SessionOverview: FC<SessionOverviewProps> = (props) => (
+  <PvPageGrid>
     <SessionSummaryCard
       key={props.session.id}
       session={props.session}
@@ -18,5 +19,5 @@ export const SessionOverview = (props: SessionOverviewProps) => (
       laps={props.laps}
     />
     <SessionChartsExplorer records={props.records} session={props.session} />
-  </PageGrid>
+  </PvPageGrid>
 );

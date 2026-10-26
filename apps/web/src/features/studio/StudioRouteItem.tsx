@@ -1,20 +1,26 @@
-import { useNavigate } from 'react-router-dom';
-import { Card } from '@pacevault/ui/components/Card.tsx';
+import type { FC } from 'react';
+import { usePageRouting } from '@/routing/usePageRouting.ts';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
 import type { StudioRoute } from '@/store/studio.ts';
 import { StudioRouteHeader } from './StudioRouteHeader.tsx';
-import { useMapHover } from '@/lib/hooks/useMapHover.ts';
+import { useMapHover } from '@/features/map/hooks/useMapHover.ts';
 
-export const StudioRouteItem = (props: { route: StudioRoute; onNavigate?: () => void }) => {
-  const navigate = useNavigate();
-  const routeHover = useMapHover('studioRoute', props.route.id);
+interface StudioRouteItemProps {
+  route: StudioRoute;
+  onNavigate?: () => void;
+}
+
+export const StudioRouteItem: FC<StudioRouteItemProps> = (props) => {
+  const pageRouting = usePageRouting();
+  const routeHover = useMapHover({ kind: 'studioRoute', id: props.route.id });
 
   const handleNavigate = () => {
-    navigate(`/studio/${props.route.id}`);
+    pageRouting.open({ page: 'studioDetail', params: { routeId: props.route.id } });
     props.onNavigate?.();
   };
 
   return (
-    <Card
+    <PvCard
       role="button"
       tabIndex={0}
       aria-label={props.route.name}
@@ -30,6 +36,6 @@ export const StudioRouteItem = (props: { route: StudioRoute; onNavigate?: () => 
       className="cursor-pointer hover:bg-white/10"
     >
       <StudioRouteHeader route={props.route} />
-    </Card>
+    </PvCard>
   );
 };

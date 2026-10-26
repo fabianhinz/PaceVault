@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import {
   LineChart,
   Line,
@@ -13,7 +14,7 @@ import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/chartTheme.ts';
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
 import type { ColorScale } from '@/lib/zoneColors.ts';
-import { useZoneLineStroke } from '@/components/charts/ZoneGradient.tsx';
+import { useZoneLineStroke } from '@/components/charts/hooks/useZoneLineStroke.tsx';
 import type { SpeedPoint } from '@/lib/chartData.ts';
 import { m } from '@pacevault/i18n/messages.js';
 
@@ -25,18 +26,18 @@ interface SpeedChartProps {
   colorScale?: ColorScale;
 }
 
-export const SpeedChart = (props: SpeedChartProps) => {
+export const SpeedChart: FC<SpeedChartProps> = (props) => {
   const zoom = useChartZoom({
     data: props.data,
     xKey: 'time',
     onZoomComplete: props.onZoomComplete,
     onClick: (x) => props.onSelectTime?.(Number(x)),
   });
-  const colorLine = useZoneLineStroke(
-    props.colorScale,
-    zoom.zoomedData.map((d) => d.speed),
-    false,
-  );
+  const colorLine = useZoneLineStroke({
+    scale: props.colorScale,
+    values: zoom.zoomedData.map((d) => d.speed),
+    reversed: false,
+  });
 
   return (
     <ResponsiveContainer width="100%" height="100%">

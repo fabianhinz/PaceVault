@@ -6,10 +6,13 @@ import type { OnboardingStep } from '@/store/onboarding.ts';
  * way to the source step), focus fell to the body: move it to the new step's heading.
  * A control that stays on screen, like Continue, keeps its focus.
  */
-export const useStepFocusEffect = (
-  step: OnboardingStep,
-  headingRef: RefObject<HTMLElement | null>,
-) => {
+export const useStepFocusEffect = ({
+  step,
+  headingRef,
+}: {
+  step: OnboardingStep;
+  headingRef: RefObject<HTMLElement | null>;
+}): void => {
   const previousStep = useRef(step);
   useEffect(() => {
     if (previousStep.current === step) return;

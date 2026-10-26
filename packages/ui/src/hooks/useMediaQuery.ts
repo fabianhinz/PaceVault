@@ -1,9 +1,8 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
-// Without `window` (server rendering) every query reads as not matching.
 const getServerSnapshot = () => false;
 
-export const useMediaQuery = (query: string) => {
+export const useMediaQuery = (query: string): boolean => {
   const mql = useMemo(() => {
     if (typeof window === 'undefined') return undefined;
     return window.matchMedia(query);

@@ -21,3 +21,5 @@ export const THRESHOLD_TILE_ICONS: Record<ThresholdTileKey, LucideIcon> = {
   weight: Weight,
   wkg: Gauge,
 };
+
+export const isEditable = (key: ThresholdTileKey): key is ThresholdKey => key !== 'wkg';

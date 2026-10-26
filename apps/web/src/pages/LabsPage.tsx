@@ -1,14 +1,20 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import type { FC } from 'react';
+import { useRouterParam } from '@/routing/useRouterParam.ts';
+import { useRouterQuery } from '@/routing/useRouterQuery.ts';
+import { PageLink } from '@/routing/PageLink.tsx';
 import { m } from '@pacevault/i18n/messages.js';
 import { useCoachPlan } from '@/features/labs/hooks/useCoachPlan.ts';
-import { PageGrid } from '@pacevault/ui/components/PageGrid.tsx';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import { Button } from '@pacevault/ui/components/Button.tsx';
+import { PvPageGrid } from '@pacevault/ui/components/pvPageGrid/PvPageGrid.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvCardHeader } from '@pacevault/ui/components/pvCardHeader/PvCardHeader.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { MetricLabel } from '@/components/MetricLabel.tsx';
-import { ActionPromptCard } from '@pacevault/ui/components/ActionPromptCard.tsx';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@pacevault/ui/components/Tabs.tsx';
+import { PvActionPromptCard } from '@pacevault/ui/components/pvActionPromptCard/PvActionPromptCard.tsx';
+import { PvTabs } from '@pacevault/ui/components/pvTabs/PvTabs.tsx';
+import { PvTabsList } from '@pacevault/ui/components/pvTabs/PvTabsList.tsx';
+import { PvTabsTrigger } from '@pacevault/ui/components/pvTabs/PvTabsTrigger.tsx';
+import { PvTabsContent } from '@pacevault/ui/components/pvTabs/PvTabsContent.tsx';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { resolveLabsTab } from '@/lib/labsTab.ts';
 
@@ -20,78 +26,78 @@ import { LabsPeek } from '@/features/labs/LabsPeek.tsx';
 import { ZoneLegend } from '@/features/sessions/ZoneLegend.tsx';
 import { StudioTab } from '@/features/studio/StudioTab.tsx';
 
-export const LabsPage = () => {
+export const LabsPage: FC = () => {
   const coach = useCoachPlan();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tab = resolveLabsTab(searchParams.get('tab'));
+  const routerQuery = useRouterQuery();
+  const tab = resolveLabsTab(useRouterParam('tab') ?? null);
 
   const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
+    routerQuery.push({ key: 'tab', value });
   };
 
   return (
-    <Tabs value={tab} onValueChange={handleTabChange}>
+    <PvTabs value={tab} onValueChange={handleTabChange}>
       <LabsPeek />
-      <TabsList>
-        <TabsTrigger value="studio">{m.ui_labs_tab_studio()}</TabsTrigger>
-        <TabsTrigger value="tools">{m.ui_labs_tab_tools()}</TabsTrigger>
-        <TabsTrigger value="training">{m.ui_labs_tab_training()}</TabsTrigger>
-      </TabsList>
+      <PvTabsList>
+        <PvTabsTrigger value="studio">{m.ui_labs_tab_studio()}</PvTabsTrigger>
+        <PvTabsTrigger value="tools">{m.ui_labs_tab_tools()}</PvTabsTrigger>
+        <PvTabsTrigger value="training">{m.ui_labs_tab_training()}</PvTabsTrigger>
+      </PvTabsList>
 
-      <TabsContent value="studio">
+      <PvTabsContent value="studio">
         <StudioTab />
-      </TabsContent>
+      </PvTabsContent>
 
-      <TabsContent value="tools">
-        <PageGrid>
+      <PvTabsContent value="tools">
+        <PvPageGrid>
           <div className="lg:col-span-2">
             <RacePredictor />
           </div>
           <div className="lg:col-span-2">
             <PaceCalculator />
           </div>
-        </PageGrid>
-      </TabsContent>
+        </PvPageGrid>
+      </PvTabsContent>
 
-      <TabsContent value="training">
-        {!coach.hasThresholdPace ? (
-          <PageGrid>
-            <ActionPromptCard
+      <PvTabsContent value="training">
+        {!coach.thresholdPaceSet ? (
+          <PvPageGrid>
+            <PvActionPromptCard
               title={m.ui_labs_threshold_title()}
               description={m.ui_labs_threshold_desc()}
               className="lg:col-span-2"
             >
-              <Button asChild variant="secondary">
-                <Link to="/settings">
+              <PvButton asChild variant="secondary">
+                <PageLink to={{ page: 'settings', params: {} }}>
                   <Settings size={16} />
                   {m.ui_labs_go_settings()}
-                </Link>
-              </Button>
-            </ActionPromptCard>
-          </PageGrid>
+                </PageLink>
+              </PvButton>
+            </PvActionPromptCard>
+          </PvPageGrid>
         ) : (
-          <PageGrid>
+          <PvPageGrid>
             <div className="lg:col-span-2">
-              <Card>
-                <CardHeader
+              <PvCard>
+                <PvCardHeader
                   titleSlot={
                     <div className="flex items-center gap-1">
-                      <Typography variant="title" as="h3">
+                      <PvTypography variant="title" as="h3">
                         {METRIC_EXPLANATIONS.trainingZones.friendlyName}
-                      </Typography>
+                      </PvTypography>
                       <MetricLabel metricId="trainingZones" size="sm" />
                     </div>
                   }
                   subtitle={METRIC_EXPLANATIONS.trainingZones.oneLiner}
                 />
                 <ZoneLegend zones={coach.zones} />
-              </Card>
+              </PvCard>
             </div>
             <div className="lg:col-span-2">
-              <Card>
+              <PvCard>
                 {coach.plan && (
                   <>
-                    <CardHeader
+                    <PvCardHeader
                       title={m.ui_labs_weekly_plan()}
                       subtitle={m.ui_labs_weekly_plan_subtitle({
                         weekOf: coach.plan.weekOf,
@@ -101,11 +107,11 @@ export const LabsPage = () => {
                     <WeeklyPlanTimeline plan={coach.plan} zones={coach.zones} />
                   </>
                 )}
-              </Card>
+              </PvCard>
             </div>
-          </PageGrid>
+          </PvPageGrid>
         )}
-      </TabsContent>
-    </Tabs>
+      </PvTabsContent>
+    </PvTabs>
   );
 };

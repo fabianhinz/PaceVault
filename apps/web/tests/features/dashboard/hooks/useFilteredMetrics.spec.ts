@@ -1,23 +1,37 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { computeMetrics } from '@pacevault/engine/metrics.ts';
-import { makeSession } from '@pacevault/testing/sessions.ts';
+import { dailyMetricsFromSessions } from '@pacevault/engine/metrics.ts';
+import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
+import { MS_PER_DAY } from '@pacevault/engine/time.ts';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-describe('useFilteredMetrics — filtering sessions before computeMetrics', () => {
+describe('useFilteredMetrics — filtering sessions before dailyMetricsFromSessions', () => {
   it('filtering by sport reduces total TSS in history', () => {
     const now = Date.now();
     const sessions = [
-      makeSession({ id: 'c1', sport: 'cycling', date: now - 3 * DAY_MS, tss: 100 }),
-      makeSession({ id: 'r1', sport: 'running', date: now - 2 * DAY_MS, tss: 80 }),
-      makeSession({ id: 'c2', sport: 'cycling', date: now - 1 * DAY_MS, tss: 120 }),
+      createMockTrainingSession({
+        id: 'c1',
+        sport: 'cycling',
+        date: now - 3 * MS_PER_DAY,
+        tss: 100,
+      }),
+      createMockTrainingSession({
+        id: 'r1',
+        sport: 'running',
+        date: now - 2 * MS_PER_DAY,
+        tss: 80,
+      }),
+      createMockTrainingSession({
+        id: 'c2',
+        sport: 'cycling',
+        date: now - 1 * MS_PER_DAY,
+        tss: 120,
+      }),
     ];
 
-    const allHistory = computeMetrics(sessions, { endDate: now });
+    const allHistory = dailyMetricsFromSessions({ sessions, endDate: now });
     const allTss = allHistory.reduce((sum, d) => sum + d.tss, 0);
 
     const cyclingOnly = sessions.filter((s) => s.sport === 'cycling');
-    const cyclingHistory = computeMetrics(cyclingOnly, { endDate: now });
+    const cyclingHistory = dailyMetricsFromSessions({ sessions: cyclingOnly, endDate: now });
     const cyclingTss = cyclingHistory.reduce((sum, d) => sum + d.tss, 0);
 
     expect(cyclingTss).toBeLessThan(allTss);
@@ -26,10 +40,17 @@ describe('useFilteredMetrics — filtering sessions before computeMetrics', () =
 
   it('filtering to a sport with no sessions returns empty history', () => {
     const now = Date.now();
-    const sessions = [makeSession({ id: 'r1', sport: 'running', date: now - 1 * DAY_MS, tss: 80 })];
+    const sessions = [
+      createMockTrainingSession({
+        id: 'r1',
+        sport: 'running',
+        date: now - 1 * MS_PER_DAY,
+        tss: 80,
+      }),
+    ];
 
     const cyclingOnly = sessions.filter((s) => s.sport === 'cycling');
-    const history = computeMetrics(cyclingOnly, { endDate: now });
+    const history = dailyMetricsFromSessions({ sessions: cyclingOnly, endDate: now });
 
     expect(history).toEqual([]);
   });
@@ -37,14 +58,29 @@ describe('useFilteredMetrics — filtering sessions before computeMetrics', () =
   it("'all' filter produces the same result as unfiltered", () => {
     const now = Date.now();
     const sessions = [
-      makeSession({ id: 'c1', sport: 'cycling', date: now - 3 * DAY_MS, tss: 100 }),
-      makeSession({ id: 'r1', sport: 'running', date: now - 2 * DAY_MS, tss: 80 }),
-      makeSession({ id: 'r2', sport: 'running', date: now - 1 * DAY_MS, tss: 60 }),
+      createMockTrainingSession({
+        id: 'c1',
+        sport: 'cycling',
+        date: now - 3 * MS_PER_DAY,
+        tss: 100,
+      }),
+      createMockTrainingSession({
+        id: 'r1',
+        sport: 'running',
+        date: now - 2 * MS_PER_DAY,
+        tss: 80,
+      }),
+      createMockTrainingSession({
+        id: 'r2',
+        sport: 'running',
+        date: now - 1 * MS_PER_DAY,
+        tss: 60,
+      }),
     ];
 
-    const allHistory = computeMetrics(sessions, { endDate: now });
+    const allHistory = dailyMetricsFromSessions({ sessions, endDate: now });
     // "all" means no filtering
-    const filteredHistory = computeMetrics(sessions, { endDate: now });
+    const filteredHistory = dailyMetricsFromSessions({ sessions, endDate: now });
 
     expect(filteredHistory).toEqual(allHistory);
   });
@@ -52,18 +88,43 @@ describe('useFilteredMetrics — filtering sessions before computeMetrics', () =
   it('single-sport filter produces correct CTL/ATL values', () => {
     const now = Date.now();
     const sessions = [
-      makeSession({ id: 'r1', sport: 'running', date: now - 5 * DAY_MS, tss: 60 }),
-      makeSession({ id: 'c1', sport: 'cycling', date: now - 4 * DAY_MS, tss: 150 }),
-      makeSession({ id: 'r2', sport: 'running', date: now - 3 * DAY_MS, tss: 70 }),
-      makeSession({ id: 'c2', sport: 'cycling', date: now - 2 * DAY_MS, tss: 200 }),
-      makeSession({ id: 'r3', sport: 'running', date: now - 1 * DAY_MS, tss: 55 }),
+      createMockTrainingSession({
+        id: 'r1',
+        sport: 'running',
+        date: now - 5 * MS_PER_DAY,
+        tss: 60,
+      }),
+      createMockTrainingSession({
+        id: 'c1',
+        sport: 'cycling',
+        date: now - 4 * MS_PER_DAY,
+        tss: 150,
+      }),
+      createMockTrainingSession({
+        id: 'r2',
+        sport: 'running',
+        date: now - 3 * MS_PER_DAY,
+        tss: 70,
+      }),
+      createMockTrainingSession({
+        id: 'c2',
+        sport: 'cycling',
+        date: now - 2 * MS_PER_DAY,
+        tss: 200,
+      }),
+      createMockTrainingSession({
+        id: 'r3',
+        sport: 'running',
+        date: now - 1 * MS_PER_DAY,
+        tss: 55,
+      }),
     ];
 
     const runningOnly = sessions.filter((s) => s.sport === 'running');
-    const runningHistory = computeMetrics(runningOnly, { endDate: now });
+    const runningHistory = dailyMetricsFromSessions({ sessions: runningOnly, endDate: now });
     const lastRunning = runningHistory[runningHistory.length - 1];
 
-    const allHistory = computeMetrics(sessions, { endDate: now });
+    const allHistory = dailyMetricsFromSessions({ sessions, endDate: now });
     const lastAll = allHistory[allHistory.length - 1];
 
     // Running-only CTL/ATL should be lower since cycling had higher TSS

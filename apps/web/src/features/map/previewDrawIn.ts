@@ -1,7 +1,8 @@
 import { decode } from '@googlemaps/polyline-codec';
 import type { GPSBounds, Sport } from '@pacevault/engine/types.ts';
-import { haversineM } from '@pacevault/engine/gps.ts';
+import { haversineDistanceMeters } from '@pacevault/engine/geodesy.ts';
 import { createSeededRandom } from '@/features/demo/seededRandom.ts';
+import { MS_PER_SECOND } from '@pacevault/engine/time.ts';
 
 interface PreviewRoute {
   sport: Sport;
@@ -29,9 +30,9 @@ const JITTER_SEED = 7;
 const STAGGER_SEED = 3;
 const JITTER_M = 22;
 const METRES_PER_DEGREE = 111_320;
-const STAGGER_SPREAD_MS = 1800;
-const MIN_DURATION_MS = 1600;
-const MAX_DURATION_MS = 2400;
+const STAGGER_SPREAD_MS = 1.8 * MS_PER_SECOND;
+const MIN_DURATION_MS = 1.6 * MS_PER_SECOND;
+const MAX_DURATION_MS = 2.4 * MS_PER_SECOND;
 
 const cumulativeOf = (path: [number, number][]): number[] => {
   const cumulative: number[] = [];
@@ -39,7 +40,10 @@ const cumulativeOf = (path: [number, number][]): number[] => {
   let previous: [number, number] | undefined = undefined;
   for (const point of path) {
     if (previous !== undefined) {
-      total += haversineM({ lat: previous[1], lng: previous[0] }, { lat: point[1], lng: point[0] });
+      total += haversineDistanceMeters({
+        from: { lat: previous[1], lng: previous[0] },
+        to: { lat: point[1], lng: point[0] },
+      });
     }
     cumulative.push(total);
     previous = point;
@@ -48,7 +52,13 @@ const cumulativeOf = (path: [number, number][]): number[] => {
 };
 
 // A smoothed random walk, so the second pass runs alongside the first like another recording.
-const jitterPath = (path: [number, number][], next: () => number): [number, number][] => {
+const jitterPath = ({
+  path,
+  next,
+}: {
+  path: [number, number][];
+  next: () => number;
+}): [number, number][] => {
   let offsetLat = (next() - 0.5) * (JITTER_M / METRES_PER_DEGREE);
   let offsetLng = (next() - 0.5) * (JITTER_M / METRES_PER_DEGREE);
   return path.map((point) => {
@@ -94,7 +104,7 @@ export const buildPreviewPasses = (routes: PreviewRoute[]): PreviewPasses => {
       ]);
       if (original.length < 2) continue;
       let path = original;
-      if (round > 0) path = jitterPath(original, jitter.next);
+      if (round > 0) path = jitterPath({ path: original, next: jitter.next });
       const cumulative = cumulativeOf(path);
       drafts.push({ sport: route.sport, path, cumulative, length: cumulative.at(-1) ?? 0 });
     }
@@ -120,7 +130,13 @@ export const previewDrawInEnd = (passes: PreviewPass[]): number => {
 };
 
 /** The drawn prefix of a pass at `elapsedMs` after the reveal, ending on an interpolated point. */
-export const slicePath = (pass: PreviewPass, elapsedMs: number): [number, number][] => {
+export const slicePath = ({
+  pass,
+  elapsedMs,
+}: {
+  pass: PreviewPass;
+  elapsedMs: number;
+}): [number, number][] => {
   const t = (elapsedMs - pass.start) / pass.duration;
   if (t <= 0) return [];
   if (t >= 1 || pass.length === 0) return pass.path;

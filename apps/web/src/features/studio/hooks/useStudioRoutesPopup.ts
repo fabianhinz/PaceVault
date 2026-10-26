@@ -1,14 +1,19 @@
 import { useState, useCallback } from 'react';
 import type { PickingInfo } from '@deck.gl/core';
 import type { MapRef } from 'react-map-gl/maplibre';
-import { useStudioStore, type StudioRoute } from '@/store/studio.ts';
-import { pickBoundsFromCorners, filterTracksByPickBounds } from '@/features/map/trackPicking.ts';
-import { decodeCached, PICK_RADIUS } from '@/features/map/hooks/types.ts';
+import { useStudioStore } from '@/store/studio.ts';
+import type { StudioRoutesPopupInfo } from '@/features/studio/types.ts';
+import {
+  pickBoundsFromCorners,
+  filterTracksByPickBounds,
+  decodeCached,
+  PICK_RADIUS,
+} from '@/features/map/trackPicking.ts';
 
-export interface StudioRoutesPopupInfo {
-  x: number;
-  y: number;
-  routes: StudioRoute[];
+export interface StudioRoutesPopup {
+  popup: StudioRoutesPopupInfo | null;
+  onClick: (info: PickingInfo) => void;
+  close: () => void;
 }
 
 /**
@@ -16,7 +21,7 @@ export interface StudioRoutesPopupInfo {
  * every route near that point (bounds-based multi-pick, same as sessions), so
  * the user can jump into any of them.
  */
-export const useStudioRoutesPopup = (mapRef: React.RefObject<MapRef | null>) => {
+export const useStudioRoutesPopup = (mapRef: React.RefObject<MapRef | null>): StudioRoutesPopup => {
   const [popup, setPopup] = useState<StudioRoutesPopupInfo | null>(null);
 
   const onClick = useCallback(
@@ -32,11 +37,11 @@ export const useStudioRoutesPopup = (mapRef: React.RefObject<MapRef | null>) => 
         route.encodedPolylines.map((encoded, segIndex) => ({
           sessionId: route.id,
           bounds: route.bounds,
-          path: decodeCached(`studio-${route.id}-${segIndex}`, encoded),
+          path: decodeCached({ sessionId: `studio-${route.id}-${segIndex}`, encoded }),
         })),
       );
 
-      const hitIds = new Set(filterTracksByPickBounds(pickable, pickBounds));
+      const hitIds = new Set(filterTracksByPickBounds({ tracks: pickable, pickBounds }));
       if (hitIds.size === 0) return;
 
       const hitRoutes = routes.filter((route) => hitIds.has(route.id));

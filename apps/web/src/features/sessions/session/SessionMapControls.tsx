@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
-import { useMapControlsStore } from '@/store/mapControls.ts';
+import type { FC } from 'react';
 import { MapControlsBar } from '@/features/map/MapControlsBar.tsx';
 import type { SessionLap, SessionRecord, TrainingSession } from '@pacevault/engine/types.ts';
 import { ColorByControl } from './ColorByControl.tsx';
 import { LapsControl } from './LapsControl.tsx';
 import { MapViewControl } from './MapViewControl.tsx';
 import { useSessionColorModes } from './hooks/useSessionColorModes.ts';
+import { useTrackColorModeEffect } from './hooks/useTrackColorModeEffect.ts';
 
 interface SessionMapControlsProps {
   session: TrainingSession;
@@ -13,13 +13,11 @@ interface SessionMapControlsProps {
   laps: SessionLap[];
 }
 
-export const SessionMapControls = (props: SessionMapControlsProps) => {
-  const coloring = useSessionColorModes(props.session, props.records);
+export const SessionMapControls: FC<SessionMapControlsProps> = (props) => {
+  const coloring = useSessionColorModes({ session: props.session, records: props.records });
   const effective = coloring.effective;
 
-  useEffect(() => {
-    useMapControlsStore.getState().setTrackColorMode(effective);
-  }, [effective]);
+  useTrackColorModeEffect(effective);
 
   return (
     <MapControlsBar testId="map-pills">

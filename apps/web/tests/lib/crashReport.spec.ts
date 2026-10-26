@@ -19,7 +19,7 @@ const issueText = (url: string) => {
   return `${params.get('title')}\n${params.get('body')}`;
 };
 
-describe('buildIssueUrl', () => {
+describe(buildIssueUrl.name, () => {
   it('never puts the intervals.icu API key into the issue URL', () => {
     useIntervalsStore.getState().connectIntervals(KEY);
     const error = new Error(`Request failed for key ${KEY}`);

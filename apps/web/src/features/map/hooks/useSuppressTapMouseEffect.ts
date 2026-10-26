@@ -5,10 +5,13 @@ const suppressEmulatedMouse = (event: TouchEvent) => {
   if (event.cancelable) event.preventDefault();
 };
 
-export const useSuppressTapMouseEffect = (
-  mapRef: React.RefObject<MapRef | null>,
-  mapLoaded: boolean,
-) => {
+export const useSuppressTapMouseEffect = ({
+  mapRef,
+  mapLoaded,
+}: {
+  mapRef: React.RefObject<MapRef | null>;
+  mapLoaded: boolean;
+}): void => {
   useEffect(() => {
     if (!mapLoaded || !mapRef.current) return;
     const container = mapRef.current.getMap().getCanvasContainer();

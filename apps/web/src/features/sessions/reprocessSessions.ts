@@ -1,5 +1,5 @@
 import type { SessionFields, SessionRecord, TrainingSession } from '@pacevault/engine/types.ts';
-import type { UserProfile } from '@/types/index.ts';
+import type { UserProfile } from '@/types.ts';
 import {
   SESSION_DERIVATION_VERSION,
   deriveSessionFieldsFromRecords,
@@ -12,7 +12,7 @@ import {
   trainingLoadHrSignature,
   type StoredSessionStress,
 } from '@/lib/sessionStress.ts';
-import { bulkReplaceSessionData, getFitFile, getSessionRecords } from '@/lib/indexeddb.ts';
+import { bulkReplaceSessionData, getFitFile, getSessionRecords } from '@/lib/db.ts';
 import { claimSessionsDerivationVersion } from '@/lib/guardedSessionsStorage.ts';
 import { withExclusiveLock } from '@/lib/webLock.ts';
 import { guardedSessionsStorage, useSessionsStore } from '@/store/sessions.ts';
@@ -39,10 +39,13 @@ const markedCurrent = (session: TrainingSession): TrainingSession => {
   return { ...session, derivationVersion: SESSION_DERIVATION_VERSION };
 };
 
-const mergeReparsedSession = (
-  stored: TrainingSession,
-  reparsed: SessionFields,
-): TrainingSession => {
+const mergeReparsedSession = ({
+  stored,
+  reparsed,
+}: {
+  stored: TrainingSession;
+  reparsed: SessionFields;
+}): TrainingSession => {
   const merged: TrainingSession = {
     ...reparsed,
     id: stored.id,
@@ -56,26 +59,37 @@ const mergeReparsedSession = (
   return merged;
 };
 
-const reparseFit = async (
-  session: TrainingSession,
-  profile: UserProfile | null,
-): Promise<ParsedFitResult | undefined> => {
+const reparseFit = async ({
+  session,
+  profile,
+}: {
+  session: TrainingSession;
+  profile: UserProfile | null;
+}): Promise<ParsedFitResult | undefined> => {
   if (profile === null) return undefined;
   const fit = await getFitFile(session.id);
   if (!fit) return undefined;
   try {
-    return await parseFitFile(fit.data, fit.fileName, toFitParseProfile(profile));
+    return await parseFitFile({
+      arrayBuffer: fit.data,
+      fileName: fit.fileName,
+      profileAt: toFitParseProfile(profile),
+    });
   } catch (err) {
     console.error(`Reparsing the FIT file of session ${session.id} failed:`, err);
     return undefined;
   }
 };
 
-const recomputedStress = (
-  session: TrainingSession,
-  records: SessionRecord[],
-  profile: UserProfile | null,
-): StoredSessionStress => {
+const recomputedStress = ({
+  session,
+  records,
+  profile,
+}: {
+  session: TrainingSession;
+  records: SessionRecord[];
+  profile: UserProfile | null;
+}): StoredSessionStress => {
   if (profile === null) {
     return {
       tss: session.tss,
@@ -83,15 +97,18 @@ const recomputedStress = (
       normalizedPower: session.normalizedPower,
     };
   }
-  return sessionStressFromRecordsAt(session, records, profile);
+  return sessionStressFromRecordsAt({ session, records, profile });
 };
 
-const recomputeFromRecords = async (
-  session: TrainingSession,
-  profile: UserProfile | null,
-): Promise<TrainingSession> => {
+const recomputeFromRecords = async ({
+  session,
+  profile,
+}: {
+  session: TrainingSession;
+  profile: UserProfile | null;
+}): Promise<TrainingSession> => {
   const records = await getSessionRecords(session.id);
-  const derived = deriveSessionFieldsFromRecords(session.sport, records);
+  const derived = deriveSessionFieldsFromRecords({ sport: session.sport, records });
 
   let gap = session.gap;
   if (session.sport === 'running') gap = derived.gap;
@@ -103,7 +120,7 @@ const recomputeFromRecords = async (
 
   return {
     ...withHr,
-    ...recomputedStress(withHr, records, profile),
+    ...recomputedStress({ session: withHr, records, profile }),
     distance: derived.distance ?? session.distance,
     avgPower: derived.avgPower ?? session.avgPower,
     avgCadence: derived.avgCadence ?? session.avgCadence,
@@ -113,22 +130,29 @@ const recomputeFromRecords = async (
   };
 };
 
-const reprocessSession = async (
-  session: TrainingSession,
-  profile: UserProfile | null,
-): Promise<ReprocessOutcome> => {
-  const parsed = await reparseFit(session, profile);
-  if (!parsed) return { kind: 'updated', session: await recomputeFromRecords(session, profile) };
-  const merged = mergeReparsedSession(session, parsed.session);
+const reprocessSession = async ({
+  session,
+  profile,
+}: {
+  session: TrainingSession;
+  profile: UserProfile | null;
+}): Promise<ReprocessOutcome> => {
+  const parsed = await reparseFit({ session, profile });
+  if (!parsed)
+    return { kind: 'updated', session: await recomputeFromRecords({ session, profile }) };
+  const merged = mergeReparsedSession({ stored: session, reparsed: parsed.session });
   return { kind: 'reparsed', reparsed: { stored: session, merged, parsed } };
 };
 
-const reprocessOrKeep = async (
-  session: TrainingSession,
-  profile: UserProfile | null,
-): Promise<ReprocessOutcome> => {
+const reprocessOrKeep = async ({
+  session,
+  profile,
+}: {
+  session: TrainingSession;
+  profile: UserProfile | null;
+}): Promise<ReprocessOutcome> => {
   try {
-    return await reprocessSession(session, profile);
+    return await reprocessSession({ session, profile });
   } catch (err) {
     console.error(`Reprocessing session ${session.id} failed:`, err);
     return { kind: 'updated', session: markedCurrent(session) };
@@ -150,10 +174,13 @@ const saveReparsedSessions = async (reparsed: ReparsedSession[]): Promise<Traini
   }
 };
 
-const reprocessBatch = async (
-  ids: string[],
-  profile: UserProfile | null,
-): Promise<TrainingSession[]> => {
+const reprocessBatch = async ({
+  ids,
+  profile,
+}: {
+  ids: string[];
+  profile: UserProfile | null;
+}): Promise<TrainingSession[]> => {
   const storedById = new Map(useSessionsStore.getState().sessions.map((s) => [s.id, s]));
   const updated: TrainingSession[] = [];
   let pending: ReparsedSession[] = [];
@@ -168,7 +195,7 @@ const reprocessBatch = async (
   for (const id of ids) {
     const session = storedById.get(id);
     if (session) {
-      const outcome = await reprocessOrKeep(session, profile);
+      const outcome = await reprocessOrKeep({ session, profile });
       if (outcome.kind === 'reparsed') pending.push(outcome.reparsed);
       else updated.push(outcome.session);
       if (pending.length >= INGEST_CHUNK_SIZE) await savePending();
@@ -202,7 +229,7 @@ const runWithLock = async (): Promise<number> => {
 
   for (let start = 0; start < outdatedIds.length; start += REPROCESS_BATCH_SIZE) {
     const batch = outdatedIds.slice(start, start + REPROCESS_BATCH_SIZE);
-    const updated = await reprocessBatch(batch, profile);
+    const updated = await reprocessBatch({ ids: batch, profile });
     useSessionsStore.getState().commitReprocessedSessions(updated);
     await guardedSessionsStorage.flush();
   }

@@ -18,7 +18,15 @@ interface ResolvedRange {
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
-export const toDayKey = (year: number, monthIndex: number, day: number): string => {
+export const toDayKey = ({
+  year,
+  monthIndex,
+  day,
+}: {
+  year: number;
+  monthIndex: number;
+  day: number;
+}): string => {
   const d = new Date(year, monthIndex, day);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
@@ -34,7 +42,15 @@ const endOfDay = (date: Date): number => {
   return end.getTime();
 };
 
-const relativeStart = (amount: number, unit: FilterTimeUnit, now: number): number => {
+const relativeStart = ({
+  amount,
+  unit,
+  now,
+}: {
+  amount: number;
+  unit: FilterTimeUnit;
+  now: number;
+}): number => {
   const today = new Date(now);
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -52,7 +68,15 @@ const relativeStart = (amount: number, unit: FilterTimeUnit, now: number): numbe
   return new Date(year, month, day - days + 1).getTime();
 };
 
-const calendarRange = (unit: FilterCalendarUnit, ago: number, now: number): ResolvedRange => {
+const calendarRange = ({
+  unit,
+  ago,
+  now,
+}: {
+  unit: FilterCalendarUnit;
+  ago: number;
+  now: number;
+}): ResolvedRange => {
   const today = new Date(now);
   const year = today.getFullYear();
   const month = today.getMonth();
@@ -76,15 +100,18 @@ const calendarRange = (unit: FilterCalendarUnit, ago: number, now: number): Reso
   };
 };
 
-const unclampedRange = (time: FilterTime, now: number): ResolvedRange => {
+const unclampedRange = ({ time, now }: { time: FilterTime; now: number }): ResolvedRange => {
   if (time.kind === 'calendar') {
-    return calendarRange(time.unit, time.ago, now);
+    return calendarRange({ unit: time.unit, ago: time.ago, now });
   }
   if (time.kind === 'since') {
     return { from: parseDayKey(time.from).getTime(), to: endOfDay(new Date(now)) };
   }
   if (time.kind === 'relative') {
-    return { from: relativeStart(time.amount, time.unit, now), to: endOfDay(new Date(now)) };
+    return {
+      from: relativeStart({ amount: time.amount, unit: time.unit, now }),
+      to: endOfDay(new Date(now)),
+    };
   }
   if (time.kind === 'calendarYear') {
     const year = new Date(now).getFullYear() - time.yearsAgo;
@@ -93,11 +120,17 @@ const unclampedRange = (time: FilterTime, now: number): ResolvedRange => {
   return { from: parseDayKey(time.from).getTime(), to: endOfDay(parseDayKey(time.to)) };
 };
 
-export const resolveFilterRange = (time: FilterTime | null, now: number): ResolvedRange | null => {
+export const resolveFilterRange = ({
+  time,
+  now,
+}: {
+  time: FilterTime | null;
+  now: number;
+}): ResolvedRange | null => {
   if (time === null) {
     return null;
   }
-  const range = unclampedRange(time, now);
+  const range = unclampedRange({ time, now });
   return { from: range.from, to: Math.min(range.to, endOfDay(new Date(now))) };
 };
 

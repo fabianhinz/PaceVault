@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import type { LapSpan } from '@/lib/lapRanges.ts';
+import type { LapSpan } from '@/lib/laps.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
-import { lapVertexBounds } from '../lapPath.ts';
+import { lapVertexBounds } from '@/features/map/lapPath.ts';
 import {
   terrainHoverLine,
   terrainLineHoverSourceId,
   terrainLineRunIdsWithin,
   type TerrainLineRun,
-} from '../terrainLine.ts';
-import type { DetailPath } from '../zoneColoredPath.ts';
+} from '@/features/map/terrainLine.ts';
+import type { DetailPath } from '@/features/map/zoneColoredPath.ts';
 
 type MapControlsState = ReturnType<typeof useMapControlsStore.getState>;
 
@@ -28,19 +28,35 @@ interface ShownLaps {
   selectedRunIds: number[];
 }
 
-const lapBounds = (line: LapLine, spans: LapSpan[] | undefined, lapIndex: number | null) => {
+const lapBounds = ({
+  line,
+  spans,
+  lapIndex,
+}: {
+  line: LapLine;
+  spans: LapSpan[] | undefined;
+  lapIndex: number | null;
+}) => {
   const span = spans?.find((candidate) => candidate.lapIndex === lapIndex);
   if (span === undefined) return null;
   return lapVertexBounds({ detailPath: line.detailPath, span });
 };
 
-const markSelected = (line: LapLine, runIds: number[], selected: boolean) => {
+const markSelected = ({
+  line,
+  runIds,
+  selected,
+}: {
+  line: LapLine;
+  runIds: number[];
+  selected: boolean;
+}) => {
   if (line.map.getSource(line.sourceId) === undefined) return;
   for (const id of runIds)
     line.map.setFeatureState({ source: line.sourceId, id }, { sel: selected });
 };
 
-const showHover = (line: LapLine, path: [number, number][] | null) => {
+const showHover = ({ line, path }: { line: LapLine; path: [number, number][] | null }) => {
   const source = line.map.getSource<GeoJSONSource>(terrainLineHoverSourceId(line.sourceId));
   source?.setData(terrainHoverLine(path));
 };
@@ -50,30 +66,54 @@ const previewLapIndex = (state: MapControlsState): number | null => {
   return state.hoveredLapIndex;
 };
 
-const syncSelected = (line: LapLine, shown: ShownLaps, state: MapControlsState) => {
+const syncSelected = ({
+  line,
+  shown,
+  state,
+}: {
+  line: LapLine;
+  shown: ShownLaps;
+  state: MapControlsState;
+}) => {
   const spans = state.sessionLaps?.spans;
   if (spans === shown.spans && state.selectedLapIndex === shown.selected) return;
-  markSelected(line, shown.selectedRunIds, false);
-  const bounds = lapBounds(line, spans, state.selectedLapIndex);
+  markSelected({ line, runIds: shown.selectedRunIds, selected: false });
+  const bounds = lapBounds({ line, spans, lapIndex: state.selectedLapIndex });
   shown.selectedRunIds = [];
   if (bounds !== null)
     shown.selectedRunIds = terrainLineRunIdsWithin({ runs: line.runs, ...bounds });
-  markSelected(line, shown.selectedRunIds, true);
+  markSelected({ line, runIds: shown.selectedRunIds, selected: true });
   shown.selected = state.selectedLapIndex;
 };
 
-const syncPreview = (line: LapLine, shown: ShownLaps, state: MapControlsState) => {
+const syncPreview = ({
+  line,
+  shown,
+  state,
+}: {
+  line: LapLine;
+  shown: ShownLaps;
+  state: MapControlsState;
+}) => {
   const spans = state.sessionLaps?.spans;
   const preview = previewLapIndex(state);
   if (spans === shown.spans && preview === shown.preview) return;
-  const bounds = lapBounds(line, spans, preview);
-  showHover(line, bounds && line.detailPath.path.slice(bounds.first, bounds.last + 1));
+  const bounds = lapBounds({ line, spans, lapIndex: preview });
+  showHover({ line, path: bounds && line.detailPath.path.slice(bounds.first, bounds.last + 1) });
   shown.preview = preview;
 };
 
-const syncLaps = (line: LapLine, shown: ShownLaps, state: MapControlsState) => {
-  syncSelected(line, shown, state);
-  syncPreview(line, shown, state);
+const syncLaps = ({
+  line,
+  shown,
+  state,
+}: {
+  line: LapLine;
+  shown: ShownLaps;
+  state: MapControlsState;
+}) => {
+  syncSelected({ line, shown, state });
+  syncPreview({ line, shown, state });
   shown.spans = state.sessionLaps?.spans;
 };
 
@@ -92,12 +132,12 @@ export const useTerrainLapStateEffect = ({
     if (map === undefined || detailPath === null || map.getSource(sourceId) === undefined) return;
     const line: LapLine = { map, sourceId, detailPath, runs };
     const shown: ShownLaps = { spans: [], selected: null, preview: null, selectedRunIds: [] };
-    syncLaps(line, shown, useMapControlsStore.getState());
-    const unsubscribe = useMapControlsStore.subscribe((state) => syncLaps(line, shown, state));
+    syncLaps({ line, shown, state: useMapControlsStore.getState() });
+    const unsubscribe = useMapControlsStore.subscribe((state) => syncLaps({ line, shown, state }));
     return () => {
       unsubscribe();
-      markSelected(line, shown.selectedRunIds, false);
-      showHover(line, null);
+      markSelected({ line, runIds: shown.selectedRunIds, selected: false });
+      showHover({ line, path: null });
     };
   }, [map, sourceId, detailPath, runs]);
 };

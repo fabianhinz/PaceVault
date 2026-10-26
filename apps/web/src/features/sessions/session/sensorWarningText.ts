@@ -1,15 +1,20 @@
 import { m } from '@pacevault/i18n/messages.js';
-import { getLocale } from '@pacevault/i18n/runtime.js';
+import { formatNumber } from '@/lib/formatters.ts';
 import type { SensorWarning } from '@/lib/validation.ts';
 
 export const sensorWarningText = (warning: SensorWarning): string => {
-  const numberFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });
-  if (warning.code === 'hr_all_zero') return m.ui_sensor_warning_hr_all_zero();
-  const values = {
-    limit: numberFmt.format(warning.limit),
-    count: numberFmt.format(warning.count),
-  };
-  if (warning.code === 'hr_above_max') return m.ui_sensor_warning_hr_above_max(values);
-  if (warning.code === 'power_above_max') return m.ui_sensor_warning_power_above_max(values);
-  return m.ui_sensor_warning_speed_above_max(values);
+  const values = (counted: { limit: number; count: number }) => ({
+    limit: formatNumber(counted.limit),
+    count: formatNumber(counted.count),
+  });
+  switch (warning.code) {
+    case 'hr_all_zero':
+      return m.ui_sensor_warning_hr_all_zero();
+    case 'hr_above_max':
+      return m.ui_sensor_warning_hr_above_max(values(warning));
+    case 'power_above_max':
+      return m.ui_sensor_warning_power_above_max(values(warning));
+    case 'speed_above_max':
+      return m.ui_sensor_warning_speed_above_max(values(warning));
+  }
 };

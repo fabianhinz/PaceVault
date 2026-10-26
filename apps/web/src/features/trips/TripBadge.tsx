@@ -1,4 +1,5 @@
+import type { FC } from 'react';
 import { Compass } from 'lucide-react';
-import { IconTile } from '@pacevault/ui/components/IconTile.tsx';
+import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
 
-export const TripBadge = () => <IconTile icon={Compass} />;
+export const TripBadge: FC = () => <PvIconTile icon={Compass} />;

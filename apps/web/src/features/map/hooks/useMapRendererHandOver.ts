@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 
 type TrackRenderer = 'deck' | 'terrain';
 
-export interface MapRendererHandOver {
+interface MapRendererHandOver {
   deckShown: boolean;
   terrainMounted: boolean;
   onTerrainDrawn: (() => void) | undefined;

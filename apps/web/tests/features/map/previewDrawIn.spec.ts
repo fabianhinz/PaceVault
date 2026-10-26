@@ -18,16 +18,16 @@ const pass: PreviewPass = {
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
-describe('slicePath', () => {
+describe(slicePath.name, () => {
   it('is empty before the pass starts', () => {
-    expect(slicePath(pass, 0)).toEqual([]);
-    expect(slicePath(pass, 1000)).toEqual([]);
+    expect(slicePath({ pass, elapsedMs: 0 })).toEqual([]);
+    expect(slicePath({ pass, elapsedMs: 1000 })).toEqual([]);
   });
 
   it('mid-pass gives the prefix plus an end point at the exact fraction of the length', () => {
     const elapsed = 1000 + 2000 * 0.4;
     const drawnM = easeOutCubic(0.4) * 200;
-    const sliced = slicePath(pass, elapsed);
+    const sliced = slicePath({ pass, elapsedMs: elapsed });
     expect(sliced).toHaveLength(3);
     expect(sliced.slice(0, 2)).toEqual([
       [0, 0],
@@ -38,12 +38,12 @@ describe('slicePath', () => {
   });
 
   it('gives the full path at and after start + duration', () => {
-    expect(slicePath(pass, 3000)).toBe(pass.path);
-    expect(slicePath(pass, 10_000)).toBe(pass.path);
+    expect(slicePath({ pass, elapsedMs: 3000 })).toBe(pass.path);
+    expect(slicePath({ pass, elapsedMs: 10_000 })).toBe(pass.path);
   });
 });
 
-describe('buildPreviewPasses', () => {
+describe(buildPreviewPasses.name, () => {
   const routes = [
     {
       sport: 'running' as const,

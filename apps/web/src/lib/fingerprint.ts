@@ -1,13 +1,9 @@
 import type { TrainingSession, Sport } from '@pacevault/engine/types.ts';
+import type { FitFileId } from '@/parsers/fitSchemas.ts';
 
 // ---------------------------------------------------------------------------
 // Interfaces
 // ---------------------------------------------------------------------------
-
-interface FitFileId {
-  serial_number?: number;
-  time_created: string | Date;
-}
 
 interface FallbackFields {
   sport: Sport;
@@ -20,10 +16,13 @@ interface FallbackFields {
 // Exported functions
 // ---------------------------------------------------------------------------
 
-export const generateFingerprint = (
-  fileId: FitFileId | undefined,
-  fallback: FallbackFields,
-): string => {
+export const generateFingerprint = ({
+  fileId,
+  fallback,
+}: {
+  fileId: FitFileId | undefined;
+  fallback: FallbackFields;
+}): string => {
   if (fileId?.serial_number != null) {
     let ts = new Date(fileId.time_created).getTime();
     if (fileId.time_created instanceof Date) {
@@ -41,10 +40,13 @@ export const generateFingerprint = (
   return `${fallback.sport}:${fallback.date}:${roundedDuration}:${roundedDistance}`;
 };
 
-export const findDuplicates = (
-  fingerprints: string[],
-  existingSessions: TrainingSession[],
-): Set<string> => {
+export const findDuplicates = ({
+  fingerprints,
+  existingSessions,
+}: {
+  fingerprints: string[];
+  existingSessions: TrainingSession[];
+}): Set<string> => {
   const existingSet = new Set<string>();
   for (const s of existingSessions) {
     if (s.fingerprint) {

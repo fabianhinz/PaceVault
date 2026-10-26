@@ -1,21 +1,16 @@
-import { decodeTrackForRendering } from '@pacevault/engine/gps.ts';
-import type { MapTrack } from './useMapTracks';
+import type { PickingInfo } from '@deck.gl/core';
+import type { SessionGPS, Sport, TrainingSession } from '@pacevault/engine/types.ts';
 
-export const PICK_RADIUS = 25;
-
-const pathCache = new Map<string, [number, number][]>();
-
-export const decodeCached = (sessionId: string, encoded: string): [number, number][] => {
-  let path = pathCache.get(sessionId);
-  if (!path) {
-    path = decodeTrackForRendering(encoded);
-    pathCache.set(sessionId, path);
-  }
-  return path;
-};
-
-export interface TrackPickData {
+export interface MapTrack {
   sessionId: string;
-  track: MapTrack;
-  path: [number, number][];
+  sport: Sport;
+  gps: SessionGPS;
+  session: TrainingSession;
+}
+
+export type PickHandler = (info: PickingInfo, event: unknown) => boolean | void;
+
+export interface DeckEventHandlers {
+  onClick?: PickHandler;
+  onHover?: PickHandler;
 }

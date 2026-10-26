@@ -1,8 +1,17 @@
 import { useMemo } from 'react';
-import { useFilteredMetrics } from './useFilteredMetrics.ts';
-import { useDashboardChartZoom } from './useDashboardChartZoom.ts';
+import type { DailyMetrics, TrainingSession } from '@pacevault/engine/types.ts';
+import { useFilteredMetrics, type FilteredMetrics } from './useFilteredMetrics.ts';
+import { useDashboardChartZoom, type DashboardZoomRange } from './useDashboardChartZoom.ts';
 
-export const useDashboardAxis = () => {
+export interface DashboardAxis {
+  history: DailyMetrics[];
+  sportTss: FilteredMetrics['sportTss'];
+  sessions: TrainingSession[];
+  days: DashboardZoomRange['days'];
+  onZoomComplete: DashboardZoomRange['onZoomComplete'];
+}
+
+export const useDashboardAxis = (): DashboardAxis => {
   const metrics = useFilteredMetrics();
   const zoom = useDashboardChartZoom();
   const days = zoom.days;
@@ -22,5 +31,3 @@ export const useDashboardAxis = () => {
     onZoomComplete: zoom.onZoomComplete,
   };
 };
-
-export type DashboardAxis = ReturnType<typeof useDashboardAxis>;

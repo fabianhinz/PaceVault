@@ -1,7 +1,10 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { parseGpx, type ParsedGpxPoint } from '@pacevault/gpx/parseGpx.ts';
 import { buildRouteGeometry } from '@pacevault/gpx/routeGeometry.ts';
-import { saveStudioRoutePoints, deleteStudioRoutePoints } from '@/lib/indexeddb.ts';
+import { saveStudioRoutePoints, deleteStudioRoutePoints } from '@/lib/db.ts';
+import { encodedSegmentPolylines } from '@/lib/gpsTrack.ts';
 import { useStudioStore } from '@/store/studio.ts';
+import { invalidateStudioRoutePoints } from '@/queries/studio/useStudioRoutePoints.ts';
 import { nextRouteColor } from './routeColors.ts';
 
 /**
@@ -9,30 +12,39 @@ import { nextRouteColor } from './routeColors.ts';
  * return its id, or `null` if the points don't make a usable route.
  */
 export const createStudioRouteFromPoints = async (
-  points: ParsedGpxPoint[],
-  meta: { name: string; sourceFileName: string },
+  {
+    points,
+    name,
+    sourceFileName,
+  }: {
+    points: ParsedGpxPoint[];
+    name: string;
+    sourceFileName: string;
+  },
+  queryClient: QueryClient,
 ): Promise<string | null> => {
   const geometry = buildRouteGeometry(points);
   if (!geometry) return null;
 
   const usedColors = useStudioStore.getState().routes.map((r) => r.color);
   const id = useStudioStore.getState().importStudioRoute({
-    name: meta.name,
-    sourceFileName: meta.sourceFileName,
+    name,
+    sourceFileName,
     color: nextRouteColor(usedColors),
-    encodedPolylines: geometry.encodedPolylines,
+    encodedPolylines: encodedSegmentPolylines(geometry.points),
     bounds: geometry.bounds,
-    distance: geometry.distance,
+    distance: geometry.distanceMeters,
     elevation: geometry.elevation,
   });
 
   try {
-    await saveStudioRoutePoints(id, geometry.points);
+    await saveStudioRoutePoints({ routeId: id, points: geometry.points });
   } catch {
     useStudioStore.getState().deleteStudioRoute(id);
     await deleteStudioRoutePoints(id).catch(() => undefined);
     return null;
   }
+  await invalidateStudioRoutePoints({ routeId: id }, queryClient);
   return id;
 };
 
@@ -43,13 +55,21 @@ export const createStudioRouteFromPoints = async (
  * The embedded `<name>` wins; `fallbackName` is used when the GPX has none.
  */
 export const createStudioRouteFromGpx = async (
-  text: string,
-  meta: { fallbackName: string; sourceFileName: string },
+  {
+    text,
+    fallbackName,
+    sourceFileName,
+  }: {
+    text: string;
+    fallbackName: string;
+    sourceFileName: string;
+  },
+  queryClient: QueryClient,
 ): Promise<string | null> => {
   const parsed = parseGpx(text);
   if (!parsed) return null;
-  return createStudioRouteFromPoints(parsed.points, {
-    name: parsed.name ?? meta.fallbackName,
-    sourceFileName: meta.sourceFileName,
-  });
+  return createStudioRouteFromPoints(
+    { points: parsed.points, name: parsed.name ?? fallbackName, sourceFileName },
+    queryClient,
+  );
 };

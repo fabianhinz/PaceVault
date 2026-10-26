@@ -17,10 +17,13 @@ const minOf = (current: number | undefined, value: number): number => {
   return current;
 };
 
-export const computeRecordExtremes = (
-  records: SessionRecord[],
-  gradients: Array<number | undefined>,
-): RecordExtremes => {
+export const computeRecordExtremes = ({
+  records,
+  gradients,
+}: {
+  records: SessionRecord[];
+  gradients: Array<number | undefined>;
+}): RecordExtremes => {
   let maxSpeed: number | undefined = undefined;
   let maxCadence: number | undefined = undefined;
   let maxGrade: number | undefined = undefined;

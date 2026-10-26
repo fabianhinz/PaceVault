@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
-import type { Map as MapLibreMap } from 'maplibre-gl';
+import { mock, type MockProxy } from 'vitest-mock-extended';
+import type { Listener, Map as MapLibreMap, Source, Subscription } from 'maplibre-gl';
 import {
   DEM_SETTLE_TIMEOUT_MS,
   fitCorrection,
@@ -29,19 +30,22 @@ const target: TerrainCamera = {
   elevation: 1940,
 };
 
-const expectCamera = (actual: TerrainCamera, expected: TerrainCamera) => {
-  expect(actual.center[0]).toBeCloseTo(expected.center[0], 9);
-  expect(actual.center[1]).toBeCloseTo(expected.center[1], 9);
-  expect(actual.zoom).toBeCloseTo(expected.zoom, 9);
-  expect(actual.pitch).toBeCloseTo(expected.pitch, 9);
-  expect(actual.bearing).toBeCloseTo(expected.bearing, 9);
-  expect(actual.elevation).toBeCloseTo(expected.elevation, 9);
-};
+const closeToCamera = (camera: TerrainCamera) => ({
+  center: [expect.closeTo(camera.center[0], 9), expect.closeTo(camera.center[1], 9)],
+  zoom: expect.closeTo(camera.zoom, 9),
+  pitch: expect.closeTo(camera.pitch, 9),
+  bearing: expect.closeTo(camera.bearing, 9),
+  elevation: expect.closeTo(camera.elevation, 9),
+});
 
-describe('interpolateTerrainCamera', () => {
+describe(interpolateTerrainCamera.name, () => {
   it('starts at the current camera and ends at the target', () => {
-    expectCamera(interpolateTerrainCamera({ from: start, to: target, progress: 0 }), start);
-    expectCamera(interpolateTerrainCamera({ from: start, to: target, progress: 1 }), target);
+    expect(interpolateTerrainCamera({ from: start, to: target, progress: 0 })).toEqual(
+      closeToCamera(start),
+    );
+    expect(interpolateTerrainCamera({ from: start, to: target, progress: 1 })).toEqual(
+      closeToCamera(target),
+    );
   });
 
   it('turns the short way round, from 350° through north to 10°', () => {
@@ -66,7 +70,7 @@ describe('interpolateTerrainCamera', () => {
   });
 });
 
-describe('medianElevation', () => {
+describe(medianElevation.name, () => {
   it('keeps a recorded 0 m and skips missing heights', () => {
     expect(medianElevation([0, null, 0, 500])).toBe(0);
     expect(medianElevation([300, null, 120, 0])).toBe(120);
@@ -74,7 +78,7 @@ describe('medianElevation', () => {
   });
 });
 
-describe('fitGroundHeight', () => {
+describe(fitGroundHeight.name, () => {
   it('uses the queried terrain once the DEM has settled, also a flat 0 m', () => {
     expect(fitGroundHeight({ settled: true, terrain: 1960, median: 1800, current: 0 })).toBe(1960);
     expect(fitGroundHeight({ settled: true, terrain: 0, median: 1800, current: 400 })).toBe(0);
@@ -91,40 +95,14 @@ describe('fitGroundHeight', () => {
   });
 });
 
-interface StubDem {
-  value: boolean;
-  terrain?: string | null;
-  source?: boolean;
-}
+describe(whenTerrainSettled.name, () => {
+  let map: MockProxy<MapLibreMap>;
+  let listeners: Map<string, Set<Listener>>;
 
-const stubMap = (loaded: StubDem) => {
-  const listeners = new Map<string, Set<() => void>>();
-  const stub = {
-    on: (type: string, listener: () => void) => {
-      const set = listeners.get(type) ?? new Set<() => void>();
-      set.add(listener);
-      listeners.set(type, set);
-    },
-    off: (type: string, listener: () => void) => {
-      listeners.get(type)?.delete(listener);
-    },
-    getTerrain: () => {
-      if (loaded.terrain === null) return null;
-      return { source: loaded.terrain ?? 'dem' };
-    },
-    getSource: () => {
-      if (loaded.source === false) return undefined;
-      return {};
-    },
-    isSourceLoaded: () => loaded.value,
-  };
   const fire = (type: string) => {
-    for (const listener of listeners.get(type) ?? []) listener();
+    for (const listener of listeners.get(type) ?? []) listener({ type });
   };
-  return { map: stub as unknown as MapLibreMap, fire };
-};
 
-describe('whenTerrainSettled', () => {
   beforeEach(() => {
     vi.useFakeTimers({
       toFake: [
@@ -135,6 +113,18 @@ describe('whenTerrainSettled', () => {
         'cancelAnimationFrame',
       ],
     });
+    listeners = new Map();
+    map = mock<MapLibreMap>();
+    map.on.mockImplementation((type: string, listener: Listener) => {
+      const set = listeners.get(type) ?? new Set<Listener>();
+      set.add(listener);
+      listeners.set(type, set);
+      return mock<Subscription>();
+    });
+    map.off.mockImplementation((type: string, listener: Listener) => {
+      listeners.get(type)?.delete(listener);
+      return map;
+    });
   });
 
   afterEach(() => {
@@ -142,50 +132,61 @@ describe('whenTerrainSettled', () => {
   });
 
   it('settles at once when the DEM source is already loaded', async () => {
-    const stub = stubMap({ value: true });
-    await expect(
-      whenTerrainSettled({ map: stub.map, timeout: DEM_SETTLE_TIMEOUT_MS }),
-    ).resolves.toBe(true);
+    map.getTerrain.mockReturnValue({ source: 'dem' });
+    map.getSource.mockReturnValue(mock<Source>());
+    map.isSourceLoaded.mockReturnValue(true);
+    await expect(whenTerrainSettled({ map, timeout: DEM_SETTLE_TIMEOUT_MS })).resolves.toBe(true);
   });
 
   it('settles when a failed tile finishes the DEM source', async () => {
-    const loaded = { value: false };
-    const stub = stubMap(loaded);
-    const settled = whenTerrainSettled({ map: stub.map, timeout: DEM_SETTLE_TIMEOUT_MS });
-    loaded.value = true;
-    stub.fire('error');
+    let loaded = false;
+    map.getTerrain.mockReturnValue({ source: 'dem' });
+    map.getSource.mockReturnValue(mock<Source>());
+    map.isSourceLoaded.mockImplementation(() => loaded);
+    const settled = whenTerrainSettled({ map, timeout: DEM_SETTLE_TIMEOUT_MS });
+    loaded = true;
+    fire('error');
     await expect(settled).resolves.toBe(true);
   });
 
   it('settles on the DEM source loading after the terrain is set during the wait', async () => {
-    const dem: StubDem = { value: false, terrain: null };
-    const stub = stubMap(dem);
-    const settled = whenTerrainSettled({ map: stub.map, timeout: DEM_SETTLE_TIMEOUT_MS });
-    dem.terrain = 'terrain-dem';
-    stub.fire('terrain');
+    let loaded = false;
+    let terrainSet = false;
+    map.getTerrain.mockImplementation(() => {
+      if (!terrainSet) return null;
+      return { source: 'terrain-dem' };
+    });
+    map.getSource.mockReturnValue(mock<Source>());
+    map.isSourceLoaded.mockImplementation(() => loaded);
+    const settled = whenTerrainSettled({ map, timeout: DEM_SETTLE_TIMEOUT_MS });
+    terrainSet = true;
+    fire('terrain');
     vi.advanceTimersByTime(DEM_SETTLE_TIMEOUT_MS / 2);
-    dem.value = true;
-    stub.fire('sourcedata');
+    loaded = true;
+    fire('sourcedata');
     await expect(settled).resolves.toBe(true);
   });
 
   it('does not settle while the terrain source is not on the map', async () => {
-    const stub = stubMap({ value: true, source: false });
-    const settled = whenTerrainSettled({ map: stub.map, timeout: DEM_SETTLE_TIMEOUT_MS });
-    stub.fire('sourcedata');
+    map.getTerrain.mockReturnValue({ source: 'dem' });
+    map.isSourceLoaded.mockReturnValue(true);
+    const settled = whenTerrainSettled({ map, timeout: DEM_SETTLE_TIMEOUT_MS });
+    fire('sourcedata');
     vi.advanceTimersByTime(DEM_SETTLE_TIMEOUT_MS);
     await expect(settled).resolves.toBe(false);
   });
 
   it('gives up after the timeout while tiles are still loading', async () => {
-    const stub = stubMap({ value: false });
-    const settled = whenTerrainSettled({ map: stub.map, timeout: DEM_SETTLE_TIMEOUT_MS });
+    map.getTerrain.mockReturnValue({ source: 'dem' });
+    map.getSource.mockReturnValue(mock<Source>());
+    map.isSourceLoaded.mockReturnValue(false);
+    const settled = whenTerrainSettled({ map, timeout: DEM_SETTLE_TIMEOUT_MS });
     vi.advanceTimersByTime(DEM_SETTLE_TIMEOUT_MS);
     await expect(settled).resolves.toBe(false);
   });
 });
 
-describe('screenBox', () => {
+describe(screenBox.name, () => {
   it('bounds the projected points', () => {
     expect(
       screenBox([
@@ -208,7 +209,7 @@ describe('screenBox', () => {
   });
 });
 
-describe('fitCorrection', () => {
+describe(fitCorrection.name, () => {
   const free = freeArea({
     width: 390,
     height: 844,
@@ -264,7 +265,7 @@ describe('fitCorrection', () => {
   });
 });
 
-describe('fitSamples', () => {
+describe(fitSamples.name, () => {
   it('keeps short paths whole', () => {
     const path: [number, number][] = [
       [8, 47],

@@ -1,32 +1,39 @@
+import type { FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import { usePaceCalculator } from '@/features/labs/hooks/usePaceCalculator.ts';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
-import { Input } from '@pacevault/ui/components/Input.tsx';
-import { Label } from '@pacevault/ui/components/Label.tsx';
-import { SegmentedControl } from '@pacevault/ui/components/SegmentedControl.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvCardHeader } from '@pacevault/ui/components/pvCardHeader/PvCardHeader.tsx';
+import { PvInput } from '@pacevault/ui/components/pvInput/PvInput.tsx';
+import { PvLabel } from '@pacevault/ui/components/pvLabel/PvLabel.tsx';
+import { PvSegmentedControl } from '@pacevault/ui/components/pvSegmentedControl/PvSegmentedControl.tsx';
 const SOLVE_OPTIONS = [
   { value: 'pace', label: m.ui_labs_converter_pace_short() },
   { value: 'distance', label: m.ui_labs_converter_distance_short() },
   { value: 'time', label: m.ui_labs_converter_time_short() },
 ];
 
-export const PaceCalculator = () => {
+export const PaceCalculator: FC = () => {
   const calc = usePaceCalculator();
 
-  const displayValue = (field: 'pace' | 'distance' | 'time', rawInput: string) => {
+  const displayValue = ({
+    field,
+    rawInput,
+  }: {
+    field: 'pace' | 'distance' | 'time';
+    rawInput: string;
+  }) => {
     if (calc.computed && calc.solveFor === field) return calc.computed.value;
     return rawInput;
   };
 
   return (
-    <Card>
-      <CardHeader title={m.ui_labs_converter_title()} subtitle={m.ui_labs_converter_subtitle()} />
+    <PvCard>
+      <PvCardHeader title={m.ui_labs_converter_title()} subtitle={m.ui_labs_converter_subtitle()} />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <Label>{m.ui_labs_converter_solve_for()}</Label>
-          <SegmentedControl
+          <PvLabel>{m.ui_labs_converter_solve_for()}</PvLabel>
+          <PvSegmentedControl
             value={calc.solveFor}
             onValueChange={(v) => calc.setSolveFor(v as 'pace' | 'distance' | 'time')}
             options={SOLVE_OPTIONS}
@@ -35,42 +42,42 @@ export const PaceCalculator = () => {
 
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <Label>{m.ui_labs_converter_pace_short()}</Label>
-            <Input
+            <PvLabel>{m.ui_labs_converter_pace_short()}</PvLabel>
+            <PvInput
               type="text"
               placeholder="5:00"
               helperText="mm:ss /km"
-              value={displayValue('pace', calc.paceInput)}
+              value={displayValue({ field: 'pace', rawInput: calc.paceInput })}
               onChange={(e) => calc.handlePaceChange(e.target.value)}
               disabled={calc.solveFor === 'pace'}
             />
           </div>
 
           <div>
-            <Label>{m.ui_labs_converter_distance_short()}</Label>
-            <Input
+            <PvLabel>{m.ui_labs_converter_distance_short()}</PvLabel>
+            <PvInput
               type="text"
               placeholder="10"
               helperText="km"
-              value={displayValue('distance', calc.distanceInput)}
+              value={displayValue({ field: 'distance', rawInput: calc.distanceInput })}
               onChange={(e) => calc.handleDistanceChange(e.target.value)}
               disabled={calc.solveFor === 'distance'}
             />
           </div>
 
           <div>
-            <Label>{m.ui_labs_converter_time_short()}</Label>
-            <Input
+            <PvLabel>{m.ui_labs_converter_time_short()}</PvLabel>
+            <PvInput
               type="text"
               placeholder="0:50:00"
               helperText="hh:mm:ss"
-              value={displayValue('time', calc.timeInput)}
+              value={displayValue({ field: 'time', rawInput: calc.timeInput })}
               onChange={(e) => calc.handleTimeChange(e.target.value)}
               disabled={calc.solveFor === 'time'}
             />
           </div>
         </div>
       </div>
-    </Card>
+    </PvCard>
   );
 };

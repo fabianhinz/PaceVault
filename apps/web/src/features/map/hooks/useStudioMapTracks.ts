@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { useMatch, useSearchParams } from 'react-router-dom';
-import { unionBounds } from '@pacevault/engine/gps.ts';
+import { useRouteMatch } from '@/routing/useRouteMatch.ts';
+import { useRouterParam } from '@/routing/useRouterParam.ts';
+import { unionBounds } from '@pacevault/engine/bounds.ts';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
 import { useStudioStore, type StudioRoute } from '@/store/studio.ts';
 import { routeColors } from '@/features/studio/routeColors.ts';
@@ -30,11 +31,11 @@ const toMapRoute = (route: StudioRoute): StudioMapRoute => ({
 
 export const useStudioMapTracks = (): StudioMapTracks => {
   const allRoutes = useStudioStore((s) => s.routes);
-  const detailMatch = useMatch('/studio/:id');
-  const labsMatch = useMatch('/labs');
-  const [searchParams] = useSearchParams();
-  const onStudioTab = labsMatch !== null && resolveLabsTab(searchParams.get('tab')) === 'studio';
-  const detailRouteId = detailMatch?.params.id ?? null;
+  const detailMatch = useRouteMatch('studioDetail');
+  const labsMatch = useRouteMatch('labs');
+  const rawTab = useRouterParam('tab') ?? null;
+  const onStudioTab = labsMatch !== null && resolveLabsTab(rawTab) === 'studio';
+  const detailRouteId = detailMatch?.id ?? null;
 
   return useMemo(() => {
     if (detailRouteId) {

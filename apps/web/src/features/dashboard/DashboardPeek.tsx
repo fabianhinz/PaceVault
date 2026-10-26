@@ -1,12 +1,13 @@
+import type { FC } from 'react';
 import { LayoutDashboard } from 'lucide-react';
-import { IconTile } from '@pacevault/ui/components/IconTile.tsx';
-import { SheetPeek } from '@pacevault/ui/components/SheetPeek.tsx';
+import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
+import { PvSheetPeek } from '@pacevault/ui/components/pvBottomSheet/PvSheetPeek.tsx';
 import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
 import { m } from '@pacevault/i18n/messages.js';
 
-export const DashboardPeek = () => (
-  <SheetPeek
-    icon={<IconTile icon={LayoutDashboard} />}
+export const DashboardPeek: FC = () => (
+  <PvSheetPeek
+    icon={<PvIconTile icon={LayoutDashboard} />}
     primary={m.ui_nav_dashboard()}
     secondary={[
       m.ui_dashboard_current_form(),

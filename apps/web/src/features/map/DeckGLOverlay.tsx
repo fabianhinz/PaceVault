@@ -1,59 +1,21 @@
-import { useDeferredValue, useMemo } from 'react';
-import { useMatch } from 'react-router-dom';
-import type { LayersList, PickingInfo } from '@deck.gl/core';
-import { PathLayer, ScatterplotLayer } from '@deck.gl/layers';
-import { useSessionDetailPath } from './hooks/useSessionDetailPath.ts';
+import type { FC } from 'react';
+import type { LayersList } from '@deck.gl/core';
+import type { SessionGPS } from '@pacevault/engine/types.ts';
 import { useMapCameraEffect } from './hooks/useMapCameraEffect.ts';
 import { useMapRendererHandOver } from './hooks/useMapRendererHandOver.ts';
 import { useOverviewMapControlsEffect } from './hooks/useOverviewMapControlsEffect.ts';
 import { useOnboardingPreviewLayer } from './hooks/useOnboardingPreviewLayer.ts';
 import { useOnboardingPreviewCameraEffect } from './hooks/useOnboardingPreviewCameraEffect.ts';
-import { dimmedColor, lapSubPath, nearestRecordIndex } from './lapPath.ts';
-import type { DetailPath } from './zoneColoredPath.ts';
-import type { SessionGPS } from '@pacevault/engine/types.ts';
-import {
-  ADDITIVE_BLEND,
-  studioRouteModifiers,
-  geoAccuracyFill,
-  geoAccuracyLine,
-  geoDotFill,
-  geoDotLine,
-  LAP_CASING_SCALE,
-  LAP_DIMMED_BRIGHTNESS,
-  sportTrackColor,
-  trackIntensityAlpha,
-  trackModifiers,
-} from './trackColors.ts';
-import { lapIndexAtRecord, type LapSpan } from '@/lib/lapRanges.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { useMapControlsStore } from '@/store/mapControls.ts';
-import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
-import { useGeolocationStore } from '@/store/geolocation.ts';
-import { useSessionsStore } from '@/store/sessions.ts';
-import { useLayoutStore } from '@/store/layout.ts';
-import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
-import type { MapTrack } from './hooks/useMapTracks.ts';
-import { decodeCached, PICK_RADIUS, type TrackPickData } from './hooks/types.ts';
-import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
+import { useDeckEventHandlers } from './hooks/useDeckEventHandlers.ts';
+import { useDetailLayers } from './hooks/useDetailLayers.ts';
+import { useTrackLayers } from './hooks/useTrackLayers.ts';
+import { useStudioRouteLayer } from './hooks/useStudioRouteLayer.ts';
+import { usePickLayers } from './hooks/usePickLayers.ts';
+import { useGeoLayers } from './hooks/useGeoLayers.ts';
+import type { MapTrack, PickHandler } from './hooks/types.ts';
 import { DeckOverlayControl } from './DeckOverlayControl.tsx';
 import { SessionTerrain } from './SessionTerrain.tsx';
 
-type PickHandler = (info: PickingInfo, event: unknown) => boolean | void;
-
-const lapPathFor = (
-  detailPath: DetailPath | null,
-  spans: LapSpan[] | undefined,
-  lapIndex: number | null,
-): DetailPath | null => {
-  if (lapIndex === null || !detailPath || !spans) return null;
-  const span = spans.find((candidate) => candidate.lapIndex === lapIndex);
-  if (!span) return null;
-  return lapSubPath(detailPath, span);
-};
-
-const LAP_CASING_COLOR: [number, number, number, number] = [255, 255, 255, 255];
-const LAP_HOVER_COLOR: [number, number, number, number] = [255, 255, 255, 255];
-const HIGHLIGHT_TRANSITIONS = { getWidth: 300, getColor: 300 };
 const NO_LAYERS: LayersList = [];
 
 interface DeckGLOverlayProps {
@@ -66,386 +28,46 @@ interface DeckGLOverlayProps {
   terrain: boolean;
 }
 
-export const DeckGLOverlay: React.FC<DeckGLOverlayProps> = (props) => {
-  const hoveredSessionId = useMapFocusStore((s) => s.hoveredSessionId);
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const hoveredPoint = useMapFocusStore((s) => (props.terrain ? null : s.hoveredPoint));
-  const pickCircle = useMapFocusStore((s) => (props.terrain ? null : s.pickCircle));
-  const lapSpans = useDeferredValue(useMapControlsStore((s) => s.sessionLaps?.spans));
-  const selectedLapIndex = useMapControlsStore((s) => s.selectedLapIndex);
-  const hoveredLapIndex = useMapControlsStore((s) => (props.terrain ? null : s.hoveredLapIndex));
-  const trackColorMode = useMapControlsStore((s) => s.trackColorMode);
-  const hoveredStudioRouteId = useMapFocusStore((s) => s.hoveredStudioRouteId);
-  const geoPosition = useGeolocationStore((s) => s.position);
-  const geoAccuracy = useGeolocationStore((s) => s.accuracy);
-  const studioTracks = useStudioMapTracks();
-  const sessions = useSessionsStore((s) => s.sessions);
-  const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
-  const trackIntensity = useMapPreferencesStore((s) => s.trackIntensity);
-  const pointerFine = useDevice().pointerFine;
-
-  const detailPath = useSessionDetailPath(hoveredSessionId, openedSessionId, sessions);
+export const DeckGLOverlay: FC<DeckGLOverlayProps> = (props) => {
+  const eventHandlers = useDeckEventHandlers({ onClick: props.onClick, onHover: props.onHover });
+  const detailLayers = useDetailLayers({ terrain: props.terrain, eventHandlers });
   const handOver = useMapRendererHandOver({ terrain: props.terrain, mapLoaded: props.mapLoaded });
-
-  const match = useMatch('/sessions/:id');
-  const highlightedSessionId = hoveredSessionId ?? match?.params.id ?? null;
-
-  const studioActive = studioTracks.active;
   useOverviewMapControlsEffect(props.tracks);
-
-  const eventHandlers = useMemo(
-    (): { onClick?: PickHandler; onHover?: PickHandler } =>
-      onboardingComplete ? { onClick: props.onClick, onHover: props.onHover } : {},
-    [onboardingComplete, props.onClick, props.onHover],
-  );
-
-  const selectedLapPath = useMemo(
-    () => lapPathFor(detailPath, lapSpans, selectedLapIndex),
-    [selectedLapIndex, detailPath, lapSpans],
-  );
-  let previewLapIndex = hoveredLapIndex;
-  if (previewLapIndex === selectedLapIndex) {
-    previewLapIndex = null;
-  }
-  const hoveredLapPath = useMemo(
-    () => lapPathFor(detailPath, lapSpans, previewLapIndex),
-    [previewLapIndex, detailPath, lapSpans],
-  );
-
   useMapCameraEffect({
     gpsData: props.gpsData,
     tracks: props.tracks,
-    lapPath: selectedLapPath,
-    sessionPath: detailPath,
+    lapPath: detailLayers.selectedLapPath,
+    sessionPath: detailLayers.detailPath,
     mapLoaded: props.mapLoaded,
   });
   useOnboardingPreviewCameraEffect();
   const onboardingPreviewLayer = useOnboardingPreviewLayer();
-
-  const detailHandlers = useMemo(() => {
-    const lapAt = (info: PickingInfo) => {
-      if (!detailPath || !lapSpans || !info.coordinate) return undefined;
-      const lng = info.coordinate[0];
-      const lat = info.coordinate[1];
-      if (lng === undefined || lat === undefined) return undefined;
-      const recordIndex = nearestRecordIndex(detailPath, [lng, lat]);
-      if (recordIndex === undefined) return undefined;
-      return lapIndexAtRecord(lapSpans, recordIndex);
-    };
-    const onClick: PickHandler = (info, event) => {
-      const lapIndex = lapAt(info);
-      if (lapIndex === undefined) return eventHandlers.onClick?.(info, event);
-      useMapControlsStore.getState().toggleSelectedLap(lapIndex);
-      return true;
-    };
-    const onHover: PickHandler = (info, event) => {
-      let lapIndex: number | null = null;
-      if (pointerFine && info.object) {
-        lapIndex = lapAt(info) ?? null;
-      }
-      useMapControlsStore.getState().setHoveredLap(lapIndex);
-      return eventHandlers.onHover?.(info, event);
-    };
-    if (!eventHandlers.onClick) return {};
-    return { onClick, onHover };
-  }, [detailPath, lapSpans, eventHandlers, pointerFine]);
-
-  const trackData = useMemo<TrackPickData[]>(
-    () =>
-      props.tracks.map((t) => ({
-        sessionId: t.sessionId,
-        track: t,
-        path: decodeCached(t.sessionId, t.gps.encodedPolyline),
-      })),
-    [props.tracks],
-  );
-
-  const trackLayers = useMemo(() => {
-    if (openedSessionId || studioActive) {
-      return null;
-    }
-
-    return [
-      new PathLayer<TrackPickData>({
-        id: 'gps-tracks',
-        data: trackData,
-        getPath: (d) => d.path,
-        getColor: (d) => {
-          const [r, g, b] = sportTrackColor[d.track.sport];
-          let alpha = trackIntensityAlpha[trackIntensity];
-          if (hoveredSessionId && hoveredSessionId !== d.sessionId) {
-            alpha = 0;
-          } else if (highlightedSessionId === d.sessionId) {
-            alpha = trackModifiers.alpha.highlighted;
-          }
-
-          return [r, g, b, alpha];
-        },
-        getWidth: (d) =>
-          d.sessionId === highlightedSessionId
-            ? trackModifiers.width.highlighted
-            : trackModifiers.width.default,
-        widthMinPixels: 1,
-        jointRounded: true,
-        capRounded: true,
-        pickable: true,
-        updateTriggers: {
-          getColor: [highlightedSessionId, hoveredSessionId, trackIntensity],
-          getWidth: [highlightedSessionId],
-        },
-        transitions: pointerFine ? HIGHLIGHT_TRANSITIONS : undefined,
-        parameters: ADDITIVE_BLEND,
-        ...eventHandlers,
-      }),
-    ];
-  }, [
-    openedSessionId,
-    studioActive,
-    trackData,
-    highlightedSessionId,
-    hoveredSessionId,
-    eventHandlers,
-    trackIntensity,
-    pointerFine,
-  ]);
-
-  const detailLayer = useMemo(() => {
-    if (!detailPath) {
-      return null;
-    }
-
-    const isDimmed = selectedLapPath !== null;
-    return new PathLayer<DetailPath>({
-      id: 'session-detail',
-      data: [detailPath],
-      getPath: (d) => d.path,
-      getColor: (d) => {
-        if (isDimmed) return dimmedColor(d.color, LAP_DIMMED_BRIGHTNESS);
-        return d.color;
-      },
-      getWidth: trackModifiers.width.highlighted,
-      widthMinPixels: 1,
-      jointRounded: true,
-      capRounded: true,
-      pickable: true,
-      updateTriggers: { getColor: [trackColorMode, openedSessionId, isDimmed] },
-      ...detailHandlers,
-    });
-  }, [detailPath, trackColorMode, openedSessionId, detailHandlers, selectedLapPath]);
-
-  const lapHoverLayer = useMemo(() => {
-    if (!detailPath) return null;
-    let data: DetailPath[] = [];
-    if (hoveredLapPath) data = [hoveredLapPath];
-    return new PathLayer<DetailPath>({
-      id: 'lap-hover',
-      data,
-      visible: hoveredLapPath !== null,
-      getPath: (d) => d.path,
-      getColor: LAP_HOVER_COLOR,
-      getWidth: 3,
-      widthUnits: 'pixels',
-      jointRounded: true,
-      capRounded: true,
-      pickable: false,
-    });
-  }, [detailPath, hoveredLapPath]);
-
-  const lapLayers = useMemo(() => {
-    const layers = [];
-    if (selectedLapPath) {
-      layers.push(
-        new PathLayer<DetailPath>({
-          id: 'lap-casing',
-          data: [selectedLapPath],
-          getPath: (d) => d.path,
-          getColor: LAP_CASING_COLOR,
-          getWidth: trackModifiers.width.highlighted * LAP_CASING_SCALE,
-          widthMinPixels: 9,
-          jointRounded: true,
-          capRounded: true,
-          pickable: false,
-        }),
-        new PathLayer<DetailPath>({
-          id: 'lap-selected',
-          data: [selectedLapPath],
-          getPath: (d) => d.path,
-          getColor: (d) => d.color,
-          getWidth: trackModifiers.width.highlighted,
-          widthMinPixels: 5,
-          jointRounded: true,
-          capRounded: true,
-          pickable: false,
-          updateTriggers: { getColor: [trackColorMode] },
-        }),
-      );
-    }
-    return layers;
-  }, [selectedLapPath, trackColorMode]);
-
-  const studioSegments = useMemo(
-    () =>
-      studioTracks.routes.flatMap((route) =>
-        route.encodedPolylines.map((encodedPolyline, segIndex) => ({
-          routeId: route.id,
-          segIndex,
-          encodedPolyline,
-          color: route.color,
-        })),
-      ),
-    [studioTracks.routes],
-  );
-
-  const studioRouteLayer = useMemo(() => {
-    if (studioSegments.length === 0) {
-      return null;
-    }
-
-    const highlightedRouteId = hoveredStudioRouteId ?? studioTracks.focusedRouteId;
-
-    return new PathLayer<(typeof studioSegments)[number]>({
-      id: 'studio-routes',
-      data: studioSegments,
-      getPath: (d) => decodeCached(`studio-${d.routeId}-${d.segIndex}`, d.encodedPolyline),
-      getColor: (d) => {
-        let alpha = studioRouteModifiers.alpha.default;
-        if (hoveredStudioRouteId && hoveredStudioRouteId !== d.routeId) {
-          alpha = studioRouteModifiers.alpha.hidden;
-        }
-        return [d.color[0], d.color[1], d.color[2], alpha];
-      },
-      getWidth: (d) =>
-        d.routeId === highlightedRouteId
-          ? studioRouteModifiers.width.highlighted
-          : studioRouteModifiers.width.default,
-      widthMinPixels: 1,
-      jointRounded: true,
-      capRounded: true,
-      pickable: studioTracks.active,
-      updateTriggers: {
-        getColor: [highlightedRouteId, hoveredStudioRouteId],
-        getWidth: [highlightedRouteId],
-      },
-      transitions: pointerFine ? HIGHLIGHT_TRANSITIONS : undefined,
-      ...eventHandlers,
-    });
-  }, [
-    studioSegments,
-    studioTracks.active,
-    studioTracks.focusedRouteId,
-    hoveredStudioRouteId,
-    eventHandlers,
-    pointerFine,
-  ]);
-
-  const pickCircleLayer = useMemo(() => {
-    if (!pickCircle || props.terrain) {
-      return null;
-    }
-
-    return new ScatterplotLayer<{ center: [number, number] }>({
-      id: 'pick-circle',
-      data: [{ center: pickCircle }],
-      getPosition: (d) => d.center,
-      getRadius: PICK_RADIUS,
-      radiusUnits: 'pixels',
-      getFillColor: [255, 255, 255, 13],
-      filled: true,
-      stroked: true,
-      getLineColor: [255, 255, 255, 25],
-      lineWidthUnits: 'pixels' as const,
-      getLineWidth: 1,
-      pickable: false,
-    });
-  }, [pickCircle, props.terrain]);
-
-  const hoveredPointLayer = useMemo(() => {
-    let data: Array<{ position: [number, number] }> = [];
-    if (hoveredPoint) data = [{ position: hoveredPoint }];
-
-    return new ScatterplotLayer<{ position: [number, number] }>({
-      id: 'hovered-point',
-      data,
-      visible: hoveredPoint !== null,
-      getPosition: (d) => d.position,
-      getRadius: 12,
-      radiusUnits: 'pixels',
-      getFillColor: [255, 255, 255, trackModifiers.alpha.highlighted],
-      filled: true,
-      stroked: true,
-      getLineColor: [0, 0, 0, trackModifiers.alpha.default],
-      lineWidthUnits: 'pixels' as const,
-      getLineWidth: 4,
-      pickable: false,
-    });
-  }, [hoveredPoint]);
-
-  const geoLayers = useMemo(() => {
-    if (!geoPosition || props.terrain) {
-      return null;
-    }
-
-    const layers = [];
-
-    if (geoAccuracy) {
-      layers.push(
-        new ScatterplotLayer<{ center: [number, number] }>({
-          id: 'geo-accuracy',
-          data: [{ center: geoPosition }],
-          getPosition: (d) => d.center,
-          getRadius: geoAccuracy,
-          radiusUnits: 'meters',
-          filled: true,
-          getFillColor: geoAccuracyFill,
-          stroked: true,
-          getLineColor: geoAccuracyLine,
-          lineWidthUnits: 'pixels' as const,
-          getLineWidth: 1,
-          pickable: false,
-        }),
-      );
-    }
-
-    layers.push(
-      new ScatterplotLayer<{ position: [number, number] }>({
-        id: 'geo-dot',
-        data: [{ position: geoPosition }],
-        getPosition: (d) => d.position,
-        getRadius: 7,
-        radiusUnits: 'pixels',
-        filled: true,
-        getFillColor: geoDotFill,
-        stroked: true,
-        getLineColor: geoDotLine,
-        lineWidthUnits: 'pixels' as const,
-        getLineWidth: 2,
-        pickable: false,
-      }),
-    );
-
-    return layers;
-  }, [geoPosition, geoAccuracy, props.terrain]);
-
-  const sessionLayers = [
-    onboardingPreviewLayer,
-    trackLayers,
-    detailLayer,
-    studioRouteLayer,
-    pickCircleLayer,
-    lapHoverLayer,
-    lapLayers,
-    hoveredPointLayer,
-    geoLayers,
-  ];
+  const trackLayers = useTrackLayers({ tracks: props.tracks, eventHandlers });
+  const studioRouteLayer = useStudioRouteLayer(eventHandlers);
+  const pickLayers = usePickLayers(props.terrain);
+  const geoLayers = useGeoLayers(props.terrain);
 
   return (
     <>
       {handOver.terrainMounted && (
-        <SessionTerrain detailPath={detailPath} onDrawn={handOver.onTerrainDrawn} />
+        <SessionTerrain detailPath={detailLayers.detailPath} onDrawn={handOver.onTerrainDrawn} />
       )}
       <DeckOverlayControl
-        layers={handOver.deckShown ? sessionLayers : NO_LAYERS}
-        interleaved={!pointerFine}
+        layers={
+          handOver.deckShown
+            ? [
+                onboardingPreviewLayer,
+                trackLayers,
+                detailLayers.detailLayer,
+                studioRouteLayer,
+                pickLayers.pickCircleLayer,
+                detailLayers.lapHoverLayer,
+                detailLayers.lapLayers,
+                pickLayers.hoveredPointLayer,
+                geoLayers,
+              ]
+            : NO_LAYERS
+        }
         hoveringTrack={props.hoveringTrack}
         onDrawn={handOver.onDeckDrawn}
       />

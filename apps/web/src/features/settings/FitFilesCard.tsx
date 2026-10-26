@@ -1,13 +1,14 @@
+import type { FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvCardHeader } from '@pacevault/ui/components/pvCardHeader/PvCardHeader.tsx';
 import { FitUploadButton } from '@/features/sessions/FitUploadButton.tsx';
 
-export const FitFilesCard = () => (
-  <Card>
-    <CardHeader title={m.ui_fit_files_title()} subtitle={m.ui_fit_files_desc()} />
+export const FitFilesCard: FC = () => (
+  <PvCard>
+    <PvCardHeader title={m.ui_fit_files_title()} subtitle={m.ui_fit_files_desc()} />
     <div className="flex justify-end">
       <FitUploadButton />
     </div>
-  </Card>
+  </PvCard>
 );

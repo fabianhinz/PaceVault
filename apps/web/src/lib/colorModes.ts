@@ -3,7 +3,8 @@ import type { WindSample } from '@pacevault/engine/windExposure.ts';
 import { zoneScale, type ZoneMetric, type ZoneThresholds } from '@/lib/zoneColors.ts';
 import { hasMovingSpeed } from '@/lib/speedScale.ts';
 
-export type ColorMode = 'sport' | ZoneMetric | 'speed' | 'wind';
+export const COLOR_MODES = ['sport', 'hr', 'power', 'pace', 'speed', 'wind'] as const;
+export type ColorMode = (typeof COLOR_MODES)[number];
 
 export type ColorModeUnavailableReason =
   | 'hrThresholds'
@@ -42,32 +43,43 @@ const unavailable = (reason: ColorModeUnavailableReason): ColorModeStatus => ({
   reason,
 });
 
-const hasValue = (records: SessionRecord[], read: (r: SessionRecord) => number | undefined) =>
-  records.some((r) => read(r) !== undefined);
+const hasValue = ({
+  records,
+  read,
+}: {
+  records: SessionRecord[];
+  read: (r: SessionRecord) => number | undefined;
+}) => records.some((r) => read(r) !== undefined);
 
 const gpsPointCount = (records: SessionRecord[]): number =>
   records.filter((r) => r.lat !== undefined && r.lng !== undefined).length;
 
-const zoneStatus = (
-  metric: ZoneMetric,
-  thresholds: ZoneThresholds,
-  hasData: boolean,
-  thresholdReason: ColorModeUnavailableReason,
-  dataReason: ColorModeUnavailableReason,
-): ColorModeStatus => {
-  if (!hasData) return unavailable(dataReason);
-  if (!zoneScale(metric, thresholds)) return unavailable(thresholdReason);
+const zoneStatus = ({
+  metric,
+  thresholds,
+  dataPresent,
+  thresholdReason,
+  dataReason,
+}: {
+  metric: ZoneMetric;
+  thresholds: ZoneThresholds;
+  dataPresent: boolean;
+  thresholdReason: ColorModeUnavailableReason;
+  dataReason: ColorModeUnavailableReason;
+}): ColorModeStatus => {
+  if (!dataPresent) return unavailable(dataReason);
+  if (!zoneScale({ metric, thresholds })) return unavailable(thresholdReason);
   return AVAILABLE;
 };
 
 const paceStatus = (input: ColorModeInput): ColorModeStatus =>
-  zoneStatus(
-    'pace',
-    input.thresholds,
-    hasMovingSpeed(input.records),
-    'thresholdPace',
-    'noPaceData',
-  );
+  zoneStatus({
+    metric: 'pace',
+    thresholds: input.thresholds,
+    dataPresent: hasMovingSpeed(input.records),
+    thresholdReason: 'thresholdPace',
+    dataReason: 'noPaceData',
+  });
 
 const speedStatus = (input: ColorModeInput): ColorModeStatus => {
   if (!hasMovingSpeed(input.records)) return unavailable('noSpeedData');
@@ -90,23 +102,23 @@ export const colorModeOptions = (input: ColorModeInput): ColorModeOption[] => [
   { mode: 'sport', status: AVAILABLE },
   {
     mode: 'hr',
-    status: zoneStatus(
-      'hr',
-      input.thresholds,
-      hasValue(input.records, (r) => r.hr),
-      'hrThresholds',
-      'noHrData',
-    ),
+    status: zoneStatus({
+      metric: 'hr',
+      thresholds: input.thresholds,
+      dataPresent: hasValue({ records: input.records, read: (r) => r.hr }),
+      thresholdReason: 'hrThresholds',
+      dataReason: 'noHrData',
+    }),
   },
   {
     mode: 'power',
-    status: zoneStatus(
-      'power',
-      input.thresholds,
-      hasValue(input.records, (r) => r.power),
-      'ftp',
-      'noPowerData',
-    ),
+    status: zoneStatus({
+      metric: 'power',
+      thresholds: input.thresholds,
+      dataPresent: hasValue({ records: input.records, read: (r) => r.power }),
+      thresholdReason: 'ftp',
+      dataReason: 'noPowerData',
+    }),
   },
   paceOrSpeed(input),
   { mode: 'wind', status: windStatus(input) },

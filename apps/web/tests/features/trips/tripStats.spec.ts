@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { computeTripTotals } from '@/features/trips/tripStats.ts';
-import { makeSession } from '@pacevault/testing/sessions.ts';
+import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
+import { MS_PER_DAY } from '@pacevault/engine/time.ts';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-describe('computeTripTotals', () => {
+describe(computeTripTotals.name, () => {
   it('returns zeroed totals, missing distance/elevation and null date range for no sessions', () => {
     const totals = computeTripTotals([]);
     expect(totals).toEqual({
@@ -21,7 +20,13 @@ describe('computeTripTotals', () => {
   it('mirrors the single session for a one-session trip', () => {
     const date = 1_700_000_000_000;
     const totals = computeTripTotals([
-      makeSession({ date, distance: 10000, duration: 1800, elevationGain: 120, tss: 45 }),
+      createMockTrainingSession({
+        date,
+        distance: 10000,
+        duration: 1800,
+        elevationGain: 120,
+        tss: 45,
+      }),
     ]);
     expect(totals.count).toBe(1);
     expect(totals.distance).toBe(10000);
@@ -35,16 +40,22 @@ describe('computeTripTotals', () => {
   it('sums totals and spans the earliest/latest date across sessions', () => {
     const base = 1_700_000_000_000;
     const totals = computeTripTotals([
-      makeSession({
-        date: base + 2 * DAY_MS,
+      createMockTrainingSession({
+        date: base + 2 * MS_PER_DAY,
         distance: 5000,
         duration: 1000,
         elevationGain: 50,
         tss: 30,
       }),
-      makeSession({ date: base, distance: 15000, duration: 2000, elevationGain: 200, tss: 70 }),
-      makeSession({
-        date: base + DAY_MS,
+      createMockTrainingSession({
+        date: base,
+        distance: 15000,
+        duration: 2000,
+        elevationGain: 200,
+        tss: 70,
+      }),
+      createMockTrainingSession({
+        date: base + MS_PER_DAY,
         distance: 8000,
         duration: 1500,
         elevationGain: 0,
@@ -57,13 +68,23 @@ describe('computeTripTotals', () => {
     expect(totals.elevationGain).toBe(250);
     expect(totals.tss).toBe(140);
     expect(totals.startDate).toBe(base);
-    expect(totals.endDate).toBe(base + 2 * DAY_MS);
+    expect(totals.endDate).toBe(base + 2 * MS_PER_DAY);
   });
 
   it('trip elevation total stays missing when no session recorded elevation', () => {
     const totals = computeTripTotals([
-      makeSession({ elevationGain: undefined, distance: undefined, duration: 100, tss: 10 }),
-      makeSession({ elevationGain: undefined, distance: undefined, duration: 200, tss: 20 }),
+      createMockTrainingSession({
+        elevationGain: undefined,
+        distance: undefined,
+        duration: 100,
+        tss: 10,
+      }),
+      createMockTrainingSession({
+        elevationGain: undefined,
+        distance: undefined,
+        duration: 200,
+        tss: 20,
+      }),
     ]);
     expect(totals.elevationGain).toBeUndefined();
     expect(totals.distance).toBeUndefined();
@@ -71,16 +92,31 @@ describe('computeTripTotals', () => {
 
   it('trip totals sum only the sessions that recorded a value and keep a recorded 0', () => {
     const totals = computeTripTotals([
-      makeSession({ elevationGain: undefined, distance: undefined, duration: 100, tss: 10 }),
-      makeSession({ elevationGain: 0, distance: 0, duration: 200, tss: 20 }),
+      createMockTrainingSession({
+        elevationGain: undefined,
+        distance: undefined,
+        duration: 100,
+        tss: 10,
+      }),
+      createMockTrainingSession({ elevationGain: 0, distance: 0, duration: 200, tss: 20 }),
     ]);
     expect(totals.elevationGain).toBe(0);
     expect(totals.distance).toBe(0);
 
     const mixed = computeTripTotals([
-      makeSession({ elevationGain: undefined, distance: 4000, duration: 100, tss: 10 }),
-      makeSession({ elevationGain: 150, distance: undefined, duration: 200, tss: 20 }),
-      makeSession({ elevationGain: 50, distance: 6000, duration: 300, tss: 30 }),
+      createMockTrainingSession({
+        elevationGain: undefined,
+        distance: 4000,
+        duration: 100,
+        tss: 10,
+      }),
+      createMockTrainingSession({
+        elevationGain: 150,
+        distance: undefined,
+        duration: 200,
+        tss: 20,
+      }),
+      createMockTrainingSession({ elevationGain: 50, distance: 6000, duration: 300, tss: 30 }),
     ]);
     expect(mixed.elevationGain).toBe(200);
     expect(mixed.distance).toBe(10000);

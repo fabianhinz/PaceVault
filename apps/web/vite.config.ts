@@ -14,7 +14,7 @@ import { i18nPlugin } from '@pacevault/i18n/vite.ts';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { SURFACE_BASE } from '@pacevault/ui/lib/colors.ts';
+import { tokens } from '@pacevault/ui/lib/tokens.ts';
 
 export default defineConfig({
   build: {
@@ -80,8 +80,8 @@ export default defineConfig({
         name: 'PaceVault',
         short_name: 'PaceVault',
         description: 'Offline-first endurance training tracker',
-        theme_color: SURFACE_BASE,
-        background_color: SURFACE_BASE,
+        theme_color: tokens.surfaceBase,
+        background_color: tokens.surfaceBase,
         display: 'standalone',
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },

@@ -1,14 +1,23 @@
+import type { FC } from 'react';
 import { MapPin, Split, type LucideIcon } from 'lucide-react';
-import { m } from '@pacevault/i18n/messages.js';
 import { useStudioStore, type StudioMarkerType } from '@/store/studio.ts';
 import { useStudioMarkerEditorStore } from '@/store/studioMarkerEditor.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { cn } from '@pacevault/ui/lib/cn.ts';
+import { ADD_LABEL_BY_STUDIO_MARKER_TYPE } from '@/microcopy/studioMarkers.ts';
 
-const options: Record<StudioMarkerType, { icon: LucideIcon; label: () => string }> = {
-  track_modifier: { icon: Split, label: () => m.ui_studio_marker_add_split() },
-  point_of_interest: { icon: MapPin, label: () => m.ui_studio_marker_add_waypoint() },
+const ICON_BY_STUDIO_MARKER_TYPE: Record<StudioMarkerType, LucideIcon> = {
+  track_modifier: Split,
+  point_of_interest: MapPin,
 };
+
+interface AddMarkerButtonProps {
+  routeId: string;
+  type: StudioMarkerType;
+  distanceM?: number;
+  className?: string;
+  onDone?: () => void;
+}
 
 /**
  * Adds a marker of the given type. Shared by the Tools-tab card CTAs and the
@@ -16,31 +25,29 @@ const options: Record<StudioMarkerType, { icon: LucideIcon; label: () => string 
  * (`distanceM`), so it saves eagerly; everything else opens the dialog — a
  * waypoint needs a label, a card CTA needs the user to type the distance.
  */
-export const AddMarkerButton = (props: {
-  routeId: string;
-  type: StudioMarkerType;
-  distanceM?: number;
-  className?: string;
-  onDone?: () => void;
-}) => {
-  const option = options[props.type];
-  const Icon = option.icon;
+export const AddMarkerButton: FC<AddMarkerButtonProps> = (props) => {
+  const Icon = ICON_BY_STUDIO_MARKER_TYPE[props.type];
 
   const handleClick = () => {
     if (props.type === 'track_modifier' && props.distanceM != null) {
-      useStudioStore
-        .getState()
-        .addStudioMarker(props.routeId, { type: 'track_modifier', distanceM: props.distanceM });
+      useStudioStore.getState().addStudioMarker({
+        routeId: props.routeId,
+        marker: { type: 'track_modifier', distanceM: props.distanceM },
+      });
     } else {
-      useStudioMarkerEditorStore.getState().openCreate(props.routeId, props.type, props.distanceM);
+      useStudioMarkerEditorStore.getState().openCreate({
+        routeId: props.routeId,
+        type: props.type,
+        initialDistanceM: props.distanceM,
+      });
     }
     props.onDone?.();
   };
 
   return (
-    <Button variant="secondary" className={cn('w-full', props.className)} onClick={handleClick}>
+    <PvButton variant="secondary" className={cn('w-full', props.className)} onClick={handleClick}>
       <Icon className="size-4" />
-      {option.label()}
-    </Button>
+      {ADD_LABEL_BY_STUDIO_MARKER_TYPE[props.type]()}
+    </PvButton>
   );
 };

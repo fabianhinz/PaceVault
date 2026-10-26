@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { shouldDismiss } from '../../src/lib/sheetDrag.ts';
 
-describe('shouldDismiss', () => {
+describe(shouldDismiss.name, () => {
   it('springs back after a short slow pull', () => {
     expect(shouldDismiss({ offset: 40, velocity: 100, height: 400 })).toBe(false);
   });

@@ -1,11 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { v4 } from 'uuid';
 import { useSessionsStore } from '@/store/sessions.ts';
-import { invalidatePersonalBests } from '@/features/records/hooks/usePersonalBests.ts';
+import { invalidatePersonalBests } from '@/queries/records/usePersonalBests.ts';
 import { findDuplicates } from '@/lib/fingerprint.ts';
-import { bulkSaveSessionData } from '@/lib/indexeddb.ts';
+import { bulkSaveSessionData } from '@/lib/db.ts';
 import { requestPersistentStorage } from '@/lib/persistentStorage.ts';
 import type { ParsedFitResultWithMeta } from '@/parsers/fit.ts';
+import type { TrainingSession } from '@pacevault/engine/types.ts';
 
 export const INGEST_CHUNK_SIZE = 10;
 export const INGEST_BATCH_SIZE = 50;
@@ -20,15 +21,17 @@ interface BatchOutcome extends IngestOutcome {
   stored: ParsedFitResultWithMeta[];
 }
 
-const ingestBatch = async (
-  parsed: ParsedFitResultWithMeta[],
-  markNew: boolean | undefined,
-): Promise<BatchOutcome> => {
-  const existingSessions = useSessionsStore.getState().sessions;
-  const storeDups = findDuplicates(
-    parsed.map((p) => p.fingerprint),
+const partitionDuplicates = ({
+  parsed,
+  existingSessions,
+}: {
+  parsed: ParsedFitResultWithMeta[];
+  existingSessions: TrainingSession[];
+}): { unique: ParsedFitResultWithMeta[]; duplicates: ParsedFitResultWithMeta[] } => {
+  const storeDups = findDuplicates({
+    fingerprints: parsed.map((p) => p.fingerprint),
     existingSessions,
-  );
+  });
 
   const seenInBatch = new Set<string>();
   const duplicates: ParsedFitResultWithMeta[] = [];
@@ -41,17 +44,17 @@ const ingestBatch = async (
     seenInBatch.add(p.fingerprint);
     return true;
   });
+  return { unique, duplicates };
+};
 
-  if (unique.length === 0) {
-    return {
-      importedCount: 0,
-      duplicateCount: duplicates.length,
-      saveFailed: false,
-      stored: duplicates,
-    };
-  }
+interface IdentifiedEntry {
+  id: string;
+  entry: ParsedFitResultWithMeta;
+}
 
-  const withIds = unique.map((entry) => ({ id: v4(), entry }));
+const saveSessionData = async (
+  withIds: IdentifiedEntry[],
+): Promise<{ savedCount: number; saveFailed: boolean }> => {
   const idbEntries = withIds.map((item) => {
     let records = item.entry.records;
     let laps = item.entry.laps;
@@ -80,19 +83,50 @@ const ingestBatch = async (
     console.error('Save error:', err);
     saveFailed = true;
   }
+  return { savedCount, saveFailed };
+};
 
-  const saved = withIds.slice(0, savedCount);
+const ingestBatch = async ({
+  parsed,
+  markNew,
+}: {
+  parsed: ParsedFitResultWithMeta[];
+  markNew: boolean | undefined;
+}): Promise<BatchOutcome> => {
+  const partition = partitionDuplicates({
+    parsed,
+    existingSessions: useSessionsStore.getState().sessions,
+  });
+  const duplicates = partition.duplicates;
+
+  if (partition.unique.length === 0) {
+    return {
+      importedCount: 0,
+      duplicateCount: duplicates.length,
+      saveFailed: false,
+      stored: duplicates,
+    };
+  }
+
+  const withIds = partition.unique.map((entry) => ({ id: v4(), entry }));
+  const saveResult = await saveSessionData(withIds);
+
+  const saved = withIds.slice(0, saveResult.savedCount);
   if (saved.length > 0) {
-    useSessionsStore.getState().addSessions(
-      saved.map((item) => ({ ...item.entry.session, id: item.id, source: item.entry.source })),
-      { markNew },
-    );
+    useSessionsStore.getState().addSessions({
+      sessions: saved.map((item) => ({
+        ...item.entry.session,
+        id: item.id,
+        source: item.entry.source,
+      })),
+      markNew,
+    });
   }
 
   return {
     importedCount: saved.length,
     duplicateCount: duplicates.length,
-    saveFailed,
+    saveFailed: saveResult.saveFailed,
     stored: [...duplicates, ...saved.map((item) => item.entry)],
   };
 };
@@ -109,7 +143,7 @@ export const createIngestBatcher = (options: {
     if (pending.length === 0) return;
     const batch = pending;
     pending = [];
-    const result = await ingestBatch(batch, options.markNew);
+    const result = await ingestBatch({ parsed: batch, markNew: options.markNew });
     outcome.importedCount += result.importedCount;
     outcome.duplicateCount += result.duplicateCount;
     outcome.saveFailed ||= result.saveFailed;
@@ -124,8 +158,8 @@ export const createIngestBatcher = (options: {
   const finish = async (): Promise<IngestOutcome> => {
     await flush();
     if (outcome.importedCount > 0) {
-      invalidatePersonalBests(options.queryClient);
-      requestPersistentStorage().catch(() => undefined);
+      void invalidatePersonalBests(options.queryClient);
+      void requestPersistentStorage();
     }
     return outcome;
   };

@@ -1,12 +1,14 @@
 import type {
+  DatedValue,
   Gender,
   SessionLap,
   SessionRecord,
+  Sport,
   TrainingSession,
 } from '@pacevault/engine/types.ts';
-import { calculateSessionStress } from '@pacevault/engine/stress.ts';
-import { valueAt, type DatedValue } from '@pacevault/engine/datedValue.ts';
-import type { UserProfile } from '@/types/index.ts';
+import { stressFromRecords } from '@pacevault/engine/stress.ts';
+import { valueAt } from '@pacevault/engine/datedValue.ts';
+import type { UserProfile } from '@/types.ts';
 import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 import {
   SESSION_DERIVATION_VERSION,
@@ -31,7 +33,7 @@ import {
   type DemoRoutesJson,
   type SimulatedSession,
 } from './demoRecords.ts';
-import { createSeededRandom } from './seededRandom.ts';
+import { createSeededRandom, type SeededRandom } from './seededRandom.ts';
 
 /** Fixed seed so every visitor gets the same dataset. */
 export const DEMO_SEED = 20_260_518;
@@ -83,7 +85,7 @@ const dayOffset = (placed: PlacedEntry): number => placed.entry.weekday - placed
  * Monday of the plan's final week: the latest whole-week shift that leaves the last
  * session on or before yesterday, so nothing lies in the future.
  */
-const finalMonday = (today: Date, lastOffset: number): Date => {
+const finalMonday = ({ today, lastOffset }: { today: Date; lastOffset: number }): Date => {
   const midnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const sinceMonday = (midnight.getDay() + 6) % 7;
   let monday = new Date(
@@ -104,7 +106,15 @@ const parseStart = (start: string): { hours: number; minutes: number } => {
   return { hours: Number(parts[0] ?? 0), minutes: Number(parts[1] ?? 0) };
 };
 
-const startTime = (monday: Date, placed: PlacedEntry, jitterMinutes: number): number => {
+const startTime = ({
+  monday,
+  placed,
+  jitterMinutes,
+}: {
+  monday: Date;
+  placed: PlacedEntry;
+  jitterMinutes: number;
+}): number => {
   const time = parseStart(placed.entry.start);
   return new Date(
     monday.getFullYear(),
@@ -135,31 +145,71 @@ const demoWeightHistory = (newestDay: Date): DatedValue<number>[] =>
     value: entry.kg,
   }));
 
-const buildSession = (
-  id: string,
-  date: number,
-  workout: DemoWorkout,
-  simulated: SimulatedSession,
-  profile: DemoDataset['profile'],
-): DemoSession => {
-  const sport = workout.sport;
-  const records = simulated.records;
-  const duration = simulated.duration;
-  const derived = deriveSessionFieldsFromRecords(sport, records);
-  // The same call as the parser and the recompute, so the startup recompute finds nothing to rewrite.
-  const stress = calculateSessionStress(
-    sport,
-    records,
-    { durationSec: duration, avgHr: derived.avgHr },
-    thresholdsAt(profile, date),
-  );
-  const distance = derived.distance;
-
+const averageSpeedAndPace = ({
+  sport,
+  distance,
+  duration,
+}: {
+  sport: Sport;
+  distance: number | undefined;
+  duration: number;
+}): { avgSpeed: number | undefined; avgPace: number | undefined } => {
   let avgSpeed: number | undefined = undefined;
   if (distance !== undefined && duration > 0)
     avgSpeed = Math.round((distance / duration) * 1000) / 1000;
   let avgPace: number | undefined = undefined;
   if (sport === 'running' && avgSpeed !== undefined && avgSpeed > 0) avgPace = 1000 / avgSpeed;
+  return { avgSpeed, avgPace };
+};
+
+const withOptionalFields = ({
+  session,
+  derived,
+  workout,
+  records,
+}: {
+  session: DemoSession;
+  derived: ReturnType<typeof deriveSessionFieldsFromRecords>;
+  workout: DemoWorkout;
+  records: SessionRecord[];
+}): DemoSession => {
+  if (derived.gap !== undefined) session.gap = derived.gap;
+  if (workout.subSport !== undefined) session.subSport = workout.subSport;
+  const elevation = elevationTotals(records);
+  if (elevation) {
+    session.elevationGain = elevation.gain;
+    session.elevationLoss = elevation.loss;
+  }
+  return session;
+};
+
+const buildSession = ({
+  id,
+  date,
+  workout,
+  simulated,
+  profile,
+}: {
+  id: string;
+  date: number;
+  workout: DemoWorkout;
+  simulated: SimulatedSession;
+  profile: DemoDataset['profile'];
+}): DemoSession => {
+  const sport = workout.sport;
+  const records = simulated.records;
+  const duration = simulated.duration;
+  const derived = deriveSessionFieldsFromRecords({ sport, records });
+  // The same call as the parser and the recompute, so the startup recompute finds nothing to rewrite.
+  const stress = stressFromRecords({
+    sport,
+    records,
+    summary: { durationSec: duration, avgHr: derived.avgHr },
+    thresholds: thresholdsAt({ profile, date }),
+  });
+  const distance = derived.distance;
+
+  const speed = averageSpeedAndPace({ sport, distance, duration });
 
   const session: DemoSession = {
     id,
@@ -173,29 +223,117 @@ const buildSession = (
     avgPower: derived.avgPower,
     normalizedPower: stress.normalizedPower,
     avgCadence: derived.avgCadence,
-    avgSpeed,
-    avgPace,
+    avgSpeed: speed.avgSpeed,
+    avgPace: speed.avgPace,
     maxSpeed: derived.maxSpeed,
     tss: stress.tss,
     stressMethod: stress.stressMethod,
     isPlanned: false,
     hasDetailedRecords: records.length > 0,
-    fingerprint: generateFingerprint(undefined, { sport, date, duration, distance }),
+    fingerprint: generateFingerprint({
+      fileId: undefined,
+      fallback: { sport, date, duration, distance },
+    }),
     derivationVersion: SESSION_DERIVATION_VERSION,
     source: { kind: 'demo' },
   };
-  if (derived.gap !== undefined) session.gap = derived.gap;
-  if (workout.subSport !== undefined) session.subSport = workout.subSport;
-  const elevation = elevationTotals(records);
-  if (elevation) {
-    session.elevationGain = elevation.gain;
-    session.elevationLoss = elevation.loss;
-  }
-  return session;
+  return withOptionalFields({ session, derived, workout, records });
 };
 
 const studioPoints = (route: DemoRoute): ParsedGpxPoint[] =>
   route.points.map((p) => ({ lat: p.lat, lng: p.lng, ele: p.ele, seg: 0 }));
+
+const indexRoutes = (
+  json: DemoRoutesJson,
+): { routes: Map<string, DemoRoute>; cityRoutes: Set<string> } => {
+  const routes = new Map<string, DemoRoute>();
+  for (const route of [...json.routes, ...json.trip]) {
+    routes.set(route.key, prepareRoute(route));
+  }
+  const cityRoutes = new Set(json.routes.map((r) => r.key));
+  return { routes, cityRoutes };
+};
+
+const demoProfile = ({
+  newestDay,
+  ftpHistory,
+}: {
+  newestDay: Date;
+  ftpHistory: DatedValue<number>[];
+}): DemoDataset['profile'] => ({
+  gender: DEMO_PERSONA.gender,
+  thresholds: {
+    maxHr: [{ date: 0, value: DEMO_PERSONA.maxHr }],
+    restHr: [{ date: 0, value: DEMO_PERSONA.restHr }],
+    thresholdHr: [{ date: 0, value: DEMO_PERSONA.thresholdHr }],
+    ftp: ftpHistory,
+    thresholdPace: [{ date: 0, value: DEMO_PERSONA.thresholdPace }],
+  },
+  weight: demoWeightHistory(newestDay),
+  birthYear: DEMO_PERSONA.birthYear,
+  showMetricHelp: true,
+});
+
+interface PlacementContext {
+  rng: SeededRandom;
+  monday: Date;
+  routes: Map<string, DemoRoute>;
+  cityRoutes: Set<string>;
+  ftpHistory: DatedValue<number>[];
+  profile: DemoDataset['profile'];
+}
+
+const placeSessions = ({
+  placed,
+  context,
+}: {
+  placed: PlacedEntry[];
+  context: PlacementContext;
+}): { sessions: DemoSession[]; sessionData: DemoSessionData[]; gardaIds: string[] } => {
+  const rng = context.rng;
+  const sessions: DemoSession[] = [];
+  const sessionData: DemoSessionData[] = [];
+  const gardaIds: string[] = [];
+
+  for (const item of placed) {
+    const workout: DemoWorkout = DEMO_WORKOUTS[item.entry.workout];
+    const id = rng.uuid();
+    const date = startTime({
+      monday: context.monday,
+      placed: item,
+      jitterMinutes: Math.floor(rng.between(0, 10)),
+    });
+    let route: DemoRoute | undefined = undefined;
+    if (workout.route !== undefined) route = context.routes.get(workout.route);
+    if (workout.route !== undefined && !route) {
+      throw new Error(`Demo route "${workout.route}" is missing`);
+    }
+    const simulated = simulateSession({
+      sport: workout.sport,
+      workout,
+      route,
+      persona: {
+        ...DEMO_PERSONA,
+        ftp: valueAt({ history: context.ftpHistory, date }) ?? DEMO_PERSONA.ftp,
+      },
+      rng,
+      effortScale: rng.between(0.97, 1.03),
+      hrRecorded: item.entry.noHr !== true,
+      cityStops:
+        workout.sport === 'cycling' &&
+        workout.route !== undefined &&
+        context.cityRoutes.has(workout.route),
+    });
+    sessions.push(buildSession({ id, date, workout, simulated, profile: context.profile }));
+    sessionData.push({
+      sessionId: id,
+      records: simulated.records,
+      laps: buildDemoLaps({ sport: workout.sport, workout, simulated, sessionStart: date }),
+    });
+    if (item.entry.trip === 'garda') gardaIds.push(id);
+  }
+  return { sessions, sessionData, gardaIds };
+};
 
 /**
  * The whole demo dataset, deterministic for a given (seed, today, time zone).
@@ -207,77 +345,38 @@ export const buildDemoDataset = (input: {
   routes: DemoRoutesJson;
 }): DemoDataset => {
   const rng = createSeededRandom(input.seed);
-  const routes = new Map<string, DemoRoute>();
-  for (const json of [...input.routes.routes, ...input.routes.trip]) {
-    routes.set(json.key, prepareRoute(json));
-  }
-  const cityRoutes = new Set(input.routes.routes.map((r) => r.key));
-
+  const indexed = indexRoutes(input.routes);
   const placed = placedEntries();
   const lastOffset = Math.max(...placed.map(dayOffset));
-  const monday = finalMonday(input.today, lastOffset);
+  const monday = finalMonday({ today: input.today, lastOffset });
   const newestDay = new Date(
     monday.getFullYear(),
     monday.getMonth(),
     monday.getDate() + lastOffset,
   );
   const ftpHistory = demoFtpHistory(newestDay);
-  const profile: DemoDataset['profile'] = {
-    gender: DEMO_PERSONA.gender,
-    thresholds: {
-      maxHr: [{ date: 0, value: DEMO_PERSONA.maxHr }],
-      restHr: [{ date: 0, value: DEMO_PERSONA.restHr }],
-      thresholdHr: [{ date: 0, value: DEMO_PERSONA.thresholdHr }],
-      ftp: ftpHistory,
-      thresholdPace: [{ date: 0, value: DEMO_PERSONA.thresholdPace }],
-    },
-    weight: demoWeightHistory(newestDay),
-    birthYear: DEMO_PERSONA.birthYear,
-    showMetricHelp: true,
-  };
-
-  const sessions: DemoSession[] = [];
-  const sessionData: DemoSessionData[] = [];
-  const gardaIds: string[] = [];
-
-  for (const item of placed) {
-    const workout: DemoWorkout = DEMO_WORKOUTS[item.entry.workout];
-    const id = rng.uuid();
-    const date = startTime(monday, item, Math.floor(rng.between(0, 10)));
-    let route: DemoRoute | undefined = undefined;
-    if (workout.route !== undefined) route = routes.get(workout.route);
-    if (workout.route !== undefined && !route) {
-      throw new Error(`Demo route "${workout.route}" is missing`);
-    }
-    const simulated = simulateSession({
-      sport: workout.sport,
-      workout,
-      route,
-      persona: { ...DEMO_PERSONA, ftp: valueAt(ftpHistory, date) ?? DEMO_PERSONA.ftp },
+  const profile = demoProfile({ newestDay, ftpHistory });
+  const placedSessions = placeSessions({
+    placed,
+    context: {
       rng,
-      effortScale: rng.between(0.97, 1.03),
-      hasHr: item.entry.noHr !== true,
-      cityStops:
-        workout.sport === 'cycling' && workout.route !== undefined && cityRoutes.has(workout.route),
-    });
-    sessions.push(buildSession(id, date, workout, simulated, profile));
-    sessionData.push({
-      sessionId: id,
-      records: simulated.records,
-      laps: buildDemoLaps(workout.sport, workout, simulated, date),
-    });
-    if (item.entry.trip === 'garda') gardaIds.push(id);
-  }
+      monday,
+      routes: indexed.routes,
+      cityRoutes: indexed.cityRoutes,
+      ftpHistory,
+      profile,
+    },
+  });
 
   return {
     profile,
-    sessions,
-    sessionData,
+    sessions: placedSessions.sessions,
+    sessionData: placedSessions.sessionData,
     trips: [
       {
         name: GARDA_TRIP,
         description: 'Five days around Riva del Garda',
-        sessionIds: gardaIds,
+        sessionIds: placedSessions.gardaIds,
       },
     ],
     studioRoutes: input.routes.studio.map((json) => ({

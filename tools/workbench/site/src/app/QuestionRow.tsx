@@ -1,70 +1,73 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { Trash2 } from 'lucide-react';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Chip } from '@pacevault/ui/components/Chip.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import type { QuestionView } from '../lib/board.ts';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvChip } from '@pacevault/ui/components/pvChip/PvChip.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import type { QuestionView } from '@site/lib/board.ts';
 import { AnswerDialog } from './AnswerDialog.tsx';
-import { Inline } from './Prose.tsx';
-import { useWrite } from './useWrite.ts';
+import { Inline } from './Inline.tsx';
+import { useWriteMutation } from '@site/app/hooks/useWriteMutation.ts';
 
-/**
- * An open question with "Answer…" (its answer dialog, which also deletes it), or an answered one
- * with a delete button.
- */
-export const QuestionRow = (props: { folder: string; question: QuestionView }) => {
+interface QuestionRowProps {
+  folder: string;
+  question: QuestionView;
+}
+
+export const QuestionRow: FC<QuestionRowProps> = (props) => {
   const [answering, setAnswering] = useState(false);
-  const remove = useWrite();
-  const q = props.question;
-  const options = q.options.map((option) => `(${option.id})`).join(' ');
+  const remove = useWriteMutation();
+  const question = props.question;
+  const options = question.options.map((option) => `(${option.id})`).join(' ');
   return (
     <li className="flex flex-col gap-1">
       <div className="flex items-start gap-2">
-        <Chip className="mt-0.5 shrink-0">{q.id}</Chip>
-        <Typography variant="caption" color="textTertiary" className="shrink-0 pt-0.5">
-          {q.open ? 'open' : `answered ${q.date ?? ''}`}
-        </Typography>
-        <Typography as="span" className="min-w-0 flex-1">
-          {q.open && <Inline markdown={q.question} />}
-          {q.open && options !== '' && <span className="text-text-tertiary"> {options}</span>}
-          {!q.open && <Inline markdown={q.body} />}
-        </Typography>
-        {!q.open && (
-          <Button
+        <PvChip className="mt-0.5 shrink-0">{question.id}</PvChip>
+        <PvTypography variant="caption" color="textTertiary" className="shrink-0 pt-0.5">
+          {question.open ? 'open' : `answered ${question.date ?? ''}`}
+        </PvTypography>
+        <PvTypography as="span" className="min-w-0 flex-1">
+          {question.open && <Inline markdown={question.question} />}
+          {question.open && options !== '' && (
+            <span className="text-text-tertiary"> {options}</span>
+          )}
+          {!question.open && <Inline markdown={question.body} />}
+        </PvTypography>
+        {!question.open && (
+          <PvButton
             variant="ghost"
             size="icon"
-            aria-label={`Delete ${q.id} with its comments`}
-            title={`Delete ${q.id} with its comments`}
+            aria-label={`Delete ${question.id} with its comments`}
+            title={`Delete ${question.id} with its comments`}
             loading={remove.isPending}
             className="-mt-1 hover:text-status-danger"
             onClick={() =>
               remove.mutate({
                 name: 'plan.deleteQuestion',
-                fields: { item: props.folder, expected: q.raw },
+                fields: { item: props.folder, expected: question.raw },
               })
             }
           >
             <Trash2 className="size-4" />
-          </Button>
+          </PvButton>
         )}
       </div>
-      {q.comments.length > 0 && (
+      {question.comments.length > 0 && (
         <ul className="list-disc pl-14 text-sm text-text-secondary marker:text-text-quaternary">
-          {q.comments.map((comment) => (
+          {question.comments.map((comment) => (
             <li key={comment}>
               <Inline markdown={comment} />
             </li>
           ))}
         </ul>
       )}
-      {q.open && (
+      {question.open && (
         <div className="flex justify-end">
-          <Button variant="secondary" size="sm" onClick={() => setAnswering(true)}>
+          <PvButton variant="secondary" size="sm" onClick={() => setAnswering(true)}>
             Answer…
-          </Button>
+          </PvButton>
           <AnswerDialog
             folder={props.folder}
-            question={q}
+            question={question}
             open={answering}
             onOpenChange={setAnswering}
           />

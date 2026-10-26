@@ -1,14 +1,14 @@
-import { useRef } from 'react';
+import { useRef, type FC } from 'react';
 import { Route } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
 import { useStudioStore } from '@/store/studio.ts';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { StudioRouteItem } from './StudioRouteItem.tsx';
 import { useGpxImport } from './hooks/useGpxImport.ts';
 
-export const StudioTab = () => {
+export const StudioTab: FC = () => {
   const routes = useStudioStore((s) => s.routes);
   const inputRef = useRef<HTMLInputElement>(null);
   const gpxImport = useGpxImport();
@@ -20,24 +20,24 @@ export const StudioTab = () => {
       ))}
 
       {routes.length === 0 && (
-        <Card className="flex-row items-center gap-3">
+        <PvCard className="flex-row items-center gap-3">
           <Route size={18} className="shrink-0 text-primary" />
           <div className="min-w-0">
-            <Typography>{m.ui_studio_nudge_title()}</Typography>
-            <Typography variant="caption" as="p">
+            <PvTypography>{m.ui_studio_nudge_title()}</PvTypography>
+            <PvTypography variant="caption" as="p">
               {m.ui_studio_nudge_desc()}
-            </Typography>
+            </PvTypography>
           </div>
-        </Card>
+        </PvCard>
       )}
 
-      <Button
+      <PvButton
         variant="primary"
         loading={gpxImport.importing}
         onClick={() => inputRef.current?.click()}
       >
         {m.ui_studio_cta_import()}
-      </Button>
+      </PvButton>
 
       <input
         ref={inputRef}
@@ -47,7 +47,7 @@ export const StudioTab = () => {
         className="hidden"
         data-testid="studio-gpx-input"
         onChange={(e) => {
-          gpxImport.handleFiles(e.target.files);
+          void gpxImport.handleFiles(e.target.files);
           e.target.value = '';
         }}
       />

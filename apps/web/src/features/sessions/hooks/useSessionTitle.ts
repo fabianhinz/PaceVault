@@ -1,7 +1,7 @@
 import type { TrainingSession } from '@pacevault/engine/types.ts';
 import { formatDate, formatDistance, formatDuration, formatSubSport } from '@/lib/formatters.ts';
 import { formatSessionName, formatSessionZoneLabel } from '@/lib/sessionTitleFormatter.ts';
-import { useThresholdsAt } from '@/lib/hooks/useThresholdsAt.ts';
+import { useThresholdsAt } from '@/features/settings/hooks/useThresholdsAt.ts';
 
 interface SessionTitle {
   title: string;
@@ -16,7 +16,11 @@ export const useSessionTitle = (session: TrainingSession | undefined): SessionTi
   }
 
   const title = formatSessionName(session);
-  const zoneLabel = formatSessionZoneLabel(session.avgHr, thresholds?.maxHr, thresholds?.restHr);
+  const zoneLabel = formatSessionZoneLabel({
+    avgHr: session.avgHr,
+    maxHr: thresholds?.maxHr,
+    restHr: thresholds?.restHr,
+  });
 
   const parts = [formatDate(session.date)];
   if (session.subSport && session.subSport !== 'generic') {

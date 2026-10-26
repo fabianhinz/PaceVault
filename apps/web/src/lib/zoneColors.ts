@@ -1,6 +1,13 @@
 import { scaleLinear } from 'd3-scale';
-import { HR_ZONE_DEFS, POWER_ZONE_DEFS } from '@pacevault/engine/zoneDistribution.ts';
-import { computeRunningZones } from '@pacevault/engine/zones.ts';
+import {
+  HEART_RATE_ZONES,
+  POWER_ZONES,
+  type HeartRateZoneName,
+  type PowerZoneName,
+  runningZonesFromThresholdPace,
+} from '@pacevault/engine/zones.ts';
+import type { RunningZoneName } from '@pacevault/engine/types.ts';
+import { tokens, type TokenColor } from '@pacevault/ui/lib/tokens.ts';
 
 export type ZoneMetric = 'hr' | 'power' | 'pace';
 
@@ -36,9 +43,9 @@ interface GradientStop {
 }
 
 export const WIND_COLORS = {
-  tail: '#34d399',
-  cross: '#fbbf24',
-  head: '#ef4444',
+  tail: tokens.windTail,
+  cross: tokens.windCross,
+  head: tokens.windHead,
 } as const;
 
 const windBlend = scaleLinear<string>()
@@ -48,17 +55,50 @@ const windBlend = scaleLinear<string>()
 
 export const windColorAt = (angle: number): string => windBlend(angle);
 
+export const COLOR_BY_RUNNING_ZONE: Record<RunningZoneName, TokenColor> = {
+  recovery: tokens.zoneBlue,
+  easy: tokens.zoneEmerald,
+  tempo: tokens.zoneAmber,
+  threshold: tokens.zoneOrange,
+  vo2max: tokens.zoneRed,
+};
+
+export const COLOR_BY_HEART_RATE_ZONE: Record<HeartRateZoneName, TokenColor> = {
+  recovery: tokens.zoneBlue,
+  aerobic: tokens.zoneEmerald,
+  tempo: tokens.zoneAmber,
+  threshold: tokens.zoneOrange,
+  vo2max: tokens.zoneRed,
+};
+
+export const COLOR_BY_POWER_ZONE: Record<PowerZoneName, TokenColor> = {
+  active_recovery: tokens.zoneSlate,
+  endurance: tokens.zoneBlue,
+  tempo: tokens.zoneEmerald,
+  threshold: tokens.zoneAmber,
+  vo2max: tokens.zoneOrange,
+  anaerobic: tokens.zoneRed,
+  neuromuscular: tokens.zoneCrimson,
+};
+
 const OPEN_ZONE_SPAN = 0.5;
 
-interface PctZoneDef {
+interface PctZoneDef<Name extends string> {
   zone: string;
-  name: string;
+  name: Name;
   minPct: number;
   maxPct: number;
-  color: string;
 }
 
-const pctBands = (defs: readonly PctZoneDef[], toValue: (pct: number) => number): ZoneBand[] =>
+const pctBands = <Name extends string>({
+  defs,
+  colorByName,
+  toValue,
+}: {
+  defs: readonly PctZoneDef<Name>[];
+  colorByName: Record<Name, string>;
+  toValue: (pct: number) => number;
+}): ZoneBand[] =>
   defs.map((def) => {
     let midMax = def.maxPct;
     if (!Number.isFinite(midMax)) {
@@ -70,52 +110,69 @@ const pctBands = (defs: readonly PctZoneDef[], toValue: (pct: number) => number)
       min: toValue(def.minPct),
       max: toValue(def.maxPct),
       mid: toValue((def.minPct + midMax) / 2),
-      color: def.color,
+      color: colorByName[def.name],
     };
   });
 
-const paceBands = (thresholdPaceSec: number): ZoneBand[] =>
-  computeRunningZones(thresholdPaceSec).map((zone, i) => {
-    const min = zone.maxPace / 60;
-    const max = zone.minPace / 60;
+const paceBands = (thresholdPaceSecPerKm: number): ZoneBand[] =>
+  runningZonesFromThresholdPace(thresholdPaceSecPerKm).map((zone, i) => {
+    const min = zone.fastestPaceSecPerKm / 60;
+    const max = zone.slowestPaceSecPerKm / 60;
     return {
       zone: `Z${i + 1}`,
       name: zone.name,
       min,
       max,
       mid: (min + max) / 2,
-      color: zone.color,
+      color: COLOR_BY_RUNNING_ZONE[zone.name],
     };
   });
 
 export const ZONE_PALETTES: Record<ZoneMetric, string[]> = {
-  hr: HR_ZONE_DEFS.map((def) => def.color),
-  power: POWER_ZONE_DEFS.map((def) => def.color),
-  pace: computeRunningZones(1).map((zone) => zone.color),
+  hr: HEART_RATE_ZONES.map((def) => COLOR_BY_HEART_RATE_ZONE[def.name]),
+  power: POWER_ZONES.map((def) => COLOR_BY_POWER_ZONE[def.name]),
+  pace: runningZonesFromThresholdPace(1).map((zone) => COLOR_BY_RUNNING_ZONE[zone.name]),
 };
 
-const bandsFor = (metric: ZoneMetric, thresholds: ZoneThresholds): ZoneBand[] | undefined => {
+const bandsFor = ({
+  metric,
+  thresholds,
+}: {
+  metric: ZoneMetric;
+  thresholds: ZoneThresholds;
+}): ZoneBand[] | undefined => {
   if (metric === 'hr') {
     const maxHr = thresholds.maxHr;
     const restHr = thresholds.restHr;
     if (maxHr === undefined || restHr === undefined || maxHr <= restHr) return undefined;
-    return pctBands(HR_ZONE_DEFS, (pct) => restHr + (maxHr - restHr) * pct);
+    return pctBands({
+      defs: HEART_RATE_ZONES,
+      colorByName: COLOR_BY_HEART_RATE_ZONE,
+      toValue: (pct) => restHr + (maxHr - restHr) * pct,
+    });
   }
   if (metric === 'power') {
     const ftp = thresholds.ftp;
     if (ftp === undefined || ftp <= 0) return undefined;
-    return pctBands(POWER_ZONE_DEFS, (pct) => ftp * pct);
+    return pctBands({
+      defs: POWER_ZONES,
+      colorByName: COLOR_BY_POWER_ZONE,
+      toValue: (pct) => ftp * pct,
+    });
   }
   const thresholdPace = thresholds.thresholdPace;
   if (thresholdPace === undefined || thresholdPace <= 0) return undefined;
   return paceBands(thresholdPace);
 };
 
-export const zoneScale = (
-  metric: ZoneMetric,
-  thresholds: ZoneThresholds,
-): ZoneScale | undefined => {
-  const unsorted = bandsFor(metric, thresholds);
+export const zoneScale = ({
+  metric,
+  thresholds,
+}: {
+  metric: ZoneMetric;
+  thresholds: ZoneThresholds;
+}): ZoneScale | undefined => {
+  const unsorted = bandsFor({ metric, thresholds });
   if (!unsorted) return undefined;
   const bands = [...unsorted].sort((a, b) => a.min - b.min);
   const blend = scaleLinear<string>()
@@ -136,11 +193,15 @@ export const zoneScale = (
   };
 };
 
-const zoneGradientStops = (
-  scale: ColorScale,
-  values: Array<number | null | undefined>,
-  reversed: boolean,
-): GradientStop[] | undefined => {
+const zoneGradientStops = ({
+  scale,
+  values,
+  reversed,
+}: {
+  scale: ColorScale;
+  values: Array<number | null | undefined>;
+  reversed: boolean;
+}): GradientStop[] | undefined => {
   const present = values.filter((v): v is number => v !== null && v !== undefined);
   if (present.length === 0) return undefined;
   const min = Math.min(...present);
@@ -161,14 +222,19 @@ interface ZoneLineStroke {
   stops?: GradientStop[];
 }
 
-export const zoneLineStroke = (
-  scale: ColorScale | undefined,
-  values: Array<number | null | undefined>,
-  reversed: boolean,
-  gradientId: string,
-): ZoneLineStroke | undefined => {
+export const zoneLineStroke = ({
+  scale,
+  values,
+  reversed,
+  gradientId,
+}: {
+  scale: ColorScale | undefined;
+  values: Array<number | null | undefined>;
+  reversed: boolean;
+  gradientId: string;
+}): ZoneLineStroke | undefined => {
   if (!scale) return undefined;
-  const stops = zoneGradientStops(scale, values, reversed);
+  const stops = zoneGradientStops({ scale, values, reversed });
   if (stops) return { stroke: `url(#${gradientId})`, stops };
   const first = values.find((v): v is number => v !== null && v !== undefined);
   if (first === undefined) return undefined;

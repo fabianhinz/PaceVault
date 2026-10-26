@@ -1,6 +1,6 @@
-import { calculateSessionStress, calculateSummaryStress } from '@pacevault/engine/stress.ts';
+import { stressFromRecords, stressFromSummary } from '@pacevault/engine/stress.ts';
 import type { SessionRecord, TrainingSession } from '@pacevault/engine/types.ts';
-import type { UserProfile } from '@/types/index.ts';
+import type { UserProfile } from '@/types.ts';
 import { thresholdsAt } from '@/lib/thresholdsAt.ts';
 
 export type StoredSessionStress = Pick<TrainingSession, 'tss' | 'stressMethod' | 'normalizedPower'>;
@@ -11,20 +11,23 @@ type StressInputs = Pick<
 >;
 
 /** Metadata path: re-scores from the stored summary, reads no records. */
-export const sessionStressAt = (
-  session: StressInputs,
-  profile: UserProfile,
-): StoredSessionStress => {
-  const thresholds = thresholdsAt(profile, session.date);
-  const stress = calculateSummaryStress(
-    session.sport,
-    {
+export const sessionStressAt = ({
+  session,
+  profile,
+}: {
+  session: StressInputs;
+  profile: UserProfile;
+}): StoredSessionStress => {
+  const thresholds = thresholdsAt({ profile, date: session.date });
+  const stress = stressFromSummary({
+    sport: session.sport,
+    summary: {
       durationSec: session.duration,
       avgHr: session.avgHr,
       normalizedPower: session.normalizedPower,
     },
     thresholds,
-  );
+  });
   return {
     tss: stress.tss,
     stressMethod: stress.stressMethod,
@@ -33,17 +36,21 @@ export const sessionStressAt = (
 };
 
 /** Records path: the same call as the parser, with the thresholds at the session date. */
-export const sessionStressFromRecordsAt = (
-  session: StressInputs,
-  records: SessionRecord[],
-  profile: UserProfile,
-): StoredSessionStress => {
-  const stress = calculateSessionStress(
-    session.sport,
+export const sessionStressFromRecordsAt = ({
+  session,
+  records,
+  profile,
+}: {
+  session: StressInputs;
+  records: SessionRecord[];
+  profile: UserProfile;
+}): StoredSessionStress => {
+  const stress = stressFromRecords({
+    sport: session.sport,
     records,
-    { durationSec: session.duration, avgHr: session.avgHr },
-    thresholdsAt(profile, session.date),
-  );
+    summary: { durationSec: session.duration, avgHr: session.avgHr },
+    thresholds: thresholdsAt({ profile, date: session.date }),
+  });
   return {
     tss: stress.tss,
     stressMethod: stress.stressMethod,

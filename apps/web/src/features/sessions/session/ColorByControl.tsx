@@ -1,104 +1,44 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { ChevronDown, Layers } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
-import { ResponsivePopover } from '@pacevault/ui/components/ResponsivePopover.tsx';
-import { RadioGroup, RadioGroupItem } from '@pacevault/ui/components/RadioGroup.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import { FloatingPill } from '@pacevault/ui/components/FloatingPill.tsx';
-import { cn } from '@pacevault/ui/lib/cn.ts';
-import { tokens } from '@pacevault/ui/lib/tokens.ts';
-import { WIND_COLORS, ZONE_PALETTES } from '@/lib/zoneColors.ts';
-import { SPEED_PALETTE, type SpeedScale } from '@/lib/speedScale.ts';
-import type {
-  ColorMode,
-  ColorModeOption,
-  ColorModeStatus,
-  ColorModeUnavailableReason,
-} from '@/lib/colorModes.ts';
+import { PvResponsivePopover } from '@pacevault/ui/components/pvResponsivePopover/PvResponsivePopover.tsx';
+import { PvRadioGroup } from '@pacevault/ui/components/pvRadioGroup/PvRadioGroup.tsx';
+import { PvRadioGroupItem } from '@pacevault/ui/components/pvRadioGroup/PvRadioGroupItem.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import { PvFloatingPill } from '@pacevault/ui/components/pvFloatingPill/PvFloatingPill.tsx';
+import { PvResponsivePopoverHeading } from '@pacevault/ui/components/pvResponsivePopover/PvResponsivePopoverHeading.tsx';
+import type { SpeedScale } from '@/lib/speedScale.ts';
+import type { ColorMode, ColorModeOption, ColorModeStatus } from '@/lib/colorModes.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { speedRangeLabel } from './lapLabels.ts';
+import { Swatch } from './Swatch.tsx';
 import type { Sport } from '@pacevault/engine/types.ts';
-
-const MODE_LABEL: Record<ColorMode, () => string> = {
-  sport: m.ui_color_by_sport,
-  hr: m.ui_color_by_hr,
-  power: m.ui_color_by_power,
-  pace: m.ui_color_by_pace,
-  speed: m.ui_color_by_speed,
-  wind: m.ui_color_by_wind,
-};
-
-const MODE_DESC: Record<Exclude<ColorMode, 'speed'>, () => string> = {
-  sport: m.ui_color_by_sport_desc,
-  hr: m.ui_color_by_hr_desc,
-  power: m.ui_color_by_power_desc,
-  pace: m.ui_color_by_pace_desc,
-  wind: m.ui_color_by_wind_desc,
-};
-
-const PILL_LABEL: Record<ColorMode, () => string> = {
-  sport: m.ui_color_by,
-  hr: m.ui_color_by_pill_hr,
-  power: m.ui_color_by_pill_power,
-  pace: m.ui_color_by_pill_pace,
-  speed: m.ui_color_by_pill_speed,
-  wind: m.ui_color_by_pill_wind,
-};
-
-const COMPACT_MODE_LABEL: Record<ColorMode, () => string> = {
-  ...PILL_LABEL,
-  sport: m.ui_color_by_sport,
-};
-
-const REASON: Record<ColorModeUnavailableReason, () => string> = {
-  hrThresholds: m.ui_color_by_reason_hrThresholds,
-  ftp: m.ui_color_by_reason_ftp,
-  thresholdPace: m.ui_color_by_reason_thresholdPace,
-  noHrData: m.ui_color_by_reason_noHrData,
-  noPowerData: m.ui_color_by_reason_noPowerData,
-  noPaceData: m.ui_color_by_reason_noPaceData,
-  noSpeedData: m.ui_color_by_reason_noSpeedData,
-  noWeather: m.ui_color_by_reason_noWeather,
-  weatherLoading: m.ui_color_by_reason_weatherLoading,
-  noGps: m.ui_color_by_reason_noGps,
-};
-
-const SPORT_COLOR: Record<Sport, string> = {
-  running: tokens.sportRunning,
-  cycling: tokens.sportCycling,
-};
-
-const gradient = (colors: readonly string[]) => `linear-gradient(to right, ${colors.join(', ')})`;
-
-const swatchBackground = (mode: ColorMode, sport: Sport): string => {
-  if (mode === 'sport') return SPORT_COLOR[sport];
-  if (mode === 'wind') return gradient([WIND_COLORS.tail, WIND_COLORS.cross, WIND_COLORS.head]);
-  if (mode === 'speed') return gradient(SPEED_PALETTE);
-  return gradient(ZONE_PALETTES[mode]);
-};
-
-const Swatch = (props: { mode: ColorMode; sport: Sport; muted?: boolean }) => (
-  <span
-    aria-hidden
-    className={cn('h-2 w-12 shrink-0 rounded-full', props.muted && 'opacity-30 grayscale')}
-    style={{ background: swatchBackground(props.mode, props.sport) }}
-  />
-);
+import {
+  COMPACT_LABEL_BY_COLOR_MODE,
+  DESCRIPTION_BY_COLOR_MODE,
+  LABEL_BY_COLOR_MODE,
+  PILL_LABEL_BY_COLOR_MODE,
+  REASON_BY_UNAVAILABLE_COLOR_MODE,
+} from '@/microcopy/colorModes.ts';
 
 const speedRange = (scale: SpeedScale | undefined): string => {
   if (!scale) return '';
-  return speedRangeLabel(scale.slowKmh, scale.fastKmh);
+  return speedRangeLabel({ slowKmh: scale.slowKmh, fastKmh: scale.fastKmh });
 };
 
-const statusText = (
-  mode: ColorMode,
-  status: ColorModeStatus,
-  speedScale: SpeedScale | undefined,
-): string => {
-  if (!status.available) return REASON[status.reason]();
+const statusText = ({
+  mode,
+  status,
+  speedScale,
+}: {
+  mode: ColorMode;
+  status: ColorModeStatus;
+  speedScale: SpeedScale | undefined;
+}): string => {
+  if (!status.available) return REASON_BY_UNAVAILABLE_COLOR_MODE[status.reason]();
   if (mode === 'speed') return m.ui_color_by_speed_desc({ range: speedRange(speedScale) });
-  return MODE_DESC[mode]();
+  return DESCRIPTION_BY_COLOR_MODE[mode]();
 };
 
 interface ColorByControlProps {
@@ -108,12 +48,13 @@ interface ColorByControlProps {
   speedScale: SpeedScale | undefined;
 }
 
-export const ColorByControl = (props: ColorByControlProps) => {
+export const ColorByControl: FC<ColorByControlProps> = (props) => {
   const [open, setOpen] = useState(false);
-  const hasSelectedLap = useMapControlsStore((s) => s.selectedLapIndex !== null);
+  const lapSelected = useMapControlsStore((s) => s.selectedLapIndex !== null);
 
   return (
-    <ResponsivePopover
+    <PvResponsivePopover
+      closeLabel={m.ui_sheet_drag_close()}
       open={open}
       onOpenChange={setOpen}
       title={m.ui_color_by()}
@@ -122,59 +63,63 @@ export const ColorByControl = (props: ColorByControlProps) => {
       align="center"
       className="lg:w-80"
       trigger={
-        hasSelectedLap ? (
-          <FloatingPill
+        lapSelected ? (
+          <PvFloatingPill
             data-testid="color-by-pill"
             aria-label={m.ui_color_by_compact_label({
-              mode: COMPACT_MODE_LABEL[props.effective](),
+              mode: COMPACT_LABEL_BY_COLOR_MODE[props.effective](),
             })}
             className="size-11 justify-center p-0"
           >
             <Layers size={16} />
-          </FloatingPill>
+          </PvFloatingPill>
         ) : (
-          <FloatingPill data-testid="color-by-pill" className="h-11">
+          <PvFloatingPill data-testid="color-by-pill" className="h-11">
             <Layers size={16} />
-            <span>{PILL_LABEL[props.effective]()}</span>
+            <span>{PILL_LABEL_BY_COLOR_MODE[props.effective]()}</span>
             {props.effective !== 'sport' && <Swatch mode={props.effective} sport={props.sport} />}
             <ChevronDown size={14} className="text-text-tertiary" />
-          </FloatingPill>
+          </PvFloatingPill>
         )
       }
     >
-      <div className="mb-3 flex items-center gap-2 text-text-tertiary max-lg:hidden">
-        <Layers size={14} />
-        <Typography variant="caption">{m.ui_color_by()}</Typography>
-      </div>
-      <RadioGroup
+      <PvResponsivePopoverHeading icon={Layers} title={m.ui_color_by()} />
+      <PvRadioGroup
         value={props.effective}
         onValueChange={(value) => {
           const option = props.options.find((candidate) => candidate.mode === value);
           if (option === undefined) return;
-          useMapPreferencesStore.getState().setSessionColorMode(props.sport, option.mode);
+          useMapPreferencesStore
+            .getState()
+            .setSessionColorMode({ sport: props.sport, mode: option.mode });
           setOpen(false);
         }}
         className="gap-1"
       >
         {props.options.map((option) => (
-          <RadioGroupItem
+          <PvRadioGroupItem
             key={option.mode}
             value={option.mode}
+            aria-label={LABEL_BY_COLOR_MODE[option.mode]()}
             disabled={!option.status.available}
             className="rounded-lg px-2 py-2 hover:bg-white/5 data-[state=checked]:bg-white/5"
           >
             <span className="min-w-0 flex-1">
-              <Typography variant="subtitle1" as="span" className="block">
-                {MODE_LABEL[option.mode]()}
-              </Typography>
-              <Typography variant="caption" as="span" color="textTertiary" className="block">
-                {statusText(option.mode, option.status, props.speedScale)}
-              </Typography>
+              <PvTypography variant="subtitle1" as="span" className="block">
+                {LABEL_BY_COLOR_MODE[option.mode]()}
+              </PvTypography>
+              <PvTypography variant="caption" as="span" color="textTertiary" className="block">
+                {statusText({
+                  mode: option.mode,
+                  status: option.status,
+                  speedScale: props.speedScale,
+                })}
+              </PvTypography>
             </span>
             <Swatch mode={option.mode} sport={props.sport} muted={!option.status.available} />
-          </RadioGroupItem>
+          </PvRadioGroupItem>
         ))}
-      </RadioGroup>
-    </ResponsivePopover>
+      </PvRadioGroup>
+    </PvResponsivePopover>
   );
 };

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
+import { FailedResponseError } from '@/lib/fetchResponse.ts';
 import {
   downloadActivityFit,
+  intervalsErrorCode,
   listIntervalsActivities,
   verifyIntervalsKey,
   type IntervalsActivity,
@@ -28,9 +30,8 @@ afterEach(() => {
 
 const listWith = async (activities: Array<Partial<IntervalsActivity> & { id: string }>) => {
   stubFetch(async () => Response.json(activities.map((a) => activity(a))));
-  const result = await listIntervalsActivities(KEY);
-  if (!result.ok) throw new Error('expected a successful listing');
-  return result.data.map((a) => a.id);
+  const listed = await listIntervalsActivities({ apiKey: KEY });
+  return listed.map((a) => a.id);
 };
 
 describe('listIntervalsActivities filtering', () => {
@@ -79,41 +80,43 @@ describe('listIntervalsActivities filtering', () => {
   });
 });
 
-describe('verifyIntervalsKey', () => {
+describe(verifyIntervalsKey.name, () => {
   it('sends basic auth with the literal username API_KEY and omits credentials', async () => {
     const spy = stubFetch(async () => Response.json({ firstname: 'Fabian' }));
 
-    const result = await verifyIntervalsKey(KEY);
-
-    expect(result).toEqual({ ok: true, data: true });
+    await expect(verifyIntervalsKey(KEY)).resolves.toBeUndefined();
 
     const url = spy.mock.calls[0]?.[0] ?? '';
     const init = spy.mock.calls[0]?.[1] ?? {};
     expect(url).toBe('https://intervals.icu/api/v1/athlete/0');
     expect(url).not.toContain(KEY);
     expect(init.credentials).toBe('omit');
-    expect((init.headers as Record<string, string>).Authorization).toBe(
-      `Basic ${btoa(`API_KEY:${KEY}`)}`,
-    );
+    expect(new Headers(init.headers).get('Authorization')).toBe(`Basic ${btoa(`API_KEY:${KEY}`)}`);
+  });
+
+  it('rejects with the failed response when the key is refused', async () => {
+    stubFetch(async () => new Response('{}', { status: 401 }));
+
+    await expect(verifyIntervalsKey(KEY)).rejects.toMatchObject({
+      name: 'FailedResponseError',
+      reason: 'unauthorized',
+    });
   });
 });
 
-describe('listIntervalsActivities', () => {
+describe(listIntervalsActivities.name, () => {
   it('drops malformed rows without voiding the listing', async () => {
     stubFetch(async () => Response.json([{ id: 'i1' }, { name: 'no id' }, { id: 'i2' }]));
 
-    const result = await listIntervalsActivities(KEY);
-
-    expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.map((a) => a.id)).toEqual(['i1', 'i2']);
+    expect((await listIntervalsActivities({ apiKey: KEY })).map((a) => a.id)).toEqual(['i1', 'i2']);
   });
 });
 
-describe('downloadActivityFit', () => {
+describe(downloadActivityFit.name, () => {
   it('prefers the device original for FIT uploads, because it carries the file_id', async () => {
     const spy = stubFetch(async () => new Response(new Uint8Array([1, 2])));
 
-    await downloadActivityFit(KEY, activity({ id: 'i1', file_type: 'fit' }));
+    await downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) });
 
     expect(spy.mock.calls[0]?.[0] ?? '').toContain('/activity/i1/file');
     expect(spy).toHaveBeenCalledTimes(1);
@@ -125,9 +128,35 @@ describe('downloadActivityFit', () => {
       return new Response(new Uint8Array([1, 2]));
     });
 
-    const result = await downloadActivityFit(KEY, activity({ id: 'i1', file_type: 'fit' }));
-
-    expect(result.ok).toBe(true);
+    await expect(
+      downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) }),
+    ).resolves.toBeInstanceOf(ArrayBuffer);
     expect(spy.mock.calls[1]?.[0] ?? '').toContain('/activity/i1/fit-file');
+  });
+
+  it('does not fall back to the generated file when the original is rate-limited', async () => {
+    const spy = stubFetch(async () => new Response('{}', { status: 429 }));
+
+    await expect(
+      downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) }),
+    ).rejects.toMatchObject({ name: 'FailedResponseError', reason: 'rate-limited' });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe(intervalsErrorCode.name, () => {
+  it('reads the code from the failed response type, not from the message', () => {
+    const error = new FailedResponseError({
+      operation: 'intervals.icu GET /athlete/0',
+      response: new Response('{}', { status: 429 }),
+    });
+
+    expect(error).toMatchObject({ name: 'FailedResponseError', reason: 'rate-limited' });
+    expect(intervalsErrorCode(error)).toBe('rate-limited');
+  });
+
+  it('maps a fetch TypeError to network and any other error to failed', () => {
+    expect(intervalsErrorCode(new TypeError('Failed to fetch'))).toBe('network');
+    expect(intervalsErrorCode(new Error('rate-limited'))).toBe('failed');
   });
 });

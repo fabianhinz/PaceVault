@@ -4,7 +4,7 @@ import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
 
 export const useSessionReprocessingActive = (): boolean => {
   const phase = useSessionReprocessingStore((s) => s.phase);
-  const hasOutdatedSessions = useSessionsStore((s) => s.sessions.some(isSessionOutdated));
+  const outdatedSessionsPresent = useSessionsStore((s) => s.sessions.some(isSessionOutdated));
   if (phase === 'waiting' || phase === 'running') return true;
-  return phase === 'pending' && hasOutdatedSessions;
+  return phase === 'pending' && outdatedSessionsPresent;
 };

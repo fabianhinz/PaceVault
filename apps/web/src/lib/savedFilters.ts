@@ -2,8 +2,8 @@ import { v4 } from 'uuid';
 import { m } from '@pacevault/i18n/messages.js';
 import { getLocale } from '@pacevault/i18n/runtime.js';
 import type { Sport, TrainingSession } from '@pacevault/engine/types.ts';
-import { ATTRIBUTE_FILTER_KEYS, matchesFuzzy } from '@/lib/attributeFilters.ts';
 import { normalizeText } from '@/lib/filterVocabulary.ts';
+import { formatDate, formatDateRange, formatNumber } from '@/lib/formatters.ts';
 import {
   type FilterCalendarUnit,
   type FilterTime,
@@ -11,6 +11,53 @@ import {
   parseDayKey,
   resolveFilterRange,
 } from '@/lib/timeRange.ts';
+import { LABEL_BY_SPORT } from '@/microcopy/sports.ts';
+
+interface AttributeConfig {
+  tolerance: number;
+  minWindow: number;
+}
+
+const ATTRIBUTE_CONFIG = {
+  duration: { tolerance: 0.2, minWindow: 600 },
+  distance: { tolerance: 0.15, minWindow: 500 },
+  elevationGain: { tolerance: 0.25, minWindow: 150 },
+} satisfies Record<string, AttributeConfig>;
+
+type AttributeFilterKey = keyof typeof ATTRIBUTE_CONFIG;
+
+export const ATTRIBUTE_FILTER_KEYS = Object.keys(ATTRIBUTE_CONFIG) as AttributeFilterKey[];
+
+export const fuzzyBounds = ({
+  key,
+  target,
+}: {
+  key: AttributeFilterKey;
+  target: number;
+}): { min: number; max: number } => {
+  const config = ATTRIBUTE_CONFIG[key];
+  const window = Math.max(target * config.tolerance, config.minWindow);
+  return { min: Math.max(0, target - window), max: target + window };
+};
+
+export const matchesFuzzy = ({
+  value,
+  key,
+  target,
+}: {
+  value: number | undefined;
+  key: AttributeFilterKey;
+  target: number | null;
+}): boolean => {
+  if (typeof target !== 'number') {
+    return true;
+  }
+  if (value === undefined) {
+    return false;
+  }
+  const bounds = fuzzyBounds({ key, target });
+  return value >= bounds.min && value <= bounds.max;
+};
 
 export interface FilterCriteria {
   sport: Sport | null;
@@ -89,7 +136,13 @@ export const filterKey = (criteria: FilterCriteria): string =>
     criteria.name ?? '',
   ].join('|');
 
-const matchesName = (sessionName: string | undefined, name: string | null): boolean => {
+const hasMatchingName = ({
+  sessionName,
+  name,
+}: {
+  sessionName: string | undefined;
+  name: string | null;
+}): boolean => {
   if (name === null) {
     return true;
   }
@@ -102,46 +155,44 @@ const matchesName = (sessionName: string | undefined, name: string | null): bool
     .every((word) => haystack.includes(word));
 };
 
-export const matchesFilters = (
-  session: FilterSession,
-  criteria: FilterCriteria | null,
-  now: number,
-): boolean => {
+export const matchesFilters = ({
+  session,
+  criteria,
+  now,
+}: {
+  session: FilterSession;
+  criteria: FilterCriteria | null;
+  now: number;
+}): boolean => {
   if (criteria === null) {
     return true;
   }
   if (criteria.sport !== null && session.sport !== criteria.sport) {
     return false;
   }
-  const range = resolveFilterRange(criteria.time, now);
+  const range = resolveFilterRange({ time: criteria.time, now });
   if (range !== null && (session.date < range.from || session.date > range.to)) {
     return false;
   }
-  if (!matchesName(session.name, criteria.name)) {
+  if (!hasMatchingName({ sessionName: session.name, name: criteria.name })) {
     return false;
   }
   return (
-    matchesFuzzy(session.duration, 'duration', criteria.duration) &&
-    matchesFuzzy(session.distance, 'distance', criteria.distance) &&
-    matchesFuzzy(session.elevationGain, 'elevationGain', criteria.elevationGain)
+    matchesFuzzy({ value: session.duration, key: 'duration', target: criteria.duration }) &&
+    matchesFuzzy({ value: session.distance, key: 'distance', target: criteria.distance }) &&
+    matchesFuzzy({
+      value: session.elevationGain,
+      key: 'elevationGain',
+      target: criteria.elevationGain,
+    })
   );
 };
-
-const formatNumber = (value: number): string =>
-  new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 1, useGrouping: false }).format(
-    value,
-  );
 
 const capitalize = (text: string): string =>
   text.charAt(0).toLocaleUpperCase(getLocale()) + text.slice(1);
 
-const sportLabels: Record<Sport, () => string> = {
-  running: m.ui_sport_running,
-  cycling: m.ui_sport_cycling,
-};
-
-const relativeLabel = (amount: number, unit: FilterTimeUnit): string => {
-  const count = formatNumber(amount);
+const relativeLabel = ({ amount, unit }: { amount: number; unit: FilterTimeUnit }): string => {
+  const count = formatNumber(amount, 'one-decimal-ungrouped');
   if (unit === 'week') {
     if (amount === 1) {
       return m.ui_filter_last_week();
@@ -169,7 +220,7 @@ const relativeLabel = (amount: number, unit: FilterTimeUnit): string => {
   return m.ui_filter_last_days({ count });
 };
 
-const calendarLabel = (unit: FilterCalendarUnit, ago: number): string => {
+const calendarLabel = ({ unit, ago }: { unit: FilterCalendarUnit; ago: number }): string => {
   if (unit === 'day' && ago === 0) {
     return m.ui_filter_today();
   }
@@ -182,19 +233,16 @@ const calendarLabel = (unit: FilterCalendarUnit, ago: number): string => {
   if (unit === 'month' && ago === 0) {
     return m.ui_filter_this_month();
   }
-  const range = resolveFilterRange({ kind: 'calendar', unit, ago }, Date.now());
+  const range = resolveFilterRange({ time: { kind: 'calendar', unit, ago }, now: Date.now() });
   if (range === null) {
     return '';
   }
-  return new Intl.DateTimeFormat(getLocale(), { day: 'numeric', month: 'short' }).formatRange(
-    range.from,
-    range.to,
-  );
+  return formatDateRange(range.from, range.to, 'day-month');
 };
 
 const timeLabel = (time: FilterTime): string => {
   if (time.kind === 'relative') {
-    return relativeLabel(time.amount, time.unit);
+    return relativeLabel({ amount: time.amount, unit: time.unit });
   }
   if (time.kind === 'calendarYear') {
     if (time.yearsAgo === 0) {
@@ -203,7 +251,7 @@ const timeLabel = (time: FilterTime): string => {
     return String(new Date().getFullYear() - time.yearsAgo);
   }
   if (time.kind === 'calendar') {
-    return calendarLabel(time.unit, time.ago);
+    return calendarLabel({ unit: time.unit, ago: time.ago });
   }
   if (time.kind === 'since') {
     const since = parseDayKey(time.from);
@@ -211,7 +259,7 @@ const timeLabel = (time: FilterTime): string => {
       return m.ui_filter_since({ date: String(since.getFullYear()) });
     }
     return m.ui_filter_since({
-      date: new Intl.DateTimeFormat(getLocale(), { month: 'long', year: 'numeric' }).format(since),
+      date: formatDate(since, 'month-year'),
     });
   }
   const from = parseDayKey(time.from);
@@ -220,25 +268,19 @@ const timeLabel = (time: FilterTime): string => {
     return String(from.getFullYear());
   }
   if (time.source === 'month') {
-    return new Intl.DateTimeFormat(getLocale(), { month: 'long', year: 'numeric' }).format(from);
+    return formatDate(from, 'month-year');
   }
   if (time.source === 'months') {
-    return new Intl.DateTimeFormat(getLocale(), { month: 'short', year: 'numeric' }).formatRange(
-      from,
-      to,
-    );
+    return formatDateRange(from, to, 'month-year-short');
   }
-  return new Intl.DateTimeFormat(getLocale(), { day: 'numeric', month: 'short' }).formatRange(
-    from,
-    to,
-  );
+  return formatDateRange(from, to, 'day-month');
 };
 
 const durationLabel = (seconds: number): string => {
   if (seconds >= 3600 && seconds % 360 === 0) {
-    return `${formatNumber(seconds / 3600)} h`;
+    return `${formatNumber(seconds / 3600, 'one-decimal-ungrouped')} h`;
   }
-  return `${formatNumber(Math.round(seconds / 60))} min`;
+  return `${formatNumber(Math.round(seconds / 60), 'one-decimal-ungrouped')} min`;
 };
 
 interface FilterPart {
@@ -249,7 +291,7 @@ interface FilterPart {
 export const filterParts = (criteria: FilterCriteria): FilterPart[] => {
   const parts: FilterPart[] = [];
   if (criteria.sport !== null) {
-    parts.push({ kind: 'sport', label: sportLabels[criteria.sport]() });
+    parts.push({ kind: 'sport', label: LABEL_BY_SPORT[criteria.sport]() });
   }
   if (criteria.time !== null) {
     parts.push({ kind: 'time', label: timeLabel(criteria.time) });
@@ -257,7 +299,9 @@ export const filterParts = (criteria: FilterCriteria): FilterPart[] => {
   if (criteria.distance !== null) {
     parts.push({
       kind: 'distance',
-      label: m.ui_filter_approx({ value: `${formatNumber(criteria.distance / 1000)} km` }),
+      label: m.ui_filter_approx({
+        value: `${formatNumber(criteria.distance / 1000, 'one-decimal-ungrouped')} km`,
+      }),
     });
   }
   if (criteria.duration !== null) {
@@ -270,7 +314,9 @@ export const filterParts = (criteria: FilterCriteria): FilterPart[] => {
     parts.push({
       kind: 'elevationGain',
       label: m.ui_filter_approx({
-        value: m.ui_filter_elevation({ value: formatNumber(criteria.elevationGain) }),
+        value: m.ui_filter_elevation({
+          value: formatNumber(criteria.elevationGain, 'one-decimal-ungrouped'),
+        }),
       }),
     });
   }
@@ -302,17 +348,6 @@ export const filterTile = (
   return { kind: head.kind, title: capitalize(head.label), description: rest.join(' · ') };
 };
 
-const dayMonthRange = (from: Date, to: Date): string => {
-  const parts = new Intl.DateTimeFormat(getLocale(), {
-    day: 'numeric',
-    month: 'short',
-  }).formatRangeToParts(from, to);
-  return parts
-    .filter((part, i) => part.type !== 'year' && parts[i + 1]?.type !== 'year')
-    .map((part) => part.value)
-    .join('');
-};
-
 export const zoomTile = (
   criteria: FilterCriteria | null,
 ): { title: string; description: string } | null => {
@@ -328,10 +363,7 @@ export const zoomTile = (
     .filter((part) => part.kind !== 'time')
     .map((part) => part.label);
   return {
-    title: dayMonthRange(from, to),
-    description: [
-      new Intl.DateTimeFormat(getLocale(), { year: 'numeric' }).formatRange(from, to),
-      ...rest,
-    ].join(' · '),
+    title: formatDateRange(from, to, 'day-month-without-year'),
+    description: [formatDateRange(from, to, 'year'), ...rest].join(' · '),
   };
 };

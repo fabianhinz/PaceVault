@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import type { FC } from 'react';
 import {
   ComposedChart,
   Area,
@@ -9,137 +9,81 @@ import {
   Tooltip as RechartsTooltip,
   ReferenceArea,
 } from 'recharts';
-import * as TabsPrimitive from '@radix-ui/react-tabs';
-import { ChartRow } from '@pacevault/ui/components/ChartsCard.tsx';
-import { TabsTrigger } from '@pacevault/ui/components/Tabs.tsx';
-import { MultiSeriesRail } from '@/components/charts/ChartRail.tsx';
+import { PvChartRow } from '@pacevault/ui/components/pvChartsCard/PvChartRow.tsx';
+import { PvTabs } from '@pacevault/ui/components/pvTabs/PvTabs.tsx';
+import { PvTabsList } from '@pacevault/ui/components/pvTabs/PvTabsList.tsx';
+import { PvTabsTrigger } from '@pacevault/ui/components/pvTabs/PvTabsTrigger.tsx';
+import { MultiSeriesRail } from '@/components/charts/MultiSeriesRail.tsx';
 import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
 import { chartTheme } from '@/lib/chartTheme.ts';
 import { hoverOnlyTooltip } from '@/lib/chartHover.ts';
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
 import {
   VOLUME_METRICS,
-  formatVolume,
   formatVolumeTick,
   DASHBOARD_Y_AXIS_WIDTH,
-  volumeUnit,
   type VolumeMetric,
-  type VolumeTotal,
 } from '@/lib/dashboardVolume.ts';
-import type { ChartHoverX } from '@/store/chartHover.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-import { SPORTS, type Sport } from '@pacevault/engine/types.ts';
 import { m } from '@pacevault/i18n/messages.js';
 import { formatDashboardDate } from './dashboardDate.ts';
 import { useDashboardAxis } from './hooks/useDashboardAxis.ts';
 import { useVolumeSeries } from './hooks/useVolumeSeries.ts';
+import { useDashboardSports } from './hooks/useDashboardSports.ts';
+import { useVolumeChartRails } from './hooks/useVolumeChartRails.ts';
+import { LegendLine } from './LegendLine.tsx';
+import { sportColors } from './types.ts';
 import { DASHBOARD_HOVER_GROUP, useDashboardChartEvents } from './hooks/useDashboardChartEvents.ts';
+import { LABEL_BY_VOLUME_METRIC } from '@/microcopy/volume.ts';
 
-const sportColors: Record<Sport, string> = {
-  running: tokens.sportRunning,
-  cycling: tokens.sportCycling,
-};
-
-const metricLabels: Record<VolumeMetric, () => string> = {
-  distance: m.ui_volume_distance,
-  duration: m.ui_volume_duration,
-  elevation: m.ui_volume_elevation,
-};
-
-const sessionCount = (count: number) => {
-  if (count === 1) return m.ui_count_sessions_one();
-  return m.ui_count_sessions_other({ count: String(count) });
-};
-
-const LegendLine = (props: { color: string; dashed?: boolean; label: string }) => (
-  <span className="inline-flex items-center gap-1.5">
-    <span
-      className="w-3.5 border-t-2"
-      style={{ borderColor: props.color, borderTopStyle: props.dashed ? 'dashed' : 'solid' }}
-    />
-    {props.label}
-  </span>
-);
-
-export const VolumeChart = () => {
+export const VolumeChart: FC = () => {
   const axis = useDashboardAxis();
   const metric = useFiltersStore((s) => s.volumeChartMetric);
-  const sportFilter = useFiltersStore((s) => s.activeFilter?.sport ?? null);
-
-  const sports = useMemo(() => {
-    if (sportFilter === null) return [...SPORTS];
-    return [sportFilter];
-  }, [sportFilter]);
-
+  const sports = useDashboardSports();
   const series = useVolumeSeries(axis);
-
   const zoom = useChartZoom({
     data: series.rows,
     xKey: 'date',
     onZoomComplete: axis.onZoomComplete,
   });
   const events = useDashboardChartEvents(zoom);
-
-  let lineColor: string = tokens.textPrimary;
-  if (sportFilter !== null) {
-    lineColor = sportColors[sportFilter];
-  }
-  const unit = volumeUnit(metric);
-  const last = series.rows.length - 1;
-  const hasData = series.rows.length > 0;
-
-  const railRow = (key: string, totals: VolumeTotal[], name: string, color: string) => ({
-    key,
-    name,
-    color,
-    unit,
-    rest: {
-      value: formatVolume(metric, totals[last]?.value),
-      secondary: sessionCount(totals[last]?.sessions ?? 0),
-    },
-    readingAt: (x: ChartHoverX) => {
-      const index = series.indexByDate.get(x);
-      if (index === undefined) return undefined;
-      const total = totals[index];
-      if (total === undefined) return undefined;
-      return { value: formatVolume(metric, total.value), secondary: sessionCount(total.sessions) };
-    },
-  });
-  const railRows = [railRow('current', series.current, m.ui_volume_this_range(), lineColor)];
-  if (series.before !== null) {
-    railRows.push(railRow('before', series.before, m.ui_volume_before(), tokens.textTertiary));
-  }
+  const rails = useVolumeChartRails({ series, metric });
+  const dataPresent = series.rows.length > 0;
 
   return (
-    <ChartRow
+    <PvChartRow
       title={m.ui_volume_title()}
       secondary={m.ui_volume_subtitle()}
       height="h-64"
       rail={
-        hasData ? (
+        dataPresent ? (
           <MultiSeriesRail
             group={DASHBOARD_HOVER_GROUP}
             restHeader={m.ui_rail_total()}
             formatX={formatDashboardDate}
             isKnownX={(x) => series.indexByDate.has(x)}
-            rows={railRows}
+            rows={rails.railRows}
           />
         ) : undefined
       }
     >
-      {hasData ? (
-        <TabsPrimitive.Root
+      {dataPresent ? (
+        <PvTabs
           value={metric}
           onValueChange={(v) => useFiltersStore.getState().setVolumeChartMetric(v as VolumeMetric)}
-          className="h-full flex flex-col"
+          className="h-full"
         >
-          <TabsPrimitive.List className="inline-flex gap-1 mb-1">
+          <PvTabsList variant="inline">
             {VOLUME_METRICS.map((key) => (
-              <TabsTrigger key={key} value={key} className="flex-none rounded-lg px-2 py-1 text-xs">
-                {metricLabels[key]()}
-              </TabsTrigger>
+              <PvTabsTrigger
+                key={key}
+                value={key}
+                className="flex-none rounded-lg px-2 py-1 text-xs"
+              >
+                {LABEL_BY_VOLUME_METRIC[key]()}
+              </PvTabsTrigger>
             ))}
-          </TabsPrimitive.List>
+          </PvTabsList>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={zoom.zoomedData} {...events}>
@@ -192,7 +136,7 @@ export const VolumeChart = () => {
                 <Line
                   type="linear"
                   dataKey="current"
-                  stroke={lineColor}
+                  stroke={rails.lineColor}
                   strokeWidth={2}
                   dot={false}
                   name={m.ui_volume_this_range()}
@@ -211,7 +155,7 @@ export const VolumeChart = () => {
           </div>
           {series.before !== null && (
             <div className="mt-1.5 flex gap-3 text-xs text-text-tertiary">
-              <LegendLine color={lineColor} label={m.ui_volume_this_range()} />
+              <LegendLine color={rails.lineColor} label={m.ui_volume_this_range()} />
               <LegendLine
                 color={tokens.textTertiary}
                 dashed
@@ -221,8 +165,8 @@ export const VolumeChart = () => {
               />
             </div>
           )}
-        </TabsPrimitive.Root>
+        </PvTabs>
       ) : null}
-    </ChartRow>
+    </PvChartRow>
   );
 };

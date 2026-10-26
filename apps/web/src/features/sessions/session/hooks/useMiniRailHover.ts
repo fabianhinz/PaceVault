@@ -1,15 +1,13 @@
 import { useState, type PointerEvent } from 'react';
+import type { MiniRailProps, MiniRailSegmentProps } from '@/features/sessions/session/types.ts';
 
-export interface MiniRailSegmentProps {
-  onPointerEnter: (event: PointerEvent<HTMLElement>) => void;
-  onClick: () => void;
+interface MiniRailHover {
+  index: number | null;
+  railProps: MiniRailProps;
+  segmentProps: (segment: number) => MiniRailSegmentProps;
 }
 
-export interface MiniRailProps {
-  onPointerLeave: (event: PointerEvent<HTMLElement>) => void;
-}
-
-export const useMiniRailHover = () => {
+export const useMiniRailHover = (): MiniRailHover => {
   const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 

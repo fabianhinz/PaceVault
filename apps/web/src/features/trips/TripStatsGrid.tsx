@@ -1,14 +1,19 @@
+import type { FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { CardGrid } from '@pacevault/ui/components/CardGrid.tsx';
-import { StatTile } from '@pacevault/ui/components/StatTile.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvCardGrid } from '@pacevault/ui/components/pvCardGrid/PvCardGrid.tsx';
+import { PvStatTile } from '@pacevault/ui/components/pvStatTile/PvStatTile.tsx';
 import { MetricLabel } from '@/components/MetricLabel.tsx';
 import type { MetricId } from '@/lib/explanations.ts';
 import { formatDate, formatDistance, formatDuration } from '@/lib/formatters.ts';
 import type { TrainingSession } from '@pacevault/engine/types.ts';
 import { computeTripTotals } from './tripStats.ts';
 
-export const TripStatsGrid = (props: { sessions: TrainingSession[] }) => {
+interface TripStatsGridProps {
+  sessions: TrainingSession[];
+}
+
+export const TripStatsGrid: FC<TripStatsGridProps> = (props) => {
   const totals = computeTripTotals(props.sessions);
 
   let dateRange = '--';
@@ -57,10 +62,10 @@ export const TripStatsGrid = (props: { sessions: TrainingSession[] }) => {
   });
 
   return (
-    <Card>
-      <CardGrid title={m.ui_stat_stats()} collapsedRows={1}>
+    <PvCard>
+      <PvCardGrid title={m.ui_stat_stats()} collapsedRows={1}>
         {stats.map((stat) => (
-          <StatTile
+          <PvStatTile
             key={stat.key}
             title={stat.title}
             value={stat.value}
@@ -73,7 +78,7 @@ export const TripStatsGrid = (props: { sessions: TrainingSession[] }) => {
             }
           />
         ))}
-      </CardGrid>
-    </Card>
+      </PvCardGrid>
+    </PvCard>
   );
 };

@@ -1,6 +1,13 @@
 import { useCallback, useState } from 'react';
 
-export const useSyncedChartZoom = () => {
+interface SyncedChartZoom {
+  zoomRange: { from: number; to: number } | null;
+  zoomed: boolean;
+  onZoomComplete: (from: string | number, to: string | number) => void;
+  resetZoom: () => void;
+}
+
+export const useSyncedChartZoom = (): SyncedChartZoom => {
   const [zoomRange, setZoomRange] = useState<{ from: number; to: number } | null>(null);
 
   const onZoomComplete = useCallback((from: string | number, to: string | number) => {
@@ -11,5 +18,5 @@ export const useSyncedChartZoom = () => {
     setZoomRange(null);
   }, []);
 
-  return { zoomRange, isZoomed: zoomRange !== null, onZoomComplete, resetZoom };
+  return { zoomRange, zoomed: zoomRange !== null, onZoomComplete, resetZoom };
 };

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { summarizeValues } from '@/lib/seriesSummary.ts';
 
-describe('summarizeValues', () => {
+describe(summarizeValues.name, () => {
   it('counts 0 as a value and skips missing ones', () => {
     const result = summarizeValues([0, 40, null, 80, undefined]);
     expect(result.total).toBe(120);

@@ -1,71 +1,32 @@
-import { useEffect } from 'react';
+import type { FC } from 'react';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { useLayoutStore } from '@/store/layout.ts';
 import { MapBackground } from '@/features/map/MapBackground.tsx';
 import { Dock } from './Dock.tsx';
-import { DemoBanner } from './DemoBanner.tsx';
 import { OnboardingPage } from '@/pages/OnboardingPage.tsx';
-import { Outlet, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
-import { RouteErrorFallback } from '@/components/ErrorFallbacks.tsx';
-import { BottomSheet, BottomSheetProvider } from '@pacevault/ui/components/BottomSheet.tsx';
+import { PvBottomSheetProvider } from '@pacevault/ui/components/pvBottomSheet/PvBottomSheetProvider.tsx';
 import { DebugCrashTrigger } from '@/lib/debug/DebugCrashTrigger.tsx';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
-import { useIntervalsSync } from '@/features/intervals/hooks/useIntervalsSync.ts';
+import { useIntervalsSync } from '@/queries/intervals/useIntervalsSync.ts';
 import { ImportProgressOverlay } from '@/components/ImportProgressOverlay.tsx';
 import { useImportProgressStore } from '@/store/importProgress.ts';
-import { useSessionReprocessingEffect } from '@/features/sessions/hooks/useSessionReprocessingEffect.ts';
-import { useTrainingLoadRecomputeEffect } from '@/features/sessions/hooks/useTrainingLoadRecomputeEffect.ts';
+import { useOutdatedSessionsReprocessing } from '@/queries/sessions/useOutdatedSessionsReprocessing.ts';
+import { useTrainingLoadRecompute } from '@/queries/sessions/useTrainingLoadRecompute.ts';
 import { useSessionReprocessingActive } from '@/features/sessions/hooks/useSessionReprocessingActive.ts';
 import { NewerVersionOverlay } from './NewerVersionOverlay.tsx';
-import { OverviewMapControls } from '@/features/map/OverviewMapControls.tsx';
+import { MobileSheet } from '@/components/layout/MobileSheet.tsx';
+import { RouteContent } from '@/components/layout/RouteContent.tsx';
 
-const RouteContent = () => {
-  const location = useLocation();
-  return (
-    <>
-      <DemoBanner />
-      <ErrorBoundary FallbackComponent={RouteErrorFallback} resetKeys={[location.pathname]}>
-        <DebugCrashTrigger target="route" />
-        <Outlet />
-        <OverviewMapControls />
-      </ErrorBoundary>
-    </>
-  );
-};
-
-const MobileSheet = () => {
-  const position = useLayoutStore((s) => s.mobileSheetPosition);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.style.overscrollBehavior = 'none';
-    return () => {
-      root.style.overscrollBehavior = '';
-    };
-  }, []);
-
-  return (
-    <BottomSheet
-      position={position}
-      onPositionChange={(next) => useLayoutStore.getState().setMobileSheetPosition(next)}
-    >
-      <main data-layout="main" className="relative pb-6">
-        <RouteContent />
-      </main>
-    </BottomSheet>
-  );
-};
-
-export const AppLayout = () => {
+export const AppLayout: FC = () => {
   const onboardingComplete = useLayoutStore((s) => s.onboardingComplete);
   const reprocessing = useSessionReprocessingActive();
   const reprocessOverlayOpen = useImportProgressStore((s) => s.foreground?.task === 'reprocess');
   const device = useDevice();
   const appMounted = onboardingComplete && !reprocessing && !reprocessOverlayOpen;
 
-  useSessionReprocessingEffect();
-  useTrainingLoadRecomputeEffect();
+  useOutdatedSessionsReprocessing();
+  useTrainingLoadRecompute();
   useIntervalsSync();
 
   return (
@@ -77,7 +38,7 @@ export const AppLayout = () => {
         <DebugCrashTrigger target="map" />
         <MapBackground />
       </ErrorBoundary>
-      {appMounted && device.isDesktop && (
+      {appMounted && device.desktop && (
         <>
           <main
             data-layout="main"
@@ -93,11 +54,11 @@ export const AppLayout = () => {
           <Dock />
         </>
       )}
-      {appMounted && !device.isDesktop && (
-        <BottomSheetProvider>
+      {appMounted && !device.desktop && (
+        <PvBottomSheetProvider>
           <MobileSheet />
           <Dock />
-        </BottomSheetProvider>
+        </PvBottomSheetProvider>
       )}
       {!onboardingComplete && <OnboardingPage />}
       <ImportProgressOverlay />

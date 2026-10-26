@@ -1,9 +1,10 @@
+import type { FC } from 'react';
 import { PEAK_WINDOW_SECONDS, peakScale } from '@/lib/moreStats.ts';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import type { Sport } from '@pacevault/engine/types.ts';
 import { m } from '@pacevault/i18n/messages.js';
-import type { MiniRailProps, MiniRailSegmentProps } from './hooks/useMiniRailHover.ts';
-import { peakWindow, watts } from './statFormat.ts';
+import type { MiniRailProps, MiniRailSegmentProps } from './types.ts';
+import { statFormat } from './statFormat.ts';
 
 const BAR_CLASS: Record<Sport, { soft: string; strong: string }> = {
   running: { soft: 'bg-sport-running/35', strong: 'bg-sport-running/95' },
@@ -18,8 +19,8 @@ interface PeakBarsProps {
   segmentProps: (segment: number) => MiniRailSegmentProps;
 }
 
-export const PeakBars = (props: PeakBarsProps) => {
-  const heights = peakScale(props.watts, 100);
+export const PeakBars: FC<PeakBarsProps> = (props) => {
+  const heights = peakScale({ watts: props.watts, heightPx: 100 });
   const colors = BAR_CLASS[props.sport];
   return (
     <div className="flex h-full w-full items-end gap-1" {...props.railProps}>
@@ -34,8 +35,8 @@ export const PeakBars = (props: PeakBarsProps) => {
             key={seconds}
             role="img"
             aria-label={m.ui_more_stats_peak_aria({
-              window: peakWindow(seconds),
-              watts: watts(value),
+              window: statFormat.peakWindow(seconds),
+              watts: statFormat.watts(value),
             })}
             className="flex h-full flex-1 cursor-pointer items-end"
             {...props.segmentProps(i)}

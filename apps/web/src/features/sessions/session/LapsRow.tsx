@@ -1,120 +1,19 @@
-import { useDeferredValue, type ReactNode } from 'react';
-import { m } from '@pacevault/i18n/messages.js';
-import { getLocale } from '@pacevault/i18n/runtime.js';
-import { CollapsibleListItem } from '@pacevault/ui/components/Collapsible.tsx';
-import { MetricLabel } from '@/components/MetricLabel.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import { cn } from '@pacevault/ui/lib/cn.ts';
-import { METRIC_EXPLANATIONS } from '@/lib/explanations.ts';
-import { summarizeLaps } from '@/lib/lapSummary.ts';
-import { effortWorkSet } from '@/lib/effortLaps.ts';
-import type { LapAnalysis } from '@/lib/laps.ts';
-import type { LapSet, LapSource } from '@/lib/lapSet.ts';
+import { useDeferredValue, type FC } from 'react';
+import { PvCollapsibleListItem } from '@pacevault/ui/components/pvCollapsibleListItem/PvCollapsibleListItem.tsx';
+import type { LapSet } from '@/lib/laps.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import type { SessionLap, Sport } from '@pacevault/engine/types.ts';
 import { LapStrip } from './LapStrip.tsx';
-import { lapName, lapPaceLabel, lapsRowLabels } from './lapLabels.ts';
-
-const bpmFmt = new Intl.NumberFormat(getLocale(), { maximumFractionDigits: 0 });
-
-const recoveryLabel = (avgBpm: number): string => {
-  if (avgBpm > 25) return m.ui_stat_recovery_strong();
-  if (avgBpm >= 15) return m.ui_stat_recovery_adequate();
-  return m.ui_stat_recovery_slow();
-};
-
-interface KeyValueProps {
-  label: ReactNode;
-  value: string;
-  detail: string;
-  interactive?: boolean;
-}
-
-const KeyValue = (props: KeyValueProps) => (
-  <div
-    className={cn(
-      'grid grid-cols-[auto_1fr] items-baseline gap-3 px-1.5 py-0.5',
-      !props.interactive && 'pointer-events-none',
-    )}
-  >
-    <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-xs text-text-secondary">
-      {props.label}
-    </span>
-    <span className="text-right text-sm tabular-nums text-text-primary">
-      {props.value}
-      <span className="block text-xs text-text-tertiary">{props.detail}</span>
-    </span>
-  </div>
-);
-
-const LapExtreme = (props: {
-  set: LapSet;
-  label: string;
-  lap: LapAnalysis | undefined;
-  sport: Sport;
-  source: LapSource;
-}) => {
-  const pace = props.lap?.paceSecPerKm;
-  if (props.lap === undefined || pace === undefined) return null;
-  return (
-    <KeyValue
-      label={props.label}
-      value={lapPaceLabel(pace, props.sport)}
-      detail={lapName(props.set, props.lap.lapIndex, props.source, props.sport)}
-    />
-  );
-};
-
-const LapsDetails = (props: { set: LapSet; sport: Sport; source: LapSource }) => {
-  let summarySet = props.set;
-  if (props.source === 'efforts') summarySet = effortWorkSet(props.set);
-  const summary = summarizeLaps(summarySet);
-  const recovery = METRIC_EXPLANATIONS.recovery;
-  return (
-    <div className="flex flex-col gap-3">
-      <LapStrip set={props.set} size="detail" />
-      <div className="flex flex-col gap-1 border-t border-white/10 pt-2.5">
-        <LapExtreme
-          set={props.set}
-          label={m.ui_laps_fastest()}
-          lap={summary.fastest}
-          sport={props.sport}
-          source={props.source}
-        />
-        <LapExtreme
-          set={props.set}
-          label={m.ui_laps_slowest()}
-          lap={summary.slowest}
-          sport={props.sport}
-          source={props.source}
-        />
-        {summary.avgHrRecovery !== undefined && (
-          <KeyValue
-            interactive
-            label={
-              <>
-                <Typography variant="caption">{recovery.friendlyName}</Typography>
-                <MetricLabel metricId="recovery" size="sm" iconOnly />
-              </>
-            }
-            value={recoveryLabel(summary.avgHrRecovery)}
-            detail={m.ui_laps_recovery_per_interval({
-              values: summary.hrRecoveries.map((bpm) => bpmFmt.format(bpm)).join(' · '),
-            })}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
+import { LapsDetails } from './LapsDetails.tsx';
+import { lapsRowLabels } from './lapLabels.ts';
 
 interface LapsRowProps {
   laps: SessionLap[];
   sport: Sport;
 }
 
-export const LapsRow = (props: LapsRowProps) => {
+export const LapsRow: FC<LapsRowProps> = (props) => {
   const lapSource = useMapPreferencesStore((s) => s.bySport[props.sport].lapSource);
   const sessionLaps = useDeferredValue(useMapControlsStore((s) => s.sessionLaps));
 
@@ -123,10 +22,10 @@ export const LapsRow = (props: LapsRowProps) => {
   let set: LapSet | null = null;
   if (source !== 'off') set = sessionLaps;
 
-  const labels = lapsRowLabels(source, set, props.sport);
+  const labels = lapsRowLabels({ source, set, sport: props.sport });
 
   return (
-    <CollapsibleListItem
+    <PvCollapsibleListItem
       testId="laps-row"
       disabled={labels.disabled || set === null}
       avatar={<LapStrip set={set} size="avatar" />}
@@ -134,6 +33,6 @@ export const LapsRow = (props: LapsRowProps) => {
       secondary={labels.secondary === '' ? undefined : labels.secondary}
     >
       {set !== null && <LapsDetails set={set} sport={props.sport} source={source} />}
-    </CollapsibleListItem>
+    </PvCollapsibleListItem>
   );
 };

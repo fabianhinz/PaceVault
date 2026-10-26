@@ -1,3 +1,5 @@
+import { formatMonthName } from '@/lib/formatters.ts';
+
 export type QuantityUnit = 'km' | 'mi' | 'h' | 'min' | 'hm';
 export type Unit = QuantityUnit | 'd' | 'w' | 'm' | 'y';
 
@@ -66,9 +68,9 @@ export const PREFIX_UNIT_ORDER: Unit[] = ['d', 'w', 'm', 'km', 'min', 'h', 'hm']
 
 export const MONTH_NAMES: string[][] = Array.from({ length: 12 }, (_, index) => {
   const date = new Date(2026, index, 15);
-  const names = ['de-DE', 'en-GB'].flatMap((locale) =>
+  const names = (['de-DE', 'en-GB'] as const).flatMap((locale) =>
     (['long', 'short'] as const).map((month) =>
-      new Intl.DateTimeFormat(locale, { month }).format(date).toLowerCase().replace('.', ''),
+      formatMonthName(date, { locale, width: month }).toLowerCase().replace('.', ''),
     ),
   );
   if (index === 2) {

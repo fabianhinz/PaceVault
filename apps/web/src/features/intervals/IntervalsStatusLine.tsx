@@ -1,39 +1,23 @@
+import type { FC } from 'react';
 import { useIsFetching } from '@tanstack/react-query';
-import { CircleCheck, CircleDashed, CircleX, LoaderCircle } from 'lucide-react';
+import { CircleCheck, CircleDashed } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { useIntervalsStore } from '@/store/intervals.ts';
-import { INTERVALS_SYNC_KEY } from './hooks/useIntervalsSync.ts';
-
-export type IntervalsKeyCheck =
-  | { kind: 'checking' }
-  | { kind: 'valid' }
-  | { kind: 'rejected' }
-  | { kind: 'failed'; message: string };
+import { intervalsSyncQueryKey } from '@/queries/intervals/useIntervalsSync.ts';
+import type { IntervalsKeyCheck } from './types.ts';
+import { ErrorLine } from './ErrorLine.tsx';
+import { LoadingLine } from './LoadingLine.tsx';
 
 interface IntervalsStatusLineProps {
   error: string | null;
   check: IntervalsKeyCheck | null;
 }
 
-const ErrorLine = (props: { message: string }) => (
-  <Typography variant="caption" color="error" className="flex items-center gap-1.5">
-    <CircleX size={14} className="shrink-0" />
-    {props.message}
-  </Typography>
-);
-
-const LoadingLine = (props: { message: string }) => (
-  <Typography variant="caption" color="textTertiary" className="flex items-center gap-1.5">
-    <LoaderCircle size={14} className="shrink-0 animate-spin" />
-    {props.message}
-  </Typography>
-);
-
-export const IntervalsStatusLine = (props: IntervalsStatusLineProps) => {
+export const IntervalsStatusLine: FC<IntervalsStatusLineProps> = (props) => {
   const connected = useIntervalsStore((s) => s.apiKey !== null);
   const keyInvalid = useIntervalsStore((s) => s.keyInvalid);
-  const syncing = useIsFetching({ queryKey: INTERVALS_SYNC_KEY }) > 0;
+  const syncing = useIsFetching({ queryKey: intervalsSyncQueryKey() }) > 0;
 
   if (props.error !== null) return <ErrorLine message={props.error} />;
 
@@ -42,10 +26,10 @@ export const IntervalsStatusLine = (props: IntervalsStatusLineProps) => {
   }
   if (props.check?.kind === 'valid') {
     return (
-      <Typography variant="caption" color="success" className="flex items-center gap-1.5">
+      <PvTypography variant="caption" color="success" className="flex items-center gap-1.5">
         <CircleCheck size={14} className="shrink-0" />
         {m.ui_integration_status_key_valid()}
-      </Typography>
+      </PvTypography>
     );
   }
   if (props.check?.kind === 'rejected') {
@@ -59,17 +43,17 @@ export const IntervalsStatusLine = (props: IntervalsStatusLineProps) => {
 
   if (!connected) {
     return (
-      <Typography variant="caption" color="textTertiary" className="flex items-center gap-1.5">
+      <PvTypography variant="caption" color="textTertiary" className="flex items-center gap-1.5">
         <CircleDashed size={14} className="shrink-0" />
         {m.ui_integration_status_not_connected()}
-      </Typography>
+      </PvTypography>
     );
   }
 
   return (
-    <Typography variant="caption" color="success" className="flex items-center gap-1.5">
+    <PvTypography variant="caption" color="success" className="flex items-center gap-1.5">
       <CircleCheck size={14} className="shrink-0" />
       {m.ui_integration_status_connected()}
-    </Typography>
+    </PvTypography>
   );
 };

@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, type FC } from 'react';
 import { TriangleAlert } from 'lucide-react';
-import { Banner } from '@pacevault/ui/components/Banner.tsx';
+import { PvBanner } from '@pacevault/ui/components/pvBanner/PvBanner.tsx';
 import { validateRecords } from '@/lib/validation.ts';
 import { sensorWarningText } from '@/features/sessions/session/sensorWarningText.ts';
 import type { SessionRecord, Sport } from '@pacevault/engine/types.ts';
@@ -10,21 +10,21 @@ interface SensorWarningBannerProps {
   sport: Sport;
 }
 
-export const SensorWarningBanner = (props: SensorWarningBannerProps) => {
+export const SensorWarningBanner: FC<SensorWarningBannerProps> = (props) => {
   const warnings = useMemo(
-    () => validateRecords(props.records, props.sport),
+    () => validateRecords({ records: props.records, sport: props.sport }),
     [props.records, props.sport],
   );
 
   if (warnings.length === 0) return null;
 
   return (
-    <Banner variant="warning" icon={TriangleAlert} role="status" className="h-auto min-h-[80px]">
+    <PvBanner variant="warning" icon={TriangleAlert} role="status" className="h-auto min-h-80px">
       {warnings.map((warning) => (
         <span key={warning.code} className="block">
           {sensorWarningText(warning)}
         </span>
       ))}
-    </Banner>
+    </PvBanner>
   );
 };

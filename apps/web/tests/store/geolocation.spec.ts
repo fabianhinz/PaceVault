@@ -1,14 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
-import { useGeolocationStore } from '@/store/geolocation.ts';
+import { INITIAL_GEOLOCATION_STORE_STATE, useGeolocationStore } from '@/store/geolocation.ts';
 
 describe('useGeolocationStore', () => {
   beforeEach(() => {
-    useGeolocationStore.setState({
-      tracking: false,
-      position: null,
-      accuracy: null,
-      error: null,
-    });
+    useGeolocationStore.setState(INITIAL_GEOLOCATION_STORE_STATE);
   });
 
   it('defaults to not tracking with no fix or error', () => {
@@ -26,7 +21,7 @@ describe('useGeolocationStore', () => {
 
   it('toggleTracking off clears the fix', () => {
     useGeolocationStore.getState().toggleTracking();
-    useGeolocationStore.getState().setFix([10.5, 48.2], 12);
+    useGeolocationStore.getState().setFix({ position: [10.5, 48.2], accuracy: 12 });
     useGeolocationStore.getState().toggleTracking();
     const state = useGeolocationStore.getState();
     expect(state.tracking).toBe(false);
@@ -47,7 +42,7 @@ describe('useGeolocationStore', () => {
   it('setFix stores the position and accuracy and clears any error', () => {
     useGeolocationStore.getState().toggleTracking();
     useGeolocationStore.getState().setError('unavailable');
-    useGeolocationStore.getState().setFix([10.5, 48.2], 12);
+    useGeolocationStore.getState().setFix({ position: [10.5, 48.2], accuracy: 12 });
     const state = useGeolocationStore.getState();
     expect(state.position).toEqual([10.5, 48.2]);
     expect(state.accuracy).toBe(12);

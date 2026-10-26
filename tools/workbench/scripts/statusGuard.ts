@@ -12,6 +12,7 @@ import {
   readChecks,
   readSize,
   readStatus,
+  type CheckHeading,
   type CheckItem,
 } from './frontmatter.ts';
 
@@ -24,7 +25,7 @@ import {
  * - Under `## Real-data checks` (plan.md) and `## Agent decisions` (`<f>/review/decisions.md`)
  *   the ticked count may not rise and the item count may not drop (ticking is owner-only; open
  *   items may be added or reworded; an agent may create decisions.md with open items).
- * - `## Agent decisions` only (R17): an open item becomes `- [~]` only by gaining
+ * - `## Agent decisions` only: an open item becomes `- [~]` only by gaining
  *   `Superseded by: <pointer>` with the rest unchanged, a `[~]` item never changes, and every
  *   decision an agent adds names its kind (`**(behaviour|look|scope) …**`).
  * - A new plan starts at `status: idea`.
@@ -35,13 +36,13 @@ import {
  * Exit 2 blocks the call (stderr goes back to Claude); a crash exits 1, which never blocks.
  */
 
-export const hookInputSchema = z.object({
+const hookInputSchema = z.object({
   tool_name: z.string(),
   tool_input: z.record(z.string(), z.unknown()),
   cwd: z.string().optional(),
 });
 
-export type HookInput = z.infer<typeof hookInputSchema>;
+type HookInput = z.infer<typeof hookInputSchema>;
 
 const editSchema = z.object({
   file_path: z.string(),
@@ -55,7 +56,6 @@ const bashSchema = z.object({ command: z.string() });
 const PLAN_FILE = /\/tools\/workbench\/backlog\/([^/_.][^/]*)\/plan\.md$/;
 const DECISIONS_FILE = /\/tools\/workbench\/backlog\/([^/_.][^/]*)\/review\/decisions\.md$/;
 
-/** The files whose checklists only the owner ticks: protected against Bash writes too. */
 const isProtected = (path: string) => PLAN_FILE.test(path) || DECISIONS_FILE.test(path);
 
 const AGENT_TARGETS: string[] = ['exploring', 'planned', 'in-dev', 'in-review'];
@@ -64,7 +64,13 @@ const BACK_MOVES = ['in-review>in-dev', 'ready>planned', 'in-dev>planned', 'in-r
 
 const STATUS_ORDER: string[] = [...STATUSES];
 
-const isAllowedMove = (from: string | undefined, to: string | undefined): boolean => {
+const isAllowedMove = ({
+  from,
+  to,
+}: {
+  from: string | undefined;
+  to: string | undefined;
+}): boolean => {
   if (from === to) return true;
   // A plan without a status (not yet on the board) may enter at `idea`, as a new plan does.
   if (from === undefined) return to === 'idea';
@@ -79,18 +85,28 @@ const isAllowedMove = (from: string | undefined, to: string | undefined): boolea
   return !STATUS_ORDER.slice(fromIndex + 1, toIndex).some((status) => OWNER_ONLY.includes(status));
 };
 
-const applyEdit = (current: string, edit: z.infer<typeof editSchema>): string | undefined => {
+const applyEdit = ({
+  current,
+  edit,
+}: {
+  current: string;
+  edit: z.infer<typeof editSchema>;
+}): string | undefined => {
   if (edit.replace_all) return current.split(edit.old_string).join(edit.new_string);
   const index = current.indexOf(edit.old_string);
   if (index === -1) return undefined;
   return current.slice(0, index) + edit.new_string + current.slice(index + edit.old_string.length);
 };
 
-const decidePlan = (
-  folder: string,
-  before: string | undefined,
-  after: string,
-): string | undefined => {
+const decidePlan = ({
+  folder,
+  before,
+  after,
+}: {
+  folder: string;
+  before: string | undefined;
+  after: string;
+}): string | undefined => {
   const path = `tools/workbench/backlog/${folder}/plan.md`;
   const to = readStatus(after);
   const sizeMessage = `size: is owner-only; the owner sets or removes it (${path}). Ask the owner.`;
@@ -103,22 +119,26 @@ const decidePlan = (
   }
   if (readSize(before) !== readSize(after)) return sizeMessage;
   const from = readStatus(before);
-  if (!isAllowedMove(from, to)) {
+  if (!isAllowedMove({ from, to })) {
     return `status: ${from ?? '(none)'} → ${to ?? '(none)'} is owner-only or skips a gate (${path}). Ask the owner.`;
   }
-  return decideChecks(path, PLAN_CHECKS, before, after);
+  return decideChecks({ path, heading: PLAN_CHECKS, before, after });
 };
 
-/** Ticked count may not rise, item count may not drop; `before` undefined is a new file. */
-const decideChecks = (
-  path: string,
-  heading: typeof PLAN_CHECKS | typeof DECISIONS,
-  before: string | undefined,
-  after: string,
-): string | undefined => {
+const decideChecks = ({
+  path,
+  heading,
+  before,
+  after,
+}: {
+  path: string;
+  heading: CheckHeading;
+  before: string | undefined;
+  after: string;
+}): string | undefined => {
   let beforeItems: ReturnType<typeof readChecks> = [];
-  if (before !== undefined) beforeItems = readChecks(before, heading);
-  const afterItems = readChecks(after, heading);
+  if (before !== undefined) beforeItems = readChecks({ text: before, heading });
+  const afterItems = readChecks({ text: after, heading });
   const tickedBefore = beforeItems.filter((item) => item.checked).length;
   const tickedAfter = afterItems.filter((item) => item.checked).length;
   if (tickedAfter > tickedBefore) {
@@ -130,23 +150,26 @@ const decideChecks = (
   return undefined;
 };
 
-/** A `[~]` line as the open line it came from: `[ ]` again and without `Superseded by: …`. */
-const unsuperseded = (raw: string): string =>
-  raw.replace(/^(\s*)- \[~\]/, '$1- [ ]').replace(/\s*\bSuperseded by:[\s\S]*$/, '');
+const unsuperseded = (decisionLine: string): string =>
+  decisionLine.replace(/^(\s*)- \[~\]/, '$1- [ ]').replace(/\s*\bSuperseded by:[\s\S]*$/, '');
 
 /**
- * Superseding (R17): an agent turns an open `- [ ]` decision into `- [~]` only by adding
+ * Superseding: an agent turns an open `- [ ]` decision into `- [~]` only by adding
  * `Superseded by: <pointer>` and leaving the rest of the line as it was; a superseded line stays
  * as it is (never back to open, never reworded).
  */
-const decideSuperseded = (
-  path: string,
-  before: string | undefined,
-  after: string,
-): string | undefined => {
+const decideSuperseded = ({
+  path,
+  before,
+  after,
+}: {
+  path: string;
+  before: string | undefined;
+  after: string;
+}): string | undefined => {
   let beforeItems: CheckItem[] = [];
-  if (before !== undefined) beforeItems = readChecks(before, DECISIONS);
-  const afterItems = readChecks(after, DECISIONS);
+  if (before !== undefined) beforeItems = readChecks({ text: before, heading: DECISIONS });
+  const afterItems = readChecks({ text: after, heading: DECISIONS });
   const afterSuperseded = new Set(
     afterItems.filter((item) => item.superseded).map((item) => item.raw),
   );
@@ -171,25 +194,28 @@ const decideSuperseded = (
   return undefined;
 };
 
-const decideDecisions = (
-  folder: string,
-  before: string | undefined,
-  after: string,
-): string | undefined => {
+const decideDecisions = ({
+  folder,
+  before,
+  after,
+}: {
+  folder: string;
+  before: string | undefined;
+  after: string;
+}): string | undefined => {
   const path = `tools/workbench/backlog/${folder}/review/decisions.md`;
-  const checks = decideChecks(path, DECISIONS, before, after);
+  const checks = decideChecks({ path, heading: DECISIONS, before, after });
   if (checks !== undefined) return checks;
-  const superseded = decideSuperseded(path, before, after);
+  const superseded = decideSuperseded({ path, before, after });
   if (superseded !== undefined) return superseded;
-  const kindless = decisionsWithoutKind(before, after);
+  const kindless = decisionsWithoutKind({ before, after });
   if (kindless.length > 0) {
     return `A new agent decision names its kind first: "- [ ] **(behaviour|look|scope) <decision>.** Agent: <reason>"; implementation details go under Deviations in the report, not into decisions.md (${path}): "${kindless[0]}".`;
   }
   return undefined;
 };
 
-/** The guarded file an Edit/Write targets, with its decide function. */
-const guarded = (filePath: string) => {
+const guardedTarget = (filePath: string) => {
   const plan = PLAN_FILE.exec(filePath);
   if (plan) return { folder: plan[1], decideFile: decidePlan };
   const decisions = DECISIONS_FILE.exec(filePath);
@@ -206,21 +232,14 @@ const WRITERS = [
   /\bgit\s+(?:mv|rm|checkout|restore|apply|stash)\b/,
   /\bpatch\b/,
 ];
-/** `>`/`>>`/`&>` and their target; `2>&1` and `>&2` do not match. */
 const REDIRECT = /(?<![<>])\d*>{1,2}\|?\s*(?:"([^"]*)"|'([^']*)'|([^\s;&|<>'"()]+))/g;
-/**
- * `tools/workbench`, its `backlog` or a `backlog/<f>` folder (not a file inside it), as a
- * resolved path.
- */
 const FEATURE_FOLDER = /(?:^|\/)tools\/workbench(?:\/backlog(?:\/[^/]+)?)?$/;
-/** `tools/workbench/backlog` or anything below it, as a resolved path. */
 const WORKBENCH_TREE = /(?:^|\/)tools\/workbench\/backlog(?:\/|$)/;
 const FIND_DELETE = /\s-(?:delete\b|exec(?:dir)?\s+(?:\S*\/)?rm\b)/;
 
 const BASH_MESSAGE =
   'This command may write a workbench plan.md or review/decisions.md, or delete a workbench folder. Edit those files with Edit/Write (the status guard checks them), or ask the owner.';
 
-/** Splits a command on `&&`, `||`, `;`, `|` and newlines outside quotes. */
 const splitSegments = (command: string): string[] => {
   const segments: string[] = [];
   let current = '';
@@ -247,8 +266,8 @@ const splitSegments = (command: string): string[] => {
       current += char;
       continue;
     }
-    const isAnd = char === '&' && next === '&';
-    if (char === ';' || char === '\n' || char === '|' || isAnd) {
+    const doubleAmpersand = char === '&' && next === '&';
+    if (char === ';' || char === '\n' || char === '|' || doubleAmpersand) {
       segments.push(current);
       current = '';
       if (next === char) index++;
@@ -260,7 +279,6 @@ const splitSegments = (command: string): string[] => {
   return segments.map((segment) => segment.trim()).filter((segment) => segment !== '');
 };
 
-/** Shell words of one segment with quotes removed; leading `(`/`{` and trailing `)` dropped. */
 const splitWords = (segment: string): string[] => {
   const words: string[] = [];
   let current = '';
@@ -295,7 +313,6 @@ const splitWords = (segment: string): string[] => {
   return words.map((word) => word.replace(/\)+$/, ''));
 };
 
-/** The words from the command name on: `VAR=value` prefixes and `sudo` are skipped. */
 const commandWords = (segment: string): string[] => {
   const words = splitWords(segment);
   let start = 0;
@@ -312,10 +329,9 @@ const redirectTargets = (segment: string): string[] => {
   return targets;
 };
 
-/** `cd`/`pushd` to a path we cannot resolve (`~`, `$VAR`, `-`, none) falls back to `/`. */
 const UNKNOWN_DIR = '/';
 
-const nextDir = (dir: string, words: string[]): string => {
+const nextDir = ({ dir, words }: { dir: string; words: string[] }): string => {
   if (words[0] !== 'cd' && words[0] !== 'pushd') return dir;
   const target = words[1];
   if (target === undefined || /^[~$-]/.test(target)) return UNKNOWN_DIR;
@@ -331,7 +347,7 @@ const findStarts = (args: string[]): string[] => {
   return starts;
 };
 
-const decideSegment = (segment: string, dir: string): string | undefined => {
+const decideSegment = ({ segment, dir }: { segment: string; dir: string }): string | undefined => {
   const words = commandWords(segment);
   const paths = words
     .filter((word) => !word.startsWith('-'))
@@ -354,40 +370,55 @@ const decideSegment = (segment: string, dir: string): string | undefined => {
   return undefined;
 };
 
-const decideBash = (command: string, cwd: string | undefined): string | undefined => {
+const decideBash = ({
+  command,
+  cwd,
+}: {
+  command: string;
+  cwd: string | undefined;
+}): string | undefined => {
   let dir = UNKNOWN_DIR;
   if (cwd !== undefined) dir = posix.resolve(UNKNOWN_DIR, cwd);
   for (const segment of splitSegments(command)) {
-    const reason = decideSegment(segment, dir);
+    const reason = decideSegment({ segment, dir });
     if (reason !== undefined) return reason;
-    dir = nextDir(dir, commandWords(segment));
+    dir = nextDir({ dir, words: commandWords(segment) });
   }
   return undefined;
 };
 
-/** `undefined` allows the call; a string is the reason it is blocked. */
-export const decide = (input: HookInput, currentText: string | undefined): string | undefined => {
+export const decide = ({
+  input,
+  currentText,
+}: {
+  input: HookInput;
+  currentText: string | undefined;
+}): string | undefined => {
   if (input.tool_name === 'Bash') {
     const bash = bashSchema.safeParse(input.tool_input);
     if (!bash.success) return undefined;
-    return decideBash(bash.data.command, input.cwd);
+    return decideBash({ command: bash.data.command, cwd: input.cwd });
   }
   if (input.tool_name === 'Edit') {
     const edit = editSchema.safeParse(input.tool_input);
     if (!edit.success) return undefined;
-    const target = guarded(edit.data.file_path);
+    const target = guardedTarget(edit.data.file_path);
     // Edit on a missing file, or with an old_string that is not there, fails on its own.
     if (target === undefined || currentText === undefined) return undefined;
-    const after = applyEdit(currentText, edit.data);
+    const after = applyEdit({ current: currentText, edit: edit.data });
     if (after === undefined) return undefined;
-    return target.decideFile(target.folder, currentText, after);
+    return target.decideFile({ folder: target.folder, before: currentText, after });
   }
   if (input.tool_name === 'Write') {
     const write = writeSchema.safeParse(input.tool_input);
     if (!write.success) return undefined;
-    const target = guarded(write.data.file_path);
+    const target = guardedTarget(write.data.file_path);
     if (target === undefined) return undefined;
-    return target.decideFile(target.folder, currentText, write.data.content);
+    return target.decideFile({
+      folder: target.folder,
+      before: currentText,
+      after: write.data.content,
+    });
   }
   return undefined;
 };
@@ -401,15 +432,15 @@ const readCurrent = (input: HookInput): string | undefined => {
 };
 
 const main = () => {
-  let raw: unknown;
+  let hookJson: unknown;
   try {
-    raw = JSON.parse(readFileSync(0, 'utf8'));
+    hookJson = JSON.parse(readFileSync(0, 'utf8'));
   } catch {
     return;
   }
-  const input = hookInputSchema.safeParse(raw);
+  const input = hookInputSchema.safeParse(hookJson);
   if (!input.success) return;
-  const reason = decide(input.data, readCurrent(input.data));
+  const reason = decide({ input: input.data, currentText: readCurrent(input.data) });
   if (reason === undefined) return;
   console.error(reason);
   process.exit(2);

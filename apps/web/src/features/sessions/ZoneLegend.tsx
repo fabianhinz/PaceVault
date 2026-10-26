@@ -1,16 +1,15 @@
+import type { FC } from 'react';
 import { PaceRange } from '@/components/PaceRange.tsx';
-import type { RunningZone, RunningZoneName } from '@pacevault/engine/types.ts';
-import { m } from '@pacevault/i18n/messages.js';
+import { COLOR_BY_RUNNING_ZONE } from '@/lib/zoneColors.ts';
+import type { RunningZone } from '@pacevault/engine/types.ts';
+import { LABEL_BY_RUNNING_ZONE } from '@/microcopy/zones.ts';
 
-const ZONE_LABELS: Record<RunningZoneName, () => string> = {
-  recovery: m.ui_zone_recovery,
-  easy: m.ui_zone_easy,
-  tempo: m.ui_zone_tempo,
-  threshold: m.ui_zone_threshold,
-  vo2max: m.ui_zone_vo2max,
-};
+interface ZoneLegendProps {
+  zones: RunningZone[];
+  compact?: boolean;
+}
 
-export const ZoneLegend = (props: { zones: RunningZone[]; compact?: boolean }) => {
+export const ZoneLegend: FC<ZoneLegendProps> = (props) => {
   return (
     <div
       className={props.compact ? 'flex flex-nowrap overflow-x-auto gap-1' : 'flex flex-wrap gap-2'}
@@ -20,9 +19,14 @@ export const ZoneLegend = (props: { zones: RunningZone[]; compact?: boolean }) =
           key={zone.name}
           className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 text-xs text-text-secondary whitespace-nowrap"
         >
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: zone.color }} />
-          {ZONE_LABELS[zone.name]?.() ?? zone.label}
-          {!props.compact && <PaceRange minPace={zone.minPace} maxPace={zone.maxPace} />}
+          <span
+            className="w-2 h-2 rounded-full shrink-0"
+            style={{ backgroundColor: COLOR_BY_RUNNING_ZONE[zone.name] }}
+          />
+          {LABEL_BY_RUNNING_ZONE[zone.name]()}
+          {!props.compact && (
+            <PaceRange minPace={zone.slowestPaceSecPerKm} maxPace={zone.fastestPaceSecPerKm} />
+          )}
         </span>
       ))}
     </div>

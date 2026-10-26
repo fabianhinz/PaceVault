@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { niceAxis } from '@/lib/chartTheme.ts';
 
-describe('niceAxis', () => {
+describe(niceAxis.name, () => {
   it('returns round ticks that cover the values with padding', () => {
     expect(niceAxis([142, 151, 158])).toEqual({
       domain: [140, 160],

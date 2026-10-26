@@ -1,8 +1,4 @@
-/**
- * Module boundary rules from CLAUDE.md §2, checked by `vp run workbench:deps -- <feature>`
- * (tools/workbench/scripts/deps.ts; paths are relative to the repo root, where it runs). node_modules patterns are not anchored with `^`: pnpm resolves
- * packages to `node_modules/.pnpm/<name>@<version>/node_modules/<name>/…`.
- */
+/** node_modules patterns are not anchored with ^: pnpm resolves packages to node_modules/.pnpm/<name>@<version>/node_modules/<name>/…. */
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [
@@ -30,5 +26,8 @@ module.exports = {
       fileName: require('node:path').join(__dirname, '../../apps/web/tsconfig.app.json'),
     },
     tsPreCompilationDeps: true,
+    webpackConfig: {
+      fileName: require('node:path').join(__dirname, 'depcruise.aliases.cjs'),
+    },
   },
 };

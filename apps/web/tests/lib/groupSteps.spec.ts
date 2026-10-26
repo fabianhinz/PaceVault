@@ -1,23 +1,17 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { groupSteps } from '@/lib/groupSteps.ts';
-import type { WorkoutStep } from '@/types/index.ts';
+import { createMockWorkoutStep } from '@tests/factories/coaching.ts';
 
-const makeStep = (overrides: Partial<WorkoutStep> = {}): WorkoutStep => ({
-  type: 'work',
-  durationSec: 300,
-  zone: 'tempo',
-  targetPaceMin: 270,
-  targetPaceMax: 290,
-  ...overrides,
-});
-
-describe('groupSteps', () => {
+describe(groupSteps.name, () => {
   it('returns empty array for empty input', () => {
     expect(groupSteps([])).toEqual([]);
   });
 
   it('wraps single steps as kind=single', () => {
-    const steps = [makeStep({ type: 'warmup' }), makeStep({ type: 'cooldown' })];
+    const steps = [
+      createMockWorkoutStep({ type: 'warmup' }),
+      createMockWorkoutStep({ type: 'cooldown' }),
+    ];
     const result = groupSteps(steps);
     expect(result).toHaveLength(2);
     expect(result[0].kind).toBe('single');
@@ -26,8 +20,8 @@ describe('groupSteps', () => {
 
   it('groups consecutive steps with the same repeat > 1 as an interval', () => {
     const steps = [
-      makeStep({ type: 'work', repeat: 4 }),
-      makeStep({ type: 'recovery', repeat: 4 }),
+      createMockWorkoutStep({ type: 'work', repeat: 4 }),
+      createMockWorkoutStep({ type: 'recovery', repeat: 4 }),
     ];
     const result = groupSteps(steps);
     expect(result).toHaveLength(1);
@@ -40,10 +34,10 @@ describe('groupSteps', () => {
 
   it('handles mixed repeats and singles', () => {
     const steps = [
-      makeStep({ type: 'warmup' }),
-      makeStep({ type: 'work', repeat: 3 }),
-      makeStep({ type: 'recovery', repeat: 3 }),
-      makeStep({ type: 'cooldown' }),
+      createMockWorkoutStep({ type: 'warmup' }),
+      createMockWorkoutStep({ type: 'work', repeat: 3 }),
+      createMockWorkoutStep({ type: 'recovery', repeat: 3 }),
+      createMockWorkoutStep({ type: 'cooldown' }),
     ];
     const result = groupSteps(steps);
     expect(result).toHaveLength(3);
@@ -54,8 +48,8 @@ describe('groupSteps', () => {
 
   it('treats repeat=1 as a single step', () => {
     const steps = [
-      makeStep({ type: 'work', repeat: 1 }),
-      makeStep({ type: 'recovery', repeat: 1 }),
+      createMockWorkoutStep({ type: 'work', repeat: 1 }),
+      createMockWorkoutStep({ type: 'recovery', repeat: 1 }),
     ];
     const result = groupSteps(steps);
     expect(result).toHaveLength(2);
@@ -65,10 +59,10 @@ describe('groupSteps', () => {
 
   it('keeps separate interval groups when repeat values differ', () => {
     const steps = [
-      makeStep({ type: 'work', repeat: 4 }),
-      makeStep({ type: 'recovery', repeat: 4 }),
-      makeStep({ type: 'work', repeat: 2 }),
-      makeStep({ type: 'recovery', repeat: 2 }),
+      createMockWorkoutStep({ type: 'work', repeat: 4 }),
+      createMockWorkoutStep({ type: 'recovery', repeat: 4 }),
+      createMockWorkoutStep({ type: 'work', repeat: 2 }),
+      createMockWorkoutStep({ type: 'recovery', repeat: 2 }),
     ];
     const result = groupSteps(steps);
     expect(result).toHaveLength(2);

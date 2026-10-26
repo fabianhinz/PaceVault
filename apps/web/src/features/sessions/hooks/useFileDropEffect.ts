@@ -1,25 +1,26 @@
 import { useEffect, useRef } from 'react';
-import { useToastStore } from '@/store/toast.ts';
-import { m } from '@pacevault/i18n/messages.js';
+import { useSnackbar } from '@/lib/hooks/useSnackbar.ts';
+import { SESSIONS_SNACKBARS } from '@/features/sessions/sessionsSnackbars.ts';
 
-const DROP_TOAST_ID = 'file-drop-hint';
-
-export const useFileDropEffect = (onDrop: (files: FileList) => void, enabled: boolean) => {
+export const useFileDropEffect = ({
+  onDrop,
+  enabled,
+}: {
+  onDrop: (files: FileList) => Promise<void>;
+  enabled: boolean;
+}): void => {
   const counterRef = useRef(0);
+  const snackbar = useSnackbar();
 
   useEffect(() => {
     if (!enabled) return;
 
     const showHint = () => {
-      useToastStore.getState().addToast({
-        id: DROP_TOAST_ID,
-        title: m.toast_drop_hint(),
-        persistent: true,
-      });
+      snackbar.enqueueSnackbar(SESSIONS_SNACKBARS.dropHint);
     };
 
     const hideHint = () => {
-      useToastStore.getState().removeToast(DROP_TOAST_ID);
+      snackbar.closeSnackbar(SESSIONS_SNACKBARS.dropHint.key);
     };
 
     const handleDragEnter = (e: DragEvent) => {
@@ -44,7 +45,7 @@ export const useFileDropEffect = (onDrop: (files: FileList) => void, enabled: bo
       counterRef.current = 0;
       hideHint();
       if (e.dataTransfer?.files.length) {
-        onDrop(e.dataTransfer.files);
+        void onDrop(e.dataTransfer.files);
       }
     };
 
@@ -61,5 +62,5 @@ export const useFileDropEffect = (onDrop: (files: FileList) => void, enabled: bo
       counterRef.current = 0;
       hideHint();
     };
-  }, [onDrop, enabled]);
+  }, [onDrop, enabled, snackbar]);
 };

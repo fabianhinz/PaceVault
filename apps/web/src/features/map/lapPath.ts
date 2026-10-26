@@ -1,4 +1,4 @@
-import type { LapSpan } from '@/lib/lapRanges.ts';
+import type { LapSpan } from '@/lib/laps.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
 
@@ -18,10 +18,13 @@ export const dimmedColor = (color: Color | Color[], factor: number): Color | Col
   return darken(color, factor);
 };
 
-export const nearestRecordIndex = (
-  detail: DetailPath,
-  coordinate: [number, number],
-): number | undefined => {
+export const nearestRecordIndex = ({
+  detail,
+  coordinate,
+}: {
+  detail: DetailPath;
+  coordinate: [number, number];
+}): number | undefined => {
   const cosLat = Math.cos((coordinate[1] * Math.PI) / 180);
   let best: number | undefined = undefined;
   let bestDistance = Infinity;
@@ -37,10 +40,13 @@ export const nearestRecordIndex = (
   return best;
 };
 
-const lapVertexRange = (
-  detail: DetailPath,
-  span: LapSpan,
-): { first: number; end: number } | null => {
+const lapVertexRange = ({
+  detail,
+  span,
+}: {
+  detail: DetailPath;
+  span: LapSpan;
+}): { first: number; end: number } | null => {
   const first = detail.recordIndices.findIndex((index) => index >= span.startRecord);
   if (first < 0) return null;
   let end = detail.recordIndices.findIndex((index) => index > span.endRecord);
@@ -58,7 +64,7 @@ export const lapVertexBounds = ({
   detailPath: DetailPath;
   span: LapSpan;
 }): { first: number; last: number } | null => {
-  const range = lapVertexRange(detailPath, span);
+  const range = lapVertexRange({ detail: detailPath, span });
   if (range === null) return null;
   return { first: range.first, last: range.end - 1 };
 };
@@ -76,8 +82,14 @@ export const lapVertexBreaks = ({
     return [bounds.first, bounds.last];
   });
 
-export const lapSubPath = (detail: DetailPath, span: LapSpan): DetailPath | null => {
-  const range = lapVertexRange(detail, span);
+export const lapSubPath = ({
+  detail,
+  span,
+}: {
+  detail: DetailPath;
+  span: LapSpan;
+}): DetailPath | null => {
+  const range = lapVertexRange({ detail, span });
   if (range === null) return null;
   const first = range.first;
   const end = range.end;

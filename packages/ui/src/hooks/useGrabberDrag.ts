@@ -1,8 +1,23 @@
 import { useRef, type PointerEvent } from 'react';
-import { useDragControls } from 'motion/react';
-import { SHEET_MOMENTUM } from '../lib/sheetDrag.ts';
+import { useDragControls, type DragControls } from 'motion/react';
+import { SHEET_DRAG_ELASTIC, SHEET_MOMENTUM } from '../lib/sheetDrag.ts';
 
-export const useGrabberDrag = () => {
+interface GrabberDragProps {
+  drag: 'y';
+  dragListener: false;
+  dragControls: DragControls;
+  dragElastic: number;
+  dragTransition: typeof SHEET_MOMENTUM;
+  onDragStart: () => void;
+}
+
+interface GrabberDrag {
+  onHandlePointerDown: (event: PointerEvent) => void;
+  isDragged: () => boolean;
+  dragProps: GrabberDragProps;
+}
+
+export const useGrabberDrag = (): GrabberDrag => {
   const dragControls = useDragControls();
   const draggedRef = useRef(false);
 
@@ -11,18 +26,18 @@ export const useGrabberDrag = () => {
     dragControls.start(event);
   };
 
-  const wasDragged = () => draggedRef.current;
+  const isDragged = () => draggedRef.current;
 
-  const dragProps = {
-    drag: 'y' as const,
+  const dragProps: GrabberDragProps = {
+    drag: 'y',
     dragListener: false,
     dragControls,
-    dragElastic: 0.08,
+    dragElastic: SHEET_DRAG_ELASTIC,
     dragTransition: SHEET_MOMENTUM,
     onDragStart: () => {
       draggedRef.current = true;
     },
   };
 
-  return { onHandlePointerDown, wasDragged, dragProps };
+  return { onHandlePointerDown, isDragged, dragProps };
 };

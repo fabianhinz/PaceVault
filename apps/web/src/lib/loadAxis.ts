@@ -16,7 +16,7 @@ interface LoadDay extends SportTss {
   bucket: string;
 }
 
-export const loadBucketKey = (day: string, groupBy: LoadGroupBy): string => {
+export const loadBucketKey = ({ day, groupBy }: { day: string; groupBy: LoadGroupBy }): string => {
   if (groupBy === 'week') {
     return getMondayOfWeek(day);
   }
@@ -28,14 +28,18 @@ export const loadBucketKey = (day: string, groupBy: LoadGroupBy): string => {
 
 const roundTss = (value: number): number => Math.round(value * 10) / 10;
 
-export const buildLoadAxis = (
-  days: readonly { date: string }[],
-  sportTss: ReadonlyMap<string, Partial<Record<string, number>>>,
-  groupBy: LoadGroupBy,
-): { rows: LoadDay[]; buckets: Map<string, LoadBucket> } => {
+export const buildLoadAxis = ({
+  days,
+  sportTss,
+  groupBy,
+}: {
+  days: readonly { date: string }[];
+  sportTss: ReadonlyMap<string, Partial<Record<string, number>>>;
+  groupBy: LoadGroupBy;
+}): { rows: LoadDay[]; buckets: Map<string, LoadBucket> } => {
   const buckets = new Map<string, LoadBucket>();
   for (const day of days) {
-    const key = loadBucketKey(day.date, groupBy);
+    const key = loadBucketKey({ day: day.date, groupBy });
     let bucket = buckets.get(key);
     if (bucket === undefined) {
       bucket = { key, from: day.date, to: day.date, running: 0, cycling: 0 };
@@ -53,7 +57,7 @@ export const buildLoadAxis = (
     }
   }
   const rows = days.map((day): LoadDay => {
-    const key = loadBucketKey(day.date, groupBy);
+    const key = loadBucketKey({ day: day.date, groupBy });
     const bucket = buckets.get(key);
     return {
       date: day.date,

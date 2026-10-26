@@ -1,16 +1,19 @@
+import type { FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import { MapPickPopup } from '@/features/map/MapPickPopup.tsx';
 import { StudioRouteItem } from '@/features/studio/StudioRouteItem.tsx';
-import type { StudioRoutesPopupInfo } from '@/features/studio/hooks/useStudioRoutesPopup.ts';
+import type { StudioRoutesPopupInfo } from '@/features/studio/types.ts';
+
+interface StudioRoutesPickPopupProps {
+  info: StudioRoutesPopupInfo;
+  onClose: () => void;
+}
 
 /**
  * Studio-tab pick popup: the routes near the clicked point, each opening its
  * detail. The detail page uses the special add-marker popup instead.
  */
-export const StudioRoutesPickPopup = (props: {
-  info: StudioRoutesPopupInfo;
-  onClose: () => void;
-}) => {
+export const StudioRoutesPickPopup: FC<StudioRoutesPickPopupProps> = (props) => {
   return (
     <MapPickPopup
       x={props.info.x}

@@ -1,7 +1,7 @@
 import { v4 } from 'uuid';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { ToastItem } from '@pacevault/ui/components/Toast.tsx';
+import type { ToastItem } from '@pacevault/ui/components/pvToastViewport/types.ts';
 
 interface ToastState {
   toasts: ToastItem[];
@@ -9,9 +9,13 @@ interface ToastState {
   removeToast: (id: string) => void;
 }
 
+export const INITIAL_TOAST_STORE_STATE: Pick<ToastState, 'toasts'> = {
+  toasts: [],
+};
+
 export const useToastStore = create<ToastState>()(
   immer((set) => ({
-    toasts: [],
+    ...INITIAL_TOAST_STORE_STATE,
     addToast: (toast) =>
       set((draft) => {
         const id = toast.id ?? v4();
@@ -25,12 +29,3 @@ export const useToastStore = create<ToastState>()(
       }),
   })),
 );
-
-export const toast = (
-  title: string,
-  description?: string,
-  variant?: ToastItem['variant'],
-  id?: string,
-) => {
-  useToastStore.getState().addToast({ title, description, variant, id });
-};

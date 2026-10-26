@@ -9,7 +9,9 @@
     "test": "vp test -- --run",
     "cleanup": "node scripts/cleanup.ts",
     "deps": "node scripts/deps.ts",
+    "boundaries": "node scripts/boundaries.ts",
     "interfaces": "node scripts/interfaces.ts",
+    "tokens": "node scripts/themeTokens.ts",
     "capture": "vp exec playwright test -c playwright.review.config.ts"
   },
   "dependencies": {
@@ -25,6 +27,7 @@
     "mermaid": "12.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-use": "^17.6.1",
     "shiki": "^4.5.0",
     "sirv": "3.0.2",
     "tailwindcss": "^4.2.2",

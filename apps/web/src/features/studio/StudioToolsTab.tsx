@@ -1,42 +1,14 @@
+import type { FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
-import type { StudioMarker, StudioMarkerType, StudioRoute } from '@/store/studio.ts';
-import { PageGrid } from '@pacevault/ui/components/PageGrid.tsx';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
-import { List } from '@pacevault/ui/components/List.tsx';
-import { MarkerRow } from './markers/MarkerRow.tsx';
-import { AddMarkerButton } from './markers/AddMarkerButton.tsx';
+import type { StudioRoute } from '@/store/studio.ts';
+import { PvPageGrid } from '@pacevault/ui/components/pvPageGrid/PvPageGrid.tsx';
+import { MarkerCard } from '@/features/studio/MarkerCard.tsx';
 
-const MarkerCard = (props: {
-  routeId: string;
-  type: StudioMarkerType;
-  title: string;
-  subtitle: string;
-  markers: StudioMarker[];
-}) => (
-  <Card>
-    <CardHeader title={props.title} subtitle={props.subtitle} />
-    {props.markers.length > 0 && (
-      <List>
-        {props.markers.map((marker, i) => (
-          <MarkerRow
-            key={marker.id}
-            routeId={props.routeId}
-            marker={marker}
-            prevSplitM={
-              props.type === 'track_modifier' && i > 0
-                ? (props.markers[i - 1]?.distanceM ?? null)
-                : null
-            }
-          />
-        ))}
-      </List>
-    )}
-    <AddMarkerButton routeId={props.routeId} type={props.type} className="mt-2" />
-  </Card>
-);
+interface StudioToolsTabProps {
+  route: StudioRoute;
+}
 
-export const StudioToolsTab = (props: { route: StudioRoute }) => {
+export const StudioToolsTab: FC<StudioToolsTabProps> = (props) => {
   const splits = props.route.markers
     .filter((mk) => mk.type === 'track_modifier')
     .sort((a, b) => a.distanceM - b.distanceM);
@@ -45,7 +17,7 @@ export const StudioToolsTab = (props: { route: StudioRoute }) => {
     .sort((a, b) => a.distanceM - b.distanceM);
 
   return (
-    <PageGrid>
+    <PvPageGrid>
       <MarkerCard
         routeId={props.route.id}
         type="track_modifier"
@@ -60,6 +32,6 @@ export const StudioToolsTab = (props: { route: StudioRoute }) => {
         subtitle={m.ui_studio_tools_waypoints_desc()}
         markers={waypoints}
       />
-    </PageGrid>
+    </PvPageGrid>
   );
 };

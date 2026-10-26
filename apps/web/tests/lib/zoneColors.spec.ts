@@ -1,27 +1,33 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { zoneLineStroke, zoneScale, type ZoneScale } from '@/lib/zoneColors.ts';
+import { ZONE_PALETTES, zoneLineStroke, zoneScale } from '@/lib/zoneColors.ts';
+import { definedOrThrow } from '@testUtils/defined.ts';
 
-const hr = zoneScale('hr', { maxHr: 200, restHr: 60 }) as ZoneScale;
+const hr = definedOrThrow(zoneScale({ metric: 'hr', thresholds: { maxHr: 200, restHr: 60 } }));
 
-describe('zoneScale', () => {
+describe(zoneScale.name, () => {
   it('is unavailable without the thresholds a metric needs', () => {
-    expect(zoneScale('hr', { maxHr: 60, restHr: 60 })).toBeUndefined();
-    expect(zoneScale('power', {})).toBeUndefined();
-    expect(zoneScale('pace', { thresholdPace: 0 })).toBeUndefined();
+    expect(zoneScale({ metric: 'hr', thresholds: { maxHr: 60, restHr: 60 } })).toBeUndefined();
+    expect(zoneScale({ metric: 'power', thresholds: {} })).toBeUndefined();
+    expect(zoneScale({ metric: 'pace', thresholds: { thresholdPace: 0 } })).toBeUndefined();
   });
 
   it('labels values outside every zone with the nearest zone', () => {
     expect(hr.bandAt(0).zone).toBe('Z1');
     expect(hr.bandAt(250).zone).toBe('Z5');
-    const pace = zoneScale('pace', { thresholdPace: 270 }) as ZoneScale;
+    const pace = definedOrThrow(zoneScale({ metric: 'pace', thresholds: { thresholdPace: 270 } }));
     expect(pace.bandAt(3).name).toBe('vo2max');
     expect(pace.bandAt(9).name).toBe('recovery');
   });
 });
 
-describe('zoneLineStroke', () => {
+describe(zoneLineStroke.name, () => {
   it('chart gradient uses the same blended colours as the map track', () => {
-    const line = zoneLineStroke(hr, [120, 180], false, 'g');
+    const line = zoneLineStroke({
+      scale: hr,
+      values: [120, 180],
+      reversed: false,
+      gradientId: 'g',
+    });
     expect(line?.stroke).toBe('url(#g)');
     const top = line?.stops?.[0];
     const bottom = line?.stops?.[line.stops.length - 1];
@@ -30,12 +36,41 @@ describe('zoneLineStroke', () => {
   });
 
   it('puts the smallest value on top for the reversed pace axis', () => {
-    const pace = zoneScale('pace', { thresholdPace: 270 }) as ZoneScale;
-    const stops = zoneLineStroke(pace, [4, 6], true, 'g')?.stops;
+    const pace = definedOrThrow(zoneScale({ metric: 'pace', thresholds: { thresholdPace: 270 } }));
+    const stops = zoneLineStroke({
+      scale: pace,
+      values: [4, 6],
+      reversed: true,
+      gradientId: 'g',
+    })?.stops;
     expect(stops?.[0]).toEqual({ offset: 0, color: pace.colorAt(4) });
   });
 
   it('falls back to a solid colour when all values are equal', () => {
-    expect(zoneLineStroke(hr, [150, null, 150], false, 'g')).toEqual({ stroke: hr.colorAt(150) });
+    expect(
+      zoneLineStroke({ scale: hr, values: [150, null, 150], reversed: false, gradientId: 'g' }),
+    ).toEqual({ stroke: hr.colorAt(150) });
+  });
+});
+
+describe('ZONE_PALETTES', () => {
+  it('lists the pace zone colours from recovery to VO2max', () => {
+    expect(ZONE_PALETTES.pace).toEqual(['#60a5fa', '#34d399', '#fbbf24', '#f97316', '#ef4444']);
+  });
+
+  it('lists the heart-rate zone colours from Z1 to Z5', () => {
+    expect(ZONE_PALETTES.hr).toEqual(['#60a5fa', '#34d399', '#fbbf24', '#f97316', '#ef4444']);
+  });
+
+  it('lists the power zone colours from Z1 to Z7', () => {
+    expect(ZONE_PALETTES.power).toEqual([
+      '#94a3b8',
+      '#60a5fa',
+      '#34d399',
+      '#fbbf24',
+      '#f97316',
+      '#ef4444',
+      '#dc2626',
+    ]);
   });
 });

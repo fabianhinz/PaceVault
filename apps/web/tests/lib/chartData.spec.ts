@@ -1,13 +1,19 @@
 import { describe, it, expect } from 'vite-plus/test';
-import { buildRouteChartRows, buildSessionChartRows, hasSeriesValues } from '@/lib/chartData.ts';
+import {
+  buildRouteChartRows,
+  buildSessionChartRows,
+  hasSeriesValues,
+  routeChartProfile,
+} from '@/lib/chartData.ts';
 import { buildRouteProfile } from '@pacevault/gpx/routeProfile.ts';
+import { createMockRoutePoint } from '@pacevault/testing/route.ts';
 import { buildSessionTerrain } from '@/lib/sessionTerrain.ts';
 import type { SessionRecord, Sport } from '@pacevault/engine/types.ts';
 
 const rowsOf = (records: SessionRecord[], sport: Sport = 'running') =>
   buildSessionChartRows(records, {
-    isRunning: sport === 'running',
-    terrain: buildSessionTerrain(sport, records),
+    running: sport === 'running',
+    terrain: buildSessionTerrain({ sport, records }),
   });
 
 const steadyRun = (gradient: number): SessionRecord[] =>
@@ -18,7 +24,7 @@ const steadyRun = (gradient: number): SessionRecord[] =>
     elevation: 100 + i * 3.5 * gradient,
   }));
 
-describe('buildSessionChartRows', () => {
+describe(buildSessionChartRows.name, () => {
   it('converts speed to km/h and pace to min/km', () => {
     const rows = rowsOf([
       { timestamp: 0, speed: 1000 / 300 },
@@ -33,8 +39,8 @@ describe('buildSessionChartRows', () => {
       { timestamp: 0, speed: 0, power: 0, hr: 0, cadence: 0 },
       { timestamp: 1, speed: 0, power: 0, hr: 0, cadence: 0 },
     ]);
-    expect(rows.every((r) => r.speed === 0 && r.power === 0 && r.hr === 0)).toBe(true);
-    expect(rows.every((r) => r.pace === null && r.gap === null)).toBe(true);
+    expect(rows.filter((r) => !(r.speed === 0 && r.power === 0 && r.hr === 0))).toEqual([]);
+    expect(rows.filter((r) => !(r.pace === null && r.gap === null))).toEqual([]);
   });
 
   it('has no pace for cycling sessions', () => {
@@ -66,7 +72,7 @@ describe('buildSessionChartRows', () => {
     const gaps = rows.map((r) => r.gap).filter((g): g is number => g !== null);
     const pace = rows[10]?.pace ?? 0;
     expect(gaps.length).toBeGreaterThan(0);
-    expect(gaps.slice(1).every((g) => g < pace)).toBe(true);
+    expect(gaps.slice(1).filter((g) => !(g < pace))).toEqual([]);
   });
 
   it('trail runs without a grade field get a GAP and a Grade chart', () => {
@@ -87,7 +93,7 @@ describe('running cadence', () => {
   });
 });
 
-describe('hasSeriesValues', () => {
+describe(hasSeriesValues.name, () => {
   it('is true when at least one value is not null, including 0', () => {
     expect(hasSeriesValues([{ hr: null }, { hr: 0 }], 'hr')).toBe(true);
   });
@@ -98,15 +104,23 @@ describe('hasSeriesValues', () => {
 });
 
 describe('route chart rows', () => {
+  it('rounds distance to kilometres and elevation and grade to a tenth', () => {
+    const point = (dist: number, ele: number) =>
+      createMockRoutePoint({ lat: 47 + dist / 111_190, ele, dist });
+    const profile = routeChartProfile(buildRouteProfile([point(0, 500.04), point(1500, 620.26)]));
+    expect(profile.elevation[0]).toMatchObject({ dist: 0, elevation: 500, lng: 11 });
+    expect(profile.elevation[1]).toMatchObject({ dist: 1.5, elevation: 620.3 });
+  });
+
   it('keeps a short steep kicker on a huge route', () => {
     const points = Array.from({ length: 10_001 }, (_, i) => {
       const dist = i * 10;
       let ele = 100;
       if (dist > 50_000 && dist <= 50_200) ele = 100 + (dist - 50_000) * 0.14;
       if (dist > 50_200) ele = 128;
-      return { lat: 48, lng: 11, ele, dist, seg: 0 };
+      return createMockRoutePoint({ lat: 48, ele, dist });
     });
-    const rows = buildRouteChartRows(buildRouteProfile(points));
+    const rows = buildRouteChartRows(routeChartProfile(buildRouteProfile(points)));
     expect(rows.length).toBeLessThanOrEqual(1502);
     expect(Math.max(...rows.map((r) => r.grade ?? -Infinity))).toBeCloseTo(14, 0);
   });
@@ -115,22 +129,14 @@ describe('route chart rows', () => {
 describe('route chart rows for sparse GPX', () => {
   it('never draws a gap on a long straight stretch with few points', () => {
     const points = [
-      ...Array.from({ length: 500 }, (_, i) => ({
-        lat: 48,
-        lng: 11,
-        ele: 100,
-        dist: i * 10,
-        seg: 0,
-      })),
-      ...Array.from({ length: 500 }, (_, i) => ({
-        lat: 48,
-        lng: 11,
-        ele: 100,
-        dist: 5600 + i * 10,
-        seg: 0,
-      })),
+      ...Array.from({ length: 500 }, (_, i) =>
+        createMockRoutePoint({ lat: 48, ele: 100, dist: i * 10 }),
+      ),
+      ...Array.from({ length: 500 }, (_, i) =>
+        createMockRoutePoint({ lat: 48, ele: 100, dist: 5600 + i * 10 }),
+      ),
     ];
-    const rows = buildRouteChartRows(buildRouteProfile(points));
-    expect(rows.some((r) => r.elevation === null || r.grade === null)).toBe(false);
+    const rows = buildRouteChartRows(routeChartProfile(buildRouteProfile(points)));
+    expect(rows.filter((r) => r.elevation === null || r.grade === null)).toEqual([]);
   });
 });

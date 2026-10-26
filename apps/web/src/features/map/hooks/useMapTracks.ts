@@ -3,16 +3,10 @@ import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { matchesFilters } from '@/lib/savedFilters.ts';
-import type { SessionGPS, Sport, TrainingSession } from '@pacevault/engine/types.ts';
+import type { SessionGPS, TrainingSession } from '@pacevault/engine/types.ts';
 import { useSessionReprocessingActive } from '@/features/sessions/hooks/useSessionReprocessingActive.ts';
 import { useStudioMapTracks } from './useStudioMapTracks.ts';
-
-export interface MapTrack {
-  sessionId: string;
-  sport: Sport;
-  gps: SessionGPS;
-  session: TrainingSession;
-}
+import type { MapTrack } from './types.ts';
 
 const NO_TRACKS: MapTrack[] = [];
 
@@ -43,7 +37,7 @@ export const useMapTracks = (gpsData: SessionGPS[] | null): MapTrack[] => {
       visible = sessions.filter((s) => tripIds.has(s.id));
     } else {
       const now = Date.now();
-      visible = sessions.filter((s) => matchesFilters(s, filter, now));
+      visible = sessions.filter((s) => matchesFilters({ session: s, criteria: filter, now }));
     }
 
     const result: MapTrack[] = [];

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { getMondayOfWeek, buildPlanCacheKey, loadBucketDayRange } from '@/lib/weekKey.ts';
 
-describe('getMondayOfWeek', () => {
+describe(getMondayOfWeek.name, () => {
   it('returns the same date when input is a Monday', () => {
     expect(getMondayOfWeek('2026-02-09')).toBe('2026-02-09');
   });
@@ -27,37 +27,51 @@ describe('getMondayOfWeek', () => {
   });
 });
 
-describe('buildPlanCacheKey', () => {
+describe(buildPlanCacheKey.name, () => {
   it('starts with week, session count and threshold pace', () => {
-    expect(buildPlanCacheKey('2026-02-09', [40, 65.5], 300)).toMatch(/^2026-02-09:2:300:/);
-    expect(buildPlanCacheKey('2026-02-09', [], 300)).toMatch(/^2026-02-09:0:300:/);
+    expect(
+      buildPlanCacheKey({ weekOf: '2026-02-09', loads: [40, 65.5], thresholdPace: 300 }),
+    ).toMatch(/^2026-02-09:2:300:/);
+    expect(buildPlanCacheKey({ weekOf: '2026-02-09', loads: [], thresholdPace: 300 })).toMatch(
+      /^2026-02-09:0:300:/,
+    );
   });
 
   it('stays the same for the same loads', () => {
-    expect(buildPlanCacheKey('2026-02-09', [40, 65.5], 300)).toBe(
-      buildPlanCacheKey('2026-02-09', [40, 65.5], 300),
+    expect(buildPlanCacheKey({ weekOf: '2026-02-09', loads: [40, 65.5], thresholdPace: 300 })).toBe(
+      buildPlanCacheKey({ weekOf: '2026-02-09', loads: [40, 65.5], thresholdPace: 300 }),
     );
   });
 
   it('changes when a recompute moves a stored load', () => {
-    const before = buildPlanCacheKey('2026-02-09', [40, 65.5], 300);
-    expect(buildPlanCacheKey('2026-02-09', [40, 71.2], 300)).not.toBe(before);
-    expect(buildPlanCacheKey('2026-02-16', [40, 65.5], 300)).not.toBe(before);
-    expect(buildPlanCacheKey('2026-02-09', [40, 65.5, 20], 300)).not.toBe(before);
+    const before = buildPlanCacheKey({
+      weekOf: '2026-02-09',
+      loads: [40, 65.5],
+      thresholdPace: 300,
+    });
+    expect(
+      buildPlanCacheKey({ weekOf: '2026-02-09', loads: [40, 71.2], thresholdPace: 300 }),
+    ).not.toBe(before);
+    expect(
+      buildPlanCacheKey({ weekOf: '2026-02-16', loads: [40, 65.5], thresholdPace: 300 }),
+    ).not.toBe(before);
+    expect(
+      buildPlanCacheKey({ weekOf: '2026-02-09', loads: [40, 65.5, 20], thresholdPace: 300 }),
+    ).not.toBe(before);
   });
 });
 
-describe('loadBucketDayRange', () => {
+describe(loadBucketDayRange.name, () => {
   it('dashboard zoom on weekly or monthly load buckets keeps the whole last bucket', () => {
-    expect(loadBucketDayRange('2026-02-09', 'week')).toEqual({
+    expect(loadBucketDayRange({ key: '2026-02-09', groupBy: 'week' })).toEqual({
       from: '2026-02-09',
       to: '2026-02-15',
     });
-    expect(loadBucketDayRange('2026-02', 'month')).toEqual({
+    expect(loadBucketDayRange({ key: '2026-02', groupBy: 'month' })).toEqual({
       from: '2026-02-01',
       to: '2026-02-28',
     });
-    expect(loadBucketDayRange('2026-02-11', 'day')).toEqual({
+    expect(loadBucketDayRange({ key: '2026-02-11', groupBy: 'day' })).toEqual({
       from: '2026-02-11',
       to: '2026-02-11',
     });

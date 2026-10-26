@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { WorkoutCard } from './WorkoutCard.tsx';
 import { WorkoutExpansionPanel } from './WorkoutExpansionPanel.tsx';
 import type { RunningZone } from '@pacevault/engine/types.ts';
-import type { WeeklyPlan } from '@/types/index.ts';
+import type { WeeklyPlan } from '@/types.ts';
 
 interface WeeklyPlanTimelineProps {
   plan: WeeklyPlan;
   zones: RunningZone[];
 }
 
-export const WeeklyPlanTimeline = (props: WeeklyPlanTimelineProps) => {
+export const WeeklyPlanTimeline: FC<WeeklyPlanTimelineProps> = (props) => {
   const todayString = new Date().toISOString().slice(0, 10);
   const defaultId =
     props.plan.workouts.find((w) => w.date === todayString && w.type !== 'rest')?.id ?? null;
@@ -26,7 +26,7 @@ export const WeeklyPlanTimeline = (props: WeeklyPlanTimelineProps) => {
           <WorkoutCard
             key={workout.id}
             workout={workout}
-            isExpanded={workout.id === expandedId}
+            expanded={workout.id === expandedId}
             onToggle={() => setExpandedId(workout.id === expandedId ? null : workout.id)}
           />
         ))}

@@ -11,17 +11,17 @@ const sportTss = new Map([
   ['2026-03-03', { running: 30, cycling: 10 }],
 ]);
 
-describe('buildLoadAxis', () => {
+describe(buildLoadAxis.name, () => {
   it('maps a hovered day to the week bucket that contains it, clipped to the axis', () => {
-    const axis = buildLoadAxis(days, sportTss, 'week');
-    expect(axis.buckets.get(loadBucketKey('2026-02-28', 'week'))).toEqual({
+    const axis = buildLoadAxis({ days, sportTss, groupBy: 'week' });
+    expect(axis.buckets.get(loadBucketKey({ day: '2026-02-28', groupBy: 'week' }))).toEqual({
       key: '2026-02-23',
       from: '2026-02-27',
       to: '2026-03-01',
       running: 40,
       cycling: 60,
     });
-    expect(axis.buckets.get(loadBucketKey('2026-03-03', 'week'))).toMatchObject({
+    expect(axis.buckets.get(loadBucketKey({ day: '2026-03-03', groupBy: 'week' }))).toMatchObject({
       key: '2026-03-02',
       from: '2026-03-02',
       to: '2026-03-03',
@@ -29,7 +29,7 @@ describe('buildLoadAxis', () => {
   });
 
   it('gives every day of a month bucket the bucket total', () => {
-    const axis = buildLoadAxis(days, sportTss, 'month');
+    const axis = buildLoadAxis({ days, sportTss, groupBy: 'month' });
     expect(axis.rows.map((row) => [row.bucket, row.running, row.cycling])).toEqual([
       ['2026-02', 40, 0],
       ['2026-02', 40, 0],

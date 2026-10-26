@@ -8,15 +8,21 @@ export const DISTANCE_OPTIONS: Array<{ value: RaceDistance; label: string }> = [
   { value: 'marathon', label: m.ui_pace_est_marathon() },
 ];
 
-export const usesLongFormat = (distance: RaceDistance): boolean =>
+export const isLongFormat = (distance: RaceDistance): boolean =>
   distance === 'half-marathon' || distance === 'marathon';
 
 /**
  * Parses a race time string into minutes.
  * Short format (mm:ss) for 5K/10K, long format (h:mm:ss) for half-marathon/marathon.
  */
-export const parseRaceTime = (input: string, distance: RaceDistance): number | undefined => {
-  if (usesLongFormat(distance)) {
+export const parseRaceTime = ({
+  input,
+  distance,
+}: {
+  input: string;
+  distance: RaceDistance;
+}): number | undefined => {
+  if (isLongFormat(distance)) {
     const match = input.match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
     if (!match) return undefined;
     const h = Number(match[1]);

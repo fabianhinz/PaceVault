@@ -1,11 +1,12 @@
+import type { FC } from 'react';
 import { Zap } from 'lucide-react';
-import { IconTile } from '@pacevault/ui/components/IconTile.tsx';
-import { SheetPeek } from '@pacevault/ui/components/SheetPeek.tsx';
+import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
+import { PvSheetPeek } from '@pacevault/ui/components/pvBottomSheet/PvSheetPeek.tsx';
 import { m } from '@pacevault/i18n/messages.js';
 
-export const SessionsPeek = () => (
-  <SheetPeek
-    icon={<IconTile icon={Zap} />}
+export const SessionsPeek: FC = () => (
+  <PvSheetPeek
+    icon={<PvIconTile icon={Zap} />}
     primary={m.ui_nav_sessions()}
     secondary={[
       m.ui_sessions_tab_log(),

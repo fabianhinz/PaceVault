@@ -1,21 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, type FC } from 'react';
 import { SessionItem } from '@/features/sessions/SessionItem.tsx';
 import { MapPickPopup } from '@/features/map/MapPickPopup.tsx';
-import type { TrainingSession } from '@pacevault/engine/types.ts';
+import type { PopupInfo } from './types.ts';
 import { m } from '@pacevault/i18n/messages.js';
-
-export interface PopupInfo {
-  x: number;
-  y: number;
-  sessions: TrainingSession[];
-}
 
 interface SessionsPickPopupProps {
   info: PopupInfo;
   onClose: () => void;
 }
 
-export const SessionsPickPopup = (props: SessionsPickPopupProps) => {
+export const SessionsPickPopup: FC<SessionsPickPopupProps> = (props) => {
   const sorted = useMemo(
     () => props.info.sessions.toSorted((a, b) => b.date - a.date),
     [props.info.sessions],

@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { CardHeader } from '@pacevault/ui/components/CardHeader.tsx';
-import { ResponsivePopover } from '@pacevault/ui/components/ResponsivePopover.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvCardHeader } from '@pacevault/ui/components/pvCardHeader/PvCardHeader.tsx';
+import { PvResponsivePopover } from '@pacevault/ui/components/pvResponsivePopover/PvResponsivePopover.tsx';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import { popupCollisionPadding } from '@/features/map/popupSafeZone.ts';
 import { cn } from '@pacevault/ui/lib/cn.ts';
@@ -17,10 +17,11 @@ interface MapPickPopupProps {
   children: ReactNode;
 }
 
-export const MapPickPopup = (props: MapPickPopupProps) => {
+export const MapPickPopup: FC<MapPickPopupProps> = (props) => {
   const device = useDevice();
   return (
-    <ResponsivePopover
+    <PvResponsivePopover
+      closeLabel={m.ui_sheet_drag_close()}
       open
       onOpenChange={(open) => {
         if (!open) props.onClose();
@@ -28,30 +29,30 @@ export const MapPickPopup = (props: MapPickPopupProps) => {
       anchor={{ x: props.x, y: props.y }}
       side="right"
       align="start"
-      collisionPadding={popupCollisionPadding(device.isDesktop)}
+      collisionPadding={popupCollisionPadding(device.desktop)}
       title={props.title}
       subtitle={props.subtitle}
-      className="flex flex-col overflow-hidden p-2 lg:max-h-[300px] lg:w-[380px] lg:max-w-none"
+      className="flex flex-col overflow-hidden p-2 lg:max-h-300px lg:w-380px lg:max-w-none"
     >
-      {device.isDesktop && (
-        <CardHeader
+      {device.desktop && (
+        <PvCardHeader
           title={props.title}
           subtitle={props.subtitle}
           actions={
-            <Button
+            <PvButton
               variant="ghost"
               size="icon"
               aria-label={m.ui_btn_close()}
               onClick={props.onClose}
             >
               <X size={16} />
-            </Button>
+            </PvButton>
           }
         />
       )}
-      <div className={cn('space-y-2', device.isDesktop && 'min-h-0 overflow-y-auto')}>
+      <div className={cn('space-y-2', device.desktop && 'min-h-0 overflow-y-auto')}>
         {props.children}
       </div>
-    </ResponsivePopover>
+    </PvResponsivePopover>
   );
 };

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import { climbingRate, detectClimbs } from '../src/climbs.ts';
 import { windowedGradients } from '../src/gradient.ts';
 import type { SessionRecord, Sport } from '../src/types.ts';
+import { createMockSessionRecord } from '../../testing/src/records.ts';
 
 interface Stretch {
   metres: number;
@@ -10,7 +11,9 @@ interface Stretch {
 }
 
 const ride = (stretches: Stretch[], speed = 1): SessionRecord[] => {
-  const records: SessionRecord[] = [{ timestamp: 0, speed, distance: 0, elevation: 100 }];
+  const records: SessionRecord[] = [
+    createMockSessionRecord({ timestamp: 0, speed, distance: 0, elevation: 100 }),
+  ];
   let distance = 0;
   let elevation = 100;
   let timestamp = 0;
@@ -20,16 +23,16 @@ const ride = (stretches: Stretch[], speed = 1): SessionRecord[] => {
       timestamp += 1;
       distance += v;
       elevation += v * stretch.gradient;
-      records.push({ timestamp, speed: v, distance, elevation });
+      records.push(createMockSessionRecord({ timestamp, speed: v, distance, elevation }));
     }
   }
   return records;
 };
 
 const climbsOf = (sport: Sport, records: SessionRecord[]) =>
-  detectClimbs(sport, records, windowedGradients(records));
+  detectClimbs({ sport, records, gradients: windowedGradients(records) });
 
-describe('detectClimbs', () => {
+describe(detectClimbs.name, () => {
   it('keeps a flatter bit inside a climb until the gradient drops below the exit threshold', () => {
     const steep = { metres: 250, gradient: 0.2 };
     const withFlatterBit = ride([
@@ -91,16 +94,18 @@ describe('detectClimbs', () => {
       { metres: 300, gradient: 0.2 },
     ]);
     const stopAt = records.findIndex((r) => r.timestamp === 250);
-    const standing = Array.from({ length: 120 }, (_, i) => ({
-      ...records[stopAt],
-      timestamp: 251 + i,
-      speed: 0,
-    }));
-    const resumed = records.slice(stopAt + 1).map((r) => ({ ...r, timestamp: r.timestamp + 121 }));
+    const standing = Array.from({ length: 120 }, (_, i) =>
+      createMockSessionRecord({ ...records[stopAt], timestamp: 251 + i, speed: 0 }),
+    );
+    const resumed = records
+      .slice(stopAt + 1)
+      .map((r) => createMockSessionRecord({ ...r, timestamp: r.timestamp + 121 }));
     const withStop = [...records.slice(0, stopAt + 1), ...standing, ...resumed] as SessionRecord[];
     const climbs = climbsOf('running', withStop);
     expect(climbs).toHaveLength(1);
     expect(climbs[0]?.vam).toBe(720);
-    expect(climbingRate(withStop, climbs, 0, withStop.length - 1)).toBe(720);
+    expect(
+      climbingRate({ records: withStop, climbs, startIndex: 0, endIndex: withStop.length - 1 }),
+    ).toBe(720);
   });
 });

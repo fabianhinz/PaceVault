@@ -1,29 +1,31 @@
-import type { ElementType, ReactNode } from 'react';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
-import type { TypographyVariants } from '@pacevault/ui/components/Typography.tsx';
+import type { ElementType, FC, ReactNode } from 'react';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import type { TypographyVariants } from '@pacevault/ui/components/pvTypography/types.ts';
 import type { StudioRoute } from '@/store/studio.ts';
 import { Route } from 'lucide-react';
-import { IconTile } from '@pacevault/ui/components/IconTile.tsx';
+import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
 import { routeColors } from './routeColors.ts';
 import { formatRouteStatsLine } from './routeStats.ts';
 
-export const StudioRouteHeader = (props: {
+interface StudioRouteHeaderProps {
   route: StudioRoute;
   titleVariant?: TypographyVariants;
   titleAs?: ElementType;
   children?: ReactNode;
-}) => {
+}
+
+export const StudioRouteHeader: FC<StudioRouteHeaderProps> = (props) => {
   return (
     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <IconTile icon={Route} style={{ color: routeColors[props.route.color].hex }} />
+        <PvIconTile icon={Route} style={{ color: routeColors[props.route.color].hex }} />
         <div className="min-w-0">
-          <Typography variant={props.titleVariant ?? 'subtitle1'} as={props.titleAs} noWrap>
+          <PvTypography variant={props.titleVariant ?? 'subtitle1'} as={props.titleAs} noWrap>
             {props.route.name}
-          </Typography>
-          <Typography variant="caption" as="p" color="textSecondary" className="truncate">
+          </PvTypography>
+          <PvTypography variant="caption" as="p" color="textSecondary" className="truncate">
             {formatRouteStatsLine(props.route)}
-          </Typography>
+          </PvTypography>
         </div>
       </div>
       {props.children}

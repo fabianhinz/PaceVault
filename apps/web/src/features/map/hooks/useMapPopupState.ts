@@ -1,15 +1,32 @@
 import { useState, useCallback } from 'react';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
-import { pickBoundsFromCorners, filterTracksByPickBounds } from '@/features/map/trackPicking.ts';
+import { pickSessionsAt } from '@/features/map/trackPicking.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
-import type { MapTrack } from './useMapTracks.ts';
-import type { PopupInfo } from '@/features/sessions/SessionsPickPopup.tsx';
-import { decodeCached, PICK_RADIUS } from './types.ts';
+import type { MapTrack } from './types.ts';
+import type { PopupInfo } from '@/features/sessions/types.ts';
 import type { PickingInfo } from '@deck.gl/core';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 
-export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks: MapTrack[]) => {
+type PickHandler = (info: PickingInfo) => boolean;
+
+export interface MapPopupState {
+  popup: PopupInfo | null;
+  hoveringTrack: boolean;
+  interactive: boolean;
+  onClick: PickHandler;
+  onHover: PickHandler;
+  closePopup: () => void;
+  onPointerLeave: () => void;
+}
+
+export const useMapPopupState = ({
+  mapRef,
+  tracks,
+}: {
+  mapRef: React.RefObject<MapRef | null>;
+  tracks: MapTrack[];
+}): MapPopupState => {
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const pointerFine = useDevice().pointerFine;
 
@@ -27,24 +44,11 @@ export const useMapPopupState = (mapRef: React.RefObject<MapRef | null>, tracks:
       }
 
       const center = mapRef.current.unproject([info.x, info.y]);
+      const sessions = pickSessionsAt({ map: mapRef.current, info, tracks });
 
-      const topLeft = mapRef.current.unproject([info.x - PICK_RADIUS, info.y - PICK_RADIUS]);
-      const bottomRight = mapRef.current.unproject([info.x + PICK_RADIUS, info.y + PICK_RADIUS]);
-
-      const pickBounds = pickBoundsFromCorners(topLeft, bottomRight);
-      const pickable = tracks.map((t) => ({
-        sessionId: t.sessionId,
-        bounds: t.gps.bounds,
-        path: decodeCached(t.sessionId, t.gps.encodedPolyline),
-      }));
-      const hitIds = filterTracksByPickBounds(pickable, pickBounds);
-
-      if (hitIds.length === 0) {
+      if (sessions.length === 0) {
         return stopPropagation;
       }
-
-      const hitSet = new Set(hitIds);
-      const sessions = tracks.filter((t) => hitSet.has(t.sessionId)).map((t) => t.session);
 
       if (pointerFine) useMapFocusStore.getState().setPickCircle([center.lng, center.lat]);
       setPopup({ x: info.x, y: info.y, sessions });

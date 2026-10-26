@@ -7,6 +7,7 @@ import {
 } from 'maplibre-gl';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
 import type { MapPadding } from './fitPadding.ts';
+import { MS_PER_SECOND } from '@pacevault/engine/time.ts';
 
 type FitTransform = MapLibreMap['transform'];
 type Terrain = MapLibreMap['terrain'];
@@ -14,7 +15,7 @@ type Terrain = MapLibreMap['terrain'];
 export const ENTRY_PITCH = 30;
 export const DEM_SETTLE_TIMEOUT_MS = 500;
 export const LAP_FIT_DURATION_MS = 800;
-export const SESSION_FIT_DURATION_MS = 1200;
+export const SESSION_FIT_DURATION_MS = 1.2 * MS_PER_SECOND;
 export const TILT_DURATION_MS = 800;
 
 export const ORBIT_DRAG_THRESHOLD_PX = 3;
@@ -74,7 +75,7 @@ const normalizeBearing = (bearing: number): number =>
 const shortBearingDelta = (from: number, to: number): number =>
   ((((to - from) % FULL_TURN) + FULL_TURN + HALF_TURN) % FULL_TURN) - HALF_TURN;
 
-const screenLinearWeight = (zoomDelta: number, eased: number): number => {
+const screenLinearWeight = ({ zoomDelta, eased }: { zoomDelta: number; eased: number }): number => {
   if (Math.abs(zoomDelta) < SAME_ZOOM_EPSILON) return eased;
   return (1 - 2 ** (-zoomDelta * eased)) / (1 - 2 ** -zoomDelta);
 };
@@ -91,7 +92,7 @@ export const interpolateTerrainCamera = ({
   progress: number;
 }): TerrainCamera => {
   const eased = easeInOutCubic(progress);
-  const weight = screenLinearWeight(to.zoom - from.zoom, eased);
+  const weight = screenLinearWeight({ zoomDelta: to.zoom - from.zoom, eased });
   return {
     center: [
       between(from.center[0], to.center[0], weight),
@@ -127,7 +128,7 @@ export const fitGroundHeight = ({
   return current;
 };
 
-const terrainLoaded = (map: MapLibreMap): boolean => {
+const isTerrainLoaded = (map: MapLibreMap): boolean => {
   const terrain = map.getTerrain();
   if (terrain === null) return false;
   if (map.getSource(terrain.source) === undefined) return false;
@@ -152,7 +153,7 @@ export const whenTerrainSettled = ({
       resolve(settled);
     };
     const check = () => {
-      if (!done && terrainLoaded(map)) finish(true);
+      if (!done && isTerrainLoaded(map)) finish(true);
     };
     const loop = () => {
       check();
@@ -269,7 +270,13 @@ export const fitSamples = (path: [number, number][]): [number, number][] => {
   return [...spread, ...extremePoints(path)];
 };
 
-const transformAt = (map: MapLibreMap, camera: TerrainCamera): FitTransform => {
+const transformAt = ({
+  map,
+  camera,
+}: {
+  map: MapLibreMap;
+  camera: TerrainCamera;
+}): FitTransform => {
   const transform = map.transform.clone();
   transform.setCenter(new LngLat(camera.center[0], camera.center[1]));
   transform.setZoom(camera.zoom);
@@ -292,7 +299,7 @@ const correctedCamera = ({
   free: ScreenBox;
   terrain: Terrain | undefined;
 }): { camera: TerrainCamera; correction: FitCorrection } | null => {
-  const transform = transformAt(map, camera);
+  const transform = transformAt({ map, camera });
   const projected = points.map((point) =>
     transform.locationToScreenPoint(new LngLat(point[0], point[1]), terrain),
   );
@@ -314,7 +321,7 @@ const correctedCamera = ({
   };
 };
 
-const converged = (correction: FitCorrection): boolean =>
+const isConverged = (correction: FitCorrection): boolean =>
   Math.abs(correction.zoomDelta) < FIT_ZOOM_EPSILON &&
   Math.hypot(correction.offset[0], correction.offset[1]) < FIT_PAN_EPSILON_PX;
 
@@ -343,7 +350,7 @@ const pitchAwareFit = ({
     if (next === null) return camera;
     camera = { ...next.camera, zoom: Math.min(next.camera.zoom, maxZoom ?? Infinity) };
     camera.elevation = ground(camera.center);
-    if (converged(next.correction)) return camera;
+    if (isConverged(next.correction)) return camera;
   }
   return camera;
 };
@@ -458,7 +465,7 @@ export const easeTerrainCamera = ({
   return cancel;
 };
 
-const anchorPivot = (map: MapLibreMap, drag: OrbitDrag) => {
+const anchorPivot = ({ map, drag }: { map: MapLibreMap; drag: OrbitDrag }) => {
   for (let step = 0; step < ORBIT_ANCHOR_STEPS; step++) {
     const projected = map.project(drag.pivot);
     const offsetX = projected.x - drag.point[0];
@@ -482,7 +489,7 @@ export const orbitCamera = ({
   const lastGood = currentCamera(map);
   const pitch = Math.min(map.getMaxPitch(), Math.max(0, drag.pitch - dy * ORBIT_PITCH_PER_PIXEL));
   map.jumpTo({ bearing: drag.bearing + dx * ORBIT_DEGREES_PER_PIXEL, pitch });
-  anchorPivot(map, drag);
+  anchorPivot({ map, drag });
   if (map.getCenter().distanceTo(drag.pivot) <= ORBIT_MAX_CENTER_DISTANCE_M) return;
   map.jumpTo({
     center: lastGood.center,

@@ -1,0 +1,79 @@
+{
+  "item": "conventions-migration",
+  "generated": "2026-10-26",
+  "command": "depcruise --config tools/workbench/.dependency-cruiser.cjs --output-type json apps/web/e2e apps/web/src apps/web/tests packages/engine packages/gpx packages/i18n packages/testing packages/ui tools/docs tools/workbench/scripts tools/workbench/site tools/workbench/tests/scripts",
+  "roots": [
+    "apps/web/e2e",
+    "apps/web/src",
+    "apps/web/tests",
+    "packages/engine",
+    "packages/gpx",
+    "packages/i18n",
+    "packages/testing",
+    "packages/ui",
+    "tools/docs",
+    "tools/workbench/scripts",
+    "tools/workbench/site",
+    "tools/workbench/tests/scripts"
+  ],
+  "focus": [
+    "apps/web/src/routing/",
+    "apps/web/src/queries/",
+    "apps/web/src/mutations/",
+    "apps/web/tests/testUtils/",
+    "apps/web/tests/testUtils/defined.ts",
+    "packages/ui/src/components/ResponsivePopoverHeading.tsx",
+    "tools/workbench/scripts/boundaries.ts",
+    "tools/workbench/scripts/themeTokens.ts",
+    "tools/workbench/tests/scripts/themeTokens.spec.ts",
+    "apps/web/src/",
+    "apps/web/tests/",
+    "apps/web/e2e/",
+    "packages/engine/",
+    "packages/gpx/",
+    "packages/ui/",
+    "packages/testing/",
+    "packages/i18n/",
+    "tools/docs/",
+    "tools/workbench/scripts/",
+    "tools/workbench/site/",
+    "vite.config.ts",
+    "package.json",
+    "CLAUDE.md",
+    "docs/conventions/plans/"
+  ],
+  "astro": [],
+  "nodes": 940,
+  "edges": 2045,
+  "added": [
+    "tools/workbench/tests/scripts/changedFiles.spec.ts",
+    "tools/workbench/tests/scripts/check.spec.ts",
+    "tools/workbench/tests/scripts/checkRules.spec.ts",
+    "tools/workbench/tests/scripts/cleanup.spec.ts",
+    "tools/workbench/tests/scripts/componentGraph.spec.ts",
+    "tools/workbench/tests/scripts/deps.spec.ts",
+    "tools/workbench/tests/scripts/frontmatter.spec.ts",
+    "tools/workbench/tests/scripts/interfaces.spec.ts",
+    "tools/workbench/tests/scripts/statusGuard.spec.ts",
+    "tools/workbench/tests/scripts/techFile.spec.ts",
+    "tools/workbench/tests/scripts/workerGitGuard.spec.ts"
+  ],
+  "missing": [
+    "packages/ui/src/components/ResponsivePopoverHeading.tsx",
+    "vite.config.ts",
+    "docs/conventions/plans/"
+  ],
+  "boundary": {
+    "rules": [
+      "engine-is-pure",
+      "store-no-features"
+    ],
+    "violations": [],
+    "modules": 1199,
+    "dependencies": 3468
+  },
+  "components": {
+    "nodes": 472,
+    "edges": 842
+  }
+}

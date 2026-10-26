@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { summarizeLaps } from '@/lib/lapSummary.ts';
-import type { LapSet } from '@/lib/lapSet.ts';
-import type { LapAnalysis } from '@/lib/laps.ts';
+import { summarizeLaps, type LapSet, type LapAnalysis } from '@/lib/laps.ts';
 
 const lap = (overrides: Partial<LapAnalysis>): LapAnalysis => ({
   lapIndex: 0,
@@ -9,8 +7,8 @@ const lap = (overrides: Partial<LapAnalysis>): LapAnalysis => ({
   distance: 1000,
   movingTime: 300,
   intensity: 'active',
-  isInterval: false,
-  isPartial: false,
+  interval: false,
+  partial: false,
   ...overrides,
 });
 
@@ -21,7 +19,7 @@ const setOf = (analysis: LapAnalysis[], hrRecoveries: number[] = []): LapSet => 
   hrRecoveries,
 });
 
-describe('summarizeLaps', () => {
+describe(summarizeLaps.name, () => {
   it('lap summary over all laps counts warm-up, recovery and the partial split', () => {
     const summary = summarizeLaps(
       setOf([
@@ -35,7 +33,7 @@ describe('summarizeLaps', () => {
           movingTime: 120,
         }),
         lap({ lapIndex: 3, paceSecPerKm: 300, movingTime: 300 }),
-        lap({ lapIndex: 4, isPartial: true, paceSecPerKm: 250, distance: 300, movingTime: 75 }),
+        lap({ lapIndex: 4, partial: true, paceSecPerKm: 250, distance: 300, movingTime: 75 }),
       ]),
     );
     expect(summary.count).toBe(5);
@@ -47,11 +45,11 @@ describe('summarizeLaps', () => {
   it('averages the HR recovery of interval device laps only', () => {
     const intervals = summarizeLaps(
       setOf(
-        [lap({ lapIndex: 0, isInterval: true }), lap({ lapIndex: 1, intensity: 'rest' })],
+        [lap({ lapIndex: 0, interval: true }), lap({ lapIndex: 1, intensity: 'rest' })],
         [30, 26],
       ),
     );
-    expect(intervals.isIntervals).toBe(true);
+    expect(intervals.intervalWorkout).toBe(true);
     expect(intervals.avgHrRecovery).toBe(28);
 
     const steady = summarizeLaps(setOf([lap({ lapIndex: 0 }), lap({ lapIndex: 1 })], [30]));

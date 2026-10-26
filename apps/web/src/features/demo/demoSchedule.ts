@@ -53,7 +53,7 @@ export interface DemoWeek {
 
 const steady = (effort: number): DemoStep[] => [{ intensity: 'active', effort }];
 
-const timed = (effort: number, duration: number): DemoStep[] => [
+const timed = ({ effort, duration }: { effort: number; duration: number }): DemoStep[] => [
   { intensity: 'active', effort, duration },
 ];
 
@@ -153,19 +153,19 @@ export const DEMO_WORKOUTS = {
     name: 'Treadmill easy',
     sport: 'running',
     subSport: 'treadmill',
-    steps: timed(0.84, 2700),
+    steps: timed({ effort: 0.84, duration: 2700 }),
   },
   treadmillShort: {
     name: 'Treadmill easy',
     sport: 'running',
     subSport: 'treadmill',
-    steps: timed(0.82, 1800),
+    steps: timed({ effort: 0.82, duration: 1800 }),
   },
   indoorEndurance: {
     name: 'Indoor endurance ride',
     sport: 'cycling',
     subSport: 'indoor_cycling',
-    steps: timed(0.64, 3600),
+    steps: timed({ effort: 0.64, duration: 3600 }),
   },
   indoorSweetSpot: {
     name: 'Sweet spot 3×12 min',

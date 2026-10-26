@@ -3,13 +3,13 @@ export interface GradientPoint {
   elevation?: number | null;
 }
 
-export const GRADIENT_WINDOW_M = 50;
-
 interface GradientNode {
   distance: number;
   elevation: number;
   indices: number[];
 }
+
+const GRADIENT_WINDOW_METERS = 50;
 
 const splitIntoRuns = (points: GradientPoint[]): GradientNode[][] => {
   const runs: GradientNode[][] = [];
@@ -47,13 +47,17 @@ const runGradients = (run: GradientNode[]): Array<number | undefined> => {
   let hi = 0;
   run.forEach((node, i) => {
     let next = run[lo + 1];
-    while (next && node.distance - next.distance >= GRADIENT_WINDOW_M / 2) {
+    while (next && node.distance - next.distance >= GRADIENT_WINDOW_METERS / 2) {
       lo++;
       next = run[lo + 1];
     }
     if (hi < i) hi = i;
     let ahead = run[hi];
-    while (ahead && ahead.distance - node.distance < GRADIENT_WINDOW_M / 2 && hi < run.length - 1) {
+    while (
+      ahead &&
+      ahead.distance - node.distance < GRADIENT_WINDOW_METERS / 2 &&
+      hi < run.length - 1
+    ) {
       hi++;
       ahead = run[hi];
     }
@@ -64,7 +68,7 @@ const runGradients = (run: GradientNode[]): Array<number | undefined> => {
       return;
     }
     const span = end.distance - start.distance;
-    if (span < GRADIENT_WINDOW_M / 2) {
+    if (span < GRADIENT_WINDOW_METERS / 2) {
       gradients.push(undefined);
       return;
     }
@@ -74,21 +78,28 @@ const runGradients = (run: GradientNode[]): Array<number | undefined> => {
 };
 
 export const windowedGradients = (points: GradientPoint[]): Array<number | undefined> => {
-  const result: Array<number | undefined> = Array.from({ length: points.length }, () => undefined);
+  const gradientByIndex: Array<number | undefined> = Array.from(
+    { length: points.length },
+    () => undefined,
+  );
   for (const run of splitIntoRuns(points)) {
     const gradients = runGradients(run);
     run.forEach((node, i) => {
-      for (const index of node.indices) result[index] = gradients[i];
+      for (const index of node.indices) gradientByIndex[index] = gradients[i];
     });
   }
-  return result;
+  return gradientByIndex;
 };
 
-export const averageGradient = (
-  points: GradientPoint[],
-  startIndex: number,
-  endIndex: number,
-): number | undefined => {
+export const averageGradient = ({
+  points,
+  startIndex,
+  endIndex,
+}: {
+  points: GradientPoint[];
+  startIndex: number;
+  endIndex: number;
+}): number | undefined => {
   let first: { distance: number; elevation: number } | undefined = undefined;
   let last: { distance: number; elevation: number } | undefined = undefined;
   for (let i = Math.max(startIndex, 0); i <= Math.min(endIndex, points.length - 1); i++) {

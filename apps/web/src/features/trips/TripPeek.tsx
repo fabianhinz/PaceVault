@@ -1,22 +1,28 @@
-import { SheetPeek } from '@pacevault/ui/components/SheetPeek.tsx';
-import { formatDistance } from '@/lib/formatters.ts';
+import type { FC } from 'react';
+import { PvSheetPeek } from '@pacevault/ui/components/pvBottomSheet/PvSheetPeek.tsx';
+import { formatDistance, formatPlural } from '@/lib/formatters.ts';
 import type { Trip } from '@/store/trips.ts';
 import { m } from '@pacevault/i18n/messages.js';
 import { TripBadge } from './TripBadge.tsx';
 import { useTripSessions } from './hooks/useTripSessions.ts';
 import { computeTripTotals } from './tripStats.ts';
 
-export const TripPeek = (props: { trip: Trip }) => {
+interface TripPeekProps {
+  trip: Trip;
+}
+
+export const TripPeek: FC<TripPeekProps> = (props) => {
   const totals = computeTripTotals(useTripSessions(props.trip));
   const details: string[] = [
-    totals.count === 1
-      ? m.ui_count_sessions_one()
-      : m.ui_count_sessions_other({ count: String(totals.count) }),
+    formatPlural(totals.count, {
+      one: () => m.ui_count_sessions_one(),
+      other: () => m.ui_count_sessions_other({ count: String(totals.count) }),
+    }),
   ];
   if (totals.count > 0) {
     details.push(formatDistance(totals.distance));
   }
   return (
-    <SheetPeek icon={<TripBadge />} primary={props.trip.name} secondary={details.join(' · ')} />
+    <PvSheetPeek icon={<TripBadge />} primary={props.trip.name} secondary={details.join(' · ')} />
   );
 };

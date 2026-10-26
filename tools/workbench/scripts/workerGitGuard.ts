@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
-const inputSchema = z.object({
+const bashHookInputSchema = z.object({
   tool_name: z.string(),
   tool_input: z.object({ command: z.string().optional() }).passthrough(),
   agent_id: z.string().optional(),
@@ -19,14 +19,14 @@ const GIT_WRITE = new RegExp(
 export const MESSAGE =
   'item-worker: git commit, reset, checkout, restore, stash, worktree, clean, switch and branch -f/-d/-D are owner-only. Leave all changes in the working tree.';
 
-export const isGitWrite = (command: string): boolean =>
+const isGitWrite = (command: string): boolean =>
   command.split(/&&|\|\||[;|\n]/).some((segment) => GIT_WRITE.test(segment));
 
 export const decideWorker = (input: unknown): string | undefined => {
-  const parsed = inputSchema.safeParse(input);
+  const parsed = bashHookInputSchema.safeParse(input);
   if (!parsed.success) return undefined;
-  const isSubagent = parsed.data.agent_id !== undefined || parsed.data.agent_type !== undefined;
-  if (!isSubagent || parsed.data.tool_name !== 'Bash') return undefined;
+  const subagent = parsed.data.agent_id !== undefined || parsed.data.agent_type !== undefined;
+  if (!subagent || parsed.data.tool_name !== 'Bash') return undefined;
   if (isGitWrite(parsed.data.tool_input.command ?? '')) return MESSAGE;
   return undefined;
 };

@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import { FlaskConical } from 'lucide-react';
 import { useLayoutStore } from '@/store/layout.ts';
 import { m } from '@pacevault/i18n/messages.js';
-import { Banner } from '@pacevault/ui/components/Banner.tsx';
-import { Button } from '@pacevault/ui/components/Button.tsx';
+import { PvBanner } from '@pacevault/ui/components/pvBanner/PvBanner.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { DeleteAllDataDialog } from '@/features/settings/DeleteAllDataDialog.tsx';
 
-export const DemoBanner = () => {
+export const DemoBanner: FC = () => {
   const demoMode = useLayoutStore((s) => s.demoMode);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -14,18 +14,18 @@ export const DemoBanner = () => {
 
   return (
     <>
-      <Banner
+      <PvBanner
         className="mb-4"
         variant="warning"
         icon={FlaskConical}
         action={
-          <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>
+          <PvButton variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>
             {m.ui_demo_banner_action()}
-          </Button>
+          </PvButton>
         }
       >
         {m.ui_demo_banner_text()}
-      </Banner>
+      </PvBanner>
       <DeleteAllDataDialog open={deleteOpen} onOpenChange={setDeleteOpen} />
     </>
   );

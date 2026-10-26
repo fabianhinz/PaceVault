@@ -1,126 +1,203 @@
-import type { RoutePoint } from './routeGeometry.ts';
+// Sources: [Veness2019]
+// See packages/engine/SOURCES.md for full citations.
+
+import { degreesToRadians } from '@pacevault/engine/geodesy.ts';
+import type { RoutePoint } from './types.ts';
 
 interface RoutePosition {
   lat: number;
   lng: number;
 }
 
-const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+const interpolateLinear = ({
+  from,
+  to,
+  fraction,
+}: {
+  from: number;
+  to: number;
+  fraction: number;
+}): number => from + (to - from) * fraction;
 
-const lerpKnown = (a: number | undefined, b: number | undefined, t: number): number | undefined => {
-  if (a == null || b == null) return undefined;
-  return lerp(a, b, t);
+const interpolateKnown = ({
+  from,
+  to,
+  fraction,
+}: {
+  from: number | undefined;
+  to: number | undefined;
+  fraction: number;
+}): number | undefined => {
+  if (from == null || to == null) return undefined;
+  return interpolateLinear({ from, to, fraction });
 };
 
-const interpolate = (a: RoutePoint, b: RoutePoint, distanceM: number): RoutePoint => {
-  const t = (distanceM - a.dist) / (b.dist - a.dist);
+const interpolatedPoint = ({
+  before,
+  after,
+  distanceMeters,
+}: {
+  before: RoutePoint;
+  after: RoutePoint;
+  distanceMeters: number;
+}): RoutePoint => {
+  const fraction = (distanceMeters - before.dist) / (after.dist - before.dist);
   const point: RoutePoint = {
-    lat: lerp(a.lat, b.lat, t),
-    lng: lerp(a.lng, b.lng, t),
-    seg: a.seg,
-    dist: distanceM,
+    lat: interpolateLinear({ from: before.lat, to: after.lat, fraction }),
+    lng: interpolateLinear({ from: before.lng, to: after.lng, fraction }),
+    seg: before.seg,
+    dist: distanceMeters,
   };
-  const ele = lerpKnown(a.ele, b.ele, t);
+  const ele = interpolateKnown({ from: before.ele, to: after.ele, fraction });
   if (ele != null) point.ele = ele;
-  const time = lerpKnown(a.time, b.time, t);
+  const time = interpolateKnown({ from: before.time, to: after.time, fraction });
   if (time != null) point.time = Math.round(time);
   return point;
 };
 
-const firstIndexAtOrAfter = (points: RoutePoint[], distanceM: number): number => {
-  let lo = 0;
-  let hi = points.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    const point = points[mid];
-    if (point && point.dist < distanceM) {
-      lo = mid + 1;
+const firstIndexAtOrAfter = ({
+  points,
+  distanceMeters,
+}: {
+  points: RoutePoint[];
+  distanceMeters: number;
+}): number => {
+  let low = 0;
+  let high = points.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    const point = points[middle];
+    if (point && point.dist < distanceMeters) {
+      low = middle + 1;
     } else {
-      hi = mid;
+      high = middle;
     }
   }
-  return lo;
+  return low;
 };
 
-export const pointAtRouteDistance = (
-  points: RoutePoint[],
-  distanceM: number,
-): RoutePoint | null => {
-  const index = firstIndexAtOrAfter(points, distanceM);
-  const at = points[index];
-  if (!at) return points[points.length - 1] ?? null;
+const interpolatedStart = ({
+  points,
+  startIndex,
+  startMeters,
+}: {
+  points: RoutePoint[];
+  startIndex: number;
+  startMeters: number;
+}): RoutePoint[] => {
+  const startAt = points[startIndex];
+  const beforeStart = points[startIndex - 1];
+  if (startAt && beforeStart && startAt.dist > startMeters) {
+    return [
+      interpolatedPoint({ before: beforeStart, after: startAt, distanceMeters: startMeters }),
+    ];
+  }
+  return [];
+};
+
+const closingPoint = ({
+  points,
+  endIndex,
+  endMeters,
+}: {
+  points: RoutePoint[];
+  endIndex: number;
+  endMeters: number;
+}): RoutePoint[] => {
+  const endAt = points[endIndex];
+  const beforeEnd = points[endIndex - 1];
+  if (endAt && endAt.dist === endMeters) return [endAt];
+  if (endAt && beforeEnd) {
+    return [interpolatedPoint({ before: beforeEnd, after: endAt, distanceMeters: endMeters })];
+  }
+  return [];
+};
+
+export const pointAtRouteDistance = ({
+  points,
+  distanceMeters,
+}: {
+  points: RoutePoint[];
+  distanceMeters: number;
+}): RoutePoint | null => {
+  const index = firstIndexAtOrAfter({ points, distanceMeters });
+  const atOrAfter = points[index];
+  if (!atOrAfter) return points[points.length - 1] ?? null;
   const before = points[index - 1];
-  if (!before || at.dist === distanceM) return at;
-  return interpolate(before, at, distanceM);
+  if (!before || atOrAfter.dist === distanceMeters) return atOrAfter;
+  return interpolatedPoint({ before, after: atOrAfter, distanceMeters });
 };
 
-export const sliceRoute = (points: RoutePoint[], startM: number, endM: number): RoutePoint[] => {
+export const sliceRoute = ({
+  points,
+  startMeters,
+  endMeters,
+}: {
+  points: RoutePoint[];
+  startMeters: number;
+  endMeters: number;
+}): RoutePoint[] => {
   const last = points[points.length - 1];
-  if (!last || endM <= startM) return [];
+  if (!last || endMeters <= startMeters) return [];
 
-  const startIdx = firstIndexAtOrAfter(points, startM);
-  let endIdx = firstIndexAtOrAfter(points, endM);
-  if (endM >= last.dist) endIdx = points.length;
+  const startIndex = firstIndexAtOrAfter({ points, distanceMeters: startMeters });
+  let endIndex = firstIndexAtOrAfter({ points, distanceMeters: endMeters });
+  if (endMeters >= last.dist) endIndex = points.length;
 
-  const slice: RoutePoint[] = [];
-  const startAt = points[startIdx];
-  const beforeStart = points[startIdx - 1];
-  if (startAt && beforeStart && startAt.dist > startM) {
-    slice.push(interpolate(beforeStart, startAt, startM));
-  }
-
-  for (let i = startIdx; i < endIdx; i++) {
-    const point = points[i];
-    if (point) slice.push(point);
-  }
-
-  const endAt = points[endIdx];
-  const beforeEnd = points[endIdx - 1];
-  if (endAt && endAt.dist === endM) {
-    slice.push(endAt);
-  } else if (endAt && beforeEnd) {
-    slice.push(interpolate(beforeEnd, endAt, endM));
-  }
-
-  return slice;
+  return [
+    ...interpolatedStart({ points, startIndex, startMeters }),
+    ...points.slice(startIndex, endIndex),
+    ...closingPoint({ points, endIndex, endMeters }),
+  ];
 };
 
-export const routeDistanceAtPosition = (
-  points: RoutePoint[],
-  click: RoutePosition,
-): number | null => {
-  const cosLat = Math.cos((click.lat * Math.PI) / 180);
-  const cx = click.lng * cosLat;
-  const cy = click.lat;
+/** @see [Veness2019] — equirectangular approximation. */
+export const routeDistanceAtPosition = ({
+  points,
+  position,
+}: {
+  points: RoutePoint[];
+  position: RoutePosition;
+}): number | null => {
+  const longitudeScale = Math.cos(degreesToRadians(position.lat));
+  const positionX = position.lng * longitudeScale;
+  const positionY = position.lat;
 
-  let bestSq = Infinity;
-  let bestAt: number | null = null;
+  let nearestDistanceSquared = Infinity;
+  let nearestRouteDistanceMeters: number | null = null;
 
   for (let i = 0; i < points.length; i++) {
-    const b = points[i];
-    if (!b) continue;
-    let a = points[i - 1];
-    if (!a || a.seg !== b.seg) a = b;
+    const segmentEnd = points[i];
+    if (!segmentEnd) continue;
+    let segmentStart = points[i - 1];
+    if (!segmentStart || segmentStart.seg !== segmentEnd.seg) segmentStart = segmentEnd;
 
-    const ax = a.lng * cosLat;
-    const ay = a.lat;
-    const dx = b.lng * cosLat - ax;
-    const dy = b.lat - ay;
-    const lenSq = dx * dx + dy * dy;
+    const startX = segmentStart.lng * longitudeScale;
+    const startY = segmentStart.lat;
+    const deltaX = segmentEnd.lng * longitudeScale - startX;
+    const deltaY = segmentEnd.lat - startY;
+    const lengthSquared = deltaX * deltaX + deltaY * deltaY;
 
-    let t = 0;
-    if (lenSq > 0) {
-      t = Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / lenSq));
+    let fraction = 0;
+    if (lengthSquared > 0) {
+      fraction = Math.max(
+        0,
+        Math.min(
+          1,
+          ((positionX - startX) * deltaX + (positionY - startY) * deltaY) / lengthSquared,
+        ),
+      );
     }
 
-    const ex = cx - (ax + dx * t);
-    const ey = cy - (ay + dy * t);
-    const distSq = ex * ex + ey * ey;
-    if (distSq < bestSq) {
-      bestSq = distSq;
-      bestAt = a.dist + (b.dist - a.dist) * t;
+    const offsetX = positionX - (startX + deltaX * fraction);
+    const offsetY = positionY - (startY + deltaY * fraction);
+    const distanceSquared = offsetX * offsetX + offsetY * offsetY;
+    if (distanceSquared < nearestDistanceSquared) {
+      nearestDistanceSquared = distanceSquared;
+      nearestRouteDistanceMeters =
+        segmentStart.dist + (segmentEnd.dist - segmentStart.dist) * fraction;
     }
   }
 
-  return bestAt;
+  return nearestRouteDistanceMeters;
 };

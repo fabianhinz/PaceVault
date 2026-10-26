@@ -3,64 +3,61 @@ import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useUserStore } from '@/store/user.ts';
 import { useImportProgressStore, type ImportSummary } from '@/store/importProgress.ts';
 import { parseFitFile } from '@/parsers/fit.ts';
-import { toast } from '@/store/toast.ts';
+import { useSnackbar, type Snackbar } from '@/lib/hooks/useSnackbar.ts';
+import { SESSIONS_SNACKBARS } from '@/features/sessions/sessionsSnackbars.ts';
 import { m } from '@pacevault/i18n/messages.js';
-import {
-  extractArchiveEntry,
-  isArchiveFile,
-  listActivityEntries,
-  type ArchiveEntry,
-} from '@/lib/archive.ts';
+import { collectUploadSources, extractArchiveEntry, type UploadSource } from '@/lib/archive.ts';
 import { toFitParseProfile } from '@/lib/fitParseProfile.ts';
 import { createIngestBatcher } from '@/features/sessions/createIngestBatcher.ts';
-import type { UserProfile } from '@/types/index.ts';
+import type { UserProfile } from '@/types.ts';
 
-const importFiles = async (
-  fileArray: File[],
-  profile: UserProfile,
-  queryClient: QueryClient,
-): Promise<ImportSummary> => {
-  const sources: Array<{ file: File; archiveEntries?: ArchiveEntry[] }> = [];
-  let fitCount = 0;
-  let failed = 0;
+type IngestFit = (target: { fileName: string; read: () => Promise<ArrayBuffer> }) => Promise<void>;
 
-  for (const file of fileArray) {
-    const lower = file.name.toLowerCase();
-    if (lower.endsWith('.fit')) {
-      sources.push({ file });
-      fitCount++;
-    } else if (isArchiveFile(file.name)) {
-      try {
-        const archiveEntries = listActivityEntries(await file.arrayBuffer()).filter(
-          (e) => e.extension === '.fit',
-        );
-        // TODO: handle .tcx files once a TCX parser is added
-        if (archiveEntries.length === 0) {
-          failed++;
-        } else {
-          sources.push({ file, archiveEntries });
-          fitCount += archiveEntries.length;
-        }
-      } catch {
-        failed++;
-      }
-    } else {
-      failed++;
+const ingestSources = async ({
+  sources,
+  ingestFit,
+}: {
+  sources: UploadSource[];
+  ingestFit: IngestFit;
+}): Promise<void> => {
+  for (const source of sources) {
+    if (source.archiveEntries === undefined) {
+      await ingestFit({ fileName: source.file.name, read: () => source.file.arrayBuffer() });
+      continue;
+    }
+    const archive = await source.file.arrayBuffer();
+    for (const entry of source.archiveEntries) {
+      await ingestFit({
+        fileName: entry.fileName,
+        read: async () => extractArchiveEntry({ archive, path: entry.path }),
+      });
     }
   }
+};
 
-  if (fitCount === 0) {
-    return { kind: 'imported', imported: 0, duplicated: 0, failed };
+const importFiles = async (
+  { files, profile }: { files: File[]; profile: UserProfile },
+  queryClient: QueryClient,
+  snackbar: Snackbar,
+): Promise<ImportSummary> => {
+  const collected = await collectUploadSources(files);
+  if (collected.fitCount === 0) {
+    return { kind: 'imported', imported: 0, duplicated: 0, failed: collected.failed };
   }
 
-  useImportProgressStore.getState().setImportTotal(fitCount);
+  useImportProgressStore.getState().setImportTotal(collected.fitCount);
 
   const batcher = createIngestBatcher({ queryClient });
+  let failed = collected.failed;
 
-  const ingestFit = async (fileName: string, read: () => Promise<ArrayBuffer>) => {
+  const ingestFit: IngestFit = async ({ fileName, read }) => {
     try {
       const data = await read();
-      const result = await parseFitFile(data, fileName, toFitParseProfile(profile));
+      const result = await parseFitFile({
+        arrayBuffer: data,
+        fileName,
+        profileAt: toFitParseProfile(profile),
+      });
       await batcher.add({ ...result, rawData: data, fileName, source: { kind: 'file' } });
     } catch (error) {
       console.error('Parse error: ', error);
@@ -69,21 +66,12 @@ const importFiles = async (
     useImportProgressStore.getState().advanceImport();
   };
 
-  for (const source of sources) {
-    if (source.archiveEntries === undefined) {
-      await ingestFit(source.file.name, () => source.file.arrayBuffer());
-      continue;
-    }
-    const archive = await source.file.arrayBuffer();
-    for (const entry of source.archiveEntries) {
-      await ingestFit(entry.fileName, async () => extractArchiveEntry(archive, entry.path));
-    }
-  }
+  await ingestSources({ sources: collected.sources, ingestFit });
 
   useImportProgressStore.getState().markImportSaving();
   const outcome = await batcher.finish();
   if (outcome.saveFailed) {
-    toast(m.toast_save_failed_title(), m.toast_save_failed_desc(), 'error');
+    snackbar.enqueueSnackbar(SESSIONS_SNACKBARS.saveFailed);
   }
 
   return {
@@ -94,10 +82,17 @@ const importFiles = async (
   };
 };
 
-export const useFileUpload = () => {
+interface FileUpload {
+  uploading: boolean;
+  profile: UserProfile | null;
+  handleFiles: (files: FileList) => Promise<void>;
+}
+
+export const useFileUpload = (): FileUpload => {
   const profile = useUserStore((s) => s.profile);
   const uploading = useImportProgressStore((s) => s.foreground !== null);
   const queryClient = useQueryClient();
+  const snackbar = useSnackbar();
 
   const handleFiles = useCallback(
     async (files: FileList) => {
@@ -110,7 +105,7 @@ export const useFileUpload = () => {
       useImportProgressStore.getState().beginImport({ foreground: true });
 
       try {
-        const summary = await importFiles(fileArray, profile, queryClient);
+        const summary = await importFiles({ files: fileArray, profile }, queryClient, snackbar);
         useImportProgressStore.getState().finishImport(summary);
       } catch (error) {
         console.error('Import error: ', error);
@@ -119,7 +114,7 @@ export const useFileUpload = () => {
           .finishImport({ kind: 'failed', message: m.ui_import_failed_generic() });
       }
     },
-    [queryClient],
+    [queryClient, snackbar],
   );
 
   return { uploading, profile, handleFiles };
