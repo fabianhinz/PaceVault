@@ -1,37 +1,14 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useStoresHydrated } from './lib/hooks/useHydrated.ts';
-import { AppLayout } from './components/layout/AppLayout.tsx';
-import { DashboardPage } from './pages/DashboardPage.tsx';
-import { SessionsPage } from './pages/SessionsPage.tsx';
-import { SessionDetailPage } from './pages/SessionDetailPage.tsx';
-import { TripDetailPage } from './pages/TripDetailPage.tsx';
-import { StudioDetailPage } from './pages/StudioDetailPage.tsx';
-import { SettingsPage } from './pages/SettingsPage.tsx';
-import { LabsPage } from './pages/LabsPage.tsx';
+import type { FC } from 'react';
 import { enableMapSet } from 'immer';
+import { useStoresHydrated } from './store/hooks/useStoresHydrated.ts';
+import { AppRoutes } from './routing/AppRoutes.tsx';
 
 enableMapSet();
 
-export const App = () => {
+export const App: FC = () => {
   const hydrated = useStoresHydrated();
 
   if (!hydrated) return null;
 
-  return (
-    <>
-      <Routes>
-        <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="/sessions" element={<SessionsPage />} />
-          <Route path="/sessions/:id" element={<SessionDetailPage />} />
-          <Route path="/trips/:id" element={<TripDetailPage />} />
-          <Route path="/studio/:id" element={<StudioDetailPage />} />
-          <Route path="/labs" element={<LabsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
-  );
+  return <AppRoutes />;
 };

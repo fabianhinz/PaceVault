@@ -29,7 +29,7 @@ flowchart LR
 flowchart TB
   subgraph UI["UI · components, pages"]
   end
-  subgraph FEAT["feature · src/features"]
+  subgraph FEAT["feature · src/components/#lt;feature#gt;"]
   end
   subgraph STORE["store"]
   end
@@ -55,7 +55,7 @@ flowchart TB
 
 ### New
 
-- `apps/web/src/features/<feature>/<File>.tsx`: what it does
+- `apps/web/src/components/<feature>/<File>.tsx`: what it does
 
 ### Changed
 

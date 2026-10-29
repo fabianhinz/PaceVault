@@ -3,17 +3,17 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { v4 } from 'uuid';
 import { z } from 'zod';
-import { idbStorage } from '@/lib/idbStorage.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
 import {
   type FilterCriteria,
   type SavedFilter,
   createDefaultSavedFilters,
   emptyCriteria,
   filterKey,
-} from '@/lib/savedFilters.ts';
-import type { LoadGroupBy } from '@/lib/loadAxis.ts';
-import { VOLUME_METRICS, type VolumeMetric } from '@/lib/dashboardVolume.ts';
-import type { FilterTime } from '@/lib/timeRange.ts';
+} from '@/lib/filtering/filters.ts';
+import type { LoadGroupBy } from '@/lib/filtering/loadAxis.ts';
+import { VOLUME_METRICS, type VolumeMetric } from '@/lib/filtering/dashboardVolume.ts';
+import type { FilterTime } from '@/lib/filtering/timeRange.ts';
 import { SPORTS } from '@pacevault/engine/types.ts';
 
 interface FiltersState {
@@ -23,7 +23,7 @@ interface FiltersState {
   volumeChartMetric: VolumeMetric;
   toggleSavedFilter: (id: string) => void;
   saveBuilderFilter: (criteria: FilterCriteria) => void;
-  setDashboardChartRange: (from: string, to: string) => void;
+  setDashboardChartRange: ({ from, to }: { from: string; to: string }) => void;
   clearActiveFilter: () => void;
   resetFilters: () => void;
   setLoadChartGroupBy: (groupBy: LoadGroupBy) => void;
@@ -89,7 +89,13 @@ const toV4Criteria = (criteria: z.infer<typeof v3CriteriaSchema>): FilterCriteri
   name: null,
 });
 
-const migrateV3 = (persistedState: unknown, migrated: PersistedFilters) => {
+const migrateV3 = ({
+  persistedState,
+  migrated,
+}: {
+  persistedState: unknown;
+  migrated: PersistedFilters;
+}) => {
   const state = v3StateSchema.safeParse(persistedState);
   if (!state.success) {
     return;
@@ -137,7 +143,7 @@ export const migrateFilters = (persistedState: unknown, fromVersion: number): Pe
     migrated.loadChartGroupBy = groupBy.data.loadChartGroupBy;
   }
   if (fromVersion === 3) {
-    migrateV3(persistedState, migrated);
+    migrateV3({ persistedState, migrated });
   }
   return migrated;
 };
@@ -173,7 +179,7 @@ export const useFiltersStore = create<FiltersState>()(
             draft.savedFilters.splice(SAVED_FILTERS_LIMIT);
           });
         },
-        setDashboardChartRange: (from, to) => {
+        setDashboardChartRange: ({ from, to }) => {
           set((draft) => {
             const active = draft.activeFilter ?? emptyCriteria();
             active.time = { kind: 'range', from, to, source: 'zoom' };

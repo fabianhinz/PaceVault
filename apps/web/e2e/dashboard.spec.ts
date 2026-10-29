@@ -45,6 +45,20 @@ test.describe('Dashboard volume', () => {
       page.getByRole('region', { name: 'Volume' }).getByRole('tab', { name: 'Elevation' }),
     ).toHaveAttribute('aria-selected', 'true');
   });
+
+  test('keeps the chosen load grouping across a short range', async ({ page }) => {
+    const load = page.getByRole('region', { name: 'Training Load' });
+    await load.getByRole('tab', { name: 'Week' }).click();
+    await expect(load.getByRole('tab', { name: 'Week' })).toHaveAttribute('aria-selected', 'true');
+
+    await applyFilter(page, 'last 7 days');
+    await expect(load.getByRole('tab', { name: 'Day' })).toHaveAttribute('aria-selected', 'true');
+    await expect(load.getByRole('tab', { name: 'Week' })).toBeDisabled();
+    await expect(load.getByRole('tab', { name: 'Month' })).toBeDisabled();
+
+    await applyFilter(page, 'last 7 days');
+    await expect(load.getByRole('tab', { name: 'Week' })).toHaveAttribute('aria-selected', 'true');
+  });
 });
 
 test.describe('Dashboard form', () => {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import { idbStorage } from '@/lib/idbStorage.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
 
 interface IntervalsState {
   apiKey: string | null;
@@ -15,14 +15,21 @@ interface IntervalsState {
   setIntervalsBacklogPending: (pending: boolean) => void;
 }
 
+export const INITIAL_INTERVALS_STORE_STATE: Pick<
+  IntervalsState,
+  'apiKey' | 'importedActivityIds' | 'keyInvalid' | 'backlogPending'
+> = {
+  apiKey: null,
+  importedActivityIds: [],
+  keyInvalid: false,
+  backlogPending: false,
+};
+
 export const useIntervalsStore = create<IntervalsState>()(
   immer(
     persist(
       (set) => ({
-        apiKey: null,
-        importedActivityIds: [],
-        keyInvalid: false,
-        backlogPending: false,
+        ...INITIAL_INTERVALS_STORE_STATE,
 
         connectIntervals: (apiKey) =>
           set((draft) => {
@@ -30,13 +37,7 @@ export const useIntervalsStore = create<IntervalsState>()(
             draft.keyInvalid = false;
           }),
 
-        disconnectIntervals: () =>
-          set({
-            apiKey: null,
-            importedActivityIds: [],
-            keyInvalid: false,
-            backlogPending: false,
-          }),
+        disconnectIntervals: () => set(INITIAL_INTERVALS_STORE_STATE),
 
         recordIntervalsImported: (importedIds) =>
           set((draft) => {

@@ -2,24 +2,14 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { z } from 'zod';
-import { idbStorage } from '@/lib/idbStorage.ts';
-import type { ColorMode } from '@/lib/colorModes.ts';
-import type { LapSource } from '@/lib/lapSet.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
+import { COLOR_MODES, type ColorMode } from '@/lib/colors/colorModes.ts';
+import { LAP_SOURCES, type LapSource } from '@/lib/analysis/laps.ts';
 import { SPORTS, type Sport } from '@pacevault/engine/types.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 
 export const TRACK_INTENSITIES = ['faint', 'warm', 'hot'] as const;
 export type TrackIntensity = (typeof TRACK_INTENSITIES)[number];
-
-const COLOR_MODES = [
-  'sport',
-  'hr',
-  'power',
-  'pace',
-  'speed',
-  'wind',
-] as const satisfies readonly ColorMode[];
-const LAP_SOURCES = ['off', 'device', 'splits', 'efforts'] as const satisfies readonly LapSource[];
 
 interface SportMapPreferences {
   colorMode: ColorMode;
@@ -31,9 +21,9 @@ interface MapPreferencesState {
   trackIntensity: TrackIntensity;
   bySport: Record<Sport, SportMapPreferences>;
   setTrackIntensity: (intensity: TrackIntensity) => void;
-  setSessionColorMode: (sport: Sport, mode: ColorMode) => void;
-  setSessionLapSource: (sport: Sport, source: LapSource) => void;
-  setSessionSplitDistance: (sport: Sport, metres: number) => void;
+  setSessionColorMode: ({ sport, mode }: { sport: Sport; mode: ColorMode }) => void;
+  setSessionLapSource: ({ sport, source }: { sport: Sport; source: LapSource }) => void;
+  setSessionSplitDistance: ({ sport, metres }: { sport: Sport; metres: number }) => void;
   resetMapPreferences: () => void;
 }
 
@@ -93,31 +83,38 @@ const parsePersistedMapPreferences = (persisted: unknown): PersistedMapPreferenc
   return preferences;
 };
 
+export const INITIAL_MAP_PREFERENCES_STORE_STATE: Pick<
+  MapPreferencesState,
+  'trackIntensity' | 'bySport'
+> = {
+  trackIntensity: 'warm',
+  bySport: defaultBySport(),
+};
+
 export const useMapPreferencesStore = create<MapPreferencesState>()(
   immer(
     persist(
       (set) => ({
-        trackIntensity: 'warm',
-        bySport: defaultBySport(),
+        ...INITIAL_MAP_PREFERENCES_STORE_STATE,
         setTrackIntensity: (intensity) => set({ trackIntensity: intensity }),
-        setSessionColorMode: (sport, mode) =>
+        setSessionColorMode: ({ sport, mode }) =>
           set((draft) => {
             draft.bySport[sport].colorMode = mode;
           }),
-        setSessionLapSource: (sport, source) => {
+        setSessionLapSource: ({ sport, source }) => {
           set((draft) => {
             draft.bySport[sport].lapSource = source;
           });
           useMapControlsStore.getState().clearLapFocusOnLapSetChange();
         },
-        setSessionSplitDistance: (sport, metres) => {
+        setSessionSplitDistance: ({ sport, metres }) => {
           set((draft) => {
             draft.bySport[sport].lapSource = 'splits';
             draft.bySport[sport].splitDistance = metres;
           });
           useMapControlsStore.getState().clearLapFocusOnLapSetChange();
         },
-        resetMapPreferences: () => set({ trackIntensity: 'warm', bySport: defaultBySport() }),
+        resetMapPreferences: () => set(INITIAL_MAP_PREFERENCES_STORE_STATE),
       }),
       {
         name: 'store-map-preferences',

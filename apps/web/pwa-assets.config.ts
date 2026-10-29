@@ -1,6 +1,6 @@
 import { defineConfig } from '@vite-pwa/assets-generator/config';
 import type { Preset } from '@vite-pwa/assets-generator/config';
-import { SURFACE_BASE } from '@pacevault/ui/lib/colors.ts';
+import { tokens } from '@pacevault/ui/lib/tokens.ts';
 
 const preset: Preset = {
   transparent: {
@@ -10,13 +10,13 @@ const preset: Preset = {
   maskable: {
     sizes: [512],
     resizeOptions: {
-      background: SURFACE_BASE,
+      background: tokens.surfaceBase,
     },
   },
   apple: {
     sizes: [180],
     resizeOptions: {
-      background: SURFACE_BASE,
+      background: tokens.surfaceBase,
     },
   },
 };

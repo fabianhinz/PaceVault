@@ -66,6 +66,9 @@ test.describe('no threshold pace', () => {
   test('Go to Settings navigates to /settings', async ({ page }) => {
     await page.getByRole('link', { name: /go to settings/i }).click();
     await page.waitForURL('/settings');
+
+    await page.goBack();
+    await page.waitForURL(/\/labs/);
   });
 });
 

@@ -10,7 +10,8 @@
     "check": "vp check"
   },
   "dependencies": {
-    "@pacevault/engine": "workspace:*"
+    "@pacevault/engine": "workspace:*",
+    "@pacevault/gpx": "workspace:*"
   },
   "devDependencies": {
     "typescript": "~5.9.3"

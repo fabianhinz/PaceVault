@@ -10,10 +10,6 @@
     "check": "vp check",
     "test": "vp test -- --run"
   },
-  "dependencies": {
-    "@googlemaps/polyline-codec": "^1.0.28",
-    "simplify-ts": "^1.0.2"
-  },
   "devDependencies": {
     "typescript": "~5.9.3"
   }

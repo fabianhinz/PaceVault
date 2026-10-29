@@ -7,10 +7,11 @@ import {
   Tooltip as RechartsTooltip,
   ReferenceArea,
 } from 'recharts';
-import { useChartZoom } from '@/lib/hooks/useChartZoom.ts';
-import { LapBands, LAP_STRIP_TICK_MARGIN } from './LapBands.tsx';
-import { chartHoverHandlers, hoverOnlyTooltip } from '@/lib/chartHover.ts';
-import { chartTheme, formatTick, type ChartXAxis } from '@/lib/chartTheme.ts';
+import { useChartZoom } from '@/components/charts/hooks/useChartZoom.ts';
+import { LapBands } from './LapBands.tsx';
+import { LAP_STRIP_TICK_MARGIN } from './types.ts';
+import { chartHoverHandlers, hoverOnlyTooltip } from '@/components/charts/chartHover.ts';
+import { chartTheme, formatTick, type ChartXAxis } from '@/lib/colors/chartTheme.ts';
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
 import { m } from '@pacevault/i18n/messages.js';
 

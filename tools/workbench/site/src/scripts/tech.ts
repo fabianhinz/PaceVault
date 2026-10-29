@@ -1,17 +1,13 @@
 import type { Mermaid } from 'mermaid';
-
-/**
- * The Tech tab (tech-tab round 3): Mermaid + ELK load on the first Tech open (Q4) and draw every
- * ```mermaid block of tech.md; each figure gets Fit · Zoom and a Full screen button (the full-screen
- * stage is the island's, `TechPane.tsx`). Sections without an actual side (Data flow, …) come
- * first as planned; then Modules, Components, Files (New / Changed) and Interfaces in that order
- * (R25), each with its own Planned | Actual switch (R28) in its frame's label row next to Reset and
- * Full screen (R29; also in the full-screen stage) over its actual side from `review/`.
- * DOM code on the pane element React hands over: `initTech` runs again after every new
- * `techHtml` and only draws blocks that are still code.
- */
+import { createElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { PvSegmentedControl } from '@pacevault/ui/components/pvSegmentedControl/PvSegmentedControl.tsx';
+import { tokens } from '@pacevault/ui/lib/tokens.ts';
 
 let loading: Promise<Mermaid> | undefined = undefined;
+
+const MERMAID_MAX_EDGES = 3000;
+const MERMAID_MAX_TEXT_SIZE = 300000;
 
 const loadMermaid = () => {
   if (loading) return loading;
@@ -23,23 +19,23 @@ const loadMermaid = () => {
       startOnLoad: false,
       layout: 'elk',
       theme: 'base',
-      maxEdges: 3000,
-      maxTextSize: 300000,
+      maxEdges: MERMAID_MAX_EDGES,
+      maxTextSize: MERMAID_MAX_TEXT_SIZE,
       themeVariables: {
         darkMode: true,
-        background: '#0a0b0f',
-        primaryColor: '#1a1d24',
-        primaryTextColor: '#e5e7eb',
-        primaryBorderColor: '#3a3e48',
-        nodeTextColor: '#e5e7eb',
-        textColor: '#b0b4be',
-        lineColor: '#5c616e',
-        secondaryColor: '#111318',
-        tertiaryColor: '#111318',
-        clusterBkg: '#111318',
-        clusterBorder: '#252830',
-        edgeLabelBackground: '#0a0b0f',
-        titleColor: '#8b8f9a',
+        background: tokens.surfaceSunken,
+        primaryColor: tokens.surfaceElevated,
+        primaryTextColor: tokens.textPrimary,
+        primaryBorderColor: tokens.borderStrong,
+        nodeTextColor: tokens.textPrimary,
+        textColor: tokens.textSecondary,
+        lineColor: tokens.textQuaternary,
+        secondaryColor: tokens.surface,
+        tertiaryColor: tokens.surface,
+        clusterBkg: tokens.surface,
+        clusterBorder: tokens.border,
+        edgeLabelBackground: tokens.surfaceSunken,
+        titleColor: tokens.textTertiary,
         fontFamily: 'ui-sans-serif, system-ui, sans-serif',
         fontSize: '16px',
       },
@@ -50,20 +46,20 @@ const loadMermaid = () => {
   return loading;
 };
 
-/* ---------- zoom and pan: wheel/pinch around the pointer, drag to pan, reset to fit ----------
-   The svg keeps its natural size and moves by a CSS transform inside a fixed box, so zooming
-   never shifts the page. Inline, plain wheel scrolls the page: zoom is Ctrl/⌘ + wheel or a
-   trackpad pinch (a wheel event with ctrlKey); at full screen the plain wheel zooms. */
+/*
+ * The svg keeps its natural size and moves by a CSS transform inside a fixed box, so zooming
+ * never shifts the page. Inline, plain wheel scrolls the page: zoom is Ctrl/⌘ + wheel or a
+ * trackpad pinch (a wheel event with ctrlKey); at full screen the plain wheel zooms.
+ */
 type View = { scale: number; x: number; y: number; fit: number };
 const views = new WeakMap<HTMLElement, View>();
 
-const apply = (box: HTMLElement, view: View) => {
+const applyView = ({ box, view }: { box: HTMLElement; view: View }) => {
   views.set(box, view);
   const svg = box.querySelector<SVGSVGElement>('svg');
   if (svg) svg.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
 };
 
-/** Whole graph in the box, centred; an inline box takes the fitted height once. */
 const resetView = (box: HTMLElement) => {
   const svg = box.querySelector<SVGSVGElement>('svg');
   const width = Number(svg?.dataset.w);
@@ -76,29 +72,48 @@ const resetView = (box: HTMLElement) => {
   else if (!box.style.height) box.style.height = `${Math.ceil(height * fit)}px`;
   const x = (box.clientWidth - width * fit) / 2;
   const y = Math.max(0, (box.clientHeight - height * fit) / 2);
-  apply(box, { scale: fit, x, y, fit });
+  applyView({ box, view: { scale: fit, x, y, fit } });
 };
 
-/**
- * Fits every not yet fitted diagram under `root` (it was hidden until now); `force` refits all
- * of them to the current width (the panel expanded or collapsed).
- */
-export const refitTech = (root: Element, force = false) => {
+export const refitTech = (root: Element, options: { force?: boolean } = {}) => {
+  const force = options.force === true;
   for (const box of root.querySelectorAll<HTMLElement>('[data-graph]')) {
     if (force) box.style.height = '';
     if (force || !views.has(box)) resetView(box);
   }
 };
 
-const zoomAt = (box: HTMLElement, factor: number, clientX: number, clientY: number) => {
+const MIN_SCALE_PER_FIT = 0.5;
+const MAX_SCALE = 8;
+const WHEEL_ZOOM_RATE = 0.002;
+
+const zoomAt = ({
+  box,
+  factor,
+  clientX,
+  clientY,
+}: {
+  box: HTMLElement;
+  factor: number;
+  clientX: number;
+  clientY: number;
+}) => {
   const view = views.get(box);
   if (!view) return;
-  const scale = Math.min(Math.max(view.scale * factor, view.fit / 2), 8);
+  const scale = Math.min(Math.max(view.scale * factor, view.fit * MIN_SCALE_PER_FIT), MAX_SCALE);
   const rect = box.getBoundingClientRect();
-  const px = clientX - rect.left;
-  const py = clientY - rect.top;
+  const pointerX = clientX - rect.left;
+  const pointerY = clientY - rect.top;
   const ratio = scale / view.scale;
-  apply(box, { ...view, scale, x: px - (px - view.x) * ratio, y: py - (py - view.y) * ratio });
+  applyView({
+    box,
+    view: {
+      ...view,
+      scale,
+      x: pointerX - (pointerX - view.x) * ratio,
+      y: pointerY - (pointerY - view.y) * ratio,
+    },
+  });
 };
 
 const makePannable = (box: HTMLElement) => {
@@ -111,34 +126,55 @@ const makePannable = (box: HTMLElement) => {
       const inDialog = box.classList.contains('tt-full__body');
       if (!inDialog && !event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
-      zoomAt(box, Math.exp(-event.deltaY * 0.002), event.clientX, event.clientY);
+      zoomAt({
+        box,
+        factor: Math.exp(-event.deltaY * WHEEL_ZOOM_RATE),
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
     },
     { passive: false },
   );
-  let last: { x: number; y: number } | undefined = undefined;
+  let lastPointer: { x: number; y: number } | undefined = undefined;
   box.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || !views.has(box)) return;
-    last = { x: event.clientX, y: event.clientY };
+    lastPointer = { x: event.clientX, y: event.clientY };
     box.setPointerCapture(event.pointerId);
     box.classList.add('is-panning');
   });
   box.addEventListener('pointermove', (event) => {
     const view = views.get(box);
-    if (!last || !view) return;
-    apply(box, { ...view, x: view.x + event.clientX - last.x, y: view.y + event.clientY - last.y });
-    last = { x: event.clientX, y: event.clientY };
+    if (!lastPointer || !view) return;
+    applyView({
+      box,
+      view: {
+        ...view,
+        x: view.x + event.clientX - lastPointer.x,
+        y: view.y + event.clientY - lastPointer.y,
+      },
+    });
+    lastPointer = { x: event.clientX, y: event.clientY };
   });
-  const end = () => {
-    last = undefined;
+  const endPan = () => {
+    lastPointer = undefined;
     box.classList.remove('is-panning');
   };
-  box.addEventListener('pointerup', end);
-  box.addEventListener('pointercancel', end);
+  box.addEventListener('pointerup', endPan);
+  box.addEventListener('pointercancel', endPan);
   box.addEventListener('dblclick', () => resetView(box));
 };
 
-/** A ghost icon button like the stage's (`Button ghost icon` with a lucide icon). */
-const toolButton = (label: string, title: string, icon: string, onClick: () => void) => {
+const toolButton = ({
+  label,
+  title,
+  icon,
+  onClick,
+}: {
+  label: string;
+  title: string;
+  icon: string;
+  onClick: () => void;
+}) => {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'tt-expand';
@@ -149,18 +185,12 @@ const toolButton = (label: string, title: string, icon: string, onClick: () => v
   return button;
 };
 
-/* ---------- full screen (TechPane's full-screen Stage): a diagram's svg, or any other frame's
-   body (R32), moves in while open and back on close ---------- */
-
-/** The diagram of a frame (its direct `[data-graph]`), or `undefined` for a list or code frame. */
 export const graphIn = (frame: HTMLElement) =>
   frame.querySelector<HTMLElement>(':scope > [data-graph]') ?? undefined;
 
-/** The nodes a non-diagram frame lent to the full-screen body, to put back on close. */
 const lent = new WeakMap<HTMLElement, Element[]>();
 
-/** The full-screen body opened: a diagram's svg moves in (pannable), else the frame's body. */
-export const showFull = (body: HTMLElement, frame: HTMLElement) => {
+export const showFull = ({ body, frame }: { body: HTMLElement; frame: HTMLElement }) => {
   const graph = graphIn(frame);
   if (graph === undefined) {
     const nodes = [...frame.children].filter(
@@ -180,8 +210,7 @@ export const showFull = (body: HTMLElement, frame: HTMLElement) => {
   requestAnimationFrame(() => resetView(body));
 };
 
-/** Full screen closes: the svg (fitted again) or the lent body goes back to its frame. */
-export const hideFull = (body: HTMLElement, frame: HTMLElement) => {
+export const hideFull = ({ body, frame }: { body: HTMLElement; frame: HTMLElement }) => {
   const graph = graphIn(frame);
   if (graph === undefined) {
     const nodes = lent.get(body) ?? [];
@@ -197,10 +226,8 @@ export const hideFull = (body: HTMLElement, frame: HTMLElement) => {
   resetView(graph);
 };
 
-/** Reset view button of the full-screen stage. */
 export const resetFull = (body: HTMLElement) => resetView(body);
 
-/** Opens a frame (a `.tt-fig`) in the full-screen stage. */
 type Expand = (frame: HTMLElement) => void;
 
 // lucide rotate-ccw and maximize-2, the icons of the full-screen stage's buttons
@@ -213,47 +240,73 @@ const MAXIMIZE = icon(
   '<path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/>',
 );
 
-/**
- * The figure's label row, as the collapsed `Stage` (Stage.tsx): label, muted path, the buttons
- * at its end. The actual graph brings its own row (`actualHtml`); the others get one here.
- */
-const labelRow = (figure: HTMLElement, label: string, path: string) => {
+const labelSpan = ({ className, text }: { className: string; text: string }): HTMLSpanElement => {
+  const span = document.createElement('span');
+  span.className = className;
+  span.textContent = text;
+  return span;
+};
+
+const labelRow = ({
+  figure,
+  label,
+  path,
+}: {
+  figure: HTMLElement;
+  label: string;
+  path: string;
+}) => {
   const existing = figure.querySelector<HTMLElement>(':scope > .tt-fig__bar');
   if (existing) return existing;
   const bar = document.createElement('div');
   bar.className = 'tt-fig__bar';
-  const name = document.createElement('span');
-  name.className = 'tt-fig__label';
-  name.textContent = label;
-  const where = document.createElement('span');
-  where.className = 'tt-fig__path';
-  where.textContent = path;
-  bar.append(name, where);
+  bar.append(
+    labelSpan({ className: 'tt-fig__label', text: label }),
+    labelSpan({ className: 'tt-fig__path', text: path }),
+  );
   figure.prepend(bar);
   return bar;
 };
 
-const addTools = (figure: HTMLElement, graph: HTMLElement, expand: Expand) => {
+const addTools = ({
+  figure,
+  graph,
+  expand,
+}: {
+  figure: HTMLElement;
+  graph: HTMLElement;
+  expand: Expand;
+}) => {
   makePannable(graph);
   const tools = document.createElement('div');
   tools.className = 'tt-tools';
   tools.append(
-    toolButton('Reset view', 'Reset view (or double-click)', RESET, () => resetView(graph)),
-    toolButton('Full screen', 'Full screen', MAXIMIZE, () => expand(figure)),
+    toolButton({
+      label: 'Reset view',
+      title: 'Reset view (or double-click)',
+      icon: RESET,
+      onClick: () => resetView(graph),
+    }),
+    toolButton({
+      label: 'Full screen',
+      title: 'Full screen',
+      icon: MAXIMIZE,
+      onClick: () => expand(figure),
+    }),
   );
-  labelRow(figure, 'Diagram', graph.dataset.title ?? '').append(tools);
+  labelRow({ figure, label: 'Diagram', path: graph.dataset.title ?? '' }).append(tools);
 };
 
 let sequence = 0;
 let queue: Promise<unknown> = Promise.resolve();
 
 /** Draws one graph; renders run one after another (Mermaid keeps global state). */
-const draw = (graph: HTMLElement, code: string) => {
+const drawGraph = ({ graph, code }: { graph: HTMLElement; code: string }) => {
   queue = queue.then(async () => {
     const mermaid = await loadMermaid();
     try {
-      const out = await mermaid.render(`tt-mmd-${sequence++}`, code);
-      graph.innerHTML = out.svg;
+      const rendered = await mermaid.render(`tt-mmd-${sequence++}`, code);
+      graph.innerHTML = rendered.svg;
       const svg = graph.querySelector('svg');
       if (svg) {
         const view = svg.viewBox.baseVal;
@@ -270,15 +323,13 @@ const draw = (graph: HTMLElement, code: string) => {
   return queue;
 };
 
-/** The heading a figure sits under, for the full-screen stage's label row. */
 const headingBefore = (node: Element) => {
   let current: Element | null = node.previousElementSibling;
   while (current && !/^H[1-6]$/.test(current.tagName)) current = current.previousElementSibling;
   return current?.textContent?.trim() ?? 'Diagram';
 };
 
-/** A ```mermaid block (`<pre class="mermaid">` from `renderTech`) → a figure with tools. */
-const toFigure = (pre: HTMLElement, expand: Expand) => {
+const toFigure = ({ pre, expand }: { pre: HTMLElement; expand: Expand }) => {
   const code = pre.textContent ?? '';
   const figure = document.createElement('figure');
   figure.className = 'tt-fig';
@@ -287,17 +338,16 @@ const toFigure = (pre: HTMLElement, expand: Expand) => {
   graph.dataset.title = headingBefore(pre);
   figure.append(graph);
   pre.replaceWith(figure);
-  addTools(figure, graph, expand);
+  addTools({ figure, graph, expand });
   return { figure, graph, code };
 };
 
 /** An H2 of the article by its text (marked writes no heading ids). */
-const h2 = (article: Element, text: string) =>
+const headingByText = ({ article, text }: { article: Element; text: string }) =>
   [...article.querySelectorAll(':scope > h2')].find(
     (heading) => heading.textContent?.trim() === text,
   );
 
-/** The elements after `heading` up to the next H2 (its section). */
 const sectionOf = (heading: Element | undefined) => {
   const nodes: HTMLElement[] = [];
   let node = heading?.nextElementSibling ?? null;
@@ -308,19 +358,19 @@ const sectionOf = (heading: Element | undefined) => {
   return nodes;
 };
 
-/** The template's top-level elements whose block starts with `block`, cloned (an Actual side). */
-const actualParts = (template: HTMLTemplateElement | null, block: string) =>
+const actualParts = ({
+  template,
+  block,
+}: {
+  template: HTMLTemplateElement | null;
+  block: string;
+}) =>
   [...(template?.content.cloneNode(true).childNodes ?? [])].filter(
     (node): node is HTMLElement =>
       node instanceof HTMLElement && (node.dataset.block ?? '').startsWith(block),
   );
 
-/**
- * A switched frame's label row names only its source file (R34): no Planned / Actual overline,
- * no description; `tech.md` on the planned side, the `review/…` file on the actual side (its date
- * and base stay in the path's tooltip).
- */
-const sourceOnly = (figure: HTMLElement, planned: boolean) => {
+const sourceOnly = ({ figure, planned }: { figure: HTMLElement; planned: boolean }) => {
   figure.querySelector(':scope > .tt-fig__bar > .tt-fig__label')?.remove();
   const where = figure.querySelector<HTMLElement>(':scope > .tt-fig__bar > .tt-fig__path');
   if (!where) return;
@@ -334,28 +384,18 @@ const sourceOnly = (figure: HTMLElement, planned: boolean) => {
   if (full !== source) where.title = full;
 };
 
-/**
- * A section with an actual side (R28, R29): one control for its planned and actual frames. The
- * switch sits first in each frame's label row (R31) and in the full-screen stage (`TechPane.tsx`
- * finds it by the frame with `controlOf`); `set` swaps the frames in place and resolves once a
- * newly shown diagram is drawn.
- */
-export type SectionControl = {
+type SectionControl = {
   name: string;
-  /** The command that writes the missing actual file; Actual is disabled meanwhile. */
   hint: string | undefined;
   isActual: () => boolean;
   set: (actual: boolean) => Promise<void>;
-  /** The frame shown on a side, for the full-screen stage. */
   frameOf: (actual: boolean) => HTMLElement | undefined;
 };
 
 const controls = new WeakMap<HTMLElement, SectionControl>();
 
-/** The section control a frame belongs to (the full-screen stage's switch). */
 export const controlOf = (frame: HTMLElement) => controls.get(frame);
 
-/** The command of a missing actual (the template's placeholder), or `undefined` when the file is there. */
 const hintOf = (parts: HTMLElement[]) => {
   const command = parts
     .map((part) => part.querySelector('.tt-placeholder code')?.textContent)
@@ -364,166 +404,221 @@ const hintOf = (parts: HTMLElement[]) => {
   return `Run ${command}`;
 };
 
-/** The frame's tool group at the end of its label row (created for frames without a diagram). */
 const toolsOf = (figure: HTMLElement) => {
   const existing = figure.querySelector<HTMLElement>(':scope > .tt-fig__bar > .tt-tools');
   if (existing) return existing;
   const tools = document.createElement('div');
   tools.className = 'tt-tools';
-  labelRow(figure, 'Planned', 'from tech.md').append(tools);
+  labelRow({ figure, label: 'Planned', path: 'from tech.md' }).append(tools);
   return tools;
 };
 
-/** Every frame can open in the full-screen stage (R32): a Full screen button at the end of its label row. */
-const addExpand = (frame: HTMLElement, expand: Expand) => {
+const addExpand = ({ frame, expand }: { frame: HTMLElement; expand: Expand }) => {
   const tools = toolsOf(frame);
   if (tools.querySelector('[aria-label="Full screen"]')) return;
-  tools.append(toolButton('Full screen', 'Full screen', MAXIMIZE, () => expand(frame)));
+  tools.append(
+    toolButton({
+      label: 'Full screen',
+      title: 'Full screen',
+      icon: MAXIMIZE,
+      onClick: () => expand(frame),
+    }),
+  );
 };
 
-/** A compact Planned | Actual switch for a label row (R29), wired to `control`. */
-const segment = (control: SectionControl) => {
-  const seg = document.createElement('div');
-  seg.className = 'tt-seg tt-seg--sm';
-  seg.setAttribute('role', 'group');
-  seg.setAttribute('aria-label', `${control.name}: planned or actual`);
-  seg.innerHTML =
-    '<button type="button" data-show="planned">Planned</button><button type="button" data-show="actual">Actual</button>';
-  const actual = seg.querySelector<HTMLButtonElement>('button[data-show="actual"]');
-  if (actual && control.hint !== undefined) {
-    actual.disabled = true;
-    actual.title = control.hint;
-  }
-  seg.addEventListener('click', (event) => {
-    if (!(event.target instanceof Element)) return;
-    const button = event.target.closest<HTMLButtonElement>('button[data-show]');
-    if (!button || button.disabled) return;
-    void control.set(button.dataset.show === 'actual');
+type SideSegment = {
+  host: HTMLElement;
+  render: (actual: boolean) => void;
+};
+
+// One React root per label-row switch; initTech unmounts the previous pane's roots before it
+// rebuilds, so a refreshed Tech tab leaves none behind.
+const segmentRoots: Root[] = [];
+
+const unmountSegments = () => {
+  const stale = segmentRoots.splice(0);
+  // deferred: initTech runs inside a React effect, where a synchronous unmount warns
+  queueMicrotask(() => {
+    for (const root of stale) root.unmount();
   });
-  return seg;
 };
 
-/**
- * Builds a section's control: the actual parts go in after the planned ones, hidden; each frame
- * (the planned one and the actual one) gets the switch first in its label row; an actual Mermaid
- * graph gets its tools and is drawn on first show. With the actual file missing, Actual is
- * disabled and the planned frame says which command writes it.
- */
-const sectionControl = (
-  name: string,
-  planned: HTMLElement[],
-  parts: HTMLElement[],
-  expand: Expand,
-): SectionControl => {
+const sideValue = (actual: boolean) => {
+  if (actual) return 'actual';
+  return 'planned';
+};
+
+const segment = (control: SectionControl): SideSegment => {
+  const host = document.createElement('div');
+  host.className = '-my-1 mr-1';
+  const root = createRoot(host);
+  segmentRoots.push(root);
+  const render = (actual: boolean) =>
+    root.render(
+      createElement(PvSegmentedControl, {
+        size: 'sm',
+        'aria-label': `${control.name}: planned or actual`,
+        value: sideValue(actual),
+        onValueChange: (side) => void control.set(side === 'actual'),
+        options: [
+          { value: 'planned', label: 'Planned' },
+          {
+            value: 'actual',
+            label: 'Actual',
+            disabled: control.hint !== undefined,
+            tooltip: control.hint,
+          },
+        ],
+      }),
+    );
+  render(false);
+  return { host, render };
+};
+
+const actualSide = ({
+  parts,
+  expand,
+}: {
+  parts: HTMLElement[];
+  expand: Expand;
+}): {
+  hint: string | undefined;
+  figure: HTMLElement | undefined;
+  graph: HTMLElement | undefined;
+  source: string | null | undefined;
+  frame: HTMLElement | undefined;
+} => {
+  const hint = hintOf(parts);
+  const figure = parts.find((part) => part.querySelector('[data-mmd]') !== null);
+  const graph = figure?.querySelector<HTMLElement>('[data-graph]') ?? undefined;
+  const source = figure?.querySelector('[data-mmd]')?.textContent;
+  if (figure && graph) addTools({ figure, graph, expand });
+  let frame: HTMLElement | undefined = undefined;
+  if (hint === undefined) frame = parts.find((part) => part.classList.contains('tt-fig'));
+  return { hint, figure, graph, source, frame };
+};
+
+const wireSwitches = ({
+  control,
+  frames,
+  segments,
+  plannedFigure,
+}: {
+  control: SectionControl;
+  frames: (HTMLElement | undefined)[];
+  segments: SideSegment[];
+  plannedFigure: HTMLElement | undefined;
+}): void => {
+  for (const frame of frames) {
+    if (frame === undefined) continue;
+    const handle = segment(control);
+    segments.push(handle);
+    toolsOf(frame);
+    frame.querySelector(':scope > .tt-fig__bar')?.prepend(handle.host);
+    sourceOnly({ figure: frame, planned: frame === plannedFigure });
+    controls.set(frame, control);
+  }
+};
+
+const sectionControl = ({
+  name,
+  planned,
+  parts,
+  expand,
+}: {
+  name: string;
+  planned: HTMLElement[];
+  parts: HTMLElement[];
+  expand: Expand;
+}): SectionControl => {
   planned[planned.length - 1]?.after(...parts);
   for (const part of parts) part.hidden = true;
-  const hint = hintOf(parts);
-  const actualFigure = parts.find((part) => part.querySelector('[data-mmd]') !== null);
-  const actualGraph = actualFigure?.querySelector<HTMLElement>('[data-graph]') ?? undefined;
-  const source = actualFigure?.querySelector('[data-mmd]')?.textContent;
-  if (actualFigure && actualGraph) addTools(actualFigure, actualGraph, expand);
+  const actualFacts = actualSide({ parts, expand });
   const plannedFigure = planned.find((node) => node.classList.contains('tt-fig'));
-  let actualFrame: HTMLElement | undefined = undefined;
-  if (hint === undefined) actualFrame = parts.find((part) => part.classList.contains('tt-fig'));
   let actual = false;
   let drawn = false;
-  const segments: HTMLElement[] = [];
+  const segments: SideSegment[] = [];
   const control: SectionControl = {
     name,
-    hint,
+    hint: actualFacts.hint,
     isActual: () => actual,
     frameOf: (side) => {
-      if (side) return actualFrame;
+      if (side) return actualFacts.frame;
       return plannedFigure;
     },
     set: async (side) => {
       actual = side;
       for (const node of planned) node.hidden = side;
       for (const part of parts) part.hidden = !side;
-      for (const seg of segments) {
-        for (const button of seg.querySelectorAll('button')) {
-          button.setAttribute('aria-pressed', String((button.dataset.show === 'actual') === side));
-        }
-      }
+      for (const handle of segments) handle.render(side);
       let drawing: Promise<unknown> = Promise.resolve();
-      if (side && actualGraph && source && !drawn) {
+      if (side && actualFacts.graph && actualFacts.source && !drawn) {
         drawn = true;
-        drawing = draw(actualGraph, source);
+        drawing = drawGraph({ graph: actualFacts.graph, code: actualFacts.source });
       }
       await drawing;
       const root = planned[0]?.parentElement;
       if (root) requestAnimationFrame(() => refitTech(root));
     },
   };
-  for (const frame of [plannedFigure, actualFrame]) {
-    if (frame === undefined) continue;
-    const seg = segment(control);
-    segments.push(seg);
-    toolsOf(frame);
-    frame.querySelector(':scope > .tt-fig__bar')?.prepend(seg);
-    sourceOnly(frame, frame === plannedFigure);
-    controls.set(frame, control);
-  }
-  if (plannedFigure && hint !== undefined) {
+  wireSwitches({ control, frames: [plannedFigure, actualFacts.frame], segments, plannedFigure });
+  if (plannedFigure && actualFacts.hint !== undefined) {
     const note = document.createElement('p');
     note.className = 'tt-missing';
-    note.textContent = `No actual yet · ${hint}`;
+    note.textContent = `No actual yet · ${actualFacts.hint}`;
     plannedFigure.append(note);
   }
   void control.set(false);
   return control;
 };
 
-/** The figure of `figures` that sits in `section`. */
-const figureIn = (section: HTMLElement[], figures: HTMLElement[]) =>
+const figureIn = ({ section, figures }: { section: HTMLElement[]; figures: HTMLElement[] }) =>
   figures.find((figure) => section.includes(figure));
 
-/** The index of the first `### New` / `### Changed` heading in a section, or -1. */
 const firstFileHeading = (section: HTMLElement[]) =>
   section.findIndex(
     (node) => node.tagName === 'H3' && /^(New|Changed)$/.test(node.textContent?.trim() ?? ''),
   );
 
-/**
- * The planned file lists: the body of `## Files` (the template since R25), or, in an older
- * tech.md, everything from the first `### New` / `### Changed` under `## Modules` on.
- */
 const plannedFiles = (article: HTMLElement) => {
-  const files = sectionOf(h2(article, 'Files'));
+  const files = sectionOf(headingByText({ article, text: 'Files' }));
   if (files.length > 0) return files;
-  const modules = sectionOf(h2(article, 'Modules'));
+  const modules = sectionOf(headingByText({ article, text: 'Modules' }));
   const first = firstFileHeading(modules);
   if (first === -1) return [];
   return modules.slice(first);
 };
 
-/**
- * The sections with an actual side, from tech.md's headings: Modules (diagram ↔ `review/deps.mmd`
- * and the boundary check), Files (the planned lists as folder-grouped rows ↔ `review/files.json`,
- * R30), Interfaces (↔ `review/interfaces.md`) and Components (↔ `review/components.mmd`).
- */
-const sectionControls = (
-  article: HTMLElement,
-  template: HTMLTemplateElement | null,
-  figures: HTMLElement[],
-  expand: Expand,
-): SectionControl[] => {
+const sectionControls = ({
+  article,
+  template,
+  figures,
+  expand,
+}: {
+  article: HTMLElement;
+  template: HTMLTemplateElement | null;
+  figures: HTMLElement[];
+  expand: Expand;
+}): SectionControl[] => {
   const sections: SectionControl[] = [];
-  const modules = sectionOf(h2(article, 'Modules'));
-  const modulesFigure = figureIn(modules, figures);
+  const modules = sectionOf(headingByText({ article, text: 'Modules' }));
+  const modulesFigure = figureIn({ section: modules, figures });
   if (modulesFigure) {
-    const parts = [...actualParts(template, 'actual'), ...actualParts(template, 'check')];
-    sections.push(sectionControl('Modules', [modulesFigure], parts, expand));
+    const parts = [
+      ...actualParts({ template, block: 'actual' }),
+      ...actualParts({ template, block: 'check' }),
+    ];
+    sections.push(sectionControl({ name: 'Modules', planned: [modulesFigure], parts, expand }));
   }
   const files = plannedFiles(article);
-  const filesPlanned = actualParts(template, 'files-planned')[0];
+  const filesPlanned = actualParts({ template, block: 'files-planned' })[0];
   if (files.length > 0 && filesPlanned) {
     files[0].before(filesPlanned);
     for (const node of files) node.remove();
-    const parts = actualParts(template, 'files-actual');
-    sections.push(sectionControl('Files', [filesPlanned], parts, expand));
+    const parts = actualParts({ template, block: 'files-actual' });
+    sections.push(sectionControl({ name: 'Files', planned: [filesPlanned], parts, expand }));
   }
-  const interfaces = h2(article, 'Interfaces');
+  const interfaces = headingByText({ article, text: 'Interfaces' });
   if (interfaces) {
     const planned = document.createElement('figure');
     planned.className = 'tt-fig tt-interfaces';
@@ -532,36 +627,39 @@ const sectionControls = (
     code.className = 'tt-code';
     code.append(...sectionOf(interfaces));
     planned.append(code);
-    labelRow(planned, 'Planned', 'from tech.md');
+    labelRow({ figure: planned, label: 'Planned', path: 'from tech.md' });
     interfaces.after(planned);
-    const parts = actualParts(template, 'interfaces-actual');
-    sections.push(sectionControl('Interfaces', [planned], parts, expand));
+    const parts = actualParts({ template, block: 'interfaces-actual' });
+    sections.push(sectionControl({ name: 'Interfaces', planned: [planned], parts, expand }));
   }
-  const componentsFigure = figureIn(sectionOf(h2(article, 'Components')), figures);
+  const componentsFigure = figureIn({
+    section: sectionOf(headingByText({ article, text: 'Components' })),
+    figures,
+  });
   if (componentsFigure) {
-    const parts = actualParts(template, 'components-actual');
-    sections.push(sectionControl('Components', [componentsFigure], parts, expand));
+    const parts = actualParts({ template, block: 'components-actual' });
+    sections.push(
+      sectionControl({ name: 'Components', planned: [componentsFigure], parts, expand }),
+    );
   }
   return sections;
 };
 
-/** An H2 and its section, or nothing when tech.md has no such heading. */
-const sectionWithHeading = (article: HTMLElement, name: string): HTMLElement[] => {
-  const heading = h2(article, name);
+const sectionWithHeading = ({
+  article,
+  name,
+}: {
+  article: HTMLElement;
+  name: string;
+}): HTMLElement[] => {
+  const heading = headingByText({ article, text: name });
   if (!(heading instanceof HTMLElement)) return [];
   return [heading, ...sectionOf(heading)];
 };
 
-/**
- * Orders the tab (R24, R25): the plan-only sections (every other H2, e.g. Data flow) stay on top
- * in tech.md order; Modules, Components, Files and Interfaces follow in that fixed order, whatever
- * tech.md's order (a missing section is skipped). In an older tech.md, the Files frame moves out
- * of Modules under a "Files" heading. A new tech.md or Actual side mounts the article afresh, so
- * every switch starts again at Planned.
- */
 const arrange = (article: HTMLElement) => {
-  let modules = sectionWithHeading(article, 'Modules');
-  let files = sectionWithHeading(article, 'Files');
+  let modules = sectionWithHeading({ article, name: 'Modules' });
+  let files = sectionWithHeading({ article, name: 'Files' });
   const first = modules.findIndex((node) => node.dataset.block === 'files-planned');
   if (files.length === 0 && first !== -1) {
     const heading = document.createElement('h2');
@@ -571,33 +669,30 @@ const arrange = (article: HTMLElement) => {
   }
   article.append(
     ...modules,
-    ...sectionWithHeading(article, 'Components'),
+    ...sectionWithHeading({ article, name: 'Components' }),
     ...files,
-    ...sectionWithHeading(article, 'Interfaces'),
+    ...sectionWithHeading({ article, name: 'Interfaces' }),
   );
 };
 
-/**
- * Draws the diagrams of the pane's tech.md (`[data-tech]`), gives each section with an actual
- * side its control and orders the sections; on a DOM it already ran on (`data-ready`) it does
- * nothing. The pane's `template[data-actual]` holds every Actual side and the planned Files rows.
- */
-export const initTech = (pane: Element, expand: Expand) => {
+export const initTech = ({ pane, expand }: { pane: Element; expand: Expand }) => {
   const article = pane.querySelector<HTMLElement>('[data-tech]');
   if (!article || article.dataset.ready === 'true') return;
   article.dataset.ready = 'true';
+  unmountSegments();
   const blocks = [
     ...article.querySelectorAll<HTMLElement>('pre:has(> code.language-mermaid), pre.mermaid'),
   ];
-  const figures = blocks.map((pre) => toFigure(pre, expand));
+  const figures = blocks.map((pre) => toFigure({ pre, expand }));
   const template = pane.querySelector<HTMLTemplateElement>('template[data-actual]');
-  const sections = sectionControls(
+  const sections = sectionControls({
     article,
     template,
-    figures.map((entry) => entry.figure),
+    figures: figures.map((entry) => entry.figure),
     expand,
-  );
+  });
   if (sections.length > 0) arrange(article);
-  for (const frame of article.querySelectorAll<HTMLElement>('.tt-fig')) addExpand(frame, expand);
-  for (const entry of figures) draw(entry.graph, entry.code);
+  for (const frame of article.querySelectorAll<HTMLElement>('.tt-fig'))
+    addExpand({ frame, expand });
+  for (const entry of figures) void drawGraph({ graph: entry.graph, code: entry.code });
 };

@@ -1,11 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Review screenshots: `vp run workbench:capture [-- backlog/<f>/review]` runs every
- * `tools/workbench/backlog/<f>/review/capture.spec.ts`: PWA specs against the web app's dev
- * server (baseURL, port 5176), board specs against the workbench board (port 4321, a board the
- * owner already runs is reused). Kept apart from the e2e suite (`apps/web/e2e`).
- */
 const PORT = 5176;
 const ORIGIN = `http://localhost:${PORT}`;
 const BOARD_PORT = 4321;

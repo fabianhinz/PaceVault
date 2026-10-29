@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { z } from 'zod';
-import { idbStorage } from '@/lib/idbStorage.ts';
+import { idbStorage } from '@/lib/storage/db.ts';
 
 const mobileSheetPositionSchema = z.number().min(0).max(1);
 
@@ -17,15 +17,22 @@ interface LayoutState {
   setMobileSheetPosition: (position: number) => void;
 }
 
+export const INITIAL_LAYOUT_STORE_STATE: Pick<
+  LayoutState,
+  'onboardingComplete' | 'demoMode' | 'mobileSheetPosition'
+> = {
+  onboardingComplete: false,
+  demoMode: false,
+  mobileSheetPosition: 0.5,
+};
+
 export const useLayoutStore = create<LayoutState>()(
   immer(
     persist(
       (set) => ({
-        onboardingComplete: false,
+        ...INITIAL_LAYOUT_STORE_STATE,
         completeOnboarding: () => set({ onboardingComplete: true }),
-        demoMode: false,
         setDemoMode: (v) => set({ demoMode: v }),
-        mobileSheetPosition: 0.5,
         setMobileSheetPosition: (position) => set({ mobileSheetPosition: position }),
       }),
       {

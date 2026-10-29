@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { detectEfforts, type EffortBlock, type EffortThresholds } from '../src/effortDetection.ts';
 import type { SessionRecord } from '../src/types.ts';
+import { createMockSessionRecord } from '../../testing/src/records.ts';
 
-const PROFILE = { ftp: 250, restHr: 50, maxHr: 190, thresholdPace: 255 };
+const PROFILE = { ftp: 250, restHr: 50, maxHr: 190, thresholdPaceSecPerKm: 255 };
 const FULL: EffortThresholds = PROFILE;
-const NO_FTP: EffortThresholds = { restHr: 50, maxHr: 190, thresholdPace: 255 };
+const NO_FTP: EffortThresholds = { restHr: 50, maxHr: 190, thresholdPaceSecPerKm: 255 };
 
 const rng = (initial: number) => {
   let seed = initial;
@@ -54,7 +55,6 @@ interface RideOptions {
   noHr?: boolean;
 }
 
-/** Synthetic 1 Hz ride. */
 const ride = (options: RideOptions): SessionRecord[] => {
   const power: number[] = [];
   for (const segment of options.segments) {
@@ -83,10 +83,10 @@ const ride = (options: RideOptions): SessionRecord[] => {
     if (options.smart) next = i + 1 + Math.floor(r() * 8);
     let speed = v;
     if (v > 0) speed = v + gauss(r) * 0.08;
-    const record: SessionRecord = {
+    const record = createMockSessionRecord({
       timestamp: i,
       speed: Math.max(0, Math.round(speed * 100) / 100),
-    };
+    });
     if (!options.noPower) record.power = Math.round(p);
     if (!options.noHr) record.hr = Math.round(hr + gauss(r) * 0.6);
     records.push(record);
@@ -131,24 +131,26 @@ const intervalRide = (extra: Partial<RideOptions> = {}): SessionRecord[] =>
 
 const work = (blocks: EffortBlock[]) => blocks.filter((block) => block.kind === 'work');
 
-describe('detectEfforts', () => {
+describe(detectEfforts.name, () => {
   it('finds 5×4 min power intervals with warm-up and cool-down, edges within 5 s', () => {
-    const result = detectEfforts(intervalRide(), 'cycling', FULL);
+    const result = detectEfforts({ records: intervalRide(), sport: 'cycling', thresholds: FULL });
 
     expect(result.signal).toBe('power');
     expect(result.limitedBy).toBeUndefined();
     const efforts = work(result.blocks);
     expect(efforts).toHaveLength(5);
     efforts.forEach((block, k) => {
-      expect(Math.abs(block.start - (903 + k * 420))).toBeLessThanOrEqual(5);
-      expect(Math.abs(block.end - (1143 + k * 420))).toBeLessThanOrEqual(5);
+      expect(Math.abs(block.startSec - (903 + k * 420))).toBeLessThanOrEqual(5);
+      expect(Math.abs(block.endSec - (1143 + k * 420))).toBeLessThanOrEqual(5);
     });
     expect(result.blocks[0]?.kind).toBe('warmup');
     expect(result.blocks[result.blocks.length - 1]?.kind).toBe('cooldown');
   });
 
   it("reports each work block's mean power, around the 300 W the intervals were ridden at", () => {
-    const efforts = work(detectEfforts(intervalRide(), 'cycling', FULL).blocks);
+    const efforts = work(
+      detectEfforts({ records: intervalRide(), sport: 'cycling', thresholds: FULL }).blocks,
+    );
 
     efforts.forEach((block) => {
       expect(block.signalMean).toBeGreaterThanOrEqual(290);
@@ -178,7 +180,7 @@ describe('detectEfforts', () => {
       ],
     });
 
-    expect(detectEfforts(records, 'cycling', FULL).blocks).toEqual([]);
+    expect(detectEfforts({ records, sport: 'cycling', thresholds: FULL }).blocks).toEqual([]);
   });
 
   it('finds nothing on a 60 min time trial at ~0.98 FTP (work share guard)', () => {
@@ -200,7 +202,7 @@ describe('detectEfforts', () => {
       ],
     });
 
-    expect(detectEfforts(records, 'cycling', FULL).blocks).toEqual([]);
+    expect(detectEfforts({ records, sport: 'cycling', thresholds: FULL }).blocks).toEqual([]);
   });
 
   const trafficRide = (stopSeconds: number): SessionRecord[] => {
@@ -232,23 +234,27 @@ describe('detectEfforts', () => {
   };
 
   it('bridges a 2:00 traffic-light stop inside a work block (smart recording)', () => {
-    const efforts = work(detectEfforts(trafficRide(120), 'cycling', FULL).blocks);
+    const efforts = work(
+      detectEfforts({ records: trafficRide(120), sport: 'cycling', thresholds: FULL }).blocks,
+    );
 
     expect(efforts).toHaveLength(3);
     const bridged = efforts[1];
     if (!bridged) throw new Error('missing bridged block');
-    expect(Math.abs(bridged.start - 1320)).toBeLessThanOrEqual(10);
-    expect(Math.abs(bridged.end - 1800)).toBeLessThanOrEqual(10);
-    expect(Math.abs(bridged.movingTime - (bridged.end - bridged.start - 120))).toBeLessThanOrEqual(
-      5,
-    );
+    expect(Math.abs(bridged.startSec - 1320)).toBeLessThanOrEqual(10);
+    expect(Math.abs(bridged.endSec - 1800)).toBeLessThanOrEqual(10);
+    expect(
+      Math.abs(bridged.movingSec - (bridged.endSec - bridged.startSec - 120)),
+    ).toBeLessThanOrEqual(5);
   });
 
   it('splits a work block at a 2:30 stop', () => {
-    const efforts = work(detectEfforts(trafficRide(150), 'cycling', FULL).blocks);
+    const efforts = work(
+      detectEfforts({ records: trafficRide(150), sport: 'cycling', thresholds: FULL }).blocks,
+    );
 
     expect(efforts).toHaveLength(4);
-    expect(efforts.some((block) => block.start < 1530 && block.end > 1680)).toBe(false);
+    expect(efforts.filter((block) => block.startSec < 1530 && block.endSec > 1680)).toEqual([]);
   });
 
   it('detects HR-only intervals with the 30 s lag shifted out', () => {
@@ -269,14 +275,13 @@ describe('detectEfforts', () => {
       grade: (i) => 0.008 * Math.sin(i / 150),
     });
 
-    const result = detectEfforts(records, 'cycling', FULL);
+    const result = detectEfforts({ records, sport: 'cycling', thresholds: FULL });
 
     expect(result.signal).toBe('hr');
     const efforts = work(result.blocks);
     expect(efforts).toHaveLength(6);
     efforts.forEach((block, k) => {
-      expect(Math.abs(block.start - (720 + k * 360))).toBeLessThanOrEqual(20);
-      // bpm, at or above the work threshold 50 + 0.8 · (190 − 50) = 162
+      expect(Math.abs(block.startSec - (720 + k * 360))).toBeLessThanOrEqual(20);
       expect(block.signalMean).toBeGreaterThanOrEqual(162);
       expect(block.signalMean).toBeLessThan(190);
     });
@@ -296,42 +301,39 @@ describe('detectEfforts', () => {
   };
 
   it('regression: sweet spot 3×12 fragments into many blocks', () => {
-    // enter 0.88 × 250 = 220 W, leave 0.80 × 250 = 200 W; the level wanders slowly from 204 to 236 W
     const records = threeBlockRide(71, (i) => 220 + 16 * Math.sin((2 * Math.PI * i) / 240));
 
-    const efforts = work(detectEfforts(records, 'cycling', FULL).blocks);
+    const efforts = work(detectEfforts({ records, sport: 'cycling', thresholds: FULL }).blocks);
 
     expect(efforts).toHaveLength(3);
     efforts.forEach((block, k) => {
-      expect(Math.abs(block.start - (600 + k * 960))).toBeLessThanOrEqual(20);
-      expect(Math.abs(block.end - (1320 + k * 960))).toBeLessThanOrEqual(20);
+      expect(Math.abs(block.startSec - (600 + k * 960))).toBeLessThanOrEqual(20);
+      expect(Math.abs(block.endSec - (1320 + k * 960))).toBeLessThanOrEqual(20);
     });
   });
 
   it('keeps a block going above the leave level and ends it below', () => {
-    // 8 min at 0.96 FTP, then 4 min at 0.84 FTP (between leave and enter): one block of 12 min
     const records = threeBlockRide(73, (i) => {
       if (i < 480) return 240;
       return 210;
     });
 
-    const efforts = work(detectEfforts(records, 'cycling', FULL).blocks);
+    const efforts = work(detectEfforts({ records, sport: 'cycling', thresholds: FULL }).blocks);
 
     expect(efforts).toHaveLength(3);
     efforts.forEach((block, k) => {
-      expect(Math.abs(block.end - (1320 + k * 960))).toBeLessThanOrEqual(20);
+      expect(Math.abs(block.endSec - (1320 + k * 960))).toBeLessThanOrEqual(20);
     });
   });
 
   it('finds no block where nothing reaches the enter level', () => {
-    // 0.84 FTP blocks: above leave, below enter, so nothing seeds a work block
     const records = threeBlockRide(79, () => 210);
 
-    expect(work(detectEfforts(records, 'cycling', FULL).blocks)).toEqual([]);
+    expect(work(detectEfforts({ records, sport: 'cycling', thresholds: FULL }).blocks)).toEqual([]);
   });
 
   it('falls back to HR without FTP and reports the missing FTP', () => {
-    const result = detectEfforts(intervalRide(), 'cycling', NO_FTP);
+    const result = detectEfforts({ records: intervalRide(), sport: 'cycling', thresholds: NO_FTP });
 
     expect(result.signal).toBe('hr');
     expect(result.limitedBy).toBe('ftp');
@@ -339,7 +341,11 @@ describe('detectEfforts', () => {
   });
 
   it('finds nothing on a power-only ride without FTP but still reports the missing FTP', () => {
-    const result = detectEfforts(intervalRide({ noHr: true }), 'cycling', NO_FTP);
+    const result = detectEfforts({
+      records: intervalRide({ noHr: true }),
+      sport: 'cycling',
+      thresholds: NO_FTP,
+    });
 
     expect(result).toEqual({ blocks: [], signal: null, limitedBy: 'ftp' });
   });

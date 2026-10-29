@@ -1,0 +1,90 @@
+import {
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSnow,
+  CloudSun,
+  Sun,
+  type LucideIcon,
+} from 'lucide-react';
+import { m } from '@pacevault/i18n/messages.js';
+import {
+  wmoToCondition,
+  wmoToDescription,
+  type WeatherCondition,
+  type WeatherDescription,
+} from '@/lib/api/weather.ts';
+import type { WindExposure } from '@pacevault/engine/windExposure.ts';
+
+const ICON_BY_WEATHER_CONDITION: Record<WeatherCondition, LucideIcon> = {
+  clear: Sun,
+  'partly-cloudy': CloudSun,
+  cloudy: Cloud,
+  fog: CloudFog,
+  drizzle: CloudDrizzle,
+  rain: CloudRain,
+  snow: CloudSnow,
+  thunderstorm: CloudLightning,
+};
+
+const LABEL_BY_WEATHER_DESCRIPTION: Record<WeatherDescription, () => string> = {
+  clear: m.ui_weather_clear,
+  'partly-cloudy': m.ui_weather_partly_cloudy,
+  cloudy: m.ui_weather_cloudy,
+  fog: m.ui_weather_fog,
+  drizzle: m.ui_weather_drizzle,
+  'drizzle-light': m.ui_weather_drizzle_light,
+  'drizzle-moderate': m.ui_weather_drizzle_moderate,
+  'drizzle-dense': m.ui_weather_drizzle_dense,
+  'freezing-drizzle-light': m.ui_weather_freezing_drizzle_light,
+  'freezing-drizzle-dense': m.ui_weather_freezing_drizzle_dense,
+  rain: m.ui_weather_rain,
+  'rain-light': m.ui_weather_rain_light,
+  'rain-moderate': m.ui_weather_rain_moderate,
+  'rain-heavy': m.ui_weather_rain_heavy,
+  'freezing-rain-light': m.ui_weather_freezing_rain_light,
+  'freezing-rain-heavy': m.ui_weather_freezing_rain_heavy,
+  'rain-showers-light': m.ui_weather_rain_showers_light,
+  'rain-showers-moderate': m.ui_weather_rain_showers_moderate,
+  'rain-showers-heavy': m.ui_weather_rain_showers_heavy,
+  snow: m.ui_weather_snow,
+  'snow-light': m.ui_weather_snow_light,
+  'snow-moderate': m.ui_weather_snow_moderate,
+  'snow-heavy': m.ui_weather_snow_heavy,
+  'snow-grains': m.ui_weather_snow_grains,
+  'snow-showers-light': m.ui_weather_snow_showers_light,
+  'snow-showers-heavy': m.ui_weather_snow_showers_heavy,
+  thunderstorm: m.ui_weather_thunderstorm,
+  'thunderstorm-heavy': m.ui_weather_thunderstorm_heavy,
+  'thunderstorm-hail': m.ui_weather_thunderstorm_hail,
+  'thunderstorm-hail-heavy': m.ui_weather_thunderstorm_hail_heavy,
+};
+
+export const weatherIcon = (weatherCode: number): LucideIcon =>
+  ICON_BY_WEATHER_CONDITION[wmoToCondition(weatherCode)];
+
+export const weatherLabel = (weatherCode: number): string =>
+  LABEL_BY_WEATHER_DESCRIPTION[wmoToDescription(weatherCode)]();
+
+export const WIND_LEGEND = [
+  {
+    key: 'head',
+    label: m.ui_weather_headwind,
+    mostly: m.ui_weather_wind_mostly_head,
+    pct: (exposure: WindExposure) => exposure.headwindPct,
+  },
+  {
+    key: 'cross',
+    label: m.ui_weather_crosswind,
+    mostly: m.ui_weather_wind_mostly_cross,
+    pct: (exposure: WindExposure) => exposure.crosswindPct,
+  },
+  {
+    key: 'tail',
+    label: m.ui_weather_tailwind,
+    mostly: m.ui_weather_wind_mostly_tail,
+    pct: (exposure: WindExposure) => exposure.tailwindPct,
+  },
+] as const;

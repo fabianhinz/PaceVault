@@ -1,0 +1,88 @@
+import { describe, expect, it } from 'vite-plus/test';
+import { createMockSessionRecord } from '@pacevault/testing/records.ts';
+import { activeRailRange, computeRangeStats } from '@/components/sessions/charts/railRange.ts';
+import { buildSessionTerrain } from '@/components/charts/sessionTerrain.ts';
+import type { SessionRecord } from '@pacevault/engine/types.ts';
+
+const ride = (hrs: number[], elevations: number[]): SessionRecord[] =>
+  hrs.map((hr, i) => ({
+    timestamp: i * 60,
+    distance: i * 300,
+    speed: 5,
+    hr,
+    cadence: 0,
+    elevation: elevations[i],
+  }));
+
+describe(activeRailRange.name, () => {
+  const lap = { lapIndex: 2, from: 4, to: 8 };
+
+  it('a selected lap limits the rail to that lap', () => {
+    expect(activeRailRange({ zoomRange: null, selectedLap: lap })).toEqual({ from: 4, to: 8 });
+  });
+
+  it('an active zoom wins over the selected lap', () => {
+    expect(activeRailRange({ zoomRange: { from: 1, to: 3 }, selectedLap: lap })).toEqual({
+      from: 1,
+      to: 3,
+    });
+  });
+
+  it('without zoom or lap the rail covers the whole session', () => {
+    expect(activeRailRange({ zoomRange: null, selectedLap: undefined })).toBeNull();
+  });
+});
+
+describe(computeRangeStats.name, () => {
+  it('rail values of a selected lap only cover that lap', () => {
+    const records = ride([100, 110, 150, 170, 120], [10, 12, 20, 15, 30]);
+    const stats = computeRangeStats({
+      records,
+      range: { from: 2, to: 3 },
+      terrain: buildSessionTerrain({ sport: 'cycling', records }),
+    });
+    expect(stats.avgHr).toBe(160);
+    expect(stats.maxHr).toBe(170);
+    expect(stats.elevationGain).toBe(0);
+    expect(stats.elevationLoss).toBe(5);
+    expect(stats.avgSpeed).toBe(5);
+    expect(stats.avgPaceSecPerKm).toBe(200);
+  });
+
+  it('the average gradient of a selected lap covers only that lap', () => {
+    const records = ride([100, 100, 100, 100, 100], [0, 30, 60, 60, 60]);
+    const terrain = buildSessionTerrain({ sport: 'cycling', records });
+    expect(computeRangeStats({ records, range: { from: 0, to: 2 }, terrain }).avgGrade).toBeCloseTo(
+      10,
+      6,
+    );
+    expect(computeRangeStats({ records, range: { from: 2, to: 4 }, terrain }).avgGrade).toBe(0);
+  });
+
+  it('counts a recorded 0 cadence as a value', () => {
+    const records = [0, 1, 2].map((i) =>
+      createMockSessionRecord({ timestamp: i, hr: 100, cadence: 0 }),
+    );
+    const stats = computeRangeStats({
+      records,
+      range: { from: 0, to: 2 },
+      terrain: buildSessionTerrain({ sport: 'cycling', records }),
+    });
+    expect(stats.avgCadence).toBe(0);
+    expect(stats.maxCadence).toBe(0);
+  });
+
+  it('zoomed avg power on smart recording is weighted by time', () => {
+    const records: SessionRecord[] = [
+      createMockSessionRecord({ timestamp: 0, power: 100 }),
+      createMockSessionRecord({ timestamp: 1, power: 100 }),
+      createMockSessionRecord({ timestamp: 5, power: 300 }),
+    ];
+    const stats = computeRangeStats({
+      records,
+      range: { from: 0, to: 1 },
+      terrain: buildSessionTerrain({ sport: 'cycling', records }),
+    });
+    expect(stats.avgPower).toBe(260);
+  });
+});

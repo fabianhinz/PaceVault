@@ -15,7 +15,8 @@
     "types": ["vite/client", "vitest/globals", "node"],
     "paths": {
       "@/*": ["./src/*"],
-      "@tests/*": ["./tests/*"]
+      "@tests/*": ["./tests/*"],
+      "@testUtils/*": ["./tests/testUtils/*"]
     }
   },
   "include": ["tests"]

@@ -1,0 +1,287 @@
+import { describe, it, expect } from 'vite-plus/test';
+import { useUserStore } from '@/store/user.ts';
+import { createMockUserProfile } from '@tests/factories/profiles.ts';
+import { getDB } from '@/lib/storage/db.ts';
+import { thresholdsAt } from '@/lib/analysis/thresholdsAt.ts';
+
+const flatProfile = (thresholds: Record<string, number>) => ({
+  id: 'p',
+  gender: 'female',
+  thresholds,
+  showMetricHelp: true,
+  createdAt: 1,
+});
+
+const rehydrateFrom = async (state: unknown, version: number) => {
+  const db = await getDB();
+  await db.put('kv', JSON.stringify({ state, version }), 'store-user');
+  await useUserStore.persist.rehydrate();
+  return useUserStore.getState().profile;
+};
+
+describe('user store', () => {
+  it('setProfile auto-generates id and createdAt', () => {
+    const { id: _id, createdAt: _ca, ...profileData } = createMockUserProfile();
+    useUserStore.getState().setProfile(profileData);
+
+    const profile = useUserStore.getState().profile;
+    expect(profile).not.toBeNull();
+    expect(profile?.id).toEqual(expect.any(String));
+    expect(profile?.createdAt).toBeGreaterThan(0);
+    expect(profile?.gender).toBe('male');
+  });
+
+  it('saveTodaysThresholds twice on one day keeps one entry for today with the second value', () => {
+    const { id: _id, createdAt: _ca, ...profileData } = createMockUserProfile();
+    useUserStore.getState().setProfile(profileData);
+
+    useUserStore.getState().saveTodaysThresholds({ ftp: 270, weight: 70 });
+    useUserStore.getState().saveTodaysThresholds({ ftp: 280 });
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const profile = useUserStore.getState().profile;
+    expect(profile?.thresholds.ftp).toEqual([
+      { date: 0, value: 250 },
+      { date: today.getTime(), value: 280 },
+    ]);
+    expect(profile?.weight).toEqual([{ date: today.getTime(), value: 70 }]);
+    expect(profile?.thresholds.restHr).toEqual([{ date: 0, value: 50 }]);
+  });
+
+  it('resetProfile → null', () => {
+    const { id: _id, createdAt: _ca, ...profileData } = createMockUserProfile();
+    useUserStore.getState().setProfile(profileData);
+    expect(useUserStore.getState().profile).not.toBeNull();
+
+    useUserStore.getState().resetProfile();
+    expect(useUserStore.getState().profile).toBeNull();
+  });
+
+  it('persistence: data survives in IndexedDB', async () => {
+    const { id: _id, createdAt: _ca, ...profileData } = createMockUserProfile();
+    useUserStore.getState().setProfile(profileData);
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    const db = await getDB();
+    const stored = await db.get('kv', 'store-user');
+    expect(stored).toBeDefined();
+    const parsed = JSON.parse(stored ?? '{}');
+    expect(parsed.state.profile.gender).toBe('male');
+  });
+
+  it('operations on null profile are no-ops', () => {
+    expect(useUserStore.getState().profile).toBeNull();
+
+    useUserStore.getState().setProfileGender('female');
+    useUserStore.getState().saveTodaysThresholds({ maxHr: 200, restHr: 55 });
+
+    expect(useUserStore.getState().profile).toBeNull();
+  });
+
+  it('drops the auto session names toggle when migrating version 1 profiles', () => {
+    const migrate = useUserStore.persist.getOptions().migrate;
+    const migrated = migrate?.(
+      { profile: { id: 'p', gender: 'female', useAutoSessionNames: true } },
+      1,
+    );
+    expect(migrated).toEqual({ profile: { id: 'p', gender: 'female' } });
+  });
+
+  it('keeps a missing or unrecognised profile when migrating version 1', () => {
+    const migrate = useUserStore.persist.getOptions().migrate;
+    expect(migrate?.({ profile: null }, 1)).toEqual({ profile: null });
+    expect(migrate?.('garbage', 1)).toBe('garbage');
+  });
+
+  it('migrates flat version 2 and version 1 thresholds into epoch-dated histories', async () => {
+    const v2 = await rehydrateFrom(
+      { profile: flatProfile({ restHr: 48, maxHr: 186, ftp: 240, thresholdPace: 280 }) },
+      2,
+    );
+    expect(v2?.thresholds).toEqual({
+      restHr: [{ date: 0, value: 48 }],
+      maxHr: [{ date: 0, value: 186 }],
+      ftp: [{ date: 0, value: 240 }],
+      thresholdPace: [{ date: 0, value: 280 }],
+    });
+    if (!v2) throw new Error('profile missing');
+    const anySession = thresholdsAt({ profile: v2, date: new Date('2019-05-04').getTime() });
+    expect(anySession).toMatchObject({ restHr: 48, maxHr: 186, ftp: 240, thresholdPace: 280 });
+
+    const v1 = await rehydrateFrom({ profile: flatProfile({ restHr: 50, maxHr: 185 }) }, 1);
+    expect(v1?.thresholds).toEqual({
+      restHr: [{ date: 0, value: 50 }],
+      maxHr: [{ date: 0, value: 185 }],
+    });
+    if (!v1) throw new Error('profile missing');
+    expect(thresholdsAt({ profile: v1, date: Date.now() }).ftp).toBeUndefined();
+  });
+
+  it('keeps an unrecognised shape when migrating version 2', () => {
+    const migrate = useUserStore.persist.getOptions().migrate;
+    expect(migrate?.('garbage', 2)).toBe('garbage');
+    expect(migrate?.({ profile: { id: 'p', thresholds: 'x' } }, 2)).toEqual({
+      profile: { id: 'p', thresholds: 'x' },
+    });
+  });
+
+  it("drops a persisted profile with the removed gender 'other' instead of throwing", async () => {
+    const profile = await rehydrateFrom(
+      {
+        profile: {
+          ...flatProfile({}),
+          gender: 'other',
+          thresholds: { restHr: [{ date: 0, value: 48 }], maxHr: [{ date: 0, value: 186 }] },
+        },
+      },
+      3,
+    );
+    expect(profile).toBeNull();
+  });
+
+  it('drops an invalid history entry on hydration and keeps the rest', async () => {
+    const profile = await rehydrateFrom(
+      {
+        profile: {
+          ...flatProfile({}),
+          thresholds: {
+            restHr: [{ date: 0, value: 48 }],
+            maxHr: [{ date: 0, value: 186 }],
+            ftp: [
+              { date: 0, value: 240 },
+              { date: 'yesterday', value: 260 },
+              { date: 5_000, value: 250 },
+            ],
+          },
+        },
+      },
+      3,
+    );
+    expect(profile?.thresholds.ftp).toEqual([
+      { date: 0, value: 240 },
+      { date: 5_000, value: 250 },
+    ]);
+    expect(profile?.thresholds.restHr).toEqual([{ date: 0, value: 48 }]);
+  });
+
+  it('migrates a version 3 profile to version 4 unchanged, and keeps unrecognised shapes', async () => {
+    const migrate = useUserStore.persist.getOptions().migrate;
+    expect(migrate?.('garbage', 3)).toBe('garbage');
+    expect(migrate?.({ profile: { id: 'p', thresholds: 'x' } }, 3)).toEqual({
+      profile: { id: 'p', thresholds: 'x' },
+    });
+
+    const thresholds = {
+      restHr: [{ date: 0, value: 48 }],
+      maxHr: [{ date: 0, value: 186 }],
+      ftp: [{ date: 0, value: 240 }],
+    };
+    const profile = await rehydrateFrom({ profile: { ...flatProfile({}), thresholds } }, 3);
+    expect(profile?.thresholds).toEqual(thresholds);
+  });
+
+  it('drops a non-positive FTP entry on hydration and keeps every other field', async () => {
+    const stored = {
+      ...flatProfile({}),
+      thresholds: {
+        restHr: [{ date: 0, value: 48 }],
+        maxHr: [{ date: 0, value: 186 }],
+        ftp: [
+          { date: 0, value: 0 },
+          { date: 5_000, value: 250 },
+        ],
+      },
+      weight: [{ date: 0, value: 70 }],
+    };
+
+    const profile = await rehydrateFrom({ profile: stored }, 4);
+
+    expect(profile).toEqual({
+      ...stored,
+      thresholds: { ...stored.thresholds, ftp: [{ date: 5_000, value: 250 }] },
+    });
+  });
+
+  it('drops a negative threshold pace entry on hydration', async () => {
+    const profile = await rehydrateFrom(
+      {
+        profile: {
+          ...flatProfile({}),
+          thresholds: {
+            restHr: [{ date: 0, value: 48 }],
+            maxHr: [{ date: 0, value: 186 }],
+            thresholdPace: [{ date: 0, value: -1 }],
+          },
+        },
+      },
+      4,
+    );
+
+    expect(profile?.thresholds.thresholdPace).toEqual([]);
+  });
+
+  it('drops a max HR entry at or below the rest HR in effect on its date', async () => {
+    const profile = await rehydrateFrom(
+      {
+        profile: {
+          ...flatProfile({}),
+          thresholds: {
+            restHr: [{ date: 0, value: 48 }],
+            maxHr: [
+              { date: 0, value: 186 },
+              { date: 5_000, value: 40 },
+            ],
+          },
+        },
+      },
+      4,
+    );
+
+    expect(profile?.thresholds.maxHr).toEqual([{ date: 0, value: 186 }]);
+    expect(profile?.thresholds.restHr).toEqual([{ date: 0, value: 48 }]);
+  });
+
+  it('saveTodaysThresholds refuses a zero FTP and a max HR at the rest HR', () => {
+    const { id: _id, createdAt: _ca, ...profileData } = createMockUserProfile();
+    useUserStore.getState().setProfile(profileData);
+    const before = useUserStore.getState().profile?.thresholds;
+
+    useUserStore.getState().saveTodaysThresholds({ ftp: 0 });
+    useUserStore.getState().saveTodaysThresholds({ maxHr: 50 });
+
+    expect(useUserStore.getState().profile?.thresholds).toEqual(before);
+  });
+
+  it('setProfile refuses a profile whose max HR is not above its rest HR', () => {
+    useUserStore.getState().resetProfile();
+    const {
+      id: _id,
+      createdAt: _ca,
+      ...profileData
+    } = createMockUserProfile({
+      thresholds: { restHr: [{ date: 0, value: 60 }], maxHr: [{ date: 0, value: 60 }] },
+    });
+
+    useUserStore.getState().setProfile(profileData);
+
+    expect(useUserStore.getState().profile).toBeNull();
+  });
+
+  it('a saved threshold HR survives rehydrate', async () => {
+    const { id: _id, createdAt: _ca, ...profileData } = createMockUserProfile();
+    useUserStore.getState().setProfile(profileData);
+    useUserStore.getState().saveTodaysThresholds({ thresholdHr: 165 });
+    await new Promise((r) => setTimeout(r, 50));
+    const db = await getDB();
+    const persisted = JSON.parse((await db.get('kv', 'store-user')) ?? '{}');
+
+    const profile = await rehydrateFrom(persisted.state, persisted.version);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expect(persisted.version).toBe(4);
+    expect(profile?.thresholds.thresholdHr).toEqual([{ date: today.getTime(), value: 165 }]);
+  });
+});

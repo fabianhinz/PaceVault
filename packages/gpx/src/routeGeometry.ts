@@ -1,13 +1,9 @@
-import { encode } from '@googlemaps/polyline-codec';
-import { computeBounds, haversineM } from '@pacevault/engine/gps.ts';
+import { boundsFromPoints } from '@pacevault/engine/bounds.ts';
+import { haversineDistanceMeters } from '@pacevault/engine/geodesy.ts';
 import { windowedGradients } from '@pacevault/engine/gradient.ts';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
 import type { ParsedGpxPoint } from './parseGpx.ts';
-import { simplifyGpxPoints } from './simplifyGpxPoints.ts';
-
-export interface RoutePoint extends ParsedGpxPoint {
-  dist: number;
-}
+import type { RoutePoint } from './types.ts';
 
 export interface RouteElevationStats {
   gain: number;
@@ -19,98 +15,100 @@ export interface RouteElevationStats {
 
 interface RouteGeometry {
   points: RoutePoint[];
-  encodedPolylines: string[];
   bounds: GPSBounds;
-  distance: number;
+  distanceMeters: number;
   elevation?: RouteElevationStats;
 }
 
-const ELEVATION_HYSTERESIS_M = 3;
+const ELEVATION_HYSTERESIS_METERS = 3;
 
-export const groupBySegment = <T extends { seg: number }>(points: T[]): T[][] => {
-  const segments: T[][] = [];
-  let current: T[] = [];
-  let currentSeg: number | null = null;
-  for (const p of points) {
-    if (currentSeg !== null && p.seg !== currentSeg && current.length > 0) {
-      segments.push(current);
-      current = [];
-    }
-    currentSeg = p.seg;
-    current.push(p);
-  }
-  if (current.length > 0) segments.push(current);
-  return segments;
-};
-
-const steepestGrade = (points: RoutePoint[]): number => {
-  let maxGrade = 0;
+const steepestGradePercent = (points: RoutePoint[]): number => {
+  let steepestPercent = 0;
   for (const segment of groupBySegment(points)) {
-    const gradients = windowedGradients(
-      segment.map((p) => ({ distance: p.dist, elevation: p.ele })),
-    );
-    for (const gradient of gradients) {
-      if (gradient !== undefined && gradient * 100 > maxGrade) maxGrade = gradient * 100;
+    for (const gradient of segmentGradients(segment)) {
+      if (gradient !== undefined && gradient * 100 > steepestPercent)
+        steepestPercent = gradient * 100;
     }
   }
-  return maxGrade;
+  return steepestPercent;
 };
 
-const computeElevationStats = (points: RoutePoint[]): RouteElevationStats | undefined => {
-  const elevated = points.filter((p): p is RoutePoint & { ele: number } => p.ele !== undefined);
-  if (elevated.length < 2) return undefined;
+const elevationStatsFromPoints = (points: RoutePoint[]): RouteElevationStats | undefined => {
+  const elevatedPoints = points.filter(
+    (point): point is RoutePoint & { ele: number } => point.ele !== undefined,
+  );
+  if (elevatedPoints.length < 2) return undefined;
 
-  let min = Infinity;
-  let max = -Infinity;
-  let gain = 0;
-  let loss = 0;
+  let minElevationMeters = Infinity;
+  let maxElevationMeters = -Infinity;
+  let gainMeters = 0;
+  let lossMeters = 0;
 
-  for (const segment of groupBySegment(elevated)) {
+  for (const segment of groupBySegment(elevatedPoints)) {
     const firstPoint = segment[0];
     if (!firstPoint) continue;
-    let ref = firstPoint.ele;
+    let referenceElevationMeters = firstPoint.ele;
 
-    for (const p of segment) {
-      if (p.ele < min) min = p.ele;
-      if (p.ele > max) max = p.ele;
-      const delta = p.ele - ref;
-      if (delta >= ELEVATION_HYSTERESIS_M) {
-        gain += delta;
-        ref = p.ele;
-      } else if (delta <= -ELEVATION_HYSTERESIS_M) {
-        loss += -delta;
-        ref = p.ele;
+    for (const point of segment) {
+      if (point.ele < minElevationMeters) minElevationMeters = point.ele;
+      if (point.ele > maxElevationMeters) maxElevationMeters = point.ele;
+      const elevationDeltaMeters = point.ele - referenceElevationMeters;
+      if (elevationDeltaMeters >= ELEVATION_HYSTERESIS_METERS) {
+        gainMeters += elevationDeltaMeters;
+        referenceElevationMeters = point.ele;
+      } else if (elevationDeltaMeters <= -ELEVATION_HYSTERESIS_METERS) {
+        lossMeters += -elevationDeltaMeters;
+        referenceElevationMeters = point.ele;
       }
     }
   }
 
-  return { gain, loss, min, max, maxGrade: steepestGrade(points) };
+  return {
+    gain: gainMeters,
+    loss: lossMeters,
+    min: minElevationMeters,
+    max: maxElevationMeters,
+    maxGrade: steepestGradePercent(points),
+  };
 };
+
+export const groupBySegment = <T extends { seg: number }>(points: T[]): T[][] => {
+  const segments: T[][] = [];
+  let segment: T[] = [];
+  let segmentIndex: number | null = null;
+  for (const point of points) {
+    if (segmentIndex !== null && point.seg !== segmentIndex && segment.length > 0) {
+      segments.push(segment);
+      segment = [];
+    }
+    segmentIndex = point.seg;
+    segment.push(point);
+  }
+  if (segment.length > 0) segments.push(segment);
+  return segments;
+};
+
+export const segmentGradients = (segment: RoutePoint[]): Array<number | undefined> =>
+  windowedGradients(segment.map((point) => ({ distance: point.dist, elevation: point.ele })));
 
 export const buildRouteGeometry = (parsedPoints: ParsedGpxPoint[]): RouteGeometry | null => {
   if (parsedPoints.length < 2) return null;
 
   const points: RoutePoint[] = [];
-  let dist = 0;
-  let prev: ParsedGpxPoint | null = null;
-  for (const p of parsedPoints) {
-    if (prev && prev.seg === p.seg) {
-      dist += haversineM(prev, p);
+  let distanceMeters = 0;
+  let previous: ParsedGpxPoint | null = null;
+  for (const point of parsedPoints) {
+    if (previous && previous.seg === point.seg) {
+      distanceMeters += haversineDistanceMeters({ from: previous, to: point });
     }
-    points.push({ ...p, dist });
-    prev = p;
+    points.push({ ...point, dist: distanceMeters });
+    previous = point;
   }
-
-  const encodedPolylines = groupBySegment(points).map((segment) => {
-    const simplified = simplifyGpxPoints(segment.map((p) => ({ lat: p.lat, lon: p.lng })));
-    return encode(simplified.map((p) => [p.lat, p.lon]));
-  });
 
   return {
     points,
-    encodedPolylines,
-    bounds: computeBounds(points),
-    distance: dist,
-    elevation: computeElevationStats(points),
+    bounds: boundsFromPoints(points),
+    distanceMeters,
+    elevation: elevationStatsFromPoints(points),
   };
 };

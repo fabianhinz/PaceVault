@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vp run -F @pacevault/web dev",
-    "check": "vp run @pacevault/i18n#compile && vp run -F '@pacevault/*' check",
+    "check": "vp run @pacevault/i18n#compile && vp run -F '@pacevault/*' check && vp run -F @pacevault/workbench boundaries && vp run -F @pacevault/workbench tokens && vp run -F @pacevault/workbench conventions",
+    "conventions:index": "vp run -F @pacevault/workbench conventions:write",
     "test": "vp run @pacevault/i18n#compile && vp run -F '@pacevault/*' test",
     "build": "vp run -F '@pacevault/*' build",
     "e2e": "vp run -F @pacevault/web e2e",

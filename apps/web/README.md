@@ -22,7 +22,7 @@ vp exec playwright test   # e2e/ (starts its own dev server on port 5174)
 
 ## Other scripts
 
-- `vp run generate-demo-routes`: regenerate `src/features/demo/demoRoutes.json`
+- `vp run generate-demo-routes`: regenerate `src/lib/demo/demoRoutes.json`
 - `vp run generate-pwa-assets`: regenerate the PWA icons in `public/`
 
 Deployment: `firebase.json` and `.firebaserc` live here; the deploy workflow passes `entryPoint: apps/web`.

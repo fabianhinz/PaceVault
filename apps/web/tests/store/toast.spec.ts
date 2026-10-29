@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
-import { useToastStore, toast } from '@/store/toast.ts';
+import { INITIAL_TOAST_STORE_STATE, useToastStore } from '@/store/toast.ts';
 
 describe('toastStore', () => {
   beforeEach(() => {
-    useToastStore.setState({ toasts: [] });
+    useToastStore.setState(INITIAL_TOAST_STORE_STATE);
   });
 
   it('addToast adds a message toast', () => {
@@ -30,11 +30,5 @@ describe('toastStore', () => {
       useToastStore.getState().addToast({ title: `Toast ${i}` });
     }
     expect(useToastStore.getState().toasts).toHaveLength(5);
-  });
-
-  it('toast helper with id deduplicates', () => {
-    toast('A', undefined, undefined, 'same-id');
-    toast('B', undefined, undefined, 'same-id');
-    expect(useToastStore.getState().toasts).toHaveLength(1);
   });
 });

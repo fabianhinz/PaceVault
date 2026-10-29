@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { migrateFilters, useFiltersStore } from '@/store/filters.ts';
-import { type FilterCriteria, emptyCriteria } from '@/lib/savedFilters.ts';
+import { type FilterCriteria, emptyCriteria } from '@/lib/filtering/filters.ts';
 
 const criteria = (overrides: Partial<FilterCriteria>): FilterCriteria => ({
   ...emptyCriteria(),
@@ -72,8 +72,8 @@ describe('useFiltersStore', () => {
 
   it('zooms the active filter to a chart range', () => {
     store().saveBuilderFilter(runLast30);
-    store().setDashboardChartRange('2026-01-05', '2026-01-18');
-    store().setDashboardChartRange('2026-01-08', '2026-01-12');
+    store().setDashboardChartRange({ from: '2026-01-05', to: '2026-01-18' });
+    store().setDashboardChartRange({ from: '2026-01-08', to: '2026-01-12' });
     expect(store().activeFilter).toEqual(
       criteria({
         sport: 'running',
@@ -84,10 +84,10 @@ describe('useFiltersStore', () => {
 
   it('clearing the zoom does not bring back the filter that was active before zooming', () => {
     store().saveBuilderFilter(runLast30);
-    store().setDashboardChartRange('2026-01-05', '2026-01-18');
+    store().setDashboardChartRange({ from: '2026-01-05', to: '2026-01-18' });
     store().clearActiveFilter();
     expect(store().activeFilter).toBeNull();
-    store().setDashboardChartRange('2026-01-08', '2026-01-12');
+    store().setDashboardChartRange({ from: '2026-01-08', to: '2026-01-12' });
     expect(store().activeFilter).toEqual(
       criteria({ time: { kind: 'range', from: '2026-01-08', to: '2026-01-12', source: 'zoom' } }),
     );
@@ -106,7 +106,7 @@ describe('useFiltersStore', () => {
   });
 });
 
-describe('migrateFilters', () => {
+describe(migrateFilters.name, () => {
   it('drops the v2 sport, range and attribute state, keeps the load grouping and seeds the default filters', () => {
     const migrated = migrateFilters(
       {

@@ -1,12 +1,13 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ToastHost } from './components/ToastHost.tsx';
-import { RootErrorFallback } from './components/ErrorFallbacks.tsx';
+import { RootErrorFallback } from './components/errors/RootErrorFallback.tsx';
 import { App } from './App.tsx';
+import { createQueryClient } from './queries/queryClient.ts';
+import { AppRouter } from './routing/AppRouter.tsx';
 import { installDebugTools } from './lib/debug/debug.ts';
 import { DebugCrashTrigger } from './lib/debug/DebugCrashTrigger.tsx';
 import { useUserStore } from './store/user.ts';
@@ -34,17 +35,17 @@ const boot = async (rootEl: HTMLElement) => {
     useMapPreferencesStore.persist.rehydrate(),
   ]);
 
-  const queryClient = new QueryClient();
+  const queryClient = createQueryClient();
 
   createRoot(rootEl).render(
     <StrictMode>
       <ErrorBoundary FallbackComponent={RootErrorFallback}>
         <DebugCrashTrigger target="root" />
         <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
+          <AppRouter>
             <App />
             <ToastHost />
-          </BrowserRouter>
+          </AppRouter>
           <ReactQueryDevtools buttonPosition="top-left" />
         </QueryClientProvider>
       </ErrorBoundary>

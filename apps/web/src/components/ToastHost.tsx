@@ -1,9 +1,10 @@
-import { ToastViewport } from '@pacevault/ui/components/Toast.tsx';
+import type { FC } from 'react';
+import { PvToastViewport } from '@pacevault/ui/components/pvToastViewport/PvToastViewport.tsx';
 import { useToastStore } from '@/store/toast.ts';
 
-export const ToastHost = () => {
+export const ToastHost: FC = () => {
   const toasts = useToastStore((s) => s.toasts);
   return (
-    <ToastViewport toasts={toasts} onDismiss={(id) => useToastStore.getState().removeToast(id)} />
+    <PvToastViewport toasts={toasts} onDismiss={(id) => useToastStore.getState().removeToast(id)} />
   );
 };

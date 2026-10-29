@@ -7,8 +7,9 @@
  */
 
 export type Place =
-  /** The whole file (lists without a `## ` heading, e.g. flaky.md). */
-  { kind: 'file' } | { kind: 'frontmatter'; key: string } | { kind: 'section'; heading: string };
+  | { kind: 'file' }
+  | { kind: 'frontmatter'; key: string }
+  | { kind: 'section'; heading: string };
 
 export type EditResult =
   | { ok: true; text: string; diff: string }
@@ -16,9 +17,8 @@ export type EditResult =
 
 type Range = { start: number; end: number };
 
-const split = (text: string) => text.split('\n');
+const splitLines = (text: string) => text.split('\n');
 
-/** The frontmatter lines between the two `---` (exclusive), when the file starts with one. */
 const frontmatterRange = (lines: string[]): Range | undefined => {
   if (lines[0] !== '---') return undefined;
   const end = lines.indexOf('---', 1);
@@ -28,24 +28,32 @@ const frontmatterRange = (lines: string[]): Range | undefined => {
 
 type Heading = { index: number; depth: number; text: string };
 
-/** Markdown headings after the frontmatter, skipping fenced code blocks. */
-const headings = (lines: string[]): Heading[] => {
-  const out: Heading[] = [];
-  let index = 0;
+const firstBodyLine = (lines: string[]): number => {
   const front = frontmatterRange(lines);
-  if (front) index = front.end + 1;
+  if (front) return front.end + 1;
+  return 0;
+};
+
+const headings = (lines: string[]): Heading[] => {
+  const headingList: Heading[] = [];
+  let index = firstBodyLine(lines);
   let fence = false;
   for (; index < lines.length; index++) {
     if (/^(```|~~~)/.test(lines[index])) fence = !fence;
     if (fence) continue;
     const match = /^(#{1,6})\s+(.*)$/.exec(lines[index]);
-    if (match) out.push({ index, depth: match[1].length, text: match[2].trim() });
+    if (match) headingList.push({ index, depth: match[1].length, text: match[2].trim() });
   }
-  return out;
+  return headingList;
 };
 
-/** The body lines of `## heading`: from the line after it up to the next heading of depth ≤ 2. */
-const sectionRange = (lines: string[], heading: string): (Range & { head: number }) | undefined => {
+const sectionRange = ({
+  lines,
+  heading,
+}: {
+  lines: string[];
+  heading: string;
+}): (Range & { head: number }) | undefined => {
   const all = headings(lines);
   const head = all.find((candidate) => candidate.depth === 2 && candidate.text === heading);
   if (!head) return undefined;
@@ -55,31 +63,25 @@ const sectionRange = (lines: string[], heading: string): (Range & { head: number
   return { head: head.index, start: head.index + 1, end };
 };
 
-const placeRange = (lines: string[], place: Place): Range | undefined => {
+const placeRange = ({ lines, place }: { lines: string[]; place: Place }): Range | undefined => {
   if (place.kind === 'file') return { start: 0, end: lines.length };
   if (place.kind === 'frontmatter') return frontmatterRange(lines);
-  return sectionRange(lines, place.heading);
+  return sectionRange({ lines, heading: place.heading });
 };
 
-/**
- * A list item: its first line `- …` plus indented continuation lines (sub-bullets), and the
- * `## ` heading it sits under (`undefined` above the first one).
- */
 export type Item = { raw: string; first: string; heading: string | undefined };
 
-/** Every top-level list item of a file (outside the frontmatter and code fences). */
 export const fileItems = (text: string): Item[] => {
-  const lines = split(text);
+  const lines = splitLines(text);
   const marks = new Map(headings(lines).map((heading) => [heading.index, heading]));
-  const front = frontmatterRange(lines);
-  let index = 0;
-  if (front) index = front.end + 1;
-  const out: Item[] = [];
+  let index = firstBodyLine(lines);
+  const items: Item[] = [];
   let heading: string | undefined = undefined;
   let current: string[] | undefined = undefined;
   let currentHeading: string | undefined = undefined;
   const flush = () => {
-    if (current) out.push({ raw: current.join('\n'), first: current[0], heading: currentHeading });
+    if (current)
+      items.push({ raw: current.join('\n'), first: current[0], heading: currentHeading });
     current = undefined;
   };
   let fence = false;
@@ -98,11 +100,18 @@ export const fileItems = (text: string): Item[] => {
     else if (current && line.trim() !== '') flush();
   }
   flush();
-  return out;
+  return items;
 };
 
-/** Start indices of the blocks of lines equal to `expected` inside `range`. */
-const findBlock = (lines: string[], range: Range, expected: string[]): number[] => {
+const findBlock = ({
+  lines,
+  range,
+  expected,
+}: {
+  lines: string[];
+  range: Range;
+  expected: string[];
+}): number[] => {
   const hits: number[] = [];
   for (let index = range.start; index + expected.length <= range.end; index++) {
     if (expected.every((line, offset) => lines[index + offset] === line)) hits.push(index);
@@ -110,124 +119,191 @@ const findBlock = (lines: string[], range: Range, expected: string[]): number[] 
   return hits;
 };
 
-const done = (before: string, lines: string[]): EditResult => {
+const appliedEdit = ({ before, lines }: { before: string; lines: string[] }): EditResult => {
   const text = lines.join('\n');
-  return { ok: true, text, diff: unifiedDiff(before, text) };
+  return { ok: true, text, diff: unifiedDiff({ before, after: text }) };
 };
 
-/** Replaces the one block of lines equal to `expected` in `place` with `next`. */
-export const editLine = (
-  text: string,
-  place: Place,
-  expected: string,
-  next: string,
-): EditResult => {
+const findUniqueBlock = ({
+  lines,
+  place,
+  expected,
+}: {
+  lines: string[];
+  place: Place;
+  expected: string;
+}):
+  | { ok: false; reason: 'missing' | 'duplicate' }
+  | { ok: true; start: number; length: number } => {
+  const range = placeRange({ lines, place });
+  if (!range) return { ok: false, reason: 'missing' };
+  const want = splitLines(expected);
+  const hits = findBlock({ lines, range, expected: want });
+  if (hits.length === 0) return { ok: false, reason: 'missing' };
+  if (hits.length > 1) return { ok: false, reason: 'duplicate' };
+  return { ok: true, start: hits[0], length: want.length };
+};
+
+export const editLine = ({
+  text,
+  place,
+  expected,
+  next,
+}: {
+  text: string;
+  place: Place;
+  expected: string;
+  next: string;
+}): EditResult => {
   if (next === expected) return { ok: false, reason: 'unchanged' };
-  const lines = split(text);
-  const range = placeRange(lines, place);
-  if (!range) return { ok: false, reason: 'missing' };
-  const want = split(expected);
-  const hits = findBlock(lines, range, want);
-  if (hits.length === 0) return { ok: false, reason: 'missing' };
-  if (hits.length > 1) return { ok: false, reason: 'duplicate' };
-  lines.splice(hits[0], want.length, ...split(next));
-  return done(text, lines);
+  const lines = splitLines(text);
+  const block = findUniqueBlock({ lines, place, expected });
+  if (!block.ok) return block;
+  lines.splice(block.start, block.length, ...splitLines(next));
+  return appliedEdit({ before: text, lines });
 };
 
-/** Removes the one block equal to `expected`; a blank line left doubled is dropped once. */
-export const deleteLine = (text: string, place: Place, expected: string): EditResult => {
-  const lines = split(text);
-  const range = placeRange(lines, place);
-  if (!range) return { ok: false, reason: 'missing' };
-  const want = split(expected);
-  const hits = findBlock(lines, range, want);
-  if (hits.length === 0) return { ok: false, reason: 'missing' };
-  if (hits.length > 1) return { ok: false, reason: 'duplicate' };
-  const at = hits[0];
-  lines.splice(at, want.length);
+export const deleteLine = ({
+  text,
+  place,
+  expected,
+}: {
+  text: string;
+  place: Place;
+  expected: string;
+}): EditResult => {
+  const lines = splitLines(text);
+  const block = findUniqueBlock({ lines, place, expected });
+  if (!block.ok) return block;
+  const at = block.start;
+  lines.splice(at, block.length);
   if (at > 0 && lines[at - 1] === '' && lines[at] === '') lines.splice(at, 1);
-  return done(text, lines);
+  return appliedEdit({ before: text, lines });
 };
 
-/** Inserts `line` (one or more lines) into `place`, right after the one block equal to `after`. */
-export const insertLine = (text: string, place: Place, after: string, line: string): EditResult => {
-  const lines = split(text);
-  const range = placeRange(lines, place);
-  if (!range) return { ok: false, reason: 'missing' };
-  const want = split(after);
-  const hits = findBlock(lines, range, want);
-  if (hits.length === 0) return { ok: false, reason: 'missing' };
-  if (hits.length > 1) return { ok: false, reason: 'duplicate' };
-  lines.splice(hits[0] + want.length, 0, ...split(line));
-  return done(text, lines);
+export const insertLine = ({
+  text,
+  place,
+  after,
+  line,
+}: {
+  text: string;
+  place: Place;
+  after: string;
+  line: string;
+}): EditResult => {
+  const lines = splitLines(text);
+  const block = findUniqueBlock({ lines, place, expected: after });
+  if (!block.ok) return block;
+  lines.splice(block.start + block.length, 0, ...splitLines(line));
+  return appliedEdit({ before: text, lines });
 };
 
-type DiffOp = { kind: ' ' | '-' | '+'; line: string; a: number; b: number };
+type DiffOp = { kind: ' ' | '-' | '+'; line: string; beforeIndex: number; afterIndex: number };
 
-/** Line diff (common prefix and suffix, LCS in between). */
-const diffOps = (a: string[], b: string[]): DiffOp[] => {
+type DiffKind = { kind: DiffOp['kind']; line: string };
+
+const lcsLengths = ({
+  beforeMiddle,
+  afterMiddle,
+}: {
+  beforeMiddle: string[];
+  afterMiddle: string[];
+}): Int32Array[] => {
+  const lengths = Array.from(
+    { length: beforeMiddle.length + 1 },
+    () => new Int32Array(afterMiddle.length + 1),
+  );
+  for (let i = beforeMiddle.length - 1; i >= 0; i--) {
+    for (let j = afterMiddle.length - 1; j >= 0; j--) {
+      if (beforeMiddle[i] === afterMiddle[j]) lengths[i][j] = lengths[i + 1][j + 1] + 1;
+      else lengths[i][j] = Math.max(lengths[i + 1][j], lengths[i][j + 1]);
+    }
+  }
+  return lengths;
+};
+
+const editScript = ({
+  beforeMiddle,
+  afterMiddle,
+  lcsLengths,
+}: {
+  beforeMiddle: string[];
+  afterMiddle: string[];
+  lcsLengths: Int32Array[];
+}): DiffKind[] => {
+  const kinds: DiffKind[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < beforeMiddle.length || j < afterMiddle.length) {
+    if (i < beforeMiddle.length && j < afterMiddle.length && beforeMiddle[i] === afterMiddle[j]) {
+      kinds.push({ kind: ' ', line: beforeMiddle[i] });
+      i++;
+      j++;
+    } else if (
+      i < beforeMiddle.length &&
+      (j === afterMiddle.length || lcsLengths[i + 1][j] >= lcsLengths[i][j + 1])
+    ) {
+      kinds.push({ kind: '-', line: beforeMiddle[i] });
+      i++;
+    } else {
+      kinds.push({ kind: '+', line: afterMiddle[j] });
+      j++;
+    }
+  }
+  return kinds;
+};
+
+const diffOps = ({ before, after }: { before: string[]; after: string[] }): DiffOp[] => {
   let prefix = 0;
-  while (prefix < a.length && prefix < b.length && a[prefix] === b[prefix]) prefix++;
+  while (prefix < before.length && prefix < after.length && before[prefix] === after[prefix])
+    prefix++;
   let suffix = 0;
   while (
-    suffix < a.length - prefix &&
-    suffix < b.length - prefix &&
-    a[a.length - 1 - suffix] === b[b.length - 1 - suffix]
+    suffix < before.length - prefix &&
+    suffix < after.length - prefix &&
+    before[before.length - 1 - suffix] === after[after.length - 1 - suffix]
   ) {
     suffix++;
   }
-  const midA = a.slice(prefix, a.length - suffix);
-  const midB = b.slice(prefix, b.length - suffix);
-  const table = Array.from({ length: midA.length + 1 }, () => new Int32Array(midB.length + 1));
-  for (let i = midA.length - 1; i >= 0; i--) {
-    for (let j = midB.length - 1; j >= 0; j--) {
-      if (midA[i] === midB[j]) table[i][j] = table[i + 1][j + 1] + 1;
-      else table[i][j] = Math.max(table[i + 1][j], table[i][j + 1]);
-    }
-  }
-  const kinds: { kind: DiffOp['kind']; line: string }[] = a
-    .slice(0, prefix)
-    .map((line) => ({ kind: ' ', line }));
-  let i = 0;
-  let j = 0;
-  while (i < midA.length || j < midB.length) {
-    if (i < midA.length && j < midB.length && midA[i] === midB[j]) {
-      kinds.push({ kind: ' ', line: midA[i] });
-      i++;
-      j++;
-    } else if (i < midA.length && (j === midB.length || table[i + 1][j] >= table[i][j + 1])) {
-      kinds.push({ kind: '-', line: midA[i] });
-      i++;
-    } else {
-      kinds.push({ kind: '+', line: midB[j] });
-      j++;
-    }
-  }
-  for (const line of a.slice(a.length - suffix)) kinds.push({ kind: ' ', line });
+  const beforeMiddle = before.slice(prefix, before.length - suffix);
+  const afterMiddle = after.slice(prefix, after.length - suffix);
+  const kinds: DiffKind[] = [
+    ...before.slice(0, prefix).map((line): DiffKind => ({ kind: ' ', line })),
+    ...editScript({
+      beforeMiddle,
+      afterMiddle,
+      lcsLengths: lcsLengths({ beforeMiddle, afterMiddle }),
+    }),
+    ...before.slice(before.length - suffix).map((line): DiffKind => ({ kind: ' ', line })),
+  ];
   let lineA = 0;
   let lineB = 0;
   return kinds.map((op) => {
-    const out = { ...op, a: lineA, b: lineB };
+    const numberedOp = { ...op, beforeIndex: lineA, afterIndex: lineB };
     if (op.kind !== '+') lineA++;
     if (op.kind !== '-') lineB++;
-    return out;
+    return numberedOp;
   });
 };
 
-/** Lines as `diff -u` sees them: a final newline ends the last line. */
 const diffLines = (text: string | null): string[] => {
   if (text === null || text === '') return [];
-  const lines = split(text);
+  const lines = splitLines(text);
   if (lines.at(-1) === '') lines.pop();
   return lines;
 };
 
-/**
- * The hunks of a unified diff (3 lines of context, no `---`/`+++` header); `null` is a file
- * that does not exist (created or deleted).
- */
-export const unifiedDiff = (before: string | null, after: string | null): string => {
-  const ops = diffOps(diffLines(before), diffLines(after));
+const DIFF_CONTEXT_LINES = 3;
+
+export const unifiedDiff = ({
+  before,
+  after,
+}: {
+  before: string | null;
+  after: string | null;
+}): string => {
+  const ops = diffOps({ before: diffLines(before), after: diffLines(after) });
   const changed = ops.flatMap((op, index) => {
     if (op.kind === ' ') return [];
     return [index];
@@ -235,35 +311,34 @@ export const unifiedDiff = (before: string | null, after: string | null): string
   const hunks: Range[] = [];
   for (const index of changed) {
     const last = hunks.at(-1);
-    if (last && index - last.end <= 6) last.end = index;
+    if (last && index - last.end <= 2 * DIFF_CONTEXT_LINES) last.end = index;
     else hunks.push({ start: index, end: index });
   }
-  const out: string[] = [];
+  const hunkLines: string[] = [];
   for (const hunk of hunks) {
-    const slice = ops.slice(Math.max(0, hunk.start - 3), Math.min(ops.length, hunk.end + 4));
+    const slice = ops.slice(
+      Math.max(0, hunk.start - DIFF_CONTEXT_LINES),
+      Math.min(ops.length, hunk.end + DIFF_CONTEXT_LINES + 1),
+    );
     const oldCount = slice.filter((op) => op.kind !== '+').length;
     const newCount = slice.filter((op) => op.kind !== '-').length;
-    let oldStart = slice[0].a;
+    let oldStart = slice[0].beforeIndex;
     if (oldCount > 0) oldStart++;
-    let newStart = slice[0].b;
+    let newStart = slice[0].afterIndex;
     if (newCount > 0) newStart++;
-    out.push(`@@ -${oldStart},${oldCount} +${newStart},${newCount} @@`);
-    for (const op of slice) out.push(`${op.kind}${op.line}`);
+    hunkLines.push(`@@ -${oldStart},${oldCount} +${newStart},${newCount} @@`);
+    for (const op of slice) hunkLines.push(`${op.kind}${op.line}`);
   }
-  return out.join('\n');
+  return hunkLines.join('\n');
 };
 
-// ---------- line builders: the exact text each board action writes ----------
-
-/** The owner's words for `Owner: "…"`: one line, double quotes become single quotes. */
-export const quote = (words: string): string =>
+const ownerQuote = (words: string): string =>
   words
     .replace(/\s+/g, ' ')
     .replace(/["“”]/g, "'")
     .trim();
 
-/** `- [ ] …` ↔ `- [x] …` on the first line of a check item. */
-export const tickLine = (first: string, checked: boolean): string => {
+export const tickLine = ({ first, checked }: { first: string; checked: boolean }): string => {
   let box = '[ ]';
   if (checked) box = '[x]';
   return first.replace(/^- \[( |x|X)\]/, `- ${box}`);
@@ -271,7 +346,6 @@ export const tickLine = (first: string, checked: boolean): string => {
 
 export type Option = { id: string; text: string };
 
-/** A question line's text split into the question and its `(a) … (b) …` options (two or more). */
 export const parseOptions = (body: string): { question: string; options: Option[] } => {
   const marks = [...body.matchAll(/(?:^|\s)(?:·\s)?\(([a-e])\)\s/g)];
   if (marks.length < 2) return { question: body, options: [] };
@@ -295,7 +369,6 @@ export const parseOptions = (body: string): { question: string; options: Option[
 const QUESTION_LINE =
   /^- \*\*(Q\d+)\*\*\s*·\s*(open|answered)(?:\s+(\d{4}-\d{2}-\d{2}))?\s*·\s*(.*)$/;
 
-/** The parts of a question's first line. */
 export const questionParts = (
   first: string,
 ): { id: string; state: string; date: string | undefined; body: string } | undefined => {
@@ -304,19 +377,20 @@ export const questionParts = (
   return { id: match[1], state: match[2], date: match[3], body: match[4] };
 };
 
-/**
- * The answered first line: options dropped, `→ (x) <option>. Owner: "<words>"`; empty words
- * quote the letter. Without options the words are the answer. `undefined`: nothing to write.
- */
-export const answerLine = (
-  first: string,
-  date: string,
-  option: string,
-  words: string,
-): string | undefined => {
+export const answerLine = ({
+  first,
+  date,
+  option,
+  words,
+}: {
+  first: string;
+  date: string;
+  option: string;
+  words: string;
+}): string | undefined => {
   const parts = questionParts(first);
   if (!parts) return undefined;
-  const said = quote(words);
+  const said = ownerQuote(words);
   const parsed = parseOptions(parts.body);
   const chosen = parsed.options.find((candidate) => candidate.id === option);
   if (chosen) {
@@ -329,9 +403,8 @@ export const answerLine = (
   return `- **${parts.id}** · answered ${date} · ${parts.body} → Owner: "${said}"`;
 };
 
-/** A comment under a question that stays open. */
-export const commentLine = (date: string, words: string): string =>
-  `  - Owner ${date}: "${quote(words)}"`;
+export const commentLine = ({ date, words }: { date: string; words: string }): string =>
+  `  - Owner ${date}: "${ownerQuote(words)}"`;
 
 const FINDING =
   /^- \*\*(R\d+)\*\*\s*·\s*(open|fixed|declined)\s*·\s*(?:on (\S+)|general)\s*·\s*(.*)$/;

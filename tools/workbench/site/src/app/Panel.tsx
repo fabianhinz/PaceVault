@@ -1,12 +1,12 @@
-import type { ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { Maximize2, Minimize2, X } from 'lucide-react';
-import { Button } from '@pacevault/ui/components/Button.tsx';
-import { Card } from '@pacevault/ui/components/Card.tsx';
-import { Typography } from '@pacevault/ui/components/Typography.tsx';
+import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 
-type PanelProps = {
+interface PanelProps {
   title: string;
   icon?: ReactNode;
   chip?: ReactNode;
@@ -16,20 +16,15 @@ type PanelProps = {
   onExpandedChange: (expanded: boolean) => void;
   onClose: () => void;
   children: ReactNode;
-};
+}
 
-/**
- * The one surface for an item and for the guide: a floating card placed like the app's content
- * column (24 px inset at 1280, over the board's title row). At 1280 it overlays the board at 40 %
- * and expands to the full width; below 1024 px it takes the whole width and Expand is disabled. Expand and Close sit top right at every width.
- */
-export const Panel = (props: PanelProps) => {
+export const Panel: FC<PanelProps> = (props) => {
   const device = useDevice();
-  const expanded = props.expanded && device.isDesktop;
+  const expanded = props.expanded && device.desktop;
   let expandLabel = 'Expand';
   if (expanded) expandLabel = 'Collapse';
   return (
-    <Card
+    <PvCard
       floating
       role="region"
       aria-label={props.title}
@@ -46,30 +41,30 @@ export const Panel = (props: PanelProps) => {
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">
             {props.icon}
-            <Typography variant="h3" as="h2" noWrap zeroMinWidth title={props.title}>
+            <PvTypography variant="h3" as="h2" noWrap zeroMinWidth title={props.title}>
               {props.title}
-            </Typography>
+            </PvTypography>
             {props.chip}
           </div>
           {props.meta !== undefined && (
-            <Typography variant="caption" as="p">
+            <PvTypography variant="caption" as="p">
               {props.meta}
-            </Typography>
+            </PvTypography>
           )}
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          <Button
+          <PvButton
             variant="ghost"
             size="icon"
             aria-label={expandLabel}
             title={expandLabel}
-            disabled={!device.isDesktop}
+            disabled={!device.desktop}
             onClick={() => props.onExpandedChange(!expanded)}
           >
             {expanded && <Minimize2 className="size-4" />}
             {!expanded && <Maximize2 className="size-4" />}
-          </Button>
-          <Button
+          </PvButton>
+          <PvButton
             variant="ghost"
             size="icon"
             aria-label="Close"
@@ -77,10 +72,10 @@ export const Panel = (props: PanelProps) => {
             onClick={props.onClose}
           >
             <X className="size-4" />
-          </Button>
+          </PvButton>
         </div>
       </div>
       <div className="mt-4 flex min-h-0 flex-1 flex-col">{props.children}</div>
-    </Card>
+    </PvCard>
   );
 };

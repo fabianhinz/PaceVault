@@ -1,19 +1,20 @@
-import { DEFAULT_BANNER_LOCALE, isBannerLocale, type BannerLocale } from './tiles.ts';
+import { resolve } from 'node:path';
+import { DEFAULT_BANNER_LOCALE, isBannerLocale, type BannerLocale } from './locales.ts';
 
 /** `run.ts` hands the `--locale` flag to the Playwright config and the capture through this. */
-export const README_LOCALE_ENV = 'README_LOCALE';
+export const BANNER_LOCALE_ENV = 'BANNER_LOCALE';
 
-export const readmeLocale = (): BannerLocale => {
-  const value = process.env[README_LOCALE_ENV];
+export const bannerLocale = (): BannerLocale => {
+  const value = process.env[BANNER_LOCALE_ENV];
   if (value === undefined || value === '') return DEFAULT_BANNER_LOCALE;
-  if (!isBannerLocale(value)) throw new Error(`Unknown README banner locale "${value}"`);
+  if (!isBannerLocale(value)) throw new Error(`Unknown banner locale "${value}"`);
   return value;
 };
 
-/** The web app's dev server (apps/web), captured for the tiles. */
-export const README_PORT = 5175;
-export const README_ORIGIN = `http://localhost:${README_PORT}`;
+export const WEB_APP_PORT = 5175;
+export const WEB_APP_ORIGIN = `http://localhost:${WEB_APP_PORT}`;
 
-/** tools/docs' own dev server, which serves the banner page and the raw tiles in `banner/out/`. */
 export const BANNER_PORT = 5177;
 export const BANNER_ORIGIN = `http://localhost:${BANNER_PORT}`;
+
+export const REPO_ROOT = resolve(import.meta.dirname, '../../..');

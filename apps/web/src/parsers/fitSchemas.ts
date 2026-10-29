@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-const optNum = z.number().optional();
-const dateTime = z.union([z.string(), z.date()]);
+const optNumSchema = z.number().optional();
+const dateTimeSchema = z.union([z.string(), z.date()]);
 // fit-file-parser returns raw integers for unknown/invalid FIT enum values.
 // This helper accepts both string and number, keeping strings and dropping numbers to undefined.
-export const enumStr = z
+export const enumStrSchema = z
   .union([z.string(), z.number()])
   .optional()
   .transform((v) => {
@@ -13,42 +13,44 @@ export const enumStr = z
   });
 
 export const fitFileIdSchema = z.object({
-  serial_number: optNum,
-  time_created: z.union([z.string(), z.date()]),
+  serial_number: optNumSchema,
+  time_created: dateTimeSchema,
 });
 
-export const fitRecordSchema = z.object({
+export type FitFileId = z.infer<typeof fitFileIdSchema>;
+
+export const fitRecordInputSchema = z.object({
   elapsed_time: z.number(),
-  heart_rate: optNum,
-  power: optNum,
-  cadence: optNum,
-  speed: optNum,
-  enhanced_speed: optNum,
-  position_lat: optNum,
-  position_long: optNum,
-  altitude: optNum,
-  enhanced_altitude: optNum,
-  distance: optNum,
-  timer_time: optNum,
+  heart_rate: optNumSchema,
+  power: optNumSchema,
+  cadence: optNumSchema,
+  speed: optNumSchema,
+  enhanced_speed: optNumSchema,
+  position_lat: optNumSchema,
+  position_long: optNumSchema,
+  altitude: optNumSchema,
+  enhanced_altitude: optNumSchema,
+  distance: optNumSchema,
+  timer_time: optNumSchema,
 });
 
-export const fitRecordsSchema = z.array(fitRecordSchema);
+export const fitRecordsSchema = z.array(fitRecordInputSchema);
 
-export type FitRecordInput = z.infer<typeof fitRecordSchema>;
+export type FitRecordInput = z.infer<typeof fitRecordInputSchema>;
 
-export const fitLapSchema = z.object({
-  start_time: dateTime,
-  timestamp: dateTime,
+export const fitLapInputSchema = z.object({
+  start_time: dateTimeSchema,
+  timestamp: dateTimeSchema,
   message_index: z.object({ value: z.number() }).optional(),
   total_elapsed_time: z.number(),
   total_timer_time: z.number(),
-  total_moving_time: optNum,
-  total_distance: optNum,
-  min_heart_rate: optNum,
-  max_heart_rate: optNum,
-  intensity: enumStr,
+  total_moving_time: optNumSchema,
+  total_distance: optNumSchema,
+  min_heart_rate: optNumSchema,
+  max_heart_rate: optNumSchema,
+  intensity: enumStrSchema,
 });
 
-export const fitLapsSchema = z.array(fitLapSchema);
+export const fitLapsSchema = z.array(fitLapInputSchema);
 
-export type FitLapInput = z.infer<typeof fitLapSchema>;
+export type FitLapInput = z.infer<typeof fitLapInputSchema>;

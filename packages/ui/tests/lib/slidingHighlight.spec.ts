@@ -4,7 +4,7 @@ import { highlightRect } from '../../src/lib/slidingHighlight.ts';
 const resolve = (length: { px: number; percent: number }, trackWidth: number) =>
   length.px + (length.percent / 100) * trackWidth;
 
-describe('sliding highlight', () => {
+describe(highlightRect.name, () => {
   it('sits on each 40 px rail item, 4 px padding and 4 px gap apart', () => {
     const rail = { count: 4, padding: 4, gap: 4, itemSize: 40 } as const;
     expect([0, 1, 2, 3].map((i) => highlightRect(rail, i).offset)).toEqual([

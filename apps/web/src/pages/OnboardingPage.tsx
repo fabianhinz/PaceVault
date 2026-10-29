@@ -1,3 +1,4 @@
-import { OnboardingFlow } from '@/features/onboarding/OnboardingFlow.tsx';
+import type { FC } from 'react';
+import { Onboarding } from '@/components/onboarding/index.tsx';
 
-export const OnboardingPage = () => <OnboardingFlow />;
+export const OnboardingPage: FC = () => <Onboarding />;

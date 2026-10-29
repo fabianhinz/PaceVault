@@ -2,69 +2,59 @@ import { v4 } from 'uuid';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
-import type { GPSBounds } from '@pacevault/engine/types.ts';
-import type { RouteElevationStats } from '@pacevault/gpx/routeGeometry.ts';
-import { idbStorage } from '@/lib/idbStorage.ts';
-
-export type StudioRouteColor = 'amber' | 'orange' | 'rose' | 'fuchsia' | 'violet' | 'emerald';
+import { idbStorage } from '@/lib/storage/db.ts';
+import type {
+  PointOfInterestMarker,
+  StudioMarker,
+  StudioRoute,
+  StudioRouteColor,
+} from '@/types.ts';
 
 const REPLACED_ROUTE_COLORS: Record<string, StudioRouteColor> = { sky: 'fuchsia', cyan: 'violet' };
-
-export type StudioMarkerType = 'track_modifier' | 'point_of_interest';
-
-interface StudioMarkerBase {
-  id: string;
-  distanceM: number;
-}
-
-interface TrackModifierMarker extends StudioMarkerBase {
-  type: 'track_modifier';
-}
-
-interface PointOfInterestMarker extends StudioMarkerBase {
-  type: 'point_of_interest';
-  label: string;
-  description?: string;
-}
-
-export type StudioMarker = TrackModifierMarker | PointOfInterestMarker;
 
 type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
 
 type StudioMarkerInput = DistributiveOmit<StudioMarker, 'id'>;
 type StudioPoiFields = Pick<PointOfInterestMarker, 'distanceM' | 'label' | 'description'>;
 
-export interface StudioRoute {
-  id: string;
-  name: string;
-  sourceFileName: string;
-  importedAt: number;
-  color: StudioRouteColor;
-  encodedPolylines: string[];
-  bounds: GPSBounds;
-  distance: number;
-  elevation?: RouteElevationStats;
-  markers: StudioMarker[];
-}
-
 interface StudioState {
   routes: StudioRoute[];
   importStudioRoute: (route: Omit<StudioRoute, 'id' | 'importedAt' | 'markers'>) => string;
-  renameStudioRoute: (id: string, name: string) => void;
-  setStudioRouteColor: (id: string, color: StudioRouteColor) => void;
+  renameStudioRoute: ({ id, name }: { id: string; name: string }) => void;
+  setStudioRouteColor: ({ id, color }: { id: string; color: StudioRouteColor }) => void;
   deleteStudioRoute: (id: string) => void;
-  addStudioMarker: (routeId: string, marker: StudioMarkerInput) => string;
-  moveStudioMarker: (routeId: string, markerId: string, distanceM: number) => void;
-  updateStudioPoi: (routeId: string, markerId: string, fields: StudioPoiFields) => void;
-  deleteStudioMarker: (routeId: string, markerId: string) => void;
+  addStudioMarker: ({ routeId, marker }: { routeId: string; marker: StudioMarkerInput }) => string;
+  moveStudioMarker: ({
+    routeId,
+    markerId,
+    distanceM,
+  }: {
+    routeId: string;
+    markerId: string;
+    distanceM: number;
+  }) => void;
+  updateStudioPoi: ({
+    routeId,
+    markerId,
+    fields,
+  }: {
+    routeId: string;
+    markerId: string;
+    fields: StudioPoiFields;
+  }) => void;
+  deleteStudioMarker: ({ routeId, markerId }: { routeId: string; markerId: string }) => void;
   clearAll: () => void;
 }
+
+export const INITIAL_STUDIO_STORE_STATE: Pick<StudioState, 'routes'> = {
+  routes: [],
+};
 
 export const useStudioStore = create<StudioState>()(
   immer(
     persist(
       (set) => ({
-        routes: [],
+        ...INITIAL_STUDIO_STORE_STATE,
         importStudioRoute: (route) => {
           const id = v4();
           set((draft) => {
@@ -72,14 +62,14 @@ export const useStudioStore = create<StudioState>()(
           });
           return id;
         },
-        renameStudioRoute: (id, name) =>
+        renameStudioRoute: ({ id, name }) =>
           set((draft) => {
             const target = draft.routes.find((r) => r.id === id);
             if (target) {
               target.name = name;
             }
           }),
-        setStudioRouteColor: (id, color) =>
+        setStudioRouteColor: ({ id, color }) =>
           set((draft) => {
             const target = draft.routes.find((r) => r.id === id);
             if (target) {
@@ -90,7 +80,7 @@ export const useStudioStore = create<StudioState>()(
           set((draft) => {
             draft.routes = draft.routes.filter((r) => r.id !== id);
           }),
-        addStudioMarker: (routeId, marker) => {
+        addStudioMarker: ({ routeId, marker }) => {
           const id = v4();
           set((draft) => {
             const route = draft.routes.find((r) => r.id === routeId);
@@ -100,7 +90,7 @@ export const useStudioStore = create<StudioState>()(
           });
           return id;
         },
-        moveStudioMarker: (routeId, markerId, distanceM) =>
+        moveStudioMarker: ({ routeId, markerId, distanceM }) =>
           set((draft) => {
             const route = draft.routes.find((r) => r.id === routeId);
             const marker = route?.markers.find((mk) => mk.id === markerId);
@@ -108,7 +98,7 @@ export const useStudioStore = create<StudioState>()(
               marker.distanceM = distanceM;
             }
           }),
-        updateStudioPoi: (routeId, markerId, fields) =>
+        updateStudioPoi: ({ routeId, markerId, fields }) =>
           set((draft) => {
             const route = draft.routes.find((r) => r.id === routeId);
             const marker = route?.markers.find((mk) => mk.id === markerId);
@@ -118,14 +108,14 @@ export const useStudioStore = create<StudioState>()(
               marker.description = fields.description;
             }
           }),
-        deleteStudioMarker: (routeId, markerId) =>
+        deleteStudioMarker: ({ routeId, markerId }) =>
           set((draft) => {
             const route = draft.routes.find((r) => r.id === routeId);
             if (route) {
               route.markers = route.markers.filter((mk) => mk.id !== markerId);
             }
           }),
-        clearAll: () => set({ routes: [] }),
+        clearAll: () => set(INITIAL_STUDIO_STORE_STATE),
       }),
       {
         name: 'store-studio',

@@ -10,8 +10,10 @@ test.describe('Session browsing', () => {
   });
 
   test('session list shows uploaded sessions', async ({ page }) => {
-    await page.getByRole('link', { name: /sessions/i }).click();
+    const sessionsTab = page.getByRole('link', { name: /sessions/i });
+    await sessionsTab.click();
     await page.waitForURL('/sessions');
+    await expect(sessionsTab).toHaveAttribute('aria-current', 'page');
 
     const sessionLinks = page.locator('[data-testid="session-item"]');
     await expect(sessionLinks).toHaveCount(2, { timeout: 10_000 });
@@ -66,7 +68,7 @@ test.describe('Session browsing', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await page.getByTestId('laps-pill').click();
-    await page.getByRole('radio', { name: /^off/i }).click();
+    await page.getByRole('radio', { name: 'Off', exact: true }).click();
     await page.keyboard.press('Escape');
     await expect(lapsToggle).toHaveCount(0);
     await expect(lapsRow.locator('[aria-disabled="true"]')).toContainText(/laps off/i);
@@ -83,7 +85,7 @@ test.describe('Session browsing', () => {
     const pill = page.getByTestId('color-by-pill');
     await expect(pill).toHaveText(/color by/i, { timeout: 10_000 });
     await pill.click();
-    await page.getByRole('radio', { name: /heart rate/i }).click();
+    await page.getByRole('radio', { name: 'Heart rate', exact: true }).click();
     await expect(pill).toHaveText(/hr zones/i);
     await expect(page.locator('path.recharts-line-curve[stroke^="url(#zone-"]')).toHaveCount(1);
 
@@ -145,7 +147,8 @@ test.describe('Session browsing', () => {
     await page.getByTestId('lap-strip-bar').nth(1).click();
     await expect(stepper.getByTestId('lap-stepper-name')).toHaveText('Split 2');
     await expect(page.getByTestId('lap-strip-selected')).toBeAttached();
-    await page.getByTestId('lap-stepper-clear').click();
+    await page.keyboard.press('Escape');
+    await expect(stepper).toHaveCount(0);
     await expect(lapsPill).toBeVisible();
 
     await lapsPill.click();

@@ -15,7 +15,8 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals"],
+    "paths": { "@scripts/*": ["./scripts/*"], "@site/*": ["./site/src/*"] }
   },
   "include": ["scripts", "tests", "vitest.config.ts", "playwright.review.config.ts"]
 }

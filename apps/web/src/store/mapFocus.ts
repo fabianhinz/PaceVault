@@ -21,9 +21,28 @@ interface MapFocusState {
   requestMapRefitAfterDelete: () => void;
 }
 
+export const INITIAL_MAP_FOCUS_STORE_STATE: Pick<
+  MapFocusState,
+  | 'openedSessionId'
+  | 'hoveredSessionId'
+  | 'focusedTripSessionIds'
+  | 'hoveredStudioRouteId'
+  | 'hoveredPoint'
+  | 'pickCircle'
+  | 'mapRefitRequest'
+> = {
+  openedSessionId: null,
+  hoveredSessionId: null,
+  focusedTripSessionIds: [],
+  hoveredStudioRouteId: null,
+  hoveredPoint: null,
+  pickCircle: null,
+  mapRefitRequest: 0,
+};
+
 export const useMapFocusStore = create<MapFocusState>()(
   immer((set, get) => ({
-    openedSessionId: null,
+    ...INITIAL_MAP_FOCUS_STORE_STATE,
     setOpenedSession: (id) => {
       if (id === null) {
         useMapControlsStore.getState().resetSessionControlsOnSessionClose();
@@ -33,19 +52,13 @@ export const useMapFocusStore = create<MapFocusState>()(
         set({ openedSessionId: id });
       }
     },
-    hoveredSessionId: null,
     setHoveredSession: (id) => set({ hoveredSessionId: id }),
-    focusedTripSessionIds: [],
     setFocusedTripSessions: (ids) => set({ focusedTripSessionIds: ids }),
-    hoveredStudioRouteId: null,
     setHoveredStudioRoute: (id) => set({ hoveredStudioRouteId: id }),
-    hoveredPoint: null,
     setHoveredPoint: (point) => set({ hoveredPoint: point }),
     clearHoveredPoint: () => set({ hoveredPoint: null }),
-    pickCircle: null,
     setPickCircle: (center) => set({ pickCircle: center }),
     clearPickCircle: () => set({ pickCircle: null }),
-    mapRefitRequest: 0,
     requestMapRefitAfterDelete: () => set({ mapRefitRequest: get().mapRefitRequest + 1 }),
   })),
 );

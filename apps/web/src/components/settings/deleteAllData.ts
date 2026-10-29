@@ -1,0 +1,28 @@
+import type { QueryClient } from '@tanstack/react-query';
+import { useSessionsStore } from '@/store/sessions.ts';
+import { useTripsStore } from '@/store/trips.ts';
+import { useStudioStore } from '@/store/studio.ts';
+import { useUserStore } from '@/store/user.ts';
+import { useCoachPlanStore } from '@/store/coachPlan.ts';
+import { useLayoutStore } from '@/store/layout.ts';
+import { useFiltersStore } from '@/store/filters.ts';
+import { useIntervalsStore } from '@/store/intervals.ts';
+import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
+import { resetPersonalBests } from '@/queries/records/usePersonalBests.ts';
+import { resetStudioRoutePoints } from '@/queries/studio/useStudioRoutePoints.ts';
+import { resetSessionGps } from '@/queries/sessions/useSessionGps.ts';
+
+export const clearAllAppState = (queryClient: QueryClient): void => {
+  useSessionsStore.getState().clearAll();
+  useTripsStore.getState().clearAll();
+  useStudioStore.getState().clearAll();
+  useUserStore.getState().resetProfile();
+  useCoachPlanStore.getState().clearPlan();
+  void resetPersonalBests(queryClient);
+  resetStudioRoutePoints(queryClient);
+  resetSessionGps(queryClient);
+  useIntervalsStore.getState().disconnectIntervals();
+  useLayoutStore.setState({ onboardingComplete: false, demoMode: false });
+  useFiltersStore.getState().resetFilters();
+  useMapPreferencesStore.getState().resetMapPreferences();
+};

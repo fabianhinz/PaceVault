@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
-import { getDB } from '@/lib/db';
+import { getDB } from '@/lib/storage/db.ts';
 
 const rehydrateFrom = async (state: unknown) => {
   const db = await getDB();
@@ -11,9 +11,9 @@ const rehydrateFrom = async (state: unknown) => {
 
 describe('useMapPreferencesStore', () => {
   it('keeps color by and laps per sport', () => {
-    useMapPreferencesStore.getState().setSessionColorMode('running', 'hr');
-    useMapPreferencesStore.getState().setSessionLapSource('running', 'device');
-    useMapPreferencesStore.getState().setSessionSplitDistance('cycling', 5000);
+    useMapPreferencesStore.getState().setSessionColorMode({ sport: 'running', mode: 'hr' });
+    useMapPreferencesStore.getState().setSessionLapSource({ sport: 'running', source: 'device' });
+    useMapPreferencesStore.getState().setSessionSplitDistance({ sport: 'cycling', metres: 5000 });
 
     expect(useMapPreferencesStore.getState().bySport).toEqual({
       running: { colorMode: 'hr', lapSource: 'device', splitDistance: null },

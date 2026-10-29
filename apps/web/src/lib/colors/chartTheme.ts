@@ -1,0 +1,108 @@
+import { fontSizes, tokens } from '@pacevault/ui/lib/tokens.ts';
+
+export const formatChartTime = (minutes: number): string => {
+  const totalSec = Math.round(minutes * 60);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+};
+
+const NICE_STEPS = [1, 2, 5, 10];
+const DEFAULT_TICK_COUNT = 5;
+const PADDING_RATIO = 0.1;
+const FLAT_PADDING_RATIO = 0.05;
+
+export const niceStep = (rough: number): number => {
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const normalized = rough / magnitude;
+  const step = NICE_STEPS.find((candidate) => candidate >= normalized) ?? 10;
+  return step * magnitude;
+};
+
+const roundToStep = (value: number): number => Number(value.toPrecision(12));
+
+const paddedRange = (present: number[]): { low: number; high: number } => {
+  const min = Math.min(...present);
+  const max = Math.max(...present);
+  let padding = (max - min) * PADDING_RATIO;
+  if (padding === 0) {
+    padding = Math.max(Math.abs(max) * FLAT_PADDING_RATIO, 1);
+  }
+  return { low: min - padding, high: max + padding };
+};
+
+const axisTicks = ({
+  start,
+  end,
+  step,
+}: {
+  start: number;
+  end: number;
+  step: number;
+}): number[] => {
+  const ticks: number[] = [];
+  for (let tick = start; tick <= end + step / 2; tick += step) {
+    ticks.push(roundToStep(tick));
+  }
+  return ticks;
+};
+
+export const niceAxis = (
+  values: Array<number | null | undefined>,
+  { tickCount = DEFAULT_TICK_COUNT }: { tickCount?: number } = {},
+): { domain: [number, number]; ticks: number[] } | undefined => {
+  const present = values.filter((v): v is number => v !== null && v !== undefined);
+  if (present.length === 0) return undefined;
+  const range = paddedRange(present);
+  const step = niceStep((range.high - range.low) / Math.max(1, tickCount - 1));
+  const start = roundToStep(Math.floor(range.low / step) * step);
+  const end = roundToStep(Math.ceil(range.high / step) * step);
+  return { domain: [start, end], ticks: axisTicks({ start, end, step }) };
+};
+
+export const formatTick = (v: number, { unit }: { unit?: string } = {}): string => {
+  const rounded = Math.round(v * 10) / 10;
+  const label = `${rounded}`;
+  if (unit) {
+    return `${label} ${unit}`;
+  }
+  return label;
+};
+
+export interface ChartXAxis<K extends string> {
+  key: K;
+  syncId: string;
+  type: 'number' | 'category';
+  tickFormatter: (v: number) => string;
+}
+
+export const sessionTimeXAxis: ChartXAxis<'time'> = {
+  key: 'time',
+  syncId: 'session-detail',
+  type: 'category',
+  tickFormatter: formatChartTime,
+};
+
+export const routeDistanceXAxis: ChartXAxis<'dist'> = {
+  key: 'dist',
+  syncId: 'studio-detail',
+  type: 'number',
+  tickFormatter: (v: number) => formatTick(v, { unit: 'km' }),
+};
+
+export const chartTheme = {
+  tick: { fill: tokens.textTertiary, fontSize: fontSizes['2xs'] },
+  compactYAxisWidth: 36,
+  axisLine: { stroke: tokens.border },
+} as const;
+
+const MIN_Y_AXIS_WIDTH = 40;
+const TICK_CHAR_WIDTH = 6.6;
+const TICK_GAP = 8;
+
+export const yAxisWidthFor = (labels: readonly string[]): number => {
+  const longest = Math.max(0, ...labels.map((label) => label.length));
+  return Math.max(MIN_Y_AXIS_WIDTH, Math.ceil(longest * TICK_CHAR_WIDTH + TICK_GAP));
+};

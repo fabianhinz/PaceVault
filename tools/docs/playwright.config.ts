@@ -3,13 +3,18 @@ import { defineConfig, devices } from '@playwright/test';
 import {
   BANNER_ORIGIN,
   BANNER_PORT,
-  README_ORIGIN,
-  README_PORT,
-  readmeLocale,
+  WEB_APP_ORIGIN,
+  WEB_APP_PORT,
+  bannerLocale,
 } from './banner/env.ts';
+import type { BannerLocale } from './banner/locales.ts';
 
-const webApp = resolve(import.meta.dirname, '../../apps/web');
-const BROWSER_LOCALES = { de: 'de-DE', en: 'en-US' } as const;
+const CAPTURE_TIMEOUT_MS = 180_000;
+const WEB_APP_DIR = resolve(import.meta.dirname, '../../apps/web');
+const BROWSER_LOCALE_BY_BANNER_LOCALE = { de: 'de-DE', en: 'en-US' } satisfies Record<
+  BannerLocale,
+  string
+>;
 
 export default defineConfig({
   testDir: './banner',
@@ -18,12 +23,12 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: 'list',
-  timeout: 180_000,
+  timeout: CAPTURE_TIMEOUT_MS,
 
   use: {
     ...devices['Desktop Chrome'],
-    baseURL: README_ORIGIN,
-    locale: BROWSER_LOCALES[readmeLocale()],
+    baseURL: WEB_APP_ORIGIN,
+    locale: BROWSER_LOCALE_BY_BANNER_LOCALE[bannerLocale()],
     timezoneId: 'Europe/Berlin',
     contextOptions: { reducedMotion: 'reduce' },
     deviceScaleFactor: 2,
@@ -37,9 +42,9 @@ export default defineConfig({
 
   webServer: [
     {
-      command: `vp dev --port ${README_PORT} --strictPort`,
-      cwd: webApp,
-      url: README_ORIGIN,
+      command: `vp dev --port ${WEB_APP_PORT} --strictPort`,
+      cwd: WEB_APP_DIR,
+      url: WEB_APP_ORIGIN,
       reuseExistingServer: false,
     },
     {

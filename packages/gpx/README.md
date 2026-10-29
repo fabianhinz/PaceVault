@@ -1,6 +1,6 @@
 # @pacevault/gpx
 
-GPX for PaceVault: parse a GPX route (`parseGpx`), build a GPX file from a session or route (`buildGpx`), cut a route into segments (`routeCut`), and derive its geometry and elevation profile (`routeGeometry`, `routeProfile`, `simplifyGpxPoints`). Pure TypeScript on top of `@pacevault/engine`.
+GPX for PaceVault: parse a GPX route (`parseGpx`), build a GPX file from a session or route (`buildGpx`), cut a route into segments (`routeCut`), and derive its geometry and elevation profile (`routeGeometry`, `routeProfile`). Pure TypeScript on top of `@pacevault/engine`.
 
 ## Use
 

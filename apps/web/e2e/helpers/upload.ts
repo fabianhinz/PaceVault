@@ -1,5 +1,5 @@
 import { type Locator, type Page, expect } from '@playwright/test';
-import { UPLOAD_EXTENSIONS } from '../../src/lib/archive';
+import { UPLOAD_EXTENSIONS } from '../../src/components/sessions/archive';
 
 export const closeImportSummary = async (page: Page): Promise<string> => {
   const summary = page.getByTestId('import-summary');

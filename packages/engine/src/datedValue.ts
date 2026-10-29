@@ -1,9 +1,12 @@
-export interface DatedValue<T> {
-  date: number;
-  value: T;
-}
+import type { DatedValue } from './types.ts';
 
-export const valueAt = <T>(history: DatedValue<T>[], date: number): T | undefined => {
+export const valueAt = <T>({
+  history,
+  date,
+}: {
+  history: DatedValue<T>[];
+  date: number;
+}): T | undefined => {
   let latest: DatedValue<T> | undefined = undefined;
   let earliest: DatedValue<T> | undefined = undefined;
   for (const entry of history) {
@@ -15,10 +18,13 @@ export const valueAt = <T>(history: DatedValue<T>[], date: number): T | undefine
   return earliest?.value;
 };
 
-export const upsertDatedValue = <T>(
-  history: DatedValue<T>[],
-  entry: DatedValue<T>,
-): DatedValue<T>[] =>
+export const upsertDatedValue = <T>({
+  history,
+  entry,
+}: {
+  history: DatedValue<T>[];
+  entry: DatedValue<T>;
+}): DatedValue<T>[] =>
   [...history.filter((existing) => existing.date !== entry.date), entry].sort(
     (a, b) => a.date - b.date,
   );

@@ -26,3 +26,15 @@ export const triggerCrash = (target: CrashTarget) => {
 export const clearCrash = () => {
   crashTarget = null;
 };
+
+const BOOT_CRASH_FLAG = 'pvDebug:crashBoot';
+
+export const requestBootCrash = () => {
+  sessionStorage.setItem(BOOT_CRASH_FLAG, '1');
+};
+
+export const throwIfBootCrashRequested = () => {
+  if (sessionStorage.getItem(BOOT_CRASH_FLAG) === null) return;
+  sessionStorage.removeItem(BOOT_CRASH_FLAG);
+  throw new Error('pvDebug: simulated boot failure');
+};

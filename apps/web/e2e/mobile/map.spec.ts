@@ -1,6 +1,6 @@
 import { test, expect, type Locator, type Page } from '../helpers/test';
-import { FINE_POINTER_QUERY } from '@pacevault/ui/hooks/useDevice.ts';
-import { DB_NAME } from '../../src/lib/db.ts';
+import { FINE_POINTER_QUERY } from '@pacevault/ui/lib/mediaQueries.ts';
+import { DB_NAME } from '../../src/lib/storage/db.ts';
 import {
   seedOnboardingComplete,
   seedWithSessions,

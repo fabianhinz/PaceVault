@@ -7,6 +7,8 @@ export const SHEET_MOMENTUM = {
   bounceDamping: 40,
 };
 
+export const SHEET_DRAG_ELASTIC = 0.08;
+
 const DISMISS_OFFSET_RATIO = 0.3;
 const DISMISS_VELOCITY = 500;
 

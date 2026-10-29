@@ -1,80 +1,65 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseArgs } from 'node:util';
 import ts from 'typescript';
-import { compareFiles, gitChanges, type FileChange, type FilesComparison } from './changedFiles.ts';
-import { readTechPaths } from './frontmatter.ts';
-
-/**
- * The actual interfaces of an item at review time (`vp run workbench:deps -- <item>`, or alone
- * `vp run workbench:interfaces -- <item>`). Takes the TypeScript files git says changed since the
- * base (R23: the change list of `files.json`, planned and not planned against the `### New` and
- * `### Changed` paths of `tools/workbench/backlog/<item>/tech.md`, deleted files left out) and
- * lists every export with its type as the TypeScript checker prints it (values as
- * `export const name: <type>`, components with their props spelled out, types and interfaces as
- * declared). Writes `…/backlog/<item>/review/interfaces.md`, one ```ts block per file (unplanned
- * ones marked), the shape of tech.md's `## Interfaces` (the planned record), and the planned
- * TypeScript paths nobody changed under `## Missing`. Exit 1 only on a script or git error.
- */
+import { compareFiles, gitChanges } from './changedFiles.ts';
+import type { FileChange, FilesComparison } from './reviewArtifactsContract.ts';
+import { BACKLOG_DIR, REPO_ROOT, baseRevisionOverride } from './paths.ts';
+import { itemTechPaths } from './itemCli.ts';
 
 const TS_FILE = /\.tsx?$/;
 
-/** Planned paths in tech.md order: the TypeScript files that exist and the paths that do not. */
-export type InterfaceFiles = { files: string[]; missing: string[] };
+type InterfaceFiles = { files: string[]; missing: string[] };
 
-/** A changed TypeScript file and whether a planned path covers it. */
-export type ChangedInterfaceFile = { path: string; planned: boolean };
+type ChangedInterfaceFile = { path: string; planned: boolean };
 
-/** The files `interfaces.md` lists (R23): the changed TypeScript files and the planned ones nobody changed. */
-export type ChangedInterfaceFiles = { files: ChangedInterfaceFile[]; missing: string[] };
+type ChangedInterfaceFiles = { files: ChangedInterfaceFile[]; missing: string[] };
 
 const isTypeScript = (path: string) => TS_FILE.test(path) && !path.endsWith('.d.ts');
 
-/**
- * The TypeScript files of the git change list (`files.json`'s comparison, R23): changed and
- * planned first, then changed and not planned, each in path order, deleted files left out; the
- * planned TypeScript paths (files or folders) no change touched are missing.
- */
 export const changedInterfaceFiles = (comparison: FilesComparison): ChangedInterfaceFiles => {
-  const pick = (changes: FileChange[], planned: boolean) =>
+  const typeScriptChanges = ({ changes, planned }: { changes: FileChange[]; planned: boolean }) =>
     changes
       .filter((change) => change.status !== 'deleted' && isTypeScript(change.path))
       .map((change) => ({ path: change.path, planned }));
   return {
-    files: [...pick(comparison.planned, true), ...pick(comparison.notPlanned, false)],
+    files: [
+      ...typeScriptChanges({ changes: comparison.planned, planned: true }),
+      ...typeScriptChanges({ changes: comparison.notPlanned, planned: false }),
+    ],
     missing: comparison.untouched.filter((path) => isTypeScript(path) || path.endsWith('/')),
   };
 };
 
-const walk = (root: string, dir: string): string[] =>
+const typeScriptFilesBelow = ({ root, dir }: { root: string; dir: string }): string[] =>
   readdirSync(join(root, dir), { withFileTypes: true })
     .filter((entry) => entry.name !== 'node_modules')
     .sort((a, b) => a.name.localeCompare(b.name))
     .flatMap((entry) => {
       const path = join(dir, entry.name);
-      if (entry.isDirectory()) return walk(root, path);
-      if (TS_FILE.test(entry.name) && !entry.name.endsWith('.d.ts')) return [path];
+      if (entry.isDirectory()) return typeScriptFilesBelow({ root, dir: path });
+      if (isTypeScript(entry.name)) return [path];
       return [];
     });
 
-/**
- * The TypeScript files behind the planned paths (repo-relative, in the given order, each once):
- * a `.ts`/`.tsx` path as is, a folder as its TypeScript files; other files are skipped and a path
- * that does not exist is missing.
- */
-export const interfaceFiles = (root: string, paths: string[]): InterfaceFiles => {
+export const interfaceFiles = ({
+  root,
+  paths,
+}: {
+  root: string;
+  paths: string[];
+}): InterfaceFiles => {
   const files: string[] = [];
   const missing: string[] = [];
-  for (const raw of paths) {
-    const path = raw.replace(/\/+$/, '');
+  for (const plannedPath of paths) {
+    const path = plannedPath.replace(/\/+$/, '');
     const absolute = join(root, path);
     if (!existsSync(absolute)) {
-      if (TS_FILE.test(path) || raw.endsWith('/')) missing.push(raw);
+      if (TS_FILE.test(path) || plannedPath.endsWith('/')) missing.push(plannedPath);
       continue;
     }
     let found: string[] = [];
-    if (statSync(absolute).isDirectory()) found = walk(root, path);
+    if (statSync(absolute).isDirectory()) found = typeScriptFilesBelow({ root, dir: path });
     else if (TS_FILE.test(path)) found = [path];
     for (const file of found) {
       if (!files.includes(file)) files.push(file);
@@ -95,8 +80,7 @@ const DEFAULT_OPTIONS: ts.CompilerOptions = {
   skipLibCheck: true,
 };
 
-/** The nearest tsconfig.json above `file`, not above `root`; `undefined` when there is none. */
-const nearestConfig = (root: string, file: string): string | undefined => {
+const nearestConfig = ({ root, file }: { root: string; file: string }): string | undefined => {
   let dir = dirname(join(root, file));
   const top = resolve(root);
   while (dir.startsWith(top)) {
@@ -114,12 +98,12 @@ type Project = { options: ts.CompilerOptions; rootNames: string[] };
 /** Compiler options and root files of a tsconfig.json (its own files, so ambient types load). */
 const readProject = (config: string | undefined): Project => {
   if (config === undefined) return { options: DEFAULT_OPTIONS, rootNames: [] };
-  const read = ts.readConfigFile(config, (path) => ts.sys.readFile(path));
-  if (read.error !== undefined) return { options: DEFAULT_OPTIONS, rootNames: [] };
-  const parsed = ts.parseJsonConfigFileContent(read.config, ts.sys, dirname(config));
+  const configRead = ts.readConfigFile(config, (path) => ts.sys.readFile(path));
+  if (configRead.error !== undefined) return { options: DEFAULT_OPTIONS, rootNames: [] };
+  const parsedConfig = ts.parseJsonConfigFileContent(configRead.config, ts.sys, dirname(config));
   return {
-    options: { ...parsed.options, noEmit: true },
-    rootNames: parsed.fileNames.filter((name) => name.endsWith('.d.ts')),
+    options: { ...parsedConfig.options, noEmit: true },
+    rootNames: parsedConfig.fileNames.filter((name) => name.endsWith('.d.ts')),
   };
 };
 
@@ -143,14 +127,14 @@ const reindent = (text: string): string =>
     .join('\n');
 
 /** `import("/abs/repo/x").Name` → `import("x").Name`: no machine paths in the output. */
-const relativeImports = (text: string, root: string): string =>
+const relativeImports = ({ text, root }: { text: string; root: string }): string =>
   text.replaceAll(/import\("([^"]+)"\)/g, (whole, path: string) => {
     if (!path.startsWith('/')) return whole;
     return `import("${relative(root, path)}")`;
   });
 
 /** Longer one-line types break their outermost object literals over lines, as Oxfmt would. */
-const LINE = 100;
+const MAX_PRINT_WIDTH = 100;
 
 const multiline = (node: ts.Node): void => {
   if (ts.isTypeLiteralNode(node)) {
@@ -160,32 +144,44 @@ const multiline = (node: ts.Node): void => {
   ts.forEachChild(node, multiline);
 };
 
-const printNode = (node: ts.Node, file: ts.SourceFile): string => {
+const printNode = ({ node, file }: { node: ts.Node; file: ts.SourceFile }): string => {
   const line = printer.printNode(ts.EmitHint.Unspecified, node, file);
-  if (line.length <= LINE) return line;
+  if (line.length <= MAX_PRINT_WIDTH) return line;
   multiline(node);
   return reindent(printer.printNode(ts.EmitHint.Unspecified, node, file));
 };
 
 type Printing = { checker: ts.TypeChecker; file: ts.SourceFile };
 
-/** A local interface or type alias of the file, by name. */
-const localDeclaration = (
-  file: ts.SourceFile,
-  name: string,
-): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined =>
+const localDeclaration = ({
+  file,
+  name,
+}: {
+  file: ts.SourceFile;
+  name: string;
+}): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined =>
   file.statements.find(
     (statement): statement is ts.InterfaceDeclaration | ts.TypeAliasDeclaration =>
       (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) &&
       statement.name.text === name,
   );
 
-/**
- * A component's props as written in its file: an inline object type, or the body of the local
- * interface or type alias it names (`Base & { … }` for `interface P extends Base`); `undefined`
- * when the props come from elsewhere (the checker prints them then).
- */
-const propsText = (context: Printing, parameter: ts.Symbol): string | undefined => {
+const localPropsText = ({
+  local,
+  file,
+}: {
+  local: ts.InterfaceDeclaration | ts.TypeAliasDeclaration;
+  file: ts.SourceFile;
+}): string => {
+  if (ts.isTypeAliasDeclaration(local)) return local.type.getText(file);
+  const body = file.text.slice(local.members.pos - 1, local.end);
+  const bases = (local.heritageClauses ?? []).flatMap((clause) =>
+    clause.types.map((base) => base.getText(file)),
+  );
+  return [...bases, body].join(' & ');
+};
+
+const propsText = (parameter: ts.Symbol, context: Printing): string | undefined => {
   const declaration = parameter.valueDeclaration;
   if (declaration === undefined || declaration.getSourceFile() !== context.file) return undefined;
   if (!ts.isParameter(declaration) || declaration.type === undefined) return undefined;
@@ -193,29 +189,29 @@ const propsText = (context: Printing, parameter: ts.Symbol): string | undefined 
   if (ts.isTypeLiteralNode(typeNode)) return typeNode.getText(context.file);
   if (!ts.isTypeReferenceNode(typeNode) || !ts.isIdentifier(typeNode.typeName)) return undefined;
   if (typeNode.typeArguments !== undefined) return undefined;
-  const local = localDeclaration(context.file, typeNode.typeName.text);
-  if (local === undefined) return undefined;
-  if (ts.isTypeAliasDeclaration(local)) return local.type.getText(context.file);
-  const body = context.file.text.slice(local.members.pos - 1, local.end);
-  const bases = (local.heritageClauses ?? []).flatMap((clause) =>
-    clause.types.map((base) => base.getText(context.file)),
-  );
-  return [...bases, body].join(' & ');
+  const localTypeDeclaration = localDeclaration({
+    file: context.file,
+    name: typeNode.typeName.text,
+  });
+  if (localTypeDeclaration === undefined) return undefined;
+  return localPropsText({ local: localTypeDeclaration, file: context.file });
 };
 
-/** A type as a printed type node; a component's props (one call signature, one parameter in a .tsx file) as written in its file. */
-const printType = (context: Printing, type: ts.Type, at: ts.Node, component: boolean): string => {
+const printType = (
+  { type, at, component }: { type: ts.Type; at: ts.Node; component: boolean },
+  context: Printing,
+): string => {
   const checker = context.checker;
   const signatures = type.getCallSignatures();
   if (signatures.length === 1 && type.getProperties().length === 0) {
     const signature = signatures[0];
     const parameters = signature.getParameters();
     if (component && parameters.length === 1) {
-      const props = propsText(context, parameters[0]);
+      const props = propsText(parameters[0], context);
       const returns = checker.typeToTypeNode(signature.getReturnType(), at, BUILDER_FLAGS);
       if (props !== undefined && returns !== undefined) {
         const name = parameters[0].getName();
-        return `(${name}: ${props}) => ${printNode(returns, context.file)}`;
+        return `(${name}: ${props}) => ${printNode({ node: returns, file: context.file })}`;
       }
     }
     const declaration = checker.signatureToSignatureDeclaration(
@@ -224,11 +220,11 @@ const printType = (context: Printing, type: ts.Type, at: ts.Node, component: boo
       at,
       BUILDER_FLAGS,
     );
-    if (declaration !== undefined) return printNode(declaration, context.file);
+    if (declaration !== undefined) return printNode({ node: declaration, file: context.file });
   }
   const node = checker.typeToTypeNode(type, at, BUILDER_FLAGS);
   if (node === undefined) return checker.typeToString(type, at, ts.TypeFormatFlags.NoTruncation);
-  return printNode(node, context.file);
+  return printNode({ node, file: context.file });
 };
 
 const isExported = (node: ts.Node): boolean => {
@@ -237,35 +233,43 @@ const isExported = (node: ts.Node): boolean => {
   return modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
 };
 
-const isComponentName = (context: Printing, name: string): boolean =>
+const isComponentName = (name: string, context: Printing): boolean =>
   context.file.fileName.endsWith('.tsx') && /^[A-Z]/.test(name);
 
-/** `export const name: <type>;` for a value symbol declared at `at`. */
-const valueLine = (context: Printing, keyword: string, name: string, at: ts.Node): string => {
+const valueLine = (
+  { keyword, name, at }: { keyword: string; name: string; at: ts.Node },
+  context: Printing,
+): string => {
   const symbol = context.checker.getSymbolAtLocation(at);
   if (symbol === undefined) return `export ${keyword} ${name}: unknown;`;
   const type = context.checker.getTypeOfSymbolAtLocation(symbol, at);
-  const printed = printType(context, type, at, isComponentName(context, name));
+  const printed = printType({ type, at, component: isComponentName(name, context) }, context);
   return `export ${keyword} ${name}: ${printed};`;
 };
 
-/** The printed exports of one statement, in source order. */
-const statementExports = (context: Printing, statement: ts.Statement): string[] => {
+const statementExports = (statement: ts.Statement, context: Printing): string[] => {
   if (ts.isExportDeclaration(statement)) return [statement.getText(context.file)];
   if (ts.isExportAssignment(statement)) {
     const type = context.checker.getTypeAtLocation(statement.expression);
-    return [`export default ${printType(context, type, statement.expression, false)};`];
+    return [
+      `export default ${printType({ type, at: statement.expression, component: false }, context)};`,
+    ];
   }
   if (!isExported(statement)) return [];
   if (ts.isVariableStatement(statement)) {
     let keyword = 'const';
     if ((statement.declarationList.flags & ts.NodeFlags.Let) !== 0) keyword = 'let';
     return statement.declarationList.declarations.map((declaration) =>
-      valueLine(context, keyword, declaration.name.getText(context.file), declaration.name),
+      valueLine(
+        { keyword, name: declaration.name.getText(context.file), at: declaration.name },
+        context,
+      ),
     );
   }
   if (ts.isFunctionDeclaration(statement) && statement.name !== undefined) {
-    return [valueLine(context, 'const', statement.name.text, statement.name)];
+    return [
+      valueLine({ keyword: 'const', name: statement.name.text, at: statement.name }, context),
+    ];
   }
   if (
     ts.isInterfaceDeclaration(statement) ||
@@ -278,14 +282,19 @@ const statementExports = (context: Printing, statement: ts.Statement): string[] 
   return [];
 };
 
-/** The printed exports of each file, keyed by the repo-relative path. */
-export const extractInterfaces = (root: string, files: string[]): Map<string, string[]> => {
+export const extractInterfaces = ({
+  root,
+  files,
+}: {
+  root: string;
+  files: string[];
+}): Map<string, string[]> => {
   const groups = new Map<string | undefined, string[]>();
   for (const file of files) {
-    const config = nearestConfig(root, file);
+    const config = nearestConfig({ root, file });
     groups.set(config, [...(groups.get(config) ?? []), file]);
   }
-  const out = new Map<string, string[]>();
+  const exportsByFile = new Map<string, string[]>();
   for (const [config, group] of groups) {
     const project = readProject(config);
     const absolute = group.map((file) => resolve(root, file));
@@ -297,31 +306,31 @@ export const extractInterfaces = (root: string, files: string[]): Map<string, st
     for (const file of group) {
       const source = program.getSourceFile(resolve(root, file));
       if (source === undefined) {
-        out.set(file, []);
+        exportsByFile.set(file, []);
         continue;
       }
       const context = { checker, file: source };
-      const lines = source.statements.flatMap((statement) => statementExports(context, statement));
-      out.set(
+      const lines = source.statements.flatMap((statement) => statementExports(statement, context));
+      exportsByFile.set(
         file,
-        lines.map((line) => relativeImports(line, resolve(root))),
+        lines.map((line) => relativeImports({ text: line, root: resolve(root) })),
       );
     }
   }
-  return out;
+  return exportsByFile;
 };
 
-/**
- * `review/interfaces.md`: a header line (date, command, counts), one ```ts block per changed file
- * headed by its path (`· not planned` when no planned path covers it), `// no exports` for a file
- * without any, then the planned paths nobody changed.
- */
-export const renderInterfaces = (
-  item: string,
-  generated: string,
-  found: ChangedInterfaceFiles,
-  exports: Map<string, string[]>,
-): string => {
+export const renderInterfaces = ({
+  item,
+  generated,
+  found,
+  exports,
+}: {
+  item: string;
+  generated: string;
+  found: ChangedInterfaceFiles;
+  exports: Map<string, string[]>;
+}): string => {
   const unplanned = found.files.filter((file) => !file.planned).length;
   const parts = [
     `# Interfaces · ${item}\n`,
@@ -344,51 +353,45 @@ export const renderInterfaces = (
   return parts.join('\n');
 };
 
-const REPO_ROOT = resolve(import.meta.dirname, '../../..');
-
-/** The backlog folder, relative to the repo root. */
-const BACKLOG = 'tools/workbench/backlog';
-
-/**
- * Writes `review/interfaces.md` from the item's git change list (R23; also run by
- * `vp run workbench:deps`); returns the summary line.
- */
-export const writeInterfaces = (item: string, comparison: FilesComparison): string => {
+export const writeInterfaces = ({
+  item,
+  comparison,
+}: {
+  item: string;
+  comparison: FilesComparison;
+}): string => {
   const found = changedInterfaceFiles(comparison);
-  const exports = extractInterfaces(
-    REPO_ROOT,
-    found.files.map((file) => file.path),
-  );
+  const exports = extractInterfaces({
+    root: REPO_ROOT,
+    files: found.files.map((file) => file.path),
+  });
   const generated = new Date().toISOString().slice(0, 10);
-  const review = join(REPO_ROOT, BACKLOG, item, 'review');
+  const review = join(REPO_ROOT, BACKLOG_DIR, item, 'review');
   mkdirSync(review, { recursive: true });
-  writeFileSync(join(review, 'interfaces.md'), renderInterfaces(item, generated, found, exports));
+  writeFileSync(
+    join(review, 'interfaces.md'),
+    renderInterfaces({ item, generated, found, exports }),
+  );
   const countOf = (planned: boolean) =>
     found.files
       .filter((file) => file.planned === planned)
       .reduce((sum, file) => sum + (exports.get(file.path) ?? []).length, 0);
   const unplanned = found.files.filter((file) => !file.planned).length;
-  return `${BACKLOG}/${item}/review/interfaces.md: ${found.files.length - unplanned} planned files · ${countOf(true)} exports, ${unplanned} not planned files · ${countOf(false)} exports, ${found.missing.length} missing`;
+  return `${BACKLOG_DIR}/${item}/review/interfaces.md: ${found.files.length - unplanned} planned files · ${countOf(true)} exports, ${unplanned} not planned files · ${countOf(false)} exports, ${found.missing.length} missing`;
 };
 
-/** `vp run workbench:interfaces -- <item>`: interfaces.md alone, without the import graphs. */
 const main = () => {
-  const args = parseArgs({ allowPositionals: true, options: {} });
-  const item = args.positionals[0];
-  if (item === undefined) {
-    console.error('usage: vp run workbench:interfaces -- <item>');
-    process.exit(1);
-  }
-  const techFile = join(REPO_ROOT, BACKLOG, item, 'tech.md');
-  if (!existsSync(techFile)) {
-    console.error(`${BACKLOG}/${item}/tech.md: missing`);
-    process.exit(1);
-  }
-  const paths = readTechPaths(readFileSync(techFile, 'utf8'));
-  const changes = gitChanges(REPO_ROOT, process.env.WB_BASE);
+  const cli = itemTechPaths('interfaces');
+  const changes = gitChanges({ root: REPO_ROOT, override: baseRevisionOverride() });
   if (changes === undefined) process.exit(1);
   console.log(
-    writeInterfaces(item, compareFiles(changes.changes, [...paths.added, ...paths.changed])),
+    writeInterfaces({
+      item: cli.item,
+      comparison: compareFiles({
+        changes: changes.changes,
+        plannedPaths: [...cli.paths.added, ...cli.paths.changed],
+      }),
+    }),
   );
 };
 

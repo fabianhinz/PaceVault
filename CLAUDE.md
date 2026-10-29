@@ -7,10 +7,10 @@
 
 | Path               | Package                | What it is                                                                                          |
 | ------------------ | ---------------------- | --------------------------------------------------------------------------------------------------- |
-| `apps/web`         | `@pacevault/web`       | The PWA: React 19, routes, features, stores, e2e and app tests. Rules: `apps/web/CLAUDE.md`         |
-| `packages/engine`  | `@pacevault/engine`    | Pure domain logic (metrics, zones, stress, GPS). Rules: `packages/engine/CLAUDE.md`                 |
+| `apps/web`         | `@pacevault/web`       | The PWA: React 19, routes, components, stores, e2e and app tests. Rules: `apps/web/CLAUDE.md`       |
+| `packages/engine`  | `@pacevault/engine`    | Pure domain logic (metrics, zones, stress, geodesy). Rules: `packages/engine/CLAUDE.md`             |
 | `packages/gpx`     | `@pacevault/gpx`       | Pure GPX parsing, building and route geometry. Rules: `packages/gpx/CLAUDE.md`                      |
-| `packages/testing` | `@pacevault/testing`   | Test factories (records, GPS, sessions) for app and package tests                                   |
+| `packages/testing` | `@pacevault/testing`   | Test factories (`createMock<Entity>`) and record/session series for app and package tests           |
 | `packages/i18n`    | `@pacevault/i18n`      | Translations (Paraglide.js messages, compile, Vite plugin). Rules: `packages/i18n/CLAUDE.md`        |
 | `packages/ui`      | `@pacevault/ui`        | UI kit: Radix + Tailwind components, theme tokens, generic UI hooks. Rules: `packages/ui/CLAUDE.md` |
 | `tools/workbench`  | `@pacevault/workbench` | Backlog board (Astro), its scripts, the Claude hooks and the backlog in `tools/workbench/backlog/`  |
@@ -25,26 +25,26 @@
 
 - **Named exports only**: Use named exports everywhere.
 - **Arrow functions only**: Never use the `function` keyword — use arrow functions (`const fn = () => {}`) everywhere.
-- **No object destructuring** for component props and hook return values — access via `props.x` and `result.x` instead. Exception: a `packages/ui` wrapper may rest-destructure `props` to strip its own props before forwarding (`packages/ui/CLAUDE.md` § Rules).
+- **No object destructuring** for component props and hook return values — access via `props.x`, and bind a hook's result to a const named for what it returns (`const chartZoom = useChartZoom(…)`, read as `chartZoom.zoomedData`) instead. Exception: a `packages/ui` wrapper may rest-destructure `props` to strip its own props before forwarding (`packages/ui/CLAUDE.md` § Rules). **Parameter objects are destructured**: a function, method or hook that takes two or more inputs declares one destructured object parameter with an inline type literal (`({ sessionId, profile }: { sessionId: string; profile: UserProfile })`), one input stays a bare positional parameter, an all-optional object defaults to `= {}`; generic utilities keep positional inputs plus a trailing `options?` object, infrastructure handles (`QueryClient`, a signal) trail positionally, and library-imposed signatures stay verbatim.
 - **Delete dead code**: Exported but never-imported code should be removed immediately, not left around.
 - **No `as any` for external data**: Use Zod schemas with `safeParse` + `z.infer` to validate and type data from untyped sources (file parsers, IndexedDB, hook input, etc.). Schemas live next to the parser/consumer (e.g. `fitSchemas.ts`). On failure: return a safe fallback (`undefined`, `[]`), never throw.
 - **No non-null assertion `!`**: Narrow with guards, defaults, optional chaining, `for…of` or type-guard filters, or early returns. `!` silences `noUncheckedIndexedAccess` without handling the missing case (lint: `no-non-null-assertion`).
 - **No ternary operators in `.ts` files** (convention, not linter-enforced): Prefer `if/else` over `condition ? a : b` in `.ts` files (engine, lib, stores, hooks, scripts). Single-level ternaries are allowed in `.tsx` (JSX). Nested ternaries are banned everywhere.
 - **No `Object.assign`**: Change state by assigning fields on the immer draft or by replacing the object outright. Store updates go through intent-named actions, never a generic partial patch.
-- **Pure packages**: `packages/engine` and `packages/gpx` hold domain logic only: no React, no state, no app imports (see their CLAUDE.md). Presentation aggregations (e.g. per-sport TSS for chart colours), serialization (GPX export), format conversion and I/O stay out of the engine even when pure: they go to feature hooks or `apps/web/src/lib/`.
+- **Pure packages**: `packages/engine` and `packages/gpx` hold domain logic only: no React, no state, no app imports (see their CLAUDE.md). Presentation aggregations (e.g. per-sport TSS for chart colours), serialization, format conversion and I/O stay out of the engine even when pure: they go to the owning component folder or `apps/web/src/lib/` (`docs/conventions/tdr/helpers-split-by-reachability.md`). The GPX file format (parse and build) lives in `packages/gpx`; route polylines, display rounding and export file names stay in the app.
 - **Syntax & Formatting**: Defer to Oxlint and Oxfmt (via Vite+, configured in the root `vite.config.ts`). Do not waste time manually formatting code or enforcing linting rules; focus on logic.
 
 ## 3. File Naming Conventions
 
-| Category         | Convention                                              | Example                                    |
-| ---------------- | ------------------------------------------------------- | ------------------------------------------ |
-| React components | PascalCase                                              | `SessionDetailPage.tsx`, `StatTile.tsx`    |
-| Hooks            | camelCase with `use` prefix                             | `useChartZoom.ts`                          |
-| Stores           | camelCase                                               | `toast.ts`, `mapFocus.ts`                  |
-| Engine modules   | camelCase                                               | `trainingEffect.ts`, `zoneDistribution.ts` |
-| Lib utilities    | camelCase                                               | `chartData.ts`, `timeRange.ts`             |
-| Tests            | Match source name + `.spec.ts` / `.integration.test.ts` | `trainingEffect.spec.ts`                   |
-| Web Workers      | camelCase                                               | `gpsBuild.worker.ts`                       |
+| Category         | Convention                                                         | Example                                 |
+| ---------------- | ------------------------------------------------------------------ | --------------------------------------- |
+| React components | PascalCase                                                         | `SessionDetailPage.tsx`, `PvStatTile.tsx` |
+| Hooks            | camelCase with `use` prefix                                        | `useChartZoom.ts`                       |
+| Stores           | camelCase                                                          | `toast.ts`, `mapFocus.ts`               |
+| Engine modules   | camelCase                                                          | `trainingEffect.ts`, `zones.ts`         |
+| Lib utilities    | camelCase                                                          | `chartData.ts`, `timeRange.ts`          |
+| Tests            | Mirrored path + `.spec.ts` / `.spec.tsx`, qualifier before `.spec` | `chartData.integration.spec.ts`         |
+| Web Workers      | camelCase                                                          | `gpsBuild.worker.ts`                    |
 
 - Side-effect-only hooks (no return value) use `Effect` suffix: `useMapCameraEffect.ts`. Hooks that return data, refs, or callbacks keep normal `useSomething` naming.
 - No kebab-case for TypeScript files.
@@ -54,7 +54,7 @@
 Read the CLAUDE.md of the area you work in:
 
 - `@apps/web/CLAUDE.md`: app stack, local-first rule, external services, 0-is-data, FIT rules, colour palette, surfaces.
-- `@apps/web/src/features/CLAUDE.md`: feature-level hooks and store colocation.
+- `@apps/web/src/components/CLAUDE.md`: component folders, colocation, hook placement and store subscriptions.
 - `@apps/web/src/store/CLAUDE.md`: Zustand store scope-naming and persist middleware.
 - `@apps/web/tests/CLAUDE.md`: the testing strategy (packages and lib vs. integration vs. e2e).
 - `@packages/i18n/CLAUDE.md`: translation tone, placeholder rules, microcopy and how messages are compiled.
@@ -73,7 +73,7 @@ All backlog work lives in `tools/workbench/backlog/<item>/` (`plan.md`, `tech.md
 3. **Verify**: Run all four from the root, never skip e2e (each script fans out to the workspace packages). Type the `vp` commands, never the pnpm script wrappers (`pnpm check`, …); Node is managed by vp too (`vp env`, pinned in `.node-version`):
 
    ```bash
-   vp run check   # per package: vp check (fmt + lint + types); workbench: astro check
+   vp run check   # per package: vp check (fmt + lint + types); workbench: astro check; then the module boundaries, the theme tokens and the conventions index
    vp run test    # vitest in every package with tests
    vp run e2e     # playwright e2e (apps/web)
    vp run build   # production build (apps/web)
@@ -82,3 +82,5 @@ All backlog work lives in `tools/workbench/backlog/<item>/` (`plan.md`, `tech.md
    The bare built-ins work from the root as well: `vp check` (whole workspace), `vp test -- --run` (all test projects), `vp build` (apps/web). Playwright has no root config: run e2e with `vp run e2e` or `vp -C apps/web exec playwright test`. The root `vp run check` and `vp run test` compile the translations first (`vp run -F @pacevault/i18n compile`); before a bare `vp check` after translation keys changed, run that compile (the message types come from the generated files).
 
 4. **Review**: every implemented plan delivers `tools/workbench/backlog/<item>/review/index.html` from `tools/workbench/shared/review-template.html`: each change labelled (C1, C2, …) with before/after screenshots (desktop and 390 px, via `vp run workbench:capture`) and 1–2 lines (what, `path:line`, which decision). The item folder is cleaned up only after the owner accepts (`tools/workbench/CLAUDE.md` Acceptance).
+
+@docs/conventions/CLAUDE.md

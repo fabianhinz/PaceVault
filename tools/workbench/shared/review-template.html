@@ -28,9 +28,9 @@
             moves focus to the first invalid field and stays; with valid fields it advances.
           </p>
           <p class="rv-refs">
-            <code>src/features/onboarding/OnboardingStep.tsx:163</code>, <code>:293</code>
+            <code>src/components/onboarding/OnboardingStep.tsx:163</code>, <code>:293</code>
             (<code>continueStep</code>);
-            <code>src/features/settings/hooks/useThresholdsForm.ts:152</code>. Test:
+            <code>src/components/settings/hooks/useThresholdsForm.ts:152</code>. Test:
             <code>e2e/onboarding.spec.ts:60</code>.
           </p>
         </div>
@@ -102,8 +102,8 @@
             line; an error replaces it in the same line.
           </p>
           <p class="rv-refs">
-            <code>src/features/onboarding/OnboardingStep.tsx:202-279</code>;
-            <code>src/features/settings/PaceEstimateButton.tsx</code>;
+            <code>src/components/onboarding/OnboardingStep.tsx:202-279</code>;
+            <code>src/components/settings/PaceEstimateButton.tsx</code>;
             <code>src/store/onboarding.ts:4</code>. Test: <code>e2e/onboarding.spec.ts:8</code>.
           </p>
         </div>
@@ -174,9 +174,9 @@
             <code>GITHUB_URL</code> in a new tab.
           </p>
           <p class="rv-refs">
-            <code>src/features/onboarding/OnboardingIntro.tsx:12</code>, <code>:46</code>;
-            <code>src/features/onboarding/OnboardingCrumbs.tsx:7</code>;
-            <code>src/features/settings/AboutSection.tsx:8</code>.
+            <code>src/components/onboarding/OnboardingIntro.tsx:12</code>, <code>:46</code>;
+            <code>src/components/onboarding/OnboardingCrumbs.tsx:7</code>;
+            <code>src/components/settings/AboutSection.tsx:8</code>.
           </p>
         </div>
         <div class="rv-cmp">
@@ -219,7 +219,7 @@
           </p>
           <p class="rv-refs">
             <code>packages/engine/src/energy.ts:12</code>, <code>:146</code>;
-            <code>src/lib/moreStats.ts:152</code>. Test:
+            <code>src/lib/analysis/moreStats.ts:152</code>. Test:
             <code>tests/packages/engine/energy.spec.ts:75</code>.
           </p>
         </div>
@@ -230,7 +230,7 @@
         <li>
           <strong>Preview camera fit runs at the reveal, not under the loader.</strong> The card it
           pads against only mounts at the reveal, so the fit runs one frame after it.
-          <code>src/features/map/hooks/useOnboardingPreviewCameraEffect.ts:43-68</code>.
+          <code>src/components/mapBackground/hooks/useOnboardingPreviewCameraEffect.ts:43-68</code>.
         </li>
       </ol>
 

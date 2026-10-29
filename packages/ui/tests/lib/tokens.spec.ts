@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { tokens } from '../../src/lib/tokens.ts';
+import { fontSizes, tokens } from '../../src/lib/tokens.ts';
 
 const themeVariables = (source: string): Map<string, string> => {
   const variables = new Map<string, string>();
@@ -22,16 +22,23 @@ const resolveVariable = (variables: Map<string, string>, name: string): string |
   return variables.get(reference);
 };
 
+const variables = themeVariables(
+  readFileSync(resolve(import.meta.dirname, '../../src/theme.css'), 'utf8'),
+);
+
 describe('tokens', () => {
   it('every colour token has a CSS theme variable', () => {
-    const variables = themeVariables(
-      readFileSync(resolve(import.meta.dirname, '../../src/theme.css'), 'utf8'),
-    );
     for (const [key, hex] of Object.entries(tokens)) {
       expect({ key, value: resolveVariable(variables, `color-${kebab(key)}`) }).toEqual({
         key,
         value: hex,
       });
+    }
+  });
+
+  it('every font size mirrors its theme variable', () => {
+    for (const [key, px] of Object.entries(fontSizes)) {
+      expect({ key, value: variables.get(`text-${key}`) }).toEqual({ key, value: `${px}px` });
     }
   });
 });

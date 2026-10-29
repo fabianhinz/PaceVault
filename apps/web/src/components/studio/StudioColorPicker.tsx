@@ -1,0 +1,34 @@
+import type { FC } from 'react';
+import { cn } from '@pacevault/ui/lib/cn.ts';
+import type { StudioRouteColor } from '@/types.ts';
+import { routeColorOrder, COLORS_BY_STUDIO_ROUTE_COLOR } from './routeColors.ts';
+
+interface StudioColorPickerProps {
+  value: StudioRouteColor;
+  onChange: (color: StudioRouteColor) => void;
+}
+
+export const StudioColorPicker: FC<StudioColorPickerProps> = (props) => {
+  return (
+    <div role="radiogroup" className="flex gap-3">
+      {routeColorOrder.map((color) => {
+        const selected = props.value === color;
+        return (
+          <button
+            key={color}
+            type="button"
+            role="radio"
+            aria-label={color}
+            aria-checked={selected}
+            onClick={() => props.onChange(color)}
+            className={cn(
+              'h-8 w-8 cursor-pointer rounded-full transition-all',
+              props.value !== color && 'opacity-50 hover:opacity-100',
+            )}
+            style={{ backgroundColor: COLORS_BY_STUDIO_ROUTE_COLOR[color].hex }}
+          />
+        );
+      })}
+    </div>
+  );
+};

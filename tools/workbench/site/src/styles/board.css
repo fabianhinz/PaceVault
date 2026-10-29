@@ -12,7 +12,7 @@
   --wb-hairline: rgb(255 255 255 / 0.1);
 }
 
-/* No rubber-band bounce and no back-swipe on the page itself (R13). */
+/* No rubber-band bounce and no back-swipe on the page itself. */
 html,
 body {
   overscroll-behavior: none;
@@ -25,8 +25,6 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
-
-/* ---------- prose: Typography h3 / title / body1 for markdown ---------- */
 
 .wb-md {
   color: var(--color-text-primary);
@@ -186,8 +184,6 @@ body {
   color: var(--color-text-primary);
 }
 
-/* ---------- Tech tab: tech.md headings as written, figures drawn by tech.ts ---------- */
-
 .tt-md h1 {
   margin: 0 0 1rem;
   font-size: var(--text-lg);
@@ -273,43 +269,6 @@ body {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-accent);
 }
-.tt-seg {
-  display: inline-flex;
-  gap: 0.25rem;
-  padding: 2px;
-  border: 1px solid var(--wb-hairline);
-  border-radius: var(--radius-md);
-  background: rgb(255 255 255 / 0.05);
-}
-.tt-seg button {
-  padding: 0 0.5rem;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: none;
-  color: var(--color-text-tertiary);
-  font: inherit;
-  font-size: var(--text-xs);
-  line-height: 1.5rem;
-  cursor: pointer;
-}
-.tt-seg button[aria-pressed='true'] {
-  background: var(--color-surface-elevated);
-  color: var(--color-text-primary);
-}
-.tt-seg button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-/* the switch in a frame's label row (R29): as tall as the ghost icon buttons next to it, */
-/* first in the row (R31), never squeezed by a long path */
-.tt-seg--sm {
-  flex-shrink: 0;
-  margin: -0.25rem 0.25rem -0.25rem 0;
-}
-.tt-seg--sm button {
-  line-height: 1.25rem;
-  white-space: nowrap;
-}
 /* a section without its actual file: the command, muted, at the end of the planned frame */
 .tt-missing {
   margin: 0 !important;
@@ -318,7 +277,7 @@ body {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
 }
-/* Files (R30, R33): the same list on both sides: summary, folders as muted small headings,
+/* Files: the same list on both sides: summary, folders as muted small headings,
    one row per file in fixed columns (name · note · tag · chip) */
 .tt-files__body {
   display: flex;
@@ -401,7 +360,7 @@ body {
   background: var(--color-status-danger-muted);
   color: var(--color-status-danger);
 }
-/* a frame body in the full-screen stage (R32): scrolls inside, padded like the inline frame */
+/* a frame body in the full-screen stage: scrolls inside, padded like the inline frame */
 .tt-full__frame {
   overflow: auto !important;
   padding: 0.5rem;
