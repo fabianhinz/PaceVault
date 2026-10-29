@@ -12,6 +12,8 @@
     "boundaries": "node scripts/boundaries.ts",
     "interfaces": "node scripts/interfaces.ts",
     "tokens": "node scripts/themeTokens.ts",
+    "conventions": "node scripts/conventionsIndex.ts",
+    "conventions:write": "node scripts/conventionsIndex.ts --write",
     "capture": "vp exec playwright test -c playwright.review.config.ts"
   },
   "dependencies": {

@@ -1,4 +1,4 @@
-import { useRef, useState, type FC } from 'react';
+import { useDeferredValue, useRef, useState, type FC } from 'react';
 import MapGL from 'react-map-gl/maplibre';
 import { MAP_MAXZOOM, STYLE_BY_MAP_STYLE } from './mapStyle.ts';
 import { useMapTracks } from './hooks/useMapTracks.ts';
@@ -22,7 +22,9 @@ export const MapBackground: FC = () => {
 
   const mapRef = useRef<MapRef>(null);
   const pointerFine = useDevice().pointerFine;
-  const terrain = useMapControlsStore((s) => s.sessionMapView === '3d');
+  const terrainSelected = useMapControlsStore((s) => s.sessionMapView === '3d');
+  // The first terrain build is expensive; the toggle repaints before the map switches.
+  const terrain = useDeferredValue(terrainSelected);
   const terrainTrackHovered = useMapControlsStore((s) => s.terrainTrackHovered);
 
   const gpsTracks = useSessionGpsTracks();

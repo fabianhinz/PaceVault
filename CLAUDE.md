@@ -73,7 +73,7 @@ All backlog work lives in `tools/workbench/backlog/<item>/` (`plan.md`, `tech.md
 3. **Verify**: Run all four from the root, never skip e2e (each script fans out to the workspace packages). Type the `vp` commands, never the pnpm script wrappers (`pnpm check`, …); Node is managed by vp too (`vp env`, pinned in `.node-version`):
 
    ```bash
-   vp run check   # per package: vp check (fmt + lint + types); workbench: astro check; then the module boundaries and the theme tokens
+   vp run check   # per package: vp check (fmt + lint + types); workbench: astro check; then the module boundaries, the theme tokens and the conventions index
    vp run test    # vitest in every package with tests
    vp run e2e     # playwright e2e (apps/web)
    vp run build   # production build (apps/web)

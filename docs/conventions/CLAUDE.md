@@ -5,7 +5,7 @@ match it and read those records in `tdr/`. The lines below are pointers, not
 the rule — rule text, detection signals and reference implementation live in
 the record.
 
-Generated from `tdr/*.md`. Don't hand-edit this file; edit the record.
+Generated from `tdr/*.md` by `vp run conventions:index`. Don't hand-edit this file; edit the record.
 
 - `apps/web/package.json` — [Native Date with composed millisecond duration constants](tdr/native-date-and-duration-constants.md): Points in time are native Date, durations are milliseconds built from MS_PER_SECOND/MINUTE/HOUR/DAY in packages/engine/src/time.ts, bound to unit-named constants, with no date or duration library.
 - `apps/web/src/**` — [A directory's shared vocabulary lives in a colocated types.ts](tdr/colocated-types-module.md): A type, union or constant table read by more than one component or hook module goes in a leaf types.ts beside its readers, never exported from a component or hook for a sibling to import.

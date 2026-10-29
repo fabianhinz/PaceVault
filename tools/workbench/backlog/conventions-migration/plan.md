@@ -63,10 +63,10 @@ The per-file changes live in the convention plans (`docs/conventions/plans/*.md`
 
 ## Real-data checks
 
-- [ ] Your own profile still loads unchanged after the threshold validation (Q23, Q27): no onboarding, every threshold history as before (an invalid entry, if any, is gone), every session page renders.
-- [ ] Weather on a session detail page still loads and caches through the new query hooks (effects → queries), online and offline.
-- [ ] Importing a FIT and a GPX file behaves as before (one GPX failure toast, Q24).
-- [ ] intervals.icu sync (if connected) still brings in new activities.
+- [x] Your own profile still loads unchanged after the threshold validation (Q23, Q27): no onboarding, every threshold history as before (an invalid entry, if any, is gone), every session page renders.
+- [x] Weather on a session detail page still loads and caches through the new query hooks (effects → queries), online and offline.
+- [x] Importing a FIT and a GPX file behaves as before (one GPX failure toast, Q24).
+- [x] intervals.icu sync (if connected) still brings in new activities.
 
 ## Delivery and acceptance
 
