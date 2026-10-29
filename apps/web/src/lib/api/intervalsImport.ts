@@ -18,13 +18,104 @@ interface IntervalsImportResult {
   fatal?: IntervalsErrorCode;
 }
 
+export const DOWNLOAD_CONCURRENCY = 5;
+
+type DownloadResult =
+  | { kind: 'data'; data: ArrayBuffer }
+  | { kind: 'request-failed'; code: IntervalsErrorCode }
+  | { kind: 'unexpected'; error: unknown };
+
+const isRequestFailure = (error: unknown): boolean =>
+  error instanceof FailedResponseError ||
+  error instanceof TypeError ||
+  error instanceof DOMException;
+
+// Never rejects, so a download left in flight after a fatal stop cannot surface as an unhandled
+// rejection; an unexpected error is rethrown when its result is consumed.
+const downloadResult = async ({
+  apiKey,
+  activity,
+}: {
+  apiKey: string;
+  activity: IntervalsActivity;
+}): Promise<DownloadResult> => {
+  try {
+    return { kind: 'data', data: await downloadActivityFit({ apiKey, activity }) };
+  } catch (error) {
+    if (!isRequestFailure(error)) return { kind: 'unexpected', error };
+    return { kind: 'request-failed', code: intervalsErrorCode(error) };
+  }
+};
+
+const isFatal = (code: IntervalsErrorCode): boolean =>
+  code === 'rate-limited' || code === 'unauthorized';
+
+const ingestActivity = async ({
+  activity,
+  data,
+  profile,
+  batcher,
+}: {
+  activity: IntervalsActivity;
+  data: ArrayBuffer;
+  profile: UserProfile;
+  batcher: ReturnType<typeof createIngestBatcher>;
+}): Promise<boolean> => {
+  try {
+    const fileName = `${activity.id}.fit`;
+    const result = await parseFitFile({
+      arrayBuffer: data,
+      fileName,
+      profileAt: toFitParseProfile(profile),
+      meta: {
+        name: activity.name ?? undefined,
+      },
+    });
+    await batcher.add({
+      ...result,
+      rawData: data,
+      fileName,
+      source: { kind: 'intervals', activityId: activity.id },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Downloads run up to DOWNLOAD_CONCURRENCY ahead; results are consumed in listing order, so
+// parsing, duplicate checks and saving stay sequential.
+const createDownloadWindow = ({
+  apiKey,
+  activities,
+}: {
+  apiKey: string;
+  activities: IntervalsActivity[];
+}): { take: () => Promise<DownloadResult> | undefined; startNext: () => void } => {
+  const inFlight: Promise<DownloadResult>[] = [];
+  let started = 0;
+
+  const startNext = (): void => {
+    const activity = activities[started];
+    if (activity === undefined) return;
+    inFlight.push(downloadResult({ apiKey, activity }));
+    started++;
+  };
+
+  for (let slot = 0; slot < DOWNLOAD_CONCURRENCY; slot++) startNext();
+
+  const take = (): Promise<DownloadResult> | undefined => inFlight.shift();
+
+  return { take, startNext };
+};
+
 export const runIntervalsImport = async ({
   apiKey,
   profile,
   activities,
   onProgress,
   queryClient,
-  markNew,
+  markNewSince,
   onSaving,
   onChunkIngested,
 }: {
@@ -33,7 +124,7 @@ export const runIntervalsImport = async ({
   activities: IntervalsActivity[];
   onProgress: (processed: number) => void;
   queryClient: QueryClient;
-  markNew?: boolean;
+  markNewSince?: number;
   onSaving?: () => void;
   onChunkIngested: (activityIds: string[]) => void;
 }): Promise<IntervalsImportResult> => {
@@ -43,7 +134,7 @@ export const runIntervalsImport = async ({
 
   const batcher = createIngestBatcher({
     queryClient,
-    markNew,
+    markNewSince,
     onFlushed: (stored) => {
       const ids: string[] = [];
       for (const entry of stored) {
@@ -53,45 +144,22 @@ export const runIntervalsImport = async ({
     },
   });
 
+  const downloads = createDownloadWindow({ apiKey, activities });
   for (const activity of activities) {
-    let data: ArrayBuffer | undefined = undefined;
-    try {
-      data = await downloadActivityFit({ apiKey, activity });
-    } catch (error) {
-      const requestFailed =
-        error instanceof FailedResponseError ||
-        error instanceof TypeError ||
-        error instanceof DOMException;
-      if (!requestFailed) throw error;
-      const code = intervalsErrorCode(error);
-      if (code === 'rate-limited' || code === 'unauthorized') {
-        fatal = code;
-        break;
-      }
-      failed++;
+    const download = await downloads.take();
+    if (download === undefined) break;
+    if (download.kind === 'unexpected') throw download.error;
+    if (download.kind === 'request-failed' && isFatal(download.code)) {
+      fatal = download.code;
+      break;
     }
+    downloads.startNext();
 
-    if (data !== undefined) {
-      try {
-        const fileName = `${activity.id}.fit`;
-        const result = await parseFitFile({
-          arrayBuffer: data,
-          fileName,
-          profileAt: toFitParseProfile(profile),
-          meta: {
-            name: activity.name ?? undefined,
-          },
-        });
-        await batcher.add({
-          ...result,
-          rawData: data,
-          fileName,
-          source: { kind: 'intervals', activityId: activity.id },
-        });
-      } catch {
-        failed++;
-      }
+    let ingested = false;
+    if (download.kind === 'data') {
+      ingested = await ingestActivity({ activity, data: download.data, profile, batcher });
     }
+    if (!ingested) failed++;
 
     processed++;
     onProgress(processed);

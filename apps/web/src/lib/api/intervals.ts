@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { SPORTS, type Sport, type TrainingSession } from '@pacevault/engine/types.ts';
-import { MS_PER_DAY } from '@pacevault/engine/time.ts';
+import { MS_PER_DAY, MS_PER_SECOND } from '@pacevault/engine/time.ts';
 import { FailedResponseError, type FailedResponseReason } from '@/lib/api/fetchResponse.ts';
 
 const BASE_URL = 'https://intervals.icu/api/v1';
@@ -31,6 +31,22 @@ const ACTIVITY_FIELDS = Object.keys(intervalsActivitySchema.shape).join(',');
 
 const intervalsAuthorization = (apiKey: string): string => `Basic ${btoa(`API_KEY:${apiKey}`)}`;
 
+// intervals.icu allows 10 requests/s per IP; staying at half leaves room for other tabs and clients.
+const MAX_REQUESTS_PER_SECOND = 5;
+const REQUEST_GAP_MS = MS_PER_SECOND / MAX_REQUESTS_PER_SECOND;
+
+let nextRequestSlotMs = 0;
+
+const waitForRequestSlot = async (): Promise<void> => {
+  const nowMs = performance.now();
+  const slotMs = Math.max(nowMs, nextRequestSlotMs);
+  nextRequestSlotMs = slotMs + REQUEST_GAP_MS;
+  if (slotMs === nowMs) return;
+  await new Promise<void>((resolve) => {
+    setTimeout(resolve, slotMs - nowMs);
+  });
+};
+
 const intervalsRequest = async ({
   apiKey,
   path,
@@ -42,6 +58,7 @@ const intervalsRequest = async ({
 }): Promise<Response> => {
   let url = `${BASE_URL}${path}`;
   if (params !== undefined) url = `${url}?${new URLSearchParams(params).toString()}`;
+  await waitForRequestSlot();
   const response = await fetch(url, {
     method: 'GET',
     credentials: 'omit',
@@ -141,7 +158,7 @@ export const downloadActivityFit = async ({
   );
 };
 
-const BUFFER_DAYS = 14;
+const BUFFER_DAYS = 30;
 
 const toLocalDate = (ms: number): string => {
   const date = new Date(ms);
@@ -150,12 +167,18 @@ const toLocalDate = (ms: number): string => {
   return `${date.getFullYear()}-${month}-${day}`;
 };
 
-export const intervalsSyncWindowOldest = (sessions: TrainingSession[]): string | undefined => {
+export const intervalsSyncWindowStart = (sessions: TrainingSession[]): number | undefined => {
   let newest: number | undefined = undefined;
   for (const session of sessions) {
     if (session.source.kind !== 'intervals') continue;
     if (newest === undefined || session.date > newest) newest = session.date;
   }
   if (newest === undefined) return undefined;
-  return toLocalDate(newest - BUFFER_DAYS * MS_PER_DAY);
+  return newest - BUFFER_DAYS * MS_PER_DAY;
+};
+
+export const intervalsSyncWindowOldest = (sessions: TrainingSession[]): string | undefined => {
+  const windowStartMs = intervalsSyncWindowStart(sessions);
+  if (windowStartMs === undefined) return undefined;
+  return toLocalDate(windowStartMs);
 };

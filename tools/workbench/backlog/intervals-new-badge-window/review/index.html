@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Intervals sync tuning · Review</title>
+    <link rel="stylesheet" href="../../../shared/review.css" />
+  </head>
+  <body class="rv">
+    <main class="rv-doc">
+      <header class="rv-text">
+        <p class="rv-over">Review · round 1</p>
+        <h1>Intervals sync: faster downloads and a 30-day window for the "new" badge</h1>
+        <p>
+          intervals.icu imports download 5 files at a time, never faster than 5 requests/s. The
+          sync window grows to 30 days and now also decides which sessions get the blue badge.
+        </p>
+      </header>
+
+      <h2>Changes without UI</h2>
+      <p class="rv-text">No UI change, no screenshots.</p>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C1</span>Every intervals.icu request is paced at 5/s</h3>
+        <div class="rv-text">
+          <p>
+            Each request waits for its slot, slots at least 200 ms apart (Q1). This covers the
+            listing, the key check, <code>/file</code> and the <code>/fit-file</code> fallback.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/lib/api/intervals.ts:35</code>, <code>:61</code>. Test:
+            <code>apps/web/tests/lib/api/intervals.spec.ts</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C2</span>Up to 5 downloads in flight, saved newest first</h3>
+        <div class="rv-text">
+          <p>
+            Downloads run up to 5 ahead; parsing and saving stay one at a time in listing order. A
+            429 or 401 still stops the import; downloads already in flight are dropped (their
+            requests still go out, at most 4) and the next background sync fetches them again.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/lib/api/intervalsImport.ts:21</code>, <code>:88</code>,
+            <code>:152</code>. Test:
+            <code>apps/web/tests/lib/api/intervalsImport.integration.spec.ts</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C3</span>30-day window, also for the "new" badge</h3>
+        <div class="rv-text">
+          <p>
+            The window is newest intervals session minus 30 days. Only sessions starting inside it
+            get the badge, in foreground and background runs alike; with no intervals session yet
+            (first connect) nothing is badged. Backlog activities from years ago stay unbadged.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/lib/api/intervals.ts:161</code>, <code>:170</code>;
+            <code>apps/web/src/lib/api/intervalsSync.ts:112</code>;
+            <code>apps/web/src/lib/storage/createIngestBatcher.ts:91</code>. Tests:
+            <code>apps/web/tests/lib/api/intervalsSync.integration.spec.ts</code>,
+            <code>apps/web/tests/lib/storage/createIngestBatcher.integration.spec.ts</code>,
+            <code>apps/web/e2e/intervals.spec.ts:22</code> (the two badge e2e tests now seed one
+            intervals session, so a window exists).
+          </p>
+        </div>
+      </article>
+
+      <h2>Verification</h2>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp run check</code></td>
+          <td class="rv-pass">pass (13/13)</td>
+        </tr>
+        <tr>
+          <td><code>vp run test</code></td>
+          <td class="rv-pass">pass (apps/web: 110 files, 1072 tests)</td>
+        </tr>
+        <tr>
+          <td><code>vp run e2e</code></td>
+          <td class="rv-pass">pass (86)</td>
+        </tr>
+        <tr>
+          <td><code>vp run build</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+      </table>
+      <p class="rv-text">
+        API specs run on fake timers (new helper <code>apps/web/tests/testUtils/fakeTimers.ts</code>),
+        so the pacing adds no real wait to the suite.
+      </p>
+
+      <h2>How to check</h2>
+      <ol class="rv-text">
+        <li>
+          Connect a large intervals.icu account: the import progress moves clearly faster than
+          before, and DevTools → Network shows at most 5 requests per second and no 429.
+        </li>
+        <li>
+          With more than 2,000 activities, wait for the background sync that continues the
+          backlog: the older sessions arrive without the blue badge.
+        </li>
+        <li>
+          Record or upload a new activity to intervals.icu: after the next sync (focus the window or
+          wait up to 15 min) it shows the blue badge.
+        </li>
+        <li>Tick the two real-data checks in <code>plan.md</code> when they hold.</li>
+      </ol>
+    </main>
+  </body>
+</html>

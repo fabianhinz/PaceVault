@@ -52,6 +52,8 @@ interface IdentifiedEntry {
   entry: ParsedFitResultWithMeta;
 }
 
+type TrainingSessionInput = Omit<TrainingSession, 'createdAt' | 'isNew'>;
+
 const saveSessionData = async (
   withIds: IdentifiedEntry[],
 ): Promise<{ savedCount: number; saveFailed: boolean }> => {
@@ -86,12 +88,31 @@ const saveSessionData = async (
   return { savedCount, saveFailed };
 };
 
+const addSavedSessions = ({
+  saved,
+  markNewSince,
+}: {
+  saved: IdentifiedEntry[];
+  markNewSince: number | undefined;
+}): void => {
+  const recent: TrainingSessionInput[] = [];
+  const older: TrainingSessionInput[] = [];
+  for (const item of saved) {
+    const session = { ...item.entry.session, id: item.id, source: item.entry.source };
+    if (markNewSince !== undefined && session.date >= markNewSince) recent.push(session);
+    else older.push(session);
+  }
+  if (recent.length > 0)
+    useSessionsStore.getState().addSessions({ sessions: recent, markNew: true });
+  if (older.length > 0) useSessionsStore.getState().addSessions({ sessions: older });
+};
+
 const ingestBatch = async ({
   parsed,
-  markNew,
+  markNewSince,
 }: {
   parsed: ParsedFitResultWithMeta[];
-  markNew: boolean | undefined;
+  markNewSince: number | undefined;
 }): Promise<BatchOutcome> => {
   const partition = partitionDuplicates({
     parsed,
@@ -112,16 +133,7 @@ const ingestBatch = async ({
   const saveResult = await saveSessionData(withIds);
 
   const saved = withIds.slice(0, saveResult.savedCount);
-  if (saved.length > 0) {
-    useSessionsStore.getState().addSessions({
-      sessions: saved.map((item) => ({
-        ...item.entry.session,
-        id: item.id,
-        source: item.entry.source,
-      })),
-      markNew,
-    });
-  }
+  addSavedSessions({ saved, markNewSince });
 
   return {
     importedCount: saved.length,
@@ -133,7 +145,7 @@ const ingestBatch = async ({
 
 export const createIngestBatcher = (options: {
   queryClient: QueryClient;
-  markNew?: boolean;
+  markNewSince?: number;
   onFlushed?: (stored: ParsedFitResultWithMeta[]) => void;
 }) => {
   let pending: ParsedFitResultWithMeta[] = [];
@@ -143,7 +155,7 @@ export const createIngestBatcher = (options: {
     if (pending.length === 0) return;
     const batch = pending;
     pending = [];
-    const result = await ingestBatch({ parsed: batch, markNew: options.markNew });
+    const result = await ingestBatch({ parsed: batch, markNewSince: options.markNewSince });
     outcome.importedCount += result.importedCount;
     outcome.duplicateCount += result.duplicateCount;
     outcome.saveFailed ||= result.saveFailed;

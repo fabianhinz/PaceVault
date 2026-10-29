@@ -18,6 +18,9 @@ const LISTING = [
 
 const FILES: Record<string, string> = { i100: RUNNING_FIT, i200: CYCLING_FIT };
 
+// One day before cycling.fit (i200), so i200 lies inside the 30-day "new" window and lists first.
+const INTERVALS_SESSION_BEFORE_I200 = new Date(2025, 10, 28, 10).getTime();
+
 const mockApi = async (page: import('@playwright/test').Page) => {
   await page.route('**/intervals.icu/api/v1/**', async (route) => {
     const url = route.request().url();
@@ -60,23 +63,29 @@ test('intervals.icu onboarding: profile + key, then import', async ({ page }) =>
 
 test('a connected account syncs new activities on load, without a click', async ({ page }) => {
   await mockApi(page);
-  await seedIntervalsConnected(page, { importedActivityIds: ['i100'] });
+  await seedIntervalsConnected(page, {
+    importedActivityIds: ['i100'],
+    intervalsSessionDates: [INTERVALS_SESSION_BEFORE_I200],
+  });
 
   await page.goto('/sessions');
 
   const items = page.locator('[data-testid="session-item"]');
-  await expect(items).toHaveCount(1, { timeout: 30000 });
+  await expect(items).toHaveCount(2, { timeout: 30000 });
   await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
 });
 
 test('opening a synced session clears its badge', async ({ page }) => {
   await mockApi(page);
-  await seedIntervalsConnected(page, { importedActivityIds: ['i100'] });
+  await seedIntervalsConnected(page, {
+    importedActivityIds: ['i100'],
+    intervalsSessionDates: [INTERVALS_SESSION_BEFORE_I200],
+  });
 
   await page.goto('/sessions');
 
   const items = page.locator('[data-testid="session-item"]');
-  await expect(items).toHaveCount(1, { timeout: 30000 });
+  await expect(items).toHaveCount(2, { timeout: 30000 });
   await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
   await items.first().click();
 
@@ -84,7 +93,7 @@ test('opening a synced session clears its badge', async ({ page }) => {
   await expect(items).toHaveCount(0);
   await page.goBack();
 
-  await expect(items).toHaveCount(1);
+  await expect(items).toHaveCount(2);
   await expect(items.first().locator('[data-testid="icon-badge"]')).toHaveCount(0);
 });
 

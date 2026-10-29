@@ -3,6 +3,7 @@ import {
   FULL_HISTORY_OLDEST,
   intervalsErrorCode,
   intervalsSyncWindowOldest,
+  intervalsSyncWindowStart,
   listIntervalsActivities,
   MAX_ACTIVITIES_PER_IMPORT,
   type IntervalsActivity,
@@ -50,6 +51,7 @@ const importBatch = async ({
   listingLength,
   fullListing,
   foreground,
+  markNewSince,
   apiKey,
   profile,
   queryClient,
@@ -59,6 +61,7 @@ const importBatch = async ({
   listingLength: number;
   fullListing: boolean;
   foreground: boolean;
+  markNewSince: number | undefined;
   apiKey: string;
   profile: UserProfile;
   queryClient: QueryClient;
@@ -72,7 +75,7 @@ const importBatch = async ({
         if (foreground) useImportProgressStore.getState().advanceImport();
       },
       queryClient,
-      markNew: !foreground,
+      markNewSince,
       onSaving: () => {
         if (foreground) useImportProgressStore.getState().markImportSaving();
       },
@@ -106,6 +109,7 @@ export const runIntervalsSync = async (options: {
   const profile = useUserStore.getState().profile;
   if (options.apiKey === null || profile === null) return NOTHING;
 
+  const markNewSince = intervalsSyncWindowStart(useSessionsStore.getState().sessions);
   const oldest = resolveOldest(options.full === true);
   const fullListing = oldest === FULL_HISTORY_OLDEST;
 
@@ -138,6 +142,7 @@ export const runIntervalsSync = async (options: {
     listingLength: listing.length,
     fullListing,
     foreground,
+    markNewSince,
     apiKey: options.apiKey,
     profile,
     queryClient: options.queryClient,

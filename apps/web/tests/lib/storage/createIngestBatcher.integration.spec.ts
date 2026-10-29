@@ -130,6 +130,29 @@ describe(createIngestBatcher.name, () => {
     }
   });
 
+  it('marks only sessions on or after markNewSince as new', async () => {
+    const cutoff = new Date(2026, 1, 1, 10).getTime();
+    const batcher = createIngestBatcher({ queryClient: new QueryClient(), markNewSince: cutoff });
+    for (const [fingerprint, date] of [
+      ['fp-before', cutoff - 1],
+      ['fp-at', cutoff],
+      ['fp-after', cutoff + 1],
+    ] as const) {
+      const parsed = makeParsed(fingerprint);
+      await batcher.add({ ...parsed, session: { ...parsed.session, date } });
+    }
+    await batcher.finish();
+
+    const newByName = Object.fromEntries(
+      useSessionsStore.getState().sessions.map((s) => [s.name, s.isNew]),
+    );
+    expect(newByName).toEqual({
+      'Ride fp-before': false,
+      'Ride fp-at': true,
+      'Ride fp-after': true,
+    });
+  });
+
   it('requests persistent storage after an import', async () => {
     const persist = stubPersistentStorage();
 

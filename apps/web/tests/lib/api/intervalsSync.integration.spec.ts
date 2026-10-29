@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
+import { fakeRequestTimers, settleWithFakeTimers } from '@testUtils/fakeTimers.ts';
 import { readE2eFixture } from '@testUtils/fixtures.ts';
 import { QueryClient } from '@tanstack/react-query';
 import { runIntervalsSync } from '@/lib/api/intervalsSync.ts';
@@ -9,6 +10,7 @@ import { createMockUserProfile } from '@tests/factories/profiles.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 import { MAX_ACTIVITIES_PER_IMPORT } from '@/lib/api/intervals.ts';
 import { INGEST_BATCH_SIZE } from '@/lib/storage/createIngestBatcher.ts';
+import { DOWNLOAD_CONCURRENCY } from '@/lib/api/intervalsImport.ts';
 
 const LISTING = [
   { id: 'i100', name: 'Karlsruhe Laufen', type: 'Run', source: 'GARMIN_CONNECT', file_type: 'fit' },
@@ -59,6 +61,10 @@ const seedIntervalsSession = (date: number) => {
   useSessionsStore.getState().addSessions({ sessions: [data] });
 };
 
+beforeEach(() => {
+  fakeRequestTimers();
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -68,7 +74,9 @@ describe(runIntervalsSync.name, () => {
     connect();
     stubApi();
 
-    const summary = await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    const summary = await settleWithFakeTimers(
+      runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }),
+    );
 
     expect(summary.pending).toBe(2);
     expect(summary.imported).toBe(2);
@@ -78,12 +86,15 @@ describe(runIntervalsSync.name, () => {
 
   it('records the ids of finished chunks before the import completes', async () => {
     connect();
-    const listing = Array.from({ length: INGEST_BATCH_SIZE + 1 }, (_, i) => ({
-      id: `i${i}`,
-      type: 'Run',
-      source: 'GARMIN_CONNECT',
-      file_type: 'fit',
-    }));
+    const listing = Array.from(
+      { length: INGEST_BATCH_SIZE + DOWNLOAD_CONCURRENCY + 1 },
+      (_, i) => ({
+        id: `i${i}`,
+        type: 'Run',
+        source: 'GARMIN_CONNECT',
+        file_type: 'fit',
+      }),
+    );
     const last = listing.at(-1)?.id;
     let recordedBeforeLast = 0;
     vi.stubGlobal(
@@ -97,36 +108,53 @@ describe(runIntervalsSync.name, () => {
       }),
     );
 
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
 
     expect(recordedBeforeLast).toBe(INGEST_BATCH_SIZE);
-    expect(useIntervalsStore.getState().importedActivityIds).toHaveLength(INGEST_BATCH_SIZE + 1);
+    expect(useIntervalsStore.getState().importedActivityIds).toHaveLength(listing.length);
   });
 
-  it('marks sessions imported by a background sync as new', async () => {
-    connect();
-    stubApi();
+  it.each([false, true])(
+    'marks only sessions inside the 30-day window as new (foreground: %s)',
+    async (foreground) => {
+      connect();
+      seedIntervalsSession(new Date(2025, 11, 10, 10).getTime());
+      stubApi();
 
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+      await settleWithFakeTimers(
+        runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key', foreground }),
+      );
 
-    expect(useSessionsStore.getState().sessions.filter((s) => !(s.isNew === true))).toEqual([]);
-  });
+      const newByName = Object.fromEntries(
+        useSessionsStore.getState().sessions.map((s) => [s.name, s.isNew]),
+      );
+      expect(newByName.Z2).toBe(true);
+      expect(newByName['Karlsruhe Laufen']).toBe(false);
+    },
+  );
 
-  it('marks sessions imported in the foreground as already seen', async () => {
-    connect();
-    stubApi();
+  it.each([false, true])(
+    'marks nothing as new before the first intervals.icu session (foreground: %s)',
+    async (foreground) => {
+      connect();
+      stubApi();
 
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key', foreground: true });
+      await settleWithFakeTimers(
+        runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key', foreground }),
+      );
 
-    expect(useSessionsStore.getState().sessions).toHaveLength(2);
-    expect(useSessionsStore.getState().sessions.filter((s) => !(s.isNew === false))).toEqual([]);
-  });
+      expect(useSessionsStore.getState().sessions).toHaveLength(2);
+      expect(useSessionsStore.getState().sessions.filter((s) => s.isNew === true)).toEqual([]);
+    },
+  );
 
   it('counts an activity whose download fails as failed', async () => {
     connect();
     stubApi({ listing: [...LISTING, { ...LISTING[0], id: 'i300' }] });
 
-    const summary = await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    const summary = await settleWithFakeTimers(
+      runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }),
+    );
 
     expect(summary.imported).toBe(2);
     expect(summary.failed).toBe(1);
@@ -137,7 +165,9 @@ describe(runIntervalsSync.name, () => {
     useIntervalsStore.getState().recordIntervalsImported(['i100', 'i200']);
     stubApi();
 
-    const summary = await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    const summary = await settleWithFakeTimers(
+      runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }),
+    );
 
     expect(summary.available).toBe(2);
     expect(summary.pending).toBe(0);
@@ -148,7 +178,9 @@ describe(runIntervalsSync.name, () => {
     useIntervalsStore.getState().recordIntervalsImported(['i100']);
     const urls = stubApi();
 
-    const summary = await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    const summary = await settleWithFakeTimers(
+      runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }),
+    );
 
     expect(summary.imported).toBe(1);
     expect(urls).not.toContainEqual(expect.stringContaining('/activity/i100/'));
@@ -160,7 +192,7 @@ describe(runIntervalsSync.name, () => {
     stubApi({ listStatus: 401 });
 
     await expect(
-      runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }),
+      settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' })),
     ).rejects.toMatchObject({
       reason: 'unauthorized',
     });
@@ -171,7 +203,7 @@ describe(runIntervalsSync.name, () => {
     connect();
     stubApi();
 
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
 
     const sources = useSessionsStore.getState().sessions.map((s) => s.source);
     expect(sources).toEqual(
@@ -186,12 +218,12 @@ describe(runIntervalsSync.name, () => {
     connect();
     const urls = stubApi();
 
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
 
     expect(listedOldest(urls)).toBe('1990-01-01');
   });
 
-  it('lists from 14 days before the newest intervals.icu session', async () => {
+  it('lists from 30 days before the newest intervals.icu session', async () => {
     connect();
     seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
     const { createdAt: _ca, ...file } = createMockTrainingSession({
@@ -201,9 +233,9 @@ describe(runIntervalsSync.name, () => {
     useSessionsStore.getState().addSessions({ sessions: [file] });
     const urls = stubApi();
 
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
 
-    expect(listedOldest(urls)).toBe('2026-09-06');
+    expect(listedOldest(urls)).toBe('2026-08-21');
   });
 
   it('lists the full history when asked to, despite a window', async () => {
@@ -211,7 +243,9 @@ describe(runIntervalsSync.name, () => {
     seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
     const urls = stubApi();
 
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key', full: true });
+    await settleWithFakeTimers(
+      runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key', full: true }),
+    );
 
     expect(listedOldest(urls)).toBe('1990-01-01');
   });
@@ -224,12 +258,12 @@ describe(runIntervalsSync.name, () => {
     }));
     stubApi({ listing });
 
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
     expect(useIntervalsStore.getState().backlogPending).toBe(true);
 
     seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
     const urls = stubApi();
-    await runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' });
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
 
     expect(listedOldest(urls)).toBe('1990-01-01');
   });
