@@ -16,19 +16,24 @@ const syncAfterConnect = async (options: {
     await options.queryClient
       .fetchQuery({
         queryKey: intervalsSyncQueryKey(),
-        queryFn: () =>
-          runIntervalsSync({ queryClient: options.queryClient, apiKey: options.apiKey }),
+        queryFn: (ctx) =>
+          runIntervalsSync({
+            queryClient: options.queryClient,
+            apiKey: options.apiKey,
+            signal: ctx.signal,
+          }),
       })
       .catch(() => undefined);
   }
   return options.queryClient.fetchQuery({
     queryKey: intervalsSyncQueryKey(),
-    queryFn: () =>
+    queryFn: (ctx) =>
       runIntervalsSync({
         queryClient: options.queryClient,
         apiKey: options.apiKey,
         full: true,
         foreground: true,
+        signal: ctx.signal,
       }),
     staleTime: 0,
   });

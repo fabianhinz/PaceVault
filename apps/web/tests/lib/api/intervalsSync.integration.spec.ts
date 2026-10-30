@@ -267,4 +267,35 @@ describe(runIntervalsSync.name, () => {
 
     expect(listedOldest(urls)).toBe('1990-01-01');
   });
+
+  it('leaves the cleared stores untouched when Delete all data aborts a running sync', async () => {
+    connect();
+    const controller = new AbortController();
+    const urls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        urls.push(url);
+        if (url.includes('/activities')) return new Response(JSON.stringify(LISTING));
+        controller.abort();
+        return new Response(readE2eFixture('running.fit'));
+      }),
+    );
+
+    await expect(
+      settleWithFakeTimers(
+        runIntervalsSync({
+          queryClient: new QueryClient(),
+          apiKey: 'key',
+          signal: controller.signal,
+        }),
+      ),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+
+    expect(urls).not.toContainEqual(expect.stringContaining('/activity/i200/'));
+    expect(useSessionsStore.getState().sessions).toEqual([]);
+    expect(useIntervalsStore.getState().importedActivityIds).toEqual([]);
+    expect(useIntervalsStore.getState().backlogPending).toBe(false);
+    expect(useIntervalsStore.getState().keyInvalid).toBe(false);
+  });
 });

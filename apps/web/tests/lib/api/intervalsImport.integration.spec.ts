@@ -206,4 +206,38 @@ describe(runIntervalsImport.name, () => {
     expect(ingestedIds).toEqual([]);
     expect(useSessionsStore.getState().sessions).toEqual([]);
   });
+
+  it('starts no download and saves nothing once aborted mid-run', async () => {
+    const controller = new AbortController();
+    const fetchedAfterAbort: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (controller.signal.aborted) fetchedAfterAbort.push(url);
+        return delayed(new Response(readE2eFixture('minimal.fit')), 5000);
+      }),
+    );
+    const activities = Array.from({ length: 12 }, (_, i) => ({ ...ACTIVITIES[1], id: `i${i}` }));
+
+    const seen: number[] = [];
+    const ingestedIds: string[] = [];
+    const run = runIntervalsImport({
+      apiKey: 'key',
+      profile: createMockUserProfile(),
+      activities,
+      onProgress: (p) => {
+        seen.push(p);
+        controller.abort();
+      },
+      queryClient: new QueryClient(),
+      onChunkIngested: (ids) => ingestedIds.push(...ids),
+      signal: controller.signal,
+    });
+
+    await expect(settleWithFakeTimers(run)).rejects.toMatchObject({ name: 'AbortError' });
+    expect(seen).toEqual([1]);
+    expect(fetchedAfterAbort).toEqual([]);
+    expect(ingestedIds).toEqual([]);
+    expect(useSessionsStore.getState().sessions).toEqual([]);
+  });
 });

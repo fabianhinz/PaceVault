@@ -35,12 +35,14 @@ const isRequestFailure = (error: unknown): boolean =>
 const downloadResult = async ({
   apiKey,
   activity,
+  signal,
 }: {
   apiKey: string;
   activity: IntervalsActivity;
+  signal: AbortSignal | undefined;
 }): Promise<DownloadResult> => {
   try {
-    return { kind: 'data', data: await downloadActivityFit({ apiKey, activity }) };
+    return { kind: 'data', data: await downloadActivityFit({ apiKey, activity, signal }) };
   } catch (error) {
     if (!isRequestFailure(error)) return { kind: 'unexpected', error };
     return { kind: 'request-failed', code: intervalsErrorCode(error) };
@@ -55,11 +57,13 @@ const ingestActivity = async ({
   data,
   profile,
   batcher,
+  signal,
 }: {
   activity: IntervalsActivity;
   data: ArrayBuffer;
   profile: UserProfile;
   batcher: ReturnType<typeof createIngestBatcher>;
+  signal: AbortSignal | undefined;
 }): Promise<boolean> => {
   try {
     const fileName = `${activity.id}.fit`;
@@ -71,6 +75,7 @@ const ingestActivity = async ({
         name: activity.name ?? undefined,
       },
     });
+    if (signal?.aborted === true) return false;
     await batcher.add({
       ...result,
       rawData: data,
@@ -88,9 +93,11 @@ const ingestActivity = async ({
 const createDownloadWindow = ({
   apiKey,
   activities,
+  signal,
 }: {
   apiKey: string;
   activities: IntervalsActivity[];
+  signal: AbortSignal | undefined;
 }): { take: () => Promise<DownloadResult> | undefined; startNext: () => void } => {
   const inFlight: Promise<DownloadResult>[] = [];
   let started = 0;
@@ -98,7 +105,7 @@ const createDownloadWindow = ({
   const startNext = (): void => {
     const activity = activities[started];
     if (activity === undefined) return;
-    inFlight.push(downloadResult({ apiKey, activity }));
+    inFlight.push(downloadResult({ apiKey, activity, signal }));
     started++;
   };
 
@@ -118,6 +125,7 @@ export const runIntervalsImport = async ({
   markNewSince,
   onSaving,
   onChunkIngested,
+  signal,
 }: {
   apiKey: string;
   profile: UserProfile;
@@ -127,6 +135,7 @@ export const runIntervalsImport = async ({
   markNewSince?: number;
   onSaving?: () => void;
   onChunkIngested: (activityIds: string[]) => void;
+  signal?: AbortSignal;
 }): Promise<IntervalsImportResult> => {
   let processed = 0;
   let failed = 0;
@@ -135,6 +144,7 @@ export const runIntervalsImport = async ({
   const batcher = createIngestBatcher({
     queryClient,
     markNewSince,
+    signal,
     onFlushed: (stored) => {
       const ids: string[] = [];
       for (const entry of stored) {
@@ -144,10 +154,11 @@ export const runIntervalsImport = async ({
     },
   });
 
-  const downloads = createDownloadWindow({ apiKey, activities });
+  const downloads = createDownloadWindow({ apiKey, activities, signal });
   for (const activity of activities) {
     const download = await downloads.take();
     if (download === undefined) break;
+    signal?.throwIfAborted();
     if (download.kind === 'unexpected') throw download.error;
     if (download.kind === 'request-failed' && isFatal(download.code)) {
       fatal = download.code;
@@ -157,7 +168,13 @@ export const runIntervalsImport = async ({
 
     let ingested = false;
     if (download.kind === 'data') {
-      ingested = await ingestActivity({ activity, data: download.data, profile, batcher });
+      ingested = await ingestActivity({
+        activity,
+        data: download.data,
+        profile,
+        batcher,
+        signal,
+      });
     }
     if (!ingested) failed++;
 
@@ -165,6 +182,7 @@ export const runIntervalsImport = async ({
     onProgress(processed);
   }
 
+  signal?.throwIfAborted();
   onSaving?.();
   const outcome = await batcher.finish();
   return {

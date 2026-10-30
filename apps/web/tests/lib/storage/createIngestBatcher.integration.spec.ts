@@ -1,12 +1,38 @@
 import { afterEach, describe, it, expect, vi } from 'vite-plus/test';
 import { QueryClient } from '@tanstack/react-query';
-import { createIngestBatcher, INGEST_BATCH_SIZE } from '@/lib/storage/createIngestBatcher.ts';
+import {
+  createIngestBatcher,
+  INGEST_BATCH_SIZE,
+  INGEST_CHUNK_SIZE,
+} from '@/lib/storage/createIngestBatcher.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { personalBestsQueryKey } from '@/queries/records/usePersonalBests.ts';
-import { getSessionRecords, getSessionLaps, getFitFile } from '@/lib/storage/db.ts';
+import {
+  getSessionRecords,
+  getSessionLaps,
+  getFitFile,
+  getFitFileSessionIds,
+} from '@/lib/storage/db.ts';
 import { cyclingRecordSeries, lapSeries } from '@pacevault/testing/series.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 import type { ParsedFitResultWithMeta } from '@/parsers/fit.ts';
+
+const chunkSaving = vi.hoisted(() => ({ onChunkDone: (_chunkIndex: number): void => undefined }));
+
+vi.mock('@/lib/storage/db.ts', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@/lib/storage/db.ts')>();
+  return {
+    ...original,
+    bulkSaveSessionData: (...args: Parameters<typeof original.bulkSaveSessionData>) =>
+      original.bulkSaveSessionData(args[0], {
+        ...args[1],
+        onChunkDone: (chunkIndex) => {
+          args[1]?.onChunkDone?.(chunkIndex);
+          chunkSaving.onChunkDone(chunkIndex);
+        },
+      }),
+  };
+});
 
 const ingestAll = async (parsed: ParsedFitResultWithMeta[], queryClient = new QueryClient()) => {
   const batcher = createIngestBatcher({ queryClient });
@@ -48,6 +74,7 @@ const stubPersistentStorage = () => {
 describe(createIngestBatcher.name, () => {
   afterEach(() => {
     Reflect.deleteProperty(navigator, 'storage');
+    chunkSaving.onChunkDone = () => undefined;
   });
 
   it('adds sessions, writes records, laps and the raw FIT, and invalidates personal bests', async () => {
@@ -151,6 +178,28 @@ describe(createIngestBatcher.name, () => {
       'Ride fp-at': true,
       'Ride fp-after': true,
     });
+  });
+
+  it('stops a running flush once the signal aborts', async () => {
+    const controller = new AbortController();
+    chunkSaving.onChunkDone = () => controller.abort();
+    const onFlushed = vi.fn();
+    const storedBefore = await getFitFileSessionIds();
+    const batcher = createIngestBatcher({
+      queryClient: new QueryClient(),
+      onFlushed,
+      signal: controller.signal,
+    });
+
+    for (let i = 0; i < INGEST_BATCH_SIZE; i++) await batcher.add(makeParsed(`fp-${i}`));
+    const outcome = await batcher.finish();
+
+    expect(useSessionsStore.getState().sessions).toHaveLength(0);
+    expect(onFlushed).not.toHaveBeenCalled();
+    expect(outcome.importedCount).toBe(0);
+    expect(outcome.saveFailed).toBe(false);
+    const storedAfter = await getFitFileSessionIds();
+    expect(storedAfter.length - storedBefore.length).toBe(INGEST_CHUNK_SIZE);
   });
 
   it('requests persistent storage after an import', async () => {

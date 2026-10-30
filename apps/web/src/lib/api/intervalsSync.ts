@@ -55,6 +55,7 @@ const importBatch = async ({
   apiKey,
   profile,
   queryClient,
+  signal,
 }: {
   batch: IntervalsActivity[];
   backlogLength: number;
@@ -65,6 +66,7 @@ const importBatch = async ({
   apiKey: string;
   profile: UserProfile;
   queryClient: QueryClient;
+  signal: AbortSignal | undefined;
 }): Promise<IntervalsSyncSummary> => {
   try {
     const result = await runIntervalsImport({
@@ -80,6 +82,7 @@ const importBatch = async ({
         if (foreground) useImportProgressStore.getState().markImportSaving();
       },
       onChunkIngested: (ids) => useIntervalsStore.getState().recordIntervalsImported(ids),
+      signal,
     });
 
     if (result.fatal === 'unauthorized') useIntervalsStore.getState().markIntervalsKeyInvalid();
@@ -105,6 +108,7 @@ export const runIntervalsSync = async (options: {
   apiKey: string | null;
   full?: boolean;
   foreground?: boolean;
+  signal?: AbortSignal;
 }): Promise<IntervalsSyncSummary> => {
   const profile = useUserStore.getState().profile;
   if (options.apiKey === null || profile === null) return NOTHING;
@@ -115,7 +119,11 @@ export const runIntervalsSync = async (options: {
 
   let listing: IntervalsActivity[];
   try {
-    listing = await listIntervalsActivities({ apiKey: options.apiKey, oldest });
+    listing = await listIntervalsActivities({
+      apiKey: options.apiKey,
+      oldest,
+      signal: options.signal,
+    });
   } catch (error) {
     if (intervalsErrorCode(error) === 'unauthorized') {
       useIntervalsStore.getState().markIntervalsKeyInvalid();
@@ -146,5 +154,6 @@ export const runIntervalsSync = async (options: {
     apiKey: options.apiKey,
     profile,
     queryClient: options.queryClient,
+    signal: options.signal,
   });
 };

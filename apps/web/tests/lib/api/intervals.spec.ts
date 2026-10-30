@@ -172,6 +172,19 @@ describe('intervals.icu request pacing', () => {
     const gaps = startedAt.slice(1).map((at, index) => at - (startedAt[index] ?? at));
     expect(gaps).toEqual([200, 200]);
   });
+
+  it('does not fetch a request aborted while it waits for its slot', async () => {
+    const spy = stubFetch(async () => Response.json([]));
+    const controller = new AbortController();
+
+    const first = listIntervalsActivities({ apiKey: KEY });
+    const second = listIntervalsActivities({ apiKey: KEY, signal: controller.signal });
+    controller.abort();
+
+    await expect(settleWithFakeTimers(second)).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(first).resolves.toEqual([]);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe(intervalsErrorCode.name, () => {

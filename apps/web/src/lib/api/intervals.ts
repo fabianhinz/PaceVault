@@ -51,18 +51,22 @@ const intervalsRequest = async ({
   apiKey,
   path,
   params,
+  signal,
 }: {
   apiKey: string;
   path: string;
   params?: Record<string, string>;
+  signal?: AbortSignal;
 }): Promise<Response> => {
   let url = `${BASE_URL}${path}`;
   if (params !== undefined) url = `${url}?${new URLSearchParams(params).toString()}`;
   await waitForRequestSlot();
+  signal?.throwIfAborted();
   const response = await fetch(url, {
     method: 'GET',
     credentials: 'omit',
     headers: { Authorization: intervalsAuthorization(apiKey) },
+    signal,
   });
   if (!response.ok) {
     throw new FailedResponseError({ operation: `intervals.icu GET ${path}`, response });
@@ -103,9 +107,11 @@ export const FULL_HISTORY_OLDEST = '1990-01-01';
 export const listIntervalsActivities = async ({
   apiKey,
   oldest = FULL_HISTORY_OLDEST,
+  signal,
 }: {
   apiKey: string;
   oldest?: string;
+  signal?: AbortSignal;
 }): Promise<IntervalsActivity[]> => {
   const response = await intervalsRequest({
     apiKey,
@@ -114,6 +120,7 @@ export const listIntervalsActivities = async ({
       oldest,
       fields: ACTIVITY_FIELDS,
     },
+    signal,
   });
 
   const raw: unknown = await response.json();
@@ -139,14 +146,16 @@ const readActivityBody = async (response: Response): Promise<ArrayBuffer> => {
 export const downloadActivityFit = async ({
   apiKey,
   activity,
+  signal,
 }: {
   apiKey: string;
   activity: IntervalsActivity;
+  signal?: AbortSignal;
 }): Promise<ArrayBuffer> => {
   if (activity.file_type?.toLowerCase() === 'fit') {
     let original: Response | undefined = undefined;
     try {
-      original = await intervalsRequest({ apiKey, path: `/activity/${activity.id}/file` });
+      original = await intervalsRequest({ apiKey, path: `/activity/${activity.id}/file`, signal });
     } catch (error) {
       if (error instanceof FailedResponseError && error.reason === 'rate-limited') throw error;
     }
@@ -154,7 +163,7 @@ export const downloadActivityFit = async ({
   }
 
   return readActivityBody(
-    await intervalsRequest({ apiKey, path: `/activity/${activity.id}/fit-file` }),
+    await intervalsRequest({ apiKey, path: `/activity/${activity.id}/fit-file`, signal }),
   );
 };
 

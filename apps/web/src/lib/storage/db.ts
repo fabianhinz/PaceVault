@@ -162,7 +162,11 @@ interface SessionDataEntry {
 
 export const bulkSaveSessionData = async (
   entries: SessionDataEntry[],
-  options?: { chunkSize?: number; onChunkDone?: (chunkIndex: number) => void },
+  options?: {
+    chunkSize?: number;
+    onChunkDone?: (chunkIndex: number) => void;
+    signal?: AbortSignal;
+  },
 ): Promise<void> => {
   const size = options?.chunkSize ?? 10;
   const db = await getDB();
@@ -176,6 +180,7 @@ export const bulkSaveSessionData = async (
       }),
     );
 
+    options?.signal?.throwIfAborted();
     const tx = db.transaction(['session-records', 'session-laps', 'fit-files'], 'readwrite');
     const recordStore = tx.objectStore('session-records');
     const lapStore = tx.objectStore('session-laps');

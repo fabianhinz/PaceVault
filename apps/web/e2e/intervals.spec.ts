@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import {
   RUNNING_FIT,
   CYCLING_FIT,
+  FIXTURES_DIR,
   seedIntervalsConnected,
   seedOnboardingComplete,
 } from './helpers/seed';
@@ -174,4 +175,63 @@ test('a rejected key shows in the status line and blocks the import', async ({ p
 
   await expect(page.getByText('Key rejected', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /import sessions/i })).toBeDisabled();
+});
+
+const SYNC_LISTING = [
+  { id: 'i100', name: 'Laufen', type: 'Run', source: 'GARMIN_CONNECT', file_type: 'fit' },
+  { id: 'i200', name: 'Z2', type: 'Ride', source: 'GARMIN_CONNECT', file_type: 'fit' },
+  { id: 'i300', name: 'Kurz', type: 'Ride', source: 'GARMIN_CONNECT', file_type: 'fit' },
+];
+
+const SYNC_FILES: Record<string, string> = {
+  i100: RUNNING_FIT,
+  i200: CYCLING_FIT,
+  i300: `${FIXTURES_DIR}/minimal.fit`,
+};
+
+test('Delete all data stops a running sync, so connecting again imports everything', async ({
+  page,
+}) => {
+  let deleted = false;
+  const fileRequestsAfterDelete: string[] = [];
+  await page.route('**/intervals.icu/api/v1/**', async (route) => {
+    const url = route.request().url();
+    if (url.includes('/activities')) {
+      await route.fulfill({ status: 200, json: SYNC_LISTING });
+      return;
+    }
+    if (url.endsWith('/athlete/0')) {
+      await route.fulfill({ status: 200, json: { firstname: 'Fabian' } });
+      return;
+    }
+    const id = /\/activity\/(\w+)\//.exec(url)?.[1] ?? '';
+    const backgroundRun = !deleted;
+    if (deleted) fileRequestsAfterDelete.push(id);
+    await new Promise((resolve) => setTimeout(resolve, backgroundRun ? 2000 : 300));
+    const body = readFileSync(SYNC_FILES[id] ?? '');
+    await route
+      .fulfill({ status: 200, contentType: 'application/octet-stream', body })
+      .catch(() => undefined);
+  });
+  const fileRequests = page.waitForRequest((request) => request.url().includes('/activity/'));
+  await seedIntervalsConnected(page, { importedActivityIds: [] });
+
+  await page.goto('/settings?tab=data');
+  await fileRequests;
+  await page.getByRole('button', { name: 'Delete all data' }).click();
+  await page.getByRole('button', { name: 'Delete Everything' }).click();
+  deleted = true;
+  await expect(page.getByRole('button', { name: 'Get started' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Get started' }).click();
+  await page.getByRole('button', { name: /^intervals\.icu/ }).click();
+  await fillOnboardingProfile(page);
+  await page.locator('input[type="password"]').fill('e2e-test-key');
+  expect(fileRequestsAfterDelete).toEqual([]);
+  await page.getByRole('button', { name: /import sessions/i }).click();
+
+  await expect(page.getByText(/^\d \/ 3$/)).toBeVisible();
+  expect(await closeImportSummary(page)).toContain('3 new sessions');
+  await page.goto('/sessions');
+  await expect(page.locator('[data-testid="session-item"]')).toHaveCount(3);
 });

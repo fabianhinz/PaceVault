@@ -20,7 +20,7 @@ export const useIntervalsSync = (): UseQueryResult<QueryResults['intervalsSync']
 
   return useQuery({
     queryKey: intervalsSyncQueryKey(),
-    queryFn: (ctx) => runIntervalsSync({ queryClient: ctx.client, apiKey }),
+    queryFn: (ctx) => runIntervalsSync({ queryClient: ctx.client, apiKey, signal: ctx.signal }),
     enabled: apiKey !== null && !keyInvalid && profilePresent && sessionsCurrent,
     refetchInterval: POLL_MS,
     retry: false,

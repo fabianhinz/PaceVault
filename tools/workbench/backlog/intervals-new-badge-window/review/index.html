@@ -15,8 +15,85 @@
         <p>
           intervals.icu imports download 5 files at a time, never faster than 5 requests/s. The
           sync window grows to 30 days and now also decides which sessions get the blue badge.
+          Round 1: "Delete all data" now stops a running intervals sync.
         </p>
       </header>
+
+      <h2>Review round 1</h2>
+      <p class="rv-text">
+        R1–R3 were already there before this item. "Delete all data" reset the stores but let a
+        running background sync go on: it kept downloading, wrote its sessions back into the
+        emptied app, and the next connect waited for it. Confirmed by an e2e probe. No UI change,
+        no screenshots.
+      </p>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R1</span>Import showed no progress</h3>
+        <div class="rv-text">
+          <p>
+            Fixed. Delete all data cancels and removes the <code>intervals-sync</code> query, and
+            its abort signal reaches every intervals.icu request (including one still waiting for
+            its pacer slot). The next connect no longer waits for an old run, so the dialog counts
+            up from the first file.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/settings/deleteAllData.ts:17-18</code>;
+            <code>apps/web/src/queries/intervals/useIntervalsSync.ts:23</code>;
+            <code>apps/web/src/mutations/intervals/useConnectIntervalsMutation.ts:23</code>,
+            <code>:36</code>; <code>apps/web/src/lib/api/intervals.ts:63-69</code>. Regression:
+            <code>apps/web/e2e/intervals.spec.ts:192</code> (fails without the fix: old
+            <code>/file</code> requests after the delete, and no "n / 3" progress).
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R2</span>"You're up to date" after an import</h3>
+        <div class="rv-text">
+          <p>
+            Fixed by the same change: the aborted run records no activity ids, so the new connect
+            imports everything and the summary counts it (e2e: "3 new sessions").
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/lib/api/intervalsImport.ts:161</code>, <code>:185</code>;
+            <code>apps/web/src/lib/api/intervalsSync.ts:125</code>, <code>:157</code>. Tests:
+            <code>apps/web/tests/lib/api/intervalsImport.integration.spec.ts:210</code>,
+            <code>apps/web/tests/lib/api/intervalsSync.integration.spec.ts:271</code>,
+            <code>apps/web/tests/lib/api/intervals.spec.ts:176</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R3</span>Deleted intervals sessions came back</h3>
+        <div class="rv-text">
+          <p>
+            Found by the probe. Fixed: after the abort, no further download is started, nothing is
+            parsed into the batcher, and a save already running writes no further IndexedDB chunk
+            and adds no session. A chunk written before the abort commits before the delete's own
+            clear, so it is wiped. File uploads pass no signal and behave as before.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/lib/storage/db.ts:183</code>;
+            <code>apps/web/src/lib/storage/createIngestBatcher.ts:90</code>, <code>:142</code>,
+            <code>:175</code>. Test:
+            <code>apps/web/tests/lib/storage/createIngestBatcher.integration.spec.ts:183</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3>Speed measured</h3>
+        <div class="rv-text">
+          <p>
+            100 synthetic FIT files (1 h, 1 Hz), new user, dev server. FIT upload: 1.9 s from click
+            to summary (parse 13 ms per file, two saves of about 265 ms). intervals.icu with a mocked
+            100 ms download: 21 s, of which 18.6 s is waiting for downloads, so the 5/s pacer sets
+            the floor (20 s per 100 activities); parsing and saving don't limit it.
+          </p>
+          <p class="rv-refs">Measured with a throwaway Playwright harness, removed after the run.</p>
+        </div>
+      </article>
 
       <h2>Changes without UI</h2>
       <p class="rv-text">No UI change, no screenshots.</p>
@@ -29,7 +106,7 @@
             listing, the key check, <code>/file</code> and the <code>/fit-file</code> fallback.
           </p>
           <p class="rv-refs">
-            <code>apps/web/src/lib/api/intervals.ts:35</code>, <code>:61</code>. Test:
+            <code>apps/web/src/lib/api/intervals.ts:35</code>, <code>:63</code>. Test:
             <code>apps/web/tests/lib/api/intervals.spec.ts</code>.
           </p>
         </div>
@@ -44,8 +121,8 @@
             requests still go out, at most 4) and the next background sync fetches them again.
           </p>
           <p class="rv-refs">
-            <code>apps/web/src/lib/api/intervalsImport.ts:21</code>, <code>:88</code>,
-            <code>:152</code>. Test:
+            <code>apps/web/src/lib/api/intervalsImport.ts:21</code>, <code>:93</code>,
+            <code>:163</code>. Test:
             <code>apps/web/tests/lib/api/intervalsImport.integration.spec.ts</code>.
           </p>
         </div>
@@ -60,9 +137,9 @@
             (first connect) nothing is badged. Backlog activities from years ago stay unbadged.
           </p>
           <p class="rv-refs">
-            <code>apps/web/src/lib/api/intervals.ts:161</code>, <code>:170</code>;
-            <code>apps/web/src/lib/api/intervalsSync.ts:112</code>;
-            <code>apps/web/src/lib/storage/createIngestBatcher.ts:91</code>. Tests:
+            <code>apps/web/src/lib/api/intervals.ts:179</code>, <code>:189</code>;
+            <code>apps/web/src/lib/api/intervalsSync.ts:116</code>;
+            <code>apps/web/src/lib/storage/createIngestBatcher.ts:97</code>. Tests:
             <code>apps/web/tests/lib/api/intervalsSync.integration.spec.ts</code>,
             <code>apps/web/tests/lib/storage/createIngestBatcher.integration.spec.ts</code>,
             <code>apps/web/e2e/intervals.spec.ts:22</code> (the two badge e2e tests now seed one
@@ -83,11 +160,11 @@
         </tr>
         <tr>
           <td><code>vp run test</code></td>
-          <td class="rv-pass">pass (apps/web: 110 files, 1072 tests)</td>
+          <td class="rv-pass">pass (apps/web: 110 files, 1076 tests)</td>
         </tr>
         <tr>
           <td><code>vp run e2e</code></td>
-          <td class="rv-pass">pass (86)</td>
+          <td class="rv-pass">pass (87)</td>
         </tr>
         <tr>
           <td><code>vp run build</code></td>
@@ -95,8 +172,11 @@
         </tr>
       </table>
       <p class="rv-text">
-        API specs run on fake timers (new helper <code>apps/web/tests/testUtils/fakeTimers.ts</code>),
-        so the pacing adds no real wait to the suite.
+        API specs run on fake timers (helper <code>apps/web/tests/testUtils/fakeTimers.ts</code>),
+        so the pacing adds no real wait to the suite. One new flaky failure in an earlier round-1
+        run: <code>apps/web/tests/lib/analysis/laps.dynamic.spec.ts</code> › "computes pace
+        correctly for running" failed once, passed alone and in two full re-runs; no laps code was
+        touched.
       </p>
 
       <h2>How to check</h2>
@@ -112,6 +192,12 @@
         <li>
           Record or upload a new activity to intervals.icu: after the next sync (focus the window or
           wait up to 15 min) it shows the blue badge.
+        </li>
+        <li>
+          R1–R3: with a key saved, reload Settings so the background sync starts, press Delete all
+          data while it downloads, then onboard again with the key. Network shows no further
+          <code>/file</code> requests after the delete, the dialog counts up, the summary names the
+          imported sessions, and no session from before the delete comes back.
         </li>
         <li>Tick the two real-data checks in <code>plan.md</code> when they hold.</li>
       </ol>
