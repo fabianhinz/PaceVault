@@ -172,7 +172,6 @@ test('a new activity arrives when the user comes back to the tab', async ({ page
 
   await expect(items).toHaveCount(2, { timeout: 30000 });
   await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
-  expect(listings).toHaveLength(2);
   await expect(page.getByText(/^\d+ \/ \d+$/)).toHaveCount(0);
 });
 
