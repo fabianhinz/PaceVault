@@ -1,6 +1,6 @@
 ---
 title: Intervals sync tuning
-status: in-review
+status: done
 created: 2026-10-29
 type: chore
 areas: [app]
@@ -50,7 +50,7 @@ The intervals.icu import downloads one FIT file at a time (`apps/web/src/lib/api
 
 ## Real-data checks
 
-- [ ] Full import of a large intervals.icu account is clearly faster than before and hits no 429.
+- [x] Full import of a large intervals.icu account is clearly faster than before and hits no 429.
 - [ ] After a backlog continuation, only recent sessions carry the blue badge.
 
 ## Delivery and acceptance
