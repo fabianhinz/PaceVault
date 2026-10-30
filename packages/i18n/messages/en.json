@@ -642,7 +642,6 @@
   "ui_intervals_connect_help": "Find it under Developer Settings",
   "ui_intervals_import_activities": "Import sessions",
   "ui_intervals_importing_short": "Importing…",
-  "ui_import_phase_preparing": "Getting ready…",
   "ui_reprocess_updating": "Migrating your sessions…",
   "ui_newer_version_title": "PaceVault was updated",
   "ui_newer_version_desc": "Another tab runs a newer version. Reload to keep your data in sync.",

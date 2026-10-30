@@ -27,8 +27,13 @@ const byNewestFirst = (a: IntervalsActivity, b: IntervalsActivity): number => {
   return (b.start_date_local ?? '').localeCompare(a.start_date_local ?? '');
 };
 
-const resolveOldest = (full: boolean): string => {
-  if (full || useIntervalsStore.getState().backlogPending) return FULL_HISTORY_OLDEST;
+const requestedByImport = (): boolean => {
+  const foreground = useImportProgressStore.getState().foreground;
+  return foreground?.source === 'intervals-import' && foreground.summary === null;
+};
+
+const resolveOldest = (foreground: boolean): string => {
+  if (foreground || useIntervalsStore.getState().backlogPending) return FULL_HISTORY_OLDEST;
   return intervalsSyncWindowOldest(useSessionsStore.getState().sessions) ?? FULL_HISTORY_OLDEST;
 };
 
@@ -106,15 +111,14 @@ const importBatch = async ({
 export const runIntervalsSync = async (options: {
   queryClient: QueryClient;
   apiKey: string | null;
-  full?: boolean;
-  foreground?: boolean;
   signal?: AbortSignal;
 }): Promise<IntervalsSyncSummary> => {
   const profile = useUserStore.getState().profile;
   if (options.apiKey === null || profile === null) return NOTHING;
 
+  const foreground = requestedByImport();
   const markNewSince = intervalsSyncWindowStart(useSessionsStore.getState().sessions);
-  const oldest = resolveOldest(options.full === true);
+  const oldest = resolveOldest(foreground);
   const fullListing = oldest === FULL_HISTORY_OLDEST;
 
   let listing: IntervalsActivity[];
@@ -140,9 +144,8 @@ export const runIntervalsSync = async (options: {
     return { ...NOTHING, available: listing.length };
   }
 
-  const foreground = options.foreground === true;
   if (foreground) useImportProgressStore.getState().setImportTotal(selection.batch.length);
-  else useImportProgressStore.getState().beginImport({ foreground: false });
+  else useImportProgressStore.getState().beginImport('intervals-sync');
 
   return await importBatch({
     batch: selection.batch,

@@ -6,6 +6,7 @@ import { runIntervalsSync } from '@/lib/api/intervalsSync.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useUserStore } from '@/store/user.ts';
+import { useImportProgressStore } from '@/store/importProgress.ts';
 import { createMockUserProfile } from '@tests/factories/profiles.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 import { MAX_ACTIVITIES_PER_IMPORT } from '@/lib/api/intervals.ts';
@@ -45,6 +46,10 @@ const stubApi = (options?: { listStatus?: number; listing?: unknown[] }): string
     }),
   );
   return urls;
+};
+
+const requestImport = (requested: boolean) => {
+  if (requested) useImportProgressStore.getState().beginImport('intervals-import');
 };
 
 const listedOldest = (urls: string[]): string | null => {
@@ -115,14 +120,15 @@ describe(runIntervalsSync.name, () => {
   });
 
   it.each([false, true])(
-    'marks only sessions inside the 30-day window as new (foreground: %s)',
-    async (foreground) => {
+    'marks only sessions inside the 30-day window as new (requested by Import: %s)',
+    async (requested) => {
       connect();
       seedIntervalsSession(new Date(2025, 11, 10, 10).getTime());
+      requestImport(requested);
       stubApi();
 
       await settleWithFakeTimers(
-        runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key', foreground }),
+        runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }),
       );
 
       const newByName = Object.fromEntries(
@@ -134,13 +140,14 @@ describe(runIntervalsSync.name, () => {
   );
 
   it.each([false, true])(
-    'marks nothing as new before the first intervals.icu session (foreground: %s)',
-    async (foreground) => {
+    'marks nothing as new before the first intervals.icu session (requested by Import: %s)',
+    async (requested) => {
       connect();
+      requestImport(requested);
       stubApi();
 
       await settleWithFakeTimers(
-        runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key', foreground }),
+        runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }),
       );
 
       expect(useSessionsStore.getState().sessions).toHaveLength(2);
@@ -238,16 +245,47 @@ describe(runIntervalsSync.name, () => {
     expect(listedOldest(urls)).toBe('2026-08-21');
   });
 
-  it('lists the full history when asked to, despite a window', async () => {
+  it('shows progress and lists the full history when the Import button requested the run', async () => {
     connect();
     seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
+    requestImport(true);
     const urls = stubApi();
 
-    await settleWithFakeTimers(
-      runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key', full: true }),
-    );
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
 
     expect(listedOldest(urls)).toBe('1990-01-01');
+    expect(useImportProgressStore.getState().runningImports).toBe(1);
+    expect(useImportProgressStore.getState().foreground).toMatchObject({
+      source: 'intervals-import',
+      phase: 'saving',
+      processed: 2,
+      total: 2,
+      summary: null,
+    });
+  });
+
+  it('runs in the background once the requested import shows its summary', async () => {
+    connect();
+    seedIntervalsSession(new Date(2026, 8, 20, 10).getTime());
+    requestImport(true);
+    useImportProgressStore.getState().finishImport({ kind: 'nothing-new' });
+    const urls = stubApi();
+
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
+
+    expect(listedOldest(urls)).toBe('2026-08-21');
+    expect(useImportProgressStore.getState().runningImports).toBe(0);
+    expect(useImportProgressStore.getState().foreground?.summary).toEqual({ kind: 'nothing-new' });
+  });
+
+  it('runs in the background without progress when no Import was requested', async () => {
+    connect();
+    stubApi();
+
+    await settleWithFakeTimers(runIntervalsSync({ queryClient: new QueryClient(), apiKey: 'key' }));
+
+    expect(useImportProgressStore.getState().runningImports).toBe(0);
+    expect(useImportProgressStore.getState().foreground).toBeNull();
   });
 
   it('flags a backlog when the batch hits the cap, and lists in full next time', async () => {

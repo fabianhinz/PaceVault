@@ -5,6 +5,15 @@ export type ImportPhase = 'preparing' | 'importing' | 'saving';
 
 export type ForegroundTask = 'import' | 'reprocess';
 
+export type ImportSource = 'files' | 'demo' | 'intervals-import' | 'intervals-sync';
+
+const FOREGROUND_BY_IMPORT_SOURCE: Record<ImportSource, boolean> = {
+  files: true,
+  demo: true,
+  'intervals-import': true,
+  'intervals-sync': false,
+};
+
 export type ImportSummary =
   | { kind: 'imported'; imported: number; duplicated: number; failed: number }
   | { kind: 'nothing-new' }
@@ -13,6 +22,7 @@ export type ImportSummary =
 
 export interface ForegroundImport {
   task: ForegroundTask;
+  source: ImportSource | null;
   phase: ImportPhase;
   processed: number;
   total: number;
@@ -25,7 +35,7 @@ interface ImportProgressState {
   foreground: ForegroundImport | null;
   awaitingTrackBuild: boolean;
   mapCrashed: boolean;
-  beginImport: (options: { foreground: boolean }) => void;
+  beginImport: (source: ImportSource) => void;
   setImportTotal: (total: number) => void;
   advanceImport: () => void;
   markImportSaving: () => void;
@@ -51,12 +61,13 @@ export const useImportProgressStore = create<ImportProgressState>()(
   immer((set) => ({
     ...INITIAL_IMPORT_PROGRESS_STORE_STATE,
 
-    beginImport: (options) =>
+    beginImport: (source) =>
       set((draft) => {
         draft.runningImports += 1;
-        if (!options.foreground) return;
+        if (!FOREGROUND_BY_IMPORT_SOURCE[source]) return;
         draft.foreground = {
           task: 'import',
+          source,
           phase: 'preparing',
           processed: 0,
           total: 0,
@@ -103,6 +114,7 @@ export const useImportProgressStore = create<ImportProgressState>()(
         draft.runningImports += 1;
         draft.foreground = {
           task: 'reprocess',
+          source: null,
           phase: 'preparing',
           processed: 0,
           total: 0,

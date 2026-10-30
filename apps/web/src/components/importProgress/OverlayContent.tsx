@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { m } from '@pacevault/i18n/messages.js';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
+import { PvInlineSkeleton } from '@pacevault/ui/components/pvInlineSkeleton/PvInlineSkeleton.tsx';
 import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { OVERLAY_CLASS } from '@pacevault/ui/lib/surfaces.ts';
 import { useImportProgressStore, type ForegroundImport } from '@/store/importProgress.ts';
@@ -24,6 +25,7 @@ export const OverlayContent: FC<OverlayContentProps> = (props) => {
   const summary = props.foreground.summary;
   const awaitingTrackBuild = useImportProgressStore((s) => s.awaitingTrackBuild);
   const showSummary = summary !== null && minTimeReached && !awaitingTrackBuild;
+  const label = foregroundLabel(props.foreground);
 
   return createPortal(
     <div
@@ -52,7 +54,11 @@ export const OverlayContent: FC<OverlayContentProps> = (props) => {
         </div>
       ) : (
         <div className="grid place-items-center gap-6">
-          <PvTypography variant="subtitle1">{foregroundLabel(props.foreground)}</PvTypography>
+          {label === null ? (
+            <PvInlineSkeleton className="h-5 w-32" />
+          ) : (
+            <PvTypography variant="subtitle1">{label}</PvTypography>
+          )}
           <ProgressRing foreground={props.foreground} />
         </div>
       )}

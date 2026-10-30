@@ -10,7 +10,7 @@ import {
   checkIntervalsKey,
   intervalsKeyCheckQueryKey,
 } from '@/queries/intervals/useIntervalsKeyCheck.ts';
-import { useConnectIntervalsMutation } from '@/mutations/intervals/useConnectIntervalsMutation.ts';
+import { intervalsSyncQueryKey, syncIntervals } from '@/queries/intervals/useIntervalsSync.ts';
 import type { ProfileGate } from '@/components/settings/hooks/types.ts';
 
 interface IntervalsImport {
@@ -32,7 +32,6 @@ export const useIntervalsImport = ({
   const [error, setError] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
   const queryClient = useQueryClient();
-  const connect = useConnectIntervalsMutation();
 
   const handleImport = async () => {
     const trimmed = keyInput.trim();
@@ -56,14 +55,17 @@ export const useIntervalsImport = ({
       return;
     }
 
-    // Started before the store writes: the mutation runs its full sync one microtask later, ahead of
-    // the re-render that enables the background `useIntervalsSync`, which would otherwise win the race.
-    const connecting = connect.mutateAsync({ apiKey: trimmed });
-    useImportProgressStore.getState().beginImport({ foreground: true });
+    useImportProgressStore.getState().beginImport('intervals-import');
     useIntervalsStore.getState().connectIntervals(trimmed);
 
     try {
-      const summary = await connecting;
+      const summary = await queryClient.fetchQuery({
+        queryKey: intervalsSyncQueryKey(),
+        queryFn: (ctx) =>
+          syncIntervals({ queryClient: ctx.client, apiKey: trimmed, signal: ctx.signal }),
+        staleTime: 0,
+        retry: false,
+      });
       if (summary.available === 0) {
         useImportProgressStore.getState().finishImport({ kind: 'no-activities' });
       } else if (summary.pending === 0) {

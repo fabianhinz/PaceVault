@@ -106,7 +106,7 @@ export const useFileUpload = (): FileUpload => {
       const fileArray = Array.from(files);
       if (fileArray.length === 0) return;
 
-      useImportProgressStore.getState().beginImport({ foreground: true });
+      useImportProgressStore.getState().beginImport('files');
 
       try {
         const summary = await importFiles({ files: fileArray, profile }, queryClient, snackbar);

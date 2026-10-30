@@ -1,10 +1,10 @@
 ---
 title: Intervals sync tuning
-status: ready
+status: in-review
 created: 2026-10-29
 type: chore
 areas: [app]
-next: Owner sets ready, then "lets dev" (round 2)
+next: Owner reviews round 2
 size: small
 ---
 
@@ -80,6 +80,10 @@ Review doc in `tools/workbench/backlog/intervals-new-badge-window/review/` (root
 
 - **R4 fix** (owner, 2026-10-30: "d) one runner: lets do it on this branch"): a sync runs only through the `intervals-sync` query and its one fetcher. Whether a run is foreground (progress, summary) and lists the full history is read from state when the run starts, never passed by the caller. Rejected as order-dependent: starting the foreground fetch synchronously in the handler, moving the store writes into the mutation, cancel-then-run.
 - **R5** (owner, 2026-10-30): the `preparing` phase shows the determinate layout: empty static ring with "0 / 0" and a skeleton in place of the label; `ui_import_phase_preparing` is deleted. Owner on the side effects (file upload and reprocess pass through `preparing` too): "side effects are acceptable".
+
+- **R6** (owner, 2026-10-30: "mini bug, just fix it"): after Delete all data (Settings or the demo banner) onboarding reopened at its last step with the profile gone. `clearAllAppState` now also calls `resetOnboarding` (`apps/web/src/store/onboarding.ts`, `INITIAL_ONBOARDING_STORE_STATE`); regression spec `apps/web/tests/store/onboarding.spec.ts`.
+
+- **R7** (owner, 2026-10-30: "yeah just do it here, no need for an item"): e2e "a new activity arrives when the user comes back to the tab" in `apps/web/e2e/intervals.spec.ts` uses the until-then unused `switchTabAwayAndBack`: the listing gains an activity, the tab switch triggers the background sync, the new session shows the badge, no progress overlay. `mockApi` takes an optional `listing` getter.
 
 ### Round 2 approach
 
