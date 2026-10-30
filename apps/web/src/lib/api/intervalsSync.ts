@@ -3,6 +3,7 @@ import {
   FULL_HISTORY_OLDEST,
   intervalsErrorCode,
   intervalsSyncWindowOldest,
+  intervalsSyncWindowStart,
   listIntervalsActivities,
   MAX_ACTIVITIES_PER_IMPORT,
   type IntervalsActivity,
@@ -26,8 +27,13 @@ const byNewestFirst = (a: IntervalsActivity, b: IntervalsActivity): number => {
   return (b.start_date_local ?? '').localeCompare(a.start_date_local ?? '');
 };
 
-const resolveOldest = (full: boolean): string => {
-  if (full || useIntervalsStore.getState().backlogPending) return FULL_HISTORY_OLDEST;
+const requestedByImport = (): boolean => {
+  const foreground = useImportProgressStore.getState().foreground;
+  return foreground?.source === 'intervals-import' && foreground.summary === null;
+};
+
+const resolveOldest = (foreground: boolean): string => {
+  if (foreground || useIntervalsStore.getState().backlogPending) return FULL_HISTORY_OLDEST;
   return intervalsSyncWindowOldest(useSessionsStore.getState().sessions) ?? FULL_HISTORY_OLDEST;
 };
 
@@ -50,18 +56,22 @@ const importBatch = async ({
   listingLength,
   fullListing,
   foreground,
+  markNewSince,
   apiKey,
   profile,
   queryClient,
+  signal,
 }: {
   batch: IntervalsActivity[];
   backlogLength: number;
   listingLength: number;
   fullListing: boolean;
   foreground: boolean;
+  markNewSince: number | undefined;
   apiKey: string;
   profile: UserProfile;
   queryClient: QueryClient;
+  signal: AbortSignal | undefined;
 }): Promise<IntervalsSyncSummary> => {
   try {
     const result = await runIntervalsImport({
@@ -72,11 +82,12 @@ const importBatch = async ({
         if (foreground) useImportProgressStore.getState().advanceImport();
       },
       queryClient,
-      markNew: !foreground,
+      markNewSince,
       onSaving: () => {
         if (foreground) useImportProgressStore.getState().markImportSaving();
       },
       onChunkIngested: (ids) => useIntervalsStore.getState().recordIntervalsImported(ids),
+      signal,
     });
 
     if (result.fatal === 'unauthorized') useIntervalsStore.getState().markIntervalsKeyInvalid();
@@ -100,18 +111,23 @@ const importBatch = async ({
 export const runIntervalsSync = async (options: {
   queryClient: QueryClient;
   apiKey: string | null;
-  full?: boolean;
-  foreground?: boolean;
+  signal?: AbortSignal;
 }): Promise<IntervalsSyncSummary> => {
   const profile = useUserStore.getState().profile;
   if (options.apiKey === null || profile === null) return NOTHING;
 
-  const oldest = resolveOldest(options.full === true);
+  const foreground = requestedByImport();
+  const markNewSince = intervalsSyncWindowStart(useSessionsStore.getState().sessions);
+  const oldest = resolveOldest(foreground);
   const fullListing = oldest === FULL_HISTORY_OLDEST;
 
   let listing: IntervalsActivity[];
   try {
-    listing = await listIntervalsActivities({ apiKey: options.apiKey, oldest });
+    listing = await listIntervalsActivities({
+      apiKey: options.apiKey,
+      oldest,
+      signal: options.signal,
+    });
   } catch (error) {
     if (intervalsErrorCode(error) === 'unauthorized') {
       useIntervalsStore.getState().markIntervalsKeyInvalid();
@@ -128,9 +144,8 @@ export const runIntervalsSync = async (options: {
     return { ...NOTHING, available: listing.length };
   }
 
-  const foreground = options.foreground === true;
   if (foreground) useImportProgressStore.getState().setImportTotal(selection.batch.length);
-  else useImportProgressStore.getState().beginImport({ foreground: false });
+  else useImportProgressStore.getState().beginImport('intervals-sync');
 
   return await importBatch({
     batch: selection.batch,
@@ -138,8 +153,10 @@ export const runIntervalsSync = async (options: {
     listingLength: listing.length,
     fullListing,
     foreground,
+    markNewSince,
     apiKey: options.apiKey,
     profile,
     queryClient: options.queryClient,
+    signal: options.signal,
   });
 };

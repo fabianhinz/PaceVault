@@ -642,7 +642,6 @@
   "ui_intervals_connect_help": "Zu finden unter Developer Settings",
   "ui_intervals_import_activities": "Einheiten importieren",
   "ui_intervals_importing_short": "Importiere…",
-  "ui_import_phase_preparing": "Einen Moment…",
   "ui_reprocess_updating": "Einheiten werden migriert…",
   "ui_newer_version_title": "PaceVault wurde aktualisiert",
   "ui_newer_version_desc": "Ein anderer Tab nutzt schon eine neuere Version. Lade neu, damit deine Daten synchron bleiben.",

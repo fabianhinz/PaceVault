@@ -5,14 +5,18 @@ import { useStudioStore } from '@/store/studio.ts';
 import { useUserStore } from '@/store/user.ts';
 import { useCoachPlanStore } from '@/store/coachPlan.ts';
 import { useLayoutStore } from '@/store/layout.ts';
+import { useOnboardingStore } from '@/store/onboarding.ts';
 import { useFiltersStore } from '@/store/filters.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { resetPersonalBests } from '@/queries/records/usePersonalBests.ts';
 import { resetStudioRoutePoints } from '@/queries/studio/useStudioRoutePoints.ts';
 import { resetSessionGps } from '@/queries/sessions/useSessionGps.ts';
+import { intervalsSyncQueryKey } from '@/queries/intervals/useIntervalsSync.ts';
 
 export const clearAllAppState = (queryClient: QueryClient): void => {
+  void queryClient.cancelQueries({ queryKey: intervalsSyncQueryKey() });
+  queryClient.removeQueries({ queryKey: intervalsSyncQueryKey() });
   useSessionsStore.getState().clearAll();
   useTripsStore.getState().clearAll();
   useStudioStore.getState().clearAll();
@@ -23,6 +27,7 @@ export const clearAllAppState = (queryClient: QueryClient): void => {
   resetSessionGps(queryClient);
   useIntervalsStore.getState().disconnectIntervals();
   useLayoutStore.setState({ onboardingComplete: false, demoMode: false });
+  useOnboardingStore.getState().resetOnboarding();
   useFiltersStore.getState().resetFilters();
   useMapPreferencesStore.getState().resetMapPreferences();
 };

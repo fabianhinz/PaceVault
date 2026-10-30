@@ -18,7 +18,18 @@ interface OnboardingState {
   previousOnboardingStep: () => void;
   setOnboardingCardOpen: (open: boolean) => void;
   revealOnboardingPreview: () => void;
+  resetOnboarding: () => void;
 }
+
+export const INITIAL_ONBOARDING_STORE_STATE: Pick<
+  OnboardingState,
+  'step' | 'source' | 'onboardingCardOpen' | 'onboardingPreviewRevealed'
+> = {
+  step: 'intro',
+  source: null,
+  onboardingCardOpen: false,
+  onboardingPreviewRevealed: false,
+};
 
 const NEXT_STEP_BY_STEP: Record<OnboardingStep, OnboardingStep> = {
   intro: 'source',
@@ -38,10 +49,7 @@ const PREVIOUS_STEP_BY_STEP: Record<OnboardingStep, OnboardingStep> = {
 
 export const useOnboardingStore = create<OnboardingState>()(
   immer((set) => ({
-    step: 'intro',
-    source: null,
-    onboardingCardOpen: false,
-    onboardingPreviewRevealed: false,
+    ...INITIAL_ONBOARDING_STORE_STATE,
     startOnboardingSetup: () =>
       set((state) => {
         state.step = 'source';
@@ -68,6 +76,7 @@ export const useOnboardingStore = create<OnboardingState>()(
         state.onboardingPreviewRevealed = true;
         state.onboardingCardOpen = true;
       }),
+    resetOnboarding: () => set(INITIAL_ONBOARDING_STORE_STATE),
   })),
 );
 

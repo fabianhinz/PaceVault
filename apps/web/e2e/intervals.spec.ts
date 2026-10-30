@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import {
   RUNNING_FIT,
   CYCLING_FIT,
+  FIXTURES_DIR,
   seedIntervalsConnected,
   seedOnboardingComplete,
 } from './helpers/seed';
@@ -18,75 +19,59 @@ const LISTING = [
 
 const FILES: Record<string, string> = { i100: RUNNING_FIT, i200: CYCLING_FIT };
 
-const mockApi = async (page: import('@playwright/test').Page) => {
+// One day before cycling.fit (i200), so i200 lies inside the 30-day "new" window and lists first.
+const INTERVALS_SESSION_BEFORE_I200 = new Date(2025, 10, 28, 10).getTime();
+
+interface ApiDelays {
+  keyCheckMs: number;
+  listingMs: number;
+  fileMs: number;
+}
+
+const NO_DELAYS: ApiDelays = { keyCheckMs: 0, listingMs: 0, fileMs: 0 };
+
+const REALISTIC_DELAYS: ApiDelays = { keyCheckMs: 300, listingMs: 1000, fileMs: 200 };
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const mockApi = async ({
+  page,
+  delays = NO_DELAYS,
+  listing = () => LISTING,
+}: {
+  page: import('@playwright/test').Page;
+  delays?: ApiDelays;
+  listing?: () => typeof LISTING;
+}) => {
   await page.route('**/intervals.icu/api/v1/**', async (route) => {
     const url = route.request().url();
 
     if (url.includes('/activities')) {
-      await route.fulfill({ status: 200, json: LISTING });
+      await wait(delays.listingMs);
+      await route.fulfill({ status: 200, json: listing() }).catch(() => undefined);
       return;
     }
     if (url.includes('/athlete/0')) {
-      await route.fulfill({ status: 200, json: { firstname: 'Fabian' } });
+      await wait(delays.keyCheckMs);
+      await route.fulfill({ status: 200, json: { firstname: 'Fabian' } }).catch(() => undefined);
       return;
     }
 
+    await wait(delays.fileMs);
     const file = FILES[/\/activity\/(\w+)\//.exec(url)?.[1] ?? ''];
     if (file === undefined) {
-      await route.fulfill({ status: 422, json: { error: 'no file' } });
+      await route.fulfill({ status: 422, json: { error: 'no file' } }).catch(() => undefined);
       return;
     }
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/octet-stream',
-      body: readFileSync(file),
-    });
+    await route
+      .fulfill({
+        status: 200,
+        contentType: 'application/octet-stream',
+        body: readFileSync(file),
+      })
+      .catch(() => undefined);
   });
 };
-
-test('intervals.icu onboarding: profile + key, then import', async ({ page }) => {
-  await mockApi(page);
-  await startOnboarding(page, 'intervals.icu');
-  await fillOnboardingProfile(page);
-
-  const keyInput = page.locator('input[type="password"]');
-  await expect(keyInput).toBeVisible({ timeout: 5000 });
-  await keyInput.fill('e2e-test-key');
-  await page.getByRole('button', { name: /import sessions/i }).click();
-
-  expect(await closeImportSummary(page)).toContain('2 new sessions');
-  await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30000 });
-});
-
-test('a connected account syncs new activities on load, without a click', async ({ page }) => {
-  await mockApi(page);
-  await seedIntervalsConnected(page, { importedActivityIds: ['i100'] });
-
-  await page.goto('/sessions');
-
-  const items = page.locator('[data-testid="session-item"]');
-  await expect(items).toHaveCount(1, { timeout: 30000 });
-  await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
-});
-
-test('opening a synced session clears its badge', async ({ page }) => {
-  await mockApi(page);
-  await seedIntervalsConnected(page, { importedActivityIds: ['i100'] });
-
-  await page.goto('/sessions');
-
-  const items = page.locator('[data-testid="session-item"]');
-  await expect(items).toHaveCount(1, { timeout: 30000 });
-  await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
-  await items.first().click();
-
-  await expect(page).toHaveURL(/\/sessions\/[\w-]+/);
-  await expect(items).toHaveCount(0);
-  await page.goBack();
-
-  await expect(items).toHaveCount(1);
-  await expect(items.first().locator('[data-testid="icon-badge"]')).toHaveCount(0);
-});
 
 const trackListings = (page: import('@playwright/test').Page): string[] => {
   const listings: string[] = [];
@@ -95,6 +80,66 @@ const trackListings = (page: import('@playwright/test').Page): string[] => {
   });
   return listings;
 };
+
+test('intervals.icu onboarding: Import after "Key valid" runs one import with progress', async ({
+  page,
+}) => {
+  await mockApi({ page, delays: REALISTIC_DELAYS });
+  const listings = trackListings(page);
+  await startOnboarding(page, 'intervals.icu');
+  await fillOnboardingProfile(page);
+
+  const keyInput = page.locator('input[type="password"]');
+  await expect(keyInput).toBeVisible({ timeout: 5000 });
+  await keyInput.fill('e2e-test-key');
+  await expect(page.getByText('Key valid', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /import sessions/i }).click();
+
+  await page
+    .getByRole('status')
+    .getByText(/^[1-9]\d* \/ 2$/)
+    .waitFor({ timeout: 10000 });
+  await expect(page.getByTestId('import-summary')).toBeVisible({ timeout: 30000 });
+  expect(listings).toHaveLength(1);
+  expect(await closeImportSummary(page)).toContain('2 new sessions');
+  await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30000 });
+});
+
+test('a connected account syncs new activities on load, without a click', async ({ page }) => {
+  await mockApi({ page });
+  await seedIntervalsConnected(page, {
+    importedActivityIds: ['i100'],
+    intervalsSessionDates: [INTERVALS_SESSION_BEFORE_I200],
+  });
+
+  await page.goto('/sessions');
+
+  const items = page.locator('[data-testid="session-item"]');
+  await expect(items).toHaveCount(2, { timeout: 30000 });
+  await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
+});
+
+test('opening a synced session clears its badge', async ({ page }) => {
+  await mockApi({ page });
+  await seedIntervalsConnected(page, {
+    importedActivityIds: ['i100'],
+    intervalsSessionDates: [INTERVALS_SESSION_BEFORE_I200],
+  });
+
+  await page.goto('/sessions');
+
+  const items = page.locator('[data-testid="session-item"]');
+  await expect(items).toHaveCount(2, { timeout: 30000 });
+  await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
+  await items.first().click();
+
+  await expect(page).toHaveURL(/\/sessions\/[\w-]+/);
+  await expect(items).toHaveCount(0);
+  await page.goBack();
+
+  await expect(items).toHaveCount(2);
+  await expect(items.first().locator('[data-testid="icon-badge"]')).toHaveCount(0);
+});
 
 const switchTabAwayAndBack = async (page: import('@playwright/test').Page) => {
   await page.evaluate(() => {
@@ -107,8 +152,31 @@ const switchTabAwayAndBack = async (page: import('@playwright/test').Page) => {
   });
 };
 
+test('a new activity arrives when the user comes back to the tab', async ({ page }) => {
+  let listing = LISTING.filter((activity) => activity.id !== 'i200');
+  await mockApi({ page, listing: () => listing });
+  const listings = trackListings(page);
+  await seedIntervalsConnected(page, {
+    importedActivityIds: ['i100'],
+    intervalsSessionDates: [INTERVALS_SESSION_BEFORE_I200],
+  });
+
+  await page.goto('/sessions');
+
+  const items = page.locator('[data-testid="session-item"]');
+  await expect.poll(() => listings.length, { timeout: 30000 }).toBe(1);
+  await expect(items).toHaveCount(1);
+
+  listing = LISTING;
+  await switchTabAwayAndBack(page);
+
+  await expect(items).toHaveCount(2, { timeout: 30000 });
+  await expect(items.first().locator('[data-testid="icon-badge"]')).toBeVisible();
+  await expect(page.getByText(/^\d+ \/ \d+$/)).toHaveCount(0);
+});
+
 test('settings shows the integration status and sessions by source', async ({ page }) => {
-  await mockApi(page);
+  await mockApi({ page });
   await seedIntervalsConnected(page, {
     importedActivityIds: ['i100', 'i200'],
     intervalsSessionDates: [Date.now() - 86_400_000, Date.now() - 2 * 86_400_000],
@@ -140,7 +208,7 @@ const trackVerifies = (page: import('@playwright/test').Page): string[] => {
 
 test('a typed key is checked after a short pause and shows as valid', async ({ page }) => {
   await page.clock.install();
-  await mockApi(page);
+  await mockApi({ page });
   await seedOnboardingComplete(page);
   await page.goto('/settings?tab=data');
   const verifies = trackVerifies(page);
@@ -165,4 +233,63 @@ test('a rejected key shows in the status line and blocks the import', async ({ p
 
   await expect(page.getByText('Key rejected', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: /import sessions/i })).toBeDisabled();
+});
+
+const SYNC_LISTING = [
+  { id: 'i100', name: 'Laufen', type: 'Run', source: 'GARMIN_CONNECT', file_type: 'fit' },
+  { id: 'i200', name: 'Z2', type: 'Ride', source: 'GARMIN_CONNECT', file_type: 'fit' },
+  { id: 'i300', name: 'Kurz', type: 'Ride', source: 'GARMIN_CONNECT', file_type: 'fit' },
+];
+
+const SYNC_FILES: Record<string, string> = {
+  i100: RUNNING_FIT,
+  i200: CYCLING_FIT,
+  i300: `${FIXTURES_DIR}/minimal.fit`,
+};
+
+test('Delete all data stops a running sync, so connecting again imports everything', async ({
+  page,
+}) => {
+  let deleted = false;
+  const fileRequestsAfterDelete: string[] = [];
+  await page.route('**/intervals.icu/api/v1/**', async (route) => {
+    const url = route.request().url();
+    if (url.includes('/activities')) {
+      await route.fulfill({ status: 200, json: SYNC_LISTING });
+      return;
+    }
+    if (url.endsWith('/athlete/0')) {
+      await route.fulfill({ status: 200, json: { firstname: 'Fabian' } });
+      return;
+    }
+    const id = /\/activity\/(\w+)\//.exec(url)?.[1] ?? '';
+    const backgroundRun = !deleted;
+    if (deleted) fileRequestsAfterDelete.push(id);
+    await new Promise((resolve) => setTimeout(resolve, backgroundRun ? 2000 : 300));
+    const body = readFileSync(SYNC_FILES[id] ?? '');
+    await route
+      .fulfill({ status: 200, contentType: 'application/octet-stream', body })
+      .catch(() => undefined);
+  });
+  const fileRequests = page.waitForRequest((request) => request.url().includes('/activity/'));
+  await seedIntervalsConnected(page, { importedActivityIds: [] });
+
+  await page.goto('/settings?tab=data');
+  await fileRequests;
+  await page.getByRole('button', { name: 'Delete all data' }).click();
+  await page.getByRole('button', { name: 'Delete Everything' }).click();
+  deleted = true;
+  await expect(page.getByRole('button', { name: 'Get started' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Get started' }).click();
+  await page.getByRole('button', { name: /^intervals\.icu/ }).click();
+  await fillOnboardingProfile(page);
+  await page.locator('input[type="password"]').fill('e2e-test-key');
+  expect(fileRequestsAfterDelete).toEqual([]);
+  await page.getByRole('button', { name: /import sessions/i }).click();
+
+  await expect(page.getByText(/^\d \/ 3$/)).toBeVisible();
+  expect(await closeImportSummary(page)).toContain('3 new sessions');
+  await page.goto('/sessions');
+  await expect(page.locator('[data-testid="session-item"]')).toHaveCount(3);
 });

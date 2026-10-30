@@ -3,8 +3,9 @@ import type { ForegroundImport, ImportSummary } from '@/store/importProgress.ts'
 import { formatPlural } from '@/lib/format/formatters.ts';
 import { LABEL_BY_IMPORT_PHASE } from '@/microcopy/importProgress.ts';
 
-export const foregroundLabel = (foreground: ForegroundImport): string => {
+export const foregroundLabel = (foreground: ForegroundImport): string | null => {
   if (foreground.task === 'reprocess') return m.ui_reprocess_updating();
+  if (foreground.phase === 'preparing') return null;
   return LABEL_BY_IMPORT_PHASE[foreground.phase]();
 };
 

@@ -70,7 +70,7 @@ const addDemoTripsAndRoutes = async ({
 
 /** Builds the deterministic demo dataset and stores it like an import. */
 export const loadDemoData = async (queryClient: QueryClient): Promise<number> => {
-  useImportProgressStore.getState().beginImport({ foreground: true });
+  useImportProgressStore.getState().beginImport('demo');
   const routes = await loadDemoRoutes();
   const dataset = buildDemoDataset({ seed: DEMO_SEED, today: new Date(), routes });
 

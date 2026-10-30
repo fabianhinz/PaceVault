@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vite-plus/test';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vite-plus/test';
+import { fakeRequestTimers, settleWithFakeTimers } from '@testUtils/fakeTimers.ts';
 import { FailedResponseError } from '@/lib/api/fetchResponse.ts';
 import {
   downloadActivityFit,
@@ -24,13 +25,17 @@ const stubFetch = (impl: (url: string, init?: RequestInit) => Promise<Response>)
   return spy;
 };
 
+beforeEach(() => {
+  fakeRequestTimers();
+});
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 const listWith = async (activities: Array<Partial<IntervalsActivity> & { id: string }>) => {
   stubFetch(async () => Response.json(activities.map((a) => activity(a))));
-  const listed = await listIntervalsActivities({ apiKey: KEY });
+  const listed = await settleWithFakeTimers(listIntervalsActivities({ apiKey: KEY }));
   return listed.map((a) => a.id);
 };
 
@@ -84,7 +89,7 @@ describe(verifyIntervalsKey.name, () => {
   it('sends basic auth with the literal username API_KEY and omits credentials', async () => {
     const spy = stubFetch(async () => Response.json({ firstname: 'Fabian' }));
 
-    await expect(verifyIntervalsKey(KEY)).resolves.toBeUndefined();
+    await expect(settleWithFakeTimers(verifyIntervalsKey(KEY))).resolves.toBeUndefined();
 
     const url = spy.mock.calls[0]?.[0] ?? '';
     const init = spy.mock.calls[0]?.[1] ?? {};
@@ -97,7 +102,7 @@ describe(verifyIntervalsKey.name, () => {
   it('rejects with the failed response when the key is refused', async () => {
     stubFetch(async () => new Response('{}', { status: 401 }));
 
-    await expect(verifyIntervalsKey(KEY)).rejects.toMatchObject({
+    await expect(settleWithFakeTimers(verifyIntervalsKey(KEY))).rejects.toMatchObject({
       name: 'FailedResponseError',
       reason: 'unauthorized',
     });
@@ -108,7 +113,9 @@ describe(listIntervalsActivities.name, () => {
   it('drops malformed rows without voiding the listing', async () => {
     stubFetch(async () => Response.json([{ id: 'i1' }, { name: 'no id' }, { id: 'i2' }]));
 
-    expect((await listIntervalsActivities({ apiKey: KEY })).map((a) => a.id)).toEqual(['i1', 'i2']);
+    expect(
+      (await settleWithFakeTimers(listIntervalsActivities({ apiKey: KEY }))).map((a) => a.id),
+    ).toEqual(['i1', 'i2']);
   });
 });
 
@@ -116,7 +123,9 @@ describe(downloadActivityFit.name, () => {
   it('prefers the device original for FIT uploads, because it carries the file_id', async () => {
     const spy = stubFetch(async () => new Response(new Uint8Array([1, 2])));
 
-    await downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) });
+    await settleWithFakeTimers(
+      downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) }),
+    );
 
     expect(spy.mock.calls[0]?.[0] ?? '').toContain('/activity/i1/file');
     expect(spy).toHaveBeenCalledTimes(1);
@@ -129,7 +138,9 @@ describe(downloadActivityFit.name, () => {
     });
 
     await expect(
-      downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) }),
+      settleWithFakeTimers(
+        downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) }),
+      ),
     ).resolves.toBeInstanceOf(ArrayBuffer);
     expect(spy.mock.calls[1]?.[0] ?? '').toContain('/activity/i1/fit-file');
   });
@@ -138,8 +149,40 @@ describe(downloadActivityFit.name, () => {
     const spy = stubFetch(async () => new Response('{}', { status: 429 }));
 
     await expect(
-      downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) }),
+      settleWithFakeTimers(
+        downloadActivityFit({ apiKey: KEY, activity: activity({ id: 'i1', file_type: 'fit' }) }),
+      ),
     ).rejects.toMatchObject({ name: 'FailedResponseError', reason: 'rate-limited' });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('intervals.icu request pacing', () => {
+  it('starts requests at least 200 ms apart, at most 5 per second', async () => {
+    const startedAt: number[] = [];
+    stubFetch(async () => {
+      startedAt.push(performance.now());
+      return Response.json({});
+    });
+
+    await settleWithFakeTimers(
+      Promise.all([verifyIntervalsKey(KEY), verifyIntervalsKey(KEY), verifyIntervalsKey(KEY)]),
+    );
+
+    const gaps = startedAt.slice(1).map((at, index) => at - (startedAt[index] ?? at));
+    expect(gaps).toEqual([200, 200]);
+  });
+
+  it('does not fetch a request aborted while it waits for its slot', async () => {
+    const spy = stubFetch(async () => Response.json([]));
+    const controller = new AbortController();
+
+    const first = listIntervalsActivities({ apiKey: KEY });
+    const second = listIntervalsActivities({ apiKey: KEY, signal: controller.signal });
+    controller.abort();
+
+    await expect(settleWithFakeTimers(second)).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(first).resolves.toEqual([]);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 });

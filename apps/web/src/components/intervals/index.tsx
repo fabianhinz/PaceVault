@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useIsFetching } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
 import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
@@ -8,6 +9,7 @@ import { PvLabel } from '@pacevault/ui/components/pvLabel/PvLabel.tsx';
 import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useUserStore } from '@/store/user.ts';
+import { intervalsSyncQueryKey } from '@/queries/intervals/useIntervalsSync.ts';
 import type { ProfileGate } from '@/components/settings/hooks/types.ts';
 import { IntervalsStatusLine } from './IntervalsStatusLine.tsx';
 import { useIntervalsKeyInput } from './hooks/useIntervalsKeyInput.ts';
@@ -23,6 +25,7 @@ interface IntervalsProps {
 export const Intervals: FC<IntervalsProps> = (props) => {
   const storedKey = useIntervalsStore((s) => s.apiKey);
   const profilePresent = useUserStore((s) => s.profile !== null);
+  const syncing = useIsFetching({ queryKey: intervalsSyncQueryKey() }) > 0;
   let profileReady = profilePresent;
   if (props.profileGate) profileReady = props.profileGate.ready;
 
@@ -70,6 +73,7 @@ export const Intervals: FC<IntervalsProps> = (props) => {
           loading={intervalsImport.manual}
           disabled={
             intervalsImport.manual ||
+            syncing ||
             keyInput.trimmed === '' ||
             !profileReady ||
             keyInput.check?.kind === 'checking' ||
