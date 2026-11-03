@@ -34,6 +34,9 @@ export const TRACK_COLOR_BY_SPORT: Record<Sport, [number, number, number]> = {
   cycling: [249, 115, 22],
 };
 
+// Map twin of the theme's --color-best (amber-400), the colour of every best-pass element.
+export const BEST_MARKER_COLOR: [number, number, number] = [255, 185, 0];
+
 // Live "you are here" position. The accuracy disc mirrors the glass surface
 // (translucent white fill + faint white border); the dot is a solid locator
 // with a white ring, à la Google/Apple Maps.

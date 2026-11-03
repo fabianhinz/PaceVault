@@ -5,6 +5,7 @@ import { DashboardPage } from '@/pages/DashboardPage.tsx';
 import { SessionsPage } from '@/pages/SessionsPage.tsx';
 import { SessionDetailPage } from '@/pages/SessionDetailPage.tsx';
 import { TripDetailPage } from '@/pages/TripDetailPage.tsx';
+import { SegmentDetailPage } from '@/pages/SegmentDetailPage.tsx';
 import { StudioDetailPage } from '@/pages/StudioDetailPage.tsx';
 import { SettingsPage } from '@/pages/SettingsPage.tsx';
 import { LabsPage } from '@/pages/LabsPage.tsx';
@@ -17,6 +18,7 @@ export const AppRoutes: FC = () => (
       <Route path={PATTERN_BY_PAGE.sessions} element={<SessionsPage />} />
       <Route path={PATTERN_BY_PAGE.sessionDetail} element={<SessionDetailPage />} />
       <Route path={PATTERN_BY_PAGE.tripDetail} element={<TripDetailPage />} />
+      <Route path={PATTERN_BY_PAGE.segmentDetail} element={<SegmentDetailPage />} />
       <Route path={PATTERN_BY_PAGE.studioDetail} element={<StudioDetailPage />} />
       <Route path={PATTERN_BY_PAGE.labs} element={<LabsPage />} />
       <Route path={PATTERN_BY_PAGE.settings} element={<SettingsPage />} />

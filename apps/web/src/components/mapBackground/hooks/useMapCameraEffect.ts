@@ -48,6 +48,7 @@ interface FitSources {
   sessionBounds: GPSBounds | null;
   lapPath: [number, number][] | null;
   studioBounds: GPSBounds | null;
+  segmentBounds: GPSBounds | null;
 }
 
 interface FitOptions {
@@ -91,6 +92,8 @@ const fitBoundsOf = ({
       return pathBounds(sources.lapPath);
     case 'studio':
       return sources.studioBounds;
+    case 'segment':
+      return sources.segmentBounds;
     case 'session':
     case 'lapClose':
     case 'tilt':
@@ -103,7 +106,7 @@ const fitOptions = (fit: MapCameraFit): FitOptions => {
   if (fit === 'overview' || fit === 'trip') {
     return { padding: mapPadding(OVERVIEW_FIT_MARGIN), duration: OVERVIEW_FIT_DURATION_MS };
   }
-  if (fit === 'lap' || fit === 'lapClose') {
+  if (fit === 'lap' || fit === 'lapClose' || fit === 'segment') {
     return {
       padding: mapPadding(MAP_FIT_MARGIN, { sheetCap: LAP_SHEET_CAP }),
       maxZoom: LAP_MAX_ZOOM,
@@ -197,6 +200,7 @@ const applyCameraOnlyFit = ({ fit, map, runs, target, median }: CameraFit): bool
     case 'lap':
     case 'lapClose':
     case 'trip':
+    case 'segment':
     case 'studio':
       return false;
   }
@@ -262,6 +266,7 @@ const fitPathOf = ({
     case 'lapClose':
     case 'flatten':
     case 'trip':
+    case 'segment':
     case 'studio':
       return sessionPath;
   }
@@ -364,6 +369,7 @@ export const useMapCameraEffect = ({
           sessionBounds: inputs.sessionBounds,
           lapPath: lapPath?.path ?? null,
           studioBounds: inputs.studioBounds,
+          segmentBounds: inputs.segmentBounds,
         },
       })
     )
@@ -381,6 +387,7 @@ export const useMapCameraEffect = ({
     inputs.lapCloseCount,
     inputs.refitRequest,
     inputs.studioBounds,
+    inputs.segmentBounds,
     inputs.sessionDataBlocked,
     inputs.progressOverlayOpen,
     gpsData,

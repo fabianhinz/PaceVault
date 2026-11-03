@@ -6,15 +6,16 @@ describe('DB schema', () => {
     resetDBInstance();
   });
 
-  it('opens at version 4 with all expected stores', async () => {
+  it('opens at version 5 with all expected stores', async () => {
     const db = await getDB();
-    expect(db.version).toBe(4);
+    expect(db.version).toBe(5);
     expect(db.objectStoreNames.contains('session-records')).toBe(true);
     expect(db.objectStoreNames.contains('session-laps')).toBe(true);
     expect(db.objectStoreNames.contains('session-gps')).toBe(true);
     expect(db.objectStoreNames.contains('session-weather')).toBe(true);
     expect(db.objectStoreNames.contains('fit-files')).toBe(true);
     expect(db.objectStoreNames.contains('studio-route-points')).toBe(true);
+    expect(db.objectStoreNames.contains('segments')).toBe(true);
     expect(db.objectStoreNames.contains('kv')).toBe(true);
   });
 

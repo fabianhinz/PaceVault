@@ -1,0 +1,1797 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Segments page · Mockup</title>
+    <link rel="stylesheet" href="../../../shared/mockup-shell.css" />
+    <script src="hifi/dist/segments-index.js"></script>
+    <script src="../../../shared/mockup-shell.js" defer></script>
+    <style>
+      .ms-screen [hidden] {
+        display: none !important;
+      }
+      .app {
+        position: absolute;
+        inset: 0;
+        background: #0b0e14;
+        color: var(--color-text-secondary);
+        font: var(--text-sm) / var(--leading-5) var(--font-sans);
+        overflow: hidden;
+      }
+      .stash {
+        display: none;
+      }
+      .t1 {
+        color: var(--color-text-primary);
+      }
+      .t2 {
+        color: var(--color-text-secondary);
+      }
+      .t3 {
+        color: var(--color-text-tertiary);
+      }
+      .xs {
+        font-size: var(--text-xs);
+        line-height: 1rem;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+      .h2 {
+        color: var(--color-text-primary);
+        font-size: var(--text-lg);
+        font-weight: var(--font-weight-semibold);
+      }
+      .sub1 {
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .between {
+        justify-content: space-between;
+      }
+      .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .trunc {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* map (MapBackground, fake) */
+      .map {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 60%;
+        height: 100%;
+        background:
+          repeating-linear-gradient(0deg, transparent 0 79px, rgb(255 255 255 / 0.03) 79px 80px),
+          repeating-linear-gradient(90deg, transparent 0 79px, rgb(255 255 255 / 0.03) 79px 80px),
+          #0d1118;
+      }
+      [data-device='phone'] .map {
+        width: 100%;
+        height: 430px;
+      }
+      .map svg {
+        position: absolute;
+        inset: 40px 40px 120px 90px;
+        width: calc(100% - 130px);
+        height: calc(100% - 160px);
+        overflow: visible;
+      }
+      [data-device='phone'] .map svg {
+        inset: 20px 20px 92px 20px;
+        width: calc(100% - 40px);
+        height: calc(100% - 112px);
+      }
+      .segband .preview {
+        opacity: 0;
+      }
+      .segband:hover .preview {
+        opacity: 1;
+      }
+      .segband .hit {
+        cursor: pointer;
+      }
+      .mapq {
+        position: absolute;
+        left: 90px;
+        top: 64px;
+      }
+      [data-device='phone'] .mapq {
+        left: 12px;
+        top: 48px;
+      }
+
+      /* map control bar (MapControlsBar, PvFloatingPill) */
+      .bar {
+        position: absolute;
+        bottom: 24px;
+        left: 30%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        white-space: nowrap;
+      }
+      [data-device='phone'] .bar {
+        left: 0;
+        right: 0;
+        bottom: auto;
+        top: 362px;
+        transform: none;
+        padding: 0 16px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 44px;
+        padding: 0 12px;
+        border-radius: 9999px;
+        background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+        backdrop-filter: blur(24px);
+        border: 1px solid var(--wb-hairline);
+        box-shadow: var(--wb-floating-shadow);
+        color: var(--color-text-primary);
+        flex-shrink: 0;
+      }
+      .chevd {
+        color: var(--color-text-tertiary);
+        display: inline-grid;
+      }
+
+      /* content column / bottom sheet */
+      .col {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 40%;
+        overflow-y: auto;
+        scrollbar-width: none;
+        padding: 24px 24px 112px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      [data-device='phone'] .col {
+        top: 420px;
+        left: 0;
+        width: auto;
+        padding: 0 16px 90px;
+        background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+        backdrop-filter: blur(24px);
+        border-top: 1px solid var(--wb-hairline);
+        border-radius: 16px 16px 0 0;
+      }
+      .grab {
+        display: none;
+      }
+      [data-device='phone'] .grab {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 2px;
+      }
+      .grab span {
+        width: 40px;
+        height: 4px;
+        border-radius: 9999px;
+        background: var(--color-gray-600);
+      }
+
+      /* PvCard (GLASS_CLASS rounded-2xl p-4) and SessionSummaryCard */
+      .card,
+      .summary {
+        border-radius: 16px;
+        border: 1px solid var(--wb-hairline);
+        background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+        backdrop-filter: blur(24px);
+        flex-shrink: 0;
+      }
+      .card {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .summary {
+        overflow: hidden;
+      }
+      [data-device='phone'] .card,
+      [data-device='phone'] .summary {
+        backdrop-filter: none;
+      }
+      .srow + .srow {
+        border-top: 1px solid var(--wb-hairline);
+      }
+      .shead {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 8px 8px 12px;
+        cursor: pointer;
+        color: inherit;
+        text-decoration: none;
+      }
+      .shead.disabled {
+        cursor: default;
+        padding-right: 12px;
+      }
+      .shead.disabled .lih {
+        opacity: 0.45;
+      }
+      .lih {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+        min-width: 0;
+      }
+      .avatar {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        color: var(--color-text-secondary);
+      }
+      .trail {
+        display: inline-grid;
+        place-items: center;
+        padding: 6px;
+        border-radius: 8px;
+        color: var(--color-text-secondary);
+      }
+      .trail svg {
+        transition: transform 0.15s;
+      }
+      .trail.open svg {
+        transform: rotate(90deg);
+      }
+      .rowbody {
+        padding: 4px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .shead:hover .trail {
+        background: rgb(255 255 255 / 0.1);
+        color: var(--color-text-primary);
+      }
+      .rowblock {
+        height: 52px;
+        background: rgb(255 255 255 / 0.05);
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .sk,
+      .skblock {
+        display: inline-block;
+        border-radius: 4px;
+        background: rgb(255 255 255 / 0.1);
+        vertical-align: middle;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .skblock {
+        display: block;
+        border-radius: 12px;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.5;
+        }
+      }
+      .cardhead {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .chip {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: rgb(255 255 255 / 0.1);
+        font-size: var(--text-xs);
+        line-height: 1rem;
+        color: var(--color-text-secondary);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .ghosticon {
+        display: inline-grid;
+        place-items: center;
+        padding: 6px;
+        border-radius: 8px;
+        color: var(--color-text-secondary);
+      }
+
+      .sdot .halo {
+        fill: transparent;
+      }
+      .sdot:hover .halo {
+        fill: rgb(255 255 255 / 0.1);
+      }
+
+      /* SessionItem (PvCard + SessionHeader) */
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .sitem {
+        padding: 16px;
+        border-radius: 16px;
+        border: 1px solid rgb(255 255 255 / 0.1);
+        background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        cursor: pointer;
+      }
+      .sitem:hover,
+      .sitem.on {
+        background: rgb(255 255 255 / 0.1);
+      }
+      .shdr {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .sport {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        color: var(--sport);
+        flex-shrink: 0;
+      }
+      .slot {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .slotchart {
+        width: 88px;
+      }
+      [data-device='phone'] .slotchart {
+        width: 56px;
+      }
+      .spark {
+        display: block;
+        width: 100%;
+        height: 30px;
+      }
+      .vcol {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* PvTabsList floating (packages/ui/src/components/pvTabs/PvTabsList.tsx:8-12) */
+      .tabs {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid rgb(255 255 255 / 0.1);
+        background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+        backdrop-filter: blur(24px);
+        flex-shrink: 0;
+        align-items: center;
+      }
+      .tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 6px;
+        border-radius: 8px;
+        font-size: var(--text-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
+      }
+      .tab {
+        cursor: pointer;
+      }
+      .peek {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+      .tab.on {
+        background: rgb(255 255 255 / 0.1);
+        color: var(--color-text-primary);
+      }
+
+      /* dock (DockRail / DockBar) */
+      .dock {
+        position: absolute;
+        top: 50%;
+        left: 12px;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 9999px;
+        background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+        border: 1px solid var(--wb-hairline);
+      }
+      .dock i {
+        width: 40px;
+        height: 40px;
+        border-radius: 9999px;
+        display: grid;
+        place-items: center;
+        font-style: normal;
+        color: var(--color-text-tertiary);
+      }
+      .dock i.on {
+        background: var(--color-accent-muted);
+        color: var(--color-accent-hover);
+      }
+      [data-device='phone'] .dock {
+        top: auto;
+        transform: none;
+        left: 12px;
+        right: 12px;
+        bottom: 16px;
+        flex-direction: row;
+        justify-content: space-around;
+      }
+      .band .hi {
+        opacity: 0;
+      }
+      .band.on .hi {
+        opacity: 1;
+      }
+      .listhead {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 20px;
+        flex-shrink: 0;
+      }
+      .pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        background: rgb(255 255 255 / 0.4);
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      .chartrow {
+        padding: 10px 12px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .chartrow + .chartrow {
+        border-top: 1px solid var(--wb-hairline);
+      }
+      .chartgrid {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        gap: 12px;
+        height: 90px;
+      }
+      .rail {
+        display: grid;
+        grid-template-rows: 2rem 1fr 2rem;
+        align-items: center;
+        border-right: 1px solid var(--wb-hairline);
+        padding-right: 8px;
+        font-size: var(--text-xs);
+        color: var(--color-text-tertiary);
+        white-space: nowrap;
+      }
+      .chartsvg {
+        width: 100%;
+        height: 90px;
+        display: block;
+      }
+      .iconbtn {
+        display: inline-grid;
+        place-items: center;
+        padding: 6px;
+        border-radius: 8px;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+      }
+      .iconbtn:hover {
+        background: rgb(255 255 255 / 0.1);
+        color: var(--color-text-primary);
+      }
+      .urlhint {
+        position: absolute;
+        left: 90px;
+        top: 24px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+        border: 1px solid var(--wb-hairline);
+      }
+      [data-device='phone'] .urlhint {
+        left: 12px;
+        top: 12px;
+      }
+      .sitem {
+        position: relative;
+      }
+      .sitem.best {
+        border-color: color-mix(in srgb, var(--crown) 20%, transparent);
+        box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--crown) 3%, transparent);
+      }
+      .crownmark {
+        position: absolute;
+        left: 2px;
+        top: -11px;
+        width: 18px;
+        height: 18px;
+        display: grid;
+        place-items: center;
+        color: var(--crown);
+        transform: rotate(-15deg);
+        pointer-events: none;
+        filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.6));
+      }
+      .crownq {
+        position: absolute;
+        left: 18px;
+        top: -12px;
+      }
+
+      /* segment page: TripDetail anatomy (PvIconTile, TripHeader h2 as h1, PvCardHeader title) */
+      .tile {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: rgb(255 255 255 / 0.05);
+        color: var(--color-text-secondary);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .phead {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex-shrink: 0;
+      }
+      .ph1 {
+        font-size: 1.25rem;
+        line-height: 1.75rem;
+        font-weight: 700;
+        color: var(--color-text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pmark {
+        pointer-events: none;
+      }
+      .pagegrid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex-shrink: 0;
+      }
+      .legend {
+        margin-left: auto;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        white-space: nowrap;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .legend > span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .legend i {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 9999px;
+        margin-right: 4px;
+      }
+      [data-explore] {
+        cursor: crosshair;
+      }
+      [data-device='phone'] .col.down {
+        top: 680px;
+        overflow: hidden;
+      }
+      [data-device='phone'] .mount:has(.col.down) .map {
+        height: 700px;
+      }
+      .grab[data-sheet] {
+        cursor: pointer;
+      }
+      .sitem.hl {
+        background: rgb(255 255 255 / 0.1);
+      }
+      .ms-screen[data-variant='hifi'] .app {
+        display: none;
+      }
+      .hifi {
+        position: absolute;
+        inset: 0;
+        background: #030712;
+      }
+      .hifi__frame {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      .hifi__badges {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .hb {
+        position: absolute;
+        display: flex;
+        gap: 4px;
+        pointer-events: auto;
+      }
+      .hb--map {
+        left: 92px;
+        top: 16px;
+      }
+      .hb--title {
+        right: 28px;
+        top: 28px;
+      }
+      .hb--times {
+        left: calc(60% - 36px);
+        top: 150px;
+        flex-direction: column;
+      }
+      .hb--passes {
+        left: calc(60% - 36px);
+        top: 400px;
+        flex-direction: column;
+      }
+      .hb--explorer {
+        left: calc(60% - 36px);
+        bottom: 96px;
+        flex-direction: column;
+      }
+      [data-device='phone'] .hb--map {
+        left: 12px;
+        top: 12px;
+      }
+      [data-device='phone'] .hb--title {
+        right: 16px;
+        top: 316px;
+      }
+      [data-device='phone'] .hb--times {
+        left: auto;
+        right: 4px;
+        top: 400px;
+      }
+      [data-device='phone'] .hb--passes {
+        left: 2px;
+        top: 560px;
+      }
+      .hb--card {
+        right: 64px;
+        top: 236px;
+      }
+      [data-device='phone'] .hb--card {
+        right: 12px;
+        top: 446px;
+      }
+      [data-device='phone'] .hb--explorer {
+        left: 4px;
+        bottom: 96px;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="application/json" id="mockup-config">
+      {
+        "title": "Segments · round 28 (high-fidelity segment page)",
+        "variants": [
+          { "id": "hifi", "label": "High fidelity · segment page" },
+          { "id": "dashboard", "label": "Low-fi · Jump to · Dashboard" },
+          { "id": "list", "label": "Low-fi · Jump to · Segments tab" },
+          { "id": "page", "label": "Low-fi · Jump to · Segment page" },
+          { "id": "sessions", "label": "Low-fi · Jump to · Sessions list" },
+          { "id": "session", "label": "Low-fi · Jump to · Session detail" },
+          { "id": "expanded", "label": "Low-fi · Jump to · Session (row expanded)" },
+          { "id": "segsel", "label": "Low-fi · Jump to · Session (segment selected)" }
+        ],
+        "scenarios": [
+          { "id": "found", "label": "Found · 6" },
+          { "id": "loading", "label": "Loading (first visit)" },
+          { "id": "updating", "label": "Updating (stale cache)" },
+          { "id": "many", "label": "Many · 15" },
+          { "id": "none", "label": "None · 0" }
+        ],
+        "extras": [
+          { "id": "restart", "type": "button", "label": "Restart" },
+          {
+            "id": "series",
+            "type": "choice",
+            "label": "Explorer series",
+            "default": "pair",
+            "options": [
+              { "id": "pair", "label": "a · Selected vs best" },
+              { "id": "single", "label": "b · Selected only" },
+              { "id": "all", "label": "c · All faint, selected bright" }
+            ]
+          },
+          {
+            "id": "sport",
+            "type": "choice",
+            "label": "Sport",
+            "default": "running",
+            "options": [
+              { "id": "running", "label": "Running" },
+              { "id": "cycling", "label": "Cycling" }
+            ]
+          },
+          {
+            "id": "segment",
+            "type": "choice",
+            "label": "Segment",
+            "options": [{ "id": "none", "label": "High fidelity only" }]
+          },
+          {
+            "id": "from",
+            "type": "choice",
+            "label": "Entered from",
+            "options": [{ "id": "tab", "label": "Segments tab" }]
+          }
+        ],
+        "decisions": [
+          { "id": "Q5", "title": "Loading state" },
+          { "id": "Q16", "title": "Unselected segment bands on the map" },
+          { "id": "Q31", "title": "Segments exist across all sessions of a sport" },
+          { "id": "Q32", "title": "When the worker detects segments" },
+          { "id": "Q33", "title": "Segments list row and order" },
+          { "id": "Q39", "title": "Session detail shows its segments in place" },
+          { "id": "Q40", "title": "Value of a segment item in the session row" },
+          { "id": "Q41", "title": "Session detail with ?segment= shows the stretch like a selected lap" },
+          { "id": "Q42", "title": "How a selected segment is cleared" },
+          { "id": "Q43", "title": "Segment item selects in the session, a trailing button opens the segment" },
+          { "id": "Q44", "title": "One item pattern: select + chevron to the segment page" },
+          { "id": "Q45", "title": "Segments tab: selecting a row fits the map to its band" },
+          { "id": "Q46", "title": "Best marker: crown icon and its colour" },
+          { "id": "Q47", "title": "Crown perched on the best card, card tinted" },
+          { "id": "Q35", "title": "Whole routes as segment type Route" },
+          { "id": "Q48", "title": "Segment page at /segments/:segmentId" },
+          { "id": "Q49", "title": "Trip detail anatomy, no breadcrumb, left via the dock" },
+          { "id": "Q50", "title": "Map: this segment fitted, pass marker on hover" },
+          { "id": "Q51", "title": "Explorer series: which passes the charts plot" },
+          { "id": "Q52", "title": "Charts explorer replaces the Summary card" },
+          { "id": "Q53", "title": "Pass times is the first summary row, expanded by default" },
+          { "id": "Q54", "title": "Pass click selects for the explorer, chevron opens the session" },
+          { "id": "Q57", "title": "Whole routes: own group, mixed list, or only without inner segments" },
+          { "id": "Q58", "title": "Shifted duplicate stretches and long stretches: dedupe, cap, lattice" },
+          { "id": "Q59", "title": "Structured workouts as passes" },
+          { "id": "Q60", "title": "Long passes lists" },
+          { "id": "Q61", "title": "Pass items truncate on phone" },
+          { "id": "Q62", "title": "Tolerances untested on demo data" },
+          { "id": "Q63", "title": "Scatter dots in the sport colour, trend line in front, fastest in amber" },
+          { "id": "Q64", "title": "Entered from a session: its pass shows in the collapsed list, preselected" },
+          { "id": "Q75", "title": "Scatter shows the last 10 passes by default" },
+          { "id": "Q76", "title": "Older passes by scrolling the scatter, no other control" },
+          { "id": "Q77", "title": "Passes list follows the scatter window, best and origin kept" },
+          { "id": "Q78", "title": "Trend line always drawn, median over all passes" },
+          { "id": "Q79", "title": "One colour family for best (dot, crown, line, rail, card, map)" }
+        ]
+      }
+    </script>
+
+    <template id="mockup-screen">
+      <div class="app">
+        <div class="stash">
+          <span data-q="Q5"></span><span data-q="Q5"></span><span data-q="Q16"></span>
+          <span data-q="Q31"></span><span data-q="Q32"></span><span data-q="Q33"></span>
+          <span data-q="Q39"></span><span data-q="Q40"></span><span data-q="Q41"></span><span data-q="Q42"></span><span data-q="Q43"></span><span data-q="Q44"></span><span data-q="Q44"></span><span data-q="Q45"></span><span data-q="Q46"></span><span data-q="Q47"></span><span data-q="Q35"></span><span data-q="Q48"></span><span data-q="Q49"></span><span data-q="Q50"></span><span data-q="Q51"></span><span data-q="Q52"></span><span data-q="Q53"></span>
+        </div>
+        <div class="mount"></div>
+      </div>
+      <div class="hifi" data-when="variant:hifi">
+        <iframe class="hifi__frame" title="High-fidelity segment page"></iframe>
+        <div class="hifi__badges">
+          <span class="hb hb--map"><span data-q="Q50"></span><span data-q="Q58"></span><span data-q="Q62"></span></span>
+          <span class="hb hb--title"><span data-q="Q57"></span></span>
+          <span class="hb hb--times"><span data-q="Q53"></span><span data-q="Q63"></span><span data-q="Q75"></span><span data-q="Q76"></span><span data-q="Q78"></span><span data-q="Q59"></span></span>
+          <span class="hb hb--passes"><span data-q="Q64"></span><span data-q="Q77"></span><span data-q="Q54"></span><span data-q="Q60"></span></span>
+          <span class="hb hb--card"><span data-q="Q61"></span></span>
+          <span class="hb hb--explorer"><span data-q="Q79"></span><span data-q="Q51"></span><span data-q="Q52"></span></span>
+        </div>
+      </div>
+    </template>
+
+    <template id="mockup-panel-flows" data-label="Flows">
+      <p>Click inside a frame; each frame runs on its own. <strong>Restart</strong> puts both frames on the Dashboard. The label top left of the map shows the route (mockup only).</p>
+      <p><strong>Flow 1 · Browse segments</strong></p>
+      <ol>
+        <li>Dock: click <em>Dashboard</em> (▦).</li>
+        <li>Click the tab <em>Segments</em> (scenario Loading: five skeleton rows for 1.5 s, then the list).</li>
+        <li>Desktop: hover a row, its band lights up on the map.</li>
+        <li>Click a row (not the chevron): it is selected, its band gets the white casing and the map fits to it. Click it again, the white stretch on the map, or press Escape: back to the overview.</li>
+        <li>Click the row's chevron ›: the segment page opens (route label <code>/segments/&lt;id&gt;</code>; the map shows only this segment, fitted).</li>
+        <li>The Pass times row is expanded: click a pass (not its chevron) to plot it in the charts explorer below; the latest pass is selected first.</li>
+        <li>Click that pass's chevron ›: its session opens with the segment selected and the Segments row expanded on it.</li>
+      </ol>
+      <p><strong>Flow 2 · In a session</strong></p>
+      <ol>
+        <li>Dock: click <em>Sessions</em> (⚡), then the first session (<em>Morning Run</em>, Nov 1, 2026).</li>
+        <li>In the summary card click <em>3 segments</em>: the row expands.</li>
+        <li>Click an item (not the chevron): the segment is selected (chart bands, map fitted, rail scoped, <code>?segment=</code> in the route label).</li>
+        <li>Clear it: click the item again, or the white stretch on the map, or press Escape.</li>
+        <li>Click the item's chevron › (Open segment): the segment page opens.</li>
+      </ol>
+      <p><strong>Flow 3 · On the segment page</strong></p>
+      <ol>
+        <li>Start on the segment page (Variant <em>Jump to · Segment page</em>, or Flow 1 step 5).</li>
+        <li>Desktop: hover a pass or a scatter dot: the marker shows on the map where that pass was when the best finished.</li>
+        <li>Click a pass or a scatter dot: that pass is selected (ring on its dot, <code>bg-white/10</code> on its card) and the charts explorer plots it. Switch <em>Explorer series</em> in the toolbar: a · selected vs best, b · selected only, c · all faint, selected bright.</li>
+        <li>Desktop: move over a chart: a cursor runs through every row and the map marker follows the selected pass (variant a also shows a white marker for the best). Phone: tap a chart.</li>
+        <li>Click <em>Pass times</em>: the row collapses to "n passes · best · last"; click again to expand.</li>
+        <li>Phone: tap the sheet's grabber: the sheet collapses to the peek (type icon, label, "1.4 km · +4 m · n passes"); tap it again to open the sheet.</li>
+        <li>Click a pass's chevron ›: its session opens with the segment selected; the chevron › there leads back to the page.</li>
+        <li>Leave the page through the dock only (<em>Dashboard</em> is highlighted on this page); there is no back link.</li>
+      </ol>
+    </template>
+
+    <template id="mockup-notes">
+      <p><strong>Round 28: high-fidelity segment page (Q55 a, Q56 b), the default variant.</strong> Each frame shows <code>hifi/dist/index.html?embed=1&amp;device=…</code> in an iframe: the real <code>@pacevault/ui</code> kit, Recharts, and segments detected by the prototype <code>hifi/detect.ts</code> (S3 anchors, ≥ 95 % / 50 m corridor match) on the demo dataset. Segment, Sport and Language in the toolbar drive both frames; a change reloads them. The Pass times row shows the scatter (Q63: every dot in the sport colour at 45 %, the trend line in front, the fastest dot in amber with a small crown, hover grows a dot, the selected one gets a sport-colour outline) and only the best pass; "Show n more passes" opens the rest (Q60). The scatter starts on the latest 10 passes (Q75); scroll it sideways (trackpad, wheel, drag, swipe) for older ones and back to the latest; there is no other control (Q76); the list follows the visible passes after the scroll settles, the best and the origin pass always kept (Q77); the trend line is the rolling median over all passes (Q78). Every best element is amber-400 (Q79: scatter dot and crown, the explorer's best line and legend swatch, the rail note, the best card's crown, border and tint, the mini chart's best line, the map marker; <code>research/best-colour.md</code>). Explorer hover works as in the app: Recharts' own tooltip without content, its cursor line and active dots, rows synced. Pass cards (Q61): the session name as title (ellipsis on phone) and the short date below ("31 Oct", "31 Oct 25" for older years; DE "31. Okt."), the mini chart, the gap to the best ("+0:48") as the only value and, on the best card, its time; one layout at every width. Every pass counts the same, structured workouts carry no marker (Q59 c). The explorer legend floats as a pill over the top right of the charts card. <em>Entered from</em> picks how the page was reached (Q64): from the Segments tab the latest pass is preselected; from a session (<code>/segments/:segmentId?from=&lt;sessionId&gt;</code>) that session's pass is preselected and stays in the collapsed list next to the best. In the frames: click a pass or a scatter dot to select it, move over the charts for the synced cursor and the map markers, click Pass times to collapse. The low-fi screens stay under Variant <em>Low-fi · …</em>; Explorer series and Scenario apply to them only. Rebuild (from <code>apps/web</code>): <code>vp build -c ../../tools/workbench/backlog/session-segments/mockup/hifi/data.config.ts</code>, then <code>node ../../tools/workbench/backlog/session-segments/mockup/hifi/.data/buildData.js ../../tools/workbench/backlog/session-segments/mockup/hifi/segments.json</code>, then <code>vp build -c ../../tools/workbench/backlog/session-segments/mockup/hifi/vite.config.ts</code>. <code>hifi/dist/index.html</code> also opens on its own (with its own mockup bar).</p>
+      <p><strong>Round 26: segment page (Q48 a, Q49 b, Q50 a).</strong> <code>/segments/:segmentId</code> replaces the dialog, built on the trip detail anatomy (<code>apps/web/src/components/trips/TripDetail.tsx:21-44</code>): a <code>space-y-4</code> column with the sheet peek (phone, <code>TripPeek.tsx:14-27</code>), a header like <code>TripHeader.tsx:16-35</code> (type icon in a <code>PvIconTile</code>, label as h2/h1, caption "Running · 1.4 km · +4 m", no actions menu), the cards Summary and Pass times, then the passes as a <code>flex flex-col gap-2</code> list of <code>SessionItem</code>. No breadcrumb, no back link; the dock highlights Dashboard and is the only way out. The map shows only this segment, fitted, with the white casing; hovering a pass or a scatter dot moves a marker to where that pass was when the best finished. The chevron › on segment items (Segments tab, expanded session items) navigates here; a pass click opens its session with <code>?segment=</code> (Q36, Q41).</p>
+      <p><strong>Round 27: segment page like the session detail (Q52 a, Q53).</strong> Under the header (unchanged, <code>TripHeader</code>-like, phone peek when the sheet is collapsed) sits a <code>PvPageGrid</code> as in <code>apps/web/src/components/sessions/session/SessionOverview.tsx:14-22</code>. <code>PvPageGrid</code> is a <code>flex flex-col gap-4</code> stack, so the explorer sits below the summary card on desktop as well (<code>packages/ui/src/components/pvPageGrid/PvPageGrid.tsx:9-11</code>). The summary card works like <code>SessionSummaryCard</code> (<code>divide-y</code> rows). Its first row, <em>Pass times</em> (Q53), is expanded by default and shows "n passes · best 3:06 · last 4:05" when collapsed; expanded it holds the scatter with rolling median, the Trend row and the passes list (crowned best card). The Summary and Pass times cards are gone; distance and elevation are in the header caption. Below the card is the charts explorer, built like the session one (round 20 look: rows with stats rail, synced cursor) with the same rows per sport and an elapsed-time x axis from the segment start (Q52). The rails show the selected pass. Item click = select the plotted pass, trailing chevron = open that session with <code>?segment=</code> (as Q44). Extra <em>Explorer series</em> (Q51): a · selected (sport colour) vs best (white), b · selected only (metric colour with fill, like the session rows), c · all passes faint, selected bright. Moving over a chart moves the map marker along the selected pass.</p>
+      <p><strong>Best marker (Q46 a, Q47 b).</strong> A filled lucide <code>Crown</code> in amber-400 (18 px, rotated −15°, aria-label and title "Best" / "Bestzeit") perched on the best card's top-left corner; the card itself only gets an amber border at 20 % and a 3 % tint. The best line in the mini chart stays white.</p>
+      <p><strong>Round 22: clickable prototype.</strong> Every screen is reachable by clicking inside the frame (dock Dashboard / Sessions, Dashboard tabs, sessions list, session detail, segment page); the Variant control only jumps to start points; see the <em>Flows</em> tab. Scenario Loading resolves to Found 1.5 s after entering the Segments tab or a session.</p>
+      <p><strong>Round 16: global segments (Q31).</strong> Segments exist on their own across all sessions of a sport; only stretches ridden by at least two sessions become segments. The structure mirrors Sessions: list → detail.</p>
+      <ul>
+        <li><strong>Segments list</strong> (Dashboard tab, <code>PvTabs</code> + <code>?tab=segments</code>): rows in <code>SessionItem</code> grammar (type icon, label, "distance · elevation · n passes", last ridden on the right), most recently ridden first (Q33); whole routes are type <code>Route n</code> in the same list (Q35). The map shows every segment as a band; hovering a row draws its band lap-style (desktop), a tap opens it. Detection runs on opening the tab and is cached (Q32): first visit = skeleton rows, after an import = the cached list plus an "Updating" line in the reserved header slot.</li>
+        <li><strong>Session detail</strong> (Q39): the summary row "3 segments" / "Flat 1, Flat 2, Flat 3" expands in place; reached by a pass click (<code>?segment=</code>, Q41) the session detail shows the stretch like a selected lap: band on the charts (<code>LapBandShape.tsx:31</code>), camera fitted (<code>useMapCameraTarget.ts:10</code>), lap-style map layers (<code>useLapLayers.ts:43-98</code>), rail stats scoped (<code>useSessionRailStats.ts:128-129</code>); clicking the stretch or Escape removes <code>?segment=</code>; round 21: an expanded item selects its segment in this session (toggle, <code>bg-white/10</code> like a selected row), its trailing chevron button "Open segment" opens the segment page (Q43, Q44); clearing (Q42 a): click the selected item again or the stretch on the map, Escape as on laps; each item shows this session's time and rank on the right ("4:12 · 3rd of 15", Q40), the Segments list keeps "last ridden"; like the other summary rows (<code>PvCollapsibleListItem</code>, chevron turns 90°); expanded, one item per segment of this session in the list-row grammar.</li>
+        <li><strong>Segment page</strong> (rounds 26–27): header, then the summary card with the Pass times row (scatter, Trend, passes) and the charts explorer below it; a pass item or scatter dot selects the plotted pass, its chevron opens the session.</li>
+      </ul>
+    </template>
+
+    <script>
+      (() => {
+        let TOTAL_KM = 12.04;
+        let SPORT = 'running';
+        const SESSION_DAY = new Date(2026, 10, 1, 7, 12);
+        let RUN = '#4ade80';
+        const BEST = '#e5e7eb';
+        const POINTS = 24;
+
+        // ---------- route geometry (viewBox 0 0 1000 700) ----------
+        const ROUTE = [
+          [120, 620], [140, 520], [130, 430], [180, 360], [260, 330], [300, 250], [290, 160],
+          [360, 90], [470, 70], [560, 110], [610, 190], [700, 210], [800, 170], [880, 220],
+          [900, 320], [850, 400], [870, 480], [820, 560], [720, 600], [620, 570], [540, 620],
+          [430, 640], [330, 600], [240, 640], [150, 650],
+        ];
+        const cum = [0];
+        for (let i = 1; i < ROUTE.length; i++) {
+          const a = ROUTE[i - 1];
+          const b = ROUTE[i];
+          cum.push(cum[i - 1] + Math.hypot(b[0] - a[0], b[1] - a[1]));
+        }
+        const LEN = cum[cum.length - 1];
+        const pointAt = (km) => {
+          const d = (km / TOTAL_KM) * LEN;
+          for (let i = 1; i < ROUTE.length; i++) {
+            if (d <= cum[i]) {
+              const t = (d - cum[i - 1]) / (cum[i] - cum[i - 1]);
+              const a = ROUTE[i - 1];
+              const b = ROUTE[i];
+              return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+            }
+          }
+          return ROUTE[ROUTE.length - 1];
+        };
+        const subPath = (a, b) => {
+          const pts = [pointAt(a)];
+          const da = (a / TOTAL_KM) * LEN;
+          const db = (b / TOTAL_KM) * LEN;
+          for (let i = 0; i < ROUTE.length; i++) if (cum[i] > da && cum[i] < db) pts.push(ROUTE[i]);
+          pts.push(pointAt(b));
+          return 'M' + pts.map((p) => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' L');
+        };
+
+        // ---------- fake data ----------
+        let seed = 7;
+        const rnd = () => {
+          seed = (seed * 16807) % 2147483647;
+          return (seed - 1) / 2147483646;
+        };
+        const series = (p, segKm) => {
+          const phase = rnd() * 6;
+          const raw = [];
+          for (let i = 0; i < POINTS; i++)
+            raw.push(1 + 0.05 * Math.sin(i / 3 + phase) + (rnd() - 0.5) * 0.04);
+          const mean = raw.reduce((s, v) => s + v, 0) / POINTS;
+          const paceAvg = p.secs / segKm;
+          p.pace = raw.map((v) => (v / mean) * paceAvg);
+          let t = 0;
+          p.cumSecs = p.pace.map((v) => (t += (v * segKm) / POINTS));
+        };
+        const buildPasses = (chunk) => {
+          const passes = [
+            { date: SESSION_DAY, secs: Math.round(chunk.km * chunk.pace), mine: true, distanceKm: TOTAL_KM },
+          ];
+          for (let i = 0; i < chunk.others; i++) {
+            const daysBack = 6 + Math.floor(rnd() * 700);
+            const date = new Date(SESSION_DAY.getTime() - daysBack * 86400000);
+            date.setHours([6, 7, 12, 17, 18, 19][Math.floor(rnd() * 6)], Math.floor(rnd() * 60));
+            const pace = chunk.pace * (0.985 + rnd() * 0.16);
+            const extraKm = SPORT === 'cycling' ? 15 + rnd() * 60 : 3 + rnd() * 14;
+            const distanceKm = Math.round((chunk.km + extraKm) * 100) / 100;
+            passes.push({ date, secs: Math.round(chunk.km * pace), mine: false, distanceKm });
+          }
+          for (const p of passes) series(p, chunk.km);
+          const byTime = [...passes].sort((x, y) => x.secs - y.secs);
+          byTime.forEach((p, i) => (p.rank = i + 1));
+          chunk.passes = passes;
+          chunk.byTime = byTime;
+          chunk.best = byTime[0];
+          chunk.me = passes[0];
+          return chunk;
+        };
+        const mk = (list) => {
+          const out = [];
+          let n = 0;
+          const typeCount = {};
+          for (const [a, b, others, pace, type, gainM] of list) {
+            const c = { a, b, km: +(b - a).toFixed(2), others, pace: pace ?? (SPORT === 'cycling' ? 120 : 290), type: type ?? null, gainM: gainM ?? null };
+            if (others > 0 && c.type) {
+              typeCount[c.type] = (typeCount[c.type] ?? 0) + 1;
+              c.typeN = typeCount[c.type];
+            }
+            if (others > 0) {
+              n += 1;
+              c.n = n;
+              buildPasses(c);
+            }
+            out.push(c);
+          }
+          return out;
+        };
+        const buildSport = (sport, totalKm, color, found, many) => {
+          SPORT = sport;
+          TOTAL_KM = totalKm;
+          const data = { found: mk(found), many: mk(many), loading: mk([[0, totalKm, 0]]), none: mk([[0, totalKm, 0]]) };
+          return { totalKm, color, data };
+        };
+        const SPORTS = {
+          running: buildSport('running', 12.04, '#4ade80', [
+            [0, 1.42, 3, 296, 'flat', 4], [1.42, 2.65, 14, 318, 'climb', 48], [2.65, 5.1, 11, 290, 'flat', 6],
+            [5.1, 6.35, 6, 272, 'descent', -41], [6.35, 8.2, 0], [8.2, 10.95, 9, 299, 'flat', 8], [10.95, 12.04, 0],
+          ], [
+            [0, 0.62, 4, 300, 'flat', 2], [0.62, 1.42, 6, 296, 'flat', 3], [1.42, 2.05, 9, 320, 'climb', 27],
+            [2.05, 2.65, 14, 316, 'climb', 21], [2.65, 3.49, 12, 292, 'flat', 5], [3.49, 4.3, 15, 288, 'flat', 4],
+            [4.3, 5.1, 11, 286, 'flat', 3], [5.1, 5.7, 7, 270, 'descent', -22], [5.7, 6.35, 5, 274, 'descent', -19],
+            [6.35, 7.05, 0], [7.05, 8.2, 3, 301, 'flat', 6], [8.2, 9.6, 6, 296, 'flat', 5], [9.6, 10.4, 9, 322, 'climb', 31],
+            [10.4, 10.95, 8, 305, 'flat', 2], [10.95, 12.04, 4, 280, 'descent', -30],
+          ]),
+          cycling: buildSport('cycling', 48.2, '#f97316', [
+            [0, 3.1, 4, 125, 'flat', 12], [3.1, 9.8, 11, 118, 'flat', 18], [9.8, 14.2, 0], [14.2, 21.6, 7, 190, 'climb', 312],
+            [21.6, 27.9, 6, 92, 'descent', -288], [27.9, 30.0, 0], [30.0, 41.5, 9, 112, 'flat', 24], [41.5, 48.2, 0],
+          ], [
+            [0, 1.4, 4, 125, 'flat', 5], [1.4, 3.1, 6, 122, 'flat', 7], [3.1, 5.2, 11, 118, 'flat', 9], [5.2, 7.0, 14, 150, 'climb', 64],
+            [7.0, 9.8, 9, 100, 'descent', -58], [9.8, 11.0, 3, 121, 'flat', 4], [11.0, 14.2, 0], [14.2, 18.0, 7, 185, 'climb', 158],
+            [18.0, 21.6, 5, 195, 'climb', 154], [21.6, 24.1, 5, 90, 'descent', -140], [24.1, 30.0, 2, 96, 'descent', -148],
+            [30.0, 33.7, 10, 112, 'flat', 11], [33.7, 37.9, 12, 114, 'flat', 8], [37.9, 41.5, 8, 140, 'climb', 52], [41.5, 44.0, 0],
+            [44.0, 48.2, 3, 120, 'flat', 6],
+          ]),
+        };
+        let DATA = SPORTS.running.data;
+        const useSport = (sport) => {
+          SPORT = sport;
+          TOTAL_KM = SPORTS[sport].totalKm;
+          RUN = SPORTS[sport].color;
+          DATA = SPORTS[sport].data;
+        };
+        useSport('running');
+
+        // ---------- formatting (mirrors apps/web/src/lib/format/formatters.ts) ----------
+        const T = (lang, en, de) => (lang === 'de' ? de : en);
+        const plural = (lang, n, en1, enN, de1, deN) => (n === 1 ? T(lang, en1, de1) : T(lang, enN, deN)).replace('#', n);
+        const raceTime = (s) => {
+          const total = Math.round(s);
+          const h = Math.floor(total / 3600);
+          const m = Math.floor((total % 3600) / 60);
+          const sec = String(total % 60).padStart(2, '0');
+          if (h > 0) return h + ':' + String(m).padStart(2, '0') + ':' + sec;
+          return m + ':' + sec;
+        };
+        const dur = raceTime;
+        const delta = (s) => {
+          if (s === 0) return '0:00';
+          return (s > 0 ? '+' : '−') + raceTime(Math.abs(s));
+        };
+        const paceFmt = (secPerKm) => raceTime(secPerKm) + ' /km';
+        const date = (lang, d) => new Intl.DateTimeFormat(lang, { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+        const hourMinute = (lang, d) => new Intl.DateTimeFormat(lang, { hour: 'numeric', minute: '2-digit' }).format(d);
+        const kmUnit = (lang, v) => new Intl.NumberFormat(lang, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 }).format(v);
+        const distance = (lang, v) => new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }).format(v) + ' km';
+        const speedFormat = (lang, kmh) => new Intl.NumberFormat(lang, { style: 'unit', unit: 'kilometer-per-hour', minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(kmh);
+        const TYPE_LABEL = { climb: ['Climb', 'Anstieg'], flat: ['Flat', 'Flach'], descent: ['Descent', 'Bergab'] };
+        const segName = (lang, c) => (c.type ? T(lang, TYPE_LABEL[c.type][0], TYPE_LABEL[c.type][1]) + ' ' + c.typeN : 'Segment ' + c.n);
+        const runTitle = (lang, d) => {
+          const h = d.getHours();
+          let timeOfDay = T(lang, 'Evening', 'am Abend');
+          if (h <= 11) timeOfDay = T(lang, 'Morning', 'am Morgen');
+          else if (h <= 16) timeOfDay = T(lang, 'Afternoon', 'am Nachmittag');
+          const noun = SPORT === 'cycling' ? T(lang, 'Ride', 'Fahrt') : T(lang, 'Run', 'Lauf');
+          return lang === 'de' ? noun + ' ' + timeOfDay : timeOfDay + ' ' + noun;
+        };
+
+        // ---------- icons (lucide paths) ----------
+        const svgIcon = (size, inner) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+        const segIcon = (size) => svgIcon(size, '<circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><path d="M5 17A12 12 0 0 1 17 5"/>');
+        const ICON_RIGHT = svgIcon(16, '<path d="m9 18 6-6-6-6"/>');
+        const ICON_FLAG = svgIcon(16, '<path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/>');
+        const ICON_GLOBE = svgIcon(16, '<circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>');
+        const ICON_PALETTE = svgIcon(16, '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>');
+        const ICON_CHEV_DOWN = svgIcon(14, '<path d="m6 9 6 6 6-6"/>');
+        const ICON_CLOUD = svgIcon(20, '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>');
+        const ICON_GAUGE = svgIcon(20, '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>');
+        const ICON_CHART = svgIcon(20, '<path d="M5 21v-6"/><path d="M12 21V3"/><path d="M19 21V9"/>');
+        const RUN_ICON = svgIcon(18, '<circle cx="14" cy="4" r="2"/><path d="M8 21l3-6 3 2v5M6 12l3-4 4 1 3 4 3 1"/>');
+        const RIDE_ICON = svgIcon(18, '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>');
+
+        // ---------- pieces ----------
+        const q = (id) => `<i class="qslot" data-slot="${id}"></i>`;
+        const sk = (w, h = 12) => `<span class="sk" style="width:${w}px;height:${h}px"></span>`;
+
+        // ---------- scatter (tokens: textSecondary dots, border axis, textTertiary ticks and trend) ----------
+        const C_DOT = '#b0b4be';
+        const C_AXIS = '#252830';
+        const C_TICK = '#8b8f9a';
+        const trendOf = (ctx, c) => {
+          const pts = [...c.passes].sort((x, y) => x.date - y.date);
+          if (pts.length < 3) return null;
+          const line = pts.map((p, i) => {
+            const win = pts.slice(Math.max(0, i - 4), i + 1).map((x) => x.secs).sort((a, b) => a - b);
+            return [p.date, win[Math.floor(win.length / 2)]];
+          });
+          return { line };
+        };
+        const scatter = (ctx, c, height, sel = null) => {
+          const W = 400;
+          const t0 = SESSION_DAY.getTime() - 720 * 86400000;
+          const t1 = SESSION_DAY.getTime();
+          const secs = c.passes.map((p) => p.secs);
+          const lo = Math.min(...secs) - 5;
+          const hi = Math.max(...secs) + 5;
+          const X = (d) => 34 + ((d.getTime() - t0) / (t1 - t0)) * (W - 44);
+          const Y = (v) => 8 + ((v - lo) / (hi - lo)) * (height - 26);
+          const tick = (x, y, text, anchor) => `<text x="${x}" y="${y}" fill="${C_TICK}" font-size="11" text-anchor="${anchor}">${text}</text>`;
+          let g = `<line x1="34" y1="${height - 16}" x2="${W - 6}" y2="${height - 16}" stroke="${C_AXIS}"/>`;
+          g += tick(0, 12, dur(lo + 5), 'start') + tick(0, height - 18, dur(hi - 5), 'start');
+          g += tick(34, height - 2, date(ctx.lang, new Date(t0)), 'start') + tick(W - 6, height - 2, date(ctx.lang, SESSION_DAY), 'end');
+          const trend = trendOf(ctx, c);
+          if (trend) {
+            const pts = trend.line.map((pt) => X(pt[0]).toFixed(1) + ',' + Y(pt[1]).toFixed(1)).join(' ');
+            g += `<polyline points="${pts}" fill="none" stroke="${C_TICK}" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+          }
+          const dot = (p, body) => `<g class="sdot" data-dot="${p.date.getTime()}"><circle class="halo" cx="${X(p.date)}" cy="${Y(p.secs)}" r="9"/>${body}</g>`;
+          for (const p of c.passes) {
+            if (p.mine) continue;
+            const best = p === c.best;
+            g += dot(p, best ? `<circle cx="${X(p.date)}" cy="${Y(p.secs)}" r="6" fill="none" stroke="${BEST}" stroke-width="2.5"/>` : `<circle cx="${X(p.date)}" cy="${Y(p.secs)}" r="3.5" fill="${C_DOT}"/>`);
+          }
+          g += dot(c.me, `<circle cx="${X(c.me.date)}" cy="${Y(c.me.secs)}" r="6" fill="${RUN}"/>`);
+          if (sel) g += `<circle cx="${X(sel.date)}" cy="${Y(sel.secs)}" r="9.5" fill="none" stroke="${RUN}" stroke-width="1.5" pointer-events="none"/>`;
+          return `<div class="row" style="align-items:flex-start"><svg class="scatter grow" viewBox="0 0 ${W} ${height}" width="100%" height="${height}" preserveAspectRatio="none" style="overflow:visible">${g}</svg></div>`;
+        };
+
+        const countLabel = (ctx, n) => plural(ctx.lang, n, '# segment', '# segments', '# Segment', '# Segmente');
+        const passesLabel = (ctx, n) => plural(ctx.lang, n, '# pass', '# passes', '# Durchgang', '# Durchgänge');
+
+        // ---------- summary card rows ----------
+
+        const gapValues = (c, p) => p.cumSecs.map((v, i) => -(v - c.best.cumSecs[i]));
+        const gapRange = (c) => {
+          const all = c.passes.flatMap((p) => gapValues(c, p));
+          return [Math.min(...all), Math.max(...all)];
+        };
+        const lineColour = (c, p) => {
+          if (p === c.best) return BEST;
+          if (p.mine) return RUN;
+          return C_TICK;
+        };
+        const spark = (c, p, yRange) => {
+          const Y = (v) => 28 - ((v - yRange[0]) / (yRange[1] - yRange[0] || 1)) * 26;
+          const pts = gapValues(c, p).map((v, i) => `${((i / (POINTS - 1)) * 100).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+          return `<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none"><line x1="0" x2="100" y1="${Y(0)}" y2="${Y(0)}" stroke="${C_TICK}" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/><polyline points="${pts}" fill="none" stroke="${lineColour(c, p)}" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+        };
+        const sessionDuration = (p) => {
+          if (p.mine) return SPORT === 'cycling' ? '1h 36m' : '58m 21s';
+          const secs = Math.round(p.distanceKm * (SPORT === 'cycling' ? 120 : 292));
+          const h = Math.floor(secs / 3600);
+          const m = Math.floor((secs % 3600) / 60);
+          if (h > 0) return h + 'h ' + m + 'm';
+          return m + 'm ' + (secs % 60) + 's';
+        };
+
+        // ---------- round 16: global segments ----------
+        const ICON_DOTS = svgIcon(16, '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>');
+        const TYPE_ICON = {
+          climb: '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+          flat: '<path d="M18 8l4 4-4 4"/><path d="M2 12h20"/>',
+          descent: '<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+          route: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+        };
+        TYPE_LABEL.route = ['Route', 'Route'];
+        const OFFSET_DAYS = [0, 3, 0, 11, 0, 26, 2, 0, 40, 5, 63, 0, 9, 17, 88];
+        const ROUTE_GAIN = { running: 96, cycling: 480 };
+        const globalCache = {};
+        const globalSegments = (scenario) => {
+          const key = SPORT + (scenario === 'many' ? 'many' : 'found');
+          if (globalCache[key]) return globalCache[key];
+          const source = scenario === 'many' ? 'many' : 'found';
+          const segs = DATA[source].filter((c) => c.others > 0);
+          const route = { a: 0, b: TOTAL_KM, km: TOTAL_KM, others: source === 'many' ? 9 : 3, pace: SPORT === 'cycling' ? 120 : 291, type: 'route', typeN: 1, gainM: ROUTE_GAIN[SPORT] };
+          buildPasses(route);
+          const all = [...segs, route];
+          all.forEach((c, i) => {
+            if (!c.dated) {
+              c.passes[0].date = new Date(SESSION_DAY.getTime() - (OFFSET_DAYS[i] ?? 30) * 86400000);
+              c.dated = true;
+            }
+            const latest = [...c.passes].sort((x, y) => y.date - x.date)[0];
+            for (const p of c.passes) p.mine = p === latest;
+            c.me = latest;
+            c.inSession = c.me.date.getTime() === SESSION_DAY.getTime();
+            c.id = `${c.type}-${c.typeN}`;
+          });
+          globalCache[key] = all.sort((x, y) => y.me.date - x.me.date);
+          return globalCache[key];
+        };
+        const segsFor = (ctx) => {
+          if (ctx.scenario === 'none' || ctx.scenario === 'loading') return [];
+          return globalSegments(ctx.scenario);
+        };
+        const shownSeg = (ctx) => globalSegments(ctx.scenario === 'many' ? 'many' : 'found').find((c) => c.id === ctx.seg) ?? globalSegments('found')[0];
+        const gainText = (c) => (c.gainM < 0 ? '−' : '+') + Math.abs(c.gainM) + ' m';
+        const typeIcon = (c, size) => svgIcon(size, TYPE_ICON[c.type]);
+        const sportIcon = () => (SPORT === 'cycling' ? RIDE_ICON : RUN_ICON);
+        const noneText = (ctx) => T(ctx.lang, 'Segments appear once two sessions of the same sport share a stretch.', 'Segmente erscheinen, sobald zwei Einheiten derselben Sportart eine Strecke teilen.');
+
+        // ---------- map ----------
+        const fittedBox = (c) => {
+          const pts = [];
+          for (let k = 0; k <= 40; k++) pts.push(pointAt(c.a + (c.b - c.a) * (k / 40)));
+          const xs = pts.map((p) => p[0]);
+          const ys = pts.map((p) => p[1]);
+          const w = Math.max(...xs) - Math.min(...xs) + 240;
+          const h = Math.max(...ys) - Math.min(...ys) + 240;
+          const side = Math.max(w, h / 0.7);
+          const cx = (Math.max(...xs) + Math.min(...xs)) / 2;
+          const cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+          return `${(cx - side / 2).toFixed(0)} ${(cy - (side * 0.7) / 2).toFixed(0)} ${side.toFixed(0)} ${(side * 0.7).toFixed(0)}`;
+        };
+        const casing = (d, colour) => `<path d="${d}" stroke="#fff" stroke-width="13" fill="none" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path d="${d}" stroke="${colour}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+        const map = (ctx) => {
+          let g = '';
+          let viewBox = '0 0 1000 700';
+          let badge = '';
+          if (ctx.page === 'session') {
+            g = `<path d="${subPath(0, TOTAL_KM)}" stroke="${RUN}" stroke-width="5" fill="none" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+            if (ctx.highlight) {
+              const c = shownSeg(ctx);
+              viewBox = fittedBox(c);
+              g += `<g data-unselect style="cursor:pointer">${casing(subPath(c.a + 0.04, c.b - 0.04), RUN)}</g>`;
+            }
+          } else if (ctx.page === 'segment') {
+            if (ctx.scenario !== 'loading') {
+              const c = pageSeg(ctx);
+              viewBox = fittedBox(c);
+              const markR = (Number(viewBox.split(' ')[2]) * 0.012).toFixed(1);
+              g = casing(subPath(c.a + 0.04, c.b - 0.04), RUN) + `<circle class="pmark2" r="${markR}" cx="0" cy="0" fill="${BEST}" stroke="#0b0e14" stroke-width="2" vector-effect="non-scaling-stroke" style="display:none;pointer-events:none"/><circle class="pmark" r="${markR}" cx="0" cy="0" fill="${RUN}" stroke="#fff" stroke-width="2.5" vector-effect="non-scaling-stroke" style="display:none"/>`;
+              badge = `<div class="mapq">${q('Q50')}</div>`;
+            }
+          } else if (ctx.page !== 'list') {
+            g = `<path d="${subPath(0, TOTAL_KM)}" stroke="${RUN}" stroke-width="5" fill="none" stroke-linejoin="round" opacity="0.6"/>`;
+          } else {
+            const segs = segsFor(ctx).filter((c) => c.type !== 'route');
+            for (const c of segs) {
+              const d = subPath(c.a + 0.04, c.b - 0.04);
+              g += `<g class="band" data-band="${c.id}"><path class="hi" d="${d}" stroke="#fff" stroke-width="13" fill="none" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path d="${d}" stroke="${RUN}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></g>`;
+            }
+            const route = segsFor(ctx).find((c) => c.type === 'route');
+            if (route) g = `<g class="band" data-band="${route.id}"><path class="hi" d="${subPath(0, TOTAL_KM)}" stroke="#fff" stroke-width="13" fill="none" stroke-linejoin="round"/></g>` + g;
+            const sel = segsFor(ctx).find((c) => c.id === ctx.tabSel);
+            if (sel) {
+              viewBox = fittedBox(sel);
+              g += `<g data-unselect style="cursor:pointer">${casing(subPath(sel.a + 0.04, sel.b - 0.04), RUN)}</g>`;
+            }
+            if (segs.length) badge = `<div class="mapq">${q('Q16')}</div>`;
+          }
+          return `<div class="map"><svg viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">${g}</svg>${badge}</div>`;
+        };
+        const pills = (ctx) => {
+          const L = ctx.lang;
+          const mapView = `<span class="pill">${ICON_GLOBE}2D<span class="chevd">${ICON_CHEV_DOWN}</span></span>`;
+          if (ctx.page !== 'session') return '';
+          if (ctx.highlight) return `<div class="bar"><span class="pill icon">${ICON_GLOBE}</span><span class="pill icon">${ICON_PALETTE}</span><span class="pill">${ICON_FLAG}${T(L, 'Laps', 'Runden')}<span class="chevd">${ICON_CHEV_DOWN}</span></span></div>`;
+          return `<div class="bar">${mapView}<span class="pill">${ICON_PALETTE}${T(L, 'Speed', 'Tempo')}<span class="chevd">${ICON_CHEV_DOWN}</span></span><span class="pill">${ICON_FLAG}${T(L, 'Laps', 'Runden')}<span class="chevd">${ICON_CHEV_DOWN}</span></span></div>`;
+        };
+        const dock = (ctx) => {
+          const active = ctx.page === 'session' || ctx.page === 'sessions' ? 'sessions' : 'dashboard';
+          const item = (id, glyph, nav) => `<i class="${active === id ? 'on' : ''}" ${nav ? `data-nav="${nav}" role="button" style="cursor:pointer"` : ''}>${glyph}</i>`;
+          return `<nav class="dock">${item('dashboard', '▦', 'dashboard')}${item('sessions', '⚡', 'sessions')}${item('labs', '⚗', null)}${item('settings', '⚙', null)}</nav>`;
+        };
+
+        // ---------- session charts (SessionChartsExplorer rows, rough) ----------
+        const CHART_POINTS = 180;
+        const METRICS = {
+          hr: { label: ['Heart rate', 'Herzfrequenz'], colour: '#ef4444', base: 152, amp: 14, fmt: (v) => Math.round(v) + ' bpm' },
+          power: { label: ['Power', 'Leistung'], colour: '#3b82f6', base: 215, amp: 70, fmt: (v) => Math.round(v) + ' W' },
+          speed: { label: ['Speed', 'Geschwindigkeit'], colour: '#22c55e', base: 30, amp: 7, fmt: (v) => v.toFixed(1) + ' km/h' },
+          pace: { label: ['Pace', 'Pace'], colour: '#06b6d4', base: 291, amp: 22, fmt: (v) => paceFmt(v), invert: true },
+        };
+        const metricSeries = (key) => {
+          const m = METRICS[key];
+          const seed = key.length * 1.7;
+          return Array.from({ length: CHART_POINTS }, (_, i) => m.base + m.amp * (0.6 * Math.sin(i / 11 + seed) + 0.3 * Math.sin(i / 3.3 + seed * 2) + 0.1 * Math.sin(i * 1.7)));
+        };
+        const chartRow = (ctx, key, first) => {
+          const L = ctx.lang;
+          const m = METRICS[key];
+          const values = metricSeries(key);
+          const c = ctx.highlight ? shownSeg(ctx) : null;
+          const from = c ? Math.floor((c.a / TOTAL_KM) * (CHART_POINTS - 1)) : 0;
+          const to = c ? Math.ceil((c.b / TOTAL_KM) * (CHART_POINTS - 1)) : CHART_POINTS - 1;
+          const scoped = values.slice(from, to + 1);
+          const lo = Math.min(...values);
+          const hi = Math.max(...values);
+          const Y = (v) => (m.invert ? 6 + ((v - lo) / (hi - lo)) * 78 : 84 - ((v - lo) / (hi - lo)) * 78);
+          const pts = values.map((v, i) => `${((i / (CHART_POINTS - 1)) * 300).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+          const avg = scoped.reduce((a, v) => a + v, 0) / scoped.length;
+          const top = m.invert ? Math.min(...scoped) : Math.max(...scoped);
+          const bottom = m.invert ? Math.max(...scoped) : Math.min(...scoped);
+          const band = c ? `<rect x="${((c.a / TOTAL_KM) * 300).toFixed(1)}" y="0.75" width="${(((c.b - c.a) / TOTAL_KM) * 300).toFixed(1)}" height="88.5" rx="2" fill="#fff" fill-opacity="0.06" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke"/>` : '';
+          return `<div class="chartrow"><div class="row"><span class="sub1 grow">${T(L, m.label[0], m.label[1])}</span>${first && c ? q('Q41') : ''}</div>
+            <div class="chartgrid"><div class="rail num"><span>${m.fmt(top)}</span><span class="t1">${m.fmt(avg)}</span><span>${m.fmt(bottom)}</span></div>
+            <svg viewBox="0 0 300 90" preserveAspectRatio="none" class="chartsvg"><polyline points="0,90 ${pts} 300,90" fill="${m.colour}" fill-opacity="0.15" stroke="none"/><polyline points="${pts}" fill="none" stroke="${m.colour}" stroke-width="1.5" vector-effect="non-scaling-stroke"/>${band}</svg></div></div>`;
+        };
+        const chartsCard = (ctx) => {
+          const keys = SPORT === 'cycling' ? ['speed', 'power', 'hr'] : ['pace', 'hr'];
+          return `<div class="card" style="padding:0;gap:0">${keys.map((k, i) => chartRow(ctx, k, i === 0)).join('')}</div>`;
+        };
+
+        // ---------- session detail ----------
+        const row = ({ avatar, primary, secondary, attrs = '', disabled = false, open = false, body = '' }) => `<div class="srow"><div class="shead ${disabled ? 'disabled' : ''}" ${attrs}><span class="lih"><span class="avatar">${avatar}</span>
+            <span class="grow" style="min-width:0"><span class="t1 num">${primary}</span><br><span class="xs t2 num trunc" style="display:block">${secondary}</span></span></span>${disabled ? '' : `<span class="trail ${open ? 'open' : ''}">${ICON_RIGHT}</span>`}</div>${open ? body : ''}</div>`;
+        const entryRow = (ctx) => {
+          const L = ctx.lang;
+          if (ctx.scenario === 'loading') return `<div class="srow"><div class="rowblock" style="position:relative"><span style="position:absolute;right:8px;top:14px">${q('Q5')}</span></div></div>`;
+          if (ctx.scenario === 'none') return row({ avatar: segIcon(20), primary: T(L, 'No segments', 'Keine Segmente'), secondary: noneText(ctx), disabled: true });
+          const mine = globalSegments(ctx.scenario === 'many' ? 'many' : 'found').filter((c) => c.passes.some((p) => p.date.getTime() === ctx.day.getTime()));
+          if (mine.length === 0) return row({ avatar: segIcon(20), primary: T(L, 'No segments', 'Keine Segmente'), secondary: noneText(ctx), disabled: true });
+          return row({
+            avatar: segIcon(20),
+            primary: `${countLabel(ctx, mine.length)}${ctx.expanded ? q('Q39') + q('Q43') : ''}`,
+            secondary: mine.map((c) => segName(L, c)).join(', '),
+            attrs: 'data-toggle-segs',
+            open: ctx.expanded,
+            body: `<div class="rowbody">${mine.map((c, i) => sessionSegRow(ctx, c, i === 0)).join('')}</div>`,
+          });
+        };
+        const sessionPanel = (ctx) => {
+          const L = ctx.lang;
+          const stats = SPORT === 'cycling' ? `1:36:12 · ${speedFormat(L, 30.1)} · 212 W · 141 bpm` : `58:21 · ${paceFmt(291)} · 148 bpm`;
+          const lapsPrimary = SPORT === 'cycling'
+            ? T(L, `10 splits · avg ${speedFormat(L, 30.1)}`, `10 Splits · Ø ${speedFormat(L, 30.1)}`)
+            : T(L, `13 splits · avg ${paceFmt(291)}`, `13 Splits · Ø ${paceFmt(291)}`);
+          return `<div class="card" style="gap:4px"><div class="row between"><span class="h2">${runTitle(L, ctx.day)}</span><span class="ghosticon">${ICON_DOTS}</span></div>
+            <div class="xs t2 num">${date(L, ctx.day)} · ${hourMinute(L, ctx.day)} · ${distance(L, dayKm(ctx.day.getTime()))} · ${stats}</div></div>
+            <div class="summary">
+            ${row({ avatar: ICON_CLOUD, primary: T(L, 'Cloudy 9–11 °C', 'Bewölkt 9–11 °C'), secondary: T(L, 'Wind 12 km/h from W', 'Wind 12 km/h aus W') })}
+            ${row({ avatar: ICON_GAUGE, primary: T(L, 'Improving · Minor', 'Verbessernd · Gering'), secondary: T(L, 'Aerobic 3.1 · Anaerobic 0.8', 'Aerob 3,1 · Anaerob 0,8') })}
+            ${row({ avatar: ICON_FLAG.replace(/16/g, '20'), primary: lapsPrimary, secondary: T(L, 'Fastest split 4:38 /km', 'Schnellster Split 4:38 /km') })}
+            ${entryRow(ctx)}
+            ${row({ avatar: ICON_CHART, primary: T(L, 'More stats', 'Weitere Werte'), secondary: T(L, 'Cadence, elevation, power', 'Kadenz, Höhe, Leistung') })}</div>
+          ${chartsCard(ctx)}`;
+        };
+
+        // ---------- dashboard: Segments tab ----------
+        const dashboardTabs = (ctx) => {
+          const L = ctx.lang;
+          const peek = ctx.device === 'phone'
+            ? `<div class="peek"><span class="avatar">▦</span><span class="grow" style="min-width:0"><span class="sub1">Dashboard</span><br><span class="xs t2 trunc" style="display:block">${T(L, 'Current Form · Training load · Volume · Performance', 'Aktuelle Form · Trainingsbelastung · Umfang · Leistung')}</span></span></div>`
+            : '';
+          return `${peek}<div class="tabs"><span class="tab ${ctx.page === 'dashboard' ? 'on' : ''}" data-goto="dashboard">Dashboard</span><span class="tab ${ctx.page === 'list' ? 'on' : ''}" data-goto="list">${T(L, 'Segments', 'Segmente')}</span></div>`;
+        };
+        const sessionItem = ({ icon, title, caption, slot, attrs = '', on = false, crown = '' }) => `<div class="sitem ${on ? 'on' : ''} ${crown ? 'best' : ''}" ${attrs}>${crown}
+            <div class="shdr"><span class="sport">${icon}</span>
+              <div style="min-width:0"><div class="sub1 trunc">${title}</div><div class="xs t2 trunc num">${caption}</div></div></div>
+            <div class="slot">${slot}</div></div>`;
+        const valueCol = (top, bottom) => `<div class="vcol"><div class="sub1">${top}</div><div class="xs t3">${bottom}</div></div>`;
+        const ORDINAL_SUFFIX = { one: 'st', two: 'nd', few: 'rd', other: 'th' };
+        const rankOf = (lang, rank, n) => {
+          if (rank === 1) return T(lang, `fastest of ${n}`, `schnellste von ${n}`);
+          return lang === 'de' ? `${rank}.-schnellste von ${n}` : `${rank}${ORDINAL_SUFFIX[new Intl.PluralRules('en', { type: 'ordinal' }).select(rank)]} fastest of ${n}`;
+        };
+        const CROWN = svgIcon(16, '<path fill="currentColor" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>');
+        const crownMark = (ctx, best) => (best ? `<span class="crownmark" role="img" aria-label="${T(ctx.lang, 'Best', 'Bestzeit')}" title="${T(ctx.lang, 'Best', 'Bestzeit')}">${CROWN.replace(/16/g, '18')}</span><span class="crownq">${q('Q46')}${q('Q47')}</span>` : '');
+        const chevronButton = (ctx, c, first) => `<span class="iconbtn" role="button" aria-label="${T(ctx.lang, 'Open segment', 'Segment öffnen')}" title="${T(ctx.lang, 'Open segment', 'Segment öffnen')}" data-open="${c.id}">${ICON_RIGHT}</span>${first ? q('Q44') : ''}`;
+        const sessionSegRow = (ctx, c, first) => {
+          const p = c.passes.find((x) => x.date.getTime() === ctx.day.getTime());
+          const selected = ctx.highlight && ctx.seg === c.id;
+          return sessionItem({
+            icon: typeIcon(c, 18),
+            title: segName(ctx.lang, c),
+            caption: `${kmUnit(ctx.lang, c.km)} · ${gainText(c)} · ${passesLabel(ctx, c.passes.length)}`,
+            crown: crownMark(ctx, p.rank === 1),
+            slot: valueCol(dur(p.secs), rankOf(ctx.lang, p.rank, c.passes.length)) + (first ? q('Q40') : '') + chevronButton(ctx, c, first) + (selected ? q('Q42') : ''),
+            attrs: `data-pickseg="${c.id}"`,
+            on: selected,
+          });
+        };
+        const segRow = (ctx, c, first) => sessionItem({
+          icon: typeIcon(c, 18),
+          title: segName(ctx.lang, c),
+          caption: `${kmUnit(ctx.lang, c.km)} · ${gainText(c)} · ${passesLabel(ctx, c.passes.length)}`,
+          slot: valueCol(date(ctx.lang, c.me.date), T(ctx.lang, 'Last ridden', 'Zuletzt')) + chevronButton(ctx, c, first) + (ctx.tabSel === c.id ? q('Q45') : ''),
+          attrs: `data-row="${c.id}" data-tabpick="${c.id}"`,
+          on: ctx.tabSel === c.id,
+        });
+        const listHeader = (ctx, segs) => {
+          const L = ctx.lang;
+          if (ctx.scenario === 'loading') return `<div class="listhead xs t3"><span class="sk" style="width:120px;height:10px"></span>${q('Q5')}${q('Q32')}</div>`;
+          if (ctx.scenario === 'updating') return `<div class="listhead xs t3"><span class="pulse"></span>${T(L, 'Updating after your last import', 'Wird nach deinem letzten Import aktualisiert')}${q('Q32')}</div>`;
+          return `<div class="listhead xs t3">${countLabel(ctx, segs.length)} · ${T(L, 'last ridden first', 'zuletzt gefahren zuerst')}${q('Q33')}</div>`;
+        };
+        const listPanel = (ctx) => {
+          const L = ctx.lang;
+          const segs = segsFor(ctx);
+          let body = `<div class="list">${segs.map((c, i) => segRow(ctx, c, i === 0)).join('')}</div>`;
+          if (ctx.scenario === 'loading') body = `<div class="list">${[1, 2, 3, 4, 5].map(() => '<div class="skblock" style="height:74px;border-radius:16px"></div>').join('')}</div>`;
+          if (ctx.scenario === 'none') body = `<div class="card"><span class="t1">${T(L, 'No segments yet', 'Noch keine Segmente')}</span><span class="xs t2">${noneText(ctx)}</span></div>`;
+          const routeQ = segs.some((c) => c.type === 'route') ? `<div class="row xs t3">${T(L, 'Whole routes are listed as Route', 'Ganze Strecken stehen als Route in der Liste')}${q('Q35')}${q('Q31')}</div>` : '';
+          return `${dashboardTabs(ctx)}${listHeader(ctx, segs)}${body}${routeQ}`;
+        };
+
+        // ---------- segment page (/segments/:segmentId, TripDetail anatomy) ----------
+        const pageSeg = (ctx) => shownSeg({ ...ctx, seg: ctx.segPage });
+        const ICON_SCATTER = svgIcon(20, '<circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="18.5" cy="5.5" r=".5" fill="currentColor"/><circle cx="11.5" cy="11.5" r=".5" fill="currentColor"/><circle cx="7.5" cy="16.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="14.5" r=".5" fill="currentColor"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/>');
+        const selectedPass = (c, pick) => c.passes.find((p) => p.date.getTime() === pick) ?? c.me;
+        const passMetric = (key, p, c) => {
+          const phase = (p.date.getTime() / 86400000) % 7;
+          const effort = c.best.secs / p.secs;
+          if (key === 'pace') return p.pace;
+          if (key === 'speed') return p.pace.map((v) => 3600 / v);
+          if (key === 'power') return p.pace.map((v, i) => 215 * effort * (c.best.secs / c.km / v) + 18 * Math.sin(i / 3 + phase));
+          return p.pace.map((v, i) => 146 + 10 * effort + i * 0.35 + 4 * Math.sin(i / 4 + phase));
+        };
+        const plottedPasses = (ctx, c, sel) => {
+          if (ctx.series === 'single') return [sel];
+          if (ctx.series === 'all') return [...c.passes.filter((p) => p !== sel), sel];
+          if (sel === c.best) return [sel];
+          return [c.best, sel];
+        };
+        const fractionAtTime = (p, secs) => {
+          const cs = p.cumSecs;
+          for (let i = 0; i < cs.length; i++) {
+            if (cs[i] >= secs) {
+              const prev = i === 0 ? 0 : cs[i - 1];
+              return (i + (secs - prev) / (cs[i] - prev)) / POINTS;
+            }
+          }
+          return 1;
+        };
+        const explorerRow = (ctx, c, sel, key, first) => {
+          const L = ctx.lang;
+          const m = METRICS[key];
+          const plotted = plottedPasses(ctx, c, sel);
+          const domain = Math.max(...plotted.map((p) => p.secs));
+          const all = plotted.flatMap((p) => passMetric(key, p, c));
+          const lo = Math.min(...all);
+          const hi = Math.max(...all);
+          const Y = (v) => (m.invert ? 6 + ((v - lo) / (hi - lo)) * 78 : 84 - ((v - lo) / (hi - lo)) * 78);
+          const pts = (p) => passMetric(key, p, c).map((v, i) => `${((p.cumSecs[i] / domain) * 300).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+          const line = (p, colour, width, opacity = 1) => `<polyline points="${pts(p)}" fill="none" stroke="${colour}" stroke-width="${width}" stroke-opacity="${opacity}" vector-effect="non-scaling-stroke"/>`;
+          let g = '';
+          if (ctx.series === 'single') {
+            const end = ((sel.secs / domain) * 300).toFixed(1);
+            g = `<polyline points="0,90 ${pts(sel)} ${end},90" fill="${m.colour}" fill-opacity="0.15" stroke="none"/>${line(sel, m.colour, 1.5)}`;
+          } else {
+            for (const p of plotted) {
+              if (p === sel) g += line(p, RUN, 1.75);
+              else if (ctx.series === 'all') g += line(p, C_TICK, 1, 0.35);
+              else g += line(p, BEST, 1.5);
+            }
+          }
+          const values = passMetric(key, sel, c);
+          const avg = values.reduce((a, v) => a + v, 0) / values.length;
+          const top = m.invert ? Math.min(...values) : Math.max(...values);
+          const bottom = m.invert ? Math.max(...values) : Math.min(...values);
+          const legend = first ? explorerLegend(ctx, c, sel) : '';
+          return `<div class="chartrow"><div class="row"><span class="sub1">${T(L, m.label[0], m.label[1])}</span>${first ? q('Q51') + q('Q52') : ''}${legend}</div>
+            <div class="chartgrid"><div class="rail num"><span>${m.fmt(top)}</span><span class="t1">${m.fmt(avg)}</span><span>${m.fmt(bottom)}</span></div>
+            <svg viewBox="0 0 300 90" preserveAspectRatio="none" class="chartsvg" data-explore>${g}<line class="xcur" x1="0" x2="0" y1="0" y2="90" stroke="#fff" stroke-opacity="0.5" vector-effect="non-scaling-stroke" style="display:none"/></svg></div></div>`;
+        };
+        const explorerLegend = (ctx, c, sel) => {
+          const L = ctx.lang;
+          const dotOf = (colour) => `<i style="background:${colour}"></i>`;
+          const mine = `<span>${dotOf(ctx.series === 'single' ? 'var(--color-text-secondary)' : RUN)}${date(L, sel.date)}</span>`;
+          if (ctx.series === 'pair' && sel !== c.best) return `<span class="legend xs t3 num">${mine}<span>${dotOf(BEST)}${T(L, 'Best', 'Bestzeit')}</span></span>`;
+          if (ctx.series === 'all') return `<span class="legend xs t3 num">${mine}<span>${dotOf(C_TICK)}${T(L, 'Other passes', 'Andere Durchgänge')}</span></span>`;
+          return `<span class="legend xs t3 num">${mine}</span>`;
+        };
+        const explorerCard = (ctx, c, sel, loading) => {
+          const keys = SPORT === 'cycling' ? ['speed', 'power', 'hr'] : ['pace', 'hr'];
+          if (loading) return `<div class="card" style="padding:0;gap:0">${keys.map((k, i) => `<div class="chartrow"><div class="row"><span class="sub1">${sk(64, 12)}</span>${i === 0 ? q('Q51') + q('Q52') : ''}</div><div class="chartgrid"><div class="skblock" style="height:90px;border-radius:8px"></div><div class="skblock" style="height:90px;border-radius:8px"></div></div></div>`).join('')}</div>`;
+          const domain = Math.max(...plottedPasses(ctx, c, sel).map((p) => p.secs));
+          return `<div class="card explorer" style="padding:0;gap:0" data-domain="${domain}" data-sel="${sel.date.getTime()}">${keys.map((k, i) => explorerRow(ctx, c, sel, k, i === 0)).join('')}</div>`;
+        };
+        const passItem = (ctx, c, p, sel, yRange) => sessionItem({
+          icon: sportIcon(),
+          title: runTitle(ctx.lang, p.date),
+          caption: `${date(ctx.lang, p.date)} · ${distance(ctx.lang, p.distanceKm)} · ${sessionDuration(p)}`,
+          crown: crownMark(ctx, p === c.best),
+          slot: `<div class="slotchart">${spark(c, p, yRange)}</div>` + valueCol(dur(p.secs), p === c.best ? T(ctx.lang, 'Best', 'Bestzeit') : delta(p.secs - c.best.secs))
+            + `<span class="iconbtn" role="button" aria-label="${T(ctx.lang, 'Open session', 'Einheit öffnen')}" title="${T(ctx.lang, 'Open session', 'Einheit öffnen')}" data-opensession="${p.date.getTime()}">${ICON_RIGHT}</span>`,
+          attrs: `data-pid="${p.date.getTime()}" data-pickpass="${p.date.getTime()}"`,
+          on: p === sel,
+        });
+        const passTimesRow = (ctx, c, sel, loading) => {
+          const L = ctx.lang;
+          if (loading) return `<div class="srow"><div class="rowblock" style="position:relative"><span style="position:absolute;right:8px;top:14px">${q('Q5')}</span></div></div>`;
+          const yRange = gapRange(c);
+          const body = `<div class="rowbody">${scatter(ctx, c, 120, sel)}
+              <div class="list">${c.byTime.map((p) => passItem(ctx, c, p, sel, yRange)).join('')}</div></div>`;
+          return row({
+            avatar: ICON_SCATTER,
+            primary: `${T(L, 'Pass times', 'Zeiten')}${q('Q53')}`,
+            secondary: passesLabel(ctx, c.passes.length),
+            attrs: 'data-toggle-times',
+            open: ctx.timesOpen,
+            body,
+          });
+        };
+        const segmentPage = (ctx) => {
+          const L = ctx.lang;
+          const loading = ctx.scenario === 'loading';
+          const c = pageSeg(ctx);
+          const sel = selectedPass(c, ctx.pick);
+          const v = (text, w) => (loading ? sk(w, 14) : text);
+          const d = (text, w) => (loading ? sk(w, 10) : text);
+          const kind = SPORT === 'cycling' ? T(L, 'Cycling', 'Radfahren') : T(L, 'Running', 'Laufen');
+          const icon = loading ? '' : typeIcon(c, 18);
+          if (ctx.sheetDown) return `<div class="peek"><span class="tile">${icon}</span><span class="grow" style="min-width:0"><span class="sub1">${v(segName(L, c), 64)}</span><br><span class="xs t2 trunc num" style="display:block">${d(`${kmUnit(L, c.km)} · ${gainText(c)} · ${passesLabel(ctx, c.passes.length)}`, 150)}</span></span></div>`;
+          const header = `<div class="phead"><span class="tile">${icon}</span><div style="min-width:0"><div class="row" style="gap:6px"><h1 class="ph1" style="margin:0">${v(segName(L, c), 96)}</h1>${q('Q48')}${q('Q49')}</div><div class="xs t2 num">${d(`${kind} · ${kmUnit(L, c.km)} · ${gainText(c)}`, 150)}</div></div></div>`;
+          return `${header}<div class="pagegrid"><div class="summary">${passTimesRow(ctx, c, sel, loading)}</div>${explorerCard(ctx, c, sel, loading)}</div>`;
+        };
+
+        // ---------- dashboard tab + sessions list ----------
+        const dashboardPanel = (ctx) => {
+          const L = ctx.lang;
+          return `${dashboardTabs(ctx)}<div class="card"><div class="sub1">${T(L, 'Current Form', 'Aktuelle Form')}</div><div class="xs t2" style="margin-top:-8px">${T(L, 'Your training readiness', 'Wie bereit du bist')}</div><div class="skblock" style="height:96px"></div></div>
+            <div class="card"><div class="skblock" style="height:220px"></div></div>`;
+        };
+        const sessionDays = () => {
+          const days = [{ day: SESSION_DAY.getTime(), km: TOTAL_KM }];
+          for (const c of globalSegments('found')) {
+            for (const p of [...c.passes].sort((x, y) => y.date - x.date)) {
+              if (days.length < 4 && !days.some((d) => d.day === p.date.getTime())) days.push({ day: p.date.getTime(), km: p.distanceKm });
+            }
+          }
+          return days.sort((x, y) => y.day - x.day);
+        };
+        const dayKm = (day) => {
+          if (day === SESSION_DAY.getTime()) return TOTAL_KM;
+          for (const c of [...globalSegments('found'), ...globalSegments('many')]) {
+            const p = c.passes.find((x) => x.date.getTime() === day);
+            if (p) return p.distanceKm;
+          }
+          return TOTAL_KM;
+        };
+        const sessionsPanel = (ctx) => {
+          const L = ctx.lang;
+          const peek = ctx.device === 'phone'
+            ? `<div class="peek"><span class="avatar">⚡</span><span class="grow" style="min-width:0"><span class="sub1">${T(L, 'Sessions', 'Einheiten')}</span><br><span class="xs t2 trunc" style="display:block">${T(L, 'Log · Trips · Records', 'Protokoll · Touren · Rekorde')}</span></span></div>`
+            : '';
+          const items = sessionDays().map((d) => {
+            const day = new Date(d.day);
+            const secs = Math.round(d.km * (SPORT === 'cycling' ? 120 : 291));
+            const h = Math.floor(secs / 3600);
+            const m = Math.floor((secs % 3600) / 60);
+            const durText = h > 0 ? `${h}h ${m}m` : `${m}m ${secs % 60}s`;
+            return sessionItem({ icon: sportIcon(), title: runTitle(L, day), caption: `${date(L, day)} · ${distance(L, d.km)} · ${durText}`, slot: '', attrs: `data-session="${d.day}"` });
+          }).join('');
+          return `${peek}<div class="tabs"><span class="tab on">${T(L, 'Log', 'Protokoll')}</span><span class="tab">${T(L, 'Trips', 'Touren')}</span><span class="tab">${T(L, 'Records', 'Rekorde')}</span></div><div class="list">${items}</div>`;
+        };
+        const routeLabel = (ctx) => {
+          let path = '/';
+          if (ctx.page === 'list') path = '/?tab=segments';
+          if (ctx.page === 'sessions') path = '/sessions';
+          if (ctx.page === 'segment') path = `/segments/${pageSeg(ctx).id}`;
+          if (ctx.page === 'session') path = `/sessions/${ctx.day.toISOString().slice(0, 10)}${ctx.highlight ? `?segment=${shownSeg(ctx).id}` : ''}`;
+          return `<div class="urlhint xs t3 num">${path}</div>`;
+        };
+
+        // ---------- render + in-frame navigation ----------
+        const LOADING_MS = 1500;
+        const locals = new WeakMap();
+        let shellState = null;
+        const effectiveScenario = (local) => {
+          if (shellState.scenario !== 'loading') return shellState.scenario;
+          return Date.now() - local.enteredAt < LOADING_MS ? 'loading' : 'found';
+        };
+        const render = (screen) => {
+          const local = locals.get(screen);
+          const s = shellState;
+          useSport(s.sport);
+          const scenario = effectiveScenario(local);
+          const ctx = { lang: s.lang, scenario, page: local.page, expanded: local.expanded, seg: local.seg, segPage: local.segPage, timesOpen: local.timesOpen, pick: local.pick ?? null, series: s.series, sheetDown: local.sheetDown && local.page === 'segment' && screen.dataset.device === 'phone', tabSel: scenario === 'loading' || scenario === 'none' ? null : local.tabSel, highlight: local.highlight && scenario !== 'loading' && scenario !== 'none', day: new Date(local.day), device: screen.dataset.device };
+          const app = screen.querySelector('.app');
+          const stash = app.querySelector('.stash');
+          const scrollTop = app.querySelector('.mount .col')?.scrollTop ?? 0;
+          for (const b of app.querySelectorAll('.mount .ms-q')) stash.append(b);
+          let panel = sessionPanel(ctx);
+          if (ctx.page === 'list') panel = listPanel(ctx);
+          if (ctx.page === 'dashboard') panel = dashboardPanel(ctx);
+          if (ctx.page === 'sessions') panel = sessionsPanel(ctx);
+          if (ctx.page === 'segment') panel = segmentPage(ctx);
+          const mount = app.querySelector('.mount');
+          mount.style.setProperty('--sport', RUN);
+          mount.style.setProperty('--crown', 'oklch(82.8% 0.189 84.429)');
+          mount.innerHTML = `${map(ctx)}${routeLabel(ctx)}${pills(ctx)}<div class="col ${ctx.sheetDown ? 'down' : ''}"><div class="grab" ${ctx.page === 'segment' ? 'data-sheet' : ''}><span></span></div>${panel}</div>${dock(ctx)}`;
+          for (const slot of mount.querySelectorAll('.qslot')) {
+            const b = stash.querySelector(`.ms-q[data-qid="${slot.dataset.slot}"]`);
+            if (b) slot.replaceWith(b);
+            else slot.remove();
+          }
+          mount.querySelector('.col').scrollTop = scrollTop;
+        };
+        const moveMarker = (screen, stamp) => {
+          const mark = screen.querySelector('.pmark');
+          const local = locals.get(screen);
+          if (!mark || !local || local.page !== 'segment') return;
+          screen.querySelector('.pmark2').style.display = 'none';
+          if (stamp === null) {
+            mark.style.display = 'none';
+            return;
+          }
+          useSport(shellState.sport);
+          const c = pageSeg({ scenario: effectiveScenario(local), segPage: local.segPage });
+          const p = c.passes.find((x) => x.date.getTime() === Number(stamp));
+          if (!p) return;
+          const pt = pointAt(c.a + (c.b - c.a) * fractionAtTime(p, c.best.secs));
+          mark.setAttribute('cx', pt[0].toFixed(1));
+          mark.setAttribute('cy', pt[1].toFixed(1));
+          mark.setAttribute('fill', p === c.best ? BEST : RUN);
+          mark.style.display = '';
+        };
+        const placeMark = (mark, c, p, secs) => {
+          const pt = pointAt(c.a + (c.b - c.a) * fractionAtTime(p, secs));
+          mark.setAttribute('cx', pt[0].toFixed(1));
+          mark.setAttribute('cy', pt[1].toFixed(1));
+          mark.style.display = '';
+        };
+        const exploreAt = (screen, svg, clientX) => {
+          const local = locals.get(screen);
+          const card = svg.closest('.explorer');
+          if (!local || !card) return;
+          const rect = svg.getBoundingClientRect();
+          const fx = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+          for (const cur of screen.querySelectorAll('.xcur')) {
+            cur.setAttribute('x1', (fx * 300).toFixed(1));
+            cur.setAttribute('x2', (fx * 300).toFixed(1));
+            cur.style.display = '';
+          }
+          useSport(shellState.sport);
+          const c = pageSeg({ scenario: effectiveScenario(local), segPage: local.segPage });
+          const sel = selectedPass(c, Number(card.dataset.sel));
+          const secs = fx * Number(card.dataset.domain);
+          const mark = screen.querySelector('.pmark');
+          mark.setAttribute('fill', RUN);
+          placeMark(mark, c, sel, secs);
+          const mark2 = screen.querySelector('.pmark2');
+          if (shellState.series === 'pair' && sel !== c.best) placeMark(mark2, c, c.best, secs);
+          else mark2.style.display = 'none';
+        };
+        const leaveExplorer = (screen) => {
+          for (const cur of screen.querySelectorAll('.xcur')) cur.style.display = 'none';
+        };
+        const enter = (screen, local) => {
+          local.enteredAt = Date.now();
+          if (shellState.scenario === 'loading') setTimeout(() => render(screen), LOADING_MS + 50);
+        };
+        const resetLocal = (screen, start) => {
+          useSport(shellState.sport);
+          const v = start ?? shellState.variant;
+          const segs = shellState.scenario === 'many' ? globalSegments('many') : globalSegments('found');
+          const inSession = segs.find((c) => c.inSession && c.type === 'climb') ?? segs.find((c) => c.inSession) ?? segs[0];
+          const pageByVariant = { dashboard: 'dashboard', list: 'list', sessions: 'sessions', session: 'session', expanded: 'session', segsel: 'session', page: 'segment' };
+          const local = {
+            page: pageByVariant[v],
+            expanded: v === 'expanded' || v === 'segsel',
+            seg: v === 'segsel' ? inSession.id : segs[0].id,
+            segPage: segs[0].id,
+            timesOpen: true,
+            pick: null,
+            highlight: v === 'segsel',
+            day: SESSION_DAY.getTime(),
+            tabSel: null,
+          };
+          locals.set(screen, local);
+          enter(screen, local);
+        };
+        document.addEventListener('click', (e) => {
+          const screen = e.target.closest?.('.ms-screen');
+          if (!screen || !locals.has(screen)) return;
+          const local = locals.get(screen);
+          useSport(shellState.sport);
+          const hit = (sel) => e.target.closest(sel);
+          const go = (page) => {
+            local.page = page;
+            local.sheetDown = false;
+            if (page === 'list' || page === 'session' || page === 'segment') enter(screen, local);
+          };
+          if (hit('[data-nav]')) {
+            go(hit('[data-nav]').getAttribute('data-nav'));
+          } else if (hit('[data-goto]')) {
+            go(hit('[data-goto]').getAttribute('data-goto'));
+          } else if (hit('[data-session]')) {
+            local.day = Number(hit('[data-session]').getAttribute('data-session'));
+            local.highlight = false;
+            local.expanded = false;
+            go('session');
+          } else if (hit('[data-open]')) {
+            local.segPage = hit('[data-open]').getAttribute('data-open');
+            local.timesOpen = true;
+            local.pick = null;
+            go('segment');
+          } else if (hit('[data-opensession]')) {
+            local.day = Number(hit('[data-opensession]').getAttribute('data-opensession'));
+            local.seg = local.segPage;
+            local.highlight = true;
+            local.expanded = true;
+            go('session');
+          } else if (hit('[data-unselect]')) {
+            if (local.page === 'list') local.tabSel = null;
+            else local.highlight = false;
+          } else if (hit('[data-tabpick]')) {
+            const id = hit('[data-tabpick]').getAttribute('data-tabpick');
+            local.tabSel = local.tabSel === id ? null : id;
+          }
+          else if (hit('[data-pickseg]')) {
+            const id = hit('[data-pickseg]').getAttribute('data-pickseg');
+            if (local.highlight && local.seg === id) local.highlight = false;
+            else {
+              local.seg = id;
+              local.highlight = true;
+            }
+          } else if (hit('[data-toggle-segs]')) local.expanded = !local.expanded;
+          else if (hit('[data-toggle-times]')) local.timesOpen = !local.timesOpen;
+          else if (hit('[data-pickpass]')) local.pick = Number(hit('[data-pickpass]').getAttribute('data-pickpass'));
+          else if (hit('[data-sheet]')) local.sheetDown = !local.sheetDown;
+          else if (hit('[data-dot]')) local.pick = Number(hit('[data-dot]').getAttribute('data-dot'));
+          else if (hit('[data-explore]')) {
+            exploreAt(screen, hit('[data-explore]'), e.clientX);
+            return;
+          } else return;
+          render(screen);
+          if (hit('[data-dot]')) moveMarker(screen, hit('[data-dot]').getAttribute('data-dot'));
+          const navigated = hit('[data-nav]') || hit('[data-goto]') || hit('[data-session]') || hit('[data-open]') || hit('[data-opensession]');
+          if (navigated) screen.querySelector('.col').scrollTop = 0;
+        });
+        document.addEventListener('mouseover', (e) => {
+          const screen = e.target.closest?.('.ms-screen');
+          if (!screen || !locals.has(screen)) return;
+          const rowEl = e.target.closest('[data-row]');
+          for (const b of screen.querySelectorAll('.band')) b.classList.toggle('on', rowEl !== null && b.getAttribute('data-band') === rowEl.getAttribute('data-row'));
+          const dotEl = e.target.closest('[data-dot]');
+          for (const r of screen.querySelectorAll('[data-pid]')) r.classList.toggle('hl', dotEl !== null && r.getAttribute('data-pid') === dotEl.getAttribute('data-dot'));
+          const pidEl = e.target.closest('[data-pid]');
+          const stamp = dotEl?.getAttribute('data-dot') ?? pidEl?.getAttribute('data-pid') ?? null;
+          if (e.target.closest('[data-explore]')) return;
+          leaveExplorer(screen);
+          if (stamp !== null || screen.dataset.device !== 'phone') moveMarker(screen, stamp);
+        });
+        document.addEventListener('mousemove', (e) => {
+          const screen = e.target.closest?.('.ms-screen');
+          if (!screen || !locals.has(screen) || screen.dataset.device === 'phone') return;
+          const svg = e.target.closest('[data-explore]');
+          if (svg) exploreAt(screen, svg, e.clientX);
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key !== 'Escape' || !shellState) return;
+          for (const screen of MockupShell.screens()) {
+            const local = locals.get(screen);
+            if (!local) continue;
+            if (local.page === 'list') local.tabSel = null;
+            else if (local.page === 'session') local.highlight = false;
+            else continue;
+            render(screen);
+          }
+        });
+        let last = '';
+        let hifiSport = null;
+        let hifiFromSegment = null;
+        const syncHifiSegments = (state) => {
+          const segments = (window.HIFI_SEGMENTS ?? {})[state.sport] ?? [];
+          if (hifiSport !== state.sport && segments.length > 0) {
+            hifiSport = state.sport;
+            MockupShell.setOptions('segment', segments.map((segment) => ({ id: segment.id, label: segment.label })));
+            return true;
+          }
+          const segment = segments.find((entry) => entry.id === state.segment);
+          if (segment === undefined || hifiFromSegment === segment.id) return false;
+          hifiFromSegment = segment.id;
+          MockupShell.setOptions('from', [{ id: 'tab', label: 'Segments tab' }, ...segment.from]);
+          MockupShell.set('from', 'tab');
+          return true;
+        };
+        const hifiSrc = (screen, state) => {
+          const query = new URLSearchParams({ embed: '1', device: screen.dataset.device, sport: state.sport, segment: state.segment, lang: state.lang });
+          if (state.from !== 'tab') query.set('from', state.from);
+          return `hifi/dist/index.html?${query}`;
+        };
+        const clearHifi = (screen) => {
+          const frame = screen.querySelector('.hifi__frame');
+          if (frame.hasAttribute('src')) frame.removeAttribute('src');
+        };
+        const showHifi = (screen, state, force = false) => {
+          const frame = screen.querySelector('.hifi__frame');
+          if (screen.closest('.ms-frame').hidden) return clearHifi(screen);
+          const src = hifiSrc(screen, state);
+          if (force || frame.getAttribute('src') !== src) frame.setAttribute('src', src);
+        };
+        addEventListener('DOMContentLoaded', () => {
+          MockupShell.onAction('restart', () => {
+            if (MockupShell.state.variant === 'hifi') {
+              for (const screen of MockupShell.screens()) showHifi(screen, MockupShell.state, true);
+              return;
+            }
+            for (const screen of MockupShell.screens()) {
+              resetLocal(screen, 'dashboard');
+              render(screen);
+            }
+          });
+          MockupShell.onChange((state, screens) => {
+            shellState = state;
+            if (syncHifiSegments(state)) return;
+            if (state.variant === 'hifi') {
+              for (const screen of screens) showHifi(screen, state);
+              last = '';
+              return;
+            }
+            const key = [state.variant, state.sport, state.scenario].join('|');
+            for (const screen of screens) clearHifi(screen);
+            for (const screen of screens) {
+              if (key !== last || !locals.has(screen)) resetLocal(screen);
+              render(screen);
+            }
+            last = key;
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

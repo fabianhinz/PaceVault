@@ -11,12 +11,15 @@ import {
 } from '@/components/studio/hooks/useStudioRoutesPopup.ts';
 import { useMapPopupState, type MapPopupState } from './useMapPopupState.ts';
 import { useStudioMapTracks } from './useStudioMapTracks.ts';
+import { useSegmentsPickPopup, type SegmentsPickPopupState } from './useSegmentsPickPopup.ts';
+import { useSegmentMapTracks } from './useSegmentMapTracks.ts';
 import type { MapTrack } from './types.ts';
 
 interface MapInteraction {
   popupState: MapPopupState;
   studioPopup: StudioMapPopup;
   studioRoutesPopup: StudioRoutesPopup;
+  segmentsPopup: SegmentsPickPopupState;
   onMapClick: (info: PickingInfo) => boolean | undefined;
   interactive: boolean;
 }
@@ -32,6 +35,9 @@ export const useMapInteraction = ({
   const studioPopup = useStudioMapPopup();
   const studioRoutesPopup = useStudioRoutesPopup(mapRef);
   const studioTracks = useStudioMapTracks();
+  const segmentsPopup = useSegmentsPickPopup(mapRef);
+  const segmentsOnClick = segmentsPopup.onClick;
+  const segmentsTab = useSegmentMapTracks().mode === 'tab';
 
   const sessionsOnClick = popupState.onClick;
   const studioOnClick = studioPopup.onClick;
@@ -47,12 +53,24 @@ export const useMapInteraction = ({
         }
         return;
       }
+      if (segmentsTab) return segmentsOnClick(info);
       return sessionsOnClick(info);
     },
-    [sessionsOnClick, studioOnClick, routesOnClick, studioTracks.focusedRouteId],
+    [
+      sessionsOnClick,
+      studioOnClick,
+      routesOnClick,
+      segmentsOnClick,
+      segmentsTab,
+      studioTracks.focusedRouteId,
+    ],
   );
 
-  const interactive = popupState.interactive && !studioPopup.popup && !studioRoutesPopup.popup;
+  const interactive =
+    popupState.interactive &&
+    !studioPopup.popup &&
+    !studioRoutesPopup.popup &&
+    !segmentsPopup.popup;
 
-  return { popupState, studioPopup, studioRoutesPopup, onMapClick, interactive };
+  return { popupState, studioPopup, studioRoutesPopup, segmentsPopup, onMapClick, interactive };
 };

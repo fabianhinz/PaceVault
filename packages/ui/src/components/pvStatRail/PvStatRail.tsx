@@ -44,15 +44,22 @@ export const PvStatRail: FC<PvStatRailProps> = (props) => {
       </div>
       <div className="min-w-0">
         {props.note && (
-          <PvTypography
-            variant="caption"
-            as="p"
-            data-testid="stat-rail-note"
-            className="line-clamp-2 leading-4 break-words"
-            style={{ color: props.note.color }}
-          >
-            {props.note.text}
-          </PvTypography>
+          <div className="flex min-w-0 items-start gap-1">
+            {props.note.icon !== undefined && (
+              <span className="mt-0.5 shrink-0" style={{ color: props.note.color }}>
+                {props.note.icon}
+              </span>
+            )}
+            <PvTypography
+              variant="caption"
+              as="p"
+              data-testid="stat-rail-note"
+              className="line-clamp-2 min-w-0 leading-4 break-words"
+              style={{ color: props.note.color }}
+            >
+              {props.note.text}
+            </PvTypography>
+          </div>
         )}
       </div>
     </div>

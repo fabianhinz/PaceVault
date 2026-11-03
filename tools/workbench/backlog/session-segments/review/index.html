@@ -1,0 +1,1339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Segments · Review round 1</title>
+    <link rel="stylesheet" href="../../../shared/review.css" />
+  </head>
+  <body class="rv">
+    <main class="rv-doc">
+      <header class="rv-text">
+        <p class="rv-over">Review · round 1</p>
+        <h1>Segments: repeated stretches across your sessions</h1>
+        <p>
+          Stretches two or more sessions of one sport share are detected in a worker and cached in
+          IndexedDB. They show in a Segments tab on the dashboard (a list over the normal session
+          map, picked from the map), in a Segments row of the session summary card, and on their own
+          page with pass times, a selected-vs-best charts explorer and the map. Shots use the demo
+          data; the segment is the first non-route segment the latest "Flaucher easy" passes
+          (Flat 1).
+        </p>
+      </header>
+
+      <h2>Review round 1</h2>
+      <p class="rv-text">
+        Findings R1–R22 (<code>review/findings.md</code>): 20 fixed, R12 dropped for R16, R17
+        reverted by R22. "Before" is the first capture's "after"; scenes that no longer exist
+        (selection on the tab and in the session) are compared with their replacement.
+      </p>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R1</span>Segments tab: header line removed</h3>
+        <div class="rv-text">
+          <p>
+            The "36 segments · last ridden first" line is gone; a small "Updating after your last
+            import" caption shows only while a stale list is up.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/SegmentsTab.tsx:23</code>;
+            <code>apps/web/src/components/segments/SegmentsUpdatingNote.tsx:5</code>;
+            <code>packages/i18n/messages/en.json:788</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Segments tab</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segments-tab.png" alt="R1 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segments-tab.png" alt="R1 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R1 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-segments-tab.png" alt="R1 before · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-segments-tab.png" alt="R1 after · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R2</span>Segments list virtualized</h3>
+        <div class="rv-text">
+          <p>
+            The list renders through the session list's window virtualizer, extracted into a shared
+            <code>VirtualItemList</code>; the session list uses it too. No visible change (R1 shots).
+            The e2e filter test checks the sport colour of the rendered items, since not every item
+            is in the DOM.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/layout/VirtualItemList.tsx:12</code>;
+            <code>apps/web/src/components/segments/SegmentsTab.tsx:27</code>;
+            <code>apps/web/src/components/sessions/SessionList.tsx:22</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R3</span>No call-stack crash with many segments</h3>
+        <div class="rv-text">
+          <p>
+            Bounds and value ranges no longer spread every point into
+            <code>Math.min</code>/<code>Math.max</code>; they loop or reduce, so 1432 segments
+            draw. Only reproducible with real data; a regression spec covers it.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/mapBackground/segmentBounds.ts:4</code>;
+            <code>apps/web/src/components/segments/charts/segmentChannels.ts:58</code>;
+            <code>apps/web/src/components/segments/PassTimesRow.tsx:49-50</code>. Test:
+            <code>apps/web/tests/components/mapBackground/segmentBounds.spec.ts</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R4</span>Small segment item from the kit</h3>
+        <div class="rv-text">
+          <p>
+            New kit item with size md | sm (renamed <code>PvActionItem</code> in R11);
+            <code>SegmentItem</code> is built on it and the session row uses sm: one line, smaller
+            avatar, no caption. At 390 px the label still truncates beside a long value (Open
+            points).
+          </p>
+          <p class="rv-refs">
+            <code>packages/ui/src/components/pvActionItem/PvActionItem.tsx:42</code>;
+            <code>apps/web/src/components/segments/SegmentItem.tsx:45</code>;
+            <code>apps/web/src/components/segments/BestHighlight.tsx:9</code>;
+            <code>apps/web/src/components/sessions/session/SessionSegmentList.tsx:48</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · row expanded</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-segments-expanded.png" alt="R4 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-segments-expanded.png" alt="R4 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R4 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-session-segments-expanded.png" alt="R4 before · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-session-segments-expanded.png" alt="R4 after · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R5</span>Collapsed row: "Best on n" instead of every label</h3>
+        <div class="rv-text">
+          <p>
+            The secondary line reads "Best on n" / "Bestzeit auf n" (segments where this session
+            holds the best time) and stays empty when it holds none, as for this session.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/sessions/session/SegmentsRow.tsx:16-20</code>,
+            <code>:39</code>; <code>packages/i18n/messages/en.json:807</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · DE, row collapsed</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-session-summary.png" alt="R5 before · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-session-summary.png" alt="R5 after · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R5 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · EN</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-summary.png" alt="R5 before · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-summary.png" alt="R5 after · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R6</span>Session segments in ride order</h3>
+        <div class="rv-text">
+          <p>
+            The row lists the segments by where this session's pass starts (before: by label).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/segmentPasses.ts:154-168</code>;
+            <code>apps/web/src/components/segments/hooks/useSessionSegments.ts:12</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · DE, row expanded</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-session-segments-expanded.png" alt="R6 before · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-session-segments-expanded.png" alt="R6 after · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R6 desktop: before / after split" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R7</span>Hovering a session-row item previews its stretch</h3>
+        <div class="rv-text">
+          <p>
+            With a fine pointer, hovering an item in the session row draws its stretch on the map
+            like a hovered lap, in 2D and on the 3D terrain (checked in both shots).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/sessions/session/SessionSegmentList.tsx:28</code>,
+            <code>:56-60</code>; <code>apps/web/src/store/mapControls.ts:73-74</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useLapLayers.ts:58-64</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useTerrainLapStateEffect.ts:99-103</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · third item hovered, 2D, new state</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-session-segment-hover.png" alt="R7 · Desktop · hover in 2D" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · the same in 3D</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-session-segment-hover-3d.png" alt="R7 · Desktop · hover in 3D" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · 2D and 3D</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · 2D</figcaption>
+              <img src="after/p-en-session-segment-hover.png" alt="R7 · Phone · hover in 2D" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After · 3D</figcaption>
+              <img src="after/p-en-session-segment-hover-3d.png" alt="R7 · Phone · hover in 3D" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R8</span>Session row shows 5 segments, then show more / fewer</h3>
+        <div class="rv-text">
+          <p>
+            Collapsed to the first 5, then "Show n more segments" / "Show fewer segments", as on the
+            segment page. Shot: the session with the most segments, expanded.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/sessions/session/SessionSegmentList.tsx:14</code>,
+            <code>:65-71</code>;
+            <code>apps/web/src/components/segments/hooks/useListExpansion.ts:9</code>;
+            <code>packages/i18n/messages/en.json:808</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · DE, all shown, new state</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-de-session-segments-show-more.png" alt="R8 · Desktop · DE · expanded list" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · EN and DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · EN</figcaption>
+              <img src="after/p-en-session-segments-show-more.png" alt="R8 · Phone · EN" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After · DE</figcaption>
+              <img src="after/p-de-session-segments-show-more.png" alt="R8 · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R9</span>Segments tab fits like the sessions</h3>
+        <div class="rv-text">
+          <p>
+            The tab draws the normal session tracks (R16), so the camera fits their densest cluster
+            (Munich) like the dashboard, instead of every segment (which reached Lake Garda).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/mapBackground/hooks/useMapCameraEffect.ts:86-87</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · DE, Segments tab</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-segments-tab.png" alt="R9 before · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-segments-tab.png" alt="R9 after · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R9 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · EN</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-segments-tab.png" alt="R9 before · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segments-tab.png" alt="R9 after · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R10</span>Map click on the Segments tab opens a pick popup</h3>
+        <div class="rv-text">
+          <p>
+            A click on a session track (R16) opens the sessions' pick popup listing the segments
+            near that place; an item opens its segment page. It also opens for a single hit, like
+            sessions (open question).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/SegmentsPickPopup.tsx:15</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useSegmentsPickPopup.ts:22-32</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useMapInteraction.ts:56</code>;
+            <code>apps/web/src/components/mapBackground/trackPicking.ts:97</code>, <code>:114</code>;
+            <code>apps/web/src/components/mapBackground/index.tsx:88</code>. Test:
+            <code>apps/web/tests/components/mapBackground/trackPicking.segments.spec.ts</code>.
+          </p>
+        </div>
+        <!-- R10_SHOTS -->
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R11</span>Segment items only open; selection removed (Q85)</h3>
+        <div class="rv-text">
+          <p>
+            A segment item is one button, like a session item: click opens the segment page, hover
+            previews the stretch; no chevron, no selection. Gone: the tab selection, the
+            session-detail segment selection with <code>?segment=</code>, its chart band and rail
+            scope; the lap readers are lap-only again. A pass card's chevron opens the plain
+            session. The kit item is renamed <code>PvActionItem</code>.
+          </p>
+          <p class="rv-refs">
+            <code>packages/ui/src/components/pvActionItem/PvActionItem.tsx:42</code>;
+            <code>apps/web/src/components/segments/SegmentItem.tsx:45-49</code>;
+            <code>apps/web/src/routing/urlQuery.ts:1</code>;
+            <code>apps/web/src/components/mapBackground/mapCamera.ts:5</code>;
+            <code>apps/web/src/components/segments/PassItem.tsx:81</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · before: an item selected; after: an item hovered</span
+            ><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segments-tab-selected.png" alt="R11 before · Desktop · selection" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segments-tab-hover.png" alt="R11 after · Desktop · hover" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R11 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE, session: before a selected segment, after a hovered one</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-session-segment-selected.png" alt="R11 before · Phone · DE · selection" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-session-segment-hover.png" alt="R11 after · Phone · DE · hover" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R12</span>Bands as bold as tracks: dropped</h3>
+        <div class="rv-text">
+          <p>Replaced by R16: the tab draws no segment bands at all.</p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R13</span>Condensed lists with a smaller gap</h3>
+        <div class="rv-text">
+          <p>
+            Lists of sm items use <code>gap-1</code>: the session row and the pass list (shots in R4
+            and R18).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/sessions/session/SessionSegmentList.tsx:44</code>;
+            <code>apps/web/src/components/segments/PassTimesRow.tsx:87</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R14</span>Segment page finds its segment again</h3>
+        <div class="rv-text">
+          <p>
+            The route match decodes the <code>id</code> param, so an encoded segment id (real data)
+            finds its segment and the map draws it. Demo ids need no encoding; the R21 shots show
+            the page map.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/routing/useRouteMatch.ts:9-12</code>, <code>:22</code>. Test:
+            <code>apps/web/tests/routing/useRouteMatch.spec.ts</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R15</span>Explorer keeps its charts while a pass loads</h3>
+        <div class="rv-text">
+          <p>
+            Selecting another pass keeps the shown series until the new one is complete; the
+            skeleton appears only on the first load. No shot (a transition).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/charts/hooks/useSegmentChartRows.ts:53-61</code>;
+            <code>apps/web/src/components/segments/charts/SegmentChartsExplorer.tsx:29</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R16</span>Segments tab draws the normal tracks</h3>
+        <div class="rv-text">
+          <p>
+            No segment bands: the tab shows the same session tracks as the dashboard; a track click
+            works out the segments under it and opens the pick popup (R10).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/mapBackground/hooks/useMapInteraction.ts:40</code>,
+            <code>:56</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts:57-63</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Segments tab</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segments-tab.png" alt="R16 before · Desktop · segment bands" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segments-tab.png" alt="R16 after · Desktop · session tracks" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R16 desktop: before / after split" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R17</span>Routes with nested segments: reverted by R22</h3>
+        <div class="rv-text">
+          <p>Built (routes with their segments as nested sm items), then undone by R22 (Q90).</p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R18</span>Pass cards use the condensed item</h3>
+        <div class="rv-text">
+          <p>
+            Pass cards are <code>PvActionItem</code> sm with a 14 px crown on the best card and the
+            smaller gap (R13).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/PassItem.tsx:43-45</code>, <code>:61</code>;
+            <code>apps/web/src/components/segments/BestHighlight.tsx:15</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · all passes in the window</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segment-page-passes-expanded.png" alt="R18 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segment-page-passes-expanded.png" alt="R18 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R18 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-segment-page-passes-expanded.png" alt="R18 before · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-segment-page-passes-expanded.png" alt="R18 after · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R19</span>Hover in the popup and the tab list fades the other tracks</h3>
+        <div class="rv-text">
+          <p>
+            Popup items are regular segment items; hovering one (or a tab list item) fades the
+            other tracks and draws the segment's stretch, like hovering in the sessions popup.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/SegmentsPickPopup.tsx:34-38</code>;
+            <code>apps/web/src/store/segmentFocus.ts:30</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useTrackLayers.ts:42</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts:58</code>.
+          </p>
+        </div>
+        <!-- R19_SHOTS -->
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R20</span>Tracks without a pass fade out on the tab</h3>
+        <div class="rv-text">
+          <p>
+            Sessions that are no pass of any segment are not drawn on the tab (alpha 0, the hover
+            fade); the R1 and R16 shots show the remaining tracks.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/segmentFilter.ts:46</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts:58</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useTrackLayers.ts:73-78</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R21</span>Segment page draws the segment like a track</h3>
+        <div class="rv-text">
+          <p>
+            The segment page map draws the segment as an overview track in its sport colour,
+            additive, without the white casing.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts:35-56</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · segment page</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segment-page.png" alt="R21 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segment-page.png" alt="R21 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R21 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · EN</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-segment-page.png" alt="R21 before · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segment-page.png" alt="R21 after · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R22</span>Route grouping reverted (Q90)</h3>
+        <div class="rv-text">
+          <p>
+            The tab is again one virtualized list of all segments, most recently ridden first;
+            <code>RouteBlock.tsx</code>, <code>segmentRoutes.ts</code> and its spec are deleted, the
+            empty copy is back to "Segments appear once two sessions of the same sport share a
+            stretch". Shots: R1.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/SegmentsTab.tsx:16-27</code>;
+            <code>packages/i18n/messages/en.json:790</code>.
+          </p>
+        </div>
+      </article>
+
+      <h2>Changes</h2>
+
+      <p class="rv-text">
+        The current state of each change; "before" is the first capture.
+      </p>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C1</span>Dashboard tabs: Dashboard │ Segments</h3>
+        <div class="rv-text">
+          <p>
+            The dashboard has two tabs; the Dashboard tab holds the existing grid unchanged, the
+            Segments tab is <code>?tab=segments</code> (Q28, Q30). The test-data peek stays above
+            the tabs (Deviations).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/dashboard/index.tsx:25-45</code>;
+            <code>apps/web/src/routing/dashboardTab.ts:4</code>. Test:
+            <code>apps/web/tests/routing/dashboardTab.spec.ts</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · dashboard</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-dashboard.png" alt="C1 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-dashboard.png" alt="C1 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C1 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-dashboard.png" alt="C1 before · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-dashboard.png" alt="C1 after · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C2</span>Segments tab: list over the session map</h3>
+        <div class="rv-text">
+          <p>
+            One virtualized list of all segments, most recently ridden first (Q33, Q57, R2, R22):
+            type icon in the sport colour, "Flat 1", "distance · elevation · n passes", last
+            ridden. Five skeleton items on first detection, an empty state, and "Updating after your
+            last import" while a stale list shows (Q5, Q9, Q73, R1). The map shows the normal
+            session tracks fitted like the dashboard (R9, R16); sessions without a pass are not
+            drawn (R20).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/SegmentsTab.tsx:16-27</code>;
+            <code>apps/web/src/components/segments/SegmentItem.tsx:33</code>;
+            <code>apps/web/src/components/segments/SegmentsEmpty.tsx:7</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useTrackLayers.ts:73-78</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · <code>?tab=segments</code></span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segments-tab.png" alt="C2 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segments-tab.png" alt="C2 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C2 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-segments-tab.png" alt="C2 before · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-segments-tab.png" alt="C2 after · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C3</span>Segments tab: hover previews, the map picks</h3>
+        <div class="rv-text">
+          <p>
+            An item click opens the segment page (R11, Q85); there is no selection. Desktop hover
+            on an item, in the list or in the map's pick popup, fades the other tracks and draws the
+            segment's stretch (R19). A track click opens the pick popup with the segments near that
+            place (R10, R16).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/SegmentsTab.tsx:37-41</code>;
+            <code>apps/web/src/components/segments/SegmentsPickPopup.tsx:15</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useMapInteraction.ts:56</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts:58</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · DE, second item hovered</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-de-segments-tab-hover.png" alt="C3 · Desktop · DE · item hovered" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · EN and DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · EN</figcaption>
+              <img src="after/p-en-segments-tab-hover.png" alt="C3 · Phone · EN · item hovered" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After · DE</figcaption>
+              <img src="after/p-de-segments-tab-hover.png" alt="C3 · Phone · DE · item hovered" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C4</span>Session: Segments row with time and rank</h3>
+        <div class="rv-text">
+          <p>
+            A Segments row after the splits: "5 segments", "Best on n" when the session holds a
+            best (R5); a skeleton row while detection runs, disabled "No segments" without any (Q39,
+            Q81). Expanded: small items in ride order (R4, R6), "3:32 · 56th fastest of 93", the crown
+            for this session's best (Q40, Q72), 5 then show more / fewer (R8). An item opens the
+            segment page with <code>?from=</code> (Q64).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/sessions/session/SessionSummaryCard.tsx:25</code>;
+            <code>apps/web/src/components/sessions/session/SegmentsRow.tsx:22-41</code>;
+            <code>apps/web/src/components/sessions/session/SessionSegmentList.tsx:22</code>,
+            <code>:35</code>; <code>apps/web/src/microcopy/segments.ts:33</code>. Test:
+            <code>apps/web/tests/components/sessions/session/SegmentsRow.spec.tsx</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · latest "Flaucher easy", row collapsed</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-summary.png" alt="C4 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-summary.png" alt="C4 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C4 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE, row collapsed</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-session-summary.png" alt="C4 before · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-session-summary.png" alt="C4 after · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C5</span>Session: hovering a segment previews its stretch</h3>
+        <div class="rv-text">
+          <p>
+            The session-detail selection (chart band, fitted map, scoped rail, <code>?segment=</code>)
+            is removed (R11); with a fine pointer, hovering an item draws its stretch on the map like
+            a hovered lap, in 2D and 3D (R7).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/sessions/session/SessionSegmentList.tsx:56-60</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useLapLayers.ts:58-64</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · DE, before: segment selected; after: item hovered</span
+            ><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-session-segment-selected.png" alt="C5 before · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-session-segment-hover.png" alt="C5 after · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C5 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE, 3D</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After · 3D</figcaption>
+              <img src="after/p-de-session-segment-hover-3d.png" alt="C5 · Phone · DE · hover in 3D" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C6</span>Segment page: header, peek and map</h3>
+        <div class="rv-text">
+          <p>
+            <code>/segments/:id</code> with the trip-detail anatomy: type icon, "Flat 1", "Running ·
+            575 m · −4 m", the phone peek, then the summary card and the charts explorer; left
+            through the dock with Dashboard highlighted (Q48, Q49, Q52). The map shows only this
+            segment, fitted, drawn like a track (R21, Q50). The id is decoded (R14).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/routing/AppRoutes.tsx:21</code>;
+            <code>apps/web/src/routing/pageRegistry.ts:25</code>;
+            <code>apps/web/src/components/segments/index.tsx:9</code>;
+            <code>apps/web/src/components/segments/SegmentDetail.tsx:35-57</code>;
+            <code>apps/web/src/components/segments/SegmentHeader.tsx:14</code>;
+            <code>apps/web/src/components/segments/SegmentPeek.tsx:13</code>;
+            <code>apps/web/src/components/layout/DockTabs.tsx:31</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useMapCameraEffect.ts:95-96</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · DE</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-segment-page.png" alt="C6 before · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-segment-page.png" alt="C6 after · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C6 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-segment-page.png" alt="C6 before · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-segment-page.png" alt="C6 after · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C7</span>Pass times row: scatter and pass list</h3>
+        <div class="rv-text">
+          <p>
+            First row of the summary card, open by default (Q53, Q65, Q80). The scatter has no box,
+            axes or legend, bleeds over the row padding with horizontal scroll fades, opens on the
+            last 10 passes; rolling median over 5, the best dot amber with a crown, the selected one
+            outlined (Q14, Q63, Q67, Q75–Q78). The list follows the visible window, collapsed to the
+            best (+ the origin pass), with show more / fewer (Q60, Q64, Q77); condensed cards (R13,
+            R18).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/PassTimesRow.tsx:54-61</code>,
+            <code>:87</code>, <code>:105-114</code>;
+            <code>apps/web/src/components/segments/PassScatter.tsx:86-88</code>,
+            <code>:104-107</code>, <code>:176</code>;
+            <code>apps/web/src/components/segments/hooks/useScatterWindow.ts:13</code>;
+            <code>apps/web/src/lib/hooks/useDragScroll.ts:12</code>. Tests:
+            <code>apps/web/tests/components/segments/PassTimesRow.spec.tsx</code>,
+            <code>apps/web/tests/components/segments/segmentPasses.spec.ts</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · DE, "Show 10 more passes" pressed</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-segment-page-passes-expanded.png" alt="C7 before · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-segment-page-passes-expanded.png" alt="C7 after · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C7 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · EN</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-segment-page-passes-expanded.png" alt="C7 before · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segment-page-passes-expanded.png" alt="C7 after · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C8</span>Pass cards and the origin pass</h3>
+        <div class="rv-text">
+          <p>
+            A pass card shows the session name, a short date, the gap mini chart and the gap to best;
+            the best card its time, the crown and an amber border and tint (Q46, Q47, Q61, Q70, Q79).
+            A card click selects the pass the explorer plots (latest by default); from a session
+            (<code>?from=</code>) that pass is preselected and kept; the chevron opens the session
+            (Q54, Q64, R11).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/PassItem.tsx:30-45</code>, <code>:61</code>,
+            <code>:72</code>, <code>:81</code>;
+            <code>apps/web/src/components/segments/hooks/useSegmentPassSelection.ts:6-9</code>;
+            <code>apps/web/src/components/segments/PassTimesRow.tsx:59-61</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · <code>?from=</code> latest "Flaucher easy"</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segment-page-from-session.png" alt="C8 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segment-page-from-session.png" alt="C8 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C8 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · DE</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-segment-page-from-session.png" alt="C8 before · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-segment-page-from-session.png" alt="C8 after · Phone · DE" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C9</span>Charts explorer: selected pass vs. best</h3>
+        <div class="rv-text">
+          <p>
+            One row per channel on elapsed time from the segment start: the selected pass in the
+            sport colour, the best in amber (Q51, Q79). Hover shows the synced cursor and active
+            dots; the rail note shows the best's value with a crown (Q65, Q71); the legend floats in
+            a pill. Switching passes keeps the charts until the new one loads (R15).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/charts/SegmentChartsExplorer.tsx:21</code>,
+            <code>:46</code>;
+            <code>apps/web/src/components/segments/charts/SegmentChannelChart.tsx:22</code>,
+            <code>:37</code>, <code>:69</code>;
+            <code>apps/web/src/components/segments/charts/SegmentChannelRail.tsx:49-53</code>;
+            <code>apps/web/src/components/segments/charts/SegmentExplorerLegend.tsx:19</code>;
+            <code>apps/web/src/components/segments/charts/hooks/useSegmentChartRows.ts:35</code>;
+            <code>apps/web/src/components/segments/charts/segmentChartRows.ts:182</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · explorer hovered</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segment-page-explorer-hover.png" alt="C9 before · Desktop" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segment-page-explorer-hover.png" alt="C9 after · Desktop" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C9 desktop: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · EN</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-segment-page-explorer-hover.png" alt="C9 before · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segment-page-explorer-hover.png" alt="C9 after · Phone" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C10</span>Map markers for the selected and the best pass</h3>
+        <div class="rv-text">
+          <p>
+            Hovering the explorer, a pass card or a scatter dot puts two markers on the segment: the
+            selected pass in the sport colour, the best in amber, at the same elapsed time (Q50,
+            Q79).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/charts/segmentExplorerHover.ts:8</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts:75</code>;
+            <code>apps/web/src/components/mapBackground/trackColors.ts:38</code>;
+            <code>apps/web/src/components/segments/segmentPasses.ts:137</code>.
+          </p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · DE, explorer hovered</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-segment-page-explorer-hover.png" alt="C10 before · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-segment-page-explorer-hover.png" alt="C10 after · Desktop · DE" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C10 desktop: before / after split" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C11</span>Dashboard filters apply to the Segments tab</h3>
+        <div class="rv-text">
+          <p>
+            The dashboard filter is a view over the cached detection: passes outside it are hidden,
+            segments left without a pass drop out, pass count and last ridden follow (Q82, Q83). The
+            session row and the segment page stay unfiltered. No shot; covered by the e2e journey.
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/components/segments/segmentFilter.ts:25</code>;
+            <code>apps/web/src/components/segments/hooks/useFilteredSegments.ts:7</code>. Tests:
+            <code>apps/web/tests/components/segments/segmentFilter.spec.ts</code>,
+            <code>apps/web/e2e/segments.spec.ts</code>.
+          </p>
+        </div>
+      </article>
+
+      <h2>Changes without UI</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N1</span>Detection engine</h3>
+        <div class="rv-text">
+          <p>
+            <code>segmentTrack</code> resamples a session to 10 m points; <code>detectedSegments</code>
+            runs grid candidates, the corridor match (≥ 95 %, ends ≤ 50 m), turn and climb anchors,
+            the Route candidate, dedupe and the type rule; one pass per session, 24 split times per
+            pass (Q8, Q24, Q26, Q31, Q35).
+          </p>
+          <p class="rv-refs">
+            <code>packages/engine/src/segments.ts:141</code>, <code>:959</code>,
+            <code>:1042</code>. Test: <code>packages/engine/tests/segments.spec.ts</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N2</span>Worker and IndexedDB cache v5</h3>
+        <div class="rv-text">
+          <p>
+            Detection runs in a Web Worker; per sport the result is cached with its sessions key and
+            detector version and reused while both match. New <code>segments</code> store,
+            <code>DB_VERSION</code> 4 → 5, cleared with the rest; invalid entries are dropped (Q32).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/lib/workers/segments.worker.ts:43</code>;
+            <code>apps/web/src/lib/workers/segmentsContract.ts:5</code>;
+            <code>apps/web/src/lib/analysis/segmentDetection.ts:34</code>, <code>:251</code>;
+            <code>apps/web/src/lib/storage/db.ts:35</code>, <code>:46</code>, <code>:73</code>,
+            <code>:104</code>, <code>:132</code>, <code>:142</code>;
+            <code>apps/web/src/lib/storage/storageBreakdown.ts:14</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N3</span>Lazy queries</h3>
+        <div class="rv-text">
+          <p>
+            Detection starts only when the Segments tab, a session detail or a segment page mounts;
+            while a re-detection runs, the stored list shows with the updating caption (Q81, Q82).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/queries/segments/useStoredSegments.ts:10</code>;
+            <code>apps/web/src/queries/segments/useDetectedSegments.ts:59</code>;
+            <code>apps/web/src/components/segments/hooks/useSegments.ts:52</code>;
+            <code>apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts:67</code>;
+            <code>apps/web/src/components/settings/deleteAllData.ts:13-14</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N4</span>Kit additions</h3>
+        <div class="rv-text">
+          <p>
+            <code>PvActionItem</code> (md | sm, R4/R11); <code>PvStatRail</code> note
+            <code>icon</code>; <code>PvCollapsibleListItem</code> <code>defaultOpen</code>; horizontal
+            scroll fade <code>scroll-fade-x</code>; theme token <code>--color-best</code> and
+            <code>tokens.best</code>. No pixel change for existing callers.
+          </p>
+          <p class="rv-refs">
+            <code>packages/ui/src/components/pvActionItem/PvActionItem.tsx:42</code>;
+            <code>packages/ui/src/components/pvStatRail/types.ts:17</code>;
+            <code>packages/ui/src/components/pvStatRail/PvStatRail.tsx:48</code>;
+            <code>packages/ui/src/components/pvCollapsibleListItem/PvCollapsibleListItem.tsx:17</code>;
+            <code>packages/ui/src/theme.css:98</code>, <code>:231</code>;
+            <code>packages/ui/src/lib/scrollFade.ts:23</code>;
+            <code>packages/ui/src/hooks/useScrollFadeEffect.ts:36</code>;
+            <code>packages/ui/src/lib/tokens.ts:29</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N5</span>Formatters and translations</h3>
+        <div class="rv-text">
+          <p>
+            Short pass dates, ordinals for the rank (Q72), a signed race time for the gap; en/de
+            keys for every segment string (Q7, Q68, Q69, Q73, Q74).
+          </p>
+          <p class="rv-refs">
+            <code>apps/web/src/lib/format/formatters.ts:50</code>, <code>:221</code>,
+            <code>:276</code>; <code>apps/web/src/microcopy/segments.ts:5</code>, <code>:33</code>.
+          </p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">N6</span>Detection performance spec</h3>
+        <div class="rv-text">
+          <p>
+            18 synthetic tracks build in about 9 ms and detect 3 segments in about 6 ms against a
+            10 s budget; the times are logged on every run.
+          </p>
+          <p class="rv-refs"><code>packages/engine/tests/segments.perf.spec.ts:41</code>.</p>
+        </div>
+      </article>
+
+      <h2>Deviations</h2>
+      <ol class="rv-text">
+        <li>
+          <strong>Extra files the plan did not list.</strong> Test factories
+          <code>packages/testing/src/segments.ts</code>,
+          <code>apps/web/tests/factories/segments.ts</code>; in
+          <code>apps/web/src/components/segments/</code>: <code>segmentFacts.ts</code>,
+          <code>SegmentItemSkeleton.tsx</code>, <code>SegmentsEmpty.tsx</code>,
+          <code>SegmentDetailSkeleton.tsx</code>, <code>SegmentsUpdatingNote.tsx</code>,
+          <code>SegmentsPickPopup.tsx</code>, <code>BestHighlight.tsx</code>, the explorer split
+          (<code>charts/segmentChannels.ts</code>, <code>charts/SegmentChannelChart.tsx</code>,
+          <code>charts/SegmentChannelRail.tsx</code>, <code>charts/segmentExplorerHover.ts</code>),
+          <code>hooks/useScatterScrollEndEffect.ts</code>, <code>hooks/useListExpansion.ts</code>;
+          <code>apps/web/src/components/layout/VirtualItemList.tsx</code>,
+          <code>apps/web/src/components/mapBackground/segmentBounds.ts</code>,
+          <code>apps/web/src/components/mapBackground/hooks/useSegmentsPickPopup.ts</code>,
+          <code>apps/web/src/components/sessions/session/SessionSegmentList.tsx</code>,
+          <code>packages/ui/src/components/pvActionItem/PvActionItem.tsx</code>; the perf spec and
+          its line in <code>packages/engine/SOURCES.md</code>.
+        </li>
+        <li>
+          <strong>Edited files the plan did not list.</strong>
+          <code>apps/web/src/components/mapBackground/lapPath.ts:1</code>, <code>:48</code> take a
+          <code>RecordSpan</code> (<code>apps/web/src/lib/analysis/laps.ts:105</code>) for the hover
+          preview; <code>apps/web/src/components/mapBackground/trackColors.ts:38</code>
+          (<code>BEST_MARKER_COLOR</code>);
+          <code>apps/web/src/components/mapBackground/hooks/useMapCameraInputs.ts:39</code>;
+          <code>apps/web/src/components/mapBackground/hooks/useMapInteraction.ts:56</code>,
+          <code>apps/web/src/components/mapBackground/trackPicking.ts:97</code>,
+          <code>apps/web/src/components/mapBackground/index.tsx:88</code> (popup);
+          <code>apps/web/src/routing/useRouteMatch.ts:22</code> (R14);
+          <code>apps/web/src/components/sessions/SessionList.tsx:22</code> (R2).
+        </li>
+        <li>
+          <strong>The R11 revert leaves planned files untouched.</strong> With the session selection
+          gone, the planned lap-reader changes (<code>LapBands.tsx</code>,
+          <code>LapBandShape.tsx</code>, <code>useSessionRailStats.ts</code>,
+          <code>ColorByControl.tsx</code>, <code>MapViewControl.tsx</code>,
+          <code>SessionTerrain.tsx</code>, <code>useDetailLayers.ts</code>,
+          <code>useTerrainTrackPickingEffect.ts</code>, <code>useRouterQuery.ts</code>,
+          <code>tests/store/mapControls.spec.ts</code>) and
+          <code>useSessionSegmentSelectionEffect.ts</code> are back to the base;
+          <code>SegmentsListHeader.tsx</code> is deleted (R1).
+        </li>
+        <li>
+          <strong><code>netElevationMeters</code> is <code>number | null</code></strong>: missing
+          elevation stays missing. <code>packages/engine/src/segments.ts:48</code>,
+          <code>:696</code>; <code>apps/web/src/lib/workers/segmentsContract.ts:36</code>.
+        </li>
+        <li>
+          <strong>The engine returns the full geometry, the app thins it</strong> to ≤ 200 points.
+          <code>packages/engine/src/segments.ts:840</code>;
+          <code>apps/web/src/lib/analysis/segmentDetection.ts:20</code>, <code>:56</code>.
+        </li>
+        <li>
+          <strong><code>DashboardPeek</code> sits before the tab list</strong>, as on the Labs page.
+          <code>apps/web/src/components/dashboard/index.tsx:26-27</code>.
+        </li>
+        <li>
+          <strong>The explorer merges both passes on one elapsed axis</strong> with linear
+          interpolation. <code>apps/web/src/components/segments/charts/segmentChartRows.ts:131</code>,
+          <code>:182</code>.
+        </li>
+        <li>
+          <strong>Round 1.</strong> The <code>SessionSegment</code> type moved to
+          <code>apps/web/src/components/segments/segmentPasses.ts:148</code>; new store state
+          <code>mapControls.hoveredSegmentSpan</code> (<code>apps/web/src/store/mapControls.ts:19</code>)
+          and <code>segmentFocus.setHoveredSegment</code>
+          (<code>apps/web/src/store/segmentFocus.ts:11</code>). The R19 hover style (fade the other
+          tracks) is used for the tab list too; the R20 fade is alpha 0, so those tracks disappear.
+          The e2e filter test checks the sport colour of the rendered items (virtualized list).
+        </li>
+        <li>
+          <strong>Segment detection debug metrics</strong>
+          (<code>apps/web/src/lib/debug/segmentMetrics.ts:3</code>,
+          <code>apps/web/src/lib/debug/pvDebug.ts</code>): changed, named by no finding.
+        </li>
+      </ol>
+
+      <h2>Open points</h2>
+      <ol class="rv-text">
+        <li>
+          <strong>New test failure, unrelated:</strong>
+          <code>packages/engine/tests/metrics.ewmaAlpha.spec.ts</code> "CTL after 42 days constant
+          TSS=50 …" expects ≈ 31.6, gets 32.2. Not in <code>flaky.md</code>; the spec is untouched
+          by this item, builds its dates from the real <code>Date.now()</code> and started failing
+          around 23:00 local, so a day-boundary bug is suspected. Own bug item recommended.
+        </li>
+        <li>
+          <strong>New one-off e2e failure:</strong> <code>apps/web/e2e/intervals.spec.ts:84</code>
+          failed once in a full run, passed 8/8 alone; not in <code>flaky.md</code>. Decide whether
+          to list it as flaky.
+        </li>
+        <li>
+          <strong>R10/R16 with a single hit.</strong> Options: (a) keep the popup for one segment,
+          as sessions do; (b) open the segment directly. <em>Recommendation: (a)</em>.
+        </li>
+        <li>
+          <strong>Real data: 1432 segments, 42 on one session, mostly Flat.</strong> Detection
+          dedupe and the minimum length need tuning (Q58) once the detection metrics JSON is in.
+        </li>
+        <li>
+          <strong>A shared stretch up to a fork is not found when both sides turn at the same
+          corner.</strong> A turn anchor cuts 30 m after the turn
+          (<code>packages/engine/src/segments.ts:642</code>; the plan's Real-data check still cites
+          <code>:579</code>). Options: (a) tune on real data; (b) cut at the turn; (c) also cut
+          before the turn. <em>Recommendation: (a)</em>.
+        </li>
+        <li>
+          <strong>Segment label truncated in the session row at 390 px</strong>, also with the sm
+          item: "Fla… 3:32 · 56.-schnellste von 93". The value keeps its width, the label
+          truncates (<code>packages/ui/src/components/pvActionItem/PvActionItem.tsx:70</code>,
+          <code>:82</code>). Options: (a) stack the value under the label on narrow widths; (b)
+          only the rank as the value; (c) keep. <em>Recommendation: (a)</em>.
+        </li>
+        <li>
+          <strong>English short dates read "10 Sept"</strong> (en-GB day-first, as Q61 asks) while
+          the rest of the app reads "Sep 10, 2026"
+          (<code>apps/web/src/lib/format/formatters.ts:17-18</code>). Options: (a) keep; (b)
+          day-first with "Sep". <em>Recommendation: (a)</em>.
+        </li>
+        <li>
+          <strong>React-lint warnings</strong> (check passes, 23 in the workspace). From this item:
+          <code>Date.now()</code> in render
+          (<code>apps/web/src/components/segments/PassItem.tsx:36</code>,
+          <code>apps/web/src/components/segments/hooks/useFilteredSegments.ts:22</code>), the
+          <code>useMeasure</code> tuple bound whole
+          (<code>apps/web/src/components/segments/PassScatter.tsx:101</code>), ref-in-render
+          heuristics on <code>useListExpansion</code>
+          (<code>apps/web/src/components/segments/PassTimesRow.tsx:109</code>,
+          <code>apps/web/src/components/sessions/session/SessionSegmentList.tsx:65-68</code>) and
+          <code>apps/web/src/components/layout/VirtualItemList.tsx:30</code>.
+        </li>
+        <li>
+          <strong>Owner steps:</strong> review the agent decisions on the Review tab
+          (<code>review/decisions.md</code>); run the Real-data checks of the plan on your history.
+        </li>
+      </ol>
+
+      <h2>Verification</h2>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td><code>vp run check</code></td>
+          <td class="rv-pass">pass · 23 warnings</td>
+        </tr>
+        <tr>
+          <td><code>vp run test</code></td>
+          <td>
+            fail · engine 1 failed / 265 passed (<code>metrics.ewmaAlpha.spec.ts</code>, new,
+            unrelated, Open points 1); ui 37, gpx 54, workbench 87, app 1125 pass
+          </td>
+        </tr>
+        <tr>
+          <td><code>vp run e2e</code></td>
+          <td class="rv-pass">pass · 90 passed (earlier one-off <code>intervals.spec.ts:84</code>, new, Open points 2)</td>
+        </tr>
+        <tr>
+          <td><code>vp run build</code></td>
+          <td class="rv-pass">pass</td>
+        </tr>
+        <tr>
+          <td><code>vp run workbench:deps -- session-segments</code></td>
+          <td class="rv-pass">pass · no boundary violation</td>
+        </tr>
+        <tr>
+          <td><code>vp run workbench:capture -- tools/workbench/backlog/session-segments/review</code></td>
+          <td><!-- CAPTURE --></td>
+        </tr>
+      </table>
+      <ul class="rv-text">
+        <li>
+          <strong>Import graph:</strong> 397 modules, 746 imports drawn, 307 added, 2 missing
+          (<code>review/deps.mmd</code>). Boundary check (<code>engine-is-pure</code>,
+          <code>state-no-components</code>): no violations, 929 modules, 3863 dependencies cruised.
+        </li>
+        <li>
+          <strong>Components:</strong> 81 components, 121 imports (<code>review/components.mmd</code>).
+        </li>
+        <li>
+          <strong>Files</strong> (base <code>2a3bfb2</code>, merge-base with <code>main</code>): 84
+          changed and planned, 37 changed not planned, 12 planned untouched (Deviations 3;
+          <code>review/files.json</code>).
+        </li>
+        <li>
+          <strong>Interfaces:</strong> 80 planned files with 291 exports, 36 not-planned files with
+          74 exports, 12 missing (the untouched files; <code>review/interfaces.md</code>).
+        </li>
+        <!-- SHOTS -->
+      </ul>
+
+      <h2>How to check</h2>
+      <ol class="rv-text">
+        <li>
+          Clear site data, open the app, "Try demo data". The dashboard shows Dashboard │ Segments;
+          the Dashboard tab is unchanged.
+        </li>
+        <li>
+          Open Segments: skeletons while detection runs, then the list, most recently ridden first;
+          the map shows the session tracks fitted on Munich, tracks without a pass are hidden.
+        </li>
+        <li>
+          Hover an item: the other tracks fade and the stretch is drawn. Click a track: the pick
+          popup lists the segments there; hover one, then click it to open its page.
+        </li>
+        <li>Apply a Cycling filter on the dashboard: the list keeps cycling segments only.</li>
+        <li>
+          Open a "Flaucher easy" session: the Segments row ("Best on n" when it holds a best).
+          Expand it: small items in ride order with time and rank; hover one for the stretch on the
+          map, also in 3D; with more than 5, show more / fewer.
+        </li>
+        <li>
+          Click an item: the segment page opens with that session's pass selected; the map draws
+          the segment like a track. Check Pass times (scatter, condensed cards, show more / fewer).
+        </li>
+        <li>
+          Click another pass card: the explorer switches without flashing. Hover the explorer:
+          cursor, rail note with the crown, two markers on the map.
+        </li>
+        <li>A pass card's chevron opens that session.</li>
+      </ol>
+    </main>
+    <script>
+      // swipe compare: the range value drives --pos (1 listener)
+      addEventListener('input', (e) =>
+        e.target.closest('.rv-swipe')?.style.setProperty('--pos', `${e.target.value}%`),
+      );
+    </script>
+  </body>
+</html>

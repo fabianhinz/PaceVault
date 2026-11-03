@@ -12,6 +12,7 @@ import { useTrackLayers } from './hooks/useTrackLayers.ts';
 import { useStudioRouteLayer } from './hooks/useStudioRouteLayer.ts';
 import { usePickLayers } from './hooks/usePickLayers.ts';
 import { useGeoLayers } from './hooks/useGeoLayers.ts';
+import { useSegmentLayers } from './hooks/useSegmentLayers.ts';
 import type { MapTrack, PickHandler } from './hooks/types.ts';
 import { DeckOverlayControl } from './DeckOverlayControl.tsx';
 import { SessionTerrain } from './SessionTerrain.tsx';
@@ -46,6 +47,7 @@ export const DeckGLOverlay: FC<DeckGLOverlayProps> = (props) => {
   const studioRouteLayer = useStudioRouteLayer(eventHandlers);
   const pickLayers = usePickLayers(props.terrain);
   const geoLayers = useGeoLayers(props.terrain);
+  const segmentLayers = useSegmentLayers();
 
   return (
     <>
@@ -58,6 +60,7 @@ export const DeckGLOverlay: FC<DeckGLOverlayProps> = (props) => {
             ? [
                 onboardingPreviewLayer,
                 trackLayers,
+                segmentLayers,
                 detailLayers.detailLayer,
                 studioRouteLayer,
                 pickLayers.pickCircleLayer,

@@ -11,6 +11,7 @@ import { StudioMarkerPins } from '@/components/studio/markers/StudioMarkerPins.t
 import { StudioTrackPickPopup } from '@/components/studio/markers/StudioTrackPickPopup.tsx';
 import { StudioRoutesPickPopup } from '@/components/studio/markers/StudioRoutesPickPopup.tsx';
 import { SessionsPickPopup } from '@/components/sessions/SessionsPickPopup.tsx';
+import { SegmentsPickPopup } from '@/components/segments/SegmentsPickPopup.tsx';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -81,6 +82,12 @@ export const MapBackground: FC = () => {
         <StudioRoutesPickPopup
           info={interaction.studioRoutesPopup.popup}
           onClose={interaction.studioRoutesPopup.close}
+        />
+      )}
+      {interaction.segmentsPopup.popup && (
+        <SegmentsPickPopup
+          info={interaction.segmentsPopup.popup}
+          onClose={interaction.segmentsPopup.close}
         />
       )}
       {interaction.popupState.popup && (

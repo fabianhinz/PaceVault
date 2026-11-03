@@ -16,7 +16,7 @@ const powerBestsAt = (value: number, date: number): PersonalBest[] =>
 describe(computePBsForSessions.name, () => {
   it('returns best values from the stronger cycling session', () => {
     const now = Date.now();
-    const weakRecords = cyclingRecordSeries({ count: 3601, basePowerWatts: 200 });
+    const weakRecords = cyclingRecordSeries({ count: 3601, basePowerWatts: 100 });
     const strongRecords = cyclingRecordSeries({ count: 3601, basePowerWatts: 280 });
 
     const result = computePBsForSessions({
@@ -95,7 +95,7 @@ describe(computePBsForSessions.name, () => {
   it('lower power does NOT overwrite higher power (higher is better for cycling)', () => {
     const now = Date.now();
     const strongRecords = cyclingRecordSeries({ count: 3601, basePowerWatts: 300 });
-    const weakRecords = cyclingRecordSeries({ count: 3601, basePowerWatts: 180 });
+    const weakRecords = cyclingRecordSeries({ count: 3601, basePowerWatts: 120 });
 
     const result = computePBsForSessions({
       sessions: [

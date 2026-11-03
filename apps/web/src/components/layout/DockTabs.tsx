@@ -28,6 +28,7 @@ const TAB_BY_PAGE = {
   sessions: 'sessions',
   sessionDetail: 'sessions',
   tripDetail: 'sessions',
+  segmentDetail: 'dashboard',
   studioDetail: 'labs',
   labs: 'labs',
   settings: 'settings',

@@ -4,6 +4,7 @@ import type { SessionRecord, SessionLap, SessionGPS } from '@pacevault/engine/ty
 import type { RoutePoint } from '@pacevault/gpx/types.ts';
 import type { SessionWeather } from '@/types.ts';
 import { decodeRecords, encodeRecords, type EncodedRecords } from './recordCodec.ts';
+import { storedSegmentsSchema, type StoredSegments } from '@/lib/workers/segmentsContract.ts';
 
 export interface EnduranceTrackerDB extends DBSchema {
   'session-records': {
@@ -31,6 +32,10 @@ export interface EnduranceTrackerDB extends DBSchema {
     key: string;
     value: { routeId: string; points: RoutePoint[] };
   };
+  segments: {
+    key: string;
+    value: unknown;
+  };
   kv: {
     key: string;
     value: string;
@@ -38,7 +43,7 @@ export interface EnduranceTrackerDB extends DBSchema {
 }
 
 export const DB_NAME = 'endurance-tracker';
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 let dbPromise: Promise<IDBPDatabase<EnduranceTrackerDB>> | null = null;
 
@@ -63,6 +68,9 @@ export const getDB = (): Promise<IDBPDatabase<EnduranceTrackerDB>> => {
         }
         if (oldVersion < 4) {
           db.createObjectStore('studio-route-points', { keyPath: 'routeId' });
+        }
+        if (oldVersion < 5) {
+          db.createObjectStore('segments', { keyPath: 'sport' });
         }
       },
     });
@@ -93,6 +101,7 @@ export const clearAllRecords = async (): Promise<void> => {
   await db.clear('session-weather');
   await db.clear('fit-files');
   await db.clear('studio-route-points');
+  await db.clear('segments');
   await db.clear('kv');
 };
 
@@ -116,6 +125,21 @@ export const getStudioRoutePoints = async (routeId: string): Promise<RoutePoint[
 export const deleteStudioRoutePoints = async (routeId: string): Promise<void> => {
   const db = await getDB();
   await db.delete('studio-route-points', routeId);
+};
+
+export const getStoredSegments = async (): Promise<StoredSegments[]> => {
+  const db = await getDB();
+  const entries = await db.getAll('segments');
+  return entries.flatMap((entry) => {
+    const parsed = storedSegmentsSchema.safeParse(entry);
+    if (!parsed.success) return [];
+    return [parsed.data];
+  });
+};
+
+export const saveStoredSegments = async (entry: StoredSegments): Promise<void> => {
+  const db = await getDB();
+  await db.put('segments', entry);
 };
 
 export const getSessionLaps = async (sessionId: string): Promise<SessionLap[]> => {

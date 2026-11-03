@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
-import type { LapSpan } from '@/lib/analysis/laps.ts';
+import type { LapSpan, RecordSpan } from '@/lib/analysis/laps.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { lapVertexBounds } from '@/components/mapBackground/lapPath.ts';
 import {
@@ -24,7 +24,7 @@ interface LapLine {
 interface ShownLaps {
   spans: LapSpan[] | undefined;
   selected: number | null;
-  preview: number | null;
+  preview: number | RecordSpan | null;
   selectedRunIds: number[];
 }
 
@@ -96,9 +96,12 @@ const syncPreview = ({
   state: MapControlsState;
 }) => {
   const spans = state.sessionLaps?.spans;
-  const preview = previewLapIndex(state);
+  const preview = state.hoveredSegmentSpan ?? previewLapIndex(state);
   if (spans === shown.spans && preview === shown.preview) return;
-  const bounds = lapBounds({ line, spans, lapIndex: preview });
+  let bounds = lapBounds({ line, spans, lapIndex: previewLapIndex(state) });
+  if (state.hoveredSegmentSpan !== null) {
+    bounds = lapVertexBounds({ detailPath: line.detailPath, span: state.hoveredSegmentSpan });
+  }
   showHover({ line, path: bounds && line.detailPath.path.slice(bounds.first, bounds.last + 1) });
   shown.preview = preview;
 };

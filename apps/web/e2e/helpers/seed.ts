@@ -62,6 +62,8 @@ const writeKvEntries = async (page: Page, entries: Record<string, string>) => {
             idb.createObjectStore('session-weather', { keyPath: 'sessionId' });
           if (!idb.objectStoreNames.contains('studio-route-points'))
             idb.createObjectStore('studio-route-points', { keyPath: 'routeId' });
+          if (!idb.objectStoreNames.contains('segments'))
+            idb.createObjectStore('segments', { keyPath: 'sport' });
         };
         openReq.onsuccess = () => {
           const idb = openReq.result;

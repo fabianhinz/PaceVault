@@ -3,10 +3,12 @@ import { dailyMetricsFromSessions } from '../src/metrics.ts';
 import { createMockTrainingSession } from '../../testing/src/sessions.ts';
 import { MS_PER_DAY } from '../src/time.ts';
 
+const NOON_REFERENCE_DATE_MS = new Date(2026, 0, 15, 12).getTime();
+
 describe(dailyMetricsFromSessions.name, () => {
   describe('EWMA alpha (Coggan PMC)', () => {
     it('CTL after 42 days constant TSS=50 is 50 · (1 − 1/e) ≈ 31.6, the 1-exp(-1/42) formula', () => {
-      const now = Date.now();
+      const now = NOON_REFERENCE_DATE_MS;
       const sessions = Array.from({ length: 42 }, (_, i) =>
         createMockTrainingSession({
           id: `day-${i}`,
@@ -22,7 +24,7 @@ describe(dailyMetricsFromSessions.name, () => {
     });
 
     it('ATL after 7 days constant TSS=100 is 100 · (1 − 1/e) ≈ 63.2, the 1-exp(-1/7) formula', () => {
-      const now = Date.now();
+      const now = NOON_REFERENCE_DATE_MS;
       const sessions = Array.from({ length: 7 }, (_, i) =>
         createMockTrainingSession({
           id: `day-${i}`,
@@ -38,7 +40,7 @@ describe(dailyMetricsFromSessions.name, () => {
     });
 
     it('alpha is NOT the financial 2/(n+1) formula: one day of TSS 100 gives ATL 13.3, not 25', () => {
-      const now = Date.now();
+      const now = NOON_REFERENCE_DATE_MS;
       const sessions = [
         createMockTrainingSession({ id: 'single', date: now - 1 * MS_PER_DAY, tss: 100 }),
       ];

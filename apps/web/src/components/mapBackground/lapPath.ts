@@ -1,4 +1,4 @@
-import type { LapSpan } from '@/lib/analysis/laps.ts';
+import type { LapSpan, RecordSpan } from '@/lib/analysis/laps.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
 
@@ -45,7 +45,7 @@ const lapVertexRange = ({
   span,
 }: {
   detail: DetailPath;
-  span: LapSpan;
+  span: RecordSpan;
 }): { first: number; end: number } | null => {
   const first = detail.recordIndices.findIndex((index) => index >= span.startRecord);
   if (first < 0) return null;
@@ -62,7 +62,7 @@ export const lapVertexBounds = ({
   span,
 }: {
   detailPath: DetailPath;
-  span: LapSpan;
+  span: RecordSpan;
 }): { first: number; last: number } | null => {
   const range = lapVertexRange({ detail: detailPath, span });
   if (range === null) return null;
@@ -87,7 +87,7 @@ export const lapSubPath = ({
   span,
 }: {
   detail: DetailPath;
-  span: LapSpan;
+  span: RecordSpan;
 }): DetailPath | null => {
   const range = lapVertexRange({ detail, span });
   if (range === null) return null;

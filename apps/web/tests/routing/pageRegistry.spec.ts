@@ -11,4 +11,18 @@ describe(pageUrl.name, () => {
   it('appends the tab as a query parameter', () => {
     expect(pageUrl({ page: 'labs', params: { tab: 'studio' } })).toBe('/labs?tab=studio');
   });
+
+  it('opens the dashboard without a query unless a tab is given', () => {
+    expect(pageUrl({ page: 'dashboard', params: {} })).toBe('/');
+    expect(pageUrl({ page: 'dashboard', params: { tab: 'segments' } })).toBe('/?tab=segments');
+  });
+
+  it('builds a segment URL with its origin session', () => {
+    expect(pageUrl({ page: 'segmentDetail', params: { segmentId: 'a:0-10' } })).toBe(
+      '/segments/a%3A0-10',
+    );
+    expect(pageUrl({ page: 'segmentDetail', params: { segmentId: 'a:0-10', from: 's1' } })).toBe(
+      '/segments/a%3A0-10?from=s1',
+    );
+  });
 });

@@ -11,6 +11,7 @@ const STORE_CATEGORIES: [IdbStoreName, StorageCategory][] = [
   ['session-records', 'appData'],
   ['session-laps', 'appData'],
   ['studio-route-points', 'appData'],
+  ['segments', 'appData'],
 ];
 
 export const breakdownStorage = ({

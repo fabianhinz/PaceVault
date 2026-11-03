@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import '../../../../../../packages/ui/src/theme.css';
+@source '../../../../../../packages/ui/src';
+@source './*.tsx';
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-700) transparent;
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  margin: 0;
+}
+
+*:focus {
+  outline: none;
+}
+
+/* Horizontal twin of the kit's scroll-fade utility (packages/ui/src/theme.css); the kit has a vertical one only. */
+@utility scroll-fade-x {
+  --fade-left: 0px;
+  --fade-right: 0px;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black var(--fade-left),
+    black calc(100% - var(--fade-right)),
+    transparent
+  );
+
+  &[data-fade-left] {
+    --fade-left: 24px;
+  }
+
+  &[data-fade-right] {
+    --fade-right: 24px;
+  }
+}

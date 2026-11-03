@@ -11,10 +11,12 @@ import type { MapTrack } from './types.ts';
 import { useStudioMapTracks } from './useStudioMapTracks.ts';
 import { useSessionFitBounds } from './useSessionFitBounds.ts';
 import { useMapCameraTarget } from './useMapCameraTarget.ts';
+import { useSegmentMapTracks } from './useSegmentMapTracks.ts';
 
 interface MapCameraInputs {
   target: MapCameraTarget;
   studioBounds: GPSBounds | null;
+  segmentBounds: GPSBounds | null;
   tripSessionIds: string[];
   lapCloseCount: number;
   refitRequest: number;
@@ -34,6 +36,7 @@ export const useMapCameraInputs = ({
 }): MapCameraInputs => {
   const target = useMapCameraTarget();
   const studioBounds = useStudioMapTracks().bounds;
+  const segmentBounds = useSegmentMapTracks().bounds;
   const tripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const lapCloseCount = useMapControlsStore((s) => s.lapCloseCount);
@@ -49,6 +52,7 @@ export const useMapCameraInputs = ({
   return {
     target,
     studioBounds,
+    segmentBounds,
     tripSessionIds,
     lapCloseCount,
     refitRequest,

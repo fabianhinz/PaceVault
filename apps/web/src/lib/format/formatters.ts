@@ -1,4 +1,4 @@
-import { getLocale } from '@pacevault/i18n/runtime.js';
+import { getLocale, type Locale } from '@pacevault/i18n/runtime.js';
 import { m } from '@pacevault/i18n/messages.js';
 import { MS_PER_HOUR, MS_PER_MINUTE, MS_PER_SECOND } from '@pacevault/engine/time.ts';
 import type { PersonalBest } from '@pacevault/engine/types.ts';
@@ -10,7 +10,13 @@ export type DateFormatMode =
   | 'numeric-day'
   | 'numeric-month'
   | 'month-year'
-  | 'hour-minute';
+  | 'hour-minute'
+  | 'day-month'
+  | 'day-month-two-digit-year';
+
+// English short dates use the day-first order of en-GB ("31 Oct"), German keeps its own ("31. Okt.").
+const SHORT_DATE_LOCALE_BY_LOCALE: Record<Locale, string> = { en: 'en-GB', de: 'de' };
+const SHORT_DATE_LOCALE = SHORT_DATE_LOCALE_BY_LOCALE[getLocale()];
 
 const DATE_FORMAT_BY_MODE: Record<DateFormatMode, Intl.DateTimeFormat> = {
   date: new Intl.DateTimeFormat(getLocale(), { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -30,10 +36,23 @@ const DATE_FORMAT_BY_MODE: Record<DateFormatMode, Intl.DateTimeFormat> = {
   'numeric-month': new Intl.DateTimeFormat(getLocale(), { month: 'numeric', year: 'numeric' }),
   'month-year': new Intl.DateTimeFormat(getLocale(), { month: 'long', year: 'numeric' }),
   'hour-minute': new Intl.DateTimeFormat(getLocale(), { hour: 'numeric', minute: '2-digit' }),
+  'day-month': new Intl.DateTimeFormat(SHORT_DATE_LOCALE, { day: 'numeric', month: 'short' }),
+  'day-month-two-digit-year': new Intl.DateTimeFormat(SHORT_DATE_LOCALE, {
+    day: 'numeric',
+    month: 'short',
+    year: '2-digit',
+  }),
 };
 
 export const formatDate = (value: number | Date, mode: DateFormatMode = 'date'): string =>
   DATE_FORMAT_BY_MODE[mode].format(value);
+
+export const formatShortDate = ({ value, now }: { value: number; now: number }): string => {
+  if (new Date(value).getFullYear() === new Date(now).getFullYear()) {
+    return formatDate(value, 'day-month');
+  }
+  return formatDate(value, 'day-month-two-digit-year');
+};
 
 export type DateRangeFormatMode =
   | 'day-month'
@@ -197,6 +216,24 @@ export const formatPlural = (
   return forms.other();
 };
 
+const ordinalRules = new Intl.PluralRules(getLocale(), { type: 'ordinal' });
+
+export const formatOrdinal = (value: number): string => {
+  const ordinal = String(value);
+  switch (ordinalRules.select(value)) {
+    case 'one':
+      return m.ui_ordinal_one({ ordinal });
+    case 'two':
+      return m.ui_ordinal_two({ ordinal });
+    case 'few':
+      return m.ui_ordinal_few({ ordinal });
+    case 'zero':
+    case 'many':
+    case 'other':
+      return m.ui_ordinal_other({ ordinal });
+  }
+};
+
 const localDateFmt = new Intl.DateTimeFormat('en', {
   year: 'numeric',
   month: '2-digit',
@@ -234,6 +271,13 @@ export const formatRaceTime = (seconds: number): string => {
   const secs = Math.round((ms % MS_PER_MINUTE) / MS_PER_SECOND);
   if (h > 0) return `${h}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+export const formatSignedRaceTime = (seconds: number): string => {
+  const rounded = Math.round(seconds);
+  if (rounded > 0) return `+${formatRaceTime(rounded)}`;
+  if (rounded < 0) return `−${formatRaceTime(-rounded)}`;
+  return formatRaceTime(0);
 };
 
 export const formatTimeHMS = (seconds: number): string => {

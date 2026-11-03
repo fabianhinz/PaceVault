@@ -4,6 +4,8 @@ import type { PickingInfo } from '@deck.gl/core';
 import type { MapRef } from 'react-map-gl/maplibre';
 import { decodeTrackForRendering } from '@/lib/analysis/gpsTrack.ts';
 import type { MapTrack } from './hooks/types.ts';
+import type { Segment } from '@/lib/workers/segmentsContract.ts';
+import { segmentBounds } from './segmentBounds.ts';
 
 interface GeoCorner {
   lat: number;
@@ -90,4 +92,38 @@ export const pickSessionsAt = ({
 
   const hitSet = new Set(hitIds);
   return tracks.filter((t) => hitSet.has(t.sessionId)).map((t) => t.session);
+};
+
+export const segmentsInPickBounds = ({
+  segments,
+  pickBounds,
+}: {
+  segments: Segment[];
+  pickBounds: GPSBounds;
+}): Segment[] => {
+  const pickable = segments.flatMap((segment) => {
+    const bounds = segmentBounds(segment);
+    if (bounds === null) return [];
+    const path = segment.geometry.map((point): [number, number] => [point[1], point[0]]);
+    return [{ sessionId: segment.id, bounds, path }];
+  });
+  const hitIds = new Set(filterTracksByPickBounds({ tracks: pickable, pickBounds }));
+  return segments.filter((segment) => hitIds.has(segment.id));
+};
+
+export const pickSegmentsAt = ({
+  map,
+  info,
+  segments,
+}: {
+  map: MapRef;
+  info: Pick<PickingInfo, 'x' | 'y'>;
+  segments: Segment[];
+}): Segment[] => {
+  const topLeft = map.unproject([info.x - PICK_RADIUS, info.y - PICK_RADIUS]);
+  const bottomRight = map.unproject([info.x + PICK_RADIUS, info.y + PICK_RADIUS]);
+  return segmentsInPickBounds({
+    segments,
+    pickBounds: pickBoundsFromCorners(topLeft, bottomRight),
+  });
 };

@@ -37,16 +37,12 @@ describe('lap on the map', () => {
 
   it('cuts the lap out of the track, sharing the boundary point with the next lap', () => {
     if (!detail) throw new Error('expected a path');
-    expect(
-      lapSubPath({ detail, span: { lapIndex: 0, startRecord: 0, endRecord: 3 } })?.path,
-    ).toEqual([
+    expect(lapSubPath({ detail, span: { startRecord: 0, endRecord: 3 } })?.path).toEqual([
       [8.4, 49],
       [8.401, 49],
       [8.402, 49],
     ]);
-    expect(
-      lapSubPath({ detail, span: { lapIndex: 1, startRecord: 3, endRecord: 5 } })?.path,
-    ).toEqual([
+    expect(lapSubPath({ detail, span: { startRecord: 3, endRecord: 5 } })?.path).toEqual([
       [8.402, 49],
       [8.403, 49],
       [8.404, 49],
@@ -55,24 +51,28 @@ describe('lap on the map', () => {
 
   it('cuts the lap elevations out with the path, keeping 0 m and missing heights', () => {
     if (!detail) throw new Error('expected a path');
-    expect(
-      lapSubPath({ detail, span: { lapIndex: 0, startRecord: 0, endRecord: 3 } })?.elevations,
-    ).toEqual([100, 0, null]);
-    expect(
-      lapSubPath({ detail, span: { lapIndex: 1, startRecord: 3, endRecord: 5 } })?.elevations,
-    ).toEqual([null, 120, 130]);
+    expect(lapSubPath({ detail, span: { startRecord: 0, endRecord: 3 } })?.elevations).toEqual([
+      100,
+      0,
+      null,
+    ]);
+    expect(lapSubPath({ detail, span: { startRecord: 3, endRecord: 5 } })?.elevations).toEqual([
+      null,
+      120,
+      130,
+    ]);
   });
 
   it('bounds the vertices of a lap, the same ones its sub-path covers', () => {
     if (!detail) throw new Error('expected a path');
+    expect(lapVertexBounds({ detailPath: detail, span: { startRecord: 0, endRecord: 3 } })).toEqual(
+      { first: 0, last: 2 },
+    );
+    expect(lapVertexBounds({ detailPath: detail, span: { startRecord: 3, endRecord: 5 } })).toEqual(
+      { first: 2, last: 4 },
+    );
     expect(
-      lapVertexBounds({ detailPath: detail, span: { lapIndex: 0, startRecord: 0, endRecord: 3 } }),
-    ).toEqual({ first: 0, last: 2 });
-    expect(
-      lapVertexBounds({ detailPath: detail, span: { lapIndex: 1, startRecord: 3, endRecord: 5 } }),
-    ).toEqual({ first: 2, last: 4 });
-    expect(
-      lapVertexBounds({ detailPath: detail, span: { lapIndex: 2, startRecord: 9, endRecord: 12 } }),
+      lapVertexBounds({ detailPath: detail, span: { startRecord: 9, endRecord: 12 } }),
     ).toBeNull();
   });
 

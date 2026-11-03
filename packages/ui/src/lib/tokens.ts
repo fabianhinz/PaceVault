@@ -26,6 +26,7 @@ export const tokens = {
   bannerWarning: 'oklch(76.9% 0.188 70.08)',
   bannerWarningText: 'oklch(92.4% 0.12 95.746)',
   bannerWarningIcon: 'oklch(82.8% 0.189 84.429)',
+  best: 'oklch(82.8% 0.189 84.429)',
   bannerSuccess: 'oklch(69.6% 0.17 162.48)',
   bannerSuccessText: 'oklch(90.5% 0.093 164.15)',
   bannerSuccessIcon: 'oklch(76.5% 0.177 163.223)',

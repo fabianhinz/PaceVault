@@ -7,8 +7,10 @@ import {
   formatDuration,
   formatDistance,
   formatSubSport,
+  formatSignedRaceTime,
   toDateString,
 } from '@/lib/format/formatters.ts';
+import { importInLocale } from '@testUtils/locale.ts';
 
 describe('pace formatters print "x:60" when seconds round up to a full minute', () => {
   it('carries the rounded minute instead of printing 60 seconds', () => {
@@ -144,5 +146,55 @@ describe(toDateString.name, () => {
   it('does not shift to next day for late-night local timestamps', () => {
     const d = new Date(2024, 11, 31, 23, 59); // Dec 31, 11:59 PM local
     expect(toDateString(d.getTime())).toBe('2024-12-31');
+  });
+});
+
+describe('short dates', () => {
+  it('drops the year inside the current year and keeps two digits outside it', async () => {
+    const english = await importInLocale('en', () => import('@/lib/format/formatters.ts'));
+    const now = new Date(2026, 9, 31).getTime();
+
+    expect(english.formatShortDate({ value: new Date(2026, 9, 31).getTime(), now })).toBe('31 Oct');
+    expect(english.formatShortDate({ value: new Date(2025, 9, 31).getTime(), now })).toBe(
+      '31 Oct 25',
+    );
+  });
+
+  it('uses the German order in German', async () => {
+    const german = await importInLocale('de', () => import('@/lib/format/formatters.ts'));
+    const now = new Date(2026, 9, 31).getTime();
+
+    expect(german.formatShortDate({ value: new Date(2026, 9, 31).getTime(), now })).toBe(
+      '31. Okt.',
+    );
+  });
+});
+
+describe('ordinals', () => {
+  it('writes English ordinal suffixes', async () => {
+    const english = await importInLocale('en', () => import('@/lib/format/formatters.ts'));
+
+    expect([1, 2, 3, 4, 11, 22].map(english.formatOrdinal)).toEqual([
+      '1st',
+      '2nd',
+      '3rd',
+      '4th',
+      '11th',
+      '22nd',
+    ]);
+  });
+
+  it('writes German ordinals with a full stop', async () => {
+    const german = await importInLocale('de', () => import('@/lib/format/formatters.ts'));
+
+    expect([1, 2, 13].map(german.formatOrdinal)).toEqual(['1.', '2.', '13.']);
+  });
+});
+
+describe(formatSignedRaceTime.name, () => {
+  it('signs a gap and prints no sign for zero', () => {
+    expect(formatSignedRaceTime(48)).toBe('+0:48');
+    expect(formatSignedRaceTime(-72)).toBe('−1:12');
+    expect(formatSignedRaceTime(0.2)).toBe('0:00');
   });
 });

@@ -10,6 +10,8 @@ import { useFiltersStore } from '@/store/filters.ts';
 import { useIntervalsStore } from '@/store/intervals.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { resetPersonalBests } from '@/queries/records/usePersonalBests.ts';
+import { resetStoredSegments } from '@/queries/segments/useStoredSegments.ts';
+import { resetDetectedSegments } from '@/queries/segments/useDetectedSegments.ts';
 import { resetStudioRoutePoints } from '@/queries/studio/useStudioRoutePoints.ts';
 import { resetSessionGps } from '@/queries/sessions/useSessionGps.ts';
 import { intervalsSyncQueryKey } from '@/queries/intervals/useIntervalsSync.ts';
@@ -23,6 +25,8 @@ export const clearAllAppState = (queryClient: QueryClient): void => {
   useUserStore.getState().resetProfile();
   useCoachPlanStore.getState().clearPlan();
   void resetPersonalBests(queryClient);
+  void resetStoredSegments(queryClient);
+  void resetDetectedSegments(queryClient);
   resetStudioRoutePoints(queryClient);
   resetSessionGps(queryClient);
   useIntervalsStore.getState().disconnectIntervals();

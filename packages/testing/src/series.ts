@@ -4,10 +4,17 @@ import { createMockTrainingSession } from './sessions.ts';
 
 type InvalidRecordKind = 'highHr' | 'highPower' | 'zeroHr';
 
+export interface PathWaypoint {
+  eastMeters: number;
+  northMeters: number;
+}
+
 const LAP_DURATION_SEC = 300;
 const GPS_SERIES_START_LATITUDE_DEGREES = 48.137;
 const GPS_SERIES_START_LONGITUDE_DEGREES = 11.575;
 const GPS_SERIES_BASE_HR_BPM = 145;
+const GPS_SERIES_START_ELEVATION_METERS = 300;
+const METERS_PER_DEGREE_LATITUDE = 111320;
 
 const FIELDS_BY_INVALID_RECORD_KIND: Record<
   InvalidRecordKind,
@@ -294,6 +301,71 @@ const assembleRecords = ({
   return records;
 };
 
+const pathPosition = ({
+  waypoints,
+  distanceMeters,
+}: {
+  waypoints: PathWaypoint[];
+  distanceMeters: number;
+}): { position: PathWaypoint; legIndex: number } => {
+  let remainingMeters = distanceMeters;
+  for (let legIndex = 0; legIndex < waypoints.length - 1; legIndex++) {
+    const from = waypoints[legIndex];
+    const to = waypoints[legIndex + 1];
+    if (from === undefined || to === undefined) continue;
+    const legMeters = Math.hypot(
+      to.eastMeters - from.eastMeters,
+      to.northMeters - from.northMeters,
+    );
+    if (remainingMeters <= legMeters || legIndex === waypoints.length - 2) {
+      const fraction = Math.min(1, remainingMeters / Math.max(legMeters, Number.EPSILON));
+      return {
+        legIndex,
+        position: {
+          eastMeters: from.eastMeters + (to.eastMeters - from.eastMeters) * fraction,
+          northMeters: from.northMeters + (to.northMeters - from.northMeters) * fraction,
+        },
+      };
+    }
+    remainingMeters -= legMeters;
+  }
+  return { legIndex: 0, position: waypoints[0] ?? { eastMeters: 0, northMeters: 0 } };
+};
+
+const pathLengthMeters = (waypoints: PathWaypoint[]): number =>
+  waypoints.reduce((totalMeters, to, i) => {
+    const from = waypoints[i - 1];
+    if (from === undefined) return totalMeters;
+    return (
+      totalMeters + Math.hypot(to.eastMeters - from.eastMeters, to.northMeters - from.northMeters)
+    );
+  }, 0);
+
+const pathRecord = ({
+  position,
+  timestamp,
+  distanceMeters,
+  gradeRatio,
+}: {
+  position: PathWaypoint;
+  timestamp: number;
+  distanceMeters: number;
+  gradeRatio: number | null;
+}): SessionRecord => {
+  const metersPerDegreeLongitude =
+    METERS_PER_DEGREE_LATITUDE * Math.cos((GPS_SERIES_START_LATITUDE_DEGREES * Math.PI) / 180);
+  const record: SessionRecord = {
+    timestamp,
+    lat: GPS_SERIES_START_LATITUDE_DEGREES + position.northMeters / METERS_PER_DEGREE_LATITUDE,
+    lng: GPS_SERIES_START_LONGITUDE_DEGREES + position.eastMeters / metersPerDegreeLongitude,
+    distance: distanceMeters,
+  };
+  if (gradeRatio !== null) {
+    record.elevation = GPS_SERIES_START_ELEVATION_METERS + distanceMeters * gradeRatio;
+  }
+  return record;
+};
+
 export const cyclingRecordSeries = ({
   count,
   basePowerWatts = 200,
@@ -429,4 +501,30 @@ export const sessionSeries = ({
   }
 
   return sessions;
+};
+
+export const gpsPathRecordSeries = ({
+  path,
+  speedMetersPerSec,
+  legSpeedsMetersPerSec = [],
+  reverse = false,
+  gradeRatio = 0,
+}: {
+  path: PathWaypoint[];
+  speedMetersPerSec: number;
+  legSpeedsMetersPerSec?: number[];
+  reverse?: boolean;
+  gradeRatio?: number | null;
+}): SessionRecord[] => {
+  let waypoints = path;
+  if (reverse) waypoints = [...path].reverse();
+  const totalMeters = pathLengthMeters(waypoints);
+  const records: SessionRecord[] = [];
+  let distanceMeters = 0;
+  for (let timestamp = 0; distanceMeters <= totalMeters; timestamp++) {
+    const located = pathPosition({ waypoints, distanceMeters });
+    records.push(pathRecord({ position: located.position, timestamp, distanceMeters, gradeRatio }));
+    distanceMeters += legSpeedsMetersPerSec[located.legIndex] ?? speedMetersPerSec;
+  }
+  return records;
 };

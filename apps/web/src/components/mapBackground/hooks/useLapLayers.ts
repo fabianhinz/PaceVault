@@ -55,10 +55,16 @@ export const useLapLayers = ({
   if (previewLapIndex === selectedLapIndex) {
     previewLapIndex = null;
   }
-  const hoveredLapPath = useMemo(
-    () => lapPathFor({ detailPath, spans: lapSpans, lapIndex: previewLapIndex }),
-    [previewLapIndex, detailPath, lapSpans],
-  );
+  const hoveredSegmentSpan = useMapControlsStore((s) => {
+    if (terrain) return null;
+    return s.hoveredSegmentSpan;
+  });
+  const hoveredLapPath = useMemo(() => {
+    if (hoveredSegmentSpan !== null && detailPath) {
+      return lapSubPath({ detail: detailPath, span: hoveredSegmentSpan });
+    }
+    return lapPathFor({ detailPath, spans: lapSpans, lapIndex: previewLapIndex });
+  }, [hoveredSegmentSpan, previewLapIndex, detailPath, lapSpans]);
 
   const lapHoverLayer = useMemo(() => {
     if (!detailPath) return null;

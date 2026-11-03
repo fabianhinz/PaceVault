@@ -1,0 +1,508 @@
+{
+  "item": "session-segments",
+  "generated": "2026-11-02",
+  "base": "2a3bfb2cf28ecd80ccbafcbe4c0881d2924c8a6d",
+  "ref": "merge-base main HEAD",
+  "planned": [
+    {
+      "path": "apps/web/CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/e2e/helpers/seed.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/e2e/segments.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/dashboard/index.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/layout/DockTabs.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/DeckGLOverlay.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useLapLayers.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useMapCameraEffect.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useMapCameraTarget.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useTerrainLapStateEffect.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useTrackLayers.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/mapCamera.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/segments/BestCrown.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/PassGapSpark.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/PassItem.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/PassScatter.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/PassTimesRow.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentDetail.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentHeader.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentItem.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentPeek.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentsTab.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/charts/SegmentChartsExplorer.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/charts/SegmentExplorerLegend.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/charts/hooks/useSegmentChartRows.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/charts/segmentChartRows.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/hooks/useFilteredSegments.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/hooks/useScatterWindow.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/hooks/useSegmentPassSelection.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/hooks/useSegments.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/hooks/useSessionSegments.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/index.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/segmentFilter.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/segmentPasses.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/segmentTypeIcons.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/sessions/session/SegmentsRow.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/sessions/session/SessionSummaryCard.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/settings/deleteAllData.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/lib/analysis/laps.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/lib/analysis/segmentDetection.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/lib/format/formatters.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/lib/hooks/useDragScroll.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/lib/storage/db.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/lib/storage/storageBreakdown.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/lib/workers/segments.worker.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/lib/workers/segmentsContract.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/microcopy/segments.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/pages/SegmentDetailPage.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/queries/segments/useDetectedSegments.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/queries/segments/useStoredSegments.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/routing/AppRoutes.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/routing/dashboardTab.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/routing/pageRegistry.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/routing/urlQuery.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/store/mapControls.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/store/segmentFocus.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/types.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/components/segments/PassTimesRow.spec.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/components/segments/charts/segmentChartRows.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/components/segments/segmentFilter.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/components/segments/segmentPasses.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/components/sessions/session/SegmentsRow.spec.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/lib/analysis/segmentDetection.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/lib/format/formatters.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/lib/storage/db.integration.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/lib/storage/db.segments.integration.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/routing/dashboardTab.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/routing/pageRegistry.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/engine/src/segments.ts",
+      "status": "added"
+    },
+    {
+      "path": "packages/engine/tests/segments.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "packages/i18n/messages/de.json",
+      "status": "modified"
+    },
+    {
+      "path": "packages/i18n/messages/en.json",
+      "status": "modified"
+    },
+    {
+      "path": "packages/testing/src/series.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvCollapsibleListItem/PvCollapsibleListItem.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvStatRail/PvStatRail.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvStatRail/types.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/hooks/useScrollFadeEffect.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/lib/scrollFade.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/lib/tokens.ts",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/theme.css",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/tests/hooks/useScrollFadeEffect.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "packages/ui/tests/lib/scrollFade.spec.ts",
+      "status": "modified"
+    }
+  ],
+  "notPlanned": [
+    {
+      "path": "apps/web/src/components/layout/VirtualItemList.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useMapCameraInputs.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useMapInteraction.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useSegmentsPickPopup.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/index.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/lapPath.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/segmentBounds.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/trackColors.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/trackPicking.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/segments/BestHighlight.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentDetailSkeleton.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentItemSkeleton.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentsEmpty.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentsPickPopup.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentsUpdatingNote.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/charts/SegmentChannelChart.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/charts/SegmentChannelRail.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/charts/segmentChannels.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/charts/segmentExplorerHover.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/hooks/useListExpansion.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/hooks/useScatterScrollEndEffect.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/segments/segmentFacts.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/sessions/SessionList.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/sessions/session/SessionSegmentList.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/lib/debug/pvDebug.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/lib/debug/segmentMetrics.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/routing/useRouteMatch.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/components/mapBackground/lapPath.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/components/mapBackground/segmentBounds.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/components/mapBackground/trackPicking.segments.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/factories/segments.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/lib/workers/segmentsContract.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/tests/routing/useRouteMatch.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "packages/engine/SOURCES.md",
+      "status": "modified"
+    },
+    {
+      "path": "packages/engine/tests/segments.perf.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "packages/testing/src/segments.ts",
+      "status": "added"
+    },
+    {
+      "path": "packages/ui/src/components/pvActionItem/PvActionItem.tsx",
+      "status": "added"
+    }
+  ],
+  "untouched": [
+    "apps/web/src/components/segments/SegmentsListHeader.tsx",
+    "apps/web/src/components/sessions/session/hooks/useSessionSegmentSelectionEffect.ts",
+    "apps/web/src/routing/useRouterQuery.ts",
+    "apps/web/src/components/sessions/session/ColorByControl.tsx",
+    "apps/web/src/components/sessions/session/MapViewControl.tsx",
+    "apps/web/src/components/mapBackground/SessionTerrain.tsx",
+    "apps/web/src/components/mapBackground/hooks/useDetailLayers.ts",
+    "apps/web/src/components/mapBackground/hooks/useTerrainTrackPickingEffect.ts",
+    "apps/web/src/components/charts/LapBands.tsx",
+    "apps/web/src/components/charts/LapBandShape.tsx",
+    "apps/web/src/components/sessions/charts/hooks/useSessionRailStats.ts",
+    "apps/web/tests/store/mapControls.spec.ts"
+  ]
+}

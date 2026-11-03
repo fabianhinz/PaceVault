@@ -14,6 +14,8 @@ import {
 } from '@/components/mapBackground/trackColors.ts';
 import { decodeCached } from '@/components/mapBackground/trackPicking.ts';
 import { useStudioMapTracks } from './useStudioMapTracks.ts';
+import { useSegmentMapTracks } from './useSegmentMapTracks.ts';
+import { useSegmentFocusStore } from '@/store/segmentFocus.ts';
 import type { DeckEventHandlers, MapTrack } from './types.ts';
 
 interface TrackPickData {
@@ -32,6 +34,12 @@ export const useTrackLayers = ({
   const hoveredSessionId = useMapFocusStore((s) => s.hoveredSessionId);
   const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
   const studioActive = useStudioMapTracks().active;
+  const segmentMap = useSegmentMapTracks();
+  const segmentMode = segmentMap.mode;
+  const representedSessionIds = segmentMap.representedSessionIds;
+  const segmentPage = segmentMode === 'page';
+  const segmentHovered =
+    useSegmentFocusStore((s) => s.hoveredSegmentId !== null) && segmentMode === 'tab';
   const trackIntensity = useMapPreferencesStore((s) => s.trackIntensity);
   const pointerFine = useDevice().pointerFine;
   const sessionMatch = useRouteMatch('sessionDetail');
@@ -48,7 +56,7 @@ export const useTrackLayers = ({
   );
 
   return useMemo(() => {
-    if (openedSessionId || studioActive) {
+    if (openedSessionId || studioActive || segmentPage) {
       return null;
     }
 
@@ -63,7 +71,13 @@ export const useTrackLayers = ({
         getColor: (d) => {
           const [r, g, b] = TRACK_COLOR_BY_SPORT[d.track.sport];
           let alpha = ALPHA_BY_TRACK_INTENSITY[trackIntensity];
-          if (hoveredSessionId && hoveredSessionId !== d.sessionId) {
+          const unrepresented =
+            representedSessionIds !== null && !representedSessionIds.has(d.sessionId);
+          if (
+            segmentHovered ||
+            unrepresented ||
+            (hoveredSessionId && hoveredSessionId !== d.sessionId)
+          ) {
             alpha = 0;
           } else if (highlightedSessionId === d.sessionId) {
             alpha = trackModifiers.alpha.highlighted;
@@ -80,7 +94,13 @@ export const useTrackLayers = ({
         capRounded: true,
         pickable: true,
         updateTriggers: {
-          getColor: [highlightedSessionId, hoveredSessionId, trackIntensity],
+          getColor: [
+            highlightedSessionId,
+            hoveredSessionId,
+            trackIntensity,
+            segmentHovered,
+            representedSessionIds,
+          ],
           getWidth: [highlightedSessionId],
         },
         transitions,
@@ -91,6 +111,9 @@ export const useTrackLayers = ({
   }, [
     openedSessionId,
     studioActive,
+    segmentPage,
+    segmentHovered,
+    representedSessionIds,
     trackData,
     highlightedSessionId,
     hoveredSessionId,

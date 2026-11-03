@@ -13,3 +13,19 @@ export const scrollFadeEdges = (metrics: ScrollMetrics): { top: boolean; bottom:
     bottom: hiddenBelow > EDGE_TOLERANCE,
   };
 };
+
+interface HorizontalScrollMetrics {
+  scrollLeft: number;
+  scrollWidth: number;
+  clientWidth: number;
+}
+
+export const horizontalScrollFadeEdges = (
+  metrics: HorizontalScrollMetrics,
+): { left: boolean; right: boolean } => {
+  const hiddenRight = metrics.scrollWidth - metrics.clientWidth - metrics.scrollLeft;
+  return {
+    left: metrics.scrollLeft > EDGE_TOLERANCE,
+    right: hiddenRight > EDGE_TOLERANCE,
+  };
+};

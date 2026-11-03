@@ -1,0 +1,83 @@
+# Copy research: how other tools word segments and repeated attempts
+
+Scope: wording of the PaceVault segment strings (EN/DE) against primary sources. Q7 is settled (`Segments`/`Segmente`, one pass = `pass`/`Durchgang`); this file only flags where the remaining strings drift from common usage. Fetched 2026-11-02. Quotes are verbatim from the pages listed under Sources; "n/f" = no such term found in the primary source.
+
+## 1. Which tools have the concept at all
+
+| Tool | Own repeated-stretch feature | Notes |
+| --- | --- | --- |
+| Strava | yes: Segments (fixed, user-created), Matched Activities (whole route) | the reference vocabulary everyone else borrows |
+| Garmin Connect | yes: Segments, leaderboard with "Me Only" filter | DE manuals: "Segmente", "persönlichen Rekord" |
+| Apple Workout | yes: Race Route (whole route, auto-detected after ≥ 2 repeats) | closest to PaceVault's detection rule |
+| Runalyze | yes: Recurring Routes (whole route, auto-detected) | closest to PaceVault's "Route" type |
+| Polar, Suunto, Coros, Wahoo | no own feature: they run Strava Live Segments on the device | wording copies Strava (PR, KOM/QOM) |
+| Komoot | no timing: "Highlights" are recommended places/segments | n/a |
+| intervals.icu | no segment feature; forum feature request "Matched Runs similar to Strava" | n/a |
+
+## 2. Concept → term per tool (EN / DE)
+
+| Concept | Strava | Garmin | Apple | Runalyze | Polar / Suunto / Coros / Wahoo | PaceVault now |
+| --- | --- | --- | --- | --- | --- | --- |
+| Stretch | "segments" / "Segmente" | "Segments" / "Segmente" | "Race Route" / "Rennstrecke" | "Recurring Routes", "Route" | "Strava Live Segments" / "Strava Live Segmente" | Segments / Segmente |
+| One attempt | "effort", "segment efforts" / "Leistung", "Segment-Leistungen" | n/f / "Ihre Leistung mit Ihren vorherigen Touren" | "your last or best time" (no noun) | "activities on this route" | n/f | pass / Durchgang |
+| List of own attempts | filter "My Results" / "Meine Ergebnisse"; DE also "Leistungsliste" | "Me Only" (forum) | n/f | "all associated activities" | n/f | Pass times / Durchgangszeiten |
+| Whole-route matches | "Matched Activities" (formerly "Matched Runs") / "vergleichbaren Aktivitäten" | n/f | "Race Route" / "Rennstrecke" | "Recurring Routes" | n/f | Route 1 / Route 1 |
+| Best | "PR", "personal records" / "PR", "persönlichen Rekorden", "persönlichen Bestleistungen" | "personal record" / "persönlichen Rekord" | "Personal Best" / "Pers. Bestleistung" | "fastest time" | Polar DE: "Differenz zu deiner persönlichen Bestzeit", "PR-Symbol"; Suunto: "personal best time" | Best / Bestzeit (crown) |
+| Best marker | "PR" gold dot; matched: "the fastest effort on this route" / "die schnellste Zeit auf dieser Strecke" (yellow dot) | n/f | n/f | n/f | "PR" symbol | amber crown |
+| Attempt time | "segment time" / "Teilabschnittszeit", "Zeit" | n/f | "time" | "fastest time" | Polar DE: "deine Zeit" | pass time / Durchgangszeit |
+| n attempts | count shown, no label quoted; matched list "grouped by year" / "gruppiert diese nach Jahren" | n/f | n/f | "15 activities on this route" | n/f | n passes / n Durchgänge |
+| Rank | medals for "second and third fastest times" / "zweit- und drittschnellsten Zeiten"; trophies 2nd–10th overall | n/f | n/f | "6th fastest time in a total of 15 activities on this route" | n/f | 2nd of 13 / 2. von 13 |
+| Trend | "a trend line showing how speed has changed over time" / "eine Linie mit der Entwicklung deiner Geschwindigkeit im Laufe der Zeit" | n/f | n/f | n/f | n/f | rolling median line, unlabelled |
+| Empty state | no bar at all: "You will not see the matched activity bar … if there aren't other matches" / "keine Leiste mit zugeordneten Aktivitäten … wenn keine anderen Übereinstimmungen vorliegen" | n/f | "available … after you've repeated the same route … at least two or more times" / "mindestens zweimal" | field appears "when at least one other activity matches" | n/f | No segments yet · Segments appear once two runs share a stretch |
+| Segment types | climb categories (Cat 4…HC, not in the help page); DE uses "Anstieg"; Coros: "downhill segments are not synced" | n/f | n/f | "A to B route" / "circular route" | n/f | Climb / Flat / Descent / Route · Anstieg / Flach / Abfahrt / Route |
+| Compare | "compare" (verb), "Effort Comparison" / "Leistungsvergleich", "Analyze Effort" / "Analysieren" | n/f | "race against" | "compares all your routes" | Polar DE: "vergleichen" | none in v1 |
+| Trademarked / brand terms | "KOM/QOM" (crown icon), "Local Legend" (laurel crown, DE also "Local Legend"), "Matched Activities" | — | "Race Route" | — | they reuse Strava's names | must not reuse |
+
+## 3. Where PaceVault diverges and what to do
+
+Tone rule (`packages/i18n/CLAUDE.md` Translation rules 3, 6, 9): short labels stay terse, copy states facts, no superlatives or nudges; German prefers prepositional phrasing over compound nouns.
+
+| String (EN / DE) | Finding | Recommendation |
+| --- | --- | --- |
+| Segments / Segmente | Same word in Strava, Garmin, Polar, Coros, Suunto, Wahoo, both languages. | **Keep.** |
+| pass / Durchgang | No tool has a noun for "one attempt" except Strava's "effort"/"Leistung", which Q7 ruled out (clash with `apps/web/src/lib/analysis/laps.ts:561`). "pass" is neutral and not a brand term. DE "Durchgang" also means one round of an interval set ("6 Durchgänge à 800 m"), which collides with Q59 (structured workouts inside the passes). | **Keep EN** (settled). **DE: keep, but see open question 1**; the alternative is "Versuch". |
+| Pass times / Durchgangszeiten | EN fine. DE "Durchgangszeit" is the established athletics term for a split at a checkpoint ("Durchgangszeit bei km 21"), so readers expect intermediate splits, not one time per attempt. It is also a compound noun (rule 9). Strava DE says "Zeit"/"Teilabschnittszeit", Polar DE "deine Zeit". | **EN keep. DE change** to "Deine Zeiten" (or plain "Zeiten"; the row already sits on the segment page). |
+| n passes / n Durchgänge | Runalyze words the count as "15 activities on this route". Ours is shorter and fits a label. | **Keep** (needs `_one`/`_other` keys). |
+| Best / Bestzeit | Matches Apple "Personal Best", Polar "persönliche Bestzeit", Garmin "persönlicher Rekord". "PR" is generic, but Strava's look makes it read as Strava. The crown icon is Strava's KOM/QOM symbol (help page: crown achievement = "King/Queen of the Mountain (KOM/QOM)"); the Local Legend mark is a laurel crown. | **Keep both words.** Flag the crown, see open question 2. |
+| Show n more passes · Show fewer passes / n weitere Durchgänge anzeigen · … | Plain functional labels; no source contradicts them. | **Keep.** DE pair for "fewer" should read "Weniger Durchgänge anzeigen". |
+| 3 segments (row label) | Same as tools' plural count. | **Keep.** |
+| 2nd of 13 / 2. von 13 | Same pattern as Runalyze ("6th fastest time in a total of 15"). Without "fastest" it could read as position in a date-sorted list. | **Change to** "2nd fastest of 13" / "2.-schnellste von 13" if space allows; otherwise keep. |
+| No segments yet | Neutral, factual. | **Keep.** |
+| Segments appear once two runs share a stretch | "runs" excludes rides; same-sport rule (Q8) is missing. Apple states the same threshold ("at least two … times"). | **Change to** "Segments appear once two sessions of the same sport share a stretch" / "Segmente erscheinen, sobald zwei Einheiten derselben Sportart eine Strecke teilen" (use whatever noun the app already uses for a session in DE). |
+| Updating after your last import | Fact, no nudge. Missing subject on its own. | **Keep**, or "Updating segments after your last import" where it stands alone. |
+| Climb / Anstieg | Strava DE uses "Anstieg". | **Keep.** |
+| Flat / Flach | No source uses a "flat" type. Adjective as a type label is fine in both languages. | **Keep.** |
+| Descent / Abfahrt | "Abfahrt" is cycling/skiing; a runner doesn't "abfahren". | **DE change** to "Bergab" (sport-neutral); keep EN "Descent". |
+| Route / Route | Runalyze uses "Route" for a whole repeated route; Strava's equivalent "Matched Activities" is a brand feature name, Apple's "Race Route" too. | **Keep** (generic word). |
+| Rail note "Best 161 bpm" | "Best" next to a heart rate reads as "best heart rate", not "the best pass's heart rate at this point". | **Change**: lead with the crown icon plus value, or "Best pass 161 bpm" / "Bestzeit-Durchgang 161 bpm"; see open question 3. |
+
+Never use: "KOM", "QOM", "CR", "Local Legend", "Matched Activities/Runs", "Race Route", "Live Segments", "Highlights" (Komoot), "Leistungsvergleich" as a feature name. "PR", "personal best", "segment", "effort", "compare" are generic.
+
+## 4. Open questions for the owner
+
+1. DE word for one pass: (a) keep "Durchgang" and accept the overlap with interval rounds; (b) "Versuch" (neutral, but sounds like a failed try); (c) date only, no noun. Recommendation: (a) while Q59 keeps structured workouts out or marked; revisit if they count.
+2. Best marker icon: the crown is Strava's KOM/QOM symbol (Local Legend: laurel crown). Icons are not the trademarked words, so it is allowed, but it imports Strava's meaning "fastest of everyone". (a) keep the amber crown (Q46); (b) a medal/trophy/star icon; (c) a "Best" chip (the earlier Q18). Recommendation: (a) is defensible since there is no leaderboard of other people; switch to (b) only if the owner wants distance from Strava.
+3. Rail note label for the best pass's value: (a) crown icon + value, no word; (b) "Best pass" / "Bester Durchgang"; (c) keep "Best". Recommendation: (a), it reuses the marker the scatter and list already teach.
+
+## Sources
+
+- Strava, My segment results, EN: https://support.strava.com/en-us/articles/15401900-my-segment-results · DE: https://support.strava.com/de/articles/15401900-meine-ergebnisse-in-segmenten
+- Strava, What's a segment (medals, trophies, KOM/QOM, Local Legend), EN: https://support.strava.com/hc/en-us/articles/216917137 · DE: https://support.strava.com/hc/de/articles/216917137
+- Strava, Matched Activities, EN: https://support.strava.com/hc/en-us/articles/216918597-Matched-Runs · DE: https://support.strava.com/hc/de/articles/216918597
+- Garmin manual, Segments, EN: https://www8.garmin.com/manuals/webhelp/GUID-A315BE5B-E191-4238-9712-D9C368997ADB/EN-US/GUID-A31B940D-7C93-4202-94D9-8D3A2C018514.html · DE: https://www8.garmin.com/manuals/webhelp/GUID-A315BE5B-E191-4238-9712-D9C368997ADB/DE-DE/GUID-A31B940D-7C93-4202-94D9-8D3A2C018514.html · Edge 520 DE: https://www8.garmin.com/manuals/webhelp/edge520/DE-DE/GUID-97813645-0EF0-4FBC-ACDA-E9DBCAC2C784.html
+- Garmin Connect "Me Only" filter (user forum, not official): https://forums.garmin.com/apps-software/mobile-apps-web/f/garmin-connect-web/154485/not-updating-personal-records
+- Apple Watch, Start an outdoor run workout (Race Route), EN: https://support.apple.com/en-us/guide/watch/apdf2260a232/watchos · DE: https://support.apple.com/de-de/guide/watch/apdf2260a232/watchos
+- Runalyze, Recurring Routes: https://runalyze.com/help/article/recurring-routes
+- Polar Grit X2 Pro, Strava Live Segmente (DE): https://support.polar.com/e_manuals/grit-x2-pro/polar-grit-x2-pro-user-manual-deutsch/strava-live-segments.htm
+- Suunto, Strava segments FAQ: https://www.suunto.com/en-be/Support/faq-articles/strava/how-do-i-use-strava-segments-on-my-suunto-watch/
+- Coros, Strava Live Segments: https://coros.com/stories/latest-news/c/stravalivesegments
+- Wahoo, Strava Live Segments [ELEMNT]: https://support.wahoofitness.com/hc/en-us/articles/115000384330
+- Komoot, Highlights: https://support.komoot.com/hc/articles/10364710659994
+- intervals.icu, feature request "Matched Runs similar to Strava": https://forum.intervals.icu/t/matched-runs-similar-to-strava-feature-request/85420
+
+Limits: Suunto, Coros, Wahoo and Komoot quotes come from search excerpts of their pages; no German app string files were available, so DE terms come from help pages and manuals only. Garmin Connect's segment UI has no current official help page.
