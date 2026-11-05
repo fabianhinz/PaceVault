@@ -15,6 +15,21 @@ export const trackModifiers = {
   alpha: { default: 80, highlighted: 255 },
 };
 
+export const HOVER_MARKER_RADIUS_PX = 12;
+export const HOVER_MARKER_RING_WIDTH_PX = 4;
+export const HOVER_MARKER_RING_COLOR: [number, number, number, number] = [
+  0,
+  0,
+  0,
+  trackModifiers.alpha.default,
+];
+export const HOVER_MARKER_FILL_COLOR: [number, number, number, number] = [
+  255,
+  255,
+  255,
+  trackModifiers.alpha.highlighted,
+];
+
 export const LAP_DIMMED_BRIGHTNESS = 0.8;
 export const LAP_CASING_SCALE = 1.6;
 

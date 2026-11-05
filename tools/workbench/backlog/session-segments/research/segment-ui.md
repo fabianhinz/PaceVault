@@ -12,18 +12,18 @@ Scope: the map control that enters segments mode, the deferred detection state, 
 
 ## 1. Comparable products
 
-| Product | What it does with segments / repeats | Source |
-| --- | --- | --- |
-| Strava web, activity page | Segment list sits **beneath the map** in the activity page; hover highlights the segment on the map **in blue** and shades the elevation profile; hidden efforts behind "Show Hidden Efforts"; a detail panel opens **inside the list** with a Top 10 and "Analyze effort". Hover is subscriber-only. | [S1] |
-| Strava web, analysis view | Segment **bars stacked between the elevation profile and lap bars**; click opens the effort analysis; selection is highlighted on the map, distance / elevation / grade / time shown under the profile. Stacked bars are how Strava shows overlapping segments on one axis. | [S1] |
-| Strava mobile | Tapping the map opens a full-screen map **with a list of matched segments**; tapping a row opens the segment effort page. | [S2] |
-| Strava "My Results" | All own efforts on a segment as a **scatter: x = date, y = time**; PR as a gold dot; when opened from an activity, that activity's effort is marked with a red line; scrubbing shows metrics along the segment. | [S3] |
-| Strava Effort Comparison | From the segment detail panel, "Compare": two efforts (default: you vs. record holder, or latest vs. PR); roster edited from the leaderboard with + / ✕. Press reports 2 for free, up to 5 for subscribers (unverified on Strava's own pages). | [S4], [S5] |
-| Strava Matched Activities | Whole-route repeats (start, end, direction, distance). A **bar on the activity page that appears only when matches exist**; opens a trend chart (dots per activity + trend line of speed over time), list grouped by year; fastest dot yellow, current activity orange; hover/scroll on list highlights the dot. Near-misses can form a second cluster. | [S6] |
-| Garmin Connect | Segments work like Strava's; activity → "View Segments" → segment → full leaderboard, filter to own results. Users report results **taking days to appear** (server processing), i.e. a deferred state exists but is invisible. Forum sources, mostly old. | [S7], [S8] |
-| intervals.icu | No native segment comparison; Strava segments shown on non-Strava activities (supporters). Workaround: create an interval per activity and compare on interval search. "Routes" beta matches **whole activities** (distance within 2 % / 200 m, start/end ~100 m, reverse = new route) and shows a route tab. | [S9], [S10], [S11] |
-| Komoot | "Highlights" are community points or segments on the planning map, rated, not timed; no effort history. Relevant only as a map-marker pattern. | [S12] |
-| COROS / Wahoo | Consume Strava Live Segments on the device; COROS shows results in the activity summary as preliminary until Strava finalises. No own history or comparison UI found. | [S13], [S14] |
+| Product                   | What it does with segments / repeats                                                                                                                                                                                                                                                                                                                    | Source             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| Strava web, activity page | Segment list sits **beneath the map** in the activity page; hover highlights the segment on the map **in blue** and shades the elevation profile; hidden efforts behind "Show Hidden Efforts"; a detail panel opens **inside the list** with a Top 10 and "Analyze effort". Hover is subscriber-only.                                                   | [S1]               |
+| Strava web, analysis view | Segment **bars stacked between the elevation profile and lap bars**; click opens the effort analysis; selection is highlighted on the map, distance / elevation / grade / time shown under the profile. Stacked bars are how Strava shows overlapping segments on one axis.                                                                             | [S1]               |
+| Strava mobile             | Tapping the map opens a full-screen map **with a list of matched segments**; tapping a row opens the segment effort page.                                                                                                                                                                                                                               | [S2]               |
+| Strava "My Results"       | All own efforts on a segment as a **scatter: x = date, y = time**; PR as a gold dot; when opened from an activity, that activity's effort is marked with a red line; scrubbing shows metrics along the segment.                                                                                                                                         | [S3]               |
+| Strava Effort Comparison  | From the segment detail panel, "Compare": two efforts (default: you vs. record holder, or latest vs. PR); roster edited from the leaderboard with + / ✕. Press reports 2 for free, up to 5 for subscribers (unverified on Strava's own pages).                                                                                                          | [S4], [S5]         |
+| Strava Matched Activities | Whole-route repeats (start, end, direction, distance). A **bar on the activity page that appears only when matches exist**; opens a trend chart (dots per activity + trend line of speed over time), list grouped by year; fastest dot yellow, current activity orange; hover/scroll on list highlights the dot. Near-misses can form a second cluster. | [S6]               |
+| Garmin Connect            | Segments work like Strava's; activity → "View Segments" → segment → full leaderboard, filter to own results. Users report results **taking days to appear** (server processing), i.e. a deferred state exists but is invisible. Forum sources, mostly old.                                                                                              | [S7], [S8]         |
+| intervals.icu             | No native segment comparison; Strava segments shown on non-Strava activities (supporters). Workaround: create an interval per activity and compare on interval search. "Routes" beta matches **whole activities** (distance within 2 % / 200 m, start/end ~100 m, reverse = new route) and shows a route tab.                                           | [S9], [S10], [S11] |
+| Komoot                    | "Highlights" are community points or segments on the planning map, rated, not timed; no effort history. Relevant only as a map-marker pattern.                                                                                                                                                                                                          | [S12]              |
+| COROS / Wahoo             | Consume Strava Live Segments on the device; COROS shows results in the activity summary as preliminary until Strava finalises. No own history or comparison UI found.                                                                                                                                                                                   | [S13], [S14]       |
 
 Takeaways for PaceVault:
 
@@ -40,61 +40,61 @@ Scale per criterion: ++ good, + fine, − weak, −− poor. "Data" means the da
 
 ### (a) Mode switch
 
-| Pattern | Data | 390 px | Vertical | Glance | Effort | Risks |
-| --- | --- | --- | --- | --- | --- | --- |
-| a1 New toggle pill `Segments` beside Laps (pressed state, no popover) | ++ | − fourth pill scrolls unless others collapse | ++ | + | ++ | Pressed vs. open-popover look must differ from the other pills |
-| a2 `PvSegmentedControl` `Session · Segments` as the first item of the bar | ++ | − widest option (≈170 px DE "Sitzung · Segmente") | ++ | ++ states the mode | + | Reads as a second "view" next to 2D/3D; competes with Map view pill |
-| a3 Third option in the Map view popover (2D / 3D / Segments) | ++ | ++ no new pill | ++ | − hidden one tap deep | ++ | Mixes camera and content; segments in 3D then undefined |
-| a4 Fifth lap source `segments` in the Laps popover | + laps are contiguous, segments may overlap or have gaps | ++ | ++ | − | + reuses stepper, strip, highlight | Overlapping / nested segments break the band model (`apps/web/src/lib/analysis/laps.ts:561`) **[depends: fixed/dynamic]** |
-| a5 Panel tab `Overview · Segments` (no map control) | ++ | ++ | − tab row costs ≈40 px | + | + | Contradicts the idea (control at the map); on phone the tab is in the sheet, away from the map |
+| Pattern                                                                   | Data                                                     | 390 px                                            | Vertical               | Glance                | Effort                             | Risks                                                                                                                     |
+| ------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------- | ---------------------- | --------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| a1 New toggle pill `Segments` beside Laps (pressed state, no popover)     | ++                                                       | − fourth pill scrolls unless others collapse      | ++                     | +                     | ++                                 | Pressed vs. open-popover look must differ from the other pills                                                            |
+| a2 `PvSegmentedControl` `Session · Segments` as the first item of the bar | ++                                                       | − widest option (≈170 px DE "Sitzung · Segmente") | ++                     | ++ states the mode    | +                                  | Reads as a second "view" next to 2D/3D; competes with Map view pill                                                       |
+| a3 Third option in the Map view popover (2D / 3D / Segments)              | ++                                                       | ++ no new pill                                    | ++                     | − hidden one tap deep | ++                                 | Mixes camera and content; segments in 3D then undefined                                                                   |
+| a4 Fifth lap source `segments` in the Laps popover                        | + laps are contiguous, segments may overlap or have gaps | ++                                                | ++                     | −                     | + reuses stepper, strip, highlight | Overlapping / nested segments break the band model (`apps/web/src/lib/analysis/laps.ts:561`) **[depends: fixed/dynamic]** |
+| a5 Panel tab `Overview · Segments` (no map control)                       | ++                                                       | ++                                                | − tab row costs ≈40 px | +                     | +                                  | Contradicts the idea (control at the map); on phone the tab is in the sheet, away from the map                            |
 
 Mode-dependent pills: in segments mode Color-by and Laps have no obvious meaning. Options: hide them (frees room at 390 px, but "same action, same place" says secondary actions shrink, not vanish), keep them working on the whole track, or collapse them to icons like Map view does when a lap is selected.
 
 ### (b) Deferred detection
 
-| Pattern | Data | 390 px | Glance | Effort | Risks |
-| --- | --- | --- | --- | --- | --- |
-| b1 Spinner inside the mode pill, label `Finding…` → `4 segments` | ++ | ++ | + | ++ | Nothing to read while it runs |
-| b2 Skeleton rows in the list (`PvInlineSkeleton`), real rows replace them | ++ | + | + | + | Skeleton count is a guess; jumps when 0 found |
-| b3 Streaming: rows append as each overlap is found, footer `Checked 120 of 340 sessions` | + needs detection to report progress per session | + | ++ honest | − | List reorders under the cursor if sorted by distance; sort by position along the track to keep it stable |
-| b4 Map-first: segments appear on the map as found, list fills afterwards | + | ++ | ++ | − | Camera must not refit on every hit |
-| b5 0 found: one line of fact in place of the list (`No other session overlaps this one.` / `Keine andere Einheit überschneidet sich mit dieser.`), mode stays on, pill shows `0` | ++ | ++ | ++ | ++ | Must distinguish "none found" from "no other sessions with GPS" and from "this session has no GPS" (NoGpsBanner already covers the last) |
-| b6 Cache: second entry is instant, a small `Updated` date in the list header | needs persisted results | ++ | + | − | Stale when sessions are imported later; invalidation rule needed |
+| Pattern                                                                                                                                                                          | Data                                             | 390 px | Glance    | Effort | Risks                                                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ------ | --------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| b1 Spinner inside the mode pill, label `Finding…` → `4 segments`                                                                                                                 | ++                                               | ++     | +         | ++     | Nothing to read while it runs                                                                                                            |
+| b2 Skeleton rows in the list (`PvInlineSkeleton`), real rows replace them                                                                                                        | ++                                               | +      | +         | +      | Skeleton count is a guess; jumps when 0 found                                                                                            |
+| b3 Streaming: rows append as each overlap is found, footer `Checked 120 of 340 sessions`                                                                                         | + needs detection to report progress per session | +      | ++ honest | −      | List reorders under the cursor if sorted by distance; sort by position along the track to keep it stable                                 |
+| b4 Map-first: segments appear on the map as found, list fills afterwards                                                                                                         | +                                                | ++     | ++        | −      | Camera must not refit on every hit                                                                                                       |
+| b5 0 found: one line of fact in place of the list (`No other session overlaps this one.` / `Keine andere Einheit überschneidet sich mit dieser.`), mode stays on, pill shows `0` | ++                                               | ++     | ++        | ++     | Must distinguish "none found" from "no other sessions with GPS" and from "this session has no GPS" (NoGpsBanner already covers the last) |
+| b6 Cache: second entry is instant, a small `Updated` date in the list header                                                                                                     | needs persisted results                          | ++     | +         | −      | Stale when sessions are imported later; invalidation rule needed                                                                         |
 
 0-is-data applies: a found count of `0` is shown as `0`, a count still unknown is `--` or the spinner, never `0`.
 
 ### (c) Segments on the map
 
-| Pattern | Data | 390 px | Glance | Effort | Risks |
-| --- | --- | --- | --- | --- | --- |
-| c1 Lap-style highlight for the selected segment only (white casing + track colour), rest of the track dimmed | ++ | ++ | + | ++ reuses `useLapLayers` | No overview of all segments at once |
-| c2 All segments drawn with a thin white casing, selected one thick; numbered badges at each start (`1`, `2`…) in list order | ++ | − badges collide when zoomed out | ++ | + | Overlapping segments stack badges; needs offset or cluster |
-| c3 Coverage ramp: track coloured by how many other sessions overlap here (1, 2–3, 4+), warm single-hue ramp; click a stretch to select its segment | ++ count per point is a by-product of detection | ++ no badges | ++ shows "where do I repeat" | − new colour mode, legend | Replaces sport colour like zone colours do (allowed, `apps/web/CLAUDE.md` §3); needs care to stay off blue/grey |
-| c4 Start/finish flags only (Komoot-like markers), path not re-styled | ++ | + | − | ++ | Does not show extent |
-| c5 Other sessions' tracks of the selected segment drawn faintly | + records of other sessions must load | + | + shows line choice | − | Clutter; same geometry mostly, little gain |
+| Pattern                                                                                                                                            | Data                                            | 390 px                           | Glance                       | Effort                    | Risks                                                                                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | -------------------------------- | ---------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| c1 Lap-style highlight for the selected segment only (white casing + track colour), rest of the track dimmed                                       | ++                                              | ++                               | +                            | ++ reuses `useLapLayers`  | No overview of all segments at once                                                                             |
+| c2 All segments drawn with a thin white casing, selected one thick; numbered badges at each start (`1`, `2`…) in list order                        | ++                                              | − badges collide when zoomed out | ++                           | +                         | Overlapping segments stack badges; needs offset or cluster                                                      |
+| c3 Coverage ramp: track coloured by how many other sessions overlap here (1, 2–3, 4+), warm single-hue ramp; click a stretch to select its segment | ++ count per point is a by-product of detection | ++ no badges                     | ++ shows "where do I repeat" | − new colour mode, legend | Replaces sport colour like zone colours do (allowed, `apps/web/CLAUDE.md` §3); needs care to stay off blue/grey |
+| c4 Start/finish flags only (Komoot-like markers), path not re-styled                                                                               | ++                                              | +                                | −                            | ++                        | Does not show extent                                                                                            |
+| c5 Other sessions' tracks of the selected segment drawn faintly                                                                                    | + records of other sessions must load           | +                                | + shows line choice          | −                         | Clutter; same geometry mostly, little gain                                                                      |
 
 Overlapping segments **[depends: fixed/dynamic]**: with fixed segments, overlaps are rare and c2 works; with dynamic overlaps per other session, nested ranges are the norm (A 2–8 km, B 3–5 km) and c3 or the stacked bars of (d) handle them better than badges.
 
 ### (d) Segment list
 
-| Pattern | Data | 390 px | Vertical | Glance | Effort | Risks |
-| --- | --- | --- | --- | --- | --- | --- |
-| d1 Rows in the panel (Strava web): number, distance, efforts count, this effort's time, rank `2 / 7`, best marker | ++ | + 4 columns max | − one row ≈48 px | ++ | + `PvList` | Long lists push detail below the fold at 860 px |
-| d2 Stacked bars along the session distance (Strava analysis view), one bar per segment, under a thin elevation line | ++ | + bars shrink with width | ++ ≈60–90 px for all | ++ shows position and overlap | − new component | Tap targets for short segments at 390 px |
-| d3 Picker popover from the pill (like `LapsPicker`) + stepper in the bar | ++ | ++ | ++ panel untouched | − list hidden | ++ | Only one segment visible at a time |
-| d4 Collapsible rows (`PvCollapsibleListItem`): row expands into its content in place | ++ | + | − nested scroll | + | + | Trend chart inside a row gets narrow |
+| Pattern                                                                                                             | Data | 390 px                   | Vertical             | Glance                        | Effort          | Risks                                           |
+| ------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------ | -------------------- | ----------------------------- | --------------- | ----------------------------------------------- |
+| d1 Rows in the panel (Strava web): number, distance, efforts count, this effort's time, rank `2 / 7`, best marker   | ++   | + 4 columns max          | − one row ≈48 px     | ++                            | + `PvList`      | Long lists push detail below the fold at 860 px |
+| d2 Stacked bars along the session distance (Strava analysis view), one bar per segment, under a thin elevation line | ++   | + bars shrink with width | ++ ≈60–90 px for all | ++ shows position and overlap | − new component | Tap targets for short segments at 390 px        |
+| d3 Picker popover from the pill (like `LapsPicker`) + stepper in the bar                                            | ++   | ++                       | ++ panel untouched   | − list hidden                 | ++              | Only one segment visible at a time              |
+| d4 Collapsible rows (`PvCollapsibleListItem`): row expands into its content in place                                | ++   | +                        | − nested scroll      | +                             | +               | Trend chart inside a row gets narrow            |
 
 ### (e) Segment content
 
-| Pattern | Data | 390 px | Vertical | Glance | Effort | Risks |
-| --- | --- | --- | --- | --- | --- | --- |
-| e1 Trend scatter: x date, y time or pace; best marked, this effort marked; optional trend line (Strava My Results / Matched) | ++ | ++ | ≈160–200 px | ++ | + recharts | With 2–3 efforts a trend line misleads; show dots only below a threshold |
-| e2 Rank line: `2nd of 7 · best 4:12 (12 Mar 2026) · +0:09` | ++ | ++ | ≈24 px | ++ | ++ | Rank meaning for dynamic segments: efforts cover different lengths **[depends: fixed/dynamic]** |
-| e3 Efforts table: date, duration, pace/speed, HR, power, cadence, elevation gain, weather icon; sortable; checkbox per row | ++ | − 3 columns visible, rest scrolls horizontally or moves into a row detail | − | + | + `PvDataTable` | `--` for missing HR/power/cadence must stay aligned |
-| e4 Compare 2–N: checkboxes in e3, default pre-pick "this + best"; comparison as metric rows side by side + delta | ++ | 2 columns at 390, N only on desktop | + | ++ | + | Cap N (Strava: 2 free / 5 paid, press [S5]); proposal: 2 at 390 px, up to 4 on desktop |
-| e5 Compare along the segment: pace / HR line over segment distance per picked effort, overlaid | + needs records of other sessions sliced to the segment | + | ≈180 px | + | − | Distances differ per effort; x must be normalised **[depends: fixed/dynamic]** |
-| e6 Weather context: temperature / wind per effort from the hourly weather | + only where weather was fetched | + | small | − | + | Missing weather → `--` |
-| e7 Time gap chart (ahead/behind best along the segment) | + same as e5 | + | ≈120 px | ++ for racing-minded users | − | Same normalisation issue |
+| Pattern                                                                                                                      | Data                                                    | 390 px                                                                    | Vertical    | Glance                     | Effort          | Risks                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- | ----------- | -------------------------- | --------------- | ----------------------------------------------------------------------------------------------- |
+| e1 Trend scatter: x date, y time or pace; best marked, this effort marked; optional trend line (Strava My Results / Matched) | ++                                                      | ++                                                                        | ≈160–200 px | ++                         | + recharts      | With 2–3 efforts a trend line misleads; show dots only below a threshold                        |
+| e2 Rank line: `2nd of 7 · best 4:12 (12 Mar 2026) · +0:09`                                                                   | ++                                                      | ++                                                                        | ≈24 px      | ++                         | ++              | Rank meaning for dynamic segments: efforts cover different lengths **[depends: fixed/dynamic]** |
+| e3 Efforts table: date, duration, pace/speed, HR, power, cadence, elevation gain, weather icon; sortable; checkbox per row   | ++                                                      | − 3 columns visible, rest scrolls horizontally or moves into a row detail | −           | +                          | + `PvDataTable` | `--` for missing HR/power/cadence must stay aligned                                             |
+| e4 Compare 2–N: checkboxes in e3, default pre-pick "this + best"; comparison as metric rows side by side + delta             | ++                                                      | 2 columns at 390, N only on desktop                                       | +           | ++                         | +               | Cap N (Strava: 2 free / 5 paid, press [S5]); proposal: 2 at 390 px, up to 4 on desktop          |
+| e5 Compare along the segment: pace / HR line over segment distance per picked effort, overlaid                               | + needs records of other sessions sliced to the segment | +                                                                         | ≈180 px     | +                          | −               | Distances differ per effort; x must be normalised **[depends: fixed/dynamic]**                  |
+| e6 Weather context: temperature / wind per effort from the hourly weather                                                    | + only where weather was fetched                        | +                                                                         | small       | −                          | +               | Missing weather → `--`                                                                          |
+| e7 Time gap chart (ahead/behind best along the segment)                                                                      | + same as e5                                            | +                                                                         | ≈120 px     | ++ for racing-minded users | −               | Same normalisation issue                                                                        |
 
 Height budget at 1512×860, desktop panel: page top padding + peek + header + map-related banners leave roughly 600–650 px; e2 + e1 (180) + e3 with ~6 rows (≈300) fits; adding e5 below needs either a tab or a selection-driven swap (table → compare).
 
@@ -131,6 +131,7 @@ Desktop                                         | panel 40dvw
 |  3 Mar 9:41 4:02  ☑  |
 +----------------------+
 ```
+
 Rationale: the pattern every product uses (list beside the map, map only highlights); most room for content.
 
 ### V2 Stepper (laps model)
@@ -155,6 +156,7 @@ Desktop
 | This 9:53 | Best 9:41|
 +----------------------+
 ```
+
 Rationale: reuses the lap stepper, lap highlight and pill-collapse rules users already know; smallest new surface.
 
 ### V3 Segmented mode switch, panel follows the mode
@@ -179,6 +181,7 @@ Desktop
 | trend …              |
 +----------------------+
 ```
+
 Rationale: the mode is always readable at a glance; the bar strip shows position and nesting of overlapping segments in ≈80 px.
 
 ### V4 Coverage ramp (map-first, for dynamic overlaps)
@@ -201,6 +204,7 @@ Desktop
 | 7 sessions · 2nd     |
 +----------------------+
 ```
+
 Rationale: answers "where do I repeat" without badges and handles nested overlaps natively; strongest fit if segments end up dynamic.
 
 ### V5 Inline card, no mode (baseline)
@@ -218,6 +222,7 @@ Desktop panel                       390 px sheet
 | Charts explorer …              |
 +--------------------------------+
 ```
+
 Rationale: lowest effort and no pill-bar pressure at 390 px; deviates from the idea (control at the map), kept as a yardstick.
 
 ### V6 Matched-first (whole-route trend on top, segments below)
@@ -235,6 +240,7 @@ Desktop panel
 +--------------------------------+
 390 px: same stack, trend 140 px tall, rows below; map/pills as V1.
 ```
+
 Rationale: gives a useful answer even when every segment is short; needs a "whole-route match" definition the detection may not have **[depends: fixed/dynamic]**.
 
 ### Which to test first
@@ -244,17 +250,20 @@ Rationale: gives a useful answer even when every segment is short; needs a "whol
 ## 4. Open questions for the owner
 
 Q1 **Where does the mode live?**
+
 - a1 own toggle pill `Segments` (V1, V2, V4, V6)
 - a2 `Session · Segments` segmented control (V3)
 - a3 inside the Map view popover
 - a5 panel tab / V5 card, no map control
 
 Q2 **What happens to Color-by and Laps in segments mode?**
+
 - collapse to icons and stay working on the whole track (like Map view when a lap is selected)
 - stay as they are (fourth pill scrolls at 390 px)
 - hide (frees room; bends "same action, same place")
 
 Q3 **Loading state honesty**
+
 - spinner + count in the pill only (b1)
 - streaming rows + `Checked n of N sessions` (b3), needs detection to report progress
 - map-first fill (b4)

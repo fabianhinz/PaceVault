@@ -3,6 +3,8 @@ import { useMap } from 'react-map-gl/maplibre';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import type { LapSpan, RecordSpan } from '@/lib/analysis/laps.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
+import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { sceneHoveredSpan } from '@/components/mapBackground/mapScene.ts';
 import { lapVertexBounds } from '@/components/mapBackground/lapPath.ts';
 import {
   terrainHoverLine,
@@ -11,6 +13,7 @@ import {
   type TerrainLineRun,
 } from '@/components/mapBackground/terrainLine.ts';
 import type { DetailPath } from '@/components/mapBackground/zoneColoredPath.ts';
+import { useMapScene } from './useMapScene.ts';
 
 type MapControlsState = ReturnType<typeof useMapControlsStore.getState>;
 
@@ -90,17 +93,19 @@ const syncPreview = ({
   line,
   shown,
   state,
+  hoveredSpan,
 }: {
   line: LapLine;
   shown: ShownLaps;
   state: MapControlsState;
+  hoveredSpan: RecordSpan | null;
 }) => {
   const spans = state.sessionLaps?.spans;
-  const preview = state.hoveredSegmentSpan ?? previewLapIndex(state);
+  const preview = hoveredSpan ?? previewLapIndex(state);
   if (spans === shown.spans && preview === shown.preview) return;
   let bounds = lapBounds({ line, spans, lapIndex: previewLapIndex(state) });
-  if (state.hoveredSegmentSpan !== null) {
-    bounds = lapVertexBounds({ detailPath: line.detailPath, span: state.hoveredSegmentSpan });
+  if (hoveredSpan !== null) {
+    bounds = lapVertexBounds({ detailPath: line.detailPath, span: hoveredSpan });
   }
   showHover({ line, path: bounds && line.detailPath.path.slice(bounds.first, bounds.last + 1) });
   shown.preview = preview;
@@ -109,14 +114,16 @@ const syncPreview = ({
 const syncLaps = ({
   line,
   shown,
-  state,
+  sceneKey,
 }: {
   line: LapLine;
   shown: ShownLaps;
-  state: MapControlsState;
+  sceneKey: string;
 }) => {
+  const state = useMapControlsStore.getState();
+  const hoveredSpan = sceneHoveredSpan({ hover: useMapFocusStore.getState().mapHover, sceneKey });
   syncSelected({ line, shown, state });
-  syncPreview({ line, shown, state });
+  syncPreview({ line, shown, state, hoveredSpan });
   shown.spans = state.sessionLaps?.spans;
 };
 
@@ -130,17 +137,21 @@ export const useTerrainLapStateEffect = ({
   runs: TerrainLineRun[];
 }): void => {
   const map = useMap().current?.getMap();
+  const sceneKey = useMapScene().key;
 
   useEffect(() => {
     if (map === undefined || detailPath === null || map.getSource(sourceId) === undefined) return;
     const line: LapLine = { map, sourceId, detailPath, runs };
     const shown: ShownLaps = { spans: [], selected: null, preview: null, selectedRunIds: [] };
-    syncLaps({ line, shown, state: useMapControlsStore.getState() });
-    const unsubscribe = useMapControlsStore.subscribe((state) => syncLaps({ line, shown, state }));
+    const sync = () => syncLaps({ line, shown, sceneKey });
+    sync();
+    const unsubscribeControls = useMapControlsStore.subscribe(sync);
+    const unsubscribeFocus = useMapFocusStore.subscribe(sync);
     return () => {
-      unsubscribe();
+      unsubscribeControls();
+      unsubscribeFocus();
       markSelected({ line, runIds: shown.selectedRunIds, selected: false });
       showHover({ line, path: null });
     };
-  }, [map, sourceId, detailPath, runs]);
+  }, [map, sourceId, detailPath, runs, sceneKey]);
 };

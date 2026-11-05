@@ -231,13 +231,20 @@
 @utility scroll-fade-x {
   --fade-left: 0px;
   --fade-right: 0px;
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    black var(--fade-left),
-    black calc(100% - var(--fade-right)),
-    transparent
-  );
+  --fade-solid-top: 0px;
+  mask-image:
+    linear-gradient(black, black),
+    linear-gradient(
+      to right,
+      transparent,
+      black var(--fade-left),
+      black calc(100% - var(--fade-right)),
+      transparent
+    );
+  mask-size:
+    100% var(--fade-solid-top),
+    100% 100%;
+  mask-repeat: no-repeat;
 
   &[data-fade-left] {
     --fade-left: 24px;

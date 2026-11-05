@@ -1,4 +1,4 @@
-import type { SegmentDetectionMetrics } from '@/lib/workers/segmentsContract.ts';
+import type { SegmentMatchingMetrics } from '@/lib/workers/segmentsContract.ts';
 
 export const SEGMENT_DEBUG_FLAG_KEY = 'pv:debug:segments';
 const COLD_FLAG_VALUE = 'cold';
@@ -7,7 +7,7 @@ export type SegmentDebugMode = 'off' | 'log' | 'cold';
 
 declare global {
   interface Window {
-    pvSegmentMetrics?: SegmentDetectionMetrics;
+    pvSegmentMetrics?: SegmentMatchingMetrics;
   }
 }
 
@@ -16,7 +16,7 @@ const roundedMs = (_key: string, value: unknown): unknown => {
   return Math.round(value * 10) / 10;
 };
 
-let latestMetrics: SegmentDetectionMetrics | null = null;
+let latestMetrics: SegmentMatchingMetrics | null = null;
 
 const storedFlag = (): string | null => {
   try {
@@ -33,11 +33,11 @@ export const segmentDebugMode = (): SegmentDebugMode => {
   return 'off';
 };
 
-export const latestSegmentMetrics = (): SegmentDetectionMetrics | null => latestMetrics;
+export const latestSegmentMetrics = (): SegmentMatchingMetrics | null => latestMetrics;
 
-export const reportSegmentMetrics = (metrics: SegmentDetectionMetrics): void => {
+export const reportSegmentMetrics = (metrics: SegmentMatchingMetrics): void => {
   latestMetrics = metrics;
   if (segmentDebugMode() === 'off') return;
   window.pvSegmentMetrics = metrics;
-  console.info('[segments] detection metrics', JSON.stringify(metrics, roundedMs, 2));
+  console.info('[segments] matching metrics', JSON.stringify(metrics, roundedMs, 2));
 };

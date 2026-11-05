@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { ComponentProps, FC } from 'react';
 import { PvStatRail } from '@pacevault/ui/components/pvStatRail/PvStatRail.tsx';
 import { useChartHoverX, type ChartHoverX } from '@/store/chartHover.ts';
 import type { RailReading } from '@/components/charts/types.ts';
@@ -9,6 +9,7 @@ interface SeriesRailProps {
   rest: RailReading & { header: string };
   formatX: (x: ChartHoverX) => string;
   readingAt: (x: ChartHoverX) => RailReading | undefined;
+  notePlacement?: ComponentProps<typeof PvStatRail>['notePlacement'];
 }
 
 export const SeriesRail: FC<SeriesRailProps> = (props) => {
@@ -32,6 +33,7 @@ export const SeriesRail: FC<SeriesRailProps> = (props) => {
       noteSlot
       secondarySlot
       note={reading.note}
+      notePlacement={props.notePlacement}
       rows={[
         {
           key: 'value',

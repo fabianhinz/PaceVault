@@ -30,6 +30,7 @@ import { m } from '@pacevault/i18n/messages.js';
 import type { ZoneScale } from '@/lib/colors/zoneColors.ts';
 import { zoneLabel } from './zoneLabel.ts';
 import { MetricLabel } from '@/components/metricLabel/index.tsx';
+import { SaveSegmentPill } from '@/components/segments/SaveSegmentPill.tsx';
 import { HOVER_GROUP } from './types.ts';
 import { useSessionChartRows } from './hooks/useSessionChartRows.ts';
 import { useSessionChartScales } from './hooks/useSessionChartScales.ts';
@@ -351,7 +352,13 @@ export const SessionChartsExplorer: FC<SessionChartsExplorerProps> = (props) => 
           label={m.ui_chart_reset_zoom()}
           zoomed={zoom.zoomed}
           onReset={zoom.resetZoom}
-        />
+        >
+          <SaveSegmentPill
+            session={props.session}
+            records={props.records}
+            zoomRange={zoom.zoomRange}
+          />
+        </PvZoomResetPill>
       }
     >
       {visibleCharts.map((chart) => (

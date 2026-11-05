@@ -1,10 +1,10 @@
 ---
 title: Segments
-status: ready
+status: in-review
 created: 2026-11-02
 type: feature
-areas: [app, engine]
-next: 'Owner updates Real-data checks, sets ready, then "lets dev"'
+areas: [app, engine, ui]
+next: 'Owner reviews round 7'
 ---
 
 # Segments: stretches you save and compare
@@ -43,8 +43,9 @@ Segments tab
 - Dashboard tabs `Dashboard` (`ui_nav_dashboard`, Q30) │ `Segments` (Q28); `?tab=segments`.
 - One virtualized list of the user's segments, most recently ridden first (Q33, R2); item: `SplinePointer` tile in the sport colour, the user's name, "distance · elevation · n passes", the short date of the last pass, click opens (Q85, Q94, R11, R25).
 - Empty state: "No segments yet" + the shared how-to "Select a stretch on the charts or use the menu" (Q97, Q100).
-- The map shows the normal session tracks; tracks of sessions without a pass of a visible segment fade; a track click opens the segments pick popup, also for one hit (R16, R20, Q104); hovering an item previews its stretch (R7, R19).
-- The dashboard filters (all criteria) apply as a view: failing passes hidden, segments without a visible pass drop out (Q82, Q83).
+- The map behaves exactly like the dashboard map: the normal session tracks, no fade, a track click opens the session pick popup (R27, R28 replace R16, R20, Q104). Owner: "The dashboard and segments share the same map behaviour. They only differ in the data they show on the right (or bottom on mobile) and the "hover effect"." Hovering an item previews its stretch and dims the other tracks (R7, R19).
+- The map shows one scene derived during render from the route plus hover; every layer, the track list and the camera read it, hover counts only within its scene, and one hover hook serves every list item (cleared on pointer leave and unmount, never on click). The stale hovered segment and the segment page markers are cleared with it (R49, O1, `research/map-hover-flash.md`). Owner: "sure lets fold and fix o1".
+- The dashboard filters (all criteria) apply as a view: failing passes hidden, segments without a visible pass drop out (Q82, Q83). The same view applies on the segment page (count, scatter, list, best, rank, explorer, map markers; the `?from=` pass always stays) and to the rank in the session Segments row (R34, R35). Owner: "a" (segment page follows the filter), "Follow the filter" (session row rank).
 
 Session detail
 
@@ -56,6 +57,17 @@ Segment page
 - `/segments/:id`, trip-detail anatomy, left through the dock (Q48, Q49, Q84).
 - Header: `SplinePointer` tile, the user's name, "Running · 1.4 km · +4 m", ⋯ with Rename (name dialog titled "Rename segment") and Delete (confirm like the trip dialog, `packages/i18n/messages/en.json:132-133`: "Delete segment", "Delete "{name}"? Your sessions stay — only the segment is removed.") (Q103, W5).
 - Summary card with the Pass times row (scatter, passes, collapse), then the charts explorer (selected vs best), the map with the segment and markers, as built and reviewed in round 1 (Q50–Q80, R14, R15, R18, R21).
+- The segment page replaces the Pass times card, its scatter and the Zeiten/Durchgänge tabs with one sticky pass strip under the header (R51, replaces R44 tabs and scatter, `mockup/pass-compare/index.html`, S1). Each pass is a chip with its short date and a dot at its time, in date order with the newest on the right. The dot scale is always robust: the best at the top, the 90th percentile at the bottom, slower passes marked ▾ at the edge. A dashed amber line marks the best's time. The best chip is amber with the filled crown in place of the dot. Exactly one pass is always selected, the best included: a tap moves the selection, and tapping the selected chip does nothing. The selected pass shows as the small session item under the strip, which opens its session. With the best selected, the explorer draws only the amber best line. Owner: "this sounds like the winner", "1a", "3a", "lets always go with (b) then". Hi-fi `mockup/pass-strip/`: the pass chip and the strip become `@pacevault/ui` kit components; a selected outlier keeps the white ▾; cadence keeps its colour; the selected dot keeps its size with no ring, only colour and opacity change; the strip's left and right edges get the kit scroll fade. Owner: "1c", "2a", "3a", "i don't want the circle to have this outline/border and it should not grow. Opacity/color switch is enough", "the edges here should have this gradient effect on the left and right edges". Chip look "Filled tile, dotted best line" (`?design=` in the hi-fi): the selected chip is a filled tile without a border, the best chip has no box (amber date and crown), the best line is dotted, outliers show a small ▼. Owner: "this is it". Changed in review round 7 (`review/findings.md`):
+  - the best pass is pinned left under its year and left out of the timeline; the best line is gone (R75)
+  - the other passes are grouped per year with a sticky year label that the next year pushes out (R62, R77)
+  - only the timeline scrolls: hidden scrollbar, no vertical scroll, the edge fade on the tile row only (R61, R75, R76, R77)
+  - the strip block is sticky only from `lg` (R70)
+  - spacing on the theme scale with nested radii: 12 px card padding, 24 px card radius, 72 × 72 px tiles with 8 px padding (R66, R68, R74)
+  - markers always at full strength, dates and colours muted until a tile is selected (R71)
+  - the selected pass shows as the medium session item: gap with the total time below, no chevron (R67, R69)
+  - a tap moves the strip at once and hands the selection to the page in a transition (R78)
+  - the one-pass note is removed (R79)
+  - in the explorer, the selected pass's line is white (R82), the rails show the best pass's average at rest for HR, power, speed, pace and GAP (R81), and the legend is gone (R64)
 
 Look and copy
 
@@ -133,7 +145,7 @@ Segments feature (kept and adapted, `apps/web/src/components/segments/`)
 
 Session detail, map, routing, dashboard (kept from round 1, adapted to `MatchedSegment` where they read segments)
 
-- `apps/web/src/components/sessions/session/SegmentsRow.tsx`, `SessionSegmentList.tsx`, `SessionSummaryCard.tsx`; `apps/web/src/store/mapControls.ts` (`hoveredSegmentSpan`), `apps/web/src/lib/analysis/laps.ts` (`recordSpanBetween`).
+- `apps/web/src/components/sessions/session/SegmentsRow.tsx`, `SessionSegmentList.tsx`, `SessionSummaryCard.tsx`; `apps/web/src/store/mapFocus.ts` (`mapHover`, R49), `apps/web/src/lib/analysis/laps.ts` (`recordSpanBetween`).
 - `apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts`, `useSegmentLayers.ts`, `useSegmentsPickPopup.ts`, `trackPicking.ts`, and the round-1 map changes (`index.tsx`, `DeckGLOverlay.tsx`, `lapPath.ts`, `mapCamera.ts`, `trackColors.ts`, `useMapCameraTarget.ts`, `useMapCameraInputs.ts`, `useMapCameraEffect.ts`, `useMapInteraction.ts`, `useTrackLayers.ts`, `useLapLayers.ts`, `useTerrainLapStateEffect.ts`).
 - `apps/web/src/routing/pageRegistry.ts`, `AppRoutes.tsx`, `urlQuery.ts`, `useRouteMatch.ts`, `dashboardTab.ts`, `apps/web/src/pages/SegmentDetailPage.tsx`, `apps/web/src/components/layout/DockTabs.tsx`, `apps/web/src/components/dashboard/index.tsx`, `apps/web/src/components/sessions/SessionList.tsx`, `apps/web/src/lib/format/formatters.ts` (plus `formatList`, Q106).
 
@@ -181,13 +193,13 @@ vp run build
 - [ ] 30 m corridor, ≥ 95 % coverage and an end tolerance of 1 % of the length (50–200 m) keep real passes and drop detours and shortcuts (Q105).
 - [ ] A segment saved from a chart range finds the passes of the sessions that rode it, and none that turned off or rode it the other way (Q105).
 - [ ] A whole session saved as reference finds the repeats of that route despite other start and stop points and small detours (Q105).
-- [ ] Matching time on the full history: first save, opening the Segments tab after an import, desktop and phone.
+- [ ] Matching time on the full history: first save, opening the Segments tab after an import, desktop and phone. Measure with `pvDebug.segmentMetrics()` once the feature is complete (R50).
 - [ ] Deleting a session removes its passes from other segments; deleting a source session warns with the right segment names and removes those segments (Q106).
 - [ ] After reprocessing a source session its segments' passes still look right (Q106).
 - [ ] Saving the same stretch again shows the similar-segment hint; a neighbouring or overlapping stretch with other ends does not (Q108).
 - [ ] The prefilled name reads well for unnamed sessions and long names (Q101).
-- [ ] Pass times and split positions look right on a long whole-session reference (scatter, gap chart, markers).
-- [ ] Scatter y range and the last-10 window read well with many passes and outliers (Q66, Q75).
+- [ ] Pass times and split positions look right on a long whole-session reference (pass strip, explorer charts, markers).
+- [ ] The pass strip reads well with many passes and outliers: dot scale, ▼ outliers, year groups (R51, R62).
 
 ## Risks
 

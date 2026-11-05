@@ -8,13 +8,12 @@ interface PvCollapsibleListItemProps {
   primary: ReactNode;
   secondary?: ReactNode;
   disabled?: boolean;
-  defaultOpen?: boolean;
   testId?: string;
   children?: ReactNode;
 }
 
 export const PvCollapsibleListItem: FC<PvCollapsibleListItemProps> = (props) => {
-  const [open, setOpen] = useState(props.defaultOpen === true);
+  const [open, setOpen] = useState(false);
 
   if (props.disabled) {
     return (

@@ -1,9 +1,11 @@
+import type { Segment } from '@/store/segments.ts';
 import type {
-  Segment,
+  SegmentPassesEntry,
   SegmentSessionMeta,
   StoredSegmentPass,
-  StoredSegments,
 } from '@/lib/workers/segmentsContract.ts';
+import type { MatchedSegment } from '@/components/segments/types.ts';
+import type { PassSeries } from '@/components/segments/charts/segmentChartRows.ts';
 
 export const createMockStoredSegmentPass = (
   overrides?: Partial<StoredSegmentPass>,
@@ -13,18 +15,25 @@ export const createMockStoredSegmentPass = (
   startTimestampSec: 0,
   endTimestampSec: 300,
   durationSec: 300,
-  splitDurationsSec: Array.from({ length: 25 }, (_, split) => split * 12.5),
   coverageRatio: 1,
   ...overrides,
 });
 
 export const createMockSegment = (overrides?: Partial<Segment>): Segment => ({
-  id: 'session-1:0-1000',
+  id: 'segment-1',
+  name: 'Morning Run · km 0.0–1.0',
   sport: 'running',
-  type: 'flat',
-  typeNumber: 1,
+  source: { sessionId: 'session-1', kind: 'range', startSec: 0, endSec: 300 },
   distanceMeters: 1000,
   netElevationMeters: 0,
+  encodedPolyline: 'gwxdHwvseAgw@?',
+  bounds: { minLat: 48.137, maxLat: 48.146, minLng: 11.575, maxLng: 11.575 },
+  createdAt: 1_767_225_600_000,
+  ...overrides,
+});
+
+export const createMockMatchedSegment = (overrides?: Partial<MatchedSegment>): MatchedSegment => ({
+  ...createMockSegment(),
   geometry: [
     [48.137, 11.575],
     [48.146, 11.575],
@@ -37,11 +46,14 @@ export const createMockSegment = (overrides?: Partial<Segment>): Segment => ({
   ...overrides,
 });
 
-export const createMockStoredSegments = (overrides?: Partial<StoredSegments>): StoredSegments => ({
-  sport: 'running',
-  sessionsKey: 'key',
-  detectorVersion: 1,
-  segments: [createMockSegment()],
+export const createMockSegmentPassesEntry = (
+  overrides?: Partial<SegmentPassesEntry>,
+): SegmentPassesEntry => ({
+  segmentId: 'segment-1',
+  matcherVersion: 1,
+  sourceSessionKey: 'session-1@1',
+  checkedSessionKeys: ['session-1@1'],
+  passes: [createMockStoredSegmentPass()],
   ...overrides,
 });
 
@@ -52,5 +64,24 @@ export const createMockSegmentSessionMeta = (
   sport: 'running',
   date: 1_767_225_600_000,
   derivationVersion: 1,
+  ...overrides,
+});
+
+export const createMockPassSeries = (overrides?: Partial<PassSeries>): PassSeries => ({
+  elapsedSec: [0, 10],
+  positions: [
+    [48.137, 11.575],
+    [48.146, 11.575],
+  ],
+  values: {
+    hr: [],
+    power: [],
+    speed: [],
+    pace: [],
+    gap: [],
+    elevation: [],
+    grade: [],
+    cadence: [],
+  },
   ...overrides,
 });

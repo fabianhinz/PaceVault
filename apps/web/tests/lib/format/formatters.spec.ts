@@ -8,6 +8,8 @@ import {
   formatDistance,
   formatSubSport,
   formatSignedRaceTime,
+  formatRaceTime,
+  formatTimeHMS,
   toDateString,
 } from '@/lib/format/formatters.ts';
 import { importInLocale } from '@testUtils/locale.ts';
@@ -17,6 +19,14 @@ describe('pace formatters print "x:60" when seconds round up to a full minute', 
     expect(formatPace(299.7)).toBe('5:00 /km');
     expect(formatPaceTick(4.999)).toBe('5:00');
     expect(formatPaceInput(359.6)).toBe('6:00');
+  });
+});
+
+describe('race time formatters print "x:60" when seconds round up to a full minute', () => {
+  it('carries the rounded minute and hour instead of printing 60 seconds', () => {
+    expect(formatRaceTime(599.6)).toBe('10:00');
+    expect(formatRaceTime(3599.7)).toBe('1:00:00');
+    expect(formatTimeHMS(599.6)).toBe('0:10:00');
   });
 });
 
@@ -149,52 +159,24 @@ describe(toDateString.name, () => {
   });
 });
 
-describe('short dates', () => {
-  it('drops the year inside the current year and keeps two digits outside it', async () => {
-    const english = await importInLocale('en', () => import('@/lib/format/formatters.ts'));
-    const now = new Date(2026, 9, 31).getTime();
-
-    expect(english.formatShortDate({ value: new Date(2026, 9, 31).getTime(), now })).toBe('31 Oct');
-    expect(english.formatShortDate({ value: new Date(2025, 9, 31).getTime(), now })).toBe(
-      '31 Oct 25',
-    );
-  });
-
-  it('uses the German order in German', async () => {
-    const german = await importInLocale('de', () => import('@/lib/format/formatters.ts'));
-    const now = new Date(2026, 9, 31).getTime();
-
-    expect(german.formatShortDate({ value: new Date(2026, 9, 31).getTime(), now })).toBe(
-      '31. Okt.',
-    );
-  });
-});
-
-describe('ordinals', () => {
-  it('writes English ordinal suffixes', async () => {
-    const english = await importInLocale('en', () => import('@/lib/format/formatters.ts'));
-
-    expect([1, 2, 3, 4, 11, 22].map(english.formatOrdinal)).toEqual([
-      '1st',
-      '2nd',
-      '3rd',
-      '4th',
-      '11th',
-      '22nd',
-    ]);
-  });
-
-  it('writes German ordinals with a full stop', async () => {
-    const german = await importInLocale('de', () => import('@/lib/format/formatters.ts'));
-
-    expect([1, 2, 13].map(german.formatOrdinal)).toEqual(['1.', '2.', '13.']);
-  });
-});
-
 describe(formatSignedRaceTime.name, () => {
-  it('signs a gap and prints no sign for zero', () => {
+  it('signs a gap and prints a plus for zero', () => {
     expect(formatSignedRaceTime(48)).toBe('+0:48');
     expect(formatSignedRaceTime(-72)).toBe('−1:12');
-    expect(formatSignedRaceTime(0.2)).toBe('0:00');
+    expect(formatSignedRaceTime(0.2)).toBe('+0:00');
+  });
+});
+
+describe('lists', () => {
+  it('joins English names with commas and "and"', async () => {
+    const english = await importInLocale('en', () => import('@/lib/format/formatters.ts'));
+
+    expect(english.formatList(['Hill', 'Loop', 'Bridge'])).toBe('Hill, Loop, and Bridge');
+  });
+
+  it('joins German names with "und"', async () => {
+    const german = await importInLocale('de', () => import('@/lib/format/formatters.ts'));
+
+    expect(german.formatList(['Hügel', 'Runde'])).toBe('Hügel und Runde');
   });
 });

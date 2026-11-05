@@ -1,21 +1,19 @@
 import type { FC } from 'react';
 import { PvChartRow } from '@pacevault/ui/components/pvChartsCard/PvChartRow.tsx';
 import { PvChartsCard } from '@pacevault/ui/components/pvChartsCard/PvChartsCard.tsx';
-import { GLASS_CLASS } from '@pacevault/ui/lib/surfaces.ts';
-import { cn } from '@pacevault/ui/lib/cn.ts';
-import type { Segment, StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
+import type { StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
+import type { MatchedSegment } from '@/components/segments/types.ts';
 import { SEGMENT_CHANNELS, hasChannelValues } from './segmentChartRows.ts';
 import { SPEC_BY_SEGMENT_CHANNEL, channelIcon } from './segmentChannels.ts';
 import { SegmentChannelChart } from './SegmentChannelChart.tsx';
 import { SegmentChannelRail } from './SegmentChannelRail.tsx';
-import { SegmentExplorerLegend } from './SegmentExplorerLegend.tsx';
+import { SegmentExplorerFrame } from './SegmentExplorerFrame.tsx';
 import { useSegmentChartRows } from './hooks/useSegmentChartRows.ts';
 
 interface SegmentChartsExplorerProps {
-  segment: Segment;
+  segment: MatchedSegment;
   selected: StoredSegmentPass;
   best: StoredSegmentPass;
-  sportColor: string;
 }
 
 export const SegmentChartsExplorer: FC<SegmentChartsExplorerProps> = (props) => {
@@ -27,12 +25,11 @@ export const SegmentChartsExplorer: FC<SegmentChartsExplorerProps> = (props) => 
   const selectedSeries = chartSeries.selected;
   const shownPass = chartSeries.selectedPass;
   if (chartSeries.loading || selectedSeries === undefined || shownPass === undefined) {
-    return <div className={cn(GLASS_CLASS, 'h-52px animate-pulse rounded-2xl')} />;
+    return <SegmentExplorerFrame sport={props.segment.sport} />;
   }
   const bestSeries = chartSeries.best;
-  const paired = bestSeries !== undefined;
   let domainSec = shownPass.durationSec;
-  if (paired) domainSec = Math.max(domainSec, props.best.durationSec);
+  if (bestSeries !== undefined) domainSec = Math.max(domainSec, props.best.durationSec);
   const channels = SEGMENT_CHANNELS.filter(
     (channel) =>
       hasChannelValues({ series: selectedSeries, channel }) ||
@@ -41,15 +38,7 @@ export const SegmentChartsExplorer: FC<SegmentChartsExplorerProps> = (props) => 
 
   return (
     <div data-testid="segment-explorer">
-      <PvChartsCard
-        zoomReset={
-          <SegmentExplorerLegend
-            selectedDate={shownPass.date}
-            paired={paired}
-            sportColor={props.sportColor}
-          />
-        }
-      >
+      <PvChartsCard zoomReset={null}>
         {channels.map((channel) => (
           <PvChartRow
             key={channel}
@@ -61,6 +50,7 @@ export const SegmentChartsExplorer: FC<SegmentChartsExplorerProps> = (props) => 
                 channel={channel}
                 segment={props.segment}
                 pass={shownPass}
+                bestPass={props.best}
                 selected={selectedSeries}
                 best={bestSeries}
               />
@@ -71,7 +61,6 @@ export const SegmentChartsExplorer: FC<SegmentChartsExplorerProps> = (props) => 
               selected={selectedSeries}
               best={bestSeries}
               domainSec={domainSec}
-              sportColor={props.sportColor}
             />
           </PvChartRow>
         ))}

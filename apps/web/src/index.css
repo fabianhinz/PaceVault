@@ -3,11 +3,6 @@
 @source '../../../packages/ui/src';
 
 /* App base styles; the theme tokens live in the kit (packages/ui/src/theme.css). */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-gray-700) transparent;
-}
-
 html {
   scrollbar-width: none;
 }

@@ -9,7 +9,7 @@ import { timeWeightedMean } from '@pacevault/engine/sessionDerivation.ts';
 import { movingSeconds } from '@/lib/analysis/movingTime.ts';
 import { summarizeValues } from '@/components/charts/seriesSummary.ts';
 import type { SessionTerrain } from '@/components/charts/sessionTerrain.ts';
-import type { LapBand } from '@/lib/analysis/laps.ts';
+import type { LapBand, RecordSpan } from '@/lib/analysis/laps.ts';
 
 interface RailRange {
   from: number;
@@ -124,6 +124,26 @@ const recordsInRange = ({
     moving.push(seconds);
   }
   return { inRange, gradients, moving, firstIndex, lastIndex };
+};
+
+export const recordSpanOfMinutes = ({
+  records,
+  range,
+}: {
+  records: SessionRecord[];
+  range: RailRange;
+}): RecordSpan | null => {
+  const allMoving = movingSeconds(records);
+  let startRecord: number | undefined = undefined;
+  let endRecord: number | undefined = undefined;
+  for (let i = 0; i < records.length; i++) {
+    const minutes = (allMoving[i] ?? 0) / 60;
+    if (minutes < range.from || minutes > range.to) continue;
+    startRecord ??= i;
+    endRecord = i;
+  }
+  if (startRecord === undefined || endRecord === undefined || endRecord <= startRecord) return null;
+  return { startRecord, endRecord };
 };
 
 const rangeClimb = ({

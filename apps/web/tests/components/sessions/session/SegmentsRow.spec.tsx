@@ -7,7 +7,10 @@ import { renderWithProviders } from '@testUtils/render.ts';
 import { createMatchMedia } from '@testUtils/matchMedia.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 import { createMockSessionRecord } from '@pacevault/testing/records.ts';
-import { createMockSegment, createMockStoredSegmentPass } from '@tests/factories/segments.ts';
+import {
+  createMockMatchedSegment,
+  createMockStoredSegmentPass,
+} from '@tests/factories/segments.ts';
 
 vi.mock('@/components/segments/hooks/useSessionSegments.ts', () => ({
   useSessionSegments: vi.fn(),
@@ -20,7 +23,7 @@ const pass = createMockStoredSegmentPass({
   startTimestampSec: 100,
   endTimestampSec: 300,
 });
-const segment = createMockSegment({ id: 'lead:0-1000', passes: [pass] });
+const segment = createMockMatchedSegment({ id: 'segment:1', name: 'Hill', passes: [pass] });
 
 const LocationProbe = () => {
   const location = useLocation();
@@ -45,11 +48,11 @@ describe(SegmentsRow.name, () => {
   it('opens the segment page with the session as origin on click', async () => {
     const view = renderRow();
 
-    fireEvent.click(view.getByRole('button', { name: 'Flat 1' }));
+    fireEvent.click(view.getByRole('button', { name: 'Hill' }));
 
     await waitFor(() =>
       expect(view.getByRole('status', { name: 'location' })).toHaveTextContent(
-        '/segments/lead%3A0-1000?from=s1',
+        '/segments/segment%3A1?from=s1',
       ),
     );
   });
@@ -57,7 +60,7 @@ describe(SegmentsRow.name, () => {
   it('shows five segments, then expands and collapses the rest', () => {
     vi.mocked(useSessionSegments).mockReturnValue(
       Array.from({ length: 7 }, (_, i) => ({
-        segment: createMockSegment({ id: `seg-${i}`, typeNumber: i + 1, passes: [pass] }),
+        segment: createMockMatchedSegment({ id: `seg-${i}`, name: `Stretch ${i}`, passes: [pass] }),
         pass,
         rank: 2,
       })),
@@ -71,13 +74,36 @@ describe(SegmentsRow.name, () => {
     expect(view.getAllByTestId('segment-item')).toHaveLength(5);
   });
 
-  it('counts the segments where this session is the best pass', () => {
-    vi.mocked(useSessionSegments).mockReturnValue([
-      { segment, pass, rank: 1 },
-      { segment: createMockSegment({ id: 'other', passes: [pass] }), pass, rank: 3 },
-    ]);
+  it('shows the how-to as the second line with segments', () => {
     const view = renderRow();
 
-    expect(view.getByTestId('segments-row')).toHaveTextContent('Best on 1');
+    expect(view.getByTestId('segments-row')).toHaveTextContent('1 segment');
+    expect(view.getByTestId('segments-row')).toHaveTextContent(
+      'Select a stretch on the charts or use the menu',
+    );
+  });
+
+  it('shows the how-to below "No segments yet" without segments', () => {
+    vi.mocked(useSessionSegments).mockReturnValue([]);
+    const view = renderRow();
+
+    expect(view.getByTestId('segments-row')).toHaveTextContent('No segments yet');
+    expect(view.getByTestId('segments-row')).toHaveTextContent(
+      'Select a stretch on the charts or use the menu',
+    );
+  });
+
+  it('frames the segments with plain Start and End labels', () => {
+    const view = renderRow();
+
+    expect(view.getByTestId('segment-ride-rail-start')).toHaveTextContent(/^Start$/);
+    expect(view.getByTestId('segment-ride-rail-end')).toHaveTextContent(/^End$/);
+  });
+
+  it('shows no start and end rail without segments', () => {
+    vi.mocked(useSessionSegments).mockReturnValue([]);
+    const view = renderRow();
+
+    expect(view.queryByTestId('segment-ride-rail')).not.toBeInTheDocument();
   });
 });

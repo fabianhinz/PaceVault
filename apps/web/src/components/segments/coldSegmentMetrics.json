@@ -1,0 +1,145 @@
+{
+    "matcherVersion": 1,
+    "environment": {
+        "hardwareConcurrency": 10,
+        "deviceMemoryGb": 32,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
+    },
+    "workerMs": 3020.699999988079,
+    "mainThreadMs": 3262.5,
+    "sessionsRead": 375,
+    "segments": [
+        {
+            "segmentId": "472c66fa-8e15-4045-9737-f7f8a8b1faf8",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 74,
+            "recordsRead": 74,
+            "referencePoints": 268,
+            "passes": 5,
+            "ms": 519.0999999940395
+        },
+        {
+            "segmentId": "bd1ae5e0-c637-43e2-af3c-17c8f273ea16",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 94,
+            "recordsRead": 21,
+            "referencePoints": 229,
+            "passes": 19,
+            "ms": 290.90000000596046
+        },
+        {
+            "segmentId": "5f018159-41ed-403b-88c7-b8fec4b73b2a",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 195,
+            "bboxCandidates": 142,
+            "recordsRead": 142,
+            "referencePoints": 223,
+            "passes": 24,
+            "ms": 471.59999999403954
+        },
+        {
+            "segmentId": "eac65176-5c91-4c47-9868-071d11f8490d",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 44,
+            "recordsRead": 8,
+            "referencePoints": 449,
+            "passes": 4,
+            "ms": 200.5
+        },
+        {
+            "segmentId": "88a07f0a-13f5-41ef-920b-c3830dc271bf",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 55,
+            "recordsRead": 8,
+            "referencePoints": 563,
+            "passes": 11,
+            "ms": 183.30000001192093
+        },
+        {
+            "segmentId": "d7a95c60-ab74-4cb7-80d8-e8ddcbd4b648",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 29,
+            "recordsRead": 1,
+            "referencePoints": 764,
+            "passes": 4,
+            "ms": 97.2999999821186
+        },
+        {
+            "segmentId": "887a23a5-f925-4904-b7ab-509cdbcab234",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 195,
+            "bboxCandidates": 142,
+            "recordsRead": 0,
+            "referencePoints": 519,
+            "passes": 3,
+            "ms": 54.80000001192093
+        },
+        {
+            "segmentId": "6db7ab43-1578-46fe-bfaa-db5cfc8fab4c",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 135,
+            "recordsRead": 121,
+            "referencePoints": 4945,
+            "passes": 6,
+            "ms": 707.1999999880791
+        },
+        {
+            "segmentId": "db6b1ca4-a298-4428-84a6-6827da0991f6",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 36,
+            "recordsRead": 0,
+            "referencePoints": 1568,
+            "passes": 7,
+            "ms": 62.20000001788139
+        },
+        {
+            "segmentId": "fb206e59-a1f5-4fda-bd01-4062b0ce0b97",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 129,
+            "recordsRead": 0,
+            "referencePoints": 872,
+            "passes": 50,
+            "ms": 167.90000000596046
+        },
+        {
+            "segmentId": "80e9283f-372d-448f-b2dd-b07b0534aade",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 88,
+            "recordsRead": 0,
+            "referencePoints": 565,
+            "passes": 17,
+            "ms": 145.59999999403954
+        },
+        {
+            "segmentId": "a7dcba07-1917-4a71-9ee6-16a7fa09b492",
+            "cache": "miss",
+            "missReason": "forced",
+            "sessionsChecked": 352,
+            "bboxCandidates": 74,
+            "recordsRead": 0,
+            "referencePoints": 196,
+            "passes": 23,
+            "ms": 110.19999998807907
+        }
+    ]
+}

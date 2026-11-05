@@ -1,7 +1,8 @@
 import { useDeferredValue, useEffect, useMemo } from 'react';
 import { recordedDistance, buildLapSet, effectiveSplitDistance } from '@/lib/analysis/laps.ts';
 import { useThresholdsAt } from '@/components/settings/hooks/useThresholdsAt.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useMapScene } from '@/components/mapBackground/hooks/useMapScene.ts';
+import { sceneSessionId } from '@/components/mapBackground/mapScene.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
@@ -14,7 +15,7 @@ export const useSessionLapsEffect = ({
   records: SessionRecord[];
   laps: SessionLap[];
 }): void => {
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
+  const openedSessionId = sceneSessionId(useMapScene());
   const sport = useSessionsStore(
     (s) => s.sessions.find((session) => session.id === openedSessionId)?.sport,
   );

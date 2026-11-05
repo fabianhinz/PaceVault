@@ -1,6 +1,6 @@
 # Interfaces · session-segments
 
-Generated 2026-11-02 by `vp run workbench:deps -- session-segments` from the TypeScript files changed since the base (as `files.json`): 80 planned, 36 not planned. The checker's types; compare with tech.md `## Interfaces`, the planned record.
+Generated 2026-11-05 by `vp run workbench:deps -- session-segments` from the TypeScript files changed since the base (as `files.json`): 176 planned, 4 not planned. The checker's types; compare with tech.md `## Interfaces`, the planned record.
 
 ```ts
 // apps/web/e2e/helpers/seed.ts
@@ -29,6 +29,11 @@ export const ACTIVITIES_ZIP: any;
 ```
 
 ```ts
+// apps/web/src/components/charts/SeriesRail.tsx
+export const SeriesRail: FC<SeriesRailProps>;
+```
+
+```ts
 // apps/web/src/components/dashboard/index.tsx
 export const Dashboard: FC;
 ```
@@ -39,13 +44,39 @@ export const DockTabs: FC<DockTabsProps>;
 ```
 
 ```ts
+// apps/web/src/components/layout/VirtualItemList.tsx
+export const VirtualItemList: <T>(props: VirtualItemListProps<T>) => ReactNode;
+```
+
+```ts
 // apps/web/src/components/mapBackground/DeckGLOverlay.tsx
 export const DeckGLOverlay: FC<DeckGLOverlayProps>;
 ```
 
 ```ts
+// apps/web/src/components/mapBackground/hooks/useDetailLayers.ts
+export const useDetailLayers: ({ terrain, eventHandlers, }: {
+  terrain: boolean;
+  eventHandlers: DeckEventHandlers;
+}) => DetailLayers;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useGeolocationCameraEffect.ts
+export const useGeolocationCameraEffect: ({ mapRef, sessionControls, }: {
+  mapRef: React.RefObject<MapRef | null>;
+  sessionControls: boolean;
+}) => void;
+```
+
+```ts
 // apps/web/src/components/mapBackground/hooks/useLapLayers.ts
 export const useLapLayers: ({ terrain, detailPath, }: { terrain: boolean; detailPath: DetailPath | null; }) => LapLayers;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useMapBackgroundEffects.ts
+export const useMapBackgroundEffects: ({ mapRef, mapLoaded, }: { mapRef: React.RefObject<MapRef | null>; mapLoaded: boolean; }) => void;
 ```
 
 ```ts
@@ -60,8 +91,55 @@ export const useMapCameraEffect: ({ gpsData, tracks, lapPath, sessionPath, mapLo
 ```
 
 ```ts
+// apps/web/src/components/mapBackground/hooks/useMapCameraInputs.ts
+export const useMapCameraInputs: ({ gpsData, tracks, }: { gpsData: SessionGPS[] | null; tracks: MapTrack[]; }) => MapCameraInputs;
+```
+
+```ts
 // apps/web/src/components/mapBackground/hooks/useMapCameraTarget.ts
 export const useMapCameraTarget: () => MapCameraTarget;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useMapHover.ts
+export const useMapHover: (target: MapHoverTarget | null) => MapHoverHandlers;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useMapPopupState.ts
+export interface MapPopupState {
+  popup: PopupInfo | null;
+  hoveringTrack: boolean;
+  interactive: boolean;
+  onClick: PickHandler;
+  onHover: PickHandler;
+  closePopup: () => void;
+  onPointerLeave: () => void;
+}
+export const useMapPopupState: ({ mapRef, tracks, }: {
+  mapRef: React.RefObject<MapRef | null>;
+  tracks: MapTrack[];
+}) => MapPopupState;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useMapScene.ts
+export const useMapScene: () => MapScene;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useMapTracks.ts
+export const useMapTracks: (gpsData: SessionGPS[] | null) => MapTrack[];
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useOpenedSessionEffect.ts
+export const useOpenedSessionEffect: (sessionId: string | null) => void;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/usePickLayers.ts
+export const usePickLayers: (terrain: boolean) => PickLayers;
 ```
 
 ```ts
@@ -73,6 +151,16 @@ export const useSegmentLayers: () => LayersList;
 // apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts
 export type SegmentMapMode = 'off' | 'tab' | 'page';
 export const useSegmentMapTracks: () => SegmentMapTracks;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useStudioMapTracks.ts
+export const useStudioMapTracks: () => StudioMapTracks;
+```
+
+```ts
+// apps/web/src/components/mapBackground/hooks/useStudioRouteLayer.ts
+export const useStudioRouteLayer: (eventHandlers: DeckEventHandlers) => Layer | null;
 ```
 
 ```ts
@@ -90,6 +178,30 @@ export const useTrackLayers: ({ tracks, eventHandlers, }: {
   tracks: MapTrack[];
   eventHandlers: DeckEventHandlers;
 }) => LayersList | null;
+```
+
+```ts
+// apps/web/src/components/mapBackground/index.tsx
+export const MapBackground: FC;
+```
+
+```ts
+// apps/web/src/components/mapBackground/lapPath.ts
+export const dimmedColor: (color: Color | Color[], factor: number) => Color | Color[];
+export const nearestRecordIndex: ({ detail, coordinate, }: {
+  detail: DetailPath;
+  coordinate: [number, number];
+}) => number | undefined;
+export const lapVertexBounds: ({ detailPath, span, }: {
+  detailPath: DetailPath;
+  span: RecordSpan;
+}) => {
+  first: number;
+  last: number;
+} | null;
+export const lapVertexBreaks: ({ detailPath, spans, }: { detailPath: DetailPath; spans: LapSpan[]; }) => number[];
+export const lapSubPath: ({ detail, span, }: { detail: DetailPath; span: RecordSpan; }) => DetailPath | null;
+export const pathBounds: (path: [number, number][]) => GPSBounds | null;
 ```
 
 ```ts
@@ -139,13 +251,90 @@ export const sessionMinZoom: ({ fitZoom, currentZoom, }: { fitZoom: number; curr
 ```
 
 ```ts
+// apps/web/src/components/mapBackground/mapPadding.ts
+export const MAP_FIT_MARGIN: 80;
+export const MAP_CONTROLS_HEIGHT: 44;
+export const MAP_CONTROLS_BOTTOM: 40;
+export const mapPadding: (margin: number, options?: MapPaddingOptions) => MapPadding;
+```
+
+```ts
+// apps/web/src/components/mapBackground/mapScene.ts
+export type MapScene =
+  | { kind: 'overview'; key: string }
+  | { kind: 'trip'; key: string; sessionIds: string[] }
+  | { kind: 'session'; key: string; sessionId: string }
+  | { kind: 'segmentTab'; key: string }
+  | { kind: 'segmentPage'; key: string; segmentId: string }
+  | { kind: 'studioTab'; key: string }
+  | { kind: 'studioRoute'; key: string; routeId: string };
+export type MapSceneKind = MapScene['kind'];
+export interface MapSceneRoute {
+  path: string;
+  sessionId: string | undefined;
+  tripSessionIds: string[] | undefined;
+  segmentId: string | undefined;
+  studioRouteId: string | undefined;
+  segmentTab: boolean;
+  studioTab: boolean;
+}
+export const mapSceneOf: (route: MapSceneRoute) => MapScene;
+export const sceneSessionId: (scene: MapScene) => string | null;
+export const sceneSegmentId: (scene: MapScene) => string | null;
+export const sceneStudioRouteId: (scene: MapScene) => string | null;
+export const sceneTripSessionIds: (scene: MapScene) => string[];
+export const sceneHoveredId: ({ hover, sceneKey, kind, }: {
+  hover: MapHover | null;
+  sceneKey: string;
+  kind: MapHoverKind;
+}) => string | null;
+export const sceneHoveredSpan: ({ hover, sceneKey, }: { hover: MapHover | null; sceneKey: string; }) => RecordSpan | null;
+```
+
+```ts
+// apps/web/src/components/mapBackground/trackColors.ts
+export const ADDITIVE_BLEND: {
+  readonly blendColorSrcFactor: "src-alpha";
+  readonly blendColorDstFactor: "one";
+  readonly blendColorOperation: "add";
+  readonly blendAlphaSrcFactor: "one";
+  readonly blendAlphaDstFactor: "one";
+  readonly blendAlphaOperation: "add";
+};
+export const trackModifiers: {
+  width: { default: number; highlighted: number; };
+  alpha: { default: number; highlighted: number; };
+};
+export const HOVER_MARKER_RADIUS_PX: 12;
+export const HOVER_MARKER_RING_WIDTH_PX: 4;
+export const HOVER_MARKER_RING_COLOR: [number, number, number, number];
+export const HOVER_MARKER_FILL_COLOR: [number, number, number, number];
+export const LAP_DIMMED_BRIGHTNESS: 0.8;
+export const LAP_CASING_SCALE: 1.6;
+export const ALPHA_BY_TRACK_INTENSITY: Record<TrackIntensity, number>;
+export const studioRouteModifiers: { width: { default: number; highlighted: number; }; alpha: { default: number; hidden: number; }; };
+export const TRACK_COLOR_BY_SPORT: Record<Sport, [number, number, number]>;
+export const BEST_MARKER_COLOR: [number, number, number];
+export const geoAccuracyFill: [number, number, number, number];
+export const geoAccuracyLine: [number, number, number, number];
+export const geoDotFill: [number, number, number, number];
+export const geoDotLine: [number, number, number, number];
+export const HIGHLIGHT_TRANSITIONS: { getWidth: number; getColor: number; };
+```
+
+```ts
 // apps/web/src/components/segments/BestCrown.tsx
 export const BestCrown: FC<BestCrownProps>;
 ```
 
 ```ts
-// apps/web/src/components/segments/PassGapSpark.tsx
-export const PassGapSpark: FC<PassGapSparkProps>;
+// apps/web/src/components/segments/BestHighlight.tsx
+export const BestHighlight: FC<BestHighlightProps>;
+```
+
+```ts
+// apps/web/src/components/segments/DeleteSegmentDialog.tsx
+export const DeleteSegmentDialog: FC<DeleteSegmentDialogProps>;
 ```
 
 ```ts
@@ -154,13 +343,33 @@ export const PassItem: FC<PassItemProps>;
 ```
 
 ```ts
-// apps/web/src/components/segments/PassScatter.tsx
-export const PassScatter: FC<PassScatterProps>;
+// apps/web/src/components/segments/PassStrip.tsx
+export const PassStrip: FC<PassStripProps>;
 ```
 
 ```ts
-// apps/web/src/components/segments/PassTimesRow.tsx
-export const PassTimesRow: FC<PassTimesRowProps>;
+// apps/web/src/components/segments/PassStripSkeleton.tsx
+export const PassStripSkeleton: FC;
+```
+
+```ts
+// apps/web/src/components/segments/PassTile.tsx
+export const PassTile: FC<PassTileProps>;
+```
+
+```ts
+// apps/web/src/components/segments/ReferenceSegmentDialog.tsx
+export const ReferenceSegmentDialog: FC<ReferenceSegmentDialogProps>;
+```
+
+```ts
+// apps/web/src/components/segments/SaveSegmentPill.tsx
+export const SaveSegmentPill: FC<SaveSegmentPillProps>;
+```
+
+```ts
+// apps/web/src/components/segments/SegmentActionsMenu.tsx
+export const SegmentActionsMenu: FC<SegmentActionsMenuProps>;
 ```
 
 ```ts
@@ -179,8 +388,28 @@ export const SegmentItem: FC<SegmentItemProps>;
 ```
 
 ```ts
+// apps/web/src/components/segments/SegmentItemSkeleton.tsx
+export const SegmentItemSkeleton: FC;
+```
+
+```ts
+// apps/web/src/components/segments/SegmentNameDialog.tsx
+export const SegmentNameDialog: FC<SegmentNameDialogProps>;
+```
+
+```ts
+// apps/web/src/components/segments/SegmentPassesNote.tsx
+export const SegmentPassesNote: FC;
+```
+
+```ts
 // apps/web/src/components/segments/SegmentPeek.tsx
 export const SegmentPeek: FC<SegmentPeekProps>;
+```
+
+```ts
+// apps/web/src/components/segments/SegmentsEmpty.tsx
+export const SegmentsEmpty: FC;
 ```
 
 ```ts
@@ -189,13 +418,23 @@ export const SegmentsTab: FC;
 ```
 
 ```ts
+// apps/web/src/components/segments/charts/SegmentChannelChart.tsx
+export const SegmentChannelChart: FC<SegmentChannelChartProps>;
+```
+
+```ts
+// apps/web/src/components/segments/charts/SegmentChannelRail.tsx
+export const SegmentChannelRail: FC<SegmentChannelRailProps>;
+```
+
+```ts
 // apps/web/src/components/segments/charts/SegmentChartsExplorer.tsx
 export const SegmentChartsExplorer: FC<SegmentChartsExplorerProps>;
 ```
 
 ```ts
-// apps/web/src/components/segments/charts/SegmentExplorerLegend.tsx
-export const SegmentExplorerLegend: FC<SegmentExplorerLegendProps>;
+// apps/web/src/components/segments/charts/SegmentExplorerFrame.tsx
+export const SegmentExplorerFrame: FC<SegmentExplorerFrameProps>;
 ```
 
 ```ts
@@ -207,10 +446,22 @@ export interface SegmentChartSeries {
   loading: boolean;
 }
 export const useSegmentChartRows: ({ segment, selected, best, }: {
-  segment: Segment;
+  segment: MatchedSegment;
   selected: StoredSegmentPass | undefined;
   best: StoredSegmentPass | undefined;
 }) => SegmentChartSeries;
+```
+
+```ts
+// apps/web/src/components/segments/charts/segmentChannels.ts
+export interface ChannelRest {
+  header: string;
+  value: string;
+  secondary?: string;
+}
+export const SPEC_BY_SEGMENT_CHANNEL: Record<"hr" | "power" | "speed" | "pace" | "gap" | "elevation" | "grade" | "cadence", ChannelSpec>;
+export const channelIcon: ({ channel, sport, }: { channel: SegmentChannel; sport: Sport; }) => LucideIcon;
+export const channelUnit: ({ channel, sport, }: { channel: SegmentChannel; sport: Sport; }) => string;
 ```
 
 ```ts
@@ -248,31 +499,69 @@ export const segmentChartRows: ({ selected, best, channel, }: {
 ```
 
 ```ts
-// apps/web/src/components/segments/hooks/useFilteredSegments.ts
-export const useFilteredSegments: (options?: { enabled?: boolean; }) => SegmentsState;
+// apps/web/src/components/segments/charts/segmentExplorerHover.ts
+export const SEGMENT_HOVER_GROUP: "segment-detail";
+export const SECONDS_PER_MINUTE: 60;
+export const hoverSegmentExplorer: ({ elapsedSec, selected, best, }: {
+  elapsedSec: number | null;
+  selected: PassSeries;
+  best: PassSeries | undefined;
+}) => void;
 ```
 
 ```ts
-// apps/web/src/components/segments/hooks/useScatterWindow.ts
-export interface ScatterWindow {
-  windowSessionIds: Set<string> | null;
-  reportVisible: (sessionIds: Set<string> | null) => void;
+// apps/web/src/components/segments/hooks/useClearPassFocusEffect.ts
+export const useClearPassFocusEffect: () => void;
+```
+
+```ts
+// apps/web/src/components/segments/hooks/useFilteredSegments.ts
+export const useFilteredSegments: (options?: { enabled?: boolean; }) => MatchedSegment[] | undefined;
+```
+
+```ts
+// apps/web/src/components/segments/hooks/useListExpansion.ts
+export interface ListExpansion {
+  expanded: boolean;
+  toggle: () => void;
+  toggleRef: RefObject<HTMLButtonElement | null>;
 }
-export const useScatterWindow: (segment: Segment) => ScatterWindow;
+export const useListExpansion: () => ListExpansion;
+```
+
+```ts
+// apps/web/src/components/segments/hooks/useReferenceSegmentMenuEntry.ts
+export const useReferenceSegmentMenuEntry: (session: TrainingSession) => ReferenceSegmentMenuEntry;
+```
+
+```ts
+// apps/web/src/components/segments/hooks/useSaveSegment.ts
+export const useSaveSegment: () => SaveSegment;
+```
+
+```ts
+// apps/web/src/components/segments/hooks/useSegmentDetail.ts
+export const useSegmentDetail: (segmentId: string | undefined) => SegmentDetailState;
 ```
 
 ```ts
 // apps/web/src/components/segments/hooks/useSegmentPassSelection.ts
-export const useSegmentPassSelection: (segment: Segment) => [string, (sessionId: string) => void];
+export const useSegmentPassSelection: (segment: MatchedSegment) => [string | null, (sessionId: string) => void];
+```
+
+```ts
+// apps/web/src/components/segments/hooks/useSegmentTitle.ts
+export const useSegmentTitle: (segment: Segment | MatchedSegment) => SegmentTitle;
 ```
 
 ```ts
 // apps/web/src/components/segments/hooks/useSegments.ts
-export interface SegmentsState {
-  segments: Segment[] | undefined;
-  updating: boolean;
-}
-export const useSegments: (options?: { enabled?: boolean; }) => SegmentsState;
+export const useSegments: (options?: { enabled?: boolean; }) => MatchedSegment[] | undefined;
+```
+
+```ts
+// apps/web/src/components/segments/hooks/useSessionReferenceSegment.ts
+export const useSessionReferenceSegment: (session: TrainingSession) => SessionReferenceSegment;
 ```
 
 ```ts
@@ -281,48 +570,148 @@ export const useSessionSegments: (sessionId: string) => SessionSegment[] | undef
 ```
 
 ```ts
+// apps/web/src/components/segments/hooks/useSimilarSegment.ts
+export const useSimilarSegment: (segment: Segment | null) => Segment | undefined;
+```
+
+```ts
 // apps/web/src/components/segments/index.tsx
 export const Segments: FC;
 ```
 
 ```ts
+// apps/web/src/components/segments/segmentCreation.ts
+export const suggestedSegmentName: ({ session, kind, startMeters, endMeters, }: {
+  session: TrainingSession;
+  kind: SegmentSourceKind;
+  startMeters: number;
+  endMeters: number;
+}) => string;
+export const segmentDraft: ({ session, records, span, kind, }: {
+  session: TrainingSession;
+  records: SessionRecord[];
+  span: RecordSpan;
+  kind: SegmentSourceKind;
+}) => Segment | null;
+export const similarSegment: ({ segment, segments, }: { segment: Segment; segments: Segment[]; }) => Segment | undefined;
+```
+
+```ts
+// apps/web/src/components/segments/segmentFacts.ts
+export const segmentFacts: (segment: Pick<Segment, "distanceMeters" | "netElevationMeters">) => string[];
+export const segmentFactsLine: (segment: Pick<Segment, "sport" | "distanceMeters" | "netElevationMeters">) => string;
+```
+
+```ts
 // apps/web/src/components/segments/segmentFilter.ts
-export const segmentsInFilter: ({ segments, sessionsById, criteria, now, }: {
-  segments: Segment[];
+export const segmentInFilter: ({ segment, sessionsById, criteria, now, keptSessionId, }: {
+  segment: MatchedSegment;
   sessionsById: Map<string, TrainingSession>;
   criteria: FilterCriteria | null;
   now: number;
-}) => Segment[];
-export const representedSessionIds: (segments: Segment[]) => Set<string>;
+  keptSessionId: string | null;
+}) => MatchedSegment;
+export const segmentsInFilter: ({ segments, sessionsById, criteria, now, }: {
+  segments: MatchedSegment[];
+  sessionsById: Map<string, TrainingSession>;
+  criteria: FilterCriteria | null;
+  now: number;
+}) => MatchedSegment[];
 ```
 
 ```ts
 // apps/web/src/components/segments/segmentPasses.ts
-export const SCATTER_WINDOW_PASSES: 10;
-export const bestPassOf: (segment: Segment) => StoredSegmentPass | undefined;
-export const latestPassOf: (segment: Segment) => StoredSegmentPass | undefined;
-export const passesFastestFirst: (segment: Segment) => StoredSegmentPass[];
-export const passesByDate: (segment: Segment) => StoredSegmentPass[];
-export const rollingMedianSec: (passesInDateOrder: StoredSegmentPass[]) => Array<number | null>;
-export const passRank: ({ segment, sessionId, }: { segment: Segment; sessionId: string; }) => number | undefined;
-export const latestWindowSessionIds: (segment: Segment) => Set<string> | null;
-export const gapSeriesSec: ({ pass, best, }: { pass: StoredSegmentPass; best: StoredSegmentPass; }) => number[];
-export const passPositionAt: ({ segment, pass, elapsedSec, }: {
-  segment: Segment;
-  pass: StoredSegmentPass;
-  elapsedSec: number;
-}) => [number, number] | null;
+export const bestPassOf: (segment: MatchedSegment) => StoredSegmentPass | undefined;
+export const latestPassOf: (segment: MatchedSegment) => StoredSegmentPass | undefined;
+export interface PassYear {
+  year: number;
+  passes: StoredSegmentPass[];
+}
+export const passesByYear: (passes: StoredSegmentPass[]) => PassYear[];
+export const passDotScale: (passes: StoredSegmentPass[]) => ((durationSec: number) => PlotStripPosition);
+export const passRank: ({ segment, sessionId, }: { segment: MatchedSegment; sessionId: string; }) => number | undefined;
 export interface SessionSegment {
-  segment: Segment;
+  segment: MatchedSegment;
   pass: StoredSegmentPass;
   rank: number;
 }
-export const sessionSegmentsInRideOrder: ({ segments, sessionId, }: { segments: Segment[]; sessionId: string; }) => SessionSegment[];
+export const sessionSegmentsInRideOrder: ({ segments, sessionId, }: { segments: MatchedSegment[]; sessionId: string; }) => SessionSegment[];
+export const unmatchedSegment: (segment: Segment) => MatchedSegment;
+export const matchedSegment: ({ segment, entry, }: { segment: Segment; entry: SegmentPassesEntry; }) => MatchedSegment;
+export const withPasses: ({ segment, passes, }: { segment: MatchedSegment; passes: StoredSegmentPass[]; }) => MatchedSegment;
+export const byLastRidden: (a: MatchedSegment, b: MatchedSegment) => number;
 ```
 
 ```ts
-// apps/web/src/components/segments/segmentTypeIcons.ts
-export const ICON_BY_SEGMENT_TYPE: Record<SegmentType, LucideIcon>;
+// apps/web/src/components/segments/segmentsSnackbars.ts
+export const SEGMENTS_SNACKBARS: SnackbarMap;
+```
+
+```ts
+// apps/web/src/components/segments/types.ts
+export interface MatchedSegment extends Segment {
+  geometry: Array<[number, number]>;
+  passes: StoredSegmentPass[];
+  lastPassDate: number | null;
+}
+```
+
+```ts
+// apps/web/src/components/sessions/SessionItem.tsx
+export const SessionItem: FC<SessionItemProps>;
+```
+
+```ts
+// apps/web/src/components/sessions/SessionList.tsx
+export const SessionList: FC;
+```
+
+```ts
+// apps/web/src/components/sessions/charts/SessionChartsExplorer.tsx
+export const SessionChartsExplorer: FC<SessionChartsExplorerProps>;
+```
+
+```ts
+// apps/web/src/components/sessions/charts/railRange.ts
+export interface RangeStats {
+  avgHr: number | undefined;
+  maxHr: number | undefined;
+  avgPower: number | undefined;
+  normalizedPower: number | undefined;
+  avgSpeed: number | undefined;
+  maxSpeed: number | undefined;
+  avgCadence: number | undefined;
+  maxCadence: number | undefined;
+  elevationGain: number | undefined;
+  elevationLoss: number | undefined;
+  maxGrade: number | undefined;
+  minGrade: number | undefined;
+  avgGrade: number | undefined;
+  avgPaceSecPerKm: number | undefined;
+  bestPaceSecPerKm: number | undefined;
+  gapSecPerKm: number | undefined;
+  vam: number | undefined;
+}
+export const activeRailRange: ({ zoomRange, selectedLap, }: {
+  zoomRange: RailRange | null;
+  selectedLap: LapBand | undefined;
+}) => RailRange | null;
+export const recordSpanOfMinutes: ({ records, range, }: { records: SessionRecord[]; range: RailRange; }) => RecordSpan | null;
+export const computeRangeStats: ({ records, range, terrain, }: {
+  records: SessionRecord[];
+  range: RailRange;
+  terrain: SessionTerrain;
+}) => RangeStats;
+```
+
+```ts
+// apps/web/src/components/sessions/session/DeleteSessionDialog.tsx
+export const DeleteSessionDialog: FC<DeleteSessionDialogProps>;
+```
+
+```ts
+// apps/web/src/components/sessions/session/SegmentRideRail.tsx
+export const SegmentRideRail: FC<SegmentRideRailProps>;
 ```
 
 ```ts
@@ -331,13 +720,44 @@ export const SegmentsRow: FC<SegmentsRowProps>;
 ```
 
 ```ts
+// apps/web/src/components/sessions/session/SessionActionsMenu.tsx
+export const SessionActionsMenu: FC<SessionActionsMenuProps>;
+```
+
+```ts
+// apps/web/src/components/sessions/session/SessionSegmentItem.tsx
+export const SessionSegmentItem: FC<SessionSegmentItemProps>;
+```
+
+```ts
+// apps/web/src/components/sessions/session/SessionSegmentList.tsx
+export const COLLAPSED_SESSION_SEGMENTS: 5;
+export const SessionSegmentList: FC<SessionSegmentListProps>;
+```
+
+```ts
 // apps/web/src/components/sessions/session/SessionSummaryCard.tsx
 export const SessionSummaryCard: FC<SessionSummaryCardProps>;
 ```
 
 ```ts
+// apps/web/src/components/sessions/session/hooks/useSessionLapsEffect.ts
+export const useSessionLapsEffect: ({ records, laps, }: { records: SessionRecord[]; laps: SessionLap[]; }) => void;
+```
+
+```ts
 // apps/web/src/components/settings/deleteAllData.ts
 export const clearAllAppState: (queryClient: QueryClient) => void;
+```
+
+```ts
+// apps/web/src/components/studio/StudioRouteItem.tsx
+export const StudioRouteItem: FC<StudioRouteItemProps>;
+```
+
+```ts
+// apps/web/src/components/trips/index.tsx
+export const Trips: FC;
 ```
 
 ```ts
@@ -428,18 +848,27 @@ export const summarizeLaps: (set: LapSet) => LapSummary;
 ```
 
 ```ts
-// apps/web/src/lib/analysis/segmentDetection.ts
-export const segmentsSessionsKey: (sessions: SegmentSessionMeta[]) => string;
-export const segmentDetectionInputs: (sessions: TrainingSession[]) => SegmentDetectionInput[];
-export const numberedByRecency: (segments: Segment[]) => Segment[];
-export interface SportDetection {
-  entry: StoredSegments;
-  metrics: SportDetectionMetrics;
-}
-export const detectSegmentsForSport: ({ ignoreCache, clockMs, ...input }: SegmentDetectionInput & {
-  ignoreCache?: boolean;
+// apps/web/src/lib/analysis/segmentMatching.ts
+export const segmentMatchSessions: (sessions: TrainingSession[]) => SegmentSessionMeta[];
+export const sessionsKeyBySport: (sessions: SegmentSessionMeta[]) => Record<Sport, string>;
+export const matchSegment: ({ segment, sessions, gpsBySessionId, records, ignoreCache, clockMs, }: MatchRun & {
+  ignoreCache: boolean;
   clockMs?: ClockMs;
-}) => Promise<SportDetection>;
+}) => Promise<SegmentMatch>;
+```
+
+```ts
+// apps/web/src/lib/debug/pvDebug.ts
+export const registerPvDebug: () => void;
+```
+
+```ts
+// apps/web/src/lib/debug/segmentMetrics.ts
+export const SEGMENT_DEBUG_FLAG_KEY: "pv:debug:segments";
+export type SegmentDebugMode = 'off' | 'log' | 'cold';
+export const segmentDebugMode: () => SegmentDebugMode;
+export const latestSegmentMetrics: () => SegmentMatchingMetrics | null;
+export const reportSegmentMetrics: (metrics: SegmentMatchingMetrics) => void;
 ```
 
 ```ts
@@ -448,14 +877,13 @@ export type DateFormatMode =
   | 'date'
   | 'date-time'
   | 'short'
+  | 'day-month'
+  | 'year'
   | 'numeric-day'
   | 'numeric-month'
   | 'month-year'
-  | 'hour-minute'
-  | 'day-month'
-  | 'day-month-two-digit-year';
+  | 'hour-minute';
 export const formatDate: (value: number | Date, mode?: DateFormatMode) => string;
-export const formatShortDate: ({ value, now }: { value: number; now: number; }) => string;
 export type DateRangeFormatMode =
   | 'day-month'
   | 'day-month-year'
@@ -486,7 +914,7 @@ export const formatUnit: (value: number, mode: UnitFormatMode) => string;
 export const formatUnitRange: (from: number, to: number, mode: UnitFormatMode) => string;
 export const formatMonthName: (date: Date, options: { locale: MonthNameLocale; width: MonthNameWidth; }) => string;
 export const formatPlural: (count: number, forms: { one: () => string; other: () => string; }) => string;
-export const formatOrdinal: (value: number) => string;
+export const formatList: (values: string[]) => string;
 export const formatBytes: (bytes: number) => string;
 export const toDateString: (timestamp: number) => string;
 export const formatDuration: (seconds: number) => string;
@@ -503,17 +931,6 @@ export const parseTimeHMS: (input: string) => number | undefined;
 export const pbLabel: (pb: PersonalBest) => string;
 export const formatPBValue: (pb: PersonalBest) => string;
 export const formatSubSport: (subSport: string) => string;
-```
-
-```ts
-// apps/web/src/lib/hooks/useDragScroll.ts
-export interface DragScroll {
-  onPointerDown: (event: PointerEvent<HTMLElement>) => void;
-  onPointerMove: (event: PointerEvent<HTMLElement>) => void;
-  onPointerUp: () => void;
-  dragged: RefObject<boolean>;
-}
-export const useDragScroll: () => DragScroll;
 ```
 
 ```ts
@@ -544,7 +961,7 @@ export interface EnduranceTrackerDB extends DBSchema {
     key: string;
     value: { routeId: string; points: RoutePoint[] };
   };
-  segments: {
+  'segment-passes': {
     key: string;
     value: unknown;
   };
@@ -563,8 +980,9 @@ export const clearAllRecords: () => Promise<void>;
 export const saveStudioRoutePoints: ({ routeId, points, }: { routeId: string; points: RoutePoint[]; }) => Promise<void>;
 export const getStudioRoutePoints: (routeId: string) => Promise<RoutePoint[]>;
 export const deleteStudioRoutePoints: (routeId: string) => Promise<void>;
-export const getStoredSegments: () => Promise<StoredSegments[]>;
-export const saveStoredSegments: (entry: StoredSegments) => Promise<void>;
+export const getSegmentPassesEntry: (segmentId: string) => Promise<SegmentPassesEntry | undefined>;
+export const saveSegmentPassesEntry: (entry: SegmentPassesEntry) => Promise<void>;
+export const deleteSegmentPassesEntries: (segmentIds: string[]) => Promise<void>;
 export const getSessionLaps: (sessionId: string) => Promise<SessionLap[]>;
 export const deleteSessionLaps: (sessionId: string) => Promise<void>;
 export const saveSessionGPS: (gps: SessionGPS) => Promise<void>;
@@ -607,7 +1025,7 @@ export const breakdownStorage: ({ storeBytes, totalBytes, }: {
 
 ```ts
 // apps/web/src/lib/workers/segmentsContract.ts
-export const SEGMENT_DETECTOR_VERSION: 1;
+export const SEGMENT_MATCHER_VERSION: 1;
 export const segmentSessionMetaSchema: z.ZodObject<{
   sessionId: z.ZodString;
   sport: z.ZodEnum<{ [x: string]: any; }>;
@@ -621,92 +1039,87 @@ export const storedSegmentPassSchema: z.ZodObject<{
   startTimestampSec: z.ZodNumber;
   endTimestampSec: z.ZodNumber;
   durationSec: z.ZodNumber;
-  splitDurationsSec: z.ZodArray<z.ZodNumber>;
   coverageRatio: z.ZodNumber;
 }, z.core.$strip>;
 export type StoredSegmentPass = z.infer<typeof storedSegmentPassSchema>;
-export const segmentSchema: z.ZodObject<{
-  id: z.ZodString;
-  sport: z.ZodEnum<{ [x: string]: any; }>;
-  type: z.ZodEnum<{ climb: "climb"; flat: "flat"; descent: "descent"; route: "route"; }>;
-  typeNumber: z.ZodNumber;
-  distanceMeters: z.ZodNumber;
-  netElevationMeters: z.ZodNullable<z.ZodNumber>;
-  geometry: z.ZodArray<z.ZodTuple<[z.ZodNumber, z.ZodNumber], null>>;
-  passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; durationSec: z.ZodNumber; splitDurationsSec: z.ZodArray<z.ZodNumber>; coverageRatio: z.ZodNumber; }, z.core.$strip>>;
-  lastPassDate: z.ZodNumber;
+export const segmentPassesEntrySchema: z.ZodObject<{
+  segmentId: z.ZodString;
+  matcherVersion: z.ZodNumber;
+  sourceSessionKey: z.ZodString;
+  checkedSessionKeys: z.ZodArray<z.ZodString>;
+  passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; durationSec: z.ZodNumber; coverageRatio: z.ZodNumber; }, z.core.$strip>>;
 }, z.core.$strip>;
-export type Segment = z.infer<typeof segmentSchema>;
-export const storedSegmentsSchema: z.ZodObject<{
+export type SegmentPassesEntry = z.infer<typeof segmentPassesEntrySchema>;
+export const segmentMatchInputSchema: z.ZodObject<{
+  segmentId: z.ZodString;
   sport: z.ZodEnum<{ [x: string]: any; }>;
-  sessionsKey: z.ZodString;
-  detectorVersion: z.ZodNumber;
-  segments: z.ZodArray<z.ZodObject<{ id: z.ZodString; sport: z.ZodEnum<{ [x: string]: any; }>; type: z.ZodEnum<{ climb: "climb"; flat: "flat"; descent: "descent"; route: "route"; }>; typeNumber: z.ZodNumber; distanceMeters: z.ZodNumber; netElevationMeters: z.ZodNullable<z.ZodNumber>; geometry: z.ZodArray<z.ZodTuple<[z.ZodNumber, z.ZodNumber], null>>; passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; durationSec: z.ZodNumber; splitDurationsSec: z.ZodArray<z.ZodNumber>; coverageRatio: z.ZodNumber; }, z.core.$strip>>; lastPassDate: z.ZodNumber; }, z.core.$strip>>;
+  bounds: z.ZodObject<{ minLat: z.ZodNumber; maxLat: z.ZodNumber; minLng: z.ZodNumber; maxLng: z.ZodNumber; }, z.core.$strip>;
+  source: z.ZodObject<{ sessionId: z.ZodString; startSec: z.ZodNumber; endSec: z.ZodNumber; }, z.core.$strip>;
 }, z.core.$strip>;
-export type StoredSegments = z.infer<typeof storedSegmentsSchema>;
-export const segmentDetectionInputSchema: z.ZodObject<{
-  sport: z.ZodEnum<{ [x: string]: any; }>;
-  sessionsKey: z.ZodString;
-  sessions: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; sport: z.ZodEnum<{ [x: string]: any; }>; date: z.ZodNumber; derivationVersion: z.ZodNumber; }, z.core.$strip>>;
-}, z.core.$strip>;
-export type SegmentDetectionInput = z.infer<typeof segmentDetectionInputSchema>;
+export type SegmentMatchInput = z.infer<typeof segmentMatchInputSchema>;
 export const workerMessageInSchema: z.ZodObject<{
-  type: z.ZodLiteral<"detect">;
-  sports: z.ZodArray<z.ZodObject<{ sport: z.ZodEnum<{ [x: string]: any; }>; sessionsKey: z.ZodString; sessions: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; sport: z.ZodEnum<{ [x: string]: any; }>; date: z.ZodNumber; derivationVersion: z.ZodNumber; }, z.core.$strip>>; }, z.core.$strip>>;
+  type: z.ZodLiteral<"match">;
+  segments: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; sport: z.ZodEnum<{ [x: string]: any; }>; bounds: z.ZodObject<{ minLat: z.ZodNumber; maxLat: z.ZodNumber; minLng: z.ZodNumber; maxLng: z.ZodNumber; }, z.core.$strip>; source: z.ZodObject<{ sessionId: z.ZodString; startSec: z.ZodNumber; endSec: z.ZodNumber; }, z.core.$strip>; }, z.core.$strip>>;
+  sessions: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; sport: z.ZodEnum<{ [x: string]: any; }>; date: z.ZodNumber; derivationVersion: z.ZodNumber; }, z.core.$strip>>;
   ignoreCache: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strip>;
 export type WorkerMessageIn = z.infer<typeof workerMessageInSchema>;
-export const segmentEngineStatsSchema: z.ZodObject<{
-  leadsProcessed: z.ZodNumber;
-  leadsSkippedAsRoute: z.ZodNumber;
-  turnAnchors: z.ZodNumber;
-  climbAnchors: z.ZodNumber;
-  atoms: z.ZodNumber;
-  corridorMatches: z.ZodNumber;
-  candidates: z.ZodNumber;
-  droppedAsDuplicate: z.ZodNumber;
-  msByPhase: z.ZodRecord<z.ZodEnum<{ [x: string]: any; }>, z.ZodNumber>;
-}, z.core.$strip>;
-export const sportDetectionMetricsSchema: z.ZodObject<{
-  sport: z.ZodEnum<{ [x: string]: any; }>;
-  cache: z.ZodEnum<{ hit: "hit"; miss: "miss"; }>;
-  missReason: z.ZodNullable<z.ZodEnum<{ sessionsKey: "sessionsKey"; detectorVersion: "detectorVersion"; noEntry: "noEntry"; forced: "forced"; }>>;
-  sessions: z.ZodNumber;
-  sessionsWithRecords: z.ZodNumber;
-  records: z.ZodNumber;
-  tracks: z.ZodNumber;
-  resampledPoints: z.ZodNumber;
-  segmentsByType: z.ZodRecord<z.ZodEnum<{ climb: "climb"; flat: "flat"; descent: "descent"; route: "route"; }>, z.ZodNumber>;
+export const segmentMatchMetricsSchema: z.ZodObject<{
+  segmentId: z.ZodString;
+  cache: z.ZodEnum<{ hit: "hit"; partial: "partial"; miss: "miss"; }>;
+  missReason: z.ZodNullable<z.ZodEnum<{ matcherVersion: "matcherVersion"; noEntry: "noEntry"; sourceSession: "sourceSession"; forced: "forced"; }>>;
+  sessionsChecked: z.ZodNumber;
+  bboxCandidates: z.ZodNumber;
+  recordsRead: z.ZodNumber;
+  referencePoints: z.ZodNumber;
   passes: z.ZodNumber;
-  engine: z.ZodNullable<z.ZodObject<{ leadsProcessed: z.ZodNumber; leadsSkippedAsRoute: z.ZodNumber; turnAnchors: z.ZodNumber; climbAnchors: z.ZodNumber; atoms: z.ZodNumber; corridorMatches: z.ZodNumber; candidates: z.ZodNumber; droppedAsDuplicate: z.ZodNumber; msByPhase: z.ZodRecord<z.ZodEnum<{ [x: string]: any; }>, z.ZodNumber>; }, z.core.$strip>>;
-  ms: z.ZodObject<{ readRecords: z.ZodNumber; slowestSessionRead: z.ZodNumber; segmentTrack: z.ZodNumber; detectedSegments: z.ZodNumber; storedSegments: z.ZodNumber; saveCache: z.ZodNumber; total: z.ZodNumber; }, z.core.$strip>;
+  ms: z.ZodNumber;
 }, z.core.$strip>;
-export type SportDetectionMetrics = z.infer<typeof sportDetectionMetricsSchema>;
-export const segmentDetectionMetricsSchema: z.ZodObject<{
-  detectorVersion: z.ZodNumber;
+export type SegmentMatchMetrics = z.infer<typeof segmentMatchMetricsSchema>;
+export const segmentMatchingMetricsSchema: z.ZodObject<{
+  matcherVersion: z.ZodNumber;
   environment: z.ZodObject<{ hardwareConcurrency: z.ZodNullable<z.ZodNumber>; deviceMemoryGb: z.ZodNullable<z.ZodNumber>; userAgent: z.ZodString; }, z.core.$strip>;
   workerMs: z.ZodNumber;
   mainThreadMs: z.ZodNullable<z.ZodNumber>;
-  sports: z.ZodArray<z.ZodObject<{ sport: z.ZodEnum<{ [x: string]: any; }>; cache: z.ZodEnum<{ hit: "hit"; miss: "miss"; }>; missReason: z.ZodNullable<z.ZodEnum<{ sessionsKey: "sessionsKey"; detectorVersion: "detectorVersion"; noEntry: "noEntry"; forced: "forced"; }>>; sessions: z.ZodNumber; sessionsWithRecords: z.ZodNumber; records: z.ZodNumber; tracks: z.ZodNumber; resampledPoints: z.ZodNumber; segmentsByType: z.ZodRecord<z.ZodEnum<{ climb: "climb"; flat: "flat"; descent: "descent"; route: "route"; }>, z.ZodNumber>; passes: z.ZodNumber; engine: z.ZodNullable<z.ZodObject<{ leadsProcessed: z.ZodNumber; leadsSkippedAsRoute: z.ZodNumber; turnAnchors: z.ZodNumber; climbAnchors: z.ZodNumber; atoms: z.ZodNumber; corridorMatches: z.ZodNumber; candidates: z.ZodNumber; droppedAsDuplicate: z.ZodNumber; msByPhase: z.ZodRecord<z.ZodEnum<{ [x: string]: any; }>, z.ZodNumber>; }, z.core.$strip>>; ms: z.ZodObject<{ readRecords: z.ZodNumber; slowestSessionRead: z.ZodNumber; segmentTrack: z.ZodNumber; detectedSegments: z.ZodNumber; storedSegments: z.ZodNumber; saveCache: z.ZodNumber; total: z.ZodNumber; }, z.core.$strip>; }, z.core.$strip>>;
+  sessionsRead: z.ZodNumber;
+  segments: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; cache: z.ZodEnum<{ hit: "hit"; partial: "partial"; miss: "miss"; }>; missReason: z.ZodNullable<z.ZodEnum<{ matcherVersion: "matcherVersion"; noEntry: "noEntry"; sourceSession: "sourceSession"; forced: "forced"; }>>; sessionsChecked: z.ZodNumber; bboxCandidates: z.ZodNumber; recordsRead: z.ZodNumber; referencePoints: z.ZodNumber; passes: z.ZodNumber; ms: z.ZodNumber; }, z.core.$strip>>;
 }, z.core.$strip>;
-export type SegmentDetectionMetrics = z.infer<typeof segmentDetectionMetricsSchema>;
+export type SegmentMatchingMetrics = z.infer<typeof segmentMatchingMetricsSchema>;
 export const workerMessageOutSchema: z.ZodObject<{
   type: z.ZodLiteral<"done">;
-  entries: z.ZodArray<z.ZodObject<{ sport: z.ZodEnum<{ [x: string]: any; }>; sessionsKey: z.ZodString; detectorVersion: z.ZodNumber; segments: z.ZodArray<z.ZodObject<{ id: z.ZodString; sport: z.ZodEnum<{ [x: string]: any; }>; type: z.ZodEnum<{ climb: "climb"; flat: "flat"; descent: "descent"; route: "route"; }>; typeNumber: z.ZodNumber; distanceMeters: z.ZodNumber; netElevationMeters: z.ZodNullable<z.ZodNumber>; geometry: z.ZodArray<z.ZodTuple<[z.ZodNumber, z.ZodNumber], null>>; passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; durationSec: z.ZodNumber; splitDurationsSec: z.ZodArray<z.ZodNumber>; coverageRatio: z.ZodNumber; }, z.core.$strip>>; lastPassDate: z.ZodNumber; }, z.core.$strip>>; }, z.core.$strip>>;
-  metrics: z.ZodOptional<z.ZodObject<{ detectorVersion: z.ZodNumber; environment: z.ZodObject<{ hardwareConcurrency: z.ZodNullable<z.ZodNumber>; deviceMemoryGb: z.ZodNullable<z.ZodNumber>; userAgent: z.ZodString; }, z.core.$strip>; workerMs: z.ZodNumber; mainThreadMs: z.ZodNullable<z.ZodNumber>; sports: z.ZodArray<z.ZodObject<{ sport: z.ZodEnum<{ [x: string]: any; }>; cache: z.ZodEnum<{ hit: "hit"; miss: "miss"; }>; missReason: z.ZodNullable<z.ZodEnum<{ sessionsKey: "sessionsKey"; detectorVersion: "detectorVersion"; noEntry: "noEntry"; forced: "forced"; }>>; sessions: z.ZodNumber; sessionsWithRecords: z.ZodNumber; records: z.ZodNumber; tracks: z.ZodNumber; resampledPoints: z.ZodNumber; segmentsByType: z.ZodRecord<z.ZodEnum<{ climb: "climb"; flat: "flat"; descent: "descent"; route: "route"; }>, z.ZodNumber>; passes: z.ZodNumber; engine: z.ZodNullable<z.ZodObject<{ leadsProcessed: z.ZodNumber; leadsSkippedAsRoute: z.ZodNumber; turnAnchors: z.ZodNumber; climbAnchors: z.ZodNumber; atoms: z.ZodNumber; corridorMatches: z.ZodNumber; candidates: z.ZodNumber; droppedAsDuplicate: z.ZodNumber; msByPhase: z.ZodRecord<z.ZodEnum<{ [x: string]: any; }>, z.ZodNumber>; }, z.core.$strip>>; ms: z.ZodObject<{ readRecords: z.ZodNumber; slowestSessionRead: z.ZodNumber; segmentTrack: z.ZodNumber; detectedSegments: z.ZodNumber; storedSegments: z.ZodNumber; saveCache: z.ZodNumber; total: z.ZodNumber; }, z.core.$strip>; }, z.core.$strip>>; }, z.core.$strip>>;
+  entries: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; matcherVersion: z.ZodNumber; sourceSessionKey: z.ZodString; checkedSessionKeys: z.ZodArray<z.ZodString>; passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; durationSec: z.ZodNumber; coverageRatio: z.ZodNumber; }, z.core.$strip>>; }, z.core.$strip>>;
+  metrics: z.ZodOptional<z.ZodObject<{ matcherVersion: z.ZodNumber; environment: z.ZodObject<{ hardwareConcurrency: z.ZodNullable<z.ZodNumber>; deviceMemoryGb: z.ZodNullable<z.ZodNumber>; userAgent: z.ZodString; }, z.core.$strip>; workerMs: z.ZodNumber; mainThreadMs: z.ZodNullable<z.ZodNumber>; sessionsRead: z.ZodNumber; segments: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; cache: z.ZodEnum<{ hit: "hit"; partial: "partial"; miss: "miss"; }>; missReason: z.ZodNullable<z.ZodEnum<{ matcherVersion: "matcherVersion"; noEntry: "noEntry"; sourceSession: "sourceSession"; forced: "forced"; }>>; sessionsChecked: z.ZodNumber; bboxCandidates: z.ZodNumber; recordsRead: z.ZodNumber; referencePoints: z.ZodNumber; passes: z.ZodNumber; ms: z.ZodNumber; }, z.core.$strip>>; }, z.core.$strip>>;
 }, z.core.$strip>;
 export type WorkerMessageOut = z.infer<typeof workerMessageOutSchema>;
 ```
 
 ```ts
+// apps/web/src/main.tsx
+// no exports
+```
+
+```ts
 // apps/web/src/microcopy/segments.ts
-export const LABEL_BY_SEGMENT_TYPE: Record<SegmentType, (inputs: { number: string; }) => string>;
-export const segmentLabel: (segment: { type: SegmentType; typeNumber: number; }) => string;
 export const segmentCountLabel: (count: number) => string;
 export const passCountLabel: (count: number) => string;
-export const showMorePassesLabel: (count: number) => string;
-export const passRankLabel: ({ rank, count }: { rank: number; count: number; }) => string;
 export const showMoreSegmentsLabel: (count: number) => string;
+export const segmentRangeName: ({ name, startMeters, endMeters, }: {
+  name: string;
+  startMeters: number;
+  endMeters: number;
+}) => string;
+export const sessionSegmentsDeleteNote: (names: string[]) => string;
+export const passChipLabel: ({ date, time, best, }: { date: string; time: string; best: boolean; }) => string;
+```
+
+```ts
+// apps/web/src/mutations/segments/useDeleteSegmentMutation.ts
+export const useDeleteSegmentMutation: () => UseMutationResult<void, Error, { segmentId: string; }>;
+```
+
+```ts
+// apps/web/src/mutations/sessions/useDeleteSessionMutation.ts
+export const useDeleteSessionMutation: () => UseMutationResult<void, Error, { sessionId: string; segmentIds: string[]; }>;
 ```
 
 ```ts
@@ -715,22 +1128,33 @@ export const SegmentDetailPage: FC;
 ```
 
 ```ts
-// apps/web/src/queries/segments/useDetectedSegments.ts
-export const detectSegments: (options: {
-  sports: SegmentDetectionInput[];
+// apps/web/src/queries/segments/useSegmentPasses.ts
+export const matchSegmentPasses: (options: {
+  segments: SegmentMatchInput[];
+  sessions: SegmentSessionMeta[];
   signal: AbortSignal;
-}) => Promise<QueryResults["detectedSegments"]>;
-export const detectedSegmentsQueryKey: (options?: { sessionsKeys?: string[]; }) => string[];
-export const useDetectedSegments: (options: { enabled: boolean; }) => UseQueryResult<QueryResults["detectedSegments"]>;
-export const resetDetectedSegments: (queryClient: QueryClient) => Promise<void>;
+}) => Promise<QueryResults["segmentPasses"]>;
+export const segmentPassesQueryKey: (options?: { segmentIds?: string[]; sessionsKeys?: string[]; }) => string[];
+export const useSegmentPasses: (options: { enabled: boolean; }) => UseQueryResult<QueryResults["segmentPasses"]>;
+export const resetSegmentPasses: (queryClient: QueryClient) => Promise<void>;
 ```
 
 ```ts
-// apps/web/src/queries/segments/useStoredSegments.ts
-export const loadStoredSegments: () => Promise<QueryResults["storedSegments"]>;
-export const storedSegmentsQueryKey: () => string[];
-export const useStoredSegments: (options: { enabled: boolean; }) => UseQueryResult<QueryResults["storedSegments"]>;
-export const resetStoredSegments: (queryClient: QueryClient) => Promise<void>;
+// apps/web/src/queries/sessions/useSessionRecordSlices.ts
+export interface SessionRecordSlices<T> {
+  sliceBySessionId: Map<string, T>;
+  loading: boolean;
+}
+export const loadSessionRecordSlice: <T>({ sessionId, slice, }: {
+  sessionId: string;
+  slice: (input: { sessionId: string; records: SessionRecord[]; }) => T;
+}) => Promise<T>;
+export const sessionRecordSlicesQueryKey: (options?: { scope?: string; sessionId?: string; }) => string[];
+export const useSessionRecordSlices: <T>({ scope, sessionIds, slice, }: {
+  scope: string;
+  sessionIds: string[];
+  slice: (input: { sessionId: string; records: SessionRecord[]; }) => T;
+}) => SessionRecordSlices<T>;
 ```
 
 ```ts
@@ -794,18 +1218,58 @@ export type SupportedQuery = (typeof SUPPORTED_QUERY)[keyof typeof SUPPORTED_QUE
 ```
 
 ```ts
-// apps/web/src/store/mapControls.ts
-export const MAP_VIEWS: readonly ["2d", "3d"];
-export type MapView = (typeof MAP_VIEWS)[number];
-export const INITIAL_MAP_CONTROLS_STORE_STATE: Pick<MapControlsState, "trackColorMode" | "sessionLaps" | "selectedLapIndex" | "hoveredSegmentSpan" | "lapCloseCount" | "hoveredLapIndex" | "overviewMapControlsShown" | "sessionMapView" | "terrainTrackHovered">;
-export const useMapControlsStore: UseBoundStore<WithImmer<StoreApi<MapControlsState>>>;
+// apps/web/src/routing/useRouteMatch.ts
+export interface RouteMatch {
+  id: string | undefined;
+}
+export const useRouteMatch: (page: SupportedPage) => RouteMatch | null;
+```
+
+```ts
+// apps/web/src/store/mapFocus.ts
+export type MapHoverTarget =
+  | { kind: 'session'; id: string }
+  | { kind: 'studioRoute'; id: string }
+  | { kind: 'segment'; id: string }
+  | { kind: 'segmentSpan'; id: string; span: RecordSpan };
+export type MapHoverKind = MapHoverTarget['kind'];
+export interface MapHover {
+  target: MapHoverTarget;
+  sceneKey: string;
+}
+export const INITIAL_MAP_FOCUS_STORE_STATE: Pick<MapFocusState, "mapHover" | "hoveredPoint" | "pickCircle" | "mapRefitRequest">;
+export const useMapFocusStore: UseBoundStore<WithImmer<StoreApi<MapFocusState>>>;
 ```
 
 ```ts
 // apps/web/src/store/segmentFocus.ts
 export type MapMarker = [number, number];
-export const INITIAL_SEGMENT_FOCUS_STORE_STATE: Pick<SegmentFocusState, "hoveredSegmentId" | "hoveredPassSessionId" | "passMarker" | "bestMarker">;
+export const INITIAL_SEGMENT_FOCUS_STORE_STATE: Pick<SegmentFocusState, "passMarker" | "bestMarker">;
 export const useSegmentFocusStore: UseBoundStore<WithImmer<StoreApi<SegmentFocusState>>>;
+```
+
+```ts
+// apps/web/src/store/segments.ts
+export type SegmentSourceKind = 'range' | 'session';
+export interface SegmentSource {
+  sessionId: string;
+  kind: SegmentSourceKind;
+  startSec: number;
+  endSec: number;
+}
+export interface Segment {
+  id: string;
+  name: string;
+  sport: Sport;
+  source: SegmentSource;
+  distanceMeters: number;
+  netElevationMeters: number | null;
+  encodedPolyline: string;
+  bounds: GPSBounds;
+  createdAt: number;
+}
+export const INITIAL_SEGMENTS_STORE_STATE: Pick<SegmentsState, "segments">;
+export const useSegmentsStore: UseBoundStore<WithPersist<WithImmer<StoreApi<SegmentsState>>, unknown>>;
 ```
 
 ```ts
@@ -920,8 +1384,7 @@ export interface QueryResults {
   onboardingPreviewRoutes: PreviewPasses;
   sessionWeather: SessionWeather | null;
   personalBests: PersonalBest[];
-  storedSegments: StoredSegments[];
-  detectedSegments: StoredSegments[];
+  segmentPasses: SegmentPassesEntry[];
   intervalsKeyCheck: true;
   intervalsSync: IntervalsSyncSummary;
   studioRoutePoints: RoutePoint[];
@@ -963,12 +1426,92 @@ export interface StudioRoute {
 ```
 
 ```ts
-// apps/web/tests/components/segments/PassTimesRow.spec.tsx
+// apps/web/tests/components/mapBackground/hooks/useMapHover.integration.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/mapBackground/hooks/useMapTracks.integration.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/mapBackground/hooks/useOpenedSessionEffect.integration.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/mapBackground/lapPath.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/mapBackground/mapScene.integration.spec.tsx
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/SegmentActionsMenu.spec.tsx
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/SegmentDetail.spec.tsx
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/SegmentItem.spec.tsx
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/SegmentNameDialog.spec.tsx
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/charts/hooks/useSegmentChartRows.spec.ts
 // no exports
 ```
 
 ```ts
 // apps/web/tests/components/segments/charts/segmentChartRows.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/charts/segmentExplorerHover.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/hooks/useSaveSegment.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/hooks/useSegmentDetail.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/hooks/useSegmentPassSelection.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/hooks/useSegmentTitle.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/hooks/useSessionSegments.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/components/segments/segmentCreation.spec.ts
 // no exports
 ```
 
@@ -983,12 +1526,42 @@ export interface StudioRoute {
 ```
 
 ```ts
+// apps/web/tests/components/sessions/session/DeleteSessionDialog.spec.tsx
+// no exports
+```
+
+```ts
 // apps/web/tests/components/sessions/session/SegmentsRow.spec.tsx
 // no exports
 ```
 
 ```ts
-// apps/web/tests/lib/analysis/segmentDetection.spec.ts
+// apps/web/tests/components/sessions/session/SessionActionsMenu.spec.tsx
+// no exports
+```
+
+```ts
+// apps/web/tests/factories/segments.ts
+export const createMockStoredSegmentPass: (overrides?: Partial<StoredSegmentPass>) => StoredSegmentPass;
+export const createMockSegment: (overrides?: Partial<Segment>) => Segment;
+export const createMockMatchedSegment: (overrides?: Partial<MatchedSegment>) => MatchedSegment;
+export const createMockSegmentPassesEntry: (overrides?: Partial<SegmentPassesEntry>) => SegmentPassesEntry;
+export const createMockSegmentSessionMeta: (overrides?: Partial<SegmentSessionMeta>) => SegmentSessionMeta;
+export const createMockPassSeries: (overrides?: Partial<PassSeries>) => PassSeries;
+```
+
+```ts
+// apps/web/tests/factories/trips.ts
+export const createMockTrip: (overrides?: Partial<Trip>) => Trip;
+```
+
+```ts
+// apps/web/tests/lib/analysis/records.computePbsForSessions.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/lib/analysis/segmentMatching.spec.ts
 // no exports
 ```
 
@@ -1008,6 +1581,11 @@ export interface StudioRoute {
 ```
 
 ```ts
+// apps/web/tests/lib/workers/segmentsContract.spec.ts
+// no exports
+```
+
+```ts
 // apps/web/tests/routing/dashboardTab.spec.ts
 // no exports
 ```
@@ -1018,8 +1596,22 @@ export interface StudioRoute {
 ```
 
 ```ts
+// apps/web/tests/routing/useRouteMatch.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/store/mapFocus.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/tests/store/segments.spec.ts
+// no exports
+```
+
+```ts
 // packages/engine/src/segments.ts
-export type SegmentType = 'climb' | 'flat' | 'descent' | 'route';
 export interface SegmentTrackPoint {
   lat: number;
   lng: number;
@@ -1027,71 +1619,60 @@ export interface SegmentTrackPoint {
   timestampSec: number;
   elevationMeters: number | undefined;
 }
-export interface SegmentClimbSpan {
-  fromPoint: number;
-  toPoint: number;
-}
 export interface SegmentTrack {
   sessionId: string;
   sport: Sport;
   date: number;
   points: SegmentTrackPoint[];
-  climbSpans: SegmentClimbSpan[];
 }
+export type SegmentReferencePoint = Omit<SegmentTrackPoint, 'timestampSec'>;
 export interface SegmentPass {
   sessionId: string;
   startTimestampSec: number;
   endTimestampSec: number;
   durationSec: number;
-  splitDurationsSec: number[];
   coverageRatio: number;
 }
-export interface DetectedSegment {
-  sport: Sport;
-  type: SegmentType;
-  leadSessionId: string;
-  startMeters: number;
-  endMeters: number;
-  distanceMeters: number;
-  netElevationMeters: number | null;
-  geometry: Array<[number, number]>;
-  passes: SegmentPass[];
+export interface SegmentMatchTolerances {
+  corridorMeters: number;
+  endToleranceMeters: number;
+  minCoverageRatio: number;
 }
-export interface SegmentDetectionStats {
-  leadsProcessed: number;
-  leadsSkippedAsRoute: number;
-  turnAnchors: number;
-  climbAnchors: number;
-  atoms: number;
-  corridorMatches: number;
-  candidates: number;
-  droppedAsDuplicate: number;
-  msByPhase: Record<SegmentDetectionPhase, number>;
-}
-export interface SegmentDetectionResult {
-  segments: DetectedSegment[];
-  stats: SegmentDetectionStats;
-}
-export const SEGMENT_DETECTION_PHASES: readonly ["grid", "corridorMatch", "anchors", "typing", "dedupe"];
-export type SegmentDetectionPhase = (typeof SEGMENT_DETECTION_PHASES)[number];
-export const SEGMENT_SPLIT_COUNT: 24;
 export const segmentTrack: ({ sessionId, sport, date, records, }: {
   sessionId: string;
   sport: Sport;
   date: number;
   records: SessionRecord[];
 }) => SegmentTrack | undefined;
-export const segmentDetectionResult: ({ sport, tracks, clockMs, }: {
-  sport: Sport;
+export const segmentReference: (records: SessionRecord[]) => SegmentReferencePoint[];
+export const segmentReferenceFacts: (reference: SegmentReferencePoint[]) => SegmentReferenceFacts;
+export const matchTolerances: (lengthMeters: number) => SegmentMatchTolerances;
+export const segmentPasses: ({ reference, tracks, }: {
+  reference: SegmentReferencePoint[];
   tracks: SegmentTrack[];
-  clockMs?: () => number;
-}) => SegmentDetectionResult;
-export const detectedSegments: ({ sport, tracks, }: { sport: Sport; tracks: SegmentTrack[]; }) => DetectedSegment[];
+}) => SegmentPass[];
+```
+
+```ts
+// packages/engine/tests/metrics.ewmaAlpha.spec.ts
+// no exports
+```
+
+```ts
+// packages/engine/tests/segments.perf.spec.ts
+// no exports
 ```
 
 ```ts
 // packages/engine/tests/segments.spec.ts
 // no exports
+```
+
+```ts
+// packages/testing/src/segments.ts
+export const createMockSegmentPass: (overrides?: Partial<SegmentPass>) => SegmentPass;
+export const createMockSegmentTrack: (overrides?: Partial<SegmentTrack>) => SegmentTrack;
+export const createMockSegmentReferencePoint: (overrides?: Partial<SegmentReferencePoint>) => SegmentReferencePoint;
 ```
 
 ```ts
@@ -1130,8 +1711,49 @@ export const gpsPathRecordSeries: ({ path, speedMetersPerSec, legSpeedsMetersPer
 ```
 
 ```ts
-// packages/ui/src/components/pvCollapsibleListItem/PvCollapsibleListItem.tsx
-export const PvCollapsibleListItem: FC<PvCollapsibleListItemProps>;
+// packages/ui/src/components/pvActionItem/PvActionItem.tsx
+export type ActionItemSize = 'md' | 'sm';
+export type ActionItemRadius = 'lg' | 'xl' | '2xl';
+export const PvActionItem: FC<PvActionItemProps>;
+```
+
+```ts
+// packages/ui/src/components/pvChartsCard/PvZoomResetPill.tsx
+export const PvZoomResetPill: FC<PvZoomResetPillProps>;
+```
+
+```ts
+// packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx
+export const PvPlotStrip: FC<PvPlotStripProps>;
+```
+
+```ts
+// packages/ui/src/components/pvPlotStrip/PvPlotStripGroup.tsx
+export const PvPlotStripGroup: FC<PvPlotStripGroupProps>;
+```
+
+```ts
+// packages/ui/src/components/pvPlotStrip/PvPlotStripMarker.tsx
+export const PvPlotStripMarker: FC<PvPlotStripMarkerProps>;
+```
+
+```ts
+// packages/ui/src/components/pvPlotStrip/PvPlotStripTile.tsx
+export const PvPlotStripTile: FC<PvPlotStripTileProps>;
+```
+
+```ts
+// packages/ui/src/components/pvPlotStrip/plotStripScale.ts
+export const plotStripTopPx: (ratio: number) => number;
+```
+
+```ts
+// packages/ui/src/components/pvPlotStrip/types.ts
+export type PlotStripTone = 'neutral' | 'best';
+export interface PlotStripPosition {
+  ratio: number;
+  clamped: boolean;
+}
 ```
 
 ```ts
@@ -1158,14 +1780,8 @@ export interface StatRailNote {
 ```
 
 ```ts
-// packages/ui/src/hooks/useScrollFadeEffect.ts
-export const useScrollFadeEffect: (ref: RefObject<HTMLElement | null>, options?: { axis?: ScrollFadeAxis; }) => void;
-```
-
-```ts
-// packages/ui/src/lib/scrollFade.ts
-export const scrollFadeEdges: (metrics: ScrollMetrics) => { top: boolean; bottom: boolean; };
-export const horizontalScrollFadeEdges: (metrics: HorizontalScrollMetrics) => { left: boolean; right: boolean; };
+// packages/ui/src/hooks/useScrollToEndEffect.ts
+export const useScrollToEndEffect: ({ ref, scrollKey, }: { ref: RefObject<HTMLElement | null>; scrollKey: string; }) => void;
 ```
 
 ```ts
@@ -1271,306 +1887,42 @@ export const fontSizes: { readonly '2xs': 11; readonly '3xs': 9; };
 ```
 
 ```ts
-// packages/ui/tests/hooks/useScrollFadeEffect.spec.ts
+// packages/ui/tests/components/pvPlotStrip/PvPlotStripTile.spec.ts
 // no exports
 ```
 
 ```ts
-// packages/ui/tests/lib/scrollFade.spec.ts
+// packages/ui/tests/components/pvPlotStrip/plotStripScale.spec.ts
 // no exports
 ```
 
 ```ts
-// apps/web/src/components/layout/VirtualItemList.tsx · not planned
-export const VirtualItemList: <T>(props: VirtualItemListProps<T>) => ReactNode;
-```
-
-```ts
-// apps/web/src/components/mapBackground/hooks/useMapCameraInputs.ts · not planned
-export const useMapCameraInputs: ({ gpsData, tracks, }: { gpsData: SessionGPS[] | null; tracks: MapTrack[]; }) => MapCameraInputs;
-```
-
-```ts
-// apps/web/src/components/mapBackground/hooks/useMapInteraction.ts · not planned
-export const useMapInteraction: ({ mapRef, tracks, }: {
-  mapRef: React.RefObject<MapRef | null>;
-  tracks: MapTrack[];
-}) => MapInteraction;
-```
-
-```ts
-// apps/web/src/components/mapBackground/hooks/useSegmentsPickPopup.ts · not planned
-export interface SegmentsPickPopupInfo {
-  x: number;
-  y: number;
-  segments: Segment[];
-}
-export interface SegmentsPickPopupState {
-  popup: SegmentsPickPopupInfo | null;
-  onClick: (info: PickingInfo) => boolean;
-  close: () => void;
-}
-export const useSegmentsPickPopup: (mapRef: React.RefObject<MapRef | null>) => SegmentsPickPopupState;
-```
-
-```ts
-// apps/web/src/components/mapBackground/index.tsx · not planned
-export const MapBackground: FC;
-```
-
-```ts
-// apps/web/src/components/mapBackground/lapPath.ts · not planned
-export const dimmedColor: (color: Color | Color[], factor: number) => Color | Color[];
-export const nearestRecordIndex: ({ detail, coordinate, }: {
-  detail: DetailPath;
-  coordinate: [number, number];
-}) => number | undefined;
-export const lapVertexBounds: ({ detailPath, span, }: {
-  detailPath: DetailPath;
-  span: RecordSpan;
-}) => {
-  first: number;
-  last: number;
-} | null;
-export const lapVertexBreaks: ({ detailPath, spans, }: { detailPath: DetailPath; spans: LapSpan[]; }) => number[];
-export const lapSubPath: ({ detail, span, }: { detail: DetailPath; span: RecordSpan; }) => DetailPath | null;
-export const pathBounds: (path: [number, number][]) => GPSBounds | null;
-```
-
-```ts
-// apps/web/src/components/mapBackground/segmentBounds.ts · not planned
-export const segmentBounds: (segment: Pick<Segment, "geometry">) => GPSBounds | null;
-```
-
-```ts
-// apps/web/src/components/mapBackground/trackColors.ts · not planned
-export const ADDITIVE_BLEND: {
-  readonly blendColorSrcFactor: "src-alpha";
-  readonly blendColorDstFactor: "one";
-  readonly blendColorOperation: "add";
-  readonly blendAlphaSrcFactor: "one";
-  readonly blendAlphaDstFactor: "one";
-  readonly blendAlphaOperation: "add";
-};
-export const trackModifiers: {
-  width: { default: number; highlighted: number; };
-  alpha: { default: number; highlighted: number; };
-};
-export const LAP_DIMMED_BRIGHTNESS: 0.8;
-export const LAP_CASING_SCALE: 1.6;
-export const ALPHA_BY_TRACK_INTENSITY: Record<TrackIntensity, number>;
-export const studioRouteModifiers: { width: { default: number; highlighted: number; }; alpha: { default: number; hidden: number; }; };
-export const TRACK_COLOR_BY_SPORT: Record<Sport, [number, number, number]>;
-export const BEST_MARKER_COLOR: [number, number, number];
-export const geoAccuracyFill: [number, number, number, number];
-export const geoAccuracyLine: [number, number, number, number];
-export const geoDotFill: [number, number, number, number];
-export const geoDotLine: [number, number, number, number];
-export const HIGHLIGHT_TRANSITIONS: { getWidth: number; getColor: number; };
-```
-
-```ts
-// apps/web/src/components/mapBackground/trackPicking.ts · not planned
-export interface PickableTrack {
-  sessionId: string;
-  bounds: GPSBounds;
-  path: [number, number][];
-}
-export const PICK_RADIUS: 25;
-export const decodeCached: ({ sessionId, encoded, }: { sessionId: string; encoded: string; }) => [number, number][];
-export const pickBoundsFromCorners: (a: GeoCorner, b: GeoCorner) => GPSBounds;
-export const filterTracksByPickBounds: ({ tracks, pickBounds, }: { tracks: PickableTrack[]; pickBounds: GPSBounds; }) => string[];
-export const pickSessionsAt: ({ map, info, tracks, }: {
-  map: MapRef;
-  info: Pick<PickingInfo, "x" | "y">;
-  tracks: MapTrack[];
-}) => TrainingSession[];
-export const segmentsInPickBounds: ({ segments, pickBounds, }: { segments: Segment[]; pickBounds: GPSBounds; }) => Segment[];
-export const pickSegmentsAt: ({ map, info, segments, }: {
-  map: MapRef;
-  info: Pick<PickingInfo, "x" | "y">;
-  segments: Segment[];
-}) => Segment[];
-```
-
-```ts
-// apps/web/src/components/segments/BestHighlight.tsx · not planned
-export const BestHighlight: FC<BestHighlightProps>;
-```
-
-```ts
-// apps/web/src/components/segments/SegmentDetailSkeleton.tsx · not planned
-export const SegmentDetailSkeleton: FC;
-```
-
-```ts
-// apps/web/src/components/segments/SegmentItemSkeleton.tsx · not planned
-export const SegmentItemSkeleton: FC;
-```
-
-```ts
-// apps/web/src/components/segments/SegmentsEmpty.tsx · not planned
-export const SegmentsEmpty: FC;
-```
-
-```ts
-// apps/web/src/components/segments/SegmentsPickPopup.tsx · not planned
-export const SegmentsPickPopup: FC<SegmentsPickPopupProps>;
-```
-
-```ts
-// apps/web/src/components/segments/SegmentsUpdatingNote.tsx · not planned
-export const SegmentsUpdatingNote: FC;
-```
-
-```ts
-// apps/web/src/components/segments/charts/SegmentChannelChart.tsx · not planned
-export const SegmentChannelChart: FC<SegmentChannelChartProps>;
-```
-
-```ts
-// apps/web/src/components/segments/charts/SegmentChannelRail.tsx · not planned
-export const SegmentChannelRail: FC<SegmentChannelRailProps>;
-```
-
-```ts
-// apps/web/src/components/segments/charts/segmentChannels.ts · not planned
-export interface ChannelRest {
-  header: string;
-  value: string;
-  secondary?: string;
-}
-export const SPEC_BY_SEGMENT_CHANNEL: Record<"hr" | "power" | "speed" | "pace" | "gap" | "elevation" | "grade" | "cadence", ChannelSpec>;
-export const channelIcon: ({ channel, sport, }: { channel: SegmentChannel; sport: Sport; }) => LucideIcon;
-export const channelUnit: ({ channel, sport, }: { channel: SegmentChannel; sport: Sport; }) => string;
-```
-
-```ts
-// apps/web/src/components/segments/charts/segmentExplorerHover.ts · not planned
-export const SEGMENT_HOVER_GROUP: "segment-detail";
-export const SECONDS_PER_MINUTE: 60;
-export const hoverSegmentExplorer: ({ elapsedSec, selected, best, }: {
-  elapsedSec: number | null;
-  selected: PassSeries;
-  best: PassSeries | undefined;
-}) => void;
-```
-
-```ts
-// apps/web/src/components/segments/hooks/useListExpansion.ts · not planned
-export interface ListExpansion {
-  expanded: boolean;
-  toggle: () => void;
-  toggleRef: RefObject<HTMLButtonElement | null>;
-}
-export const useListExpansion: () => ListExpansion;
-```
-
-```ts
-// apps/web/src/components/segments/hooks/useScatterScrollEndEffect.ts · not planned
-export const useScatterScrollEndEffect: ({ ref, contentWidthPx, }: { ref: RefObject<HTMLElement | null>; contentWidthPx: number; }) => void;
-```
-
-```ts
-// apps/web/src/components/segments/segmentFacts.ts · not planned
-export const segmentFacts: (segment: Segment) => string[];
-```
-
-```ts
-// apps/web/src/components/sessions/SessionList.tsx · not planned
-export const SessionList: FC;
-```
-
-```ts
-// apps/web/src/components/sessions/session/SessionSegmentList.tsx · not planned
-export const COLLAPSED_SESSION_SEGMENTS: 5;
-export const SessionSegmentList: FC<SessionSegmentListProps>;
-```
-
-```ts
-// apps/web/src/lib/debug/pvDebug.ts · not planned
-export const registerPvDebug: () => void;
-```
-
-```ts
-// apps/web/src/lib/debug/segmentMetrics.ts · not planned
-export const SEGMENT_DEBUG_FLAG_KEY: "pv:debug:segments";
-export type SegmentDebugMode = 'off' | 'log' | 'cold';
-export const segmentDebugMode: () => SegmentDebugMode;
-export const latestSegmentMetrics: () => SegmentDetectionMetrics | null;
-export const reportSegmentMetrics: (metrics: SegmentDetectionMetrics) => void;
-```
-
-```ts
-// apps/web/src/routing/useRouteMatch.ts · not planned
-export interface RouteMatch {
-  id: string | undefined;
-}
-export const useRouteMatch: (page: SupportedPage) => RouteMatch | null;
-```
-
-```ts
-// apps/web/tests/components/mapBackground/lapPath.spec.ts · not planned
+// packages/ui/tests/components/pvStatRail/PvStatRail.spec.ts
 // no exports
 ```
 
 ```ts
-// apps/web/tests/components/mapBackground/segmentBounds.spec.ts · not planned
+// packages/ui/tests/hooks/useScrollToEndEffect.spec.ts
 // no exports
 ```
 
 ```ts
-// apps/web/tests/components/mapBackground/trackPicking.segments.spec.ts · not planned
+// packages/ui/src/hooks/useScrollFadeEffect.ts · not planned
+export const useScrollFadeEffect: (ref: RefObject<HTMLElement | null>, options?: { axis?: ScrollFadeAxis; }) => void;
+```
+
+```ts
+// packages/ui/src/lib/scrollFade.ts · not planned
+export const scrollFadeEdges: (metrics: ScrollMetrics) => { top: boolean; bottom: boolean; };
+export const horizontalScrollFadeEdges: (metrics: HorizontalScrollMetrics) => { left: boolean; right: boolean; };
+```
+
+```ts
+// packages/ui/tests/hooks/useScrollFadeEffect.spec.ts · not planned
 // no exports
 ```
 
 ```ts
-// apps/web/tests/factories/segments.ts · not planned
-export const createMockStoredSegmentPass: (overrides?: Partial<StoredSegmentPass>) => StoredSegmentPass;
-export const createMockSegment: (overrides?: Partial<Segment>) => Segment;
-export const createMockStoredSegments: (overrides?: Partial<StoredSegments>) => StoredSegments;
-export const createMockSegmentSessionMeta: (overrides?: Partial<SegmentSessionMeta>) => SegmentSessionMeta;
-```
-
-```ts
-// apps/web/tests/lib/workers/segmentsContract.spec.ts · not planned
+// packages/ui/tests/lib/scrollFade.spec.ts · not planned
 // no exports
 ```
-
-```ts
-// apps/web/tests/routing/useRouteMatch.spec.ts · not planned
-// no exports
-```
-
-```ts
-// packages/engine/tests/segments.perf.spec.ts · not planned
-// no exports
-```
-
-```ts
-// packages/testing/src/segments.ts · not planned
-export const createMockSegmentPass: (overrides?: Partial<SegmentPass>) => SegmentPass;
-export const createMockDetectedSegment: (overrides?: Partial<DetectedSegment>) => DetectedSegment;
-export const createMockSegmentTrack: (overrides?: Partial<SegmentTrack>) => SegmentTrack;
-```
-
-```ts
-// packages/ui/src/components/pvActionItem/PvActionItem.tsx · not planned
-export type ActionItemSize = 'md' | 'sm';
-export const PvActionItem: FC<PvActionItemProps>;
-```
-
-## Missing
-
-- `apps/web/src/components/segments/SegmentsListHeader.tsx`: planned, not changed
-- `apps/web/src/components/sessions/session/hooks/useSessionSegmentSelectionEffect.ts`: planned, not changed
-- `apps/web/src/routing/useRouterQuery.ts`: planned, not changed
-- `apps/web/src/components/sessions/session/ColorByControl.tsx`: planned, not changed
-- `apps/web/src/components/sessions/session/MapViewControl.tsx`: planned, not changed
-- `apps/web/src/components/mapBackground/SessionTerrain.tsx`: planned, not changed
-- `apps/web/src/components/mapBackground/hooks/useDetailLayers.ts`: planned, not changed
-- `apps/web/src/components/mapBackground/hooks/useTerrainTrackPickingEffect.ts`: planned, not changed
-- `apps/web/src/components/charts/LapBands.tsx`: planned, not changed
-- `apps/web/src/components/charts/LapBandShape.tsx`: planned, not changed
-- `apps/web/src/components/sessions/charts/hooks/useSessionRailStats.ts`: planned, not changed
-- `apps/web/tests/store/mapControls.spec.ts`: planned, not changed

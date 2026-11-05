@@ -5,7 +5,13 @@ import { mapPadding } from '@/components/mapBackground/mapPadding.ts';
 
 const GEOLOCATION_FLY_DURATION_MS = 800;
 
-export const useGeolocationCameraEffect = (mapRef: React.RefObject<MapRef | null>): void => {
+export const useGeolocationCameraEffect = ({
+  mapRef,
+  sessionControls,
+}: {
+  mapRef: React.RefObject<MapRef | null>;
+  sessionControls: boolean;
+}): void => {
   const tracking = useGeolocationStore((s) => s.tracking);
   const position = useGeolocationStore((s) => s.position);
   const flownRef = useRef(false);
@@ -23,8 +29,8 @@ export const useGeolocationCameraEffect = (mapRef: React.RefObject<MapRef | null
     mapRef.current.flyTo({
       center: position,
       zoom: 15,
-      padding: mapPadding(0),
+      padding: mapPadding(0, { sessionControls }),
       duration: GEOLOCATION_FLY_DURATION_MS,
     });
-  }, [tracking, position, mapRef]);
+  }, [tracking, position, mapRef, sessionControls]);
 };

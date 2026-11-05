@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { segmentsInFilter } from '@/components/segments/segmentFilter.ts';
+import { segmentInFilter, segmentsInFilter } from '@/components/segments/segmentFilter.ts';
 import { emptyCriteria } from '@/lib/filtering/filters.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
-import { createMockSegment, createMockStoredSegmentPass } from '@tests/factories/segments.ts';
+import {
+  createMockMatchedSegment,
+  createMockStoredSegmentPass,
+} from '@tests/factories/segments.ts';
 import { MS_PER_DAY } from '@pacevault/engine/time.ts';
 
 const NOW = Date.UTC(2026, 1, 11);
 
-const run = createMockSegment({
+const run = createMockMatchedSegment({
   id: 'run',
   sport: 'running',
   passes: [
@@ -16,7 +19,7 @@ const run = createMockSegment({
   ],
   lastPassDate: NOW - 2 * MS_PER_DAY,
 });
-const ride = createMockSegment({
+const ride = createMockMatchedSegment({
   id: 'ride',
   sport: 'cycling',
   passes: [
@@ -74,5 +77,49 @@ describe(segmentsInFilter.name, () => {
     const visible = segmentsInFilter({ segments: [run], sessionsById, criteria, now: NOW });
 
     expect(visible[0]?.passes.map((pass) => pass.sessionId)).toContain('new-run');
+  });
+});
+
+describe(segmentInFilter.name, () => {
+  const lastMonth = {
+    ...emptyCriteria(),
+    time: { kind: 'relative' as const, amount: 30, unit: 'day' as const },
+  };
+
+  it('keeps only passes inside the filter', () => {
+    const visible = segmentInFilter({
+      segment: run,
+      sessionsById,
+      criteria: lastMonth,
+      now: NOW,
+      keptSessionId: null,
+    });
+
+    expect(visible.passes.map((pass) => pass.sessionId)).toEqual(['new-run']);
+  });
+
+  it('keeps the pass of the kept session although the filter excludes it', () => {
+    const visible = segmentInFilter({
+      segment: run,
+      sessionsById,
+      criteria: lastMonth,
+      now: NOW,
+      keptSessionId: 'old-run',
+    });
+
+    expect(visible.passes.map((pass) => pass.sessionId)).toEqual(['old-run', 'new-run']);
+  });
+
+  it('leaves a segment without passes when none is inside the filter', () => {
+    const visible = segmentInFilter({
+      segment: ride,
+      sessionsById,
+      criteria: lastMonth,
+      now: NOW,
+      keptSessionId: null,
+    });
+
+    expect(visible.passes).toEqual([]);
+    expect(visible.lastPassDate).toBe(null);
   });
 });

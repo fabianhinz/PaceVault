@@ -1,14 +1,16 @@
-import { detectSegmentsForSport } from '@/lib/analysis/segmentDetection.ts';
+import type { SessionGPS, SessionRecord } from '@pacevault/engine/types.ts';
+import { getAllSessionGPS } from '@/lib/storage/db.ts';
+import { matchSegment } from '@/lib/analysis/segmentMatching.ts';
 import {
-  SEGMENT_DETECTOR_VERSION,
+  SEGMENT_MATCHER_VERSION,
   workerMessageInSchema,
-  type SegmentDetectionMetrics,
-  type SportDetectionMetrics,
-  type StoredSegments,
+  type SegmentMatchingMetrics,
+  type SegmentMatchMetrics,
+  type SegmentPassesEntry,
   type WorkerMessageOut,
 } from './segmentsContract.ts';
 
-const environment = (): SegmentDetectionMetrics['environment'] => {
+const environment = (): SegmentMatchingMetrics['environment'] => {
   let deviceMemoryGb: number | null = null;
   if ('deviceMemory' in navigator && typeof navigator.deviceMemory === 'number') {
     deviceMemoryGb = navigator.deviceMemory;
@@ -20,25 +22,39 @@ const environment = (): SegmentDetectionMetrics['environment'] => {
   };
 };
 
+const gpsBySessionIdOf = async (): Promise<Map<string, SessionGPS>> => {
+  const all = await getAllSessionGPS().catch((): SessionGPS[] => []);
+  return new Map(all.map((gps) => [gps.sessionId, gps]));
+};
+
 self.onmessage = async (event: MessageEvent<unknown>) => {
   const startMs = performance.now();
   const parsed = workerMessageInSchema.safeParse(event.data);
-  const entries: StoredSegments[] = [];
-  const sports: SportDetectionMetrics[] = [];
-  if (parsed.success) {
+  const entries: SegmentPassesEntry[] = [];
+  const segments: SegmentMatchMetrics[] = [];
+  const records = new Map<string, SessionRecord[]>();
+  if (parsed.success && parsed.data.segments.length > 0) {
+    const gpsBySessionId = await gpsBySessionIdOf();
     const ignoreCache = parsed.data.ignoreCache === true;
-    for (const input of parsed.data.sports) {
-      const detection = await detectSegmentsForSport({ ...input, ignoreCache });
-      entries.push(detection.entry);
-      sports.push(detection.metrics);
+    for (const segment of parsed.data.segments) {
+      const match = await matchSegment({
+        segment,
+        sessions: parsed.data.sessions,
+        gpsBySessionId,
+        records,
+        ignoreCache,
+      });
+      entries.push(match.entry);
+      segments.push(match.metrics);
     }
   }
-  const metrics: SegmentDetectionMetrics = {
-    detectorVersion: SEGMENT_DETECTOR_VERSION,
+  const metrics: SegmentMatchingMetrics = {
+    matcherVersion: SEGMENT_MATCHER_VERSION,
     environment: environment(),
     workerMs: performance.now() - startMs,
     mainThreadMs: null,
-    sports,
+    sessionsRead: records.size,
+    segments,
   };
   self.postMessage({ type: 'done', entries, metrics } satisfies WorkerMessageOut);
 };

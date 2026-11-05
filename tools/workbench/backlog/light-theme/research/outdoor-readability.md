@@ -9,7 +9,7 @@ Scope: what makes a phone UI readable in direct sunlight, how comparable product
 - **Light mode (dark text on light ground, "positive polarity") reads better for people with normal vision.** Piepenbrock et al. (2013) found it better on acuity and proofreading for young and older adults, and the advantage grows as the text gets smaller [S1, S2]. Participants did not notice the difference, even though they performed better [S1].
 - **Ambient light changes the effect.** In Dobres et al. (2017), dark mode in dark surroundings did worst. In simulated daylight, polarity made no significant difference [S1, S3]. The authors explain the light-mode advantage by the pupil narrowing under bright light, which cuts optical aberration [S3]. So in a lab, bright ambient light alone does not make dark mode fail. What fails outdoors is the screen itself: reflections and mid-grey text (§ 1.2).
 - **Display vendors measure sunlight readability as brightness against reflectance.** DisplayMate rates phones by "contrast rating for high ambient light". Good phones reflect about 4.4–4.8 % of ambient light [S4, S5]. Readability needs both high brightness and low reflectance [S5].
-- **Bike computers default to dark but offer light, or switch by time of day.** Garmin Edge has *Color Mode*: day, night or Auto, which switches "based on the time of day" [S6]. Wahoo BOLT v2 and ROAM v2 added a light/dark Display Mode switch on the device [S7] (exact page content **unverified**: the page returned 403; this comes from the search snippet). Wahoo users report daytime readability is better in light mode (forum, anecdotal) [S8].
+- **Bike computers default to dark but offer light, or switch by time of day.** Garmin Edge has _Color Mode_: day, night or Auto, which switches "based on the time of day" [S6]. Wahoo BOLT v2 and ROAM v2 added a light/dark Display Mode switch on the device [S7] (exact page content **unverified**: the page returned 403; this comes from the search snippet). Wahoo users report daytime readability is better in light mode (forum, anecdotal) [S8].
 - **NN/g's verdict** is that light mode is better for most users by default, and users should be able to switch to dark [S1].
 
 ### 1.2 Why the current dark UI fails outdoors
@@ -26,15 +26,15 @@ Caveat on OLED: phones limit full-screen white brightness more than they limit a
 
 _(model)_ The effective contrast is `(Y_text·W + R) / (Y_bg·W + R)`. W is the screen white level, 1000 cd/m² (a conservative sustained outdoor level). R is the reflected luminance: ambient illuminance × 1 % diffuse reflectance ÷ π. That gives R ≈ 64 cd/m² for bright shade or overcast (20 klx) and R ≈ 318 cd/m² for direct sun (100 klx). The reflectance and white level are assumptions; the ranking holds over plausible values. Script: WCAG 2 relative luminance plus APCA 0.0.98G-4g.
 
-| Token / role   | Dark today (on #030712)     | WCAG | APCA Lc | 20 klx | 100 klx  | Light candidate (on #ffffff) | WCAG | APCA Lc | 20 klx | 100 klx |
-| -------------- | --------------------------- | ---- | ------- | ------ | -------- | ---------------------------- | ---- | ------- | ------ | ------- |
-| primary        | #e5e7eb                     | 16.3 | −92     | 13.1   | 3.5      | #111318 (gray-900)           | 18.6 | 105     | 15.2   | 4.1     |
-| secondary      | #b0b4be                     | 9.7  | −62     | 7.9    | 2.4      | #3a3e48 (gray-600)           | 10.7 | 95      | 9.5    | 3.6     |
-| tertiary       | #8b8f9a                     | 6.2  | −42     | 5.1    | **1.85** | #5c616e (gray-500)           | 6.2  | 81      | 5.8    | 3.0     |
-| quaternary     | #5c616e                     | 3.3  | −21     | 2.8    | **1.37** | #8b8f9a (gray-400)           | 3.2  | 60      | 3.1    | 2.2     |
-| accent         | #3b82f6                     | 5.5  | −38     | 4.5    | 1.7      | #1d4ed8 (blue-700)           | 6.7  | 82      | 6.2    | 3.1     |
-| sport running  | #4ade80                     | 11.6 | −71     | 9.4    | 2.7      | #15803d (green-700)          | 5.0  | 74      | 4.8    | 2.8     |
-| sport cycling  | #f97316                     | 7.2  | −49     | 5.9    | 2.0      | #c2410c (orange-700)         | 5.2  | 75      | 4.9    | 2.8     |
+| Token / role  | Dark today (on #030712) | WCAG | APCA Lc | 20 klx | 100 klx  | Light candidate (on #ffffff) | WCAG | APCA Lc | 20 klx | 100 klx |
+| ------------- | ----------------------- | ---- | ------- | ------ | -------- | ---------------------------- | ---- | ------- | ------ | ------- |
+| primary       | #e5e7eb                 | 16.3 | −92     | 13.1   | 3.5      | #111318 (gray-900)           | 18.6 | 105     | 15.2   | 4.1     |
+| secondary     | #b0b4be                 | 9.7  | −62     | 7.9    | 2.4      | #3a3e48 (gray-600)           | 10.7 | 95      | 9.5    | 3.6     |
+| tertiary      | #8b8f9a                 | 6.2  | −42     | 5.1    | **1.85** | #5c616e (gray-500)           | 6.2  | 81      | 5.8    | 3.0     |
+| quaternary    | #5c616e                 | 3.3  | −21     | 2.8    | **1.37** | #8b8f9a (gray-400)           | 3.2  | 60      | 3.1    | 2.2     |
+| accent        | #3b82f6                 | 5.5  | −38     | 4.5    | 1.7      | #1d4ed8 (blue-700)           | 6.7  | 82      | 6.2    | 3.1     |
+| sport running | #4ade80                 | 11.6 | −71     | 9.4    | 2.7      | #15803d (green-700)          | 5.0  | 74      | 4.8    | 2.8     |
+| sport cycling | #f97316                 | 7.2  | −49     | 5.9    | 2.0      | #c2410c (orange-700)         | 5.2  | 75      | 4.9    | 2.8     |
 
 What the table shows:
 
@@ -44,35 +44,35 @@ What the table shows:
 
 ### 1.4 Numeric targets for a sunlight-readable light theme
 
-| Role                                                   | Minimum                         | Target               | Why                                                          |
-| ------------------------------------------------------ | ------------------------------- | -------------------- | ------------------------------------------------------------ |
-| Primary text, numbers                                  | WCAG 12 : 1, APCA Lc 90         | ≥ 16 : 1, Lc ≥ 100   | Lc 90 is APCA's preferred body level [S9]                    |
-| Secondary text (labels, units)                         | WCAG 7 : 1, Lc 75               | ≥ 9 : 1, Lc ≥ 85     | stays ≥ 3.3 : 1 at 100 klx _(model)_; Lc 75 is the body minimum [S9] |
-| Tertiary text (hints, axis ticks)                      | WCAG 5.5 : 1, Lc 75             | ≥ 6 : 1, Lc ≥ 80     | ≥ 3 : 1 at 100 klx _(model)_                                 |
-| Disabled or decorative only                            | Lc 30                           | none                 | Lc 30 is "spot readable" only [S9]                           |
-| Icons, chart lines, route on map                       | WCAG 3 : 1, Lc 45               | ≥ 4.5 : 1            | Lc 45 for fine icons [S9]; hue washes out                    |
-| Dividers, card edges                                   | Lc 15                           | Lc ≥ 20, ≥ 1 px solid | below Lc 15 counts as invisible [S9]                         |
-| Accent and sport colours as text                       | WCAG 4.5 : 1                    | ≥ 5 : 1 (700 shades) | see the table in § 1.3                                       |
-| Page surface                                           | #ffffff or ≥ 0.9 relative luminance | #ffffff          | every step below white lowers all text contrast              |
-| Font                                                   | ≥ 14 px at 400, ≥ 12 px at 600  | numbers 600, labels 500, no 300 | the light advantage grows as size shrinks [S2]; APCA size and weight table [S9] |
+| Role                              | Minimum                             | Target                          | Why                                                                             |
+| --------------------------------- | ----------------------------------- | ------------------------------- | ------------------------------------------------------------------------------- |
+| Primary text, numbers             | WCAG 12 : 1, APCA Lc 90             | ≥ 16 : 1, Lc ≥ 100              | Lc 90 is APCA's preferred body level [S9]                                       |
+| Secondary text (labels, units)    | WCAG 7 : 1, Lc 75                   | ≥ 9 : 1, Lc ≥ 85                | stays ≥ 3.3 : 1 at 100 klx _(model)_; Lc 75 is the body minimum [S9]            |
+| Tertiary text (hints, axis ticks) | WCAG 5.5 : 1, Lc 75                 | ≥ 6 : 1, Lc ≥ 80                | ≥ 3 : 1 at 100 klx _(model)_                                                    |
+| Disabled or decorative only       | Lc 30                               | none                            | Lc 30 is "spot readable" only [S9]                                              |
+| Icons, chart lines, route on map  | WCAG 3 : 1, Lc 45                   | ≥ 4.5 : 1                       | Lc 45 for fine icons [S9]; hue washes out                                       |
+| Dividers, card edges              | Lc 15                               | Lc ≥ 20, ≥ 1 px solid           | below Lc 15 counts as invisible [S9]                                            |
+| Accent and sport colours as text  | WCAG 4.5 : 1                        | ≥ 5 : 1 (700 shades)            | see the table in § 1.3                                                          |
+| Page surface                      | #ffffff or ≥ 0.9 relative luminance | #ffffff                         | every step below white lowers all text contrast                                 |
+| Font                              | ≥ 14 px at 400, ≥ 12 px at 600      | numbers 600, labels 500, no 300 | the light advantage grows as size shrinks [S2]; APCA size and weight table [S9] |
 
 Common indoor references: WCAG AA is 4.5 : 1 for text and 3 : 1 for large text and UI; AAA is 7 : 1. Apple's HIG is commonly summarised as 4.5 : 1 minimum and 7 : 1 for small text (the exact HIG wording is **unverified**; the page renders only with JS) [S10]. Indoor AA alone is not enough outdoors (§ 1.3).
 
 ## 2. Comparable products
 
-| Product                          | Theming                                                                                | How users switch                                                              | Source                                 |
-| -------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------- |
-| Strava (app)                     | Light by default; dark added in mid-2024                                               | You › Settings › Appearance: Default (follows phone) / Light / Dark           | [S11, S12]                             |
-| Garmin Connect (app)             | Dark by default; light added in Sep 2023                                               | More › Settings › Theme: Light / Dark / System                                | [S13, S14]                             |
-| Komoot                           | Light; release notes mention dark-mode fixes                                           | Probably follows the system; no in-app toggle found (**unverified**)          | [S15]                                  |
-| intervals.icu (web)              | Light by default; dark "V1" shipped and still has contrast bugs in dialogs             | A setting exists; its location is **unverified**                              | [S16, S17]                             |
-| TrainingPeaks                    | Light; users ask for dark                                                              | No toggle confirmed (**unverified**)                                          | [S18]                                  |
-| Apple Fitness (iPhone) / Workout (Watch) | iPhone follows the system; Watch is always black (OLED)                        | iOS system setting only (**unverified**, observation)                         | none                                   |
-| Apple Maps (iOS)                 | Light or dark map following the system appearance and time of day                     | No per-app override on iOS; Mac has "always light map"                        | [S19, S20]                             |
-| Google Maps (navigation)         | Day and night colour scheme                                                            | Navigation settings › Colour scheme: Automatic (by time of day, default) / Day / Night | [S21, S22] (older sources)    |
-| Garmin Edge (head unit)          | Day and night colours                                                                  | System › Display › Color Mode: Day / Night / Auto (time of day)               | [S6]                                   |
-| Garmin handhelds (Oregon, Rino)  | Light and dark appearance                                                              | Appearance setting with automatic by sunrise and sunset                       | [S14, Garmin manual results]           |
-| Wahoo BOLT v2 / ROAM v2          | Light and dark, dark by default                                                        | On-device Display Mode toggle; no auto mode found                             | [S7, S8]                               |
+| Product                                  | Theming                                                                    | How users switch                                                                       | Source                       |
+| ---------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------- |
+| Strava (app)                             | Light by default; dark added in mid-2024                                   | You › Settings › Appearance: Default (follows phone) / Light / Dark                    | [S11, S12]                   |
+| Garmin Connect (app)                     | Dark by default; light added in Sep 2023                                   | More › Settings › Theme: Light / Dark / System                                         | [S13, S14]                   |
+| Komoot                                   | Light; release notes mention dark-mode fixes                               | Probably follows the system; no in-app toggle found (**unverified**)                   | [S15]                        |
+| intervals.icu (web)                      | Light by default; dark "V1" shipped and still has contrast bugs in dialogs | A setting exists; its location is **unverified**                                       | [S16, S17]                   |
+| TrainingPeaks                            | Light; users ask for dark                                                  | No toggle confirmed (**unverified**)                                                   | [S18]                        |
+| Apple Fitness (iPhone) / Workout (Watch) | iPhone follows the system; Watch is always black (OLED)                    | iOS system setting only (**unverified**, observation)                                  | none                         |
+| Apple Maps (iOS)                         | Light or dark map following the system appearance and time of day          | No per-app override on iOS; Mac has "always light map"                                 | [S19, S20]                   |
+| Google Maps (navigation)                 | Day and night colour scheme                                                | Navigation settings › Colour scheme: Automatic (by time of day, default) / Day / Night | [S21, S22] (older sources)   |
+| Garmin Edge (head unit)                  | Day and night colours                                                      | System › Display › Color Mode: Day / Night / Auto (time of day)                        | [S6]                         |
+| Garmin handhelds (Oregon, Rino)          | Light and dark appearance                                                  | Appearance setting with automatic by sunrise and sunset                                | [S14, Garmin manual results] |
+| Wahoo BOLT v2 / ROAM v2                  | Light and dark, dark by default                                            | On-device Display Mode toggle; no auto mode found                                      | [S7, S8]                     |
 
 Patterns across them: phone apps use a 3-way switch (System / Light / Dark) in their settings. Navigation products add **automatic by time of day**. None found uses an ambient light sensor. None ships a separate "sunlight" mode; high contrast is left to the OS (iOS Increase Contrast, Android contrast levels; Material 3 defines standard, medium and high contrast [S23]).
 
@@ -80,25 +80,25 @@ Patterns across them: phone apps use a 3-way switch (System / Light / Dark) in t
 
 ### 3.1 Light palette character
 
-| Pattern | Description | Outdoor readability | Fit at 390 px | Effort | Risks |
-| ------- | ----------- | ------------------- | ------------- | ------ | ----- |
-| **P1 Paper (pure white, flat)** | Page and cards #ffffff; cards separated by 1 px gray-200 borders or a hairline shadow; gray-900/600/500 text ramp; 700 accents | Best of the soft options: full white ground, ramp ≥ 6 : 1 | Good; borders cost no width | Medium: a new token set plus replacing the ~98 `*-white/N` overlays (51 files) with semantic tokens | Glare indoors and at night (handled by switching); cards blur together without borders |
-| **P2 Off-white page, white cards** | Page #f3f4f6, cards #ffffff, same ramp | ~9 % less contrast on the page, full contrast inside cards | Good; cards read as blocks without borders | Same as P1 | Text placed straight on the page (headers, empty states) loses contrast; low-contrast card edges vanish in sun |
-| **P3 Sunlight high contrast** | White, black #000 text, secondary #1a1d24, tertiary #3a3e48, 800 accents, weight +100, 1.5 px borders, no greys below Lc 75 | Highest: ramp ≥ 10 : 1 | Good; heavier weight may wrap long German labels | Low extra on top of P1 (a second token set) | Looks harsh, hierarchy flattens (everything is dark), a 4th theme to test |
-| **P4 Tinted or warm paper** | Page #f7f4ee, warm greys | 10–15 % below P1 | Good | Same as P1 | Lower contrast, clashes with map and sport colours, looks like a reading app |
+| Pattern                            | Description                                                                                                                    | Outdoor readability                                        | Fit at 390 px                                    | Effort                                                                                              | Risks                                                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **P1 Paper (pure white, flat)**    | Page and cards #ffffff; cards separated by 1 px gray-200 borders or a hairline shadow; gray-900/600/500 text ramp; 700 accents | Best of the soft options: full white ground, ramp ≥ 6 : 1  | Good; borders cost no width                      | Medium: a new token set plus replacing the ~98 `*-white/N` overlays (51 files) with semantic tokens | Glare indoors and at night (handled by switching); cards blur together without borders                         |
+| **P2 Off-white page, white cards** | Page #f3f4f6, cards #ffffff, same ramp                                                                                         | ~9 % less contrast on the page, full contrast inside cards | Good; cards read as blocks without borders       | Same as P1                                                                                          | Text placed straight on the page (headers, empty states) loses contrast; low-contrast card edges vanish in sun |
+| **P3 Sunlight high contrast**      | White, black #000 text, secondary #1a1d24, tertiary #3a3e48, 800 accents, weight +100, 1.5 px borders, no greys below Lc 75    | Highest: ramp ≥ 10 : 1                                     | Good; heavier weight may wrap long German labels | Low extra on top of P1 (a second token set)                                                         | Looks harsh, hierarchy flattens (everything is dark), a 4th theme to test                                      |
+| **P4 Tinted or warm paper**        | Page #f7f4ee, warm greys                                                                                                       | 10–15 % below P1                                           | Good                                             | Same as P1                                                                                          | Lower contrast, clashes with map and sport colours, looks like a reading app                                   |
 
 Applies to all four: a light basemap (the vendored CARTO voyager, `apps/web/src/features/map/mapStyle.ts:8-12`; positron, CARTO's light grey style, is not vendored), darker route, sport and chart tokens, and `color-scheme: light` so native controls and scrollbars follow.
 
 ### 3.2 Switching model
 
-| Model | Description | Outdoor fit | Effort | Risks |
-| ----- | ----------- | ----------- | ------ | ----- |
-| **S1 System follow only** | `prefers-color-scheme` | Weak: many people keep the phone dark all day, so the light theme never appears outdoors | Low | No in-app escape when the system choice is wrong for the moment |
-| **S2 Manual 3-way: System / Light / Dark** | What Strava and Garmin Connect do [S11, S13] | Good if the user plans ahead | Low–medium: a persisted preference and a select in Settings › Display (`apps/web/src/pages/SettingsPage.tsx:59-91`, beside Language) | Two taps deep in Settings is slow when standing in the sun |
-| **S3 Auto by time / sun** | Light between sunrise and sunset, computed locally from the last known position or the latest activity's GPS (no external service) | Good daytime default; matches Garmin Edge, Google Maps and Garmin handhelds [S6, S21] | Medium: sun-position maths and a re-check while the app is open | Shade, tunnels, indoor training at noon; needs a location |
-| **S4 Ambient light sensor** | `AmbientLightSensor` | Would be ideal | n/a | Not usable: not supported in iOS Safari, behind a flag in Chrome; only Firefox Android lists it [S24, S25] |
-| **S5 Follow `prefers-contrast: more`** | Switch to the P3 tokens when the OS asks for more contrast | Helps users who already enable Increase Contrast | Low | Supported in iOS Safari 14.5+, Chrome and Firefox [S26]; few users turn it on |
-| **S6 One-tap quick toggle** | A sun/moon button in a persistent bar, same place at every width, next to the Settings entry | Best for "I'm in the sun right now" | Low–medium; needs a fixed slot in the dock or header | Uses chrome space at 390 px; overlaps with S2 |
+| Model                                      | Description                                                                                                                        | Outdoor fit                                                                              | Effort                                                                                                                               | Risks                                                                                                      |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| **S1 System follow only**                  | `prefers-color-scheme`                                                                                                             | Weak: many people keep the phone dark all day, so the light theme never appears outdoors | Low                                                                                                                                  | No in-app escape when the system choice is wrong for the moment                                            |
+| **S2 Manual 3-way: System / Light / Dark** | What Strava and Garmin Connect do [S11, S13]                                                                                       | Good if the user plans ahead                                                             | Low–medium: a persisted preference and a select in Settings › Display (`apps/web/src/pages/SettingsPage.tsx:59-91`, beside Language) | Two taps deep in Settings is slow when standing in the sun                                                 |
+| **S3 Auto by time / sun**                  | Light between sunrise and sunset, computed locally from the last known position or the latest activity's GPS (no external service) | Good daytime default; matches Garmin Edge, Google Maps and Garmin handhelds [S6, S21]    | Medium: sun-position maths and a re-check while the app is open                                                                      | Shade, tunnels, indoor training at noon; needs a location                                                  |
+| **S4 Ambient light sensor**                | `AmbientLightSensor`                                                                                                               | Would be ideal                                                                           | n/a                                                                                                                                  | Not usable: not supported in iOS Safari, behind a flag in Chrome; only Firefox Android lists it [S24, S25] |
+| **S5 Follow `prefers-contrast: more`**     | Switch to the P3 tokens when the OS asks for more contrast                                                                         | Helps users who already enable Increase Contrast                                         | Low                                                                                                                                  | Supported in iOS Safari 14.5+, Chrome and Firefox [S26]; few users turn it on                              |
+| **S6 One-tap quick toggle**                | A sun/moon button in a persistent bar, same place at every width, next to the Settings entry                                       | Best for "I'm in the sun right now"                                                      | Low–medium; needs a fixed slot in the dock or header                                                                                 | Uses chrome space at 390 px; overlaps with S2                                                              |
 
 PWA chrome risks for every model:
 
@@ -204,8 +204,8 @@ Excluded: P4 warm paper (lowest contrast of the light options, clashes with map 
 ## 6. Sources
 
 - [S1] NN/g, "Dark Mode vs. Light Mode: Which Is Better?": https://www.nngroup.com/articles/dark-mode/
-- [S2] Piepenbrock, Mayr, Buchner (2013), positive polarity and font size, *Human Factors*, via [S1]
-- [S3] Dobres, Chahine, Reimer (2017), *Applied Ergonomics* 60, 68–73, doi 10.1016/j.apergo.2016.11.001: https://rosap.ntl.bts.gov/view/dot/43887/dot_43887_DS1.pdf
+- [S2] Piepenbrock, Mayr, Buchner (2013), positive polarity and font size, _Human Factors_, via [S1]
+- [S3] Dobres, Chahine, Reimer (2017), _Applied Ergonomics_ 60, 68–73, doi 10.1016/j.apergo.2016.11.001: https://rosap.ntl.bts.gov/view/dot/43887/dot_43887_DS1.pdf
 - [S4] DisplayMate Mobile Brightness Shoot-Out: https://displaymate.com/Mobile_Brightness_ShootOut_2.htm
 - [S5] Cult of Mac on DisplayMate's iPhone 12 Pro Max test (4.8 % reflectance): https://www.cultofmac.com/728140/iphone-12-pro-max-screen-displaymate-analysis/
 - [S6] Garmin Edge 1030 manual, Display Settings: https://www8.garmin.com/manuals/webhelp/edge1030/EN-US/GUID-0222B83B-39C2-4537-9A4D-AD8688F2CD26.html

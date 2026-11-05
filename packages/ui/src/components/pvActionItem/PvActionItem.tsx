@@ -5,9 +5,17 @@ import { PvTypography } from '../pvTypography/PvTypography.tsx';
 
 export type ActionItemSize = 'md' | 'sm';
 
-const ROOT_CLASS_BY_ACTION_ITEM_SIZE: Record<ActionItemSize, string> = {
-  md: 'rounded-2xl',
-  sm: 'rounded-xl',
+export type ActionItemRadius = 'lg' | 'xl' | '2xl';
+
+const RADIUS_BY_ACTION_ITEM_SIZE: Record<ActionItemSize, ActionItemRadius> = {
+  md: '2xl',
+  sm: 'xl',
+};
+
+const ROOT_CLASS_BY_ACTION_ITEM_RADIUS: Record<ActionItemRadius, string> = {
+  lg: 'rounded-lg',
+  xl: 'rounded-xl',
+  '2xl': 'rounded-2xl',
 };
 
 const BUTTON_CLASS_BY_ACTION_ITEM_SIZE: Record<ActionItemSize, string> = {
@@ -24,7 +32,6 @@ interface PvActionItemProps {
   avatar: ReactNode;
   primary: ReactNode;
   secondary?: ReactNode;
-  aside?: ReactNode;
   value?: ReactNode;
   valueCaption?: ReactNode;
   decoration?: ReactNode;
@@ -33,6 +40,7 @@ interface PvActionItemProps {
   onClick: () => void;
   selected?: boolean;
   size?: ActionItemSize;
+  radius?: ActionItemRadius;
   className?: string;
   testId?: string;
   onPointerEnter?: () => void;
@@ -49,7 +57,7 @@ export const PvActionItem: FC<PvActionItemProps> = (props) => {
       className={cn(
         GLASS_CLASS,
         'relative flex flex-row items-center hover:bg-white/10',
-        ROOT_CLASS_BY_ACTION_ITEM_SIZE[size],
+        ROOT_CLASS_BY_ACTION_ITEM_RADIUS[props.radius ?? RADIUS_BY_ACTION_ITEM_SIZE[size]],
         props.selected === true && 'bg-white/10',
         props.className,
       )}
@@ -76,7 +84,6 @@ export const PvActionItem: FC<PvActionItemProps> = (props) => {
             </PvTypography>
           )}
         </span>
-        {props.aside}
         {props.value !== undefined && (
           <span className="shrink-0 text-right">
             <PvTypography variant="subtitle1" as="p" tabularNums noWrap>

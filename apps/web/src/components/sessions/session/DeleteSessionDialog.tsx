@@ -4,6 +4,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { m } from '@pacevault/i18n/messages.js';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useTripsStore } from '@/store/trips.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { useSegmentsStore } from '@/store/segments.ts';
+import { sessionSegmentsDeleteNote } from '@/microcopy/segments.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { invalidatePersonalBestsOfSession } from '@/queries/records/usePersonalBests.ts';
 import { useDeleteSessionMutation } from '@/mutations/sessions/useDeleteSessionMutation.ts';
@@ -14,6 +17,7 @@ import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader
 import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
 import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
 import { PvDialogDescription } from '@pacevault/ui/components/pvDialog/PvDialogDescription.tsx';
+import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { formatDate } from '@/lib/format/formatters.ts';
 import type { TrainingSession } from '@pacevault/engine/types.ts';
 
@@ -27,15 +31,23 @@ export const DeleteSessionDialog: FC<DeleteSessionDialogProps> = (props) => {
   const pageRouting = usePageRouting();
   const queryClient = useQueryClient();
   const deleteSession = useDeleteSessionMutation();
+  const segmentNames = useSegmentsStore(
+    useShallow((s) =>
+      s.segments
+        .filter((segment) => segment.source.sessionId === props.session.id)
+        .map((segment) => segment.name),
+    ),
+  );
 
   const handleDelete = async () => {
     useSessionsStore.getState().deleteSession(props.session.id);
     useTripsStore.getState().removeSessionFromAllTrips(props.session.id);
+    const segmentIds = useSegmentsStore.getState().removeSegmentsOfSession(props.session.id);
     void invalidatePersonalBestsOfSession(props.session.id, queryClient);
     props.onOpenChange(false);
     useMapFocusStore.getState().requestMapRefitAfterDelete();
     pageRouting.open({ page: 'sessions', params: {} });
-    await deleteSession.mutateAsync({ sessionId: props.session.id });
+    await deleteSession.mutateAsync({ sessionId: props.session.id, segmentIds });
   };
 
   return (
@@ -54,6 +66,11 @@ export const DeleteSessionDialog: FC<DeleteSessionDialogProps> = (props) => {
               date: formatDate(props.session.date),
             })}
           </PvDialogDescription>
+          {segmentNames.length > 0 && (
+            <PvTypography variant="body1" color="textTertiary" className="mt-3">
+              {sessionSegmentsDeleteNote(segmentNames)}
+            </PvTypography>
+          )}
         </PvDialogBody>
         <PvDialogFooter>
           <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { ColorMode } from '@/lib/colors/colorModes.ts';
-import type { LapSet, RecordSpan } from '@/lib/analysis/laps.ts';
+import type { LapSet } from '@/lib/analysis/laps.ts';
 
 export const MAP_VIEWS = ['2d', '3d'] as const;
 
@@ -16,8 +16,6 @@ interface MapControlsState {
   selectLap: (lapIndex: number) => void;
   toggleSelectedLap: (lapIndex: number) => void;
   clearSelectedLap: () => void;
-  hoveredSegmentSpan: RecordSpan | null;
-  setHoveredSegmentSpan: (span: RecordSpan | null) => void;
   lapCloseCount: number;
   closeSelectedLap: () => void;
   hoveredLapIndex: number | null;
@@ -38,7 +36,6 @@ export const INITIAL_MAP_CONTROLS_STORE_STATE: Pick<
   | 'trackColorMode'
   | 'sessionLaps'
   | 'selectedLapIndex'
-  | 'hoveredSegmentSpan'
   | 'lapCloseCount'
   | 'hoveredLapIndex'
   | 'overviewMapControlsShown'
@@ -48,7 +45,6 @@ export const INITIAL_MAP_CONTROLS_STORE_STATE: Pick<
   trackColorMode: 'sport',
   sessionLaps: null,
   selectedLapIndex: null,
-  hoveredSegmentSpan: null,
   lapCloseCount: 0,
   hoveredLapIndex: null,
   overviewMapControlsShown: false,
@@ -70,9 +66,6 @@ export const useMapControlsStore = create<MapControlsState>()(
       }
     },
     clearSelectedLap: () => set({ selectedLapIndex: null }),
-    setHoveredSegmentSpan: (span) => {
-      if (get().hoveredSegmentSpan !== span) set({ hoveredSegmentSpan: span });
-    },
     closeSelectedLap: () => {
       if (get().selectedLapIndex === null) return;
       set({ selectedLapIndex: null, lapCloseCount: get().lapCloseCount + 1 });
@@ -89,7 +82,6 @@ export const useMapControlsStore = create<MapControlsState>()(
     resetSessionControlsOnSessionOpen: () =>
       set({
         selectedLapIndex: null,
-        hoveredSegmentSpan: null,
         hoveredLapIndex: null,
         sessionMapView: '2d',
         terrainTrackHovered: false,
@@ -99,7 +91,6 @@ export const useMapControlsStore = create<MapControlsState>()(
         trackColorMode: 'sport',
         sessionLaps: null,
         selectedLapIndex: null,
-        hoveredSegmentSpan: null,
         hoveredLapIndex: null,
         sessionMapView: '2d',
         terrainTrackHovered: false,

@@ -7,6 +7,7 @@ import type { MapTrack } from './types.ts';
 import type { PopupInfo } from '@/components/sessions/types.ts';
 import type { PickingInfo } from '@deck.gl/core';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
+import { useMapScene } from './useMapScene.ts';
 
 type PickHandler = (info: PickingInfo) => boolean;
 
@@ -27,7 +28,7 @@ export const useMapPopupState = ({
   mapRef: React.RefObject<MapRef | null>;
   tracks: MapTrack[];
 }): MapPopupState => {
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
+  const sessionScene = useMapScene().kind === 'session';
   const pointerFine = useDevice().pointerFine;
 
   const [popup, setPopup] = useState<PopupInfo | null>(null);
@@ -39,7 +40,7 @@ export const useMapPopupState = ({
     (info: PickingInfo) => {
       const stopPropagation = false;
 
-      if (!info.object || !mapRef.current || openedSessionId) {
+      if (!info.object || !mapRef.current || sessionScene) {
         return stopPropagation;
       }
 
@@ -55,7 +56,7 @@ export const useMapPopupState = ({
 
       return stopPropagation;
     },
-    [tracks, openedSessionId, mapRef, pointerFine],
+    [tracks, sessionScene, mapRef, pointerFine],
   );
 
   const closePopup = useCallback(() => {
@@ -68,7 +69,7 @@ export const useMapPopupState = ({
       const stopPropagation = false;
       const lapPick =
         info.layer?.id === 'session-detail' && useMapControlsStore.getState().sessionLaps !== null;
-      const pickable = !!info.object && (!openedSessionId || lapPick);
+      const pickable = !!info.object && (!sessionScene || lapPick);
       setHoveringTrack(pickable);
       if (!popup) {
         if (
@@ -86,7 +87,7 @@ export const useMapPopupState = ({
 
       return stopPropagation;
     },
-    [popup, openedSessionId, pointerFine],
+    [popup, sessionScene, pointerFine],
   );
 
   const onPointerLeave = useCallback(() => {

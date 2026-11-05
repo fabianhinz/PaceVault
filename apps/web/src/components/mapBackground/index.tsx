@@ -6,12 +6,12 @@ import { useSessionGpsTracks } from '@/queries/sessions/useSessionGpsTracks.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
 import { useMapInteraction } from './hooks/useMapInteraction.ts';
 import { useMapBackgroundEffects } from './hooks/useMapBackgroundEffects.ts';
+import { useMapScene } from './hooks/useMapScene.ts';
 import { DeckGLOverlay } from './DeckGLOverlay.tsx';
 import { StudioMarkerPins } from '@/components/studio/markers/StudioMarkerPins.tsx';
 import { StudioTrackPickPopup } from '@/components/studio/markers/StudioTrackPickPopup.tsx';
 import { StudioRoutesPickPopup } from '@/components/studio/markers/StudioRoutesPickPopup.tsx';
 import { SessionsPickPopup } from '@/components/sessions/SessionsPickPopup.tsx';
-import { SegmentsPickPopup } from '@/components/segments/SegmentsPickPopup.tsx';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import type { MapRef } from 'react-map-gl/maplibre';
@@ -23,7 +23,8 @@ export const MapBackground: FC = () => {
 
   const mapRef = useRef<MapRef>(null);
   const pointerFine = useDevice().pointerFine;
-  const terrainSelected = useMapControlsStore((s) => s.sessionMapView === '3d');
+  const sessionScene = useMapScene().kind === 'session';
+  const terrainSelected = useMapControlsStore((s) => s.sessionMapView === '3d') && sessionScene;
   // The first terrain build is expensive; the toggle repaints before the map switches.
   const terrain = useDeferredValue(terrainSelected);
   const terrainTrackHovered = useMapControlsStore((s) => s.terrainTrackHovered);
@@ -82,12 +83,6 @@ export const MapBackground: FC = () => {
         <StudioRoutesPickPopup
           info={interaction.studioRoutesPopup.popup}
           onClose={interaction.studioRoutesPopup.close}
-        />
-      )}
-      {interaction.segmentsPopup.popup && (
-        <SegmentsPickPopup
-          info={interaction.segmentsPopup.popup}
-          onClose={interaction.segmentsPopup.close}
         />
       )}
       {interaction.popupState.popup && (

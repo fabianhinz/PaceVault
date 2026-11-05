@@ -1,26 +1,51 @@
-import type { FC } from 'react';
+import type { ElementType, FC, ReactNode } from 'react';
+import { SplinePointer } from 'lucide-react';
+import { PvInlineSkeleton } from '@pacevault/ui/components/pvInlineSkeleton/PvInlineSkeleton.tsx';
 import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
 import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
-import type { Segment } from '@/lib/workers/segmentsContract.ts';
-import { LABEL_BY_SPORT } from '@/microcopy/sports.ts';
-import { segmentLabel } from '@/microcopy/segments.ts';
-import { ICON_BY_SEGMENT_TYPE } from './segmentTypeIcons.ts';
-import { segmentFacts } from './segmentFacts.ts';
+import type { TypographyVariants } from '@pacevault/ui/components/pvTypography/types.ts';
+import { cn } from '@pacevault/ui/lib/cn.ts';
+import type { Segment } from '@/store/segments.ts';
+import { TEXT_CLASS_BY_SPORT } from '@/components/dashboard/statusColors.ts';
+import type { MatchedSegment } from './types.ts';
+import { useSegmentTitle } from './hooks/useSegmentTitle.ts';
 
 interface SegmentHeaderProps {
-  segment: Segment;
+  segment: Segment | MatchedSegment;
+  titleVariant: TypographyVariants;
+  titleAs?: ElementType;
+  subtitleLoading?: boolean;
+  children?: ReactNode;
+  className?: string;
 }
 
-export const SegmentHeader: FC<SegmentHeaderProps> = (props) => (
-  <div className="flex min-w-0 flex-1 items-center gap-2" data-testid="segment-header">
-    <PvIconTile icon={ICON_BY_SEGMENT_TYPE[props.segment.type]} />
-    <div className="min-w-0">
-      <PvTypography variant="h2" as="h1" noWrap>
-        {segmentLabel(props.segment)}
-      </PvTypography>
-      <PvTypography variant="caption" as="p" color="textSecondary" tabularNums>
-        {[LABEL_BY_SPORT[props.segment.sport](), ...segmentFacts(props.segment)].join(' · ')}
-      </PvTypography>
+export const SegmentHeader: FC<SegmentHeaderProps> = (props) => {
+  const segmentTitle = useSegmentTitle(props.segment);
+
+  return (
+    <div
+      className={cn('flex items-center justify-between gap-3', props.className)}
+      data-testid="segment-header"
+    >
+      <div className="flex min-w-0 items-center gap-2">
+        <PvIconTile icon={SplinePointer} className={TEXT_CLASS_BY_SPORT[props.segment.sport]} />
+        <div className="min-w-0">
+          <PvTypography variant={props.titleVariant} as={props.titleAs} className="truncate">
+            {segmentTitle.title}
+          </PvTypography>
+          {props.subtitleLoading === true && (
+            <span className="flex h-4 items-center" data-testid="segment-subtitle-skeleton">
+              <PvInlineSkeleton className="h-2.5 w-40" />
+            </span>
+          )}
+          {props.subtitleLoading !== true && (
+            <PvTypography variant="caption" as="p" tabularNums className="truncate">
+              {segmentTitle.subtitle}
+            </PvTypography>
+          )}
+        </div>
+      </div>
+      {props.children}
     </div>
-  </div>
-);
+  );
+};

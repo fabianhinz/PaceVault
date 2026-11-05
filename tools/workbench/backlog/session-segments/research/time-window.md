@@ -12,21 +12,21 @@ Question: should the Pass times scatter (and maybe the passes list) show only th
 
 ## Other tools
 
-Facts come from the cited primary sources. Anything not documented there is marked *unverified*.
+Facts come from the cited primary sources. Anything not documented there is marked _unverified_.
 
-| Tool / view | Default window | Slices | Control type / placement | Sparse data | List follows chart? |
-| --- | --- | --- | --- | --- | --- |
-| Strava segment "My Results" graph [1] | All efforts ("All of your efforts … are plotted") | None on the graph; you scroll left and right | My Results is a leaderboard filter; graph above the efforts list | Shows what exists; PR as a gold dot | You scroll the list and the graph separately; linking not documented |
-| Strava segment leaderboard [2] | All-Time | Today, This Week, This Month, This Year, All-Time (web: This Year in the side menu, the rest in the All-Time dropdown; app: This Year and Today) | Dropdown and side-menu items | n/a (ranking) | It is the list |
-| Strava Matched Activities [3] | Full history of matches, scrolled horizontally | None | Chart with trend line; list grouped by year below | Not documented | Hovering or scrolling the list highlights points on the chart; the list is not windowed |
-| Strava progress chart [4] | Last 12 weeks | Article names only 12 weeks (*a "this year" option is unverified*) | Chart on the profile / You tab | n/a | n/a |
-| Garmin Connect segments [5][6] | Leaderboard, all time | No date filter found; "Me Only" filter; age groups | Filter button top right of the full leaderboard | n/a | It is the list |
-| Runalyze recurring routes [7] | Last 10 times up to the activity's date (small graphic) | Detail view: all activities on the route, filterable table, chart with chosen axes | Table filters and column picker | Count-based window, so it never shows fewer than min(n, 10) | The chart sits with the table; filtering the table is "dynamic" |
-| intervals.icu Fitness / curves [8][9] | Last-used range is remembered and centred on today | 1, 3, 6 months; seasons (user-defined); curves: last 42 / 84 days, seasons, custom ranges | Range dropdown above the chart | Not documented | One range shared by the whole Fitness chart |
-| TrainingPeaks dashboard [10] | Dashboard-wide range | Each chart follows the dashboard range or has its own | Chart settings (tap the title) | Not documented | n/a |
-| Golden Cheetah Trends [11] | Selected season / date range | Seasons, user-defined relative ranges (v3.7) | Sidebar date range / season tree | Not documented | Charts follow the selected range |
-| Apple Health / Fitness [12][13] | Week (Health charts) | D / W / M / (6M) / Y segmented control above the chart (*the 6M label is unverified in a primary source*); Activity Trends compare the last 90 days with the last 365 | iOS segmented control at the top of the chart | Activity Trends: "Needs More Data" section | Lists under the chart follow the selected period (*unverified*) |
-| Highcharts Stock (library default) [14] | Not fixed | 1m, 3m, 6m, YTD, 1y, All buttons plus a navigator (overview brush) | Buttons top left, brush below the plot | Not handled | n/a |
+| Tool / view                             | Default window                                          | Slices                                                                                                                                                                | Control type / placement                                         | Sparse data                                                 | List follows chart?                                                                     |
+| --------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Strava segment "My Results" graph [1]   | All efforts ("All of your efforts … are plotted")       | None on the graph; you scroll left and right                                                                                                                          | My Results is a leaderboard filter; graph above the efforts list | Shows what exists; PR as a gold dot                         | You scroll the list and the graph separately; linking not documented                    |
+| Strava segment leaderboard [2]          | All-Time                                                | Today, This Week, This Month, This Year, All-Time (web: This Year in the side menu, the rest in the All-Time dropdown; app: This Year and Today)                      | Dropdown and side-menu items                                     | n/a (ranking)                                               | It is the list                                                                          |
+| Strava Matched Activities [3]           | Full history of matches, scrolled horizontally          | None                                                                                                                                                                  | Chart with trend line; list grouped by year below                | Not documented                                              | Hovering or scrolling the list highlights points on the chart; the list is not windowed |
+| Strava progress chart [4]               | Last 12 weeks                                           | Article names only 12 weeks (_a "this year" option is unverified_)                                                                                                    | Chart on the profile / You tab                                   | n/a                                                         | n/a                                                                                     |
+| Garmin Connect segments [5][6]          | Leaderboard, all time                                   | No date filter found; "Me Only" filter; age groups                                                                                                                    | Filter button top right of the full leaderboard                  | n/a                                                         | It is the list                                                                          |
+| Runalyze recurring routes [7]           | Last 10 times up to the activity's date (small graphic) | Detail view: all activities on the route, filterable table, chart with chosen axes                                                                                    | Table filters and column picker                                  | Count-based window, so it never shows fewer than min(n, 10) | The chart sits with the table; filtering the table is "dynamic"                         |
+| intervals.icu Fitness / curves [8][9]   | Last-used range is remembered and centred on today      | 1, 3, 6 months; seasons (user-defined); curves: last 42 / 84 days, seasons, custom ranges                                                                             | Range dropdown above the chart                                   | Not documented                                              | One range shared by the whole Fitness chart                                             |
+| TrainingPeaks dashboard [10]            | Dashboard-wide range                                    | Each chart follows the dashboard range or has its own                                                                                                                 | Chart settings (tap the title)                                   | Not documented                                              | n/a                                                                                     |
+| Golden Cheetah Trends [11]              | Selected season / date range                            | Seasons, user-defined relative ranges (v3.7)                                                                                                                          | Sidebar date range / season tree                                 | Not documented                                              | Charts follow the selected range                                                        |
+| Apple Health / Fitness [12][13]         | Week (Health charts)                                    | D / W / M / (6M) / Y segmented control above the chart (_the 6M label is unverified in a primary source_); Activity Trends compare the last 90 days with the last 365 | iOS segmented control at the top of the chart                    | Activity Trends: "Needs More Data" section                  | Lists under the chart follow the selected period (_unverified_)                         |
+| Highcharts Stock (library default) [14] | Not fixed                                               | 1m, 3m, 6m, YTD, 1y, All buttons plus a navigator (overview brush)                                                                                                    | Buttons top left, brush below the plot                           | Not handled                                                 | n/a                                                                                     |
 
 Komoot and Wahoo: I found no segment-effort history view comparable to this one.
 
@@ -51,12 +51,12 @@ Komoot and Wahoo: I found no segment-effort history view comparable to this one.
 
 ### Demo density (passes in window, 36 segments, `mockup/hifi/segments.json`)
 
-| Window | Median per segment | Segments with 0 | Segments with < 5 | Max |
-| --- | --- | --- | --- | --- |
-| 4 weeks | 2 | 8 | 31 | 10 |
-| 12 weeks | 4 | 5 | 27 | 24 |
-| 26 weeks | 8 | 0 | 6 | 52 |
-| 52 weeks | 14 | 0 | 3 | 93 |
+| Window   | Median per segment | Segments with 0 | Segments with < 5 | Max |
+| -------- | ------------------ | --------------- | ----------------- | --- |
+| 4 weeks  | 2                  | 8               | 31                | 10  |
+| 12 weeks | 4                  | 5               | 27                | 24  |
+| 26 weeks | 8                  | 0               | 6                 | 52  |
+| 52 weeks | 14                 | 0               | 3                 | 93  |
 
 The demo spans about one year, so "All" equals 52 weeks here. Real exports over several years will make "All" denser.
 
@@ -71,6 +71,7 @@ Pass times                      [12W] 6M  1Y  All
 ```
 
 `PvTabsList variant="inline"` like the Load chart, with options 12 W · 6 M · 1 Y · All. Labels come from the existing `relativeLabel` messages in long form for screen readers and short visible labels (new keys). The list shows the window's passes plus the best pass, always, even when it lies outside the window.
+
 - Pros: reuses the Load chart pattern; one tap; the caption counts make the window honest; `FilterTime` and `resolveFilterRange` do the maths.
 - Cons: a new set of short labels (12 W / 6 M) is needed; a 12-week default holds fewer than 5 passes on 27 of 36 demo segments.
 
@@ -83,6 +84,7 @@ Pass times                       12W [6M] 1Y  All
 ```
 
 Same control as O1, but the initial selection is the shortest preset holding at least k passes (k ≈ 8: enough for a 5-pass median to settle), else All. Choosing a tab yourself overrides it.
+
 - Pros: never opens on an empty or near-empty plot; a busy segment (93 passes) opens on 12 W (24 passes), a rare one on All.
 - Cons: the default differs between segments, which can surprise; it needs one line of copy explaining the choice (or none, if the selected tab is enough).
 
@@ -110,7 +112,7 @@ Pass times                                 ⤺ Reset
 
 **List:** the list follows the window (the "Show n more" count is per window), with the best pass and the origin pass (Q64) always kept. Strava keeps lists unwindowed (grouped by year), which is the alternative.
 
-**State:** the window in the URL query (`?window=12w`) like the other segment-page state (`?from=`, Q64), not persisted. *Assumption*: a persisted per-user default in the store would need a store version bump with `migrate`.
+**State:** the window in the URL query (`?window=12w`) like the other segment-page state (`?from=`, Q64), not persisted. _Assumption_: a persisted per-user default in the store would need a store version bump with `migrate`.
 
 ## Open questions for the owner
 

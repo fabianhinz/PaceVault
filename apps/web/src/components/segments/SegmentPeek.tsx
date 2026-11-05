@@ -1,21 +1,25 @@
 import type { FC } from 'react';
+import { SplinePointer } from 'lucide-react';
 import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
 import { PvSheetPeek } from '@pacevault/ui/components/pvBottomSheet/PvSheetPeek.tsx';
-import type { Segment } from '@/lib/workers/segmentsContract.ts';
-import { passCountLabel, segmentLabel } from '@/microcopy/segments.ts';
-import { ICON_BY_SEGMENT_TYPE } from './segmentTypeIcons.ts';
-import { segmentFacts } from './segmentFacts.ts';
+import type { Segment } from '@/store/segments.ts';
+import { TEXT_CLASS_BY_SPORT } from '@/components/dashboard/statusColors.ts';
+import type { MatchedSegment } from './types.ts';
+import { useSegmentTitle } from './hooks/useSegmentTitle.ts';
 
 interface SegmentPeekProps {
-  segment: Segment;
+  segment: Segment | MatchedSegment;
 }
 
-export const SegmentPeek: FC<SegmentPeekProps> = (props) => (
-  <PvSheetPeek
-    icon={<PvIconTile icon={ICON_BY_SEGMENT_TYPE[props.segment.type]} />}
-    primary={segmentLabel(props.segment)}
-    secondary={[...segmentFacts(props.segment), passCountLabel(props.segment.passes.length)].join(
-      ' · ',
-    )}
-  />
-);
+export const SegmentPeek: FC<SegmentPeekProps> = (props) => {
+  const segmentTitle = useSegmentTitle(props.segment);
+  return (
+    <PvSheetPeek
+      icon={
+        <PvIconTile icon={SplinePointer} className={TEXT_CLASS_BY_SPORT[props.segment.sport]} />
+      }
+      primary={segmentTitle.title}
+      secondary={segmentTitle.subtitle}
+    />
+  );
+};

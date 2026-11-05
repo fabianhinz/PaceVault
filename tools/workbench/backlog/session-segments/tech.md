@@ -30,7 +30,7 @@ flowchart LR
   join --> tab[Segments tab + filters view]
   join --> row[session Segments row]
   join --> page[segment page: Finding passes… / passes]
-  join --> map[map: tab tracks fade, pick popup, page segment]
+  join --> map[map: hover stretch, page segment]
   import[import / delete / reprocess] -->|changes sessions key| key
   rename[⋯ Rename] --> store
   del[⋯ Delete] -->|delete passes entry, removeSegment| store
@@ -53,11 +53,11 @@ flowchart TB
     segIndex["index.tsx, SegmentDetail, SegmentHeader, SegmentActionsMenu, DeleteSegmentDialog, SegmentPassesNote"]:::new
     creation["SaveSegmentPill, SegmentNameDialog, segmentCreation.ts"]:::new
     SegmentsTab:::new
-    PassTimesRow:::new
+    PassStrip:::new
     SegmentChartsExplorer:::new
     segmentPasses:::new
     segmentFilter:::new
-    segHooks["hooks/useSegments, useSegmentDetail, useFilteredSegments, useSessionSegments, useSaveSegment, useSimilarSegment, useSessionReferenceSegment, useSegmentPassSelection, useScatterWindow"]:::new
+    segHooks["hooks/useSegments, useSegmentDetail, useFilteredSegments, useSessionSegments, useSaveSegment, useSimilarSegment, useSessionReferenceSegment, useSegmentPassSelection"]:::new
   end
   subgraph SESS["feature · sessions, dashboard, mapBackground"]
     SegmentsRow:::new
@@ -66,8 +66,10 @@ flowchart TB
     SessionChartsExplorer:::mod
     railRange:::mod
     Dashboard["dashboard/index.tsx"]:::mod
-    mapSeg["useSegmentMapTracks, useSegmentLayers, useSegmentsPickPopup"]:::new
-    mapMod["trackPicking, useTrackLayers, useMapInteraction, camera hooks"]:::mod
+    mapSeg["useSegmentMapTracks, useSegmentLayers"]:::new
+    mapMod["useTrackLayers, camera hooks"]:::mod
+    mapScene["mapScene, useMapScene"]:::new
+    useMapHover:::mod
   end
   subgraph IO["queries, mutations"]
     useSegmentPasses:::new
@@ -77,7 +79,7 @@ flowchart TB
   subgraph STORE["store"]
     segmentsStore["segments (persisted)"]:::new
     segmentFocus:::new
-    mapControls:::mod
+    mapFocus:::mod
     filtersStore["filters (read only)"]
   end
   subgraph LIB["lib"]
@@ -96,8 +98,9 @@ flowchart TB
   end
   subgraph KIT["packages/ui"]
     PvActionItem:::new
+    chipKit["PvPlotStripTile, PvPlotStrip, useScrollToEndEffect"]:::new
     PvZoomResetPill:::mod
-    kitMods["PvStatRail, PvCollapsibleListItem, scroll fade x, --color-best"]:::mod
+    kitMods["PvStatRail, scroll fade x, --color-best"]:::mod
   end
   SegmentDetailPage --> segIndex
   segIndex --> segHooks
@@ -133,8 +136,15 @@ flowchart TB
   mapSeg --> segHooks
   mapSeg --> segmentFocus
   mapMod --> mapSeg
-  SegmentsRow --> mapControls
-  PassTimesRow --> segmentPasses
+  SegmentsRow --> useMapHover
+  SegmentsTab --> useMapHover
+  useMapHover --> mapScene
+  useMapHover --> mapFocus
+  mapMod --> mapScene
+  mapSeg --> mapScene
+  mapScene --> mapFocus
+  PassStrip --> segmentPasses
+  PassStrip --> chipKit
   segIndex --> microcopy
   SegmentsTab --> PvActionItem
   classDef new stroke:#60a5fa,stroke-width:1.5px
@@ -149,10 +159,8 @@ flowchart TB
   Dashboard --> SegmentsTab
   SegmentsTab --> SegmentsEmpty["SegmentsEmpty (SplinePointer, No segments yet + how-to)"]
   SegmentsTab --> VirtualItemList
-  VirtualItemList --> SegmentItemA["SegmentItem md (name, facts · passes, short date)"]
-  SegmentItemA --> PvActionItem:::ui
-  MapBackground["mapBackground/index.tsx"]:::uimod --> SegmentsPickPopup
-  SegmentsPickPopup --> SegmentItemP["SegmentItem md"]
+  VirtualItemList --> SegmentItemA["SegmentItem (PvCard like SessionItem)"]
+  SegmentItemA --> SegmentHeaderA["SegmentHeader subtitle1 (useSegmentTitle)"]
 
   SessionDetailPage --> Session["sessions/session/index.tsx"]
   Session --> SessionActionsMenu:::uimod
@@ -161,9 +169,9 @@ flowchart TB
   SessionActionsMenu --> DeleteSessionDialog["DeleteSessionDialog (segment warning)"]:::uimod
   Session --> SessionSummaryCard:::uimod
   SessionSummaryCard --> SegmentsRow
-  SegmentsRow --> PvCollapsibleListItem:::uimod
+  SegmentsRow --> PvCollapsibleListItem:::ui
   SegmentsRow --> SessionSegmentList
-  SessionSegmentList --> SegmentItemB["SegmentItem sm (name, time · rank)"]
+  SessionSegmentList --> SegmentItemB["SessionSegmentItem (PvActionItem sm: name, time · rank)"]
   Session --> SessionChartsExplorer:::uimod
   SessionChartsExplorer --> PvZoomResetPill:::uimod
   PvZoomResetPill --> SaveSegmentPill
@@ -172,23 +180,24 @@ flowchart TB
   NameDialogC --> PvDialog:::ui
 
   SegmentDetailPage --> Segments["segments/index.tsx"]
-  Segments --> SegmentDetailSkeleton
+  Segments --> PassStripSkeleton["PassStripSkeleton (loading)"]
+  Segments --> SegmentExplorerFrame["SegmentExplorerFrame (loading, empty charts)"]
   Segments --> SegmentDetail
-  SegmentDetail --> SegmentPeek
-  SegmentDetail --> SegmentHeader["SegmentHeader (name, facts, Finding passes…)"]
+  Segments --> SegmentPeek["SegmentPeek (useSegmentTitle)"]
+  Segments --> SegmentHeader["SegmentHeader h2/h1 (useSegmentTitle)"]
   SegmentHeader --> SegmentActionsMenu
   SegmentActionsMenu --> NameDialogE["SegmentNameDialog (rename)"]
   SegmentActionsMenu --> DeleteSegmentDialog
   SegmentDetail --> PvPageGrid:::ui
-  PvPageGrid --> PassTimesRow
-  PassTimesRow --> SegmentPassesNote["SegmentPassesNote (1 pass · only this session so far)"]
-  PassTimesRow --> PassScatter
-  PassTimesRow --> PassItem
-  PassItem --> PassGapSpark
-  PassItem --> BestCrown
+  PvPageGrid --> PassStrip["PassStrip (sticky)"]
+  PassStrip --> PvPlotStrip:::ui
+  PvPlotStrip --> PvPlotStripTile:::ui
+  PassStrip --> PassItem["PassItem (PvActionItem md, selected pass)"]
+  PassItem --> BestHighlight
+  PvPageGrid --> SegmentPassesNote["SegmentPassesNote (1 pass · only this session so far)"]
   PvPageGrid --> SegmentChartsExplorer
   SegmentChartsExplorer --> PvChartsCard:::ui
-  SegmentChartsExplorer --> SegmentExplorerLegend
+  SegmentChartsExplorer --> SegmentExplorerFrame
   SegmentChartsExplorer --> SegmentChannelChart
   SegmentChartsExplorer --> SegmentChannelRail
   SegmentChannelRail --> PvStatRail:::uimod
@@ -204,10 +213,19 @@ flowchart TB
 - `packages/engine/tests/segments.spec.ts`: matcher cases on series factories
 - `packages/engine/tests/segments.perf.spec.ts`: one reference against many synthetic sessions, time logged under a generous bound
 - `packages/testing/src/segments.ts`: `createMockSegmentPass`, `createMockSegmentTrack`, `createMockSegmentReferencePoint` (engine input, built at match time)
-- `packages/ui/src/components/pvActionItem/PvActionItem.tsx`: one-button item, sizes `md` | `sm`
-- `packages/ui/tests/hooks/useScrollFadeEffect.spec.ts`: x axis sets `data-fade-left` / `data-fade-right`
+- `packages/ui/src/components/pvActionItem/PvActionItem.tsx`: one-button item, sizes `md` | `sm`, optional `radius` (`lg` | `xl` | `2xl`) for nesting (R66)
+- `packages/ui/src/components/pvPlotStrip/PvPlotStripTile.tsx`: date tile with a dot plot: filled tile when pressed, no box for the best tone, dotted a press on the pressed chip does nothing (R51)
+- `packages/ui/src/components/pvPlotStrip/PvPlotStripMarker.tsx`: the tile's marker: icon (best), small ▼ for a clamped value, dot otherwise; pressed changes colour only
+- `packages/ui/src/components/pvPlotStrip/PvPlotStripGroup.tsx`: a labelled group of tiles with a sticky header (24 px in, past the edge fade) that the next group pushes out (R62, R75)
+- `packages/ui/src/components/pvPlotStrip/plotStripScale.ts`: ratio to marker top in pixels
+- `packages/ui/src/components/pvPlotStrip/types.ts`: `PlotStripTone`, `PlotStripPosition`
+- `packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx`: labelled tile row: an optional `pinned` slot on the left, then the scrolling part (hidden scrollbar, x edge fade, scrolled to the end on open and when `scrollKey` changes), tiles right-aligned (R75)
+- `packages/ui/src/hooks/useScrollToEndEffect.ts`: scrolls a horizontal container to its end when the key changes
+- `packages/ui/tests/components/pvPlotStrip/PvPlotStripTile.spec.ts`: marker per position, a press on the pressed chip ignored
+- `packages/ui/tests/components/pvPlotStrip/plotStripScale.spec.ts`: ratio to pixels
+- `packages/ui/tests/hooks/useScrollToEndEffect.spec.ts`: end on mount and on a new key, position kept for the same key
 - `apps/web/src/store/segments.ts`: persisted `store-segments` (version 1): the user's segments (name, sport, source session with its cuts, facts, display polyline, bounds), `addSegment`, `renameSegment`, `removeSegment`, `removeSegmentsOfSession`, `clearAll`
-- `apps/web/src/store/segmentFocus.ts`: hovered segment, hovered pass, pass and best markers (not persisted)
+- `apps/web/src/store/segmentFocus.ts`: pass and best markers while the explorer is scrubbed (not persisted); the hovered segment lives in `mapFocus.mapHover` (R49)
 - `apps/web/src/lib/workers/segmentsContract.ts`: zod schemas for the match input (source session and cuts), the passes cache entry and the worker messages, `SEGMENT_MATCHER_VERSION`
 - `apps/web/src/lib/workers/segments.worker.ts`: thin `self.onmessage` around `segmentMatching.ts`
 - `apps/web/src/lib/analysis/segmentMatching.ts`: per segment: cache check (matcher version, source session key), drop passes of sessions that are gone, reference from the source records between the cuts, bbox prefilter on `session-gps`, records read once per run, engine match, cache write; metrics
@@ -216,14 +234,17 @@ flowchart TB
 - `apps/web/src/mutations/segments/useDeleteSegmentMutation.ts`: deletes the segment's passes entry
 - `apps/web/src/routing/dashboardTab.ts`: `DashboardTab`, `resolveDashboardTab`
 - `apps/web/src/pages/SegmentDetailPage.tsx`: thin page for `/segments/:id`
-- `apps/web/src/microcopy/segments.ts`: count, passes, rank, show more / fewer, name suggestion, the session delete note (count + quoted names)
-- `apps/web/src/lib/hooks/useDragScroll.ts`: mouse drag scrolls a horizontal container
+- `apps/web/src/microcopy/segments.ts`: count, passes, rank, show more / fewer, name suggestion, the session delete note (count + quoted names), the pass chip's accessible label
 - `apps/web/src/components/layout/VirtualItemList.tsx`: virtualized list shared by the session list and the Segments tab
 - `apps/web/src/components/segments/index.tsx`: segment page entry: param, store lookup, not-found
-- `apps/web/src/components/segments/SegmentDetail.tsx`: peek, header, `PvPageGrid` with the summary card and the explorer; skeletons while the passes are found
-- `apps/web/src/components/segments/SegmentDetailSkeleton.tsx`: card and explorer skeletons
-- `apps/web/src/components/segments/SegmentHeader.tsx`: SplinePointer tile, user name, "Running · 1.4 km · +4 m", inline "Finding passes…", ⋯
-- `apps/web/src/components/segments/SegmentPeek.tsx`: phone peek with name and facts
+- `apps/web/src/components/segments/SegmentDetail.tsx`: the sticky pass strip, the single-pass note and the explorer (selected vs best) in one column; clears the map markers on leave (R49, R51)
+- `apps/web/src/components/segments/PassStrip.tsx`: sticky strip under the header: the best pass pinned left under its year, then one `PvPlotStripGroup` per year (sticky year header) with a `PassTile` per other pass in date order (R62, R75) (newest right, opens scrolled to it), robust dot scale, crown tile for the best; the selected pass as `PassItem` below (R51)
+- `apps/web/src/components/segments/PassTile.tsx`: one pass as a `PvPlotStripTile`: date, crown and tone for the best (R62)
+- `apps/web/src/components/segments/PassStripSkeleton.tsx`: the strip's place at its height while the first match runs: skeleton dates and a skeleton session item (R52)
+- `apps/web/src/components/segments/charts/SegmentExplorerFrame.tsx`: the explorer card with heart rate, pace or speed and elevation rows and no lines, while the first match or the pass records load (R52)
+- `apps/web/src/components/segments/SegmentHeader.tsx`: shared header shaped like `SessionHeader`: sport-coloured SplinePointer tile, title and subtitle from `useSegmentTitle` (`subtitleLoading` shows a skeleton instead, R52), `titleVariant`, `titleAs`, `children` slot (⋯ on the page), `className`; used by the Segments tab item and the segment page
+- `apps/web/src/components/segments/hooks/useSegmentTitle.ts`: `{ title, subtitle }`: name; last ridden date (`formatDate`) · distance · elevation · pass count of the filtered segment, date and count left out while unknown
+- `apps/web/src/components/segments/SegmentPeek.tsx`: phone peek with the header's tile, title and subtitle
 - `apps/web/src/components/segments/SegmentActionsMenu.tsx`: ⋯ with Rename and Delete (`PvActionsMenu`, like `SessionActionsMenu`)
 - `apps/web/src/components/segments/SegmentNameDialog.tsx`: `PvDialog` with a name field (prefilled, selected), facts line, in create mode the similar-segment hint with "Open segment", Cancel / Save; modes create and rename
 - `apps/web/src/components/segments/DeleteSegmentDialog.tsx`: confirm like `DeleteTripDialog`; opens the Segments tab afterwards
@@ -231,88 +252,98 @@ flowchart TB
 - `apps/web/src/components/segments/SegmentPassesNote.tsx`: "1 pass · only this session so far" (or no pass) + "New imports are checked against this segment automatically"
 - `apps/web/src/components/segments/segmentCreation.ts`: draft from a record span (cuts, facts, polyline, bounds), suggested name, `similarSegment`
 - `apps/web/src/components/segments/segmentsSnackbars.ts`: no GPS in the range
-- `apps/web/src/components/segments/SegmentsTab.tsx`: Dashboard tab content: virtualized items, skeletons on the first match, empty state
+- `apps/web/src/components/segments/SegmentsTab.tsx`: Dashboard tab content: virtualized items, 10 skeletons on the first match (R48), empty state
 - `apps/web/src/components/segments/SegmentsEmpty.tsx`: "No segments yet" + the shared how-to
-- `apps/web/src/components/segments/SegmentItem.tsx`: SplinePointer tile in the sport colour, user name, value slot; opens the segment page
+- `apps/web/src/components/segments/SegmentItem.tsx`: Segments tab item: `PvCard` button (like `SessionItem`) with `SegmentHeader` subtitle1; opens the segment page, hover highlights it on the map through `useMapHover` (cleared on leave and unmount, never on click, R49)
+- `apps/web/src/components/sessions/session/SessionSegmentItem.tsx`: condensed `PvActionItem` sm in the session Segments row: sport-coloured tile, name, time · rank, best crown; opens the segment page with `?from=`; hover previews its stretch through `useMapHover` (R49)
 - `apps/web/src/components/segments/SegmentItemSkeleton.tsx`: item skeleton
-- `apps/web/src/components/segments/SegmentsPickPopup.tsx`: map pick popup listing the segments under a click
 - `apps/web/src/components/segments/BestCrown.tsx`: amber crown on the best card's corner
 - `apps/web/src/components/segments/BestHighlight.tsx`: best item decoration (crown, border)
-- `apps/web/src/components/segments/PassTimesRow.tsx`: Pass times row: scatter, passes, show more / fewer, single-pass note
-- `apps/web/src/components/segments/PassScatter.tsx`: Recharts scatter + rolling median, horizontal scroll window
-- `apps/web/src/components/segments/PassItem.tsx`: pass card (condensed `PvActionItem`)
-- `apps/web/src/components/segments/PassGapSpark.tsx`: time-gap-to-best mini chart
-- `apps/web/src/components/segments/segmentPasses.ts`: best, latest, ordering, rolling median, rank, window, gap series, positions, session segments in ride order
+- `apps/web/src/components/segments/PassItem.tsx`: the selected pass under the strip (`PvActionItem` md, radius lg: session name, date, gap with the total time below or the best time, no chevron), opens its session; best with crown and border (R67, R69)
+- `apps/web/src/components/segments/segmentPasses.ts`: best, latest, passes grouped by year in date order (R62), robust dot scale (best at the top, 90th percentile at the bottom, slower clamped), rank, session segments in ride order
 - `apps/web/src/components/segments/segmentFacts.ts`: distance and signed net elevation
-- `apps/web/src/components/segments/segmentFilter.ts`: dashboard filter as a view over the matched segments (Q82)
+- `apps/web/src/components/segments/segmentFilter.ts`: dashboard filter as a view over the matched segments (Q82): `segmentsInFilter` for the tab, `segmentInFilter` for one segment with a pass that always stays
 - `apps/web/src/components/segments/hooks/useSegments.ts`: store ⨝ passes → `MatchedSegment[]`
-- `apps/web/src/components/segments/hooks/useSegmentDetail.ts`: one segment by id with its passes and the finding flag
+- `apps/web/src/components/segments/hooks/useSegmentDetail.ts`: one segment by id with its passes inside the dashboard filter (the `?from=` pass always kept) and the finding flag
 - `apps/web/src/components/segments/hooks/useFilteredSegments.ts`: `useSegments` + filters
-- `apps/web/src/components/segments/hooks/useSessionSegments.ts`: the segments a session rode, with time and rank
+- `apps/web/src/components/segments/hooks/useSessionSegments.ts`: the segments a session rode, with time and rank among the passes inside the dashboard filter (its own pass always counts)
 - `apps/web/src/components/segments/hooks/useSaveSegment.ts`: `addSegment`, then the segment page; no-GPS snackbar for a `null` draft
 - `apps/web/src/components/segments/hooks/useSimilarSegment.ts`: the stored segment nearly matching a draft (Q108)
 - `apps/web/src/components/segments/hooks/useSessionReferenceSegment.ts`: whether the session can become or already is a reference, draft of the whole session
-- `apps/web/src/components/segments/hooks/useSegmentPassSelection.ts`: selected pass (origin from `?from=`, else latest)
-- `apps/web/src/components/segments/hooks/useScatterWindow.ts`: visible pass ids after scrolling settles
-- `apps/web/src/components/segments/hooks/useScatterScrollEndEffect.ts`: scroll-end listener for the scatter
+- `apps/web/src/components/segments/hooks/useReferenceSegmentMenuEntry.ts`: the session ⋯ item "Open segment" or "Use as reference segment" (or none), the whole-session draft and its close
+- `apps/web/src/components/segments/ReferenceSegmentDialog.tsx`: the create-mode `SegmentNameDialog` for that draft with the similar-segment hint; Save stores it and opens the segment page
+- `apps/web/src/components/segments/hooks/useSegmentPassSelection.ts`: the one selected pass (origin from `?from=`, else latest); a tap selects any pass, the best included, and never clears it
+- `apps/web/src/queries/sessions/useSessionRecordSlices.ts`: records of several sessions loaded once and kept only as the caller's slice (`useQueries`)
 - `apps/web/src/components/segments/hooks/useListExpansion.ts`: show more / fewer state with the scroll-into-view on collapse
 - `apps/web/src/components/segments/charts/SegmentChartsExplorer.tsx`: selected vs best per channel
 - `apps/web/src/components/segments/charts/SegmentChannelChart.tsx`: one channel chart
 - `apps/web/src/components/segments/charts/SegmentChannelRail.tsx`: rail with the best note (crown)
-- `apps/web/src/components/segments/charts/SegmentExplorerLegend.tsx`: floating legend pill
 - `apps/web/src/components/segments/charts/segmentChartRows.ts`: slice a pass's records, rows on elapsed time
 - `apps/web/src/components/segments/charts/segmentChannels.ts`: channel specs
 - `apps/web/src/components/segments/charts/segmentExplorerHover.ts`: hover group and markers
-- `apps/web/src/components/segments/charts/hooks/useSegmentChartRows.ts`: loads the selected and best records
+- `apps/web/src/components/segments/charts/hooks/useSegmentChartRows.ts`: series of the selected and best pass from the slices of every pass in the view, loading until all are sliced
 - `apps/web/src/components/sessions/session/SegmentsRow.tsx`: Segments row: count or "No segments yet", the how-to as the secondary line, SplinePointer icon
-- `apps/web/src/components/sessions/session/SessionSegmentList.tsx`: the session's segments in ride order, 5 + show more, hover previews the stretch
-- `apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts`: whether the tab or the page drives the map, which segments, bounds
-- `apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts`: hovered stretch, page segment, pass and best markers
-- `apps/web/src/components/mapBackground/hooks/useSegmentsPickPopup.ts`: track click on the tab → segments under it, popup also for one hit
+- `apps/web/src/components/sessions/session/SessionSegmentList.tsx`: the session's segments in ride order inside the start / end rail, 5 + show more
+- `apps/web/src/components/sessions/session/SegmentRideRail.tsx`: vertical rail from "Start" to "End" around the session's segment items: hollow ring at the start, filled dot at the end, small uppercase labels (R41)
+- `apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts`: tab or page from the map scene, which segments, bounds
+- `apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts`: hovered stretch (scene-gated), page segment, pass and best markers
+- `apps/web/src/components/mapBackground/mapScene.ts`: `MapScene` (overview, trip, session, segment tab, segment page, studio tab, studio route) derived from the route, scene key, scene-gated hover reads (R49)
+- `apps/web/src/components/mapBackground/hooks/useMapScene.ts`: the map scene of the current render (route + trip sessions), read by every map layer hook, the track list, the camera, the pick popup and the hover hook (R49)
+- `apps/web/src/components/segments/hooks/useClearPassFocusEffect.ts`: clears the hovered pass and the pass / best markers when the segment page unmounts (R49)
+- `apps/web/tests/components/mapBackground/mapScene.integration.spec.tsx`: click-through S1 (Segments tab card), S2 (pick popup card), S4 (session Segments row) never show all tracks without hover or lose the overlay before the next page commits (R49)
+- `apps/web/tests/components/mapBackground/hooks/useOpenedSessionEffect.integration.spec.ts`: session close resets the controls and the hovered point, another session clears the lap selection (moved from `mapFocus.spec.ts`)
+- `apps/web/tests/factories/trips.ts`: `createMockTrip`
 - `apps/web/tests/store/segments.spec.ts`: add, rename, remove, removeSegmentsOfSession, clearAll, persist version 1
 - `apps/web/tests/lib/analysis/segmentMatching.spec.ts`: cache hit, new session matched only, gone session dropped, matcher version, source reprocessed, reference cut from the source records, bbox prefilter, source records missing
 - `apps/web/tests/lib/storage/db.segments.integration.spec.ts`: v4 → v5 keeps data, `segment-passes`, invalid entries fall back, delete by ids
 - `apps/web/tests/lib/workers/segmentsContract.spec.ts`: schemas accept valid, reject invalid
 - `apps/web/tests/components/segments/segmentCreation.spec.ts`: span from a zoom range, cuts, any length, suggestion, no GPS, `similarSegment`
 - `apps/web/tests/components/segments/hooks/useSaveSegment.spec.ts`: store entry added, page opened, no-GPS snackbar
+- `apps/web/tests/components/segments/hooks/useSegmentDetail.spec.ts`: passes, best and rank inside the dashboard filter, the `?from=` pass kept, no pass in the filter
+- `apps/web/tests/components/segments/hooks/useSegmentTitle.spec.ts`: subtitle with passes, without known passes, with no pass left, count inside the filter
+- `apps/web/tests/components/segments/SegmentItem.spec.tsx`: the Segments tab item and the segment page show the same header; Enter opens the segment page
+- `apps/web/tests/components/segments/hooks/useSessionSegments.spec.ts`: row rank among the passes inside the filter, the viewed session kept
 - `apps/web/tests/components/segments/SegmentNameDialog.spec.tsx`: prefill, Enter, blank name, similar hint with "Open segment", rename without hint
 - `apps/web/tests/components/sessions/session/DeleteSessionDialog.spec.tsx`: segment note with names, cascade on Delete
 - `apps/web/tests/components/segments/SegmentActionsMenu.spec.tsx`: rename, delete confirm, Segments tab afterwards
-- `apps/web/tests/components/segments/segmentPasses.spec.ts`: median, rank, window, gap series, positions
+- `apps/web/tests/components/segments/segmentPasses.spec.ts`: median, rank, window, ride order
+- `apps/web/tests/components/segments/hooks/useSegmentPassSelection.spec.ts`: latest on open, `?from=` pass, a second tap keeps the selection, the best selectable, fallback when the pick leaves the view
+- `apps/web/tests/components/segments/charts/segmentExplorerHover.spec.ts`: scrub markers, only the best marker when only the best is plotted
 - `apps/web/tests/components/segments/segmentFilter.spec.ts`: filter view
-- `apps/web/tests/components/segments/PassTimesRow.spec.tsx`: collapsed list, show more / fewer, selection, single-pass note
+- `apps/web/tests/components/segments/SegmentDetail.spec.tsx`: chips in date order with the latest selected, the best chip's tone, the `?from=` pass, a tap moves selection, session item and explorer, only the best line with the best selected, map markers cleared on leaving the page (R49)
+- `apps/web/tests/components/segments/charts/hooks/useSegmentChartRows.spec.ts`: loading until every pass in the view is sliced, each pass loaded once
 - `apps/web/tests/components/segments/charts/segmentChartRows.spec.ts`: slicing, elapsed time, missing stays null
-- `apps/web/tests/components/sessions/session/SegmentsRow.spec.tsx`: how-to line at 0 and n, item opens `/segments/<id>?from=`
+- `apps/web/tests/components/sessions/session/SegmentsRow.spec.tsx`: how-to line at 0 and n, item opens `/segments/<id>?from=`, start / end rail labels, no rail without segments
 - `apps/web/tests/components/sessions/session/SessionActionsMenu.spec.tsx`: "Use as reference segment" vs "Open segment", hidden without GPS
-- `apps/web/tests/components/mapBackground/trackPicking.segments.spec.ts`: segments in pick bounds
 - `apps/web/tests/factories/segments.ts`: `createMockSegment`, `createMockMatchedSegment`, `createMockStoredSegmentPass`, `createMockSegmentPassesEntry`
 - `apps/web/tests/routing/dashboardTab.spec.ts`: tab resolution
 - `apps/web/tests/routing/useRouteMatch.spec.ts`: decoded ids
-- `apps/web/e2e/segments.spec.ts`: create from charts, session menu reference, rename, delete, similar hint, source session delete
+- `apps/web/e2e/segments.spec.ts`: create from charts, the pass strip (a tap moves the selection, the session item opens its session), session menu reference, rename, delete, similar hint, source session delete
+- `apps/web/src/components/segments/types.ts`: `MatchedSegment`, shared by the segment hooks and components
+- `packages/ui/tests/components/pvStatRail/PvStatRail.spec.ts`: note placement top and bottom
 
 ### Changed
+
+- `apps/web/src/components/mapBackground/hooks/usePickLayers.ts`: reads the shared hover marker constants from `trackColors.ts` (R31)
+- `apps/web/src/components/charts/SeriesRail.tsx`: forwards `notePlacement`
 
 - `packages/engine/SOURCES.md`: `segments.ts` row (corridor match)
 - `packages/engine/tests/metrics.ewmaAlpha.spec.ts`: follows the series factory change
 - `packages/testing/src/series.ts`: GPS series along a given path (offset, reverse, speed)
 - `packages/ui/src/components/pvChartsCard/PvZoomResetPill.tsx`: optional `children` rendered before the reset pill in the same sticky row
 - `packages/ui/src/components/pvStatRail/types.ts`: note `icon`
-- `packages/ui/src/components/pvStatRail/PvStatRail.tsx`: renders the note icon
-- `packages/ui/src/components/pvCollapsibleListItem/PvCollapsibleListItem.tsx`: `defaultOpen`
+- `packages/ui/src/components/pvStatRail/PvStatRail.tsx`: renders the note icon and places the note top or bottom (`notePlacement`, R29)
 - `packages/ui/src/theme.css`: `--color-best`, `scroll-fade-x`
 - `packages/ui/src/lib/tokens.ts`: `best`
-- `packages/ui/src/lib/scrollFade.ts`: `horizontalScrollFadeEdges`
-- `packages/ui/src/hooks/useScrollFadeEffect.ts`: `options?: { axis }`
-- `packages/ui/tests/lib/scrollFade.spec.ts`: left / right edges
-- `packages/i18n/messages/en.json`: segment keys (no type labels)
-- `packages/i18n/messages/de.json`: segment keys (no type labels)
+- `packages/i18n/messages/en.json`: segment keys (no type labels, no tab, Pass times or trend keys; strip and chip labels)
+- `packages/i18n/messages/de.json`: the same keys as `en.json`
 - `apps/web/CLAUDE.md`: §1 Storage row lists `segment-passes`
 - `apps/web/src/main.tsx`: rehydrates `useSegmentsStore`
 - `apps/web/src/lib/storage/db.ts`: v5 with `segment-passes`, read / write / delete by ids, cleared with the rest
 - `apps/web/src/lib/storage/storageBreakdown.ts`: `segment-passes` → appData
 - `apps/web/src/types.ts`: `QueryResults.segmentPasses`
 - `apps/web/src/lib/analysis/laps.ts`: `RecordSpan`, `recordSpanBetween`
-- `apps/web/src/lib/format/formatters.ts`: short date, ordinal, signed race time, `formatList`
+- `apps/web/src/lib/format/formatters.ts`: short date, `day-month` date (tile labels), `year` (strip year headers, R62), signed race time, `formatList`
 - `apps/web/src/lib/debug/pvDebug.ts`: `segmentMetrics` command
 - `apps/web/src/routing/pageRegistry.ts`: `segmentDetail` with `from`, dashboard `tab`
 - `apps/web/src/routing/AppRoutes.tsx`: segment route
@@ -323,25 +354,40 @@ flowchart TB
 - `apps/web/src/components/settings/deleteAllData.ts`: `useSegmentsStore` `clearAll`, reset the passes query
 - `apps/web/src/components/sessions/SessionList.tsx`: uses `VirtualItemList`
 - `apps/web/src/components/sessions/session/SessionSummaryCard.tsx`: Segments row after Laps
-- `apps/web/src/components/sessions/session/SessionActionsMenu.tsx`: "Use as reference segment" / "Open segment" + name dialog
+- `apps/web/src/components/sessions/session/SessionActionsMenu.tsx`: "Use as reference segment" / "Open segment" + name dialog through `useReferenceSegmentMenuEntry` and `ReferenceSegmentDialog`
 - `apps/web/src/components/sessions/session/DeleteSessionDialog.tsx`: names the session's segments in the description, removes them on Delete (Q106)
 - `apps/web/src/mutations/sessions/useDeleteSessionMutation.ts`: takes `segmentIds`, deletes their passes entries with the session data
 - `apps/web/src/components/sessions/charts/SessionChartsExplorer.tsx`: `SaveSegmentPill` beside Reset zoom while zoomed
 - `apps/web/src/components/sessions/charts/railRange.ts`: record span of a minute range
-- `apps/web/src/store/mapControls.ts`: `hoveredSegmentSpan`
-- `apps/web/src/components/mapBackground/index.tsx`: segments pick popup
 - `apps/web/src/components/mapBackground/DeckGLOverlay.tsx`: segment layers
-- `apps/web/src/components/mapBackground/trackPicking.ts`: `segmentsInPickBounds`, `pickSegmentsAt` on stored bounds
 - `apps/web/src/components/mapBackground/trackColors.ts`: `BEST_MARKER_COLOR`
 - `apps/web/src/components/mapBackground/lapPath.ts`: paths from a `RecordSpan`
 - `apps/web/src/components/mapBackground/mapCamera.ts`: `segment` target
-- `apps/web/src/components/mapBackground/hooks/useMapCameraTarget.ts`: segment page target
-- `apps/web/src/components/mapBackground/hooks/useMapCameraInputs.ts`: segment bounds
-- `apps/web/src/components/mapBackground/hooks/useMapCameraEffect.ts`: fits the segment
-- `apps/web/src/components/mapBackground/hooks/useMapInteraction.ts`: track click on the tab opens the segments popup
-- `apps/web/src/components/mapBackground/hooks/useTrackLayers.ts`: tab fade, hover, hidden on the page
-- `apps/web/src/components/mapBackground/hooks/useLapLayers.ts`: hovered segment span
-- `apps/web/src/components/mapBackground/hooks/useTerrainLapStateEffect.ts`: hovered segment span in 3D
+- `apps/web/src/components/mapBackground/hooks/useMapCameraTarget.ts`: target switched on the map scene (segment page included)
+- `apps/web/src/components/mapBackground/hooks/useMapCameraInputs.ts`: segment bounds; trip ids and session id from the scene
+- `apps/web/src/components/mapBackground/hooks/useMapCameraEffect.ts`: fits the segment; padding reserves the session controls bar from the target
+- `apps/web/src/components/mapBackground/hooks/useTrackLayers.ts`: shown per scene kind, scene-gated session and segment hover (no tab fade, R27; R49)
+- `apps/web/src/components/mapBackground/hooks/useLapLayers.ts`: scene-gated hovered segment span
+- `apps/web/src/components/mapBackground/hooks/useTerrainLapStateEffect.ts`: scene-gated hovered segment span in 3D
+- `apps/web/src/store/mapFocus.ts`: one hover `mapHover` (`{ target, sceneKey }`, `setMapHover`, `clearMapHover` of the own target) replaces `hoveredSessionId` / `hoveredStudioRouteId`; `openedSessionId` and `focusedTripSessionIds` gone, the scene reads them from the route (R49)
+- `apps/web/src/components/mapBackground/index.tsx`: terrain only in the session scene
+- `apps/web/src/components/mapBackground/mapPadding.ts`: session controls inset from the caller (`sessionControls`) instead of `openedSessionId`
+- `apps/web/src/components/mapBackground/hooks/useMapHover.ts`: one hover hook for every map-driving list item, target union, scene key, clears its own target on leave and unmount
+- `apps/web/src/components/mapBackground/hooks/useOpenedSessionEffect.ts`: only resets the session controls (and the hovered point on close) when the scene's session changes
+- `apps/web/src/components/mapBackground/hooks/useMapBackgroundEffects.ts`: session id and geolocation padding from the scene
+- `apps/web/src/components/mapBackground/hooks/useGeolocationCameraEffect.ts`: `sessionControls` for the padding
+- `apps/web/src/components/mapBackground/hooks/useMapTracks.ts`: listed per scene kind, trip ids from the scene
+- `apps/web/src/components/mapBackground/hooks/useStudioMapTracks.ts`: studio tab and route from the scene
+- `apps/web/src/components/mapBackground/hooks/useStudioRouteLayer.ts`: scene-gated route hover
+- `apps/web/src/components/mapBackground/hooks/useDetailLayers.ts`: opened session and hover prefetch from the scene
+- `apps/web/src/components/mapBackground/hooks/useMapPopupState.ts`: pick disabled in the session scene
+- `apps/web/src/components/sessions/SessionItem.tsx`: navigation and `onNavigate` (pick popup close) in one transition
+- `apps/web/src/components/studio/StudioRouteItem.tsx`: navigation and `onNavigate` (pick popup close) in one transition
+- `apps/web/src/components/sessions/session/hooks/useSessionLapsEffect.ts`: session from the scene
+- `apps/web/src/components/trips/index.tsx`: no map focus effect (the scene reads the trip); `components/trips/hooks/useTripMapFocusEffect.ts` deleted
+- `apps/web/tests/store/mapFocus.spec.ts`: `clearMapHover` clears only its own target; opened-session cases moved to `useOpenedSessionEffect.integration.spec.ts`
+- `apps/web/tests/components/mapBackground/hooks/useMapHover.integration.spec.ts`: scene key on set, touch no-op, cleared on card unmount, another card's hover kept
+- `apps/web/tests/components/mapBackground/hooks/useMapTracks.integration.spec.ts`: no tracks on the way from a segment page to a session (S5), trip tracks from the first render (S7)
 - `apps/web/e2e/helpers/seed.ts`: create `segment-passes`
 - `apps/web/tests/lib/storage/db.integration.spec.ts`: version 5 with `segment-passes`
 - `apps/web/tests/routing/pageRegistry.spec.ts`: new URLs
@@ -355,7 +401,6 @@ Overview: the user's segments live only in the persisted `store-segments` (name,
 
 ```ts
 // packages/engine/src/segments.ts
-export const SEGMENT_SPLIT_COUNT = 24;
 export interface SegmentTrackPoint {
   lat: number;
   lng: number;
@@ -375,7 +420,6 @@ export interface SegmentPass {
   startTimestampSec: number;
   endTimestampSec: number;
   durationSec: number;
-  splitDurationsSec: number[];
   coverageRatio: number;
 }
 export interface SegmentMatchTolerances {
@@ -531,7 +575,7 @@ export const useSegments: (options?: { enabled?: boolean }) => MatchedSegment[] 
 // apps/web/src/components/segments/hooks/useSegmentDetail.ts
 interface SegmentDetailState {
   segment: Segment | undefined; // from the store, at once after Save
-  matched: MatchedSegment | undefined; // undefined while its passes are found
+  matched: MatchedSegment | undefined; // passes inside the dashboard filter, the ?from= pass kept; undefined while its passes are found
   finding: boolean;
 }
 export const useSegmentDetail: (segmentId: string | undefined) => SegmentDetailState;
@@ -575,6 +619,18 @@ interface SegmentNameDialogProps extends Required<
 export const formatList: (values: string[]) => string; // Intl.ListFormat conjunction with getLocale()
 // apps/web/src/microcopy/segments.ts
 export const sessionSegmentsDeleteNote: (names: string[]) => string; // ui_session_delete_segments_one / _other, names quoted, formatList
-// unchanged from the working tree: PvActionItem, PvStatRail note icon, PvCollapsibleListItem defaultOpen,
-// scroll-fade-x, --color-best, segmentFocus store, pageRegistry segmentDetail/from, dashboard tab
+export const passChipLabel: (input: { date: string; time: string; best: boolean }) => string; // ui_segment_pass_chip / _best
+// apps/web/src/components/segments/segmentPasses.ts
+export const passDotScale: (passes: StoredSegmentPass[]) => (durationSec: number) => PlotStripPosition;
+export const passesByYear: (passes: StoredSegmentPass[]) => PassYear[]; // { year: number; passes: StoredSegmentPass[] }, oldest first
+// packages/ui/src/components/pvPlotStrip/PvPlotStripTile.tsx
+interface PvPlotStripTileProps { label: string; accessibleLabel: string; position: PlotStripPosition; referenceRatio?: number; pressed: boolean; onPress: () => void; tone?: PlotStripTone; markerIcon?: LucideIcon; testId?: string; ref?: Ref<HTMLButtonElement> }
+// packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx
+interface PvPlotStripProps { label: string; scrollKey: string; children: ReactNode; pinned?: ReactNode; className?: string }
+// packages/ui/src/components/pvPlotStrip/PvPlotStripGroup.tsx
+interface PvPlotStripGroupProps { label: string; children: ReactNode }
+// packages/ui/src/hooks/useScrollToEndEffect.ts
+export const useScrollToEndEffect: (input: { ref: RefObject<HTMLElement | null>; scrollKey: string }) => void;
+// unchanged from the working tree: PvActionItem, PvStatRail note icon,
+// --color-best, segmentFocus store, pageRegistry segmentDetail/from, dashboard tab
 ```

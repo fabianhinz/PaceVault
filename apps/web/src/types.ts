@@ -13,7 +13,7 @@ import type {
   SessionRecord,
 } from '@pacevault/engine/types.ts';
 import type { RoutePoint } from '@pacevault/gpx/types.ts';
-import type { StoredSegments } from '@/lib/workers/segmentsContract.ts';
+import type { SegmentPassesEntry } from '@/lib/workers/segmentsContract.ts';
 import type { RouteElevationStats } from '@pacevault/gpx/routeGeometry.ts';
 
 export type ThresholdKey = 'restHr' | 'maxHr' | 'thresholdHr' | 'ftp' | 'thresholdPace' | 'weight';
@@ -143,8 +143,7 @@ export interface QueryResults {
   onboardingPreviewRoutes: PreviewPasses;
   sessionWeather: SessionWeather | null;
   personalBests: PersonalBest[];
-  storedSegments: StoredSegments[];
-  detectedSegments: StoredSegments[];
+  segmentPasses: SegmentPassesEntry[];
   intervalsKeyCheck: true;
   intervalsSync: IntervalsSyncSummary;
   studioRoutePoints: RoutePoint[];

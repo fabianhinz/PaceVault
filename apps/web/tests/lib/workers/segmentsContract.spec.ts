@@ -1,54 +1,86 @@
 import { describe, expect, it } from 'vite-plus/test';
 import {
-  SEGMENT_DETECTOR_VERSION,
+  SEGMENT_MATCHER_VERSION,
+  segmentPassesEntrySchema,
+  workerMessageInSchema,
   workerMessageOutSchema,
 } from '@/lib/workers/segmentsContract.ts';
-import { createMockStoredSegments } from '@tests/factories/segments.ts';
+import {
+  createMockSegmentPassesEntry,
+  createMockSegmentSessionMeta,
+} from '@tests/factories/segments.ts';
 
 const metrics = {
-  detectorVersion: SEGMENT_DETECTOR_VERSION,
+  matcherVersion: SEGMENT_MATCHER_VERSION,
   environment: { hardwareConcurrency: 8, deviceMemoryGb: null, userAgent: 'test' },
   workerMs: 12,
   mainThreadMs: null,
-  sports: [
+  sessionsRead: 2,
+  segments: [
     {
-      sport: 'running',
-      cache: 'hit',
+      segmentId: 'segment-1',
+      cache: 'partial',
       missReason: null,
-      sessions: 3,
-      sessionsWithRecords: 0,
-      records: 0,
-      tracks: 0,
-      resampledPoints: 0,
-      segmentsByType: { climb: 0, flat: 1, descent: 0, route: 0 },
-      passes: 2,
-      engine: null,
-      ms: {
-        readRecords: 0,
-        slowestSessionRead: 0,
-        segmentTrack: 0,
-        detectedSegments: 0,
-        storedSegments: 0,
-        saveCache: 0,
-        total: 1,
-      },
+      sessionsChecked: 1,
+      bboxCandidates: 1,
+      recordsRead: 2,
+      referencePoints: 140,
+      passes: 3,
+      ms: 4,
     },
   ],
 };
 
 describe('workerMessageOutSchema', () => {
   it('accepts a result with and without metrics', () => {
-    const entries = [createMockStoredSegments()];
+    const entries = [createMockSegmentPassesEntry()];
 
     expect(workerMessageOutSchema.safeParse({ type: 'done', entries, metrics }).success).toBe(true);
     expect(workerMessageOutSchema.safeParse({ type: 'done', entries }).success).toBe(true);
   });
 
   it('rejects metrics with an unknown cache state', () => {
-    const broken = { ...metrics, sports: [{ ...metrics.sports[0], cache: 'warm' }] };
+    const broken = { ...metrics, segments: [{ ...metrics.segments[0], cache: 'warm' }] };
 
     expect(
       workerMessageOutSchema.safeParse({ type: 'done', entries: [], metrics: broken }).success,
     ).toBe(false);
+  });
+});
+
+describe('workerMessageInSchema', () => {
+  it('accepts a match request with segments and sessions', () => {
+    expect(
+      workerMessageInSchema.safeParse({
+        type: 'match',
+        segments: [
+          {
+            segmentId: 'segment-1',
+            sport: 'running',
+            bounds: { minLat: 48, maxLat: 48.1, minLng: 11, maxLng: 11.1 },
+            source: { sessionId: 'session-1', startSec: 10, endSec: 400 },
+          },
+        ],
+        sessions: [createMockSegmentSessionMeta()],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects a segment without its source cuts', () => {
+    expect(
+      workerMessageInSchema.safeParse({
+        type: 'match',
+        segments: [{ segmentId: 'segment-1', sport: 'running', source: { sessionId: 's' } }],
+        sessions: [],
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('segmentPassesEntrySchema', () => {
+  it('rejects an entry without checked session keys', () => {
+    const entry = { ...createMockSegmentPassesEntry(), checkedSessionKeys: undefined };
+
+    expect(segmentPassesEntrySchema.safeParse(entry).success).toBe(false);
   });
 });

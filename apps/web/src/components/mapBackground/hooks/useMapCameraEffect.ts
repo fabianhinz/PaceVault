@@ -102,18 +102,31 @@ const fitBoundsOf = ({
   }
 };
 
-const fitOptions = (fit: MapCameraFit): FitOptions => {
+const fitOptions = ({
+  fit,
+  target,
+}: {
+  fit: MapCameraFit;
+  target: MapCameraTarget;
+}): FitOptions => {
+  const sessionControls = target.kind === 'session';
   if (fit === 'overview' || fit === 'trip') {
-    return { padding: mapPadding(OVERVIEW_FIT_MARGIN), duration: OVERVIEW_FIT_DURATION_MS };
+    return {
+      padding: mapPadding(OVERVIEW_FIT_MARGIN, { sessionControls }),
+      duration: OVERVIEW_FIT_DURATION_MS,
+    };
   }
   if (fit === 'lap' || fit === 'lapClose' || fit === 'segment') {
     return {
-      padding: mapPadding(MAP_FIT_MARGIN, { sheetCap: LAP_SHEET_CAP }),
+      padding: mapPadding(MAP_FIT_MARGIN, { sheetCap: LAP_SHEET_CAP, sessionControls }),
       maxZoom: LAP_MAX_ZOOM,
       duration: LAP_FIT_DURATION_MS,
     };
   }
-  return { padding: mapPadding(MAP_FIT_MARGIN), duration: SESSION_FIT_DURATION_MS };
+  return {
+    padding: mapPadding(MAP_FIT_MARGIN, { sessionControls }),
+    duration: SESSION_FIT_DURATION_MS,
+  };
 };
 
 const boundsArray = (bounds: GPSBounds): LngLatBoundsLike => [
@@ -142,7 +155,7 @@ const armZoomLimit = ({
 }) => {
   const onMoveEnd = () => {
     const fit = map.cameraForBounds(boundsArray(bounds), {
-      padding: mapPadding(MAP_FIT_MARGIN),
+      padding: mapPadding(MAP_FIT_MARGIN, { sessionControls: true }),
       bearing: 0,
     });
     if (fit?.zoom === undefined) return;
@@ -216,7 +229,7 @@ const applyBoundsFit = ({
   path,
   bounds,
 }: CameraFit & { bounds: GPSBounds }) => {
-  const options = fitOptions(fit);
+  const options = fitOptions({ fit, target });
   if (target.kind === 'session' && target.view === '3d') {
     void runTerrainFit({
       map,

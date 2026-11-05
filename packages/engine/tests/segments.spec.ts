@@ -1,248 +1,230 @@
 import { describe, expect, it } from 'vite-plus/test';
 import {
-  detectedSegments,
-  segmentDetectionResult,
+  matchTolerances,
+  segmentPasses,
+  segmentReference,
+  segmentReferenceFacts,
   segmentTrack,
-  type DetectedSegment,
+  type SegmentReferencePoint,
   type SegmentTrack,
 } from '../src/segments.ts';
 import { gpsPathRecordSeries, type PathWaypoint } from '../../testing/src/series.ts';
+import { createMockSegmentReferencePoint } from '../../testing/src/segments.ts';
 
 const NORTH_2_KM: PathWaypoint[] = [
   { eastMeters: 0, northMeters: 0 },
   { eastMeters: 0, northMeters: 2000 },
 ];
 
+const NORTH_20_KM: PathWaypoint[] = [
+  { eastMeters: 0, northMeters: 0 },
+  { eastMeters: 0, northMeters: 20000 },
+];
+
 const trackOf = ({
   sessionId,
-  date,
   path,
   speedMetersPerSec = 4,
   legSpeedsMetersPerSec,
   reverse,
-  gradeRatio,
 }: {
   sessionId: string;
-  date: number;
   path: PathWaypoint[];
   speedMetersPerSec?: number;
   legSpeedsMetersPerSec?: number[];
   reverse?: boolean;
-  gradeRatio?: number | null;
 }): SegmentTrack => {
   const track = segmentTrack({
     sessionId,
     sport: 'running',
-    date,
-    records: gpsPathRecordSeries({
-      path,
-      speedMetersPerSec,
-      legSpeedsMetersPerSec,
-      reverse,
-      gradeRatio,
-    }),
+    date: 0,
+    records: gpsPathRecordSeries({ path, speedMetersPerSec, legSpeedsMetersPerSec, reverse }),
   });
   if (track === undefined) throw new Error(`no track for ${sessionId}`);
   return track;
 };
 
-const passIds = (segment: DetectedSegment | undefined): string[] =>
-  (segment?.passes ?? []).map((pass) => pass.sessionId).sort();
+const referenceOf = (path: PathWaypoint[]): SegmentReferencePoint[] =>
+  segmentReference(gpsPathRecordSeries({ path, speedMetersPerSec: 4 }));
 
-const routeLedBy = ({
-  segments,
-  sessionId,
+const passIds = ({
+  reference,
+  tracks,
 }: {
-  segments: DetectedSegment[];
-  sessionId: string;
-}): DetectedSegment | undefined =>
-  segments.find((segment) => segment.type === 'route' && segment.leadSessionId === sessionId);
-
-const EAST_AFTER_2_KM: PathWaypoint[] = [...NORTH_2_KM, { eastMeters: 1000, northMeters: 2000 }];
-
-const turnOffPaths = (): { through: PathWaypoint[]; turnOff: PathWaypoint[] } => ({
-  through: EAST_AFTER_2_KM,
-  turnOff: [
-    ...NORTH_2_KM,
-    { eastMeters: 500, northMeters: 2000 },
-    { eastMeters: 500, northMeters: 2500 },
-  ],
-});
+  reference: SegmentReferencePoint[];
+  tracks: SegmentTrack[];
+}): string[] =>
+  segmentPasses({ reference, tracks })
+    .map((pass) => pass.sessionId)
+    .sort();
 
 describe('segments', () => {
-  it('finds one route with two passes when two sessions run the same route', () => {
-    const segments = detectedSegments({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 2, path: NORTH_2_KM }),
-        trackOf({ sessionId: 'b', date: 1, path: NORTH_2_KM }),
-      ],
+  describe(segmentPasses.name, () => {
+    it('finds one pass for a session on the reference path', () => {
+      const passes = segmentPasses({
+        reference: referenceOf(NORTH_2_KM),
+        tracks: [trackOf({ sessionId: 'a', path: NORTH_2_KM })],
+      });
+
+      expect(passes).toHaveLength(1);
+      expect(passes[0]?.sessionId).toBe('a');
     });
 
-    expect(segments).toHaveLength(1);
-    expect(segments[0]?.type).toBe('route');
-    expect(passIds(segments[0])).toEqual(['a', 'b']);
-  });
-
-  it('counts no pass for a session in the opposite direction', () => {
-    const segments = detectedSegments({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 3, path: NORTH_2_KM }),
-        trackOf({ sessionId: 'b', date: 2, path: NORTH_2_KM, reverse: true }),
-        trackOf({ sessionId: 'c', date: 1, path: NORTH_2_KM }),
-      ],
-    });
-
-    expect(passIds(routeLedBy({ segments, sessionId: 'a' }))).toEqual(['a', 'c']);
-  });
-
-  it('counts no pass for a session with a detour below 95 % coverage', () => {
-    const detour: PathWaypoint[] = [
-      { eastMeters: 0, northMeters: 0 },
-      { eastMeters: 0, northMeters: 800 },
-      { eastMeters: 200, northMeters: 800 },
-      { eastMeters: 200, northMeters: 1100 },
-      { eastMeters: 0, northMeters: 1100 },
-      { eastMeters: 0, northMeters: 2000 },
-    ];
-    const segments = detectedSegments({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 3, path: NORTH_2_KM }),
-        trackOf({ sessionId: 'b', date: 2, path: NORTH_2_KM }),
-        trackOf({ sessionId: 'c', date: 1, path: detour }),
-      ],
-    });
-
-    expect(passIds(routeLedBy({ segments, sessionId: 'a' }))).toEqual(['a', 'b']);
-  });
-
-  it('counts no pass for a session that ends more than 50 m before the end', () => {
-    const shortened: PathWaypoint[] = [
-      { eastMeters: 0, northMeters: 0 },
-      { eastMeters: 0, northMeters: 1900 },
-    ];
-    const segments = detectedSegments({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 3, path: NORTH_2_KM }),
-        trackOf({ sessionId: 'b', date: 2, path: NORTH_2_KM }),
-        trackOf({ sessionId: 'c', date: 1, path: shortened }),
-      ],
-    });
-
-    expect(passIds(routeLedBy({ segments, sessionId: 'a' }))).toEqual(['a', 'b']);
-  });
-
-  it('keeps one pass with the faster time when a session runs the stretch twice', () => {
-    const twice: PathWaypoint[] = [
-      ...NORTH_2_KM,
-      { eastMeters: 300, northMeters: 2000 },
-      { eastMeters: 300, northMeters: 0 },
-      ...NORTH_2_KM,
-    ];
-    const segments = detectedSegments({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 2, path: NORTH_2_KM }),
-        trackOf({
-          sessionId: 'b',
-          date: 1,
-          path: twice,
-          speedMetersPerSec: 3,
-          legSpeedsMetersPerSec: [3, 3, 3, 3, 5],
+    it('finds no pass for a session in the opposite direction', () => {
+      expect(
+        passIds({
+          reference: referenceOf(NORTH_2_KM),
+          tracks: [trackOf({ sessionId: 'a', path: NORTH_2_KM, reverse: true })],
         }),
-      ],
-    });
-    const route = routeLedBy({ segments, sessionId: 'a' });
-    const passesOfB = (route?.passes ?? []).filter((pass) => pass.sessionId === 'b');
-
-    expect(passesOfB).toHaveLength(1);
-    expect(passesOfB[0]?.durationSec).toBeCloseTo(2000 / 5, -1);
-  });
-
-  it('finds a segment for the stretch three sessions share before one turns off', () => {
-    const paths = turnOffPaths();
-    const segments = detectedSegments({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 3, path: paths.through }),
-        trackOf({ sessionId: 'b', date: 2, path: paths.through }),
-        trackOf({ sessionId: 'c', date: 1, path: paths.turnOff }),
-      ],
-    });
-    const shared = segments.filter((segment) => passIds(segment).join() === 'a,b,c');
-
-    expect(shared).toHaveLength(1);
-    expect(shared[0]?.type).toBe('flat');
-  });
-
-  it('finds nothing for a stretch run once', () => {
-    expect(
-      detectedSegments({
-        sport: 'running',
-        tracks: [trackOf({ sessionId: 'a', date: 1, path: NORTH_2_KM })],
-      }),
-    ).toEqual([]);
-  });
-
-  it('times a pass as the elapsed time between the projected ends', () => {
-    const longer: PathWaypoint[] = [
-      { eastMeters: 0, northMeters: -500 },
-      { eastMeters: 0, northMeters: 2000 },
-    ];
-    const segments = detectedSegments({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 2, path: NORTH_2_KM, speedMetersPerSec: 5 }),
-        trackOf({ sessionId: 'b', date: 1, path: longer, speedMetersPerSec: 4 }),
-      ],
-    });
-    const route = routeLedBy({ segments, sessionId: 'a' });
-    const passOfB = route?.passes.find((pass) => pass.sessionId === 'b');
-    const routeMeters = (route?.endMeters ?? 0) - (route?.startMeters ?? 0);
-
-    expect(passOfB?.startTimestampSec).toBeCloseTo(500 / 4, 0);
-    expect(passOfB?.durationSec).toBeCloseTo(routeMeters / 4, 0);
-    expect(passOfB?.splitDurationsSec).toHaveLength(25);
-  });
-
-  it('keeps a stretch without elevation flat with no elevation change', () => {
-    const paths = turnOffPaths();
-    const segments = detectedSegments({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 3, path: paths.through, gradeRatio: null }),
-        trackOf({ sessionId: 'b', date: 2, path: paths.through, gradeRatio: null }),
-        trackOf({ sessionId: 'c', date: 1, path: paths.turnOff, gradeRatio: null }),
-      ],
-    });
-    const shared = segments.find((segment) => passIds(segment).join() === 'a,b,c');
-
-    expect(shared?.type).toBe('flat');
-    expect(shared?.netElevationMeters).toBe(null);
-  });
-
-  it('reports the run through the stats with phase times from the injected clock', () => {
-    let tickMs = 0;
-    const result = segmentDetectionResult({
-      sport: 'running',
-      tracks: [
-        trackOf({ sessionId: 'a', date: 2, path: NORTH_2_KM }),
-        trackOf({ sessionId: 'b', date: 1, path: NORTH_2_KM }),
-      ],
-      clockMs: () => {
-        tickMs += 1;
-        return tickMs;
-      },
+      ).toEqual([]);
     });
 
-    expect(result.segments).toHaveLength(1);
-    expect(result.stats.leadsProcessed).toBe(1);
-    expect(result.stats.leadsSkippedAsRoute).toBe(1);
-    expect(result.stats.candidates).toBe(1);
-    expect(result.stats.msByPhase.grid).toBe(1);
-    expect(result.stats.msByPhase.corridorMatch).toBeGreaterThan(0);
+    it('finds no pass for a session leaving the corridor for more than the coverage allows', () => {
+      const detour: PathWaypoint[] = [
+        { eastMeters: 0, northMeters: 0 },
+        { eastMeters: 0, northMeters: 800 },
+        { eastMeters: 200, northMeters: 800 },
+        { eastMeters: 200, northMeters: 1100 },
+        { eastMeters: 0, northMeters: 1100 },
+        { eastMeters: 0, northMeters: 2000 },
+      ];
+
+      expect(
+        passIds({
+          reference: referenceOf(NORTH_2_KM),
+          tracks: [
+            trackOf({ sessionId: 'a', path: NORTH_2_KM }),
+            trackOf({ sessionId: 'b', path: detour }),
+          ],
+        }),
+      ).toEqual(['a']);
+    });
+
+    it('finds no pass for a session ending beyond the end tolerance', () => {
+      const shortened: PathWaypoint[] = [
+        { eastMeters: 0, northMeters: 0 },
+        { eastMeters: 0, northMeters: 1920 },
+      ];
+
+      expect(
+        passIds({
+          reference: referenceOf(NORTH_2_KM),
+          tracks: [trackOf({ sessionId: 'a', path: shortened })],
+        }),
+      ).toEqual([]);
+    });
+
+    it('accepts an end 150 m off on a 20 km reference', () => {
+      const shortened: PathWaypoint[] = [
+        { eastMeters: 0, northMeters: 0 },
+        { eastMeters: 0, northMeters: 19850 },
+      ];
+
+      expect(
+        passIds({
+          reference: referenceOf(NORTH_20_KM),
+          tracks: [trackOf({ sessionId: 'a', path: shortened, speedMetersPerSec: 8 })],
+        }),
+      ).toEqual(['a']);
+    });
+
+    it('keeps one pass with the faster time when a session rides the stretch twice', () => {
+      const twice: PathWaypoint[] = [
+        ...NORTH_2_KM,
+        { eastMeters: 300, northMeters: 2000 },
+        { eastMeters: 300, northMeters: 0 },
+        ...NORTH_2_KM,
+      ];
+      const passes = segmentPasses({
+        reference: referenceOf(NORTH_2_KM),
+        tracks: [
+          trackOf({
+            sessionId: 'a',
+            path: twice,
+            speedMetersPerSec: 3,
+            legSpeedsMetersPerSec: [3, 3, 3, 3, 5],
+          }),
+        ],
+      });
+
+      expect(passes).toHaveLength(1);
+      expect(passes[0]?.durationSec).toBeCloseTo(2000 / 5, -1);
+    });
+
+    it('times a pass as the elapsed time between the projected ends', () => {
+      const longer: PathWaypoint[] = [
+        { eastMeters: 0, northMeters: -500 },
+        { eastMeters: 0, northMeters: 2000 },
+      ];
+      const reference = referenceOf(NORTH_2_KM);
+      const passes = segmentPasses({
+        reference,
+        tracks: [trackOf({ sessionId: 'a', path: longer, speedMetersPerSec: 4 })],
+      });
+
+      expect(passes[0]?.startTimestampSec).toBeCloseTo(500 / 4, 0);
+      expect(passes[0]?.durationSec).toBeCloseTo(
+        segmentReferenceFacts(reference).distanceMeters / 4,
+        0,
+      );
+    });
+  });
+
+  describe(matchTolerances.name, () => {
+    it('keeps corridor and coverage at every length', () => {
+      expect(matchTolerances(500).corridorMeters).toBe(30);
+      expect(matchTolerances(100_000).corridorMeters).toBe(30);
+      expect(matchTolerances(500).minCoverageRatio).toBe(0.95);
+      expect(matchTolerances(100_000).minCoverageRatio).toBe(0.95);
+    });
+
+    it('scales the end tolerance with the length within 50 to 200 m', () => {
+      expect(matchTolerances(2000).endToleranceMeters).toBe(50);
+      expect(matchTolerances(12_000).endToleranceMeters).toBe(120);
+      expect(matchTolerances(20_000).endToleranceMeters).toBe(200);
+      expect(matchTolerances(100_000).endToleranceMeters).toBe(200);
+    });
+  });
+
+  describe(segmentReference.name, () => {
+    it('resamples the records to 10 m points', () => {
+      const reference = referenceOf(NORTH_2_KM);
+      const steps = reference
+        .slice(1)
+        .map((point, i) => Math.round(point.distanceMeters - (reference[i]?.distanceMeters ?? 0)));
+
+      expect(reference).toHaveLength(201);
+      expect(new Set(steps)).toEqual(new Set([10]));
+    });
+
+    it('keeps missing elevation missing', () => {
+      const records = gpsPathRecordSeries({
+        path: NORTH_2_KM,
+        speedMetersPerSec: 4,
+        gradeRatio: null,
+      });
+
+      expect(segmentReference(records)[0]?.elevationMeters).toBe(undefined);
+    });
+  });
+
+  describe(segmentReferenceFacts.name, () => {
+    it('returns the distance and the net elevation', () => {
+      expect(
+        segmentReferenceFacts([
+          createMockSegmentReferencePoint({ distanceMeters: 100, elevationMeters: 300 }),
+          createMockSegmentReferencePoint({ distanceMeters: 600, elevationMeters: 0 }),
+        ]),
+      ).toEqual({ distanceMeters: 500, netElevationMeters: -300 });
+    });
+
+    it('returns null elevation without elevation, never 0', () => {
+      expect(
+        segmentReferenceFacts([
+          createMockSegmentReferencePoint({ elevationMeters: undefined }),
+          createMockSegmentReferencePoint({ distanceMeters: 500, elevationMeters: undefined }),
+        ]).netElevationMeters,
+      ).toBe(null);
+    });
   });
 });

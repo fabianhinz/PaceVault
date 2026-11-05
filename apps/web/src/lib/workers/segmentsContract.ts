@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { SPORTS } from '@pacevault/engine/types.ts';
-import { SEGMENT_DETECTION_PHASES } from '@pacevault/engine/segments.ts';
 
-export const SEGMENT_DETECTOR_VERSION = 1;
+export const SEGMENT_MATCHER_VERSION = 1;
 
 export const segmentSessionMetaSchema = z.object({
   sessionId: z.string(),
@@ -19,92 +18,66 @@ export const storedSegmentPassSchema = z.object({
   startTimestampSec: z.number(),
   endTimestampSec: z.number(),
   durationSec: z.number(),
-  splitDurationsSec: z.array(z.number()),
   coverageRatio: z.number(),
 });
 
 export type StoredSegmentPass = z.infer<typeof storedSegmentPassSchema>;
 
-const segmentTypeSchema = z.enum(['climb', 'flat', 'descent', 'route']);
-
-export const segmentSchema = z.object({
-  id: z.string(),
-  sport: z.enum(SPORTS),
-  type: segmentTypeSchema,
-  typeNumber: z.number(),
-  distanceMeters: z.number(),
-  netElevationMeters: z.number().nullable(),
-  geometry: z.array(z.tuple([z.number(), z.number()])),
+export const segmentPassesEntrySchema = z.object({
+  segmentId: z.string(),
+  matcherVersion: z.number(),
+  sourceSessionKey: z.string(),
+  checkedSessionKeys: z.array(z.string()),
   passes: z.array(storedSegmentPassSchema),
-  lastPassDate: z.number(),
 });
 
-export type Segment = z.infer<typeof segmentSchema>;
+export type SegmentPassesEntry = z.infer<typeof segmentPassesEntrySchema>;
 
-export const storedSegmentsSchema = z.object({
+const boundsSchema = z.object({
+  minLat: z.number(),
+  maxLat: z.number(),
+  minLng: z.number(),
+  maxLng: z.number(),
+});
+
+export const segmentMatchInputSchema = z.object({
+  segmentId: z.string(),
   sport: z.enum(SPORTS),
-  sessionsKey: z.string(),
-  detectorVersion: z.number(),
-  segments: z.array(segmentSchema),
+  bounds: boundsSchema,
+  source: z.object({
+    sessionId: z.string(),
+    startSec: z.number(),
+    endSec: z.number(),
+  }),
 });
 
-export type StoredSegments = z.infer<typeof storedSegmentsSchema>;
-
-export const segmentDetectionInputSchema = z.object({
-  sport: z.enum(SPORTS),
-  sessionsKey: z.string(),
-  sessions: z.array(segmentSessionMetaSchema),
-});
-
-export type SegmentDetectionInput = z.infer<typeof segmentDetectionInputSchema>;
+export type SegmentMatchInput = z.infer<typeof segmentMatchInputSchema>;
 
 export const workerMessageInSchema = z.object({
-  type: z.literal('detect'),
-  sports: z.array(segmentDetectionInputSchema),
+  type: z.literal('match'),
+  segments: z.array(segmentMatchInputSchema),
+  sessions: z.array(segmentSessionMetaSchema),
   ignoreCache: z.boolean().optional(),
 });
 
 export type WorkerMessageIn = z.infer<typeof workerMessageInSchema>;
 
-export const segmentEngineStatsSchema = z.object({
-  leadsProcessed: z.number(),
-  leadsSkippedAsRoute: z.number(),
-  turnAnchors: z.number(),
-  climbAnchors: z.number(),
-  atoms: z.number(),
-  corridorMatches: z.number(),
-  candidates: z.number(),
-  droppedAsDuplicate: z.number(),
-  msByPhase: z.record(z.enum(SEGMENT_DETECTION_PHASES), z.number()),
-});
-
-export const sportDetectionMetricsSchema = z.object({
-  sport: z.enum(SPORTS),
-  cache: z.enum(['hit', 'miss']),
-  missReason: z.enum(['noEntry', 'sessionsKey', 'detectorVersion', 'forced']).nullable(),
-  sessions: z.number(),
-  sessionsWithRecords: z.number(),
-  records: z.number(),
-  tracks: z.number(),
-  resampledPoints: z.number(),
-  segmentsByType: z.record(segmentTypeSchema, z.number()),
+export const segmentMatchMetricsSchema = z.object({
+  segmentId: z.string(),
+  cache: z.enum(['hit', 'partial', 'miss']),
+  missReason: z.enum(['noEntry', 'matcherVersion', 'sourceSession', 'forced']).nullable(),
+  sessionsChecked: z.number(),
+  bboxCandidates: z.number(),
+  recordsRead: z.number(),
+  referencePoints: z.number(),
   passes: z.number(),
-  engine: segmentEngineStatsSchema.nullable(),
-  ms: z.object({
-    readRecords: z.number(),
-    slowestSessionRead: z.number(),
-    segmentTrack: z.number(),
-    detectedSegments: z.number(),
-    storedSegments: z.number(),
-    saveCache: z.number(),
-    total: z.number(),
-  }),
+  ms: z.number(),
 });
 
-export type SportDetectionMetrics = z.infer<typeof sportDetectionMetricsSchema>;
+export type SegmentMatchMetrics = z.infer<typeof segmentMatchMetricsSchema>;
 
-export const segmentDetectionMetricsSchema = z.object({
-  detectorVersion: z.number(),
+export const segmentMatchingMetricsSchema = z.object({
+  matcherVersion: z.number(),
   environment: z.object({
     hardwareConcurrency: z.number().nullable(),
     deviceMemoryGb: z.number().nullable(),
@@ -112,15 +85,16 @@ export const segmentDetectionMetricsSchema = z.object({
   }),
   workerMs: z.number(),
   mainThreadMs: z.number().nullable(),
-  sports: z.array(sportDetectionMetricsSchema),
+  sessionsRead: z.number(),
+  segments: z.array(segmentMatchMetricsSchema),
 });
 
-export type SegmentDetectionMetrics = z.infer<typeof segmentDetectionMetricsSchema>;
+export type SegmentMatchingMetrics = z.infer<typeof segmentMatchingMetricsSchema>;
 
 export const workerMessageOutSchema = z.object({
   type: z.literal('done'),
-  entries: z.array(storedSegmentsSchema),
-  metrics: segmentDetectionMetricsSchema.optional(),
+  entries: z.array(segmentPassesEntrySchema),
+  metrics: segmentMatchingMetricsSchema.optional(),
 });
 
 export type WorkerMessageOut = z.infer<typeof workerMessageOutSchema>;

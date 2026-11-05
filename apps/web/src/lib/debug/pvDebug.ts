@@ -18,7 +18,7 @@ const DOC_BY_COMMAND: Record<keyof typeof commands, string> = {
   reportUrl: 'GitHub issue URL for an optional error',
   rerunMigration: 'Mark sessions outdated + reload — real reprocess ({ count } = newest N only)',
   segmentMetrics:
-    'Latest segment detection metrics (copy(pvDebug.segmentMetrics()) to the clipboard)',
+    'Latest segment matching metrics (copy(pvDebug.segmentMetrics()) to the clipboard)',
 };
 
 type PvDebug = typeof commands & { help: () => void };

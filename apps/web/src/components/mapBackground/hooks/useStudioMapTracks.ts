@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
-import { useRouteMatch } from '@/routing/useRouteMatch.ts';
-import { useRouterParam } from '@/routing/useRouterParam.ts';
 import { unionBounds } from '@pacevault/engine/bounds.ts';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
 import { useStudioStore } from '@/store/studio.ts';
 import type { StudioRoute } from '@/types.ts';
 import { COLORS_BY_STUDIO_ROUTE_COLOR } from '@/components/studio/routeColors.ts';
-import { resolveLabsTab } from '@/routing/labsTab.ts';
+import { sceneStudioRouteId } from '@/components/mapBackground/mapScene.ts';
+import { useMapScene } from './useMapScene.ts';
 
 interface StudioMapRoute {
   id: string;
@@ -32,11 +31,9 @@ const toMapRoute = (route: StudioRoute): StudioMapRoute => ({
 
 export const useStudioMapTracks = (): StudioMapTracks => {
   const allRoutes = useStudioStore((s) => s.routes);
-  const detailMatch = useRouteMatch('studioDetail');
-  const labsMatch = useRouteMatch('labs');
-  const rawTab = useRouterParam('tab') ?? null;
-  const onStudioTab = labsMatch !== null && resolveLabsTab(rawTab) === 'studio';
-  const detailRouteId = detailMatch?.id ?? null;
+  const scene = useMapScene();
+  const onStudioTab = scene.kind === 'studioTab';
+  const detailRouteId = sceneStudioRouteId(scene);
 
   return useMemo(() => {
     if (detailRouteId) {

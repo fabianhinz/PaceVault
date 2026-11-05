@@ -15,7 +15,7 @@ describe('DB schema', () => {
     expect(db.objectStoreNames.contains('session-weather')).toBe(true);
     expect(db.objectStoreNames.contains('fit-files')).toBe(true);
     expect(db.objectStoreNames.contains('studio-route-points')).toBe(true);
-    expect(db.objectStoreNames.contains('segments')).toBe(true);
+    expect(db.objectStoreNames.contains('segment-passes')).toBe(true);
     expect(db.objectStoreNames.contains('kv')).toBe(true);
   });
 

@@ -1,84 +1,62 @@
 import { useMemo } from 'react';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
-import { useRouteMatch } from '@/routing/useRouteMatch.ts';
-import { useRouterParam } from '@/routing/useRouterParam.ts';
-import { resolveDashboardTab } from '@/routing/dashboardTab.ts';
-import type { Segment } from '@/lib/workers/segmentsContract.ts';
-import { useSegments } from '@/components/segments/hooks/useSegments.ts';
+import type { MatchedSegment } from '@/components/segments/types.ts';
+import { useSegmentDetail } from '@/components/segments/hooks/useSegmentDetail.ts';
 import { useFilteredSegments } from '@/components/segments/hooks/useFilteredSegments.ts';
-import { segmentBounds } from '@/components/mapBackground/segmentBounds.ts';
-import { representedSessionIds } from '@/components/segments/segmentFilter.ts';
+import { unmatchedSegment } from '@/components/segments/segmentPasses.ts';
+import type { Segment } from '@/store/segments.ts';
+import { sceneSegmentId } from '@/components/mapBackground/mapScene.ts';
+import { useMapScene } from './useMapScene.ts';
 
 export type SegmentMapMode = 'off' | 'tab' | 'page';
 
 interface SegmentMapTracks {
   mode: SegmentMapMode;
-  segments: Segment[];
-  pageSegmentId: string | null;
+  segments: MatchedSegment[];
   bounds: GPSBounds | null;
-  representedSessionIds: Set<string> | null;
 }
 
-const NO_SEGMENTS: Segment[] = [];
+const NO_SEGMENTS: MatchedSegment[] = [];
 
 const OFF: SegmentMapTracks = {
   mode: 'off',
   segments: NO_SEGMENTS,
-  pageSegmentId: null,
   bounds: null,
-  representedSessionIds: null,
 };
 
 const pageTracks = ({
-  segments,
-  segmentId,
+  segment,
+  matched,
 }: {
-  segments: Segment[] | undefined;
-  segmentId: string;
+  segment: Segment | undefined;
+  matched: MatchedSegment | undefined;
 }): SegmentMapTracks => {
-  const segment = segments?.find((candidate) => candidate.id === segmentId);
-  if (segment === undefined) return { ...OFF, mode: 'page', pageSegmentId: segmentId };
+  if (segment === undefined) return { ...OFF, mode: 'page' };
   return {
     mode: 'page',
-    segments: [segment],
-    pageSegmentId: segmentId,
-    bounds: segmentBounds(segment),
-    representedSessionIds: null,
+    segments: [matched ?? unmatchedSegment(segment)],
+    bounds: segment.bounds,
   };
 };
 
-const tabTracks = ({
-  segments,
-  updating,
-}: {
-  segments: Segment[] | undefined;
-  updating: boolean;
-}): SegmentMapTracks => {
-  let represented: Set<string> | null = null;
-  if (segments !== undefined && !updating) represented = representedSessionIds(segments);
-  return {
-    ...OFF,
-    mode: 'tab',
-    segments: segments ?? NO_SEGMENTS,
-    representedSessionIds: represented,
-  };
-};
+const tabTracks = (segments: MatchedSegment[] | undefined): SegmentMapTracks => ({
+  ...OFF,
+  mode: 'tab',
+  segments: segments ?? NO_SEGMENTS,
+});
 
 export const useSegmentMapTracks = (): SegmentMapTracks => {
-  const dashboardMatch = useRouteMatch('dashboard');
-  const pageMatch = useRouteMatch('segmentDetail');
-  const rawTab = useRouterParam('tab') ?? null;
-  const onTab = dashboardMatch !== null && resolveDashboardTab(rawTab) === 'segments';
-  const pageSegmentId = pageMatch?.id ?? null;
-  const tabState = useFilteredSegments({ enabled: onTab });
-  const tabSegments = tabState.segments;
-  const tabUpdating = tabState.updating;
-  const allSegments = useSegments({ enabled: pageSegmentId !== null }).segments;
+  const scene = useMapScene();
+  const onTab = scene.kind === 'segmentTab';
+  const pageSegmentId = sceneSegmentId(scene);
+  const tabSegments = useFilteredSegments({ enabled: onTab });
+  const segmentDetail = useSegmentDetail(pageSegmentId ?? undefined);
+  const pageSegment = segmentDetail.segment;
+  const pageMatched = segmentDetail.matched;
 
   return useMemo(() => {
-    if (pageSegmentId !== null)
-      return pageTracks({ segments: allSegments, segmentId: pageSegmentId });
-    if (onTab) return tabTracks({ segments: tabSegments, updating: tabUpdating });
+    if (pageSegmentId !== null) return pageTracks({ segment: pageSegment, matched: pageMatched });
+    if (onTab) return tabTracks(tabSegments);
     return OFF;
-  }, [pageSegmentId, allSegments, onTab, tabSegments, tabUpdating]);
+  }, [pageSegmentId, pageSegment, pageMatched, onTab, tabSegments]);
 };

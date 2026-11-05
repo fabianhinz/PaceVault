@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { Layer } from '@deck.gl/core';
 import { PathLayer } from '@deck.gl/layers';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { sceneHoveredId } from '@/components/mapBackground/mapScene.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import {
   HIGHLIGHT_TRANSITIONS,
@@ -9,10 +10,14 @@ import {
 } from '@/components/mapBackground/trackColors.ts';
 import { decodeCached } from '@/components/mapBackground/trackPicking.ts';
 import { useStudioMapTracks } from './useStudioMapTracks.ts';
+import { useMapScene } from './useMapScene.ts';
 import type { DeckEventHandlers } from './types.ts';
 
 export const useStudioRouteLayer = (eventHandlers: DeckEventHandlers): Layer | null => {
-  const hoveredStudioRouteId = useMapFocusStore((s) => s.hoveredStudioRouteId);
+  const sceneKey = useMapScene().key;
+  const hoveredStudioRouteId = useMapFocusStore((s) =>
+    sceneHoveredId({ hover: s.mapHover, sceneKey, kind: 'studioRoute' }),
+  );
   const studioTracks = useStudioMapTracks();
   const pointerFine = useDevice().pointerFine;
 
@@ -48,7 +53,7 @@ export const useStudioRouteLayer = (eventHandlers: DeckEventHandlers): Layer | n
         }),
       getColor: (d) => {
         let alpha = studioRouteModifiers.alpha.default;
-        if (hoveredStudioRouteId && hoveredStudioRouteId !== d.routeId) {
+        if (hoveredStudioRouteId !== null && hoveredStudioRouteId !== d.routeId) {
           alpha = studioRouteModifiers.alpha.hidden;
         }
         return [d.color[0], d.color[1], d.color[2], alpha];

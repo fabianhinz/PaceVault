@@ -2,7 +2,9 @@ import type { FC } from 'react';
 import { Crown } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
-import type { Segment, StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
+import type { StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
+import type { MatchedSegment } from '@/components/segments/types.ts';
+import type { StatRailNote } from '@pacevault/ui/components/pvStatRail/types.ts';
 import type { ChartHoverX } from '@/store/chartHover.ts';
 import { SeriesRail } from '@/components/charts/SeriesRail.tsx';
 import { formatChartTime } from '@/lib/colors/chartTheme.ts';
@@ -12,11 +14,26 @@ import { SPEC_BY_SEGMENT_CHANNEL, channelUnit } from './segmentChannels.ts';
 
 interface SegmentChannelRailProps {
   channel: SegmentChannel;
-  segment: Segment;
+  segment: MatchedSegment;
   pass: StoredSegmentPass;
+  bestPass: StoredSegmentPass;
   selected: PassSeries;
   best: PassSeries | undefined;
 }
+
+const bestNote = (text: string): StatRailNote => ({
+  text,
+  color: tokens.best,
+  icon: (
+    <Crown
+      role="img"
+      aria-label={m.ui_segment_best()}
+      size={12}
+      fill="currentColor"
+      strokeWidth={1.5}
+    />
+  ),
+});
 
 const formatHoverTime = (x: ChartHoverX): string => formatChartTime(Number(x) / SECONDS_PER_MINUTE);
 
@@ -27,13 +44,19 @@ export const SegmentChannelRail: FC<SegmentChannelRailProps> = (props) => {
   const best = props.best;
   let restLine = rest.value;
   if (rest.header !== '') restLine = `${rest.header} ${rest.value}`;
+  let restNote: StatRailNote | undefined = undefined;
+  if (best !== undefined && spec.bestAtRest) {
+    const bestRest = spec.rest({ series: best, segment: props.segment, pass: props.bestPass });
+    restNote = bestNote(`${bestRest.value} ${unit}`);
+  }
 
   return (
     <SeriesRail
       group={SEGMENT_HOVER_GROUP}
       unit={unit}
       formatX={formatHoverTime}
-      rest={rest}
+      rest={{ ...rest, note: restNote }}
+      notePlacement="top"
       readingAt={(x) => {
         const elapsedSec = Number(x);
         const value = valueAtElapsed({
@@ -46,19 +69,7 @@ export const SegmentChannelRail: FC<SegmentChannelRailProps> = (props) => {
         return {
           value: spec.format(value),
           secondary: restLine,
-          note: {
-            text: `${spec.format(bestValue)} ${unit}`,
-            color: tokens.best,
-            icon: (
-              <Crown
-                role="img"
-                aria-label={m.ui_segment_best()}
-                size={12}
-                fill="currentColor"
-                strokeWidth={1.5}
-              />
-            ),
-          },
+          note: bestNote(`${spec.format(bestValue)} ${unit}`),
         };
       }}
     />

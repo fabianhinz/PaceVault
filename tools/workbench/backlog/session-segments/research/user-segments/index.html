@@ -1,61 +1,133 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>User-created segments</title>
-<style>
-  :root { --bg: #111214; --card: #1a1b1f; --text: #ececef; --muted: #a0a1aa; --rm: #e5484d; --new: #30a46c; --keep: #8b8d98; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Inter", "Segoe UI", sans-serif; }
-  main { max-width: 1240px; margin: 0 auto; padding: 32px 16px 64px; }
-  h1 { font-size: 24px; margin: 0 0 6px; }
-  p.lead { color: var(--muted); margin: 0 0 18px; max-width: 820px; }
-  .legend { display: flex; flex-wrap: wrap; gap: 18px; padding: 12px 16px; background: var(--card); border-radius: 10px; font-size: 14px; margin-bottom: 28px; }
-  .legend span::before { content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; background: var(--c); }
-  .legend em { color: var(--muted); font-style: normal; }
-  figure { margin: 0 0 36px; }
-  figure img { width: 100%; height: auto; border-radius: 10px; display: block; border: 1px solid #2a2b31; }
-  figcaption { margin-top: 8px; color: var(--muted); }
-  figcaption b { color: var(--text); margin-right: 6px; }
-  .status { font-size: 13px; color: var(--muted); }
-</style>
-</head>
-<body>
-<main>
-  <h1>User-created segments: what changes</h1>
-  <p class="lead">Direction under consideration: no automatic detection. The user saves a chart range or a whole session as a reference segment; the app only matches other sessions against it. Screens below in flow order: annotated current screenshots (desktop EN) and greyscale wireframes (W1–W6) where no screen exists yet.</p>
-  <div class="legend">
-    <span style="--c:var(--rm)">red: removed or changes</span>
-    <span style="--c:var(--new)">green: new</span>
-    <span style="--c:var(--keep)">grey: stays</span>
-    <em>Dashed box: area-level note. W = wireframe.</em>
-  </div>
-  <div id="list"></div>
-  <p class="status" id="status"></p>
-</main>
-<script src="src/data.js"></script>
-<script>
-  const list = document.getElementById('list');
-  window.SCENES.forEach((scene, index) => {
-    const fig = document.createElement('figure');
-    const img = document.createElement('img');
-    img.src = scene.file;
-    img.alt = scene.title;
-    img.loading = 'eager';
-    const cap = document.createElement('figcaption');
-    const label = document.createElement('b');
-    label.textContent = String(index + 1).padStart(2, '0') + ' · ' + scene.title;
-    cap.append(label, document.createTextNode(scene.caption));
-    fig.append(img, cap);
-    list.appendChild(fig);
-  });
-  window.addEventListener('load', () => {
-    const imgs = [...document.images];
-    const broken = imgs.filter((img) => img.naturalWidth === 0).length;
-    document.getElementById('status').textContent = imgs.length + ' images, ' + broken + ' not rendered.';
-    document.body.dataset.broken = String(broken);
-    document.body.dataset.total = String(imgs.length);
-  });
-</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>User-created segments</title>
+    <style>
+      :root {
+        --bg: #111214;
+        --card: #1a1b1f;
+        --text: #ececef;
+        --muted: #a0a1aa;
+        --rm: #e5484d;
+        --new: #30a46c;
+        --keep: #8b8d98;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          15px/1.5 -apple-system,
+          'Inter',
+          'Segoe UI',
+          sans-serif;
+      }
+      main {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+      }
+      h1 {
+        font-size: 24px;
+        margin: 0 0 6px;
+      }
+      p.lead {
+        color: var(--muted);
+        margin: 0 0 18px;
+        max-width: 820px;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        padding: 12px 16px;
+        background: var(--card);
+        border-radius: 10px;
+        font-size: 14px;
+        margin-bottom: 28px;
+      }
+      .legend span::before {
+        content: '';
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+        vertical-align: -1px;
+        background: var(--c);
+      }
+      .legend em {
+        color: var(--muted);
+        font-style: normal;
+      }
+      figure {
+        margin: 0 0 36px;
+      }
+      figure img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        display: block;
+        border: 1px solid #2a2b31;
+      }
+      figcaption {
+        margin-top: 8px;
+        color: var(--muted);
+      }
+      figcaption b {
+        color: var(--text);
+        margin-right: 6px;
+      }
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>User-created segments: what changes</h1>
+      <p class="lead">
+        Direction under consideration: no automatic detection. The user saves a chart range or a
+        whole session as a reference segment; the app only matches other sessions against it.
+        Screens below in flow order: annotated current screenshots (desktop EN) and greyscale
+        wireframes (W1–W6) where no screen exists yet.
+      </p>
+      <div class="legend">
+        <span style="--c: var(--rm)">red: removed or changes</span>
+        <span style="--c: var(--new)">green: new</span>
+        <span style="--c: var(--keep)">grey: stays</span>
+        <em>Dashed box: area-level note. W = wireframe.</em>
+      </div>
+      <div id="list"></div>
+      <p class="status" id="status"></p>
+    </main>
+    <script src="src/data.js"></script>
+    <script>
+      const list = document.getElementById('list');
+      window.SCENES.forEach((scene, index) => {
+        const fig = document.createElement('figure');
+        const img = document.createElement('img');
+        img.src = scene.file;
+        img.alt = scene.title;
+        img.loading = 'eager';
+        const cap = document.createElement('figcaption');
+        const label = document.createElement('b');
+        label.textContent = String(index + 1).padStart(2, '0') + ' · ' + scene.title;
+        cap.append(label, document.createTextNode(scene.caption));
+        fig.append(img, cap);
+        list.appendChild(fig);
+      });
+      window.addEventListener('load', () => {
+        const imgs = [...document.images];
+        const broken = imgs.filter((img) => img.naturalWidth === 0).length;
+        document.getElementById('status').textContent =
+          imgs.length + ' images, ' + broken + ' not rendered.';
+        document.body.dataset.broken = String(broken);
+        document.body.dataset.total = String(imgs.length);
+      });
+    </script>
+  </body>
 </html>

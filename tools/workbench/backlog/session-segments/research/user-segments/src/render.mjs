@@ -18,7 +18,9 @@ for (const scene of scenes) {
   await page.goto(pathToFileURL(join(here, 'page.html')).href + '#' + scene.id);
   await page.reload();
   await page.waitForSelector('body[data-ready="1"]');
-  await page.waitForFunction(() => [...document.images].every((img) => img.complete), null, { timeout: 5000 });
+  await page.waitForFunction(() => [...document.images].every((img) => img.complete), null, {
+    timeout: 5000,
+  });
   const ok = await page.evaluate(() => [...document.images].every((img) => img.naturalWidth > 0));
   if (!ok) throw new Error('image failed: ' + scene.id);
   await page.screenshot({ path: join(here, '..', scene.file) });

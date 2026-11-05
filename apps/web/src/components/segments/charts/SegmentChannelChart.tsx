@@ -16,7 +16,6 @@ interface SegmentChannelChartProps {
   selected: PassSeries;
   best: PassSeries | undefined;
   domainSec: number;
-  sportColor: string;
 }
 
 export const SegmentChannelChart: FC<SegmentChannelChartProps> = (props) => {
@@ -27,7 +26,7 @@ export const SegmentChannelChart: FC<SegmentChannelChartProps> = (props) => {
   );
   const paired = props.best !== undefined;
   let selectedColor: string = tokens.best;
-  if (paired) selectedColor = props.sportColor;
+  if (paired) selectedColor = tokens.white;
   const onHover = (elapsedSec: number | null) =>
     hoverSegmentExplorer({ elapsedSec, selected: props.selected, best: props.best });
 

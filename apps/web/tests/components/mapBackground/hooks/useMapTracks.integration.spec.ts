@@ -7,6 +7,8 @@ import { useStudioMapTracks } from '@/components/mapBackground/hooks/useStudioMa
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useStudioStore } from '@/store/studio.ts';
 import { useSessionReprocessingStore } from '@/store/sessionReprocessing.ts';
+import { useTripsStore } from '@/store/trips.ts';
+import { createMockTrip } from '@tests/factories/trips.ts';
 import type { SessionGPS } from '@pacevault/engine/types.ts';
 import { createMockTrainingSession } from '@pacevault/testing/sessions.ts';
 
@@ -45,6 +47,7 @@ const renderMapAt = (initialPath: string) => {
 
 beforeEach(() => {
   useSessionReprocessingStore.setState({ phase: 'done' });
+  useTripsStore.setState({ trips: [] });
   useSessionsStore.setState({ sessions: [createMockTrainingSession({ id: 'ride' })] });
   useStudioStore.setState({
     routes: [
@@ -96,5 +99,38 @@ describe('studio map context', () => {
       routes: 1,
       tracks: 0,
     });
+  });
+});
+
+describe('session and trip map context', () => {
+  it('session tracks never flash in on the way from a segment page to a session', () => {
+    const map = renderMapAt('/segments/seg-1');
+
+    act(() => {
+      void map.hook.result.current('/sessions/ride');
+    });
+
+    const sessionRenders = map.renders.filter((render) => render.path === '/sessions/ride');
+    expect(sessionRenders.length).toBeGreaterThan(0);
+    expect(sessionRenders.filter((render) => render.tracks !== 0)).toEqual([]);
+  });
+
+  it('a trip shows only its own tracks from its first render', () => {
+    useSessionsStore.setState({
+      sessions: [
+        createMockTrainingSession({ id: 'ride' }),
+        createMockTrainingSession({ id: 'run' }),
+      ],
+    });
+    useTripsStore.setState({ trips: [createMockTrip({ id: 't1', sessionIds: ['run'] })] });
+    const map = renderMapAt('/');
+
+    act(() => {
+      void map.hook.result.current('/trips/t1');
+    });
+
+    const tripRenders = map.renders.filter((render) => render.path === '/trips/t1');
+    expect(tripRenders.length).toBeGreaterThan(0);
+    expect(tripRenders.filter((render) => render.tracks !== 0)).toEqual([]);
   });
 });

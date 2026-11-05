@@ -1,263 +1,432 @@
 flowchart TB
-subgraph D0["apps/web/src/components/charts/"]
-c0["LapBandShape"]
-c1["LapBands"]
+subgraph D0["apps/web/src/"]
+c0["App"]
+c69["main"]
 end
-subgraph D1["apps/web/src/components/dashboard/"]
-c2["DashboardPeek"]
-c3["DashboardZoomReset"]
-c4["FormStatusCard"]
-c5["LoadChart"]
-c6["PerformanceChart"]
-c7["VolumeChart"]
-c8["index"]
+subgraph D1["apps/web/src/components/"]
+c1["ToastHost"]
 end
-subgraph D2["apps/web/src/components/layout/"]
-c9["AppLayout"]
-c10["DockTabs"]
-c11["VirtualItemList"]
+subgraph D2["apps/web/src/components/charts/"]
+c2["SeriesRail"]
 end
-subgraph D3["apps/web/src/components/mapBackground/"]
-c12["DeckGLOverlay"]
-c13["DeckOverlayControl"]
-c14["SessionTerrain"]
+subgraph D3["apps/web/src/components/dashboard/"]
+c3["DashboardPeek"]
+c4["DashboardZoomReset"]
+c5["FormStatusCard"]
+c6["LoadChart"]
+c7["PerformanceChart"]
+c8["VolumeChart"]
+c9["index"]
 end
-subgraph D4["apps/web/src/components/segments/"]
-c15["BestCrown"]
-c16["BestHighlight"]
-c17["PassGapSpark"]
-c18["PassItem"]
-c19["PassScatter"]
-c20["PassTimesRow"]
-c21["SegmentDetail"]
-c22["SegmentDetailSkeleton"]
-c23["SegmentHeader"]
-c24["SegmentItem"]
-c25["SegmentItemSkeleton"]
-c26["SegmentPeek"]
-c27["SegmentsEmpty"]
-c28["SegmentsTab"]
-c29["SegmentsUpdatingNote"]
-c34["index"]
+subgraph D4["apps/web/src/components/errors/"]
+c10["RootErrorFallback"]
 end
-subgraph D5["apps/web/src/components/segments/charts/"]
-c30["SegmentChannelChart"]
-c31["SegmentChannelRail"]
-c32["SegmentChartsExplorer"]
-c33["SegmentExplorerLegend"]
+subgraph D5["apps/web/src/components/layout/"]
+c11["AppLayout"]
+c12["DockTabs"]
+c13["VirtualItemList"]
 end
-subgraph D6["apps/web/src/components/sessions/session/"]
-c35["ColorByControl"]
-c36["LapsRow"]
-c37["MapViewControl"]
-c38["MoreStatsRow"]
-c39["SegmentsRow"]
-c40["SessionSegmentList"]
-c41["SessionSummaryCard"]
-c42["Swatch"]
-c43["TrainingEffectCard"]
-c44["WeatherCard"]
+subgraph D6["apps/web/src/components/mapBackground/"]
+c14["DeckGLOverlay"]
+c15["DeckOverlayControl"]
+c16["SessionTerrain"]
+c17["index"]
 end
-subgraph D7["apps/web/src/pages/"]
-c45["DashboardPage"]
-c46["LabsPage"]
-c47["SegmentDetailPage"]
-c48["SessionDetailPage"]
-c49["SessionsPage"]
-c50["SettingsPage"]
-c51["StudioDetailPage"]
-c52["TripDetailPage"]
+subgraph D7["apps/web/src/components/metricLabel/"]
+c18["index"]
 end
-subgraph D8["apps/web/src/routing/"]
-c53["AppRoutes"]
-c54["PageLink"]
+subgraph D8["apps/web/src/components/segments/"]
+c19["BestCrown"]
+c20["BestHighlight"]
+c21["DeleteSegmentDialog"]
+c22["PassItem"]
+c23["PassStrip"]
+c24["PassStripSkeleton"]
+c25["PassTile"]
+c26["ReferenceSegmentDialog"]
+c27["SaveSegmentPill"]
+c28["SegmentActionsMenu"]
+c29["SegmentDetail"]
+c30["SegmentHeader"]
+c31["SegmentItem"]
+c32["SegmentItemSkeleton"]
+c33["SegmentNameDialog"]
+c34["SegmentPassesNote"]
+c35["SegmentPeek"]
+c36["SegmentsEmpty"]
+c37["SegmentsTab"]
+c42["index"]
 end
-subgraph D9["apps/web/tests/components/segments/"]
-c55["PassTimesRow.spec"]
+subgraph D9["apps/web/src/components/segments/charts/"]
+c38["SegmentChannelChart"]
+c39["SegmentChannelRail"]
+c40["SegmentChartsExplorer"]
+c41["SegmentExplorerFrame"]
 end
-subgraph D10["apps/web/tests/components/sessions/session/"]
-c56["SegmentsRow.spec"]
+subgraph D10["apps/web/src/components/sessions/"]
+c43["SessionHeader"]
+c44["SessionItem"]
+c45["SessionList"]
+c46["SessionsPickPopup"]
 end
-subgraph D11["packages/ui/src/components/pvActionItem/"]
-c57["PvActionItem"]
+subgraph D11["apps/web/src/components/sessions/charts/"]
+c47["SessionChartsExplorer"]
 end
-subgraph D12["packages/ui/src/components/pvBottomSheet/"]
-c58["PvSheetPeek"]
+subgraph D12["apps/web/src/components/sessions/charts/hooks/"]
+c48["useSessionChartNodes"]
 end
-subgraph D13["packages/ui/src/components/pvButton/"]
-c59["PvButton"]
+subgraph D13["apps/web/src/components/sessions/session/"]
+c49["DeleteSessionDialog"]
+c50["LapsRow"]
+c51["MoreStatsRow"]
+c52["SegmentRideRail"]
+c53["SegmentsRow"]
+c54["SessionActionsMenu"]
+c55["SessionSegmentItem"]
+c56["SessionSegmentList"]
+c57["SessionSummaryCard"]
+c58["TrainingEffectCard"]
+c59["WeatherCard"]
 end
-subgraph D14["packages/ui/src/components/pvChartsCard/"]
-c60["PvChartRow"]
-c61["PvChartsCard"]
+subgraph D14["apps/web/src/components/studio/"]
+c60["StudioRouteHeader"]
+c61["StudioRouteItem"]
 end
-subgraph D15["packages/ui/src/components/pvCollapsibleHeader/"]
-c62["PvCollapsibleHeader"]
+subgraph D15["apps/web/src/components/studio/markers/"]
+c62["StudioMarkerPins"]
+c63["StudioRoutesPickPopup"]
+c64["StudioTrackPickPopup"]
 end
-subgraph D16["packages/ui/src/components/pvCollapsibleListItem/"]
-c63["PvCollapsibleContent"]
-c64["PvCollapsibleListItem"]
+subgraph D16["apps/web/src/components/trips/"]
+c65["ManageTripDialog"]
+c66["TripDetail"]
+c67["index"]
 end
-subgraph D17["packages/ui/src/components/pvFloatingPill/"]
-c65["PvFloatingPill"]
+subgraph D17["apps/web/src/lib/debug/"]
+c68["DebugCrashTrigger"]
 end
-subgraph D18["packages/ui/src/components/pvIconTile/"]
-c66["PvIconTile"]
+subgraph D18["apps/web/src/pages/"]
+c70["DashboardPage"]
+c71["LabsPage"]
+c72["SegmentDetailPage"]
+c73["SessionDetailPage"]
+c74["SessionsPage"]
+c75["SettingsPage"]
+c76["StudioDetailPage"]
+c77["TripDetailPage"]
 end
-subgraph D19["packages/ui/src/components/pvListItemHeader/"]
-c67["PvListItemHeader"]
+subgraph D19["apps/web/src/routing/"]
+c78["AppRouter"]
+c79["AppRoutes"]
+c80["PageLink"]
 end
-subgraph D20["packages/ui/src/components/pvPageGrid/"]
-c68["PvPageGrid"]
+subgraph D20["apps/web/tests/components/mapBackground/"]
+c81["mapScene.integration.spec"]
 end
-subgraph D21["packages/ui/src/components/pvRadioGroup/"]
-c69["PvRadioGroup"]
-c70["PvRadioGroupItem"]
+subgraph D21["apps/web/tests/components/segments/"]
+c82["SegmentActionsMenu.spec"]
+c83["SegmentDetail.spec"]
+c84["SegmentItem.spec"]
+c85["SegmentNameDialog.spec"]
 end
-subgraph D22["packages/ui/src/components/pvResponsivePopover/"]
-c71["PvResponsivePopover"]
-c72["PvResponsivePopoverHeading"]
+subgraph D22["apps/web/tests/components/sessions/session/"]
+c86["DeleteSessionDialog.spec"]
+c87["SegmentsRow.spec"]
+c88["SessionActionsMenu.spec"]
 end
-subgraph D23["packages/ui/src/components/pvSlidingHighlight/"]
-c73["PvSlidingHighlight"]
+subgraph D23["packages/ui/src/components/pvActionItem/"]
+c89["PvActionItem"]
 end
-subgraph D24["packages/ui/src/components/pvStatRail/"]
-c74["PvStatRail"]
-c75["PvStatRailContent"]
+subgraph D24["packages/ui/src/components/pvActionsMenu/"]
+c90["PvActionsMenu"]
 end
-subgraph D25["packages/ui/src/components/pvTabs/"]
-c76["PvTabs"]
-c77["PvTabsContent"]
-c78["PvTabsList"]
-c79["PvTabsTrigger"]
+subgraph D25["packages/ui/src/components/pvBottomSheet/"]
+c91["PvBottomSheetProvider"]
+c92["PvSheetPeek"]
 end
-subgraph D26["packages/ui/src/components/pvTypography/"]
-c80["PvTypography"]
+subgraph D26["packages/ui/src/components/pvButton/"]
+c93["PvButton"]
 end
-c1-->c0
-c2-->c58
-c2-->c66
-c4-->c80
-c5-->c60
-c5-->c76
-c5-->c78
-c5-->c79
-c6-->c60
-c7-->c60
-c7-->c76
-c7-->c78
-c7-->c79
-c8-->c2
-c8-->c3
-c8-->c4
-c8-->c5
-c8-->c6
-c8-->c7
-c8-->c28
-c8-->c61
-c8-->c68
-c8-->c76
-c8-->c77
-c8-->c78
-c8-->c79
-c10-->c54
-c10-->c59
-c10-->c73
-c12-->c13
-c12-->c14
-c15-->c57
-c16-->c15
-c16-->c57
-c18-->c16
-c18-->c17
-c18-->c54
-c18-->c57
-c18-->c59
-c18-->c66
-c20-->c18
+subgraph D27["packages/ui/src/components/pvCard/"]
+c94["PvCard"]
+end
+subgraph D28["packages/ui/src/components/pvChartsCard/"]
+c95["PvChartRow"]
+c96["PvChartsCard"]
+c97["PvZoomResetPill"]
+end
+subgraph D29["packages/ui/src/components/pvCollapsibleListItem/"]
+c98["PvCollapsibleListItem"]
+end
+subgraph D30["packages/ui/src/components/pvDialog/"]
+c99["PvDialog"]
+c100["PvDialogBody"]
+c101["PvDialogContent"]
+c102["PvDialogDescription"]
+c103["PvDialogFooter"]
+c104["PvDialogHeader"]
+end
+subgraph D31["packages/ui/src/components/pvFloatingPill/"]
+c105["PvFloatingPill"]
+end
+subgraph D32["packages/ui/src/components/pvIconTile/"]
+c106["PvIconTile"]
+end
+subgraph D33["packages/ui/src/components/pvInlineSkeleton/"]
+c107["PvInlineSkeleton"]
+end
+subgraph D34["packages/ui/src/components/pvInput/"]
+c108["PvInput"]
+end
+subgraph D35["packages/ui/src/components/pvLabel/"]
+c109["PvLabel"]
+end
+subgraph D36["packages/ui/src/components/pvPageGrid/"]
+c110["PvPageGrid"]
+end
+subgraph D37["packages/ui/src/components/pvPlotStrip/"]
+c111["PvPlotStrip"]
+c112["PvPlotStripGroup"]
+c113["PvPlotStripMarker"]
+c114["PvPlotStripTile"]
+end
+subgraph D38["packages/ui/src/components/pvSlidingHighlight/"]
+c115["PvSlidingHighlight"]
+end
+subgraph D39["packages/ui/src/components/pvStatRail/"]
+c116["PvStatRail"]
+c117["PvStatRailContent"]
+end
+subgraph D40["packages/ui/src/components/pvTabs/"]
+c118["PvTabs"]
+c119["PvTabsContent"]
+c120["PvTabsList"]
+c121["PvTabsTrigger"]
+end
+subgraph D41["packages/ui/src/components/pvTypography/"]
+c122["PvTypography"]
+end
+c0-->c79
+c2-->c116
+c3-->c92
+c3-->c106
+c4-->c97
+c5-->c94
+c5-->c122
+c6-->c18
+c6-->c95
+c6-->c118
+c6-->c120
+c6-->c121
+c7-->c95
+c8-->c95
+c8-->c118
+c8-->c120
+c8-->c121
+c9-->c3
+c9-->c4
+c9-->c5
+c9-->c6
+c9-->c7
+c9-->c8
+c9-->c37
+c9-->c96
+c9-->c110
+c9-->c118
+c9-->c119
+c9-->c120
+c9-->c121
+c10-->c93
+c11-->c17
+c11-->c68
+c11-->c91
+c12-->c80
+c12-->c93
+c12-->c115
+c13-->c91
+c14-->c15
+c14-->c16
+c17-->c14
+c17-->c46
+c17-->c62
+c17-->c63
+c17-->c64
+c18-->c93
+c18-->c122
+c19-->c89
 c20-->c19
-c20-->c59
-c20-->c64
-c21-->c20
-c21-->c23
-c21-->c26
-c21-->c32
-c21-->c68
-c22-->c68
-c23-->c66
-c23-->c80
-c24-->c16
-c24-->c57
-c24-->c66
-c26-->c58
-c26-->c66
-c27-->c80
-c28-->c11
-c28-->c24
-c28-->c25
-c28-->c27
-c28-->c29
-c29-->c80
-c32-->c30
-c32-->c31
-c32-->c33
-c32-->c60
-c32-->c61
-c33-->c80
-c34-->c21
-c34-->c22
-c34-->c80
-c35-->c42
-c35-->c65
-c35-->c69
-c35-->c70
-c35-->c71
-c35-->c72
-c35-->c80
-c36-->c64
-c37-->c65
-c37-->c69
-c37-->c70
-c37-->c71
-c37-->c72
-c37-->c80
-c38-->c54
-c38-->c64
-c39-->c40
-c39-->c64
-c40-->c24
-c40-->c59
-c41-->c36
-c41-->c38
-c41-->c39
-c41-->c43
-c41-->c44
-c43-->c64
-c43-->c80
-c44-->c64
-c45-->c8
-c47-->c34
-c53-->c9
-c53-->c45
-c53-->c46
-c53-->c47
-c53-->c48
-c53-->c49
-c53-->c50
-c53-->c51
-c53-->c52
+c20-->c89
+c21-->c93
+c21-->c99
+c21-->c100
+c21-->c101
+c21-->c102
+c21-->c103
+c21-->c104
+c22-->c20
+c22-->c89
+c22-->c106
+c23-->c22
+c23-->c25
+c23-->c111
+c23-->c112
+c24-->c107
+c25-->c114
+c26-->c33
+c27-->c33
+c27-->c105
+c28-->c21
+c28-->c33
+c28-->c90
+c29-->c23
+c29-->c34
+c29-->c40
+c29-->c110
+c30-->c106
+c30-->c107
+c30-->c122
+c31-->c30
+c31-->c94
+c32-->c94
+c32-->c107
+c33-->c93
+c33-->c99
+c33-->c100
+c33-->c101
+c33-->c103
+c33-->c104
+c33-->c108
+c33-->c109
+c33-->c122
+c34-->c122
+c35-->c92
+c35-->c106
+c36-->c94
+c36-->c122
+c37-->c13
+c37-->c31
+c37-->c32
+c37-->c36
+c39-->c2
+c40-->c38
+c40-->c39
+c40-->c41
+c40-->c95
+c40-->c96
+c41-->c95
+c41-->c96
+c42-->c24
+c42-->c28
+c42-->c29
+c42-->c30
+c42-->c34
+c42-->c35
+c42-->c41
+c42-->c110
+c42-->c122
+c43-->c122
+c44-->c43
+c44-->c94
+c45-->c13
+c45-->c44
+c46-->c44
+c47-->c2
+c47-->c18
+c47-->c27
+c47-->c48
+c47-->c95
+c47-->c96
+c47-->c97
+c49-->c93
+c49-->c99
+c49-->c100
+c49-->c101
+c49-->c102
+c49-->c103
+c49-->c104
+c49-->c122
+c50-->c98
+c51-->c18
+c51-->c80
+c51-->c98
+c52-->c122
+c53-->c56
+c53-->c98
+c54-->c26
+c54-->c49
+c54-->c65
+c54-->c90
 c55-->c20
-c56-->c39
-c64-->c62
-c64-->c63
-c64-->c67
-c67-->c80
-c74-->c75
-c74-->c80
-c75-->c80
-class c15,c17,c18,c19,c20,c21,c23,c24,c26,c28,c32,c33,c34,c39,c47,c55,c56 new
-class c0,c1,c8,c10,c12,c14,c35,c37,c41,c53,c64,c74 mod
-class c2,c3,c4,c5,c6,c7,c9,c11,c13,c16,c22,c25,c27,c29,c30,c31,c36,c38,c40,c42,c43,c44,c45,c46,c48,c49,c50,c51,c52,c54,c57,c58,c59,c60,c61,c62,c63,c65,c66,c67,c68,c69,c70,c71,c72,c73,c75,c76,c77,c78,c79,c80 ui
+c55-->c89
+c55-->c106
+c56-->c52
+c56-->c55
+c56-->c93
+c57-->c50
+c57-->c51
+c57-->c53
+c57-->c58
+c57-->c59
+c58-->c98
+c58-->c122
+c59-->c98
+c60-->c106
+c60-->c122
+c61-->c60
+c61-->c94
+c63-->c61
+c64-->c93
+c65-->c93
+c65-->c99
+c65-->c100
+c65-->c101
+c65-->c102
+c65-->c103
+c65-->c104
+c66-->c44
+c66-->c94
+c66-->c122
+c67-->c66
+c67-->c122
+c69-->c0
+c69-->c1
+c69-->c10
+c69-->c68
+c69-->c78
+c70-->c9
+c72-->c42
+c77-->c67
+c79-->c11
+c79-->c70
+c79-->c71
+c79-->c72
+c79-->c73
+c79-->c74
+c79-->c75
+c79-->c76
+c79-->c77
+c81-->c31
+c81-->c44
+c81-->c53
+c82-->c28
+c83-->c29
+c84-->c31
+c84-->c42
+c85-->c33
+c86-->c49
+c87-->c53
+c88-->c54
+c89-->c122
+c97-->c105
+c112-->c122
+c114-->c113
+c114-->c122
+c116-->c117
+c116-->c122
+c117-->c122
+class c13,c19,c20,c21,c22,c23,c24,c25,c26,c27,c28,c29,c30,c31,c32,c33,c34,c35,c36,c37,c38,c39,c40,c41,c42,c52,c53,c55,c56,c72,c81,c82,c83,c84,c85,c86,c87,c88,c89,c111,c112,c113,c114 new
+class c2,c9,c12,c14,c17,c44,c45,c47,c49,c54,c57,c61,c67,c69,c79,c97,c116 mod
+class c0,c1,c3,c4,c5,c6,c7,c8,c10,c11,c15,c16,c18,c43,c46,c48,c50,c51,c58,c59,c60,c62,c63,c64,c65,c66,c68,c70,c71,c73,c74,c75,c76,c77,c78,c80,c90,c91,c92,c93,c94,c95,c96,c98,c99,c100,c101,c102,c103,c104,c105,c106,c107,c108,c109,c110,c115,c117,c118,c119,c120,c121,c122 ui
 classDef new stroke:#e5e7eb,stroke-width:2px
 classDef mod stroke:#8b8f9a,stroke-width:2px
 classDef ui stroke:#8b8f9a,stroke-dasharray:4 3

@@ -11,7 +11,8 @@ import {
 import { m } from '@pacevault/i18n/messages.js';
 import { tokens, type TokenColor } from '@pacevault/ui/lib/tokens.ts';
 import type { Sport } from '@pacevault/engine/types.ts';
-import type { Segment, StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
+import type { StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
+import type { MatchedSegment } from '@/components/segments/types.ts';
 import {
   railFixed1,
   railGain,
@@ -32,7 +33,7 @@ export interface ChannelRest {
 
 interface RestInput {
   series: PassSeries;
-  segment: Segment;
+  segment: MatchedSegment;
   pass: StoredSegmentPass;
 }
 
@@ -42,6 +43,7 @@ interface ChannelSpec {
   reversed: boolean;
   format: (value: number | null) => string;
   rest: (input: RestInput) => ChannelRest;
+  bestAtRest: boolean;
 }
 
 const METERS_PER_KM = 1000;
@@ -101,6 +103,7 @@ export const SPEC_BY_SEGMENT_CHANNEL: Record<SegmentChannel, ChannelSpec> = {
     title: m.ui_chart_title_hr,
     color: tokens.chartHr,
     reversed: false,
+    bestAtRest: true,
     format: railInt,
     rest: averageAndMax({ channel: 'hr', format: railInt }),
   },
@@ -108,6 +111,7 @@ export const SPEC_BY_SEGMENT_CHANNEL: Record<SegmentChannel, ChannelSpec> = {
     title: m.ui_zones_tab_power,
     color: tokens.chartPower,
     reversed: false,
+    bestAtRest: true,
     format: railInt,
     rest: averageAndMax({ channel: 'power', format: railInt }),
   },
@@ -115,6 +119,7 @@ export const SPEC_BY_SEGMENT_CHANNEL: Record<SegmentChannel, ChannelSpec> = {
     title: m.ui_laps_col_speed,
     color: tokens.chartSpeed,
     reversed: false,
+    bestAtRest: true,
     format: railFixed1,
     rest: (input) => ({
       header: m.ui_rail_avg(),
@@ -126,6 +131,7 @@ export const SPEC_BY_SEGMENT_CHANNEL: Record<SegmentChannel, ChannelSpec> = {
     title: m.ui_zones_tab_pace,
     color: tokens.chartPace,
     reversed: true,
+    bestAtRest: true,
     format: railPace,
     rest: (input) => ({
       header: m.ui_rail_avg(),
@@ -137,6 +143,7 @@ export const SPEC_BY_SEGMENT_CHANNEL: Record<SegmentChannel, ChannelSpec> = {
     title: m.exp_grade_adjusted_pace_friendly_name,
     color: tokens.chartGap,
     reversed: true,
+    bestAtRest: true,
     format: railPace,
     rest: (input) => ({
       header: m.ui_rail_avg(),
@@ -147,6 +154,7 @@ export const SPEC_BY_SEGMENT_CHANNEL: Record<SegmentChannel, ChannelSpec> = {
     title: m.ui_stat_elevation,
     color: tokens.chartElevation,
     reversed: false,
+    bestAtRest: false,
     format: railInt,
     rest: (input) => {
       const change = elevationChange(present(input.series.values.elevation));
@@ -157,6 +165,7 @@ export const SPEC_BY_SEGMENT_CHANNEL: Record<SegmentChannel, ChannelSpec> = {
     title: m.ui_chart_title_grade,
     color: tokens.chartGrade,
     reversed: false,
+    bestAtRest: false,
     format: railSigned1,
     rest: (input) => ({
       header: m.ui_rail_avg(),
@@ -168,6 +177,7 @@ export const SPEC_BY_SEGMENT_CHANNEL: Record<SegmentChannel, ChannelSpec> = {
     title: m.ui_stat_cadence,
     color: tokens.chartCadence,
     reversed: false,
+    bestAtRest: false,
     format: railInt,
     rest: averageAndMax({ channel: 'cadence', format: railInt }),
   },

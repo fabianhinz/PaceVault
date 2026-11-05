@@ -1,8 +1,52 @@
+import type { Locator, Page } from '@playwright/test';
 import { test, expect } from './helpers/test';
 import { closeImportSummary } from './helpers/upload';
-import { closeFilterList, filterList, openFilterList } from './helpers/filters';
 
-const DETECTION_TIMEOUT_MS = 90_000;
+const MATCHING_TIMEOUT_MS = 90_000;
+
+const openRunningSession = async (page: Page) => {
+  await page.getByRole('link', { name: /sessions/i }).click();
+  await page.waitForURL('/sessions');
+  await page.locator('[data-testid="session-item"]').filter({ hasText: /run/i }).first().click();
+  await page.waitForURL(/\/sessions\/.+/);
+};
+
+const STABLE_LAYOUT_POLL_MS = 300;
+
+const settledBox = async (locator: Locator) => {
+  let previous = '';
+  await expect
+    .poll(
+      async () => {
+        await locator.scrollIntoViewIfNeeded();
+        const current = JSON.stringify(await locator.boundingBox());
+        const settled = current === previous;
+        previous = current;
+        return settled;
+      },
+      { intervals: [STABLE_LAYOUT_POLL_MS] },
+    )
+    .toBe(true);
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('chart missing');
+  return box;
+};
+
+const zoomHeartRateChart = async (page: Page) => {
+  const chart = page.getByRole('region', { name: 'Heart Rate' }).locator('.recharts-surface');
+  const box = await settledBox(chart);
+  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByTestId('zoom-reset-chip')).toBeVisible();
+};
+
+const openSegmentsTab = async (page: Page) => {
+  await page.getByRole('link', { name: /dashboard/i }).click();
+  await page.getByRole('tab', { name: 'Segments' }).click();
+  await expect(page).toHaveURL(/\?tab=segments/);
+};
 
 test.describe('Segments', () => {
   test.beforeEach(async ({ page }) => {
@@ -12,44 +56,87 @@ test.describe('Segments', () => {
     await expect(page.locator('[data-layout="dock"]')).toBeVisible({ timeout: 30_000 });
   });
 
-  test('segment item → segment page → pass → session', async ({ page }) => {
+  test('a chart range becomes a segment with passes, and leaves with its session', async ({
+    page,
+  }) => {
     test.setTimeout(180_000);
-    await page.getByRole('tab', { name: 'Segments' }).click();
-    await expect(page).toHaveURL(/\?tab=segments/);
-    const items = page.getByTestId('segment-item');
-    await expect(items.first()).toBeVisible({ timeout: DETECTION_TIMEOUT_MS });
+    await openRunningSession(page);
+    const sessionUrl = page.url();
 
-    await items.first().click();
+    await zoomHeartRateChart(page);
+    await page.getByRole('button', { name: 'Save as segment' }).click();
+    const nameInput = page.getByRole('textbox', { name: 'Name' });
+    await expect(nameInput).toHaveValue(/ · km \d/);
+    const name = await nameInput.inputValue();
+    await page.getByRole('button', { name: 'Save' }).click();
+
     await expect(page).toHaveURL(/\/segments\//);
-    await expect(page.getByTestId('pass-times-row')).toContainText('Pass times');
-    await expect(page.getByTestId('segment-explorer')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('segment-header')).toContainText(name);
+    const strip = page.getByRole('group', { name: 'Passes' });
+    await expect(strip).toBeVisible({ timeout: MATCHING_TIMEOUT_MS });
+    await expect(page.getByTestId('segment-header')).toContainText(/\d+ passes/);
+    const firstChip = strip.getByRole('button').first();
+    await expect(firstChip).toHaveAttribute('aria-pressed', 'false');
+    await firstChip.click();
+    await expect(firstChip).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('selected-pass-item').getByRole('button').click();
+    await expect(page).toHaveURL(/\/sessions\//);
 
-    await page.getByTestId('pass-list').getByRole('link', { name: 'Open session' }).first().click();
-    await expect(page).toHaveURL(/\/sessions\/[^?]+$/);
-    await expect(page.getByTestId('segments-row')).toBeVisible({ timeout: DETECTION_TIMEOUT_MS });
+    await page.goto(sessionUrl);
+    await zoomHeartRateChart(page);
+    await page.getByRole('button', { name: 'Save as segment' }).click();
+    await expect(
+      page.getByText(`A segment with nearly the same start and end exists: ${name}`),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await openSegmentsTab(page);
+    await expect(page.getByTestId('segment-item').filter({ hasText: name })).toBeVisible({
+      timeout: MATCHING_TIMEOUT_MS,
+    });
+
+    await page.goto(sessionUrl);
+    await page.getByRole('button', { name: 'Session actions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await expect(
+      page.getByText(`This also removes 1 segment created from it: "${name}"`),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.waitForURL('/sessions');
+
+    await openSegmentsTab(page);
+    await expect(page.getByText('No segments yet')).toBeVisible({ timeout: MATCHING_TIMEOUT_MS });
   });
 
-  test('a sport filter on the dashboard narrows the Segments list', async ({ page }) => {
+  test('a whole session becomes a reference segment, renamed and deleted', async ({ page }) => {
     test.setTimeout(180_000);
-    await page.goto('/?tab=segments');
-    const items = page.getByTestId('segment-item');
-    await expect(items.first()).toBeVisible({ timeout: DETECTION_TIMEOUT_MS });
-    await expect(items.locator('.text-sport-running').first()).toBeVisible();
+    await openRunningSession(page);
+    const sessionUrl = page.url();
 
-    await openFilterList(page);
-    await page.getByLabel(/describe a filter/i).fill('ride');
-    await page
-      .getByTestId('filter-builder-tiles')
-      .getByRole('button', { name: /^Apply filter: Cycling/ })
-      .first()
-      .click();
-    await expect(filterList(page).getByRole('button').first()).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await closeFilterList(page);
+    await page.getByRole('button', { name: 'Session actions' }).click();
+    await page.getByRole('menuitem', { name: 'Use as reference segment' }).click();
+    await expect(page.getByRole('textbox', { name: 'Name' })).not.toHaveValue('');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/segments\//);
+    await expect(page.getByRole('group', { name: 'Passes' })).toBeVisible({
+      timeout: MATCHING_TIMEOUT_MS,
+    });
 
-    await expect(items.locator('.text-sport-running')).toHaveCount(0);
-    await expect(items.locator('.text-sport-cycling').first()).toBeVisible();
+    await page.goto(sessionUrl);
+    await page.getByRole('button', { name: 'Session actions' }).click();
+    await page.getByRole('menuitem', { name: 'Open segment' }).click();
+    await expect(page).toHaveURL(/\/segments\//);
+
+    await page.getByRole('button', { name: 'Segment actions' }).click();
+    await page.getByRole('menuitem', { name: 'Rename' }).click();
+    await page.getByRole('textbox', { name: 'Name' }).fill('Isar reference');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByTestId('segment-header')).toContainText('Isar reference');
+
+    await page.getByRole('button', { name: 'Segment actions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(page).toHaveURL(/\?tab=segments/);
+    await expect(page.getByText('No segments yet')).toBeVisible({ timeout: MATCHING_TIMEOUT_MS });
   });
 });

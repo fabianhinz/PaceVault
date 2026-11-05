@@ -20,10 +20,13 @@ export const hoverSegmentExplorer = ({
     return;
   }
   useChartHoverStore.getState().setChartHover({ group: SEGMENT_HOVER_GROUP, x: elapsedSec });
-  let bestMarker: [number, number] | null = null;
-  if (best !== undefined) bestMarker = positionAtElapsed({ series: best, elapsedSec });
+  const selectedPosition = positionAtElapsed({ series: selected, elapsedSec });
+  if (best === undefined) {
+    useSegmentFocusStore.getState().showExplorerMarkers({ pass: null, best: selectedPosition });
+    return;
+  }
   useSegmentFocusStore.getState().showExplorerMarkers({
-    pass: positionAtElapsed({ series: selected, elapsedSec }),
-    best: bestMarker,
+    pass: selectedPosition,
+    best: positionAtElapsed({ series: best, elapsedSec }),
   });
 };

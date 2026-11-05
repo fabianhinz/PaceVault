@@ -1,28 +1,38 @@
 import { useMemo } from 'react';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useFiltersStore } from '@/store/filters.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { matchesFilters } from '@/lib/filtering/filters.ts';
 import type { SessionGPS, TrainingSession } from '@pacevault/engine/types.ts';
 import { useSessionReprocessingActive } from '@/store/hooks/useSessionReprocessingActive.ts';
-import { useStudioMapTracks } from './useStudioMapTracks.ts';
+import { sceneTripSessionIds, type MapSceneKind } from '@/components/mapBackground/mapScene.ts';
+import { useMapScene } from './useMapScene.ts';
 import type { MapTrack } from './types.ts';
 
 const NO_TRACKS: MapTrack[] = [];
 
+const TRACKS_LISTED_BY_SCENE_KIND: Record<MapSceneKind, boolean> = {
+  overview: true,
+  trip: true,
+  session: false,
+  segmentTab: true,
+  segmentPage: true,
+  studioTab: false,
+  studioRoute: false,
+};
+
 export const useMapTracks = (gpsData: SessionGPS[] | null): MapTrack[] => {
   const sessions = useSessionsStore((s) => s.sessions);
   const activeFilter = useFiltersStore((s) => s.activeFilter);
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const focusedTripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
+  const scene = useMapScene();
   const reprocessing = useSessionReprocessingActive();
-  const studioActive = useStudioMapTracks().active;
-  const tripActive = focusedTripSessionIds.length > 0;
+  const listed = TRACKS_LISTED_BY_SCENE_KIND[scene.kind];
+  const tripActive = scene.kind === 'trip';
+  const tripSessionIds = sceneTripSessionIds(scene);
   let filter = activeFilter;
   if (tripActive) filter = null;
 
   return useMemo(() => {
-    if (studioActive || reprocessing || openedSessionId !== null || gpsData === null) {
+    if (!listed || reprocessing || gpsData === null) {
       return NO_TRACKS;
     }
 
@@ -33,7 +43,7 @@ export const useMapTracks = (gpsData: SessionGPS[] | null): MapTrack[] => {
 
     let visible: TrainingSession[];
     if (tripActive) {
-      const tripIds = new Set(focusedTripSessionIds);
+      const tripIds = new Set(tripSessionIds);
       visible = sessions.filter((s) => tripIds.has(s.id));
     } else {
       const now = Date.now();
@@ -46,14 +56,5 @@ export const useMapTracks = (gpsData: SessionGPS[] | null): MapTrack[] => {
       if (gps) result.push({ sessionId: s.id, sport: s.sport, gps, session: s });
     }
     return result;
-  }, [
-    studioActive,
-    reprocessing,
-    openedSessionId,
-    gpsData,
-    tripActive,
-    focusedTripSessionIds,
-    sessions,
-    filter,
-  ]);
+  }, [listed, reprocessing, gpsData, tripActive, tripSessionIds, sessions, filter]);
 };

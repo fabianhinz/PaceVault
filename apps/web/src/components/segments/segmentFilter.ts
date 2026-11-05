@@ -1,25 +1,29 @@
 import type { TrainingSession } from '@pacevault/engine/types.ts';
 import { matchesFilters, type FilterCriteria } from '@/lib/filtering/filters.ts';
-import type { Segment } from '@/lib/workers/segmentsContract.ts';
+import { byLastRidden, withPasses } from './segmentPasses.ts';
+import type { MatchedSegment } from './types.ts';
 
-const visibleSegment = ({
+export const segmentInFilter = ({
   segment,
   sessionsById,
   criteria,
   now,
+  keptSessionId,
 }: {
-  segment: Segment;
+  segment: MatchedSegment;
   sessionsById: Map<string, TrainingSession>;
-  criteria: FilterCriteria;
+  criteria: FilterCriteria | null;
   now: number;
-}): Segment | undefined => {
+  keptSessionId: string | null;
+}): MatchedSegment => {
+  if (criteria === null) return segment;
   const passes = segment.passes.filter((pass) => {
+    if (pass.sessionId === keptSessionId) return true;
     const session = sessionsById.get(pass.sessionId);
     if (session === undefined) return false;
     return matchesFilters({ session, criteria, now });
   });
-  if (passes.length === 0) return undefined;
-  return { ...segment, passes, lastPassDate: Math.max(...passes.map((pass) => pass.date)) };
+  return withPasses({ segment, passes });
 };
 
 export const segmentsInFilter = ({
@@ -28,20 +32,23 @@ export const segmentsInFilter = ({
   criteria,
   now,
 }: {
-  segments: Segment[];
+  segments: MatchedSegment[];
   sessionsById: Map<string, TrainingSession>;
   criteria: FilterCriteria | null;
   now: number;
-}): Segment[] => {
+}): MatchedSegment[] => {
   if (criteria === null) return segments;
   return segments
     .flatMap((segment) => {
-      const visible = visibleSegment({ segment, sessionsById, criteria, now });
-      if (visible === undefined) return [];
+      const visible = segmentInFilter({
+        segment,
+        sessionsById,
+        criteria,
+        now,
+        keptSessionId: null,
+      });
+      if (visible.passes.length === 0) return [];
       return [visible];
     })
-    .sort((a, b) => b.lastPassDate - a.lastPassDate);
+    .sort(byLastRidden);
 };
-
-export const representedSessionIds = (segments: Segment[]): Set<string> =>
-  new Set(segments.flatMap((segment) => segment.passes.map((pass) => pass.sessionId)));
