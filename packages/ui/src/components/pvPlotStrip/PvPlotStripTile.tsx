@@ -5,19 +5,17 @@ import { PvTypography } from '../pvTypography/PvTypography.tsx';
 import { PvPlotStripMarker } from './PvPlotStripMarker.tsx';
 import type { PlotStripPosition, PlotStripTone } from './types.ts';
 
-type PlotStripTileState = 'idle' | 'pressed' | 'bestIdle' | 'bestPressed';
+type PlotStripTileState = 'idle' | 'pressed' | 'bestPressed';
 
 const SURFACE_CLASS_BY_PLOT_STRIP_TILE_STATE: Record<PlotStripTileState, string> = {
   idle: 'cursor-pointer border-white/10 hover:bg-white/10',
   pressed: 'cursor-default border-white/10 bg-white/15',
-  bestIdle: 'cursor-pointer border-white/10 hover:bg-white/10',
   bestPressed: 'cursor-default border-best/20 bg-best/10',
 };
 
 const LABEL_CLASS_BY_PLOT_STRIP_TILE_STATE: Record<PlotStripTileState, string> = {
   idle: 'text-text-tertiary',
   pressed: 'text-text-primary',
-  bestIdle: 'text-text-tertiary',
   bestPressed: 'text-best',
 };
 
@@ -28,9 +26,9 @@ const plotStripTileState = ({
   tone: PlotStripTone;
   pressed: boolean;
 }): PlotStripTileState => {
-  if (tone === 'best' && pressed) return 'bestPressed';
-  if (tone === 'best') return 'bestIdle';
-  if (pressed) return 'pressed';
+  if (!pressed) return 'idle';
+  if (tone === 'best') return 'bestPressed';
+  return 'pressed';
   return 'idle';
 };
 

@@ -27,10 +27,10 @@ export const PassItem: FC<PassItemProps> = (props) => {
   const date = formatDate(props.pass.date);
   let title = date;
   if (session !== undefined) title = formatSessionName(session);
-  let value = formatSignedRaceTime(props.pass.durationSec - props.best.durationSec);
-  let valueCaption: string | undefined = formatRaceTime(props.pass.durationSec);
+  let value = formatSignedRaceTime(props.pass.movingSec - props.best.movingSec);
+  let valueCaption: string | undefined = formatRaceTime(props.pass.movingSec);
   if (isBest) {
-    value = formatRaceTime(props.pass.durationSec);
+    value = formatRaceTime(props.pass.movingSec);
     valueCaption = undefined;
   }
 

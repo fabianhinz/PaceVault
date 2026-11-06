@@ -4,7 +4,6 @@ import { PvInlineSkeleton } from '@pacevault/ui/components/pvInlineSkeleton/PvIn
 import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
 import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import type { TypographyVariants } from '@pacevault/ui/components/pvTypography/types.ts';
-import { cn } from '@pacevault/ui/lib/cn.ts';
 import type { Segment } from '@/store/segments.ts';
 import { TEXT_CLASS_BY_SPORT } from '@/components/dashboard/statusColors.ts';
 import type { MatchedSegment } from './types.ts';
@@ -16,17 +15,13 @@ interface SegmentHeaderProps {
   titleAs?: ElementType;
   subtitleLoading?: boolean;
   children?: ReactNode;
-  className?: string;
 }
 
 export const SegmentHeader: FC<SegmentHeaderProps> = (props) => {
   const segmentTitle = useSegmentTitle(props.segment);
 
   return (
-    <div
-      className={cn('flex items-center justify-between gap-3', props.className)}
-      data-testid="segment-header"
-    >
+    <div className="flex items-center justify-between gap-3" data-testid="segment-header">
       <div className="flex min-w-0 items-center gap-2">
         <PvIconTile icon={SplinePointer} className={TEXT_CLASS_BY_SPORT[props.segment.sport]} />
         <div className="min-w-0">
@@ -34,7 +29,7 @@ export const SegmentHeader: FC<SegmentHeaderProps> = (props) => {
             {segmentTitle.title}
           </PvTypography>
           {props.subtitleLoading === true && (
-            <span className="flex h-4 items-center" data-testid="segment-subtitle-skeleton">
+            <span className="flex h-4 items-center">
               <PvInlineSkeleton className="h-2.5 w-40" />
             </span>
           )}

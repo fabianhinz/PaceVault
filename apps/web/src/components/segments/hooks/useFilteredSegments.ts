@@ -5,10 +5,8 @@ import { segmentsInFilter } from '@/components/segments/segmentFilter.ts';
 import type { MatchedSegment } from '@/components/segments/types.ts';
 import { useSegments } from './useSegments.ts';
 
-export const useFilteredSegments = (
-  options: { enabled?: boolean } = {},
-): MatchedSegment[] | undefined => {
-  const segments = useSegments(options);
+export const useFilteredSegments = (): MatchedSegment[] | undefined => {
+  const segments = useSegments();
   const sessions = useSessionsStore((s) => s.sessions);
   const activeFilter = useFiltersStore((s) => s.activeFilter);
 

@@ -49,7 +49,7 @@ export const PvBanner: FC<PvBannerProps> = (props) => {
     <div
       {...rest}
       className={cn(
-        'flex flex-col justify-between gap-3 rounded-xl border px-4 py-2 text-sm h-80px',
+        'flex flex-col justify-between gap-3 rounded-xl border px-4 py-2 text-sm',
         classes.container,
         props.className,
       )}

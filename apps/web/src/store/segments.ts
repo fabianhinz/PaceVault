@@ -6,7 +6,7 @@ import { idbStorage } from '@/lib/storage/db.ts';
 
 export type SegmentSourceKind = 'range' | 'session';
 
-export interface SegmentSource {
+interface SegmentSource {
   sessionId: string;
   kind: SegmentSourceKind;
   startSec: number;

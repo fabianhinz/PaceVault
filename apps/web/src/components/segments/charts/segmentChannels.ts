@@ -25,7 +25,7 @@ import {
 import { ICON_BY_SPORT } from '@/components/sessions/sportIcons.ts';
 import type { PassSeries, SegmentChannel } from './segmentChartRows.ts';
 
-export interface ChannelRest {
+interface ChannelRest {
   header: string;
   value: string;
   secondary?: string;
@@ -88,10 +88,10 @@ const averageAndMax =
   };
 
 const segmentSpeedKmh = (input: RestInput): number =>
-  (input.segment.distanceMeters / input.pass.durationSec) * MPS_TO_KMH;
+  (input.segment.distanceMeters / input.pass.movingSec) * MPS_TO_KMH;
 
 const segmentPaceSecPerKm = (input: RestInput): number =>
-  input.pass.durationSec / (input.segment.distanceMeters / METERS_PER_KM);
+  input.pass.movingSec / (input.segment.distanceMeters / METERS_PER_KM);
 
 const segmentGradePercent = (input: RestInput): number | null => {
   if (input.segment.netElevationMeters === null) return null;

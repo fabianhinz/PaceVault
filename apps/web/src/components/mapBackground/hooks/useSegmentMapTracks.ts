@@ -1,62 +1,41 @@
 import { useMemo } from 'react';
-import type { GPSBounds } from '@pacevault/engine/types.ts';
-import type { MatchedSegment } from '@/components/segments/types.ts';
-import { useSegmentDetail } from '@/components/segments/hooks/useSegmentDetail.ts';
-import { useFilteredSegments } from '@/components/segments/hooks/useFilteredSegments.ts';
-import { unmatchedSegment } from '@/components/segments/segmentPasses.ts';
-import type { Segment } from '@/store/segments.ts';
-import { sceneSegmentId } from '@/components/mapBackground/mapScene.ts';
+import type { GPSBounds, Sport } from '@pacevault/engine/types.ts';
+import { decodeTrackForRendering } from '@/lib/analysis/gpsTrack.ts';
+import { useSegmentsStore } from '@/store/segments.ts';
+import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { sceneHoveredId, sceneSegmentId } from '@/components/mapBackground/mapScene.ts';
 import { useMapScene } from './useMapScene.ts';
 
-export type SegmentMapMode = 'off' | 'tab' | 'page';
+interface SegmentMapTrack {
+  sport: Sport;
+  path: [number, number][];
+}
 
 interface SegmentMapTracks {
-  mode: SegmentMapMode;
-  segments: MatchedSegment[];
+  page: SegmentMapTrack | null;
+  hovered: SegmentMapTrack | null;
   bounds: GPSBounds | null;
 }
 
-const NO_SEGMENTS: MatchedSegment[] = [];
-
-const OFF: SegmentMapTracks = {
-  mode: 'off',
-  segments: NO_SEGMENTS,
-  bounds: null,
-};
-
-const pageTracks = ({
-  segment,
-  matched,
-}: {
-  segment: Segment | undefined;
-  matched: MatchedSegment | undefined;
-}): SegmentMapTracks => {
-  if (segment === undefined) return { ...OFF, mode: 'page' };
-  return {
-    mode: 'page',
-    segments: [matched ?? unmatchedSegment(segment)],
-    bounds: segment.bounds,
-  };
-};
-
-const tabTracks = (segments: MatchedSegment[] | undefined): SegmentMapTracks => ({
-  ...OFF,
-  mode: 'tab',
-  segments: segments ?? NO_SEGMENTS,
-});
+const NO_TRACKS: SegmentMapTracks = { page: null, hovered: null, bounds: null };
 
 export const useSegmentMapTracks = (): SegmentMapTracks => {
   const scene = useMapScene();
-  const onTab = scene.kind === 'segmentTab';
   const pageSegmentId = sceneSegmentId(scene);
-  const tabSegments = useFilteredSegments({ enabled: onTab });
-  const segmentDetail = useSegmentDetail(pageSegmentId ?? undefined);
-  const pageSegment = segmentDetail.segment;
-  const pageMatched = segmentDetail.matched;
+  const hoveredId = useMapFocusStore((s) =>
+    sceneHoveredId({ hover: s.mapHover, sceneKey: scene.key, kind: 'segment' }),
+  );
+  let shownId: string | null = pageSegmentId;
+  if (shownId === null && scene.kind === 'segmentTab') shownId = hoveredId;
+  const segment = useSegmentsStore((s) => s.segments.find((candidate) => candidate.id === shownId));
 
   return useMemo(() => {
-    if (pageSegmentId !== null) return pageTracks({ segment: pageSegment, matched: pageMatched });
-    if (onTab) return tabTracks(tabSegments);
-    return OFF;
-  }, [pageSegmentId, pageSegment, pageMatched, onTab, tabSegments]);
+    if (segment === undefined) return NO_TRACKS;
+    const track: SegmentMapTrack = {
+      sport: segment.sport,
+      path: decodeTrackForRendering(segment.encodedPolyline),
+    };
+    if (pageSegmentId !== null) return { page: track, hovered: null, bounds: segment.bounds };
+    return { page: null, hovered: track, bounds: null };
+  }, [segment, pageSegmentId]);
 };

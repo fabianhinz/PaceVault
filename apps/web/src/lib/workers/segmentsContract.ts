@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { SPORTS } from '@pacevault/engine/types.ts';
 
-export const SEGMENT_MATCHER_VERSION = 1;
+export const SEGMENT_MATCHER_VERSION = 2;
 
-export const segmentSessionMetaSchema = z.object({
+const segmentSessionMetaSchema = z.object({
   sessionId: z.string(),
   sport: z.enum(SPORTS),
   date: z.number(),
@@ -12,12 +12,12 @@ export const segmentSessionMetaSchema = z.object({
 
 export type SegmentSessionMeta = z.infer<typeof segmentSessionMetaSchema>;
 
-export const storedSegmentPassSchema = z.object({
+const storedSegmentPassSchema = z.object({
   sessionId: z.string(),
   date: z.number(),
   startTimestampSec: z.number(),
   endTimestampSec: z.number(),
-  durationSec: z.number(),
+  movingSec: z.number(),
   coverageRatio: z.number(),
 });
 
@@ -40,7 +40,7 @@ const boundsSchema = z.object({
   maxLng: z.number(),
 });
 
-export const segmentMatchInputSchema = z.object({
+const segmentMatchInputSchema = z.object({
   segmentId: z.string(),
   sport: z.enum(SPORTS),
   bounds: boundsSchema,
@@ -62,13 +62,15 @@ export const workerMessageInSchema = z.object({
 
 export type WorkerMessageIn = z.infer<typeof workerMessageInSchema>;
 
-export const segmentMatchMetricsSchema = z.object({
+const segmentMatchMetricsSchema = z.object({
   segmentId: z.string(),
   cache: z.enum(['hit', 'partial', 'miss']),
   missReason: z.enum(['noEntry', 'matcherVersion', 'sourceSession', 'forced']).nullable(),
   sessionsChecked: z.number(),
   bboxCandidates: z.number(),
   recordsRead: z.number(),
+  readMs: z.number(),
+  matchMs: z.number(),
   referencePoints: z.number(),
   passes: z.number(),
   ms: z.number(),
@@ -76,7 +78,7 @@ export const segmentMatchMetricsSchema = z.object({
 
 export type SegmentMatchMetrics = z.infer<typeof segmentMatchMetricsSchema>;
 
-export const segmentMatchingMetricsSchema = z.object({
+const segmentMatchingMetricsSchema = z.object({
   matcherVersion: z.number(),
   environment: z.object({
     hardwareConcurrency: z.number().nullable(),

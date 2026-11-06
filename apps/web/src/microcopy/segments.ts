@@ -44,7 +44,7 @@ export const sessionSegmentsDeleteNote = (names: string[]): string => {
   });
 };
 
-export const passChipLabel = ({
+export const passTileLabel = ({
   date,
   time,
   best,
@@ -53,6 +53,6 @@ export const passChipLabel = ({
   time: string;
   best: boolean;
 }): string => {
-  if (best) return m.ui_segment_pass_chip_best({ date, time });
-  return m.ui_segment_pass_chip({ date, time });
+  if (best) return m.ui_segment_pass_tile_best({ date, time });
+  return m.ui_segment_pass_tile({ date, time });
 };

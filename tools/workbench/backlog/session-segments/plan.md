@@ -4,7 +4,7 @@ status: in-review
 created: 2026-11-02
 type: feature
 areas: [app, engine, ui]
-next: 'Owner reviews round 7'
+next: 'Owner reviews round 9'
 ---
 
 # Segments: stretches you save and compare
@@ -22,7 +22,7 @@ Creation
 - From the session ⋯ menu: "Use as reference segment" turns the whole session into a segment (name dialog prefilled with the session name); when the session already is a reference the entry reads "Open segment" (Q102).
 - Both entries are offered for sessions with GPS, for a range of any length; there is no minimum length (Q107). A range with fewer than two GPS points gives no segment and a snackbar.
 - The name dialog shows a hint when a segment of the same sport has nearly the same start and end (both ends within the end tolerance of the new segment, Q105, and the length within ±10 %) and offers "Open segment"; Save stays possible (Q108).
-- After Save the segment page shows its header at once, "Finding passes…" and skeletons while matching, then the passes; with no other match "1 pass · only this session so far" and "New imports are checked against this segment automatically" (Q96, W7).
+- After Save the segment page shows its header at once and skeletons while matching, then the passes (Q96, W7; the "Finding passes…" line went with R53, the one-pass note with R79).
 
 Matching
 
@@ -68,6 +68,11 @@ Segment page
   - a tap moves the strip at once and hands the selection to the page in a transition (R78)
   - the one-pass note is removed (R79)
   - in the explorer, the selected pass's line is white (R82), the rails show the best pass's average at rest for HR, power, speed, pace and GAP (R81), and the legend is gone (R64)
+
+  Changed in review round 8 (`review/findings.md`):
+  - pass times and the explorer x axis use moving time, computed in the app with `movingSeconds` like the session; the stored field is `movingSec`, matcher version 2 (R80)
+  - matching reports read and match time per segment, skips sessions whose stored polyline misses the segment's start or end before reading their records, and caches resampled tracks instead of records (R85)
+  - the explorer loads only the selected and the best pass and keeps the shown charts until a tapped pass has loaded; the map draws segments from the stored polyline without the passes query; "chip" names, i18n keys and test ids become "tile"; the no-passes note is decided once on the page and always sits in the glass card; dead props, exports and the passes-cache write heuristic are fixed (R86)
 
 Look and copy
 
@@ -139,14 +144,14 @@ Session delete cascade (Q106)
 Segments feature (kept and adapted, `apps/web/src/components/segments/`)
 
 - New: `SegmentActionsMenu.tsx`, `DeleteSegmentDialog.tsx`, `SegmentPassesNote.tsx`, `hooks/useSegmentDetail.ts`.
-- Adapted: `index.tsx`, `SegmentDetail.tsx`, `SegmentHeader.tsx`, `SegmentPeek.tsx`, `SegmentsTab.tsx`, `SegmentsEmpty.tsx`, `SegmentItem.tsx`, `SegmentsPickPopup.tsx`, `PassTimesRow.tsx`, `segmentPasses.ts`, `segmentFacts.ts`, `segmentFilter.ts`, `hooks/useSegments.ts`, `hooks/useFilteredSegments.ts`, `hooks/useSessionSegments.ts`; `apps/web/src/microcopy/segments.ts`.
-- Unchanged from round 1: pass items, scatter, explorer (`charts/`), `BestCrown`, `BestHighlight`, skeletons, `useSegmentPassSelection`, `useScatterWindow`, `useScatterScrollEndEffect`, `useListExpansion`, `apps/web/src/store/segmentFocus.ts`, `apps/web/src/lib/hooks/useDragScroll.ts`, `apps/web/src/components/layout/VirtualItemList.tsx`.
+- Adapted: `index.tsx`, `SegmentDetail.tsx`, `SegmentHeader.tsx`, `SegmentPeek.tsx`, `SegmentsTab.tsx`, `SegmentsEmpty.tsx`, `SegmentItem.tsx`, `PassStrip.tsx`, `PassTile.tsx`, `CreateSegmentDialog.tsx`, `segmentPasses.ts`, `segmentFacts.ts`, `segmentFilter.ts`, `hooks/useSegments.ts`, `hooks/useFilteredSegments.ts`, `hooks/useSessionSegments.ts`; `apps/web/src/microcopy/segments.ts`.
+- Unchanged from round 1: pass items, explorer (`charts/`), `BestCrown`, `BestHighlight`, skeletons, `useSegmentPassSelection`, `useListExpansion`, `apps/web/src/store/segmentFocus.ts`, `apps/web/src/components/layout/VirtualItemList.tsx`.
 - Removed: `segmentTypeIcons.ts`, `SegmentsUpdatingNote.tsx`, `apps/web/src/lib/analysis/segmentDetection.ts`, `apps/web/src/queries/segments/useStoredSegments.ts`, `useDetectedSegments.ts`, `apps/web/src/components/mapBackground/segmentBounds.ts`.
 
 Session detail, map, routing, dashboard (kept from round 1, adapted to `MatchedSegment` where they read segments)
 
 - `apps/web/src/components/sessions/session/SegmentsRow.tsx`, `SessionSegmentList.tsx`, `SessionSummaryCard.tsx`; `apps/web/src/store/mapFocus.ts` (`mapHover`, R49), `apps/web/src/lib/analysis/laps.ts` (`recordSpanBetween`).
-- `apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts`, `useSegmentLayers.ts`, `useSegmentsPickPopup.ts`, `trackPicking.ts`, and the round-1 map changes (`index.tsx`, `DeckGLOverlay.tsx`, `lapPath.ts`, `mapCamera.ts`, `trackColors.ts`, `useMapCameraTarget.ts`, `useMapCameraInputs.ts`, `useMapCameraEffect.ts`, `useMapInteraction.ts`, `useTrackLayers.ts`, `useLapLayers.ts`, `useTerrainLapStateEffect.ts`).
+- `apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts`, `useSegmentLayers.ts`, `apps/web/src/components/mapBackground/trackPicking.ts`, and the round-1 map changes (`index.tsx`, `DeckGLOverlay.tsx`, `lapPath.ts`, `mapCamera.ts`, `trackColors.ts`, `useMapCameraTarget.ts`, `useMapCameraInputs.ts`, `useMapCameraEffect.ts`, `useMapInteraction.ts`, `useTrackLayers.ts`, `useLapLayers.ts`, `useTerrainLapStateEffect.ts`).
 - `apps/web/src/routing/pageRegistry.ts`, `AppRoutes.tsx`, `urlQuery.ts`, `useRouteMatch.ts`, `dashboardTab.ts`, `apps/web/src/pages/SegmentDetailPage.tsx`, `apps/web/src/components/layout/DockTabs.tsx`, `apps/web/src/components/dashboard/index.tsx`, `apps/web/src/components/sessions/SessionList.tsx`, `apps/web/src/lib/format/formatters.ts` (plus `formatList`, Q106).
 
 Research
@@ -169,9 +174,9 @@ Research
 - `apps/web/tests/components/segments/SegmentActionsMenu.spec.tsx`: Rename updates the name; Delete asks, removes the segment and its data, opens the Segments tab.
 - `apps/web/tests/components/sessions/session/SessionActionsMenu.spec.tsx`: "Use as reference segment" without a reference, "Open segment" with one, hidden without GPS.
 - `apps/web/tests/components/sessions/session/SegmentsRow.spec.tsx`: how-to line at 0 and at n; item opens `/segments/<id>?from=<sessionId>`.
-- `apps/web/tests/components/segments/PassTimesRow.spec.tsx`: plus the single-pass note at one pass.
+- `apps/web/tests/components/segments/SegmentDetail.spec.tsx`: best tile pinned first, selection, explorer with selected and best.
 - Kept: `segmentPasses.spec.ts`, `segmentFilter.spec.ts`, `charts/segmentChartRows.spec.ts`, `trackPicking.segments.spec.ts`, `dashboardTab.spec.ts`, `useRouteMatch.spec.ts`, `pageRegistry.spec.ts`, `formatters.spec.ts`, the kit specs; adapted to `MatchedSegment` where they build segments (`apps/web/tests/factories/segments.ts`).
-- `apps/web/e2e/segments.spec.ts` (demo data, desktop): session detail → drag-zoom a chart → "Save as segment" → dialog prefilled → Save → segment page with "Finding passes…", then Pass times with passes from the other demo sessions; Dashboard → Segments lists it; session ⋯ → "Use as reference segment" → Save → page; the same menu now reads "Open segment"; segment ⋯ → Rename → new name in the header; ⋯ → Delete → confirm → Segments tab without it; saving the same range again shows the similar-segment hint (Q108); deleting the source session warns with the segment's name and the Segments tab no longer lists it (Q106).
+- `apps/web/e2e/segments.spec.ts` (demo data, desktop): session detail → drag-zoom a chart → "Save as segment" → dialog prefilled → Save → segment page with skeletons while matching, then the pass strip with passes from the other demo sessions; Dashboard → Segments lists it; session ⋯ → "Use as reference segment" → Save → page; the same menu now reads "Open segment"; segment ⋯ → Rename → new name in the header; ⋯ → Delete → confirm → Segments tab without it; saving the same range again shows the similar-segment hint (Q108); deleting the source session warns with the segment's name and the Segments tab no longer lists it (Q106).
 
 ## Verification
 
@@ -200,6 +205,7 @@ vp run build
 - [ ] The prefilled name reads well for unnamed sessions and long names (Q101).
 - [ ] Pass times and split positions look right on a long whole-session reference (pass strip, explorer charts, markers).
 - [ ] The pass strip reads well with many passes and outliers: dot scale, ▼ outliers, year groups (R51, R62).
+- [ ] After the matching runs on matcher v2 (R50, R85): decide whether the debug surface (`window.pvSegmentMetrics`, the console log, `pv:debug:segments`) stays or is removed before the merge.
 
 ## Risks
 

@@ -3,6 +3,7 @@ import { gradeAdjustedPaceFactor } from '@pacevault/engine/normalizedEffort.ts';
 import { stepsPerMinute } from '@pacevault/engine/cadence.ts';
 import type { SessionRecord } from '@pacevault/engine/types.ts';
 import type { StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
+import { movingClock, movingSecondsAt } from '@/lib/analysis/movingTime.ts';
 
 export const SEGMENT_CHANNELS = [
   'hr',
@@ -18,20 +19,20 @@ export const SEGMENT_CHANNELS = [
 export type SegmentChannel = (typeof SEGMENT_CHANNELS)[number];
 
 export interface PassSeries {
-  elapsedSec: number[];
+  movingSec: number[];
   positions: Array<[number, number] | null>;
   values: Record<SegmentChannel, Array<number | null>>;
 }
 
-export interface SegmentChartRow {
-  elapsedSec: number;
+interface SegmentChartRow {
+  movingSec: number;
   selected: number | null;
   best: number | null;
 }
 
 const MAX_ROWS = 1500;
 const METERS_PER_KM = 1000;
-const SECONDS_PER_MINUTE = 60;
+export const SECONDS_PER_MINUTE = 60;
 const MPS_TO_KMH = 3.6;
 
 type ChannelAccessor = (input: {
@@ -77,18 +78,6 @@ const orNull = (value: number | undefined): number | null => {
   return value;
 };
 
-export const passRecords = ({
-  records,
-  pass,
-}: {
-  records: SessionRecord[];
-  pass: StoredSegmentPass;
-}): SessionRecord[] =>
-  records.filter(
-    (record) =>
-      record.timestamp >= pass.startTimestampSec && record.timestamp <= pass.endTimestampSec,
-  );
-
 const positionOf = (record: SessionRecord): [number, number] | null => {
   if (record.lat === undefined || record.lng === undefined) return null;
   return [record.lat, record.lng];
@@ -103,14 +92,23 @@ export const passSeries = ({
   pass: StoredSegmentPass;
   running: boolean;
 }): PassSeries => {
-  const sliced = passRecords({ records, pass });
+  const clock = movingClock(records);
+  const startMovingSec = movingSecondsAt({ clock, timestampSec: pass.startTimestampSec });
+  const spanned = records.flatMap((record, i) => {
+    const movingSec = clock.movingSec[i];
+    if (startMovingSec === undefined || movingSec === undefined) return [];
+    if (record.timestamp < pass.startTimestampSec || record.timestamp > pass.endTimestampSec)
+      return [];
+    return [{ record, movingSec: movingSec - startMovingSec }];
+  });
+  const sliced = spanned.map((entry) => entry.record);
   const gradients = windowedGradients(sliced);
   const channelValues = (channel: SegmentChannel) =>
     sliced.map((record, i) =>
       orNull(ACCESSOR_BY_SEGMENT_CHANNEL[channel]({ record, gradient: gradients[i], running })),
     );
   return {
-    elapsedSec: sliced.map((record) => record.timestamp - pass.startTimestampSec),
+    movingSec: spanned.map((entry) => entry.movingSec),
     positions: sliced.map(positionOf),
     values: {
       hr: channelValues('hr'),
@@ -125,42 +123,42 @@ export const passSeries = ({
   };
 };
 
-const neighbourIndex = ({ series, elapsedSec }: { series: PassSeries; elapsedSec: number }) =>
-  series.elapsedSec.findIndex((candidate) => candidate >= elapsedSec);
+const neighbourIndex = ({ series, movingSec }: { series: PassSeries; movingSec: number }) =>
+  series.movingSec.findIndex((candidate) => candidate >= movingSec);
 
-export const valueAtElapsed = ({
+export const valueAtMovingSec = ({
   series,
   channel,
-  elapsedSec,
+  movingSec,
 }: {
   series: PassSeries;
   channel: SegmentChannel;
-  elapsedSec: number;
+  movingSec: number;
 }): number | null => {
-  const after = neighbourIndex({ series, elapsedSec });
+  const after = neighbourIndex({ series, movingSec });
   if (after < 0) return null;
   const values = series.values[channel];
   const afterValue = values[after] ?? null;
-  const afterSec = series.elapsedSec[after];
-  if (after === 0 || afterSec === elapsedSec) return afterValue;
+  const afterSec = series.movingSec[after];
+  if (after === 0 || afterSec === movingSec) return afterValue;
   const beforeValue = values[after - 1] ?? null;
-  const beforeSec = series.elapsedSec[after - 1];
+  const beforeSec = series.movingSec[after - 1];
   if (beforeValue === null || afterValue === null) return null;
   if (beforeSec === undefined || afterSec === undefined || afterSec === beforeSec)
     return afterValue;
   return (
-    beforeValue + ((afterValue - beforeValue) * (elapsedSec - beforeSec)) / (afterSec - beforeSec)
+    beforeValue + ((afterValue - beforeValue) * (movingSec - beforeSec)) / (afterSec - beforeSec)
   );
 };
 
-export const positionAtElapsed = ({
+export const positionAtMovingSec = ({
   series,
-  elapsedSec,
+  movingSec,
 }: {
   series: PassSeries;
-  elapsedSec: number;
+  movingSec: number;
 }): [number, number] | null => {
-  const after = neighbourIndex({ series, elapsedSec });
+  const after = neighbourIndex({ series, movingSec });
   if (after < 0) return series.positions[series.positions.length - 1] ?? null;
   return series.positions[after] ?? null;
 };
@@ -188,19 +186,19 @@ export const segmentChartRows = ({
   best: PassSeries | undefined;
   channel: SegmentChannel;
 }): SegmentChartRow[] => {
-  const rows: SegmentChartRow[] = selected.elapsedSec.map((elapsedSec, i) => {
+  const rows: SegmentChartRow[] = selected.movingSec.map((movingSec, i) => {
     let bestValue: number | null = null;
-    if (best !== undefined) bestValue = valueAtElapsed({ series: best, channel, elapsedSec });
-    return { elapsedSec, selected: selected.values[channel][i] ?? null, best: bestValue };
+    if (best !== undefined) bestValue = valueAtMovingSec({ series: best, channel, movingSec });
+    return { movingSec, selected: selected.values[channel][i] ?? null, best: bestValue };
   });
   if (best !== undefined) {
-    best.elapsedSec.forEach((elapsedSec, i) => {
+    best.movingSec.forEach((movingSec, i) => {
       rows.push({
-        elapsedSec,
-        selected: valueAtElapsed({ series: selected, channel, elapsedSec }),
+        movingSec,
+        selected: valueAtMovingSec({ series: selected, channel, movingSec }),
         best: best.values[channel][i] ?? null,
       });
     });
   }
-  return sampled(rows.sort((a, b) => a.elapsedSec - b.elapsedSec));
+  return sampled(rows.sort((a, b) => a.movingSec - b.movingSec));
 };

@@ -246,9 +246,8 @@ export const formatRaceTime = (seconds: number): string => {
 
 export const formatSignedRaceTime = (seconds: number): string => {
   const rounded = Math.round(seconds);
-  if (rounded > 0) return `+${formatRaceTime(rounded)}`;
   if (rounded < 0) return `−${formatRaceTime(-rounded)}`;
-  return `+${formatRaceTime(0)}`;
+  return `+${formatRaceTime(rounded)}`;
 };
 
 export const formatTimeHMS = (seconds: number): string => {

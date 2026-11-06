@@ -6,6 +6,7 @@ import {
   loadDemoData,
   prepare,
   shootAll,
+  seedSessions,
   test,
   type Locator,
   type Page,
@@ -205,9 +206,9 @@ const waitForSegmentPage = async (page: Page) => {
   await expect(page.getByTestId('segment-explorer')).toBeVisible({ timeout: 60_000 });
 };
 
-const selectPassChip = async (page: Page, chip: Locator) => {
-  await chip.click();
-  await expect(chip).toHaveAttribute('aria-pressed', 'true');
+const selectPassTile = async (page: Page, tile: Locator) => {
+  await tile.click();
+  await expect(tile).toHaveAttribute('aria-pressed', 'true');
 };
 
 // Scrolls so the second year group starts just right of where the first year's sticky header
@@ -494,20 +495,20 @@ test('segment page', async ({ page }) => {
     await p.goto(segmentUrl(seeded.rangeSegmentId));
     await waitForSegmentPage(p);
     const label = await p
-      .getByTestId('pass-chip')
+      .getByTestId('pass-tile')
       .and(p.locator('[data-tone="neutral"][aria-pressed="false"]'))
       .nth(-3)
       .getAttribute('aria-label');
-    if (label === null) throw new Error('pass chip has no label');
-    await selectPassChip(p, p.getByRole('button', { name: label, exact: true }));
+    if (label === null) throw new Error('pass tile has no label');
+    await selectPassTile(p, p.getByRole('button', { name: label, exact: true }));
   });
 
   await shootAll(page, 'segment-page-best-selected', async (p) => {
     await p.goto(segmentUrl(seeded.rangeSegmentId));
     await waitForSegmentPage(p);
-    const best = p.getByTestId('pass-chip').and(p.locator('[data-tone="best"]'));
+    const best = p.getByTestId('pass-tile').and(p.locator('[data-tone="best"]'));
     await best.scrollIntoViewIfNeeded();
-    await selectPassChip(p, best);
+    await selectPassTile(p, best);
   });
 
   await shootAll(page, 'segment-page-strip-years', async (p) => {
@@ -701,4 +702,58 @@ test('segment page and session row under a dashboard filter', async ({ page }) =
     const row = await openSegmentsRow(p);
     await centerOnPhone(row.getByTestId('segment-item').nth(1), shot.device);
   });
+
+  await shootAll(page, 'segment-page-no-passes', async (p, shot) => {
+    await p.goto(segmentUrl(seeded.torboleSegmentId));
+    await expect(p.getByText(t(shot.locale, 'ui_segment_imports_checked'))).toBeVisible({
+      timeout: MATCHING_TIMEOUT_MS,
+    });
+  });
+});
+
+// City rides in the demo data stop for 15–45 s within their first 4 km, so a segment over the
+// first twentieth of the ride holds a stop in every pass.
+test('segment page with a stop in its passes', async ({ page }) => {
+  await setUpEmpty(page);
+  const ids = await createSegments(page, [
+    {
+      sessionName: STARNBERGER_LONG_RIDE,
+      sessionIndex: 0,
+      kind: 'range',
+      fromFraction: 0,
+      toFraction: 0.05,
+    },
+  ]);
+  await waitForMatching(page, ids.length);
+  const stopSegmentId = ids[0];
+  if (stopSegmentId === undefined) throw new Error('segment missing');
+
+  await shootAll(page, 'segment-page-stop', async (p, shot) => {
+    await p.goto(segmentUrl(stopSegmentId));
+    await waitForSegmentPage(p);
+    const surface = p.getByTestId('segment-explorer').locator('.recharts-surface').first();
+    await expect(surface).toBeVisible({ timeout: 60_000 });
+    await centerOnPhone(p.getByTestId('segment-explorer'), shot.device);
+  });
+});
+
+const UNKNOWN_ID = 'unknown-id';
+
+test('not found pages', async ({ page }) => {
+  await prepare(page, 'en');
+  await seedSessions(page, []);
+  await page.goto('/');
+
+  const scenes = [
+    { name: 'segment-not-found', url: segmentUrl(UNKNOWN_ID), key: 'ui_segment_not_found' },
+    { name: 'session-not-found', url: sessionUrl(UNKNOWN_ID), key: 'ui_session_not_found' },
+    { name: 'trip-not-found', url: `/trips/${UNKNOWN_ID}`, key: 'ui_trips_not_found' },
+    { name: 'route-not-found', url: `/studio/${UNKNOWN_ID}`, key: 'ui_studio_not_found' },
+  ];
+  for (const scene of scenes) {
+    await shootAll(page, scene.name, async (p, shot) => {
+      await p.goto(scene.url);
+      await expect(p.getByText(t(shot.locale, scene.key))).toBeVisible({ timeout: 30_000 });
+    });
+  }
 });

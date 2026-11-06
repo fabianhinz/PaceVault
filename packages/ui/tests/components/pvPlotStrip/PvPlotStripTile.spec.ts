@@ -25,7 +25,7 @@ describe(PvPlotStripTile.name, () => {
     vi.unstubAllGlobals();
   });
 
-  const renderChip = (overrides: Partial<PlotStripTileProps>): HTMLButtonElement => {
+  const renderTile = (overrides: Partial<PlotStripTileProps>): HTMLButtonElement => {
     act(() =>
       root.render(
         createElement(PvPlotStripTile, {
@@ -39,7 +39,7 @@ describe(PvPlotStripTile.name, () => {
       ),
     );
     const button = container.querySelector('button');
-    if (button === null) throw new Error('chip not rendered');
+    if (button === null) throw new Error('tile not rendered');
     return button;
   };
 
@@ -47,27 +47,27 @@ describe(PvPlotStripTile.name, () => {
     button.querySelector('[data-marker]')?.getAttribute('data-marker') ?? null;
 
   it('draws a dot for a pass inside the scale', () => {
-    expect(markerOf(renderChip({}))).toBe('dot');
+    expect(markerOf(renderTile({}))).toBe('dot');
   });
 
   it('draws the outlier mark for a pass beyond the scale', () => {
-    expect(markerOf(renderChip({ position: { ratio: 1, clamped: true } }))).toBe('outlier');
+    expect(markerOf(renderTile({ position: { ratio: 1, clamped: true } }))).toBe('outlier');
   });
 
   it('draws the marker icon in place of the dot', () => {
-    expect(markerOf(renderChip({ markerIcon: Crown, tone: 'best' }))).toBe('icon');
+    expect(markerOf(renderTile({ markerIcon: Crown, tone: 'best' }))).toBe('icon');
   });
 
-  it('presses an idle chip', () => {
-    const button = renderChip({});
+  it('presses an idle tile', () => {
+    const button = renderTile({});
 
     act(() => button.click());
 
     expect(onPress).toHaveBeenCalledWith();
   });
 
-  it('ignores a press on the pressed chip', () => {
-    const button = renderChip({ pressed: true });
+  it('ignores a press on the pressed tile', () => {
+    const button = renderTile({ pressed: true });
 
     act(() => button.click());
 

@@ -3,12 +3,13 @@ import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'rec
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
 import { chartHoverHandlers, hoverOnlyTooltip } from '@/components/charts/chartHover.ts';
 import { chartTheme, formatChartTime, formatTick } from '@/lib/colors/chartTheme.ts';
+import { hoverSegmentExplorer, SEGMENT_HOVER_GROUP } from './segmentExplorerHover.ts';
 import {
-  hoverSegmentExplorer,
   SECONDS_PER_MINUTE,
-  SEGMENT_HOVER_GROUP,
-} from './segmentExplorerHover.ts';
-import { segmentChartRows, type PassSeries, type SegmentChannel } from './segmentChartRows.ts';
+  segmentChartRows,
+  type PassSeries,
+  type SegmentChannel,
+} from './segmentChartRows.ts';
 import { SPEC_BY_SEGMENT_CHANNEL } from './segmentChannels.ts';
 
 interface SegmentChannelChartProps {
@@ -27,8 +28,8 @@ export const SegmentChannelChart: FC<SegmentChannelChartProps> = (props) => {
   const paired = props.best !== undefined;
   let selectedColor: string = tokens.best;
   if (paired) selectedColor = tokens.white;
-  const onHover = (elapsedSec: number | null) =>
-    hoverSegmentExplorer({ elapsedSec, selected: props.selected, best: props.best });
+  const onHover = (movingSec: number | null) =>
+    hoverSegmentExplorer({ movingSec, selected: props.selected, best: props.best });
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -41,7 +42,7 @@ export const SegmentChannelChart: FC<SegmentChannelChartProps> = (props) => {
         {...chartHoverHandlers(onHover)}
       >
         <XAxis
-          dataKey="elapsedSec"
+          dataKey="movingSec"
           type="number"
           domain={[0, props.domainSec]}
           ticks={[0, props.domainSec]}

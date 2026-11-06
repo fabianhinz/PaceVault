@@ -66,13 +66,13 @@ Before every hand-over, read `tools/workbench/backlog/<f>/review/decisions.md` a
 
 Findings arrive in the chat or as `- **Rn** · open · on <entry> · …` lines in `tools/workbench/backlog/<f>/review/findings.md` (written by an agent or by hand); work the open ones from both.
 
-1. **Start.** Set `status: in-dev`; rewrite `next:` to `Review round n rework`. Move the shots: `rm -rf tools/workbench/backlog/<f>/review/before && cp -R tools/workbench/backlog/<f>/review/after tools/workbench/backlog/<f>/review/before`.
+1. **Start.** Set `status: in-dev`; rewrite `next:` to `Review round n rework`. Move the shots: `cp -R tools/workbench/backlog/<f>/review/after/. tools/workbench/backlog/<f>/review/before/` (never empty `before/`: older rounds in the doc still show shots that later captures no longer take).
 2. **Sort each finding:**
    - unclear → ask the owner in the `item-plan` question format; "i don't get it" keeps it open, explain again with a concrete example;
    - changes a settled plan decision → record it in the plan (quote the owner) and, if the approach must be replanned, move to `planned` and stop for this item;
    - otherwise → a fix.
 3. **Fix.** One `item-worker` per item with the R items, the plan path and "smallest fix per item, full CLAUDE.md §5 suite". Failures: listed in `tools/workbench/backlog/flaky.md` → re-run with `vp -C apps/web exec playwright test --last-failed --workers 1`; not listed → new, into Open points.
-4. **Recapture and document.** Re-run `vp run workbench:deps -- <f>` (see Actuals; skip for `size: small`). Extend `capture.spec.ts` for any new scene, run the capture, add a "Review round n" section above Changes with one R entry per finding (fixed: before/after; not fixed: why), update Deviations, Open points and Verification.
+4. **Recapture and document.** Re-run `vp run workbench:deps -- <f>` (see Actuals; skip for `size: small`). Extend `capture.spec.ts` for any new scene, then capture only the tests whose scenes the round touches, one spec line each: `cd tools/workbench && vp exec playwright test -c playwright.review.config.ts <f>/review/capture.spec.ts:<line>` (`-g` through `vp run workbench:capture --` filters nothing and runs the whole spec); the full capture is for the first round only. Then add a "Review round n" section above Changes with one R entry per finding (fixed: before/after; not fixed: why), update Deviations, Open points and Verification.
 5. **Sweep decisions.** See Decision sweep.
 6. **Hand over.** Set `status: in-review`; rewrite `next:` to `Owner reviews round n`. One line to the owner, as in the first round.
 

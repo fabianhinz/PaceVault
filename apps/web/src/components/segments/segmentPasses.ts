@@ -10,7 +10,7 @@ const MIN_SCALE_SPAN_SEC = 1;
 export const bestPassOf = (segment: MatchedSegment): StoredSegmentPass | undefined => {
   let best: StoredSegmentPass | undefined = undefined;
   for (const pass of segment.passes) {
-    if (best === undefined || pass.durationSec < best.durationSec) best = pass;
+    if (best === undefined || pass.movingSec < best.movingSec) best = pass;
   }
   return best;
 };
@@ -23,7 +23,7 @@ export const latestPassOf = (segment: MatchedSegment): StoredSegmentPass | undef
   return latest;
 };
 
-export interface PassYear {
+interface PassYear {
   year: number;
   passes: StoredSegmentPass[];
 }
@@ -41,35 +41,23 @@ export const passesByYear = (passes: StoredSegmentPass[]): PassYear[] => {
 
 export const passDotScale = (
   passes: StoredSegmentPass[],
-): ((durationSec: number) => PlotStripPosition) => {
-  const sortedSec = passes.map((pass) => pass.durationSec).sort((a, b) => a - b);
+): ((movingSec: number) => PlotStripPosition) => {
+  const sortedSec = passes.map((pass) => pass.movingSec).sort((a, b) => a - b);
   const fastestSec = sortedSec[0];
   const slowEdgeSec = sortedSec[Math.floor(ROBUST_SCALE_QUANTILE * (sortedSec.length - 1))];
   if (fastestSec === undefined || slowEdgeSec === undefined)
     return () => ({ ratio: 0, clamped: false });
   const spanSec = Math.max(MIN_SCALE_SPAN_SEC, slowEdgeSec - fastestSec);
-  return (durationSec) => {
-    const ratio = (durationSec - fastestSec) / spanSec;
+  return (movingSec) => {
+    const ratio = (movingSec - fastestSec) / spanSec;
     return { ratio: Math.min(1, ratio), clamped: ratio > 1 };
   };
-};
-
-export const passRank = ({
-  segment,
-  sessionId,
-}: {
-  segment: MatchedSegment;
-  sessionId: string;
-}): number | undefined => {
-  const pass = segment.passes.find((candidate) => candidate.sessionId === sessionId);
-  if (pass === undefined) return undefined;
-  return 1 + segment.passes.filter((other) => other.durationSec < pass.durationSec).length;
 };
 
 export interface SessionSegment {
   segment: MatchedSegment;
   pass: StoredSegmentPass;
-  rank: number;
+  best: boolean;
 }
 
 export const sessionSegmentsInRideOrder = ({
@@ -82,9 +70,9 @@ export const sessionSegmentsInRideOrder = ({
   segments
     .flatMap((segment) => {
       const pass = segment.passes.find((candidate) => candidate.sessionId === sessionId);
-      const rank = passRank({ segment, sessionId });
-      if (pass === undefined || rank === undefined) return [];
-      return [{ segment, pass, rank }];
+      if (pass === undefined) return [];
+      const best = !segment.passes.some((other) => other.movingSec < pass.movingSec);
+      return [{ segment, pass, best }];
     })
     .sort((a, b) => a.pass.startTimestampSec - b.pass.startTimestampSec);
 
@@ -96,7 +84,7 @@ const lastPassDateOf = (passes: StoredSegmentPass[]): number | null => {
   return last;
 };
 
-export const unmatchedSegment = (segment: Segment): MatchedSegment => ({
+const unmatchedSegment = (segment: Segment): MatchedSegment => ({
   ...segment,
   geometry: decodeTrackForRendering(segment.encodedPolyline).map((point): [number, number] => [
     point[1],

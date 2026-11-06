@@ -10,7 +10,7 @@ describe(hoverSegmentExplorer.name, () => {
 
   it('shows the selected and the best marker while two passes are plotted', () => {
     hoverSegmentExplorer({
-      elapsedSec: 5,
+      movingSec: 5,
       selected: createMockPassSeries({
         positions: [
           [48.1, 11.5],
@@ -29,9 +29,9 @@ describe(hoverSegmentExplorer.name, () => {
     expect(useSegmentFocusStore.getState().bestMarker).toEqual([48.2, 11.6]);
   });
 
-  it('shows only the best marker when only the best is plotted (nothing selected)', () => {
+  it('shows only the best marker when the selected pass is the best', () => {
     hoverSegmentExplorer({
-      elapsedSec: 5,
+      movingSec: 5,
       selected: createMockPassSeries({
         positions: [
           [48.2, 11.6],

@@ -9,7 +9,7 @@ import { useListExpansion } from '@/components/segments/hooks/useListExpansion.t
 import { SegmentRideRail } from './SegmentRideRail.tsx';
 import { SessionSegmentItem } from './SessionSegmentItem.tsx';
 
-export const COLLAPSED_SESSION_SEGMENTS = 5;
+const COLLAPSED_SESSION_SEGMENTS = 5;
 
 interface SessionSegmentListProps {
   sessionId: string;
@@ -32,8 +32,8 @@ export const SessionSegmentList: FC<SessionSegmentListProps> = (props) => {
             key={entry.segment.id}
             segment={entry.segment}
             sessionId={props.sessionId}
-            best={entry.rank === 1}
-            value={formatRaceTime(entry.pass.durationSec)}
+            best={entry.best}
+            value={formatRaceTime(entry.pass.movingSec)}
             pass={entry.pass}
             records={props.records}
           />

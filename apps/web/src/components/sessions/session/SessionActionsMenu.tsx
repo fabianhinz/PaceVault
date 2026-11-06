@@ -9,7 +9,7 @@ import { ManageTripDialog } from '@/components/trips/ManageTripDialog.tsx';
 import { useSessionExport } from '@/components/sessions/session/hooks/useSessionExport.ts';
 import { useEditInStudio } from '@/components/sessions/session/hooks/useEditInStudio.ts';
 import type { TrainingSession } from '@pacevault/engine/types.ts';
-import { ReferenceSegmentDialog } from '@/components/segments/ReferenceSegmentDialog.tsx';
+import { CreateSegmentDialog } from '@/components/segments/CreateSegmentDialog.tsx';
 import { useReferenceSegmentMenuEntry } from '@/components/segments/hooks/useReferenceSegmentMenuEntry.ts';
 
 interface SessionActionsMenuProps {
@@ -76,8 +76,9 @@ export const SessionActionsMenu: FC<SessionActionsMenuProps> = (props) => {
         onOpenChange={setShowDeleteDialog}
       />
 
-      <ReferenceSegmentDialog
+      <CreateSegmentDialog
         draft={referenceSegmentMenuEntry.draft}
+        title={m.ui_segment_use_as_reference()}
         onClose={referenceSegmentMenuEntry.closeDraft}
       />
 

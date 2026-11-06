@@ -4,16 +4,171 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <title>Segments · Review round 7</title>
+    <title>Segments · Review round 9</title>
     <link rel="stylesheet" href="../../../shared/review.css" />
   </head>
   <body class="rv">
     <main class="rv-doc">
       <header class="rv-text">
-        <p class="rv-over">Review · round 7 · replan to user-created segments (Q95)</p>
+        <p class="rv-over">Review · round 9 · replan to user-created segments (Q95)</p>
         <h1>Segments: stretches you save and compare</h1>
         <p>Round 2 replaces the automatic detection (1432 overlapping segments on real data) with segments the user saves: a range from the session charts or a whole session from its ⋯ menu. The app only matches them against the sessions of the same sport; the segment page, Pass times, explorer, Segments tab and session row from round 1 stay. Before shots are the round-1 build.</p>
       </header>
+
+      <h2>Review round 9</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R87</span>Not found: an error banner on the segment, session, trip and route pages</h3>
+        <div class="rv-text">
+          <p>"Segment not found." was plain text. It is now a red <code>PvBanner</code> (variant <code>error</code>) with the <code>SearchX</code> icon, through the new <code>NotFoundBanner</code>; the session, trip and route (studio) pages use the same banner for their not-found text. The texts themselves are unchanged. There are no before shots (the scenes are new; before, each page showed the same sentence as plain text).</p>
+          <p class="rv-refs"><code>apps/web/src/components/errors/NotFoundBanner.tsx:5-9</code> (new); <code>apps/web/src/components/segments/index.tsx:24</code>; <code>apps/web/src/components/sessions/session/index.tsx:39</code>; <code>apps/web/src/components/trips/index.tsx:13</code>; <code>apps/web/src/components/studio/index.tsx:13</code>.</p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · segment page, unknown id · no before</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-segment-not-found.png" alt="R87 · Desktop · segment page, unknown id · no before" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · segment page, unknown id · no before</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segment-not-found.png" alt="R87 After · Phone · segment page, unknown id" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · session page, unknown id · no before</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-session-not-found.png" alt="R87 · Desktop · session page, unknown id · no before" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · session page, unknown id · no before</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-not-found.png" alt="R87 After · Phone · session page, unknown id" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · trip page, unknown id · no before</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-trip-not-found.png" alt="R87 · Desktop · trip page, unknown id · no before" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · trip page, unknown id · no before</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-trip-not-found.png" alt="R87 After · Phone · trip page, unknown id" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · route (studio) page, unknown id · no before</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-route-not-found.png" alt="R87 · Desktop · route (studio) page, unknown id · no before" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · route (studio) page, unknown id · no before</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-route-not-found.png" alt="R87 After · Phone · route (studio) page, unknown id" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <h2>Review round 8</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R80</span>Moving time: pass times and the chart x axis</h3>
+        <div class="rv-text">
+          <p>Pass times and the segment charts now use moving time, like the session: after matching, the app reads the moving seconds at the pass's start and end from the session's moving clock (<code>movingSeconds</code>, unchanged session logic) and stores the difference as <code>movingSec</code> (renamed from <code>durationSec</code>, Q2). The best pass, the tile positions, the gap in the session item and the tile labels all read <code>movingSec</code>. The explorer plots each pass on moving seconds since its start, so a stop collapses to one point instead of a flat line across the standing time (Q3). <code>SEGMENT_MATCHER_VERSION</code> 1 → 2 re-matches every segment once; no note (Q4). Engine unchanged (Q1). The scene below is a segment over the first twentieth of a demo city ride, where every pass holds 15–45 s stops: the power and speed lines dip to zero for a moment and continue, with no flat stretch across the standing time, and the x axis ends at the moving time (9:23 for 4.0 km). There is no before shot (the scene is new; the round-7 build plotted the same pass on elapsed time). Whether each dip is a stop or a zero-power sample around it is for the owner to judge on real data (Open points).</p>
+          <p class="rv-refs"><code>apps/web/src/lib/workers/segmentsContract.ts:4</code>, <code>:20</code>; <code>apps/web/src/lib/analysis/movingTime.ts:88</code>, <code>:114</code>; <code>apps/web/src/lib/analysis/segmentMatching.ts:273-282</code>; <code>apps/web/src/components/segments/charts/segmentChartRows.ts:96-102</code>; <code>apps/web/src/components/segments/segmentPasses.ts:13</code>, <code>:45</code>; <code>apps/web/src/components/segments/PassItem.tsx:30-33</code>; <code>apps/web/src/components/segments/PassTile.tsx:23</code>. Tests: <code>apps/web/tests/lib/analysis/movingTime.spec.ts</code>, <code>apps/web/tests/components/segments/charts/segmentChartRows.spec.ts</code>, <code>apps/web/tests/lib/analysis/segmentMatching.spec.ts</code>.</p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · passes with a stop · no before</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-segment-page-stop.png" alt="R80 · Desktop · passes with a stop · no before" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · passes with a stop, charts in view · no before</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segment-page-stop.png" alt="R80 After · Phone · passes with a stop, charts in view" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R85</span>Matching: phase timing, start/end prefilter, track cache</h3>
+        <div class="rv-text">
+          <p>No UI change. (a) Each segment's metrics carry <code>readMs</code> (record reads) and <code>matchMs</code> (resampling and matching) next to <code>recordsRead</code>; <code>pv:debug:segments</code> logs them. (b) Before any record is read, a candidate's stored polyline must pass near the segment's start and end (<code>reachesSegmentEnds</code>); the source session always passes. (c) One run keeps the resampled track per session (<code>CachedSessionTrack</code>) instead of decoded records, so a session shared by several segments is read once per run; the reference is still built from the source's records. <code>coldSegmentMetrics.json</code> is deleted. The warm, after-import, first-save and phone runs are owner steps (Open points).</p>
+          <p class="rv-refs"><code>apps/web/src/lib/analysis/segmentMatching.ts:149</code>, <code>:165-166</code>, <code>:186-201</code>, <code>:229-242</code>, <code>:366-371</code>; <code>apps/web/src/lib/analysis/segmentPrefilter.ts:69</code>; <code>apps/web/src/lib/workers/segmentsContract.ts:71-73</code>, <code>:90</code>; <code>apps/web/src/lib/workers/segments.worker.ts:35</code>, <code>:56</code>; <code>apps/web/src/lib/debug/segmentMetrics.ts:3</code>. Tests: <code>apps/web/tests/lib/analysis/segmentPrefilter.spec.ts</code> (new), <code>apps/web/tests/lib/analysis/segmentMatching.spec.ts</code>.</p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R86</span>Cleanup: cache fix, explorer loading, map path, renames, no-passes note, deletions</h3>
+        <div class="rv-text">
+          <p><strong>Cache fix (1):</strong> the passes entry is saved whenever sessions were checked, the cache missed or the run was forced, not only when the counts differ, so reprocessed sessions are no longer re-read on every run. <strong>Explorer loading (2, Q1):</strong> the explorer reads records only for the selected and the best pass and keeps the shown charts until a newly tapped pass has loaded. <strong>Map path (Q2):</strong> the segment map looks the segment up in the store and decodes its polyline; no passes query and no filter. <strong>Renames (6, Q3):</strong> "chip" is gone from identifiers, i18n keys (<code>ui_segment_pass_tile</code>, <code>ui_segment_pass_tile_best</code>) and test ids (<code>pass-tile</code>); <code>useClearPassFocusEffect</code> → <code>useClearExplorerMarkersEffect</code>. <strong>No-passes note (7, Q4):</strong> decided once on the page (no entry or no best pass) and always in the glass card; <code>SegmentDetail</code> only receives a segment with a best pass. <strong>Deletions (3–5):</strong> <code>ReferenceSegmentDialog</code> and the dialog half of <code>SaveSegmentPill</code> merged into <code>CreateSegmentDialog</code>; strip and skeleton share <code>PASS_STRIP_SHELL_CLASS</code>; <code>PvActionItem</code> <code>selected</code>/<code>trailing</code>, <code>className</code> on <code>PvPlotStrip</code> and <code>SegmentHeader</code>, unused test ids, the <code>bestIdle</code> tile state and the identical branch in <code>formatSignedRaceTime</code> removed.</p>
+          <p class="rv-refs"><code>apps/web/src/lib/analysis/segmentMatching.ts:331-344</code>, <code>:402</code>; <code>apps/web/src/components/segments/charts/hooks/useSegmentChartRows.ts:21-38</code>, <code>:60-68</code>; <code>apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts:22-41</code>; <code>apps/web/src/components/segments/PassTile.tsx:19</code>; <code>packages/i18n/messages/en.json:789-790</code>; <code>apps/web/src/components/segments/hooks/useClearExplorerMarkersEffect.ts:4</code>; <code>apps/web/src/components/segments/index.tsx:44-54</code>; <code>apps/web/src/components/segments/SegmentPassesNote.tsx:8-9</code>; <code>apps/web/src/components/segments/SegmentDetail.tsx:12</code>; <code>apps/web/src/components/segments/CreateSegmentDialog.tsx:14</code>; <code>apps/web/src/components/segments/SaveSegmentPill.tsx:50</code>; <code>apps/web/src/components/sessions/session/SessionActionsMenu.tsx:79-81</code>; <code>apps/web/src/components/segments/types.ts:12</code>; <code>packages/ui/src/components/pvPlotStrip/PvPlotStripTile.tsx:8</code>, <code>:29-31</code>; <code>apps/web/src/lib/format/formatters.ts:247-251</code>. Tests: <code>apps/web/tests/components/segments/charts/hooks/useSegmentChartRows.spec.ts</code>, <code>apps/web/tests/components/mapBackground/mapScene.integration.spec.tsx</code>, <code>apps/web/tests/components/segments/SegmentDetail.spec.tsx</code>, <code>packages/ui/tests/components/pvPlotStrip/PvPlotStripTile.spec.ts</code>.</p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · segment without a pass under the dashboard filter · no before</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage" style="--w: 1280px">
+              <img src="after/d-en-segment-page-no-passes.png" alt="R86 · Desktop · segment without a pass under the dashboard filter · no before" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--after">After</span>
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · segment without a pass under the dashboard filter · no before</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segment-page-no-passes.png" alt="R86 After · Phone · segment without a pass under the dashboard filter" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · an older pass tapped</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segment-page-pass-tapped.png" alt="R86 before · Desktop · an older pass tapped" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segment-page-pass-tapped.png" alt="R86 after · Desktop · an older pass tapped" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R86 an older pass tapped: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · an older pass tapped</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-segment-page-pass-tapped.png" alt="R86 Before · Phone · an older pass tapped" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segment-page-pass-tapped.png" alt="R86 After · Phone · an older pass tapped" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Segments tab, item hovered (map path from the store)</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segments-tab-hover.png" alt="R86 before · Desktop · Segments tab, item hovered" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segments-tab-hover.png" alt="R86 after · Desktop · Segments tab, item hovered" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R86 Segments tab, item hovered: before / after split" />
+            </div>
+          </div>
+        </div>
+      </article>
 
       <h2>Review round 7</h2>
 
@@ -21,7 +176,7 @@
         <h3><span class="rv-chip">R51</span>Pass strip replaces the scatter, the Pass times card and the tabs</h3>
         <div class="rv-text">
           <p>Comparing two passes now works by tap on every device: a strip of plot tiles (date over a dot placed by pass time) sits above the explorer, the best pass pinned left with a crown, the other passes newest at the right. One pass is always selected (the best when nothing else is) and shows as a session item under the strip that opens its session. The scatter, the Pass times card, the Times/Passes tabs and the pass list are gone. Research <code>research/pass-compare-touch.md</code>, wireframe <code>mockup/pass-compare/index.html</code> (rounds 2–4, S1). Three agent decisions in <code>review/decisions.md</code> (R51, still open).</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/SegmentDetail.tsx:31-41</code>; <code>apps/web/src/components/segments/PassStrip.tsx:21</code>; <code>apps/web/src/components/segments/PassTile.tsx:17</code>; <code>apps/web/src/components/segments/segmentPasses.ts:31</code>, <code>:42</code>; <code>packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx:14</code>. Tests: <code>apps/web/tests/components/segments/SegmentDetail.spec.tsx</code>, <code>apps/web/tests/components/segments/segmentPasses.spec.ts</code>, <code>packages/ui/tests/components/pvPlotStrip/PvPlotStripTile.spec.ts</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/SegmentDetail.tsx:21-31</code>; <code>apps/web/src/components/segments/PassStrip.tsx:19</code>; <code>apps/web/src/components/segments/PassTile.tsx:17</code>; <code>apps/web/src/components/segments/segmentPasses.ts:31</code>, <code>:42</code>; <code>packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx:14</code>. Tests: <code>apps/web/tests/components/segments/SegmentDetail.spec.tsx</code>, <code>apps/web/tests/components/segments/segmentPasses.spec.ts</code>, <code>packages/ui/tests/components/pvPlotStrip/PvPlotStripTile.spec.ts</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · segment page opened from the Segments tab</span><span>drag to compare</span></p>
@@ -71,7 +226,7 @@
         <h3><span class="rv-chip">R54</span><span class="rv-chip">R58</span><span class="rv-chip">R60</span><span class="rv-chip">R66</span><span class="rv-chip">R68</span><span class="rv-chip">R71</span><span class="rv-chip">R74</span><span class="rv-chip">R75</span>Plot strip tiles: size, border, states, best pinned left</h3>
         <div class="rv-text">
           <p><code>PvPlotStrip</code> / <code>PvPlotStripTile</code> (renamed from chip strip, R60) in <code>packages/ui/src/components/pvPlotStrip/</code>. Tiles are 72 × 72 px with 8 px padding and a 40 px plot (R68, R74), keep their width and sit right-aligned (R54), have a <code>white/10</code> border and the session item's hover (R58, R60), 4 px apart. Markers are always at full strength; date and border stay muted and only the pressed tile lights up, amber for the best (R71). The best is pinned left with its year above and left out of the timeline (R75). Spacing on the theme scale (variant F): card padding 12 px, radius 24 px, strip ↔ item 12 px, tiles and item 12 px radius (R66, new <code>radius</code> on <code>PvActionItem</code>).</p>
-          <p class="rv-refs"><code>packages/ui/src/components/pvPlotStrip/PvPlotStripTile.tsx:10-22</code>, <code>:64</code>, <code>:76</code>; <code>packages/ui/src/components/pvPlotStrip/plotStripScale.ts:1-4</code>; <code>packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx:19-27</code>; <code>apps/web/src/components/segments/PassStrip.tsx:37</code>, <code>:43-53</code>; <code>packages/ui/src/components/pvActionItem/PvActionItem.tsx:43</code>.</p>
+          <p class="rv-refs"><code>packages/ui/src/components/pvPlotStrip/PvPlotStripTile.tsx:10-22</code>, <code>:64</code>, <code>:76</code>; <code>packages/ui/src/components/pvPlotStrip/plotStripScale.ts:1-4</code>; <code>packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx:19-27</code>; <code>apps/web/src/components/segments/PassStrip.tsx:36-44</code>, <code>:47-63</code>; <code>packages/ui/src/components/pvActionItem/PvActionItem.tsx:43</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · an older pass tapped · no before</span></p>
@@ -109,7 +264,7 @@
         <h3><span class="rv-chip">R62</span><span class="rv-chip">R63</span><span class="rv-chip">R65</span><span class="rv-chip">R76</span><span class="rv-chip">R77</span>Year headers and scrolling in the timeline</h3>
         <div class="rv-text">
           <p>The timeline groups its tiles per year (<code>PvPlotStripGroup</code>); the year label sticks at the timeline's left edge until the next year pushes it out, also with a single year (R62, R77). R63 (the spacer captions that broke the dotted line) is moot since R75 removed the line. Only the timeline scrolls, without a scrollbar and without vertical play (R76); the edge fade (<code>scroll-fade-x</code>) covers only the tile row, a solid top band keeps the year labels unfaded (R77). R65's bleed to the card edge was replaced by R75/R77.</p>
-          <p class="rv-refs"><code>packages/ui/src/components/pvPlotStrip/PvPlotStripGroup.tsx:9-21</code>; <code>packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx:24</code>; <code>packages/ui/src/theme.css:231-245</code>; <code>packages/ui/src/hooks/useScrollFadeEffect.ts</code>; <code>apps/web/src/components/segments/PassStrip.tsx:55-71</code>. Test: <code>packages/ui/tests/hooks/useScrollFadeEffect.spec.ts</code>, <code>packages/ui/tests/lib/scrollFade.spec.ts</code>.</p>
+          <p class="rv-refs"><code>packages/ui/src/components/pvPlotStrip/PvPlotStripGroup.tsx:9-21</code>; <code>packages/ui/src/components/pvPlotStrip/PvPlotStrip.tsx:24</code>; <code>packages/ui/src/theme.css:231-245</code>; <code>packages/ui/src/hooks/useScrollFadeEffect.ts</code>; <code>apps/web/src/components/segments/PassStrip.tsx:47-63</code>. Test: <code>packages/ui/tests/hooks/useScrollFadeEffect.spec.ts</code>, <code>packages/ui/tests/lib/scrollFade.spec.ts</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · passes over several years · no before</span></p>
@@ -348,7 +503,7 @@
         <h3><span class="rv-chip">R84</span>Reference segment entry moved out of the session menu</h3>
         <div class="rv-text">
           <p><code>SessionActionsMenu.tsx</code> was past the unit-length guideline; the reference-segment menu entry and its draft moved to <code>useReferenceSegmentMenuEntry</code>, the name dialog to <code>ReferenceSegmentDialog</code>. Behaviour unchanged (the menu shot is identical).</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/hooks/useReferenceSegmentMenuEntry.ts:17</code>; <code>apps/web/src/components/segments/ReferenceSegmentDialog.tsx:14</code>; <code>apps/web/src/components/sessions/session/SessionActionsMenu.tsx:25</code>, <code>:79</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/hooks/useReferenceSegmentMenuEntry.ts:17</code>; <code>apps/web/src/components/segments/CreateSegmentDialog.tsx:14</code> (was <code>ReferenceSegmentDialog</code>, merged in round 8, R86); <code>apps/web/src/components/sessions/session/SessionActionsMenu.tsx:25</code>, <code>:79</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · session ⋯ menu</span><span>drag to compare</span></p>
@@ -1633,7 +1788,7 @@
 
       <h2>Deviations</h2>
       <ol class="rv-text">
-        <li><strong><code>MatchedSegment</code> lives in a colocated types module</strong>, not in <code>hooks/useSegments.ts</code>: the colocated-types convention forbids exporting a shared type from a hook. <code>apps/web/src/components/segments/types.ts:4</code> (the one file not in tech.md).</li>
+        <li><strong><code>MatchedSegment</code> lives in a colocated types module</strong>, not in <code>hooks/useSegments.ts</code>: the colocated-types convention forbids exporting a shared type from a hook. <code>apps/web/src/components/segments/types.ts:6</code> (the one file not in tech.md).</li>
         <li><strong><code>SegmentNameDialog</code> takes a <code>title</code> prop</strong> (Save as segment, Use as reference segment, Rename segment).</li>
         <li><strong>Two extra i18n keys:</strong> <code>ui_segment_quoted_name</code> (locale quotes for the delete note) and <code>ui_btn_rename</code> (no Rename label existed).</li>
         <li><strong>Single-pass copy split:</strong> "1 pass · only this session so far" was the Pass times row's second line; since R79 only <code>SegmentPassesNote</code> remains, for a segment without passes ("0 passes" plus the imports line).</li>
@@ -1648,16 +1803,27 @@
         <li><strong>R39 also removes the engine's split durations</strong> (<code>splitDurationsSec</code>, <code>SEGMENT_SPLIT_COUNT</code>): the marker was their only reader. Stored cache entries still parse, the extra field is stripped.</li>
         <li><strong>Round 7 touches six files outside tech.md</strong> (<code>workbench:deps</code>, not planned): <code>apps/web/src/index.css</code> (R61, the global thin-scrollbar rule removed); <code>packages/ui/src/hooks/useScrollFadeEffect.ts</code>, <code>packages/ui/src/lib/scrollFade.ts</code> and their specs <code>packages/ui/tests/hooks/useScrollFadeEffect.spec.ts</code> (added), <code>packages/ui/tests/lib/scrollFade.spec.ts</code> (R65 removed the x axis, R75/R77 brought it back with the solid top band); <code>apps/web/src/components/trips/hooks/useTripMapFocusEffect.ts</code> deleted (R49, the trip focus is derived from the route by <code>useMapScene</code>).</li>
         <li><strong>R51 builds the strip as a kit family</strong> (<code>packages/ui/src/components/pvPlotStrip/</code>: <code>PvPlotStrip</code>, <code>PvPlotStripGroup</code>, <code>PvPlotStripTile</code>, <code>PvPlotStripMarker</code>, <code>plotStripScale.ts</code>, <code>types.ts</code>) with app wrappers <code>PassStrip</code>, <code>PassTile</code>, <code>PassItem</code>, <code>PassStripSkeleton</code>; the scatter, Pass times card, tabs and list components (<code>PassScatter</code>, <code>PassTimesRow</code>, <code>PassGapSpark</code>, …) are deleted.</li>
-        <li><strong>R46 keeps three formatters the feature added</strong>, since no existing one fits: <code>formatSignedRaceTime</code> (the gap to the best as "+0:40"; the app had no signed time, only the signed number <code>railSigned1</code>), <code>apps/web/src/lib/format/formatters.ts:261</code>; <code>formatOrdinal</code> (the rank "3rd of 12"; no ordinal formatter existed), <code>:206</code>; <code>formatList</code> (the segment names in the session delete note; no list formatter existed), <code>:202</code>. <code>segmentFacts.ts</code> keeps a small local sign switch that picks <code>railGain</code>, <code>railLoss</code> or <code>railInt</code>.</li>
+        <li><strong>R46 keeps three formatters the feature added</strong>, since no existing one fits: <code>formatSignedRaceTime</code> (the gap to the best as "+0:40"; the app had no signed time, only the signed number <code>railSigned1</code>), <code>apps/web/src/lib/format/formatters.ts:247</code>; <code>formatOrdinal</code> (the rank "3rd of 12"; no ordinal formatter existed; removed in round 8 with the always-1 rank, R86); <code>formatList</code> (the segment names in the session delete note; no list formatter existed), <code>:206</code>. <code>segmentFacts.ts</code> keeps a small local sign switch that picks <code>railGain</code>, <code>railLoss</code> or <code>railInt</code>.</li>
+        <li><strong>Round 8 kept on purpose</strong> (cleanup audit items judged as no change): <code>workerMessageOutSchema</code>, the fetcher and key exports of the query modules and the engine type exports stay exported; the skeleton merge (R86 (4)) is limited to the shared shell class <code>PASS_STRIP_SHELL_CLASS</code> (<code>apps/web/src/components/segments/types.ts:12</code>); <code>selectedPass</code> stays on the <code>useSegmentChartRows</code> result.</li>
+        <li><strong>R85 reference:</strong> the source records are re-read per segment to build the reference (<code>apps/web/src/lib/analysis/segmentMatching.ts:203-220</code>); only resampled tracks are cached, not records. <code>sessionsRead</code> counts the sessions with a cached track in the run (<code>apps/web/src/lib/workers/segments.worker.ts:56</code>).</li>
+        <li><strong>R86 cache fix:</strong> a forced run always saves its entry (<code>apps/web/src/lib/analysis/segmentMatching.ts:341</code>, a forced run sets a miss reason).</li>
+        <li><strong>Round 8 left as is</strong> (audit items outside the three findings): the zoom-reset chip naming, <code>window.pvSegmentMetrics</code>, the placement of <code>useListExpansion</code>, the <code>SessionSegmentItem</code> value, the <code>SegmentRideRail</code> labels, <code>save(null)</code>, the <code>SegmentNameDialog</code> <code>mode</code> prop and the <code>sessionRecordSlicesQueryKey</code> branches.</li>
+        <li><strong>Round 8 touches one more file outside tech.md</strong>: <code>apps/web/tests/lib/analysis/movingTime.spec.ts</code> (R80, specs for <code>movingClock</code> and <code>movingSecondsAt</code>); seven changed, not planned in all.</li>
+        <li><strong>Round 9 touches three more files outside tech.md</strong> (<code>workbench:deps</code>, changed, not planned; R87): <code>apps/web/src/components/errors/NotFoundBanner.tsx</code> (added), <code>apps/web/src/components/sessions/session/index.tsx</code> and <code>apps/web/src/components/studio/index.tsx</code> (the not-found text in the banner); <code>apps/web/src/components/trips/index.tsx</code> is in tech.md. Ten changed, not planned in all.</li>
       </ol>
 
       <h2>Open points</h2>
       <ol class="rv-text">
-        <li><strong>R80 (must be fixed before the merge): moving time</strong>, analysis in <code>research/moving-time.md</code> §4–5. Q1 where moving time is computed: <em>(A1, recommended)</em> in the app after matching (<code>datedPasses</code> and <code>passSeries</code>), engine unchanged; (A2) <code>movingSeconds</code> moves into <code>packages/engine</code> and the matcher picks the fastest visit on moving time. Q2 what a stored pass holds: <em>(a, recommended)</em> rename <code>durationSec</code> to <code>movingSec</code>; (b) keep the name, change the meaning; (c) store both. Q3 segment chart x axis: <em>(a, recommended)</em> moving time, stops collapsed like the session charts; (b) elapsed time with a break at every stop. Q4 crown and gaps after the re-match: <em>(a, recommended)</em> accept silently; (b) one-time snackbar.</li>
-        <li><strong>R50:</strong> <code>pvDebug.segmentMetrics()</code> stays (<code>apps/web/src/lib/debug/segmentMetrics.ts:42</code>); measuring with real data is the Real-data check "Matching time on the full history" in <code>plan.md</code>.</li>
-        <li><strong>Agent decisions:</strong> 62 still open in <code>review/decisions.md</code>; the owner postponed the sweep, so none is marked superseded. Round 7 added R49 (<code>:197</code>, <code>:198</code>), R51 (<code>:199-201</code>) and R52 (<code>:202</code>, <code>:203</code>). Candidates for the sweep: <code>:199</code> (single-pass note, removed by R79), <code>:200</code> (strip sticky at every width, changed by R57/R70), <code>:113</code> (pass time is elapsed time, replaced once R80 lands), and the scatter and pass-list decisions from rounds 4–6 (<code>:118</code>, <code>:119</code>, <code>:128</code>, <code>:129</code>, <code>:135</code>, <code>:141</code>, <code>:143</code>, <code>:147</code>), whose UI R51 removed.</li>
+        <li><strong>Owner step (R85, R80 landed): real-data runs</strong> with <code>localStorage["pv:debug:segments"]</code> set, on matcher v2: cold (first load after the version bump), warm (reload), after an import, after a first save, and on the phone including memory. Check <code>readMs</code>/<code>matchMs</code> per segment and that <code>recordsRead</code> dropped against the round-7 run in <code>research/matching-metrics.md</code>.</li>
+        <li><strong>Owner step (R80):</strong> on real data, check that pass times and the best pass moved to moving time (a pass with a stop is now shorter than its elapsed time; the crown may move) and that the segment charts no longer bridge the stops.</li>
+        <li><strong>Owner step (R86):</strong> on a segment page tap a tile whose pass has not loaded yet: the shown charts stay until the new pass has loaded, no skeleton in between.</li>
+        <li><strong>Two new e2e failures that passed on the serial re-run</strong> (not in <code>flaky.md</code>): <code>[chromium] e2e/map.spec.ts:42</code> "track click opens the picker popover at the click point" and <code>[mobile] e2e/mobile/map.spec.ts:249</code> "mobile dock › filter input stays in place while typing". Candidates for <code>flaky.md</code>, the owner&#39;s call.</li>
+        <li><strong>R50:</strong> <code>pvDebug.segmentMetrics()</code> stays (<code>apps/web/src/lib/debug/segmentMetrics.ts:36</code>); measuring with real data is the Real-data check "Matching time on the full history" in <code>plan.md</code>.</li>
+        <li><strong>Agent decisions:</strong> 62 still open in <code>review/decisions.md</code>; the owner postponed the sweep, so none is marked superseded. Round 7 added R49 (<code>:197</code>, <code>:198</code>), R51 (<code>:199-201</code>) and R52 (<code>:202</code>, <code>:203</code>). Candidates for the sweep: <code>:199</code> (single-pass note, removed by R79), <code>:200</code> (strip sticky at every width, changed by R57/R70), <code>:113</code> (pass time is elapsed time, replaced by R80 in round 8), and the scatter and pass-list decisions from rounds 4–6 (<code>:118</code>, <code>:119</code>, <code>:128</code>, <code>:129</code>, <code>:135</code>, <code>:141</code>, <code>:143</code>, <code>:147</code>), whose UI R51 removed.</li>
         <li><strong>Owner step:</strong> clear the local site data once in every browser that ran the round-1 build (DevTools → Application → Storage → Clear site data); <code>DB_VERSION</code> 5 is redefined, so those browsers never get <code>segment-passes</code> otherwise (Q109).</li>
         <li><strong>Real-data checks still to do</strong> (all 10 in <code>plan.md</code> § Real-data checks): tolerances keep real passes and drop detours (Q105); chart-range segments find the right passes; whole-session references find repeats; matching time on the full history (desktop, phone); session delete removes passes and the source's segments; passes after reprocessing a source; the similar hint on the same vs. a neighbouring stretch; prefilled names for unnamed and long sessions; pass times and splits on a long whole-session reference; scatter y range and last-10 window with many passes.</li>
+        <li><strong>Stale refs in rounds 1–6</strong> (owner's call): 24 <code>path:line</code> refs in the round 1–6 entries point at files deleted in later rounds (<code>PassList</code>, <code>PassScatter</code>, <code>ScatterRail</code>, <code>PassTimesRow</code>, <code>SegmentExplorerLegend</code>, <code>useScatterScrub</code>, <code>useScatterPreviewPass</code>, <code>routing/segmentTab.ts</code>) or at lines past the end of the current file. Options: (a) leave them as history (recommended); (b) rewrite them to current code; (c) mark them "removed in round N".</li>
+        <li><strong>Debug metrics after R50:</strong> <code>window.pvSegmentMetrics</code>, the console log and <code>pv:debug:segments</code> stay until the real-data runs on matcher v2; whether they go before the merge is a Real-data check in <code>plan.md</code>.</li>
         <li><strong>Owner step for R26:</strong> segments saved before the fix keep their stored polyline; delete "Marxzell &gt; Neusatz" and save the stretch again.</li>
       </ol>
 
@@ -1665,16 +1831,19 @@
       <table>
         <tr><th>Command</th><th>Result</th></tr>
         <tr><td><code>vp run check</code></td><td class="rv-pass">pass · 13/13</td></tr>
-        <tr><td><code>vp run test</code></td><td class="rv-pass">pass · engine 269 · ui 50 · gpx 54 · workbench 87 · app 1193</td></tr>
-        <tr><td><code>vp run e2e</code></td><td class="rv-pass">pass · 90</td></tr>
+        <tr><td><code>vp run test</code></td><td class="rv-pass">pass · app 1201 · ui 50 · engine 269 · gpx 54 · workbench 87</td></tr>
+        <tr><td><code>vp run e2e</code></td><td class="rv-pass">89 passed · 1 failed (not in <code>flaky.md</code>), passed on <code>vp -C apps/web exec playwright test --last-failed --workers 1</code></td></tr>
         <tr><td><code>vp run build</code></td><td class="rv-pass">pass</td></tr>
-        <tr><td><code>vp run workbench:deps</code></td><td class="rv-pass">520 modules · 1163 imports drawn (344 added, 0 missing); boundary: no violations (957 modules, 4012 dependencies)</td></tr>
+        <tr><td><code>vp run workbench:deps</code></td><td class="rv-pass">525 modules · 1169 imports drawn (346 added, 0 missing); boundary engine-is-pure, state-no-components: no violations (959 modules, 4014 dependencies)</td></tr>
       </table>
       <ol class="rv-text">
-        <li><strong>Round 7 suite</strong> (after R48–R84): all four commands passed on the first run; no e2e failure, nothing re-run.</li>
-        <li><strong>Deps</strong> (<code>WB_BASE=2a3bfb2</code>): components 123 · 218 imports; files 181 changed and planned · 6 changed, not planned (see Deviations) · 0 planned, untouched; interfaces 176 planned files · 412 exports, 4 not planned files · 3 exports, 0 missing.</li>
-        <li><strong>Shots:</strong> <code>before/</code> holds the round-6 after shots, <code>after/</code> the round-7 capture (8/8 capture tests, all scenes). New scenes: <code>segment-page-pass-tapped</code>, <code>segment-page-best-selected</code>, <code>segment-page-strip-years</code> (after only). Scenes retired by R51 (<code>segment-page-passes-expanded</code>, <code>-passes-tab</code>, <code>-none-selected</code>, <code>-pass-hover</code>, <code>-scatter-scrub</code>, <code>-explorer-hover-r30</code>) are no longer captured; the earlier rounds' entries now show their last capture from <code>before/</code>.</li>
-        <li>Shots in <code>after/</code> not shown above (the German copies): <code>after/d-de-dashboard.png</code>, <code>after/d-de-segment-delete-confirm.png</code>, <code>after/d-de-segment-menu.png</code>, <code>after/d-de-segment-name-dialog-similar.png</code>, <code>after/d-de-segment-name-dialog.png</code>, <code>after/d-de-segment-page-best-selected.png</code>, <code>after/d-de-segment-page-explorer-hover.png</code>, <code>after/d-de-segment-page-filtered.png</code>, <code>after/d-de-segment-page-finding.png</code>, <code>after/d-de-segment-page-from-session.png</code>, <code>after/d-de-segment-page-pass-tapped.png</code>, <code>after/d-de-segment-page-single-pass.png</code>, <code>after/d-de-segment-page-strip-years.png</code>, <code>after/d-de-segment-page.png</code>, <code>after/d-de-segment-rename-dialog.png</code>, <code>after/d-de-segments-tab-empty.png</code>, <code>after/d-de-segments-tab-hover.png</code>, <code>after/d-de-segments-tab.png</code>, <code>after/d-de-session-chart-zoom-save.png</code>, <code>after/d-de-session-delete-segments.png</code>, <code>after/d-de-session-menu-open-segment.png</code>, <code>after/d-de-session-menu-reference.png</code>, <code>after/d-de-session-segment-hover-3d.png</code>, <code>after/d-de-session-segment-hover.png</code>, <code>after/d-de-session-segments-expanded.png</code>, <code>after/d-de-session-segments-filtered.png</code>, <code>after/d-de-session-segments-none.png</code>, <code>after/d-de-session-segments-show-more.png</code>, <code>after/d-de-session-summary.png</code>, <code>after/p-de-dashboard.png</code>, <code>after/p-de-segment-delete-confirm.png</code>, <code>after/p-de-segment-menu.png</code>, <code>after/p-de-segment-name-dialog-similar.png</code>, <code>after/p-de-segment-page-best-selected.png</code>, <code>after/p-de-segment-page-explorer-hover.png</code>, <code>after/p-de-segment-page-filtered.png</code>, <code>after/p-de-segment-page-finding.png</code>, <code>after/p-de-segment-page-from-session.png</code>, <code>after/p-de-segment-page-pass-tapped.png</code>, <code>after/p-de-segment-page-single-pass.png</code>, <code>after/p-de-segment-page-strip-years.png</code>, <code>after/p-de-segment-page.png</code>, <code>after/p-de-segment-rename-dialog.png</code>, <code>after/p-de-segments-tab-empty.png</code>, <code>after/p-de-segments-tab-hover.png</code>, <code>after/p-de-segments-tab.png</code>, <code>after/p-de-session-delete-segments.png</code>, <code>after/p-de-session-menu-open-segment.png</code>, <code>after/p-de-session-menu-reference.png</code>, <code>after/p-de-session-segment-hover-3d.png</code>, <code>after/p-de-session-segment-hover.png</code>, <code>after/p-de-session-segments-expanded.png</code>, <code>after/p-de-session-segments-filtered.png</code>, <code>after/p-de-session-segments-none.png</code>, <code>after/p-de-session-segments-show-more.png</code>, <code>after/p-de-session-summary.png</code>.</li>
+        <li><strong>Round 9 suite</strong> (after R87): check 13/13 and build passed; test passed (app 1201, ui 50, engine 269, gpx 54, workbench 87). e2e: 89 passed, 1 failed: <code>[chromium] e2e/map.spec.ts:42</code> "track click opens the picker popover at the click point", passed on the serial re-run. It is not in <code>flaky.md</code> and also failed in round 8: a candidate for <code>flaky.md</code> (owner).</li>
+        <li><strong>Deps round 9</strong> (<code>WB_BASE=2a3bfb2</code>): components 124 · 217 imports; files 184 changed and planned · 10 changed, not planned (see Deviations) · 0 planned, untouched; interfaces 179 planned files · 399 exports, 8 not planned files · 6 exports, 0 missing.</li>
+        <li><strong>Shots round 9:</strong> new test "not found pages" in <code>capture.spec.ts</code> (empty library, unknown id) with the scenes <code>segment-not-found</code>, <code>session-not-found</code>, <code>trip-not-found</code> and <code>route-not-found</code>, after only. The capture ran the whole spec (10/10 tests, 22.0 min), so <code>after/</code> holds a fresh round-9 capture of every scene; <code>before/</code> holds the round-8 shots. German copies: <code>after/d-de-segment-not-found.png</code>, <code>after/p-de-segment-not-found.png</code>, <code>after/d-de-session-not-found.png</code>, <code>after/p-de-session-not-found.png</code>, <code>after/d-de-trip-not-found.png</code>, <code>after/p-de-trip-not-found.png</code>, <code>after/d-de-route-not-found.png</code>, <code>after/p-de-route-not-found.png</code>.</li>
+        <li><strong>Round 8 suite</strong> (after R80, R85, R86): check, test and build passed on the first run. e2e: 88 passed, 2 failed that are not in <code>flaky.md</code> (new): <code>[chromium] e2e/map.spec.ts:42</code> "track click opens the picker popover at the click point" and <code>[mobile] e2e/mobile/map.spec.ts:249</code> "mobile dock › filter input stays in place while typing"; both passed on the serial re-run (see Open points).</li>
+        <li><strong>Deps</strong> (<code>WB_BASE=2a3bfb2</code>): components 123 · 217 imports; files 184 changed and planned · 7 changed, not planned (see Deviations) · 0 planned, untouched; interfaces 179 planned files · 399 exports, 5 not planned files · 3 exports, 0 missing.</li>
+        <li><strong>Shots:</strong> <code>before/</code> holds the round-7 after shots, <code>after/</code> the round-8 capture (9/9 capture tests, 20.7 min). New scenes: <code>segment-page-stop</code> (new test: a segment over the first twentieth of the latest Starnberger ride, whose passes hold demo city stops; R80) and <code>segment-page-no-passes</code> (the Torbole segment under the last-30-days filter; R86), after only. The retired round-1–6 before shots the earlier entries still show (<code>segment-page-passes-expanded</code>, <code>-none-selected</code>, <code>-pass-hover</code>, <code>-scatter-scrub</code>, <code>-passes-tab</code>, <code>-explorer-hover-r30</code>, English only) were restored into <code>before/</code> from the last commit after the round-7 refresh had removed them.</li>
+        <li>Shots in <code>after/</code> not shown above (the German copies): <code>after/d-de-dashboard.png</code>, <code>after/d-de-segment-delete-confirm.png</code>, <code>after/d-de-segment-menu.png</code>, <code>after/d-de-segment-name-dialog-similar.png</code>, <code>after/d-de-segment-name-dialog.png</code>, <code>after/d-de-segment-page-best-selected.png</code>, <code>after/d-de-segment-page-no-passes.png</code>, <code>after/d-de-segment-page-stop.png</code>, <code>after/d-de-segment-page-explorer-hover.png</code>, <code>after/d-de-segment-page-filtered.png</code>, <code>after/d-de-segment-page-finding.png</code>, <code>after/d-de-segment-page-from-session.png</code>, <code>after/d-de-segment-page-pass-tapped.png</code>, <code>after/d-de-segment-page-single-pass.png</code>, <code>after/d-de-segment-page-strip-years.png</code>, <code>after/d-de-segment-page.png</code>, <code>after/d-de-segment-rename-dialog.png</code>, <code>after/d-de-segments-tab-empty.png</code>, <code>after/d-de-segments-tab-hover.png</code>, <code>after/d-de-segments-tab.png</code>, <code>after/d-de-session-chart-zoom-save.png</code>, <code>after/d-de-session-delete-segments.png</code>, <code>after/d-de-session-menu-open-segment.png</code>, <code>after/d-de-session-menu-reference.png</code>, <code>after/d-de-session-segment-hover-3d.png</code>, <code>after/d-de-session-segment-hover.png</code>, <code>after/d-de-session-segments-expanded.png</code>, <code>after/d-de-session-segments-filtered.png</code>, <code>after/d-de-session-segments-none.png</code>, <code>after/d-de-session-segments-show-more.png</code>, <code>after/d-de-session-summary.png</code>, <code>after/p-de-dashboard.png</code>, <code>after/p-de-segment-delete-confirm.png</code>, <code>after/p-de-segment-menu.png</code>, <code>after/p-de-segment-name-dialog-similar.png</code>, <code>after/p-de-segment-page-best-selected.png</code>, <code>after/p-de-segment-page-no-passes.png</code>, <code>after/p-de-segment-page-stop.png</code>, <code>after/p-de-segment-page-explorer-hover.png</code>, <code>after/p-de-segment-page-filtered.png</code>, <code>after/p-de-segment-page-finding.png</code>, <code>after/p-de-segment-page-from-session.png</code>, <code>after/p-de-segment-page-pass-tapped.png</code>, <code>after/p-de-segment-page-single-pass.png</code>, <code>after/p-de-segment-page-strip-years.png</code>, <code>after/p-de-segment-page.png</code>, <code>after/p-de-segment-rename-dialog.png</code>, <code>after/p-de-segments-tab-empty.png</code>, <code>after/p-de-segments-tab-hover.png</code>, <code>after/p-de-segments-tab.png</code>, <code>after/p-de-session-delete-segments.png</code>, <code>after/p-de-session-menu-open-segment.png</code>, <code>after/p-de-session-menu-reference.png</code>, <code>after/p-de-session-segment-hover-3d.png</code>, <code>after/p-de-session-segment-hover.png</code>, <code>after/p-de-session-segments-expanded.png</code>, <code>after/p-de-session-segments-filtered.png</code>, <code>after/p-de-session-segments-none.png</code>, <code>after/p-de-session-segments-show-more.png</code>, <code>after/p-de-session-summary.png</code>.</li>
       </ol>
 
       <h2>How to check</h2>

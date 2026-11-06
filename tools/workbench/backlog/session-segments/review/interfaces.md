@@ -1,6 +1,6 @@
 # Interfaces · session-segments
 
-Generated 2026-11-05 by `vp run workbench:deps -- session-segments` from the TypeScript files changed since the base (as `files.json`): 176 planned, 4 not planned. The checker's types; compare with tech.md `## Interfaces`, the planned record.
+Generated 2026-11-06 by `vp run workbench:deps -- session-segments` from the TypeScript files changed since the base (as `files.json`): 179 planned, 8 not planned. The checker's types; compare with tech.md `## Interfaces`, the planned record.
 
 ```ts
 // apps/web/e2e/helpers/seed.ts
@@ -149,7 +149,6 @@ export const useSegmentLayers: () => LayersList;
 
 ```ts
 // apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts
-export type SegmentMapMode = 'off' | 'tab' | 'page';
 export const useSegmentMapTracks: () => SegmentMapTracks;
 ```
 
@@ -269,15 +268,6 @@ export type MapScene =
   | { kind: 'studioTab'; key: string }
   | { kind: 'studioRoute'; key: string; routeId: string };
 export type MapSceneKind = MapScene['kind'];
-export interface MapSceneRoute {
-  path: string;
-  sessionId: string | undefined;
-  tripSessionIds: string[] | undefined;
-  segmentId: string | undefined;
-  studioRouteId: string | undefined;
-  segmentTab: boolean;
-  studioTab: boolean;
-}
 export const mapSceneOf: (route: MapSceneRoute) => MapScene;
 export const sceneSessionId: (scene: MapScene) => string | null;
 export const sceneSegmentId: (scene: MapScene) => string | null;
@@ -333,6 +323,11 @@ export const BestHighlight: FC<BestHighlightProps>;
 ```
 
 ```ts
+// apps/web/src/components/segments/CreateSegmentDialog.tsx
+export const CreateSegmentDialog: FC<CreateSegmentDialogProps>;
+```
+
+```ts
 // apps/web/src/components/segments/DeleteSegmentDialog.tsx
 export const DeleteSegmentDialog: FC<DeleteSegmentDialogProps>;
 ```
@@ -355,11 +350,6 @@ export const PassStripSkeleton: FC;
 ```ts
 // apps/web/src/components/segments/PassTile.tsx
 export const PassTile: FC<PassTileProps>;
-```
-
-```ts
-// apps/web/src/components/segments/ReferenceSegmentDialog.tsx
-export const ReferenceSegmentDialog: FC<ReferenceSegmentDialogProps>;
 ```
 
 ```ts
@@ -439,26 +429,15 @@ export const SegmentExplorerFrame: FC<SegmentExplorerFrameProps>;
 
 ```ts
 // apps/web/src/components/segments/charts/hooks/useSegmentChartRows.ts
-export interface SegmentChartSeries {
-  selectedPass: StoredSegmentPass | undefined;
-  selected: PassSeries | undefined;
-  best: PassSeries | undefined;
-  loading: boolean;
-}
 export const useSegmentChartRows: ({ segment, selected, best, }: {
   segment: MatchedSegment;
-  selected: StoredSegmentPass | undefined;
-  best: StoredSegmentPass | undefined;
+  selected: StoredSegmentPass;
+  best: StoredSegmentPass;
 }) => SegmentChartSeries;
 ```
 
 ```ts
 // apps/web/src/components/segments/charts/segmentChannels.ts
-export interface ChannelRest {
-  header: string;
-  value: string;
-  secondary?: string;
-}
 export const SPEC_BY_SEGMENT_CHANNEL: Record<"hr" | "power" | "speed" | "pace" | "gap" | "elevation" | "grade" | "cadence", ChannelSpec>;
 export const channelIcon: ({ channel, sport, }: { channel: SegmentChannel; sport: Sport; }) => LucideIcon;
 export const channelUnit: ({ channel, sport, }: { channel: SegmentChannel; sport: Sport; }) => string;
@@ -469,27 +448,22 @@ export const channelUnit: ({ channel, sport, }: { channel: SegmentChannel; sport
 export const SEGMENT_CHANNELS: readonly ["hr", "power", "speed", "pace", "gap", "elevation", "grade", "cadence"];
 export type SegmentChannel = (typeof SEGMENT_CHANNELS)[number];
 export interface PassSeries {
-  elapsedSec: number[];
+  movingSec: number[];
   positions: Array<[number, number] | null>;
   values: Record<SegmentChannel, Array<number | null>>;
 }
-export interface SegmentChartRow {
-  elapsedSec: number;
-  selected: number | null;
-  best: number | null;
-}
-export const passRecords: ({ records, pass, }: { records: SessionRecord[]; pass: StoredSegmentPass; }) => SessionRecord[];
+export const SECONDS_PER_MINUTE: 60;
 export const passSeries: ({ records, pass, running, }: {
   records: SessionRecord[];
   pass: StoredSegmentPass;
   running: boolean;
 }) => PassSeries;
-export const valueAtElapsed: ({ series, channel, elapsedSec, }: {
+export const valueAtMovingSec: ({ series, channel, movingSec, }: {
   series: PassSeries;
   channel: SegmentChannel;
-  elapsedSec: number;
+  movingSec: number;
 }) => number | null;
-export const positionAtElapsed: ({ series, elapsedSec, }: { series: PassSeries; elapsedSec: number; }) => [number, number] | null;
+export const positionAtMovingSec: ({ series, movingSec, }: { series: PassSeries; movingSec: number; }) => [number, number] | null;
 export const hasChannelValues: ({ series, channel, }: { series: PassSeries | undefined; channel: SegmentChannel; }) => boolean;
 export const segmentChartRows: ({ selected, best, channel, }: {
   selected: PassSeries;
@@ -501,31 +475,25 @@ export const segmentChartRows: ({ selected, best, channel, }: {
 ```ts
 // apps/web/src/components/segments/charts/segmentExplorerHover.ts
 export const SEGMENT_HOVER_GROUP: "segment-detail";
-export const SECONDS_PER_MINUTE: 60;
-export const hoverSegmentExplorer: ({ elapsedSec, selected, best, }: {
-  elapsedSec: number | null;
+export const hoverSegmentExplorer: ({ movingSec, selected, best, }: {
+  movingSec: number | null;
   selected: PassSeries;
   best: PassSeries | undefined;
 }) => void;
 ```
 
 ```ts
-// apps/web/src/components/segments/hooks/useClearPassFocusEffect.ts
-export const useClearPassFocusEffect: () => void;
+// apps/web/src/components/segments/hooks/useClearExplorerMarkersEffect.ts
+export const useClearExplorerMarkersEffect: () => void;
 ```
 
 ```ts
 // apps/web/src/components/segments/hooks/useFilteredSegments.ts
-export const useFilteredSegments: (options?: { enabled?: boolean; }) => MatchedSegment[] | undefined;
+export const useFilteredSegments: () => MatchedSegment[] | undefined;
 ```
 
 ```ts
 // apps/web/src/components/segments/hooks/useListExpansion.ts
-export interface ListExpansion {
-  expanded: boolean;
-  toggle: () => void;
-  toggleRef: RefObject<HTMLButtonElement | null>;
-}
 export const useListExpansion: () => ListExpansion;
 ```
 
@@ -556,7 +524,7 @@ export const useSegmentTitle: (segment: Segment | MatchedSegment) => SegmentTitl
 
 ```ts
 // apps/web/src/components/segments/hooks/useSegments.ts
-export const useSegments: (options?: { enabled?: boolean; }) => MatchedSegment[] | undefined;
+export const useSegments: () => MatchedSegment[] | undefined;
 ```
 
 ```ts
@@ -623,20 +591,14 @@ export const segmentsInFilter: ({ segments, sessionsById, criteria, now, }: {
 // apps/web/src/components/segments/segmentPasses.ts
 export const bestPassOf: (segment: MatchedSegment) => StoredSegmentPass | undefined;
 export const latestPassOf: (segment: MatchedSegment) => StoredSegmentPass | undefined;
-export interface PassYear {
-  year: number;
-  passes: StoredSegmentPass[];
-}
 export const passesByYear: (passes: StoredSegmentPass[]) => PassYear[];
-export const passDotScale: (passes: StoredSegmentPass[]) => ((durationSec: number) => PlotStripPosition);
-export const passRank: ({ segment, sessionId, }: { segment: MatchedSegment; sessionId: string; }) => number | undefined;
+export const passDotScale: (passes: StoredSegmentPass[]) => ((movingSec: number) => PlotStripPosition);
 export interface SessionSegment {
   segment: MatchedSegment;
   pass: StoredSegmentPass;
-  rank: number;
+  best: boolean;
 }
 export const sessionSegmentsInRideOrder: ({ segments, sessionId, }: { segments: MatchedSegment[]; sessionId: string; }) => SessionSegment[];
-export const unmatchedSegment: (segment: Segment) => MatchedSegment;
 export const matchedSegment: ({ segment, entry, }: { segment: Segment; entry: SegmentPassesEntry; }) => MatchedSegment;
 export const withPasses: ({ segment, passes, }: { segment: MatchedSegment; passes: StoredSegmentPass[]; }) => MatchedSegment;
 export const byLastRidden: (a: MatchedSegment, b: MatchedSegment) => number;
@@ -654,6 +616,7 @@ export interface MatchedSegment extends Segment {
   passes: StoredSegmentPass[];
   lastPassDate: number | null;
 }
+export const PASS_STRIP_SHELL_CLASS: any;
 ```
 
 ```ts
@@ -731,7 +694,6 @@ export const SessionSegmentItem: FC<SessionSegmentItemProps>;
 
 ```ts
 // apps/web/src/components/sessions/session/SessionSegmentList.tsx
-export const COLLAPSED_SESSION_SEGMENTS: 5;
 export const SessionSegmentList: FC<SessionSegmentListProps>;
 ```
 
@@ -848,13 +810,37 @@ export const summarizeLaps: (set: LapSet) => LapSummary;
 ```
 
 ```ts
+// apps/web/src/lib/analysis/movingTime.ts
+export const movingSeconds: (records: SessionRecord[]) => number[];
+export const sessionMovingTime: (records: SessionRecord[]) => { movingS: number; elapsedS: number; } | undefined;
+export interface MovingClock {
+  timestampsSec: number[];
+  movingSec: number[];
+}
+export const movingClock: (records: SessionRecord[]) => MovingClock;
+export const movingSecondsAt: ({ clock, timestampSec, }: { clock: MovingClock; timestampSec: number; }) => number | undefined;
+```
+
+```ts
 // apps/web/src/lib/analysis/segmentMatching.ts
+export interface CachedSessionTrack {
+  track: SegmentTrack | undefined;
+  clock: MovingClock;
+}
 export const segmentMatchSessions: (sessions: TrainingSession[]) => SegmentSessionMeta[];
 export const sessionsKeyBySport: (sessions: SegmentSessionMeta[]) => Record<Sport, string>;
-export const matchSegment: ({ segment, sessions, gpsBySessionId, records, ignoreCache, clockMs, }: MatchRun & {
+export const matchSegment: ({ segment, sessions, gpsBySessionId, tracks, ignoreCache, clockMs, }: MatchRun & {
   ignoreCache: boolean;
   clockMs?: ClockMs;
 }) => Promise<SegmentMatch>;
+```
+
+```ts
+// apps/web/src/lib/analysis/segmentPrefilter.ts
+export const reachesSegmentEnds: ({ encodedPolyline, reference, }: {
+  encodedPolyline: string;
+  reference: SegmentReferencePoint[];
+}) => boolean;
 ```
 
 ```ts
@@ -864,8 +850,6 @@ export const registerPvDebug: () => void;
 
 ```ts
 // apps/web/src/lib/debug/segmentMetrics.ts
-export const SEGMENT_DEBUG_FLAG_KEY: "pv:debug:segments";
-export type SegmentDebugMode = 'off' | 'log' | 'cold';
 export const segmentDebugMode: () => SegmentDebugMode;
 export const latestSegmentMetrics: () => SegmentMatchingMetrics | null;
 export const reportSegmentMetrics: (metrics: SegmentMatchingMetrics) => void;
@@ -1025,37 +1009,17 @@ export const breakdownStorage: ({ storeBytes, totalBytes, }: {
 
 ```ts
 // apps/web/src/lib/workers/segmentsContract.ts
-export const SEGMENT_MATCHER_VERSION: 1;
-export const segmentSessionMetaSchema: z.ZodObject<{
-  sessionId: z.ZodString;
-  sport: z.ZodEnum<{ [x: string]: any; }>;
-  date: z.ZodNumber;
-  derivationVersion: z.ZodNumber;
-}, z.core.$strip>;
+export const SEGMENT_MATCHER_VERSION: 2;
 export type SegmentSessionMeta = z.infer<typeof segmentSessionMetaSchema>;
-export const storedSegmentPassSchema: z.ZodObject<{
-  sessionId: z.ZodString;
-  date: z.ZodNumber;
-  startTimestampSec: z.ZodNumber;
-  endTimestampSec: z.ZodNumber;
-  durationSec: z.ZodNumber;
-  coverageRatio: z.ZodNumber;
-}, z.core.$strip>;
 export type StoredSegmentPass = z.infer<typeof storedSegmentPassSchema>;
 export const segmentPassesEntrySchema: z.ZodObject<{
   segmentId: z.ZodString;
   matcherVersion: z.ZodNumber;
   sourceSessionKey: z.ZodString;
   checkedSessionKeys: z.ZodArray<z.ZodString>;
-  passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; durationSec: z.ZodNumber; coverageRatio: z.ZodNumber; }, z.core.$strip>>;
+  passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; movingSec: z.ZodNumber; coverageRatio: z.ZodNumber; }, z.core.$strip>>;
 }, z.core.$strip>;
 export type SegmentPassesEntry = z.infer<typeof segmentPassesEntrySchema>;
-export const segmentMatchInputSchema: z.ZodObject<{
-  segmentId: z.ZodString;
-  sport: z.ZodEnum<{ [x: string]: any; }>;
-  bounds: z.ZodObject<{ minLat: z.ZodNumber; maxLat: z.ZodNumber; minLng: z.ZodNumber; maxLng: z.ZodNumber; }, z.core.$strip>;
-  source: z.ZodObject<{ sessionId: z.ZodString; startSec: z.ZodNumber; endSec: z.ZodNumber; }, z.core.$strip>;
-}, z.core.$strip>;
 export type SegmentMatchInput = z.infer<typeof segmentMatchInputSchema>;
 export const workerMessageInSchema: z.ZodObject<{
   type: z.ZodLiteral<"match">;
@@ -1064,31 +1028,12 @@ export const workerMessageInSchema: z.ZodObject<{
   ignoreCache: z.ZodOptional<z.ZodBoolean>;
 }, z.core.$strip>;
 export type WorkerMessageIn = z.infer<typeof workerMessageInSchema>;
-export const segmentMatchMetricsSchema: z.ZodObject<{
-  segmentId: z.ZodString;
-  cache: z.ZodEnum<{ hit: "hit"; partial: "partial"; miss: "miss"; }>;
-  missReason: z.ZodNullable<z.ZodEnum<{ matcherVersion: "matcherVersion"; noEntry: "noEntry"; sourceSession: "sourceSession"; forced: "forced"; }>>;
-  sessionsChecked: z.ZodNumber;
-  bboxCandidates: z.ZodNumber;
-  recordsRead: z.ZodNumber;
-  referencePoints: z.ZodNumber;
-  passes: z.ZodNumber;
-  ms: z.ZodNumber;
-}, z.core.$strip>;
 export type SegmentMatchMetrics = z.infer<typeof segmentMatchMetricsSchema>;
-export const segmentMatchingMetricsSchema: z.ZodObject<{
-  matcherVersion: z.ZodNumber;
-  environment: z.ZodObject<{ hardwareConcurrency: z.ZodNullable<z.ZodNumber>; deviceMemoryGb: z.ZodNullable<z.ZodNumber>; userAgent: z.ZodString; }, z.core.$strip>;
-  workerMs: z.ZodNumber;
-  mainThreadMs: z.ZodNullable<z.ZodNumber>;
-  sessionsRead: z.ZodNumber;
-  segments: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; cache: z.ZodEnum<{ hit: "hit"; partial: "partial"; miss: "miss"; }>; missReason: z.ZodNullable<z.ZodEnum<{ matcherVersion: "matcherVersion"; noEntry: "noEntry"; sourceSession: "sourceSession"; forced: "forced"; }>>; sessionsChecked: z.ZodNumber; bboxCandidates: z.ZodNumber; recordsRead: z.ZodNumber; referencePoints: z.ZodNumber; passes: z.ZodNumber; ms: z.ZodNumber; }, z.core.$strip>>;
-}, z.core.$strip>;
 export type SegmentMatchingMetrics = z.infer<typeof segmentMatchingMetricsSchema>;
 export const workerMessageOutSchema: z.ZodObject<{
   type: z.ZodLiteral<"done">;
-  entries: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; matcherVersion: z.ZodNumber; sourceSessionKey: z.ZodString; checkedSessionKeys: z.ZodArray<z.ZodString>; passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; durationSec: z.ZodNumber; coverageRatio: z.ZodNumber; }, z.core.$strip>>; }, z.core.$strip>>;
-  metrics: z.ZodOptional<z.ZodObject<{ matcherVersion: z.ZodNumber; environment: z.ZodObject<{ hardwareConcurrency: z.ZodNullable<z.ZodNumber>; deviceMemoryGb: z.ZodNullable<z.ZodNumber>; userAgent: z.ZodString; }, z.core.$strip>; workerMs: z.ZodNumber; mainThreadMs: z.ZodNullable<z.ZodNumber>; sessionsRead: z.ZodNumber; segments: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; cache: z.ZodEnum<{ hit: "hit"; partial: "partial"; miss: "miss"; }>; missReason: z.ZodNullable<z.ZodEnum<{ matcherVersion: "matcherVersion"; noEntry: "noEntry"; sourceSession: "sourceSession"; forced: "forced"; }>>; sessionsChecked: z.ZodNumber; bboxCandidates: z.ZodNumber; recordsRead: z.ZodNumber; referencePoints: z.ZodNumber; passes: z.ZodNumber; ms: z.ZodNumber; }, z.core.$strip>>; }, z.core.$strip>>;
+  entries: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; matcherVersion: z.ZodNumber; sourceSessionKey: z.ZodString; checkedSessionKeys: z.ZodArray<z.ZodString>; passes: z.ZodArray<z.ZodObject<{ sessionId: z.ZodString; date: z.ZodNumber; startTimestampSec: z.ZodNumber; endTimestampSec: z.ZodNumber; movingSec: z.ZodNumber; coverageRatio: z.ZodNumber; }, z.core.$strip>>; }, z.core.$strip>>;
+  metrics: z.ZodOptional<z.ZodObject<{ matcherVersion: z.ZodNumber; environment: z.ZodObject<{ hardwareConcurrency: z.ZodNullable<z.ZodNumber>; deviceMemoryGb: z.ZodNullable<z.ZodNumber>; userAgent: z.ZodString; }, z.core.$strip>; workerMs: z.ZodNumber; mainThreadMs: z.ZodNullable<z.ZodNumber>; sessionsRead: z.ZodNumber; segments: z.ZodArray<z.ZodObject<{ segmentId: z.ZodString; cache: z.ZodEnum<{ hit: "hit"; partial: "partial"; miss: "miss"; }>; missReason: z.ZodNullable<z.ZodEnum<{ matcherVersion: "matcherVersion"; noEntry: "noEntry"; sourceSession: "sourceSession"; forced: "forced"; }>>; sessionsChecked: z.ZodNumber; bboxCandidates: z.ZodNumber; recordsRead: z.ZodNumber; readMs: z.ZodNumber; matchMs: z.ZodNumber; referencePoints: z.ZodNumber; passes: z.ZodNumber; ms: z.ZodNumber; }, z.core.$strip>>; }, z.core.$strip>>;
 }, z.core.$strip>;
 export type WorkerMessageOut = z.infer<typeof workerMessageOutSchema>;
 ```
@@ -1109,7 +1054,7 @@ export const segmentRangeName: ({ name, startMeters, endMeters, }: {
   endMeters: number;
 }) => string;
 export const sessionSegmentsDeleteNote: (names: string[]) => string;
-export const passChipLabel: ({ date, time, best, }: { date: string; time: string; best: boolean; }) => string;
+export const passTileLabel: ({ date, time, best, }: { date: string; time: string; best: boolean; }) => string;
 ```
 
 ```ts
@@ -1141,10 +1086,6 @@ export const resetSegmentPasses: (queryClient: QueryClient) => Promise<void>;
 
 ```ts
 // apps/web/src/queries/sessions/useSessionRecordSlices.ts
-export interface SessionRecordSlices<T> {
-  sliceBySessionId: Map<string, T>;
-  loading: boolean;
-}
 export const loadSessionRecordSlice: <T>({ sessionId, slice, }: {
   sessionId: string;
   slice: (input: { sessionId: string; records: SessionRecord[]; }) => T;
@@ -1154,7 +1095,7 @@ export const useSessionRecordSlices: <T>({ scope, sessionIds, slice, }: {
   scope: string;
   sessionIds: string[];
   slice: (input: { sessionId: string; records: SessionRecord[]; }) => T;
-}) => SessionRecordSlices<T>;
+}) => Map<string, T>;
 ```
 
 ```ts
@@ -1251,12 +1192,6 @@ export const useSegmentFocusStore: UseBoundStore<WithImmer<StoreApi<SegmentFocus
 ```ts
 // apps/web/src/store/segments.ts
 export type SegmentSourceKind = 'range' | 'session';
-export interface SegmentSource {
-  sessionId: string;
-  kind: SegmentSourceKind;
-  startSec: number;
-  endSec: number;
-}
 export interface Segment {
   id: string;
   name: string;
@@ -1566,6 +1501,11 @@ export const createMockTrip: (overrides?: Partial<Trip>) => Trip;
 ```
 
 ```ts
+// apps/web/tests/lib/analysis/segmentPrefilter.spec.ts
+// no exports
+```
+
+```ts
 // apps/web/tests/lib/format/formatters.spec.ts
 // no exports
 ```
@@ -1713,7 +1653,6 @@ export const gpsPathRecordSeries: ({ path, speedMetersPerSec, legSpeedsMetersPer
 ```ts
 // packages/ui/src/components/pvActionItem/PvActionItem.tsx
 export type ActionItemSize = 'md' | 'sm';
-export type ActionItemRadius = 'lg' | 'xl' | '2xl';
 export const PvActionItem: FC<PvActionItemProps>;
 ```
 
@@ -1903,6 +1842,26 @@ export const fontSizes: { readonly '2xs': 11; readonly '3xs': 9; };
 
 ```ts
 // packages/ui/tests/hooks/useScrollToEndEffect.spec.ts
+// no exports
+```
+
+```ts
+// apps/web/src/components/errors/NotFoundBanner.tsx · not planned
+export const NotFoundBanner: FC<{ children?: ReactNode | undefined; }>;
+```
+
+```ts
+// apps/web/src/components/sessions/session/index.tsx · not planned
+export const Session: FC;
+```
+
+```ts
+// apps/web/src/components/studio/index.tsx · not planned
+export const Studio: FC;
+```
+
+```ts
+// apps/web/tests/lib/analysis/movingTime.spec.ts · not planned
 // no exports
 ```
 

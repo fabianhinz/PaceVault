@@ -1,6 +1,6 @@
 import { useRef, useState, type RefObject } from 'react';
 
-export interface ListExpansion {
+interface ListExpansion {
   expanded: boolean;
   toggle: () => void;
   toggleRef: RefObject<HTMLButtonElement | null>;

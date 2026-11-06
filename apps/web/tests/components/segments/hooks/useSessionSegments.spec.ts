@@ -29,22 +29,22 @@ describe(useSessionSegments.name, () => {
     vi.mocked(useSegments).mockReturnValue([
       createMockMatchedSegment({
         passes: [
-          createMockStoredSegmentPass({ sessionId: 'old-fast', durationSec: 200 }),
-          createMockStoredSegmentPass({ sessionId: 'old-viewed', durationSec: 280 }),
-          createMockStoredSegmentPass({ sessionId: 'recent', durationSec: 260 }),
+          createMockStoredSegmentPass({ sessionId: 'old-fast', movingSec: 200 }),
+          createMockStoredSegmentPass({ sessionId: 'old-viewed', movingSec: 240 }),
+          createMockStoredSegmentPass({ sessionId: 'recent', movingSec: 260 }),
         ],
       }),
     ]);
   });
 
-  it('ranks among all passes without a filter', () => {
+  it('compares with all passes without a filter', () => {
     const hook = renderHookWithProviders(() => useSessionSegments('old-viewed'));
 
-    expect(hook.result.current?.[0]?.rank).toBe(3);
+    expect(hook.result.current?.[0]?.best).toBe(false);
     expect(hook.result.current?.[0]?.segment.passes).toHaveLength(3);
   });
 
-  it('ranks among the passes inside the filter and keeps the viewed session', () => {
+  it('compares only with the passes inside the filter and keeps the viewed session', () => {
     useFiltersStore.setState({
       activeFilter: {
         ...emptyCriteria(),
@@ -53,7 +53,7 @@ describe(useSessionSegments.name, () => {
     });
     const hook = renderHookWithProviders(() => useSessionSegments('old-viewed'));
 
-    expect(hook.result.current?.[0]?.rank).toBe(2);
+    expect(hook.result.current?.[0]?.best).toBe(true);
     expect(hook.result.current?.[0]?.segment.passes.map((pass) => pass.sessionId)).toEqual([
       'old-viewed',
       'recent',

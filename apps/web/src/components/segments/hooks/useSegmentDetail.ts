@@ -11,7 +11,7 @@ import type { MatchedSegment } from '@/components/segments/types.ts';
 interface SegmentDetailState {
   segment: Segment | undefined;
   matched: MatchedSegment | undefined;
-  finding: boolean;
+  matching: boolean;
 }
 
 export const useSegmentDetail = (segmentId: string | undefined): SegmentDetailState => {
@@ -35,5 +35,5 @@ export const useSegmentDetail = (segmentId: string | undefined): SegmentDetailSt
     });
   }, [segment, entry, sessions, activeFilter, from]);
 
-  return { segment, matched, finding: segmentPasses.isFetching };
+  return { segment, matched, matching: segmentPasses.isFetching };
 };

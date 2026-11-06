@@ -4,11 +4,6 @@ import { loadSessionRecords } from '@/queries/sessions/useSessionRecords.ts';
 
 const SESSION_RECORD_SLICES_QUERY_ROOT = 'session-record-slices';
 
-export interface SessionRecordSlices<T> {
-  sliceBySessionId: Map<string, T>;
-  loading: boolean;
-}
-
 export const loadSessionRecordSlice = async <T>({
   sessionId,
   slice,
@@ -33,7 +28,7 @@ export const useSessionRecordSlices = <T>({
   scope: string;
   sessionIds: string[];
   slice: (input: { sessionId: string; records: SessionRecord[] }) => T;
-}): SessionRecordSlices<T> =>
+}): Map<string, T> =>
   useQueries({
     queries: sessionIds.map((sessionId) => ({
       queryKey: sessionRecordSlicesQueryKey({ scope, sessionId }),
@@ -50,6 +45,6 @@ export const useSessionRecordSlices = <T>({
         if (sessionId !== undefined && result.data !== undefined)
           sliceBySessionId.set(sessionId, result.data);
       });
-      return { sliceBySessionId, loading: results.some((result) => result.isPending) };
+      return sliceBySessionId;
     },
   });

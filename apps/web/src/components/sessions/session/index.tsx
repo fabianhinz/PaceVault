@@ -5,7 +5,7 @@ import { useSessionsStore } from '@/store/sessions.ts';
 import { useSessionRecords } from '@/queries/sessions/useSessionRecords.ts';
 import { useSessionLaps } from '@/queries/sessions/useSessionLaps.ts';
 import { useMarkSessionSeenEffect } from '@/components/sessions/session/hooks/useMarkSessionSeenEffect.ts';
-import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
+import { NotFoundBanner } from '@/components/errors/NotFoundBanner.tsx';
 import { SessionHeader } from '@/components/sessions/SessionHeader.tsx';
 import { SessionActionsMenu } from '@/components/sessions/session/SessionActionsMenu.tsx';
 import { SensorWarningBanner } from '@/components/sessions/session/SensorWarningBanner.tsx';
@@ -36,9 +36,7 @@ export const Session: FC = () => {
     return (
       <>
         {lapSetSync}
-        <PvTypography variant="body1" color="textSecondary">
-          {m.ui_session_not_found()}
-        </PvTypography>
+        <NotFoundBanner>{m.ui_session_not_found()}</NotFoundBanner>
       </>
     );
   }

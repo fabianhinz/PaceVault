@@ -14,7 +14,7 @@ export const createMockStoredSegmentPass = (
   date: 1_767_225_600_000,
   startTimestampSec: 0,
   endTimestampSec: 300,
-  durationSec: 300,
+  movingSec: 300,
   coverageRatio: 1,
   ...overrides,
 });
@@ -40,7 +40,7 @@ export const createMockMatchedSegment = (overrides?: Partial<MatchedSegment>): M
   ],
   passes: [
     createMockStoredSegmentPass({ sessionId: 'session-1' }),
-    createMockStoredSegmentPass({ sessionId: 'session-2', durationSec: 320 }),
+    createMockStoredSegmentPass({ sessionId: 'session-2', movingSec: 320 }),
   ],
   lastPassDate: 1_767_225_600_000,
   ...overrides,
@@ -50,7 +50,7 @@ export const createMockSegmentPassesEntry = (
   overrides?: Partial<SegmentPassesEntry>,
 ): SegmentPassesEntry => ({
   segmentId: 'segment-1',
-  matcherVersion: 1,
+  matcherVersion: 2,
   sourceSessionKey: 'session-1@1',
   checkedSessionKeys: ['session-1@1'],
   passes: [createMockStoredSegmentPass()],
@@ -68,7 +68,7 @@ export const createMockSegmentSessionMeta = (
 });
 
 export const createMockPassSeries = (overrides?: Partial<PassSeries>): PassSeries => ({
-  elapsedSec: [0, 10],
+  movingSec: [0, 10],
   positions: [
     [48.137, 11.575],
     [48.146, 11.575],

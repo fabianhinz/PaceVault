@@ -1,6 +1,6 @@
-import type { SessionGPS, SessionRecord } from '@pacevault/engine/types.ts';
+import type { SessionGPS } from '@pacevault/engine/types.ts';
 import { getAllSessionGPS } from '@/lib/storage/db.ts';
-import { matchSegment } from '@/lib/analysis/segmentMatching.ts';
+import { matchSegment, type CachedSessionTrack } from '@/lib/analysis/segmentMatching.ts';
 import {
   SEGMENT_MATCHER_VERSION,
   workerMessageInSchema,
@@ -32,7 +32,7 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
   const parsed = workerMessageInSchema.safeParse(event.data);
   const entries: SegmentPassesEntry[] = [];
   const segments: SegmentMatchMetrics[] = [];
-  const records = new Map<string, SessionRecord[]>();
+  const tracks = new Map<string, CachedSessionTrack>();
   if (parsed.success && parsed.data.segments.length > 0) {
     const gpsBySessionId = await gpsBySessionIdOf();
     const ignoreCache = parsed.data.ignoreCache === true;
@@ -41,7 +41,7 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
         segment,
         sessions: parsed.data.sessions,
         gpsBySessionId,
-        records,
+        tracks,
         ignoreCache,
       });
       entries.push(match.entry);
@@ -53,7 +53,7 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
     environment: environment(),
     workerMs: performance.now() - startMs,
     mainThreadMs: null,
-    sessionsRead: records.size,
+    sessionsRead: tracks.size,
     segments,
   };
   self.postMessage({ type: 'done', entries, metrics } satisfies WorkerMessageOut);

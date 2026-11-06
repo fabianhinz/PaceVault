@@ -8,8 +8,13 @@ import type { StatRailNote } from '@pacevault/ui/components/pvStatRail/types.ts'
 import type { ChartHoverX } from '@/store/chartHover.ts';
 import { SeriesRail } from '@/components/charts/SeriesRail.tsx';
 import { formatChartTime } from '@/lib/colors/chartTheme.ts';
-import { SECONDS_PER_MINUTE, SEGMENT_HOVER_GROUP } from './segmentExplorerHover.ts';
-import { valueAtElapsed, type PassSeries, type SegmentChannel } from './segmentChartRows.ts';
+import { SEGMENT_HOVER_GROUP } from './segmentExplorerHover.ts';
+import {
+  SECONDS_PER_MINUTE,
+  valueAtMovingSec,
+  type PassSeries,
+  type SegmentChannel,
+} from './segmentChartRows.ts';
 import { SPEC_BY_SEGMENT_CHANNEL, channelUnit } from './segmentChannels.ts';
 
 interface SegmentChannelRailProps {
@@ -58,14 +63,14 @@ export const SegmentChannelRail: FC<SegmentChannelRailProps> = (props) => {
       rest={{ ...rest, note: restNote }}
       notePlacement="top"
       readingAt={(x) => {
-        const elapsedSec = Number(x);
-        const value = valueAtElapsed({
+        const movingSec = Number(x);
+        const value = valueAtMovingSec({
           series: props.selected,
           channel: props.channel,
-          elapsedSec,
+          movingSec,
         });
         if (best === undefined) return { value: spec.format(value), secondary: restLine };
-        const bestValue = valueAtElapsed({ series: best, channel: props.channel, elapsedSec });
+        const bestValue = valueAtMovingSec({ series: best, channel: props.channel, movingSec });
         return {
           value: spec.format(value),
           secondary: restLine,

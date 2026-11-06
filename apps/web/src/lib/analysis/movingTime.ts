@@ -79,3 +79,54 @@ export const sessionMovingTime = (
   const moving = movingSeconds(records);
   return { movingS: moving[moving.length - 1] ?? 0, elapsedS: last.timestamp - first.timestamp };
 };
+
+export interface MovingClock {
+  timestampsSec: number[];
+  movingSec: number[];
+}
+
+export const movingClock = (records: SessionRecord[]): MovingClock => ({
+  timestampsSec: records.map((record) => record.timestamp),
+  movingSec: movingSeconds(records),
+});
+
+const firstIndexAtOrAfter = ({
+  timestampsSec,
+  timestampSec,
+}: {
+  timestampsSec: number[];
+  timestampSec: number;
+}): number => {
+  let low = 0;
+  let high = timestampsSec.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    const candidate = timestampsSec[middle];
+    if (candidate !== undefined && candidate < timestampSec) {
+      low = middle + 1;
+    } else {
+      high = middle;
+    }
+  }
+  return low;
+};
+
+export const movingSecondsAt = ({
+  clock,
+  timestampSec,
+}: {
+  clock: MovingClock;
+  timestampSec: number;
+}): number | undefined => {
+  const after = firstIndexAtOrAfter({ timestampsSec: clock.timestampsSec, timestampSec });
+  const afterSec = clock.timestampsSec[after];
+  const afterMoving = clock.movingSec[after];
+  if (afterSec === undefined || afterMoving === undefined) return clock.movingSec.at(-1);
+  const beforeSec = clock.timestampsSec[after - 1];
+  const beforeMoving = clock.movingSec[after - 1];
+  if (beforeSec === undefined || beforeMoving === undefined || afterSec === timestampSec) {
+    return afterMoving;
+  }
+  const fraction = (timestampSec - beforeSec) / (afterSec - beforeSec);
+  return beforeMoving + (afterMoving - beforeMoving) * fraction;
+};

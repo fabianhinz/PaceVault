@@ -13,8 +13,23 @@ const records = [
 const pass = createMockStoredSegmentPass({ startTimestampSec: 100, endTimestampSec: 102.5 });
 
 describe('segmentChartRows', () => {
-  it('slices the records to the pass span on elapsed seconds from the segment start', () => {
-    expect(passSeries({ records, pass, running: false }).elapsedSec).toEqual([0, 1, 2]);
+  it('slices the records to the pass span on moving seconds from the segment start', () => {
+    expect(passSeries({ records, pass, running: false }).movingSec).toEqual([0, 1, 2]);
+  });
+
+  it('collapses a timer pause inside the pass on the time axis', () => {
+    const paused = [
+      createMockSessionRecord({ timestamp: 0, timerTime: 0 }),
+      createMockSessionRecord({ timestamp: 1, timerTime: 1 }),
+      createMockSessionRecord({ timestamp: 2, timerTime: 2 }),
+      createMockSessionRecord({ timestamp: 92, timerTime: 3 }),
+      createMockSessionRecord({ timestamp: 93, timerTime: 4 }),
+    ];
+    const pausedPass = createMockStoredSegmentPass({ startTimestampSec: 1, endTimestampSec: 93 });
+
+    expect(passSeries({ records: paused, pass: pausedPass, running: false }).movingSec).toEqual([
+      0, 1, 2, 3,
+    ]);
   });
 
   it('keeps one point per record, a missing value as null and a recorded 0', () => {
@@ -33,11 +48,11 @@ describe('segmentChartRows', () => {
     });
 
     expect(segmentChartRows({ selected, best, channel: 'power' })).toEqual([
-      { elapsedSec: 0, selected: 0, best: 0 },
-      { elapsedSec: 0, selected: 0, best: 0 },
-      { elapsedSec: 1, selected: 200, best: 200 },
-      { elapsedSec: 1, selected: 200, best: 200 },
-      { elapsedSec: 2, selected: 210, best: null },
+      { movingSec: 0, selected: 0, best: 0 },
+      { movingSec: 0, selected: 0, best: 0 },
+      { movingSec: 1, selected: 200, best: 200 },
+      { movingSec: 1, selected: 200, best: 200 },
+      { movingSec: 2, selected: 210, best: null },
     ]);
   });
 });

@@ -7,7 +7,7 @@ interface SegmentFocusState {
   passMarker: MapMarker | null;
   bestMarker: MapMarker | null;
   showExplorerMarkers: (markers: { pass: MapMarker | null; best: MapMarker | null }) => void;
-  clearPassFocus: () => void;
+  clearExplorerMarkers: () => void;
 }
 
 export const INITIAL_SEGMENT_FOCUS_STORE_STATE: Pick<
@@ -26,7 +26,7 @@ export const useSegmentFocusStore = create<SegmentFocusState>()(
         draft.passMarker = markers.pass;
         draft.bestMarker = markers.best;
       }),
-    clearPassFocus: () =>
+    clearExplorerMarkers: () =>
       set((draft) => {
         draft.passMarker = null;
         draft.bestMarker = null;

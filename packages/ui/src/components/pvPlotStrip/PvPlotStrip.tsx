@@ -1,5 +1,4 @@
 import { useRef, type FC, type ReactNode } from 'react';
-import { cn } from '../../lib/cn.ts';
 import { useScrollFadeEffect } from '../../hooks/useScrollFadeEffect.ts';
 import { useScrollToEndEffect } from '../../hooks/useScrollToEndEffect.ts';
 
@@ -8,7 +7,6 @@ interface PvPlotStripProps {
   scrollKey: string;
   children: ReactNode;
   pinned?: ReactNode;
-  className?: string;
 }
 
 export const PvPlotStrip: FC<PvPlotStripProps> = (props) => {
@@ -16,7 +14,7 @@ export const PvPlotStrip: FC<PvPlotStripProps> = (props) => {
   useScrollFadeEffect(scrollRef, { axis: 'x' });
   useScrollToEndEffect({ ref: scrollRef, scrollKey: props.scrollKey });
   return (
-    <div role="group" aria-label={props.label} className={cn('flex gap-1', props.className)}>
+    <div role="group" aria-label={props.label} className="flex gap-1">
       {props.pinned}
       <div
         ref={scrollRef}

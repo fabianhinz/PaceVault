@@ -4,7 +4,7 @@ import { PvPlotStripTile } from '@pacevault/ui/components/pvPlotStrip/PvPlotStri
 import type { PlotStripPosition } from '@pacevault/ui/components/pvPlotStrip/types.ts';
 import type { StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
 import { formatDate, formatRaceTime } from '@/lib/format/formatters.ts';
-import { passChipLabel } from '@/microcopy/segments.ts';
+import { passTileLabel } from '@/microcopy/segments.ts';
 
 interface PassTileProps {
   pass: StoredSegmentPass;
@@ -16,11 +16,11 @@ interface PassTileProps {
 
 export const PassTile: FC<PassTileProps> = (props) => (
   <PvPlotStripTile
-    testId="pass-chip"
+    testId="pass-tile"
     label={formatDate(props.pass.date, 'day-month')}
-    accessibleLabel={passChipLabel({
+    accessibleLabel={passTileLabel({
       date: formatDate(props.pass.date),
-      time: formatRaceTime(props.pass.durationSec),
+      time: formatRaceTime(props.pass.movingSec),
       best: props.best,
     })}
     position={props.position}

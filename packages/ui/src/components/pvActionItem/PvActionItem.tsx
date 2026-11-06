@@ -5,7 +5,7 @@ import { PvTypography } from '../pvTypography/PvTypography.tsx';
 
 export type ActionItemSize = 'md' | 'sm';
 
-export type ActionItemRadius = 'lg' | 'xl' | '2xl';
+type ActionItemRadius = 'lg' | 'xl' | '2xl';
 
 const RADIUS_BY_ACTION_ITEM_SIZE: Record<ActionItemSize, ActionItemRadius> = {
   md: '2xl',
@@ -23,11 +23,6 @@ const BUTTON_CLASS_BY_ACTION_ITEM_SIZE: Record<ActionItemSize, string> = {
   sm: 'gap-2 px-2 py-1.5',
 };
 
-const TRAILING_CLASS_BY_ACTION_ITEM_SIZE: Record<ActionItemSize, string> = {
-  md: 'mr-3',
-  sm: 'mr-1',
-};
-
 interface PvActionItemProps {
   avatar: ReactNode;
   primary: ReactNode;
@@ -35,10 +30,8 @@ interface PvActionItemProps {
   value?: ReactNode;
   valueCaption?: ReactNode;
   decoration?: ReactNode;
-  trailing?: ReactNode;
   label: string;
   onClick: () => void;
-  selected?: boolean;
   size?: ActionItemSize;
   radius?: ActionItemRadius;
   className?: string;
@@ -58,7 +51,6 @@ export const PvActionItem: FC<PvActionItemProps> = (props) => {
         GLASS_CLASS,
         'relative flex flex-row items-center hover:bg-white/10',
         ROOT_CLASS_BY_ACTION_ITEM_RADIUS[props.radius ?? RADIUS_BY_ACTION_ITEM_SIZE[size]],
-        props.selected === true && 'bg-white/10',
         props.className,
       )}
     >
@@ -66,7 +58,6 @@ export const PvActionItem: FC<PvActionItemProps> = (props) => {
       <button
         type="button"
         aria-label={props.label}
-        aria-pressed={props.selected}
         onClick={props.onClick}
         className={cn(
           'flex min-w-0 flex-1 cursor-pointer items-center text-left',
@@ -97,11 +88,6 @@ export const PvActionItem: FC<PvActionItemProps> = (props) => {
           </span>
         )}
       </button>
-      {props.trailing !== undefined && (
-        <span className={cn('shrink-0', TRAILING_CLASS_BY_ACTION_ITEM_SIZE[size])}>
-          {props.trailing}
-        </span>
-      )}
     </div>
   );
 };

@@ -2,9 +2,6 @@ import { useMemo } from 'react';
 import type { LayersList } from '@deck.gl/core';
 import { PathLayer, ScatterplotLayer } from '@deck.gl/layers';
 import { useSegmentFocusStore, type MapMarker } from '@/store/segmentFocus.ts';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { sceneHoveredId } from '@/components/mapBackground/mapScene.ts';
-import type { MatchedSegment } from '@/components/segments/types.ts';
 import {
   BEST_MARKER_COLOR,
   HOVER_MARKER_FILL_COLOR,
@@ -17,10 +14,7 @@ import {
 import { useSegmentMapTracks } from './useSegmentMapTracks.ts';
 import { useMapScene } from './useMapScene.ts';
 
-interface SegmentPath {
-  segment: MatchedSegment;
-  path: [number, number][];
-}
+type SegmentPath = NonNullable<ReturnType<typeof useSegmentMapTracks>['page']>;
 
 interface MarkerDot {
   position: [number, number];
@@ -32,17 +26,12 @@ const BEST_MARKER_FILL_COLOR: [number, number, number, number] = [
   trackModifiers.alpha.highlighted,
 ];
 
-const pathOf = (segment: MatchedSegment): SegmentPath => ({
-  segment,
-  path: segment.geometry.map((point) => [point[1], point[0]]),
-});
-
 const pageLayer = (page: SegmentPath): PathLayer<SegmentPath> =>
   new PathLayer<SegmentPath>({
     id: 'segment-track',
     data: [page],
     getPath: (d) => d.path,
-    getColor: (d) => [...TRACK_COLOR_BY_SPORT[d.segment.sport], trackModifiers.alpha.highlighted],
+    getColor: (d) => [...TRACK_COLOR_BY_SPORT[d.sport], trackModifiers.alpha.highlighted],
     getWidth: trackModifiers.width.highlighted,
     widthMinPixels: 1,
     jointRounded: true,
@@ -50,15 +39,15 @@ const pageLayer = (page: SegmentPath): PathLayer<SegmentPath> =>
     pickable: false,
   });
 
-const hoverLayer = (hovered: SegmentPath | undefined): PathLayer<SegmentPath> => {
+const hoverLayer = (hovered: SegmentPath | null): PathLayer<SegmentPath> => {
   let data: SegmentPath[] = [];
-  if (hovered !== undefined) data = [hovered];
+  if (hovered !== null) data = [hovered];
   return new PathLayer<SegmentPath>({
     id: 'segment-hover',
     data,
-    visible: hovered !== undefined,
+    visible: hovered !== null,
     getPath: (d) => d.path,
-    getColor: (d) => [...TRACK_COLOR_BY_SPORT[d.segment.sport], trackModifiers.alpha.highlighted],
+    getColor: (d) => [...TRACK_COLOR_BY_SPORT[d.sport], trackModifiers.alpha.highlighted],
     getWidth: trackModifiers.width.highlighted,
     widthMinPixels: 1,
     jointRounded: true,
@@ -99,24 +88,15 @@ const markerLayer = ({
 
 export const useSegmentLayers = (): LayersList => {
   const segmentMap = useSegmentMapTracks();
-  const sceneKey = useMapScene().key;
-  const hoveredId = useMapFocusStore((s) =>
-    sceneHoveredId({ hover: s.mapHover, sceneKey, kind: 'segment' }),
-  );
+  const onTab = useMapScene().kind === 'segmentTab';
   const passMarker = useSegmentFocusStore((s) => s.passMarker);
   const bestMarker = useSegmentFocusStore((s) => s.bestMarker);
-  const segments = segmentMap.segments;
-  const mode = segmentMap.mode;
+  const page = segmentMap.page;
+  const hovered = segmentMap.hovered;
 
   return useMemo(() => {
-    if (mode === 'tab') {
-      const hovered = segments.find((segment) => segment.id === hoveredId);
-      let hoveredPath: SegmentPath | undefined = undefined;
-      if (hovered !== undefined) hoveredPath = pathOf(hovered);
-      return [hoverLayer(hoveredPath)];
-    }
-    const page = segments[0];
-    if (mode === 'off' || page === undefined) return [];
-    return [pageLayer(pathOf(page)), markerLayer({ passMarker, bestMarker })];
-  }, [mode, segments, hoveredId, passMarker, bestMarker]);
+    if (page !== null) return [pageLayer(page), markerLayer({ passMarker, bestMarker })];
+    if (onTab) return [hoverLayer(hovered)];
+    return [];
+  }, [page, hovered, onTab, passMarker, bestMarker]);
 };

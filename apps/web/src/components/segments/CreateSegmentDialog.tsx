@@ -1,17 +1,17 @@
 import type { FC } from 'react';
-import { m } from '@pacevault/i18n/messages.js';
 import type { Segment } from '@/store/segments.ts';
 import { SegmentNameDialog } from '@/components/segments/SegmentNameDialog.tsx';
 import { segmentFactsLine } from '@/components/segments/segmentFacts.ts';
 import { useSaveSegment } from '@/components/segments/hooks/useSaveSegment.ts';
 import { useSimilarSegment } from '@/components/segments/hooks/useSimilarSegment.ts';
 
-interface ReferenceSegmentDialogProps {
+interface CreateSegmentDialogProps {
   draft: Segment | null;
+  title: string;
   onClose: () => void;
 }
 
-export const ReferenceSegmentDialog: FC<ReferenceSegmentDialogProps> = (props) => {
+export const CreateSegmentDialog: FC<CreateSegmentDialogProps> = (props) => {
   const saveSegment = useSaveSegment();
   const similarSegment = useSimilarSegment(props.draft);
   const draft = props.draft;
@@ -23,7 +23,7 @@ export const ReferenceSegmentDialog: FC<ReferenceSegmentDialogProps> = (props) =
         if (!open) props.onClose();
       }}
       mode="create"
-      title={m.ui_segment_use_as_reference()}
+      title={props.title}
       initialName={draft?.name ?? ''}
       facts={draft === null ? undefined : segmentFactsLine(draft)}
       similarSegment={similarSegment}

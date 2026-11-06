@@ -41,7 +41,7 @@ const renderRow = () =>
 
 describe(SegmentsRow.name, () => {
   beforeEach(() => {
-    vi.mocked(useSessionSegments).mockReturnValue([{ segment, pass, rank: 1 }]);
+    vi.mocked(useSessionSegments).mockReturnValue([{ segment, pass, best: true }]);
     window.matchMedia = createMatchMedia(1440);
   });
 
@@ -62,7 +62,7 @@ describe(SegmentsRow.name, () => {
       Array.from({ length: 7 }, (_, i) => ({
         segment: createMockMatchedSegment({ id: `seg-${i}`, name: `Stretch ${i}`, passes: [pass] }),
         pass,
-        rank: 2,
+        best: false,
       })),
     );
     const view = renderRow();

@@ -9,9 +9,9 @@ import {
 
 const segment = createMockMatchedSegment({
   passes: [
-    createMockStoredSegmentPass({ sessionId: 'best', date: 1, durationSec: 200 }),
-    createMockStoredSegmentPass({ sessionId: 'middle', date: 2, durationSec: 250 }),
-    createMockStoredSegmentPass({ sessionId: 'latest', date: 3, durationSec: 300 }),
+    createMockStoredSegmentPass({ sessionId: 'best', date: 1, movingSec: 200 }),
+    createMockStoredSegmentPass({ sessionId: 'middle', date: 2, movingSec: 250 }),
+    createMockStoredSegmentPass({ sessionId: 'latest', date: 3, movingSec: 300 }),
   ],
 });
 

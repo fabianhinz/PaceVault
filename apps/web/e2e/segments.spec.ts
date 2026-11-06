@@ -75,10 +75,10 @@ test.describe('Segments', () => {
     const strip = page.getByRole('group', { name: 'Passes' });
     await expect(strip).toBeVisible({ timeout: MATCHING_TIMEOUT_MS });
     await expect(page.getByTestId('segment-header')).toContainText(/\d+ passes/);
-    const firstChip = strip.getByRole('button').first();
-    await expect(firstChip).toHaveAttribute('aria-pressed', 'false');
-    await firstChip.click();
-    await expect(firstChip).toHaveAttribute('aria-pressed', 'true');
+    const firstTile = strip.getByRole('button').first();
+    await expect(firstTile).toHaveAttribute('aria-pressed', 'false');
+    await firstTile.click();
+    await expect(firstTile).toHaveAttribute('aria-pressed', 'true');
     await page.getByTestId('selected-pass-item').getByRole('button').click();
     await expect(page).toHaveURL(/\/sessions\//);
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { mock } from 'vitest-mock-extended';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useSegmentDetail } from '@/components/segments/hooks/useSegmentDetail.ts';
-import { bestPassOf, passRank } from '@/components/segments/segmentPasses.ts';
+import { bestPassOf } from '@/components/segments/segmentPasses.ts';
 import { useSegmentPasses } from '@/queries/segments/useSegmentPasses.ts';
 import { useSegmentsStore } from '@/store/segments.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
@@ -47,9 +47,9 @@ describe(useSegmentDetail.name, () => {
         createMockSegmentPassesEntry({
           segmentId: 'segment-1',
           passes: [
-            createMockStoredSegmentPass({ sessionId: 'old-fast', durationSec: 200 }),
-            createMockStoredSegmentPass({ sessionId: 'recent', durationSec: 260 }),
-            createMockStoredSegmentPass({ sessionId: 'recent-slow', durationSec: 300 }),
+            createMockStoredSegmentPass({ sessionId: 'old-fast', movingSec: 200 }),
+            createMockStoredSegmentPass({ sessionId: 'recent', movingSec: 260 }),
+            createMockStoredSegmentPass({ sessionId: 'recent-slow', movingSec: 300 }),
           ],
         }),
       ]),
@@ -57,15 +57,12 @@ describe(useSegmentDetail.name, () => {
     useFiltersStore.setState({ activeFilter: LAST_MONTH });
   });
 
-  it('counts only passes inside the dashboard filter for count, best and rank', () => {
+  it('counts only passes inside the dashboard filter for count and best', () => {
     const hook = renderDetail('/segments/segment-1');
     const matched = hook.result.current.matched;
 
     expect(matched?.passes.map((pass) => pass.sessionId)).toEqual(['recent', 'recent-slow']);
     expect(matched === undefined ? undefined : bestPassOf(matched)?.sessionId).toBe('recent');
-    expect(
-      matched === undefined ? undefined : passRank({ segment: matched, sessionId: 'recent-slow' }),
-    ).toBe(2);
   });
 
   it('keeps the pass of the session the page was opened from', () => {

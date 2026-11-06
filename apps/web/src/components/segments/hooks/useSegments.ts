@@ -4,9 +4,9 @@ import { useSegmentPasses } from '@/queries/segments/useSegmentPasses.ts';
 import { byLastRidden, matchedSegment } from '@/components/segments/segmentPasses.ts';
 import type { MatchedSegment } from '@/components/segments/types.ts';
 
-export const useSegments = (options: { enabled?: boolean } = {}): MatchedSegment[] | undefined => {
+export const useSegments = (): MatchedSegment[] | undefined => {
   const segments = useSegmentsStore((s) => s.segments);
-  const segmentPasses = useSegmentPasses({ enabled: options.enabled ?? true });
+  const segmentPasses = useSegmentPasses({ enabled: true });
   const entries = segmentPasses.data;
 
   return useMemo(() => {

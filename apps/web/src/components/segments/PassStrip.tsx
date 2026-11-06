@@ -2,11 +2,9 @@ import { startTransition, useOptimistic, type FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import { PvPlotStrip } from '@pacevault/ui/components/pvPlotStrip/PvPlotStrip.tsx';
 import { PvPlotStripGroup } from '@pacevault/ui/components/pvPlotStrip/PvPlotStripGroup.tsx';
-import { FLOATING_LG_CLASS } from '@pacevault/ui/lib/surfaces.ts';
-import { cn } from '@pacevault/ui/lib/cn.ts';
 import type { StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
 import { formatDate } from '@/lib/format/formatters.ts';
-import type { MatchedSegment } from './types.ts';
+import { PASS_STRIP_SHELL_CLASS, type MatchedSegment } from './types.ts';
 import { passDotScale, passesByYear } from './segmentPasses.ts';
 import { PassItem } from './PassItem.tsx';
 import { PassTile } from './PassTile.tsx';
@@ -30,13 +28,7 @@ export const PassStrip: FC<PassStripProps> = (props) => {
       props.onSelect(sessionId);
     });
   return (
-    <div
-      data-testid="pass-strip"
-      className={cn(
-        FLOATING_LG_CLASS,
-        'lg:sticky lg:top-6 z-raised flex flex-col gap-3 rounded-3xl p-3',
-      )}
-    >
+    <div data-testid="pass-strip" className={PASS_STRIP_SHELL_CLASS}>
       <PvPlotStrip
         label={m.ui_segment_passes_label()}
         scrollKey={`${props.segment.id}:${props.segment.passes.length}`}
@@ -44,7 +36,7 @@ export const PassStrip: FC<PassStripProps> = (props) => {
           <PvPlotStripGroup label={formatDate(props.best.date, 'year')}>
             <PassTile
               pass={props.best}
-              position={scale(props.best.durationSec)}
+              position={scale(props.best.movingSec)}
               best
               selected={props.best.sessionId === pressed.sessionId}
               onSelect={select}
@@ -61,7 +53,7 @@ export const PassStrip: FC<PassStripProps> = (props) => {
               <PassTile
                 key={pass.sessionId}
                 pass={pass}
-                position={scale(pass.durationSec)}
+                position={scale(pass.movingSec)}
                 best={false}
                 selected={pass.sessionId === pressed.sessionId}
                 onSelect={select}

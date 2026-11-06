@@ -1,6 +1,6 @@
 {
   "item": "session-segments",
-  "generated": "2026-11-05",
+  "generated": "2026-11-06",
   "command": "depcruise --config tools/workbench/.dependency-cruiser.cjs --output-type json apps/web/e2e apps/web/src apps/web/tests/components/mapBackground apps/web/tests/components/segments apps/web/tests/components/sessions/session apps/web/tests/factories apps/web/tests/lib/analysis apps/web/tests/lib/format apps/web/tests/lib/storage apps/web/tests/lib/workers apps/web/tests/routing apps/web/tests/store packages/engine/src packages/engine/tests packages/testing/src packages/ui/src packages/ui/tests/components/pvPlotStrip packages/ui/tests/components/pvStatRail packages/ui/tests/hooks",
   "roots": [
     "apps/web/e2e",
@@ -44,6 +44,8 @@
     "apps/web/src/lib/workers/segmentsContract.ts",
     "apps/web/src/lib/workers/segments.worker.ts",
     "apps/web/src/lib/analysis/segmentMatching.ts",
+    "apps/web/src/lib/analysis/segmentPrefilter.ts",
+    "apps/web/src/lib/analysis/movingTime.ts",
     "apps/web/src/lib/debug/segmentMetrics.ts",
     "apps/web/src/queries/segments/useSegmentPasses.ts",
     "apps/web/src/mutations/segments/useDeleteSegmentMutation.ts",
@@ -86,7 +88,7 @@
     "apps/web/src/components/segments/hooks/useSimilarSegment.ts",
     "apps/web/src/components/segments/hooks/useSessionReferenceSegment.ts",
     "apps/web/src/components/segments/hooks/useReferenceSegmentMenuEntry.ts",
-    "apps/web/src/components/segments/ReferenceSegmentDialog.tsx",
+    "apps/web/src/components/segments/CreateSegmentDialog.tsx",
     "apps/web/src/components/segments/hooks/useSegmentPassSelection.ts",
     "apps/web/src/queries/sessions/useSessionRecordSlices.ts",
     "apps/web/src/components/segments/hooks/useListExpansion.ts",
@@ -104,12 +106,13 @@
     "apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts",
     "apps/web/src/components/mapBackground/mapScene.ts",
     "apps/web/src/components/mapBackground/hooks/useMapScene.ts",
-    "apps/web/src/components/segments/hooks/useClearPassFocusEffect.ts",
+    "apps/web/src/components/segments/hooks/useClearExplorerMarkersEffect.ts",
     "apps/web/tests/components/mapBackground/mapScene.integration.spec.tsx",
     "apps/web/tests/components/mapBackground/hooks/useOpenedSessionEffect.integration.spec.ts",
     "apps/web/tests/factories/trips.ts",
     "apps/web/tests/store/segments.spec.ts",
     "apps/web/tests/lib/analysis/segmentMatching.spec.ts",
+    "apps/web/tests/lib/analysis/segmentPrefilter.spec.ts",
     "apps/web/tests/lib/storage/db.segments.integration.spec.ts",
     "apps/web/tests/lib/workers/segmentsContract.spec.ts",
     "apps/web/tests/components/segments/segmentCreation.spec.ts",
@@ -207,8 +210,8 @@
     "apps/web/tests/lib/analysis/records.computePbsForSessions.spec.ts"
   ],
   "astro": [],
-  "nodes": 520,
-  "edges": 1163,
+  "nodes": 525,
+  "edges": 1169,
   "added": [
     "apps/web/e2e/dashboard.spec.ts",
     "apps/web/e2e/filters.spec.ts",
@@ -402,7 +405,7 @@
     "apps/web/src/components/trips/TripStatsGrid.tsx",
     "apps/web/src/components/trips/tripStats.ts",
     "apps/web/src/lib/analysis/gpsTrack.ts",
-    "apps/web/src/lib/analysis/movingTime.ts",
+    "apps/web/src/lib/analysis/moreStats.ts",
     "apps/web/src/lib/analysis/recomputeTrainingLoad.ts",
     "apps/web/src/lib/analysis/records.ts",
     "apps/web/src/lib/analysis/reprocessSessions.ts",
@@ -418,6 +421,7 @@
     "apps/web/src/lib/debug/crashSignal.ts",
     "apps/web/src/lib/debug/debug.ts",
     "apps/web/src/lib/debug/migrationCommands.ts",
+    "apps/web/src/lib/demo/demoRecords.ts",
     "apps/web/src/lib/demo/previewDrawIn.ts",
     "apps/web/src/lib/filtering/dashboardVolume.ts",
     "apps/web/src/lib/filtering/filters.ts",
@@ -494,6 +498,7 @@
     "apps/web/tests/lib/analysis/laps.ranges.spec.ts",
     "apps/web/tests/lib/analysis/laps.spec.ts",
     "apps/web/tests/lib/analysis/laps.summary.spec.ts",
+    "apps/web/tests/lib/analysis/movingTime.spec.ts",
     "apps/web/tests/lib/analysis/recomputeTrainingLoad.integration.spec.ts",
     "apps/web/tests/lib/analysis/reprocessSessions.integration.spec.ts",
     "apps/web/tests/lib/storage/createIngestBatcher.integration.spec.ts",
@@ -562,11 +567,11 @@
       "state-no-components"
     ],
     "violations": [],
-    "modules": 957,
-    "dependencies": 4012
+    "modules": 959,
+    "dependencies": 4014
   },
   "components": {
-    "nodes": 123,
-    "edges": 218
+    "nodes": 124,
+    "edges": 217
   }
 }

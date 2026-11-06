@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vite-plus/test';
 import {
   passDotScale,
   passesByYear,
-  passRank,
   sessionSegmentsInRideOrder,
 } from '@/components/segments/segmentPasses.ts';
 import {
@@ -11,8 +10,8 @@ import {
 } from '@tests/factories/segments.ts';
 
 const passesWith = (durationsSec: number[]) =>
-  durationsSec.map((durationSec, i) =>
-    createMockStoredSegmentPass({ sessionId: `s${i}`, date: i, durationSec }),
+  durationsSec.map((movingSec, i) =>
+    createMockStoredSegmentPass({ sessionId: `s${i}`, date: i, movingSec }),
   );
 
 describe('segmentPasses', () => {
@@ -66,18 +65,15 @@ describe('segmentPasses', () => {
     });
   });
 
-  describe(passRank.name, () => {
-    it('ranks by time and shares a rank on a tie', () => {
-      const segment = createMockMatchedSegment({ passes: passesWith([300, 280, 280, 310]) });
-
-      expect(passRank({ segment, sessionId: 's1' })).toBe(1);
-      expect(passRank({ segment, sessionId: 's2' })).toBe(1);
-      expect(passRank({ segment, sessionId: 's0' })).toBe(3);
-      expect(passRank({ segment, sessionId: 'missing' })).toBe(undefined);
-    });
-  });
-
   describe(sessionSegmentsInRideOrder.name, () => {
+    it('marks the pass best when no other pass is faster, a tie included', () => {
+      const segment = createMockMatchedSegment({ passes: passesWith([300, 280, 280, 310]) });
+      const bestOf = (sessionId: string) =>
+        sessionSegmentsInRideOrder({ segments: [segment], sessionId })[0]?.best;
+
+      expect([bestOf('s1'), bestOf('s2'), bestOf('s0')]).toEqual([true, true, false]);
+    });
+
     it('orders the segments of a session by where its pass starts along it', () => {
       const later = createMockMatchedSegment({
         id: 'later',

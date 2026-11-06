@@ -26,7 +26,7 @@ const LocationProbe = () => {
 describe(SegmentItem.name, () => {
   beforeEach(() => {
     window.matchMedia = createMatchMedia(1440);
-    vi.mocked(useSegmentDetail).mockReturnValue({ segment, matched: segment, finding: false });
+    vi.mocked(useSegmentDetail).mockReturnValue({ segment, matched: segment, matching: false });
   });
 
   it('shows the segment header with a subtitle1 title', () => {

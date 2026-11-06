@@ -12,7 +12,7 @@ export type MapScene =
 
 export type MapSceneKind = MapScene['kind'];
 
-export interface MapSceneRoute {
+interface MapSceneRoute {
   path: string;
   sessionId: string | undefined;
   tripSessionIds: string[] | undefined;

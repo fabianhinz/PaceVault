@@ -24,6 +24,8 @@ const metrics = {
       sessionsChecked: 1,
       bboxCandidates: 1,
       recordsRead: 2,
+      readMs: 3,
+      matchMs: 1,
       referencePoints: 140,
       passes: 3,
       ms: 4,

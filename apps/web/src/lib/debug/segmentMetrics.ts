@@ -1,9 +1,9 @@
 import type { SegmentMatchingMetrics } from '@/lib/workers/segmentsContract.ts';
 
-export const SEGMENT_DEBUG_FLAG_KEY = 'pv:debug:segments';
+const SEGMENT_DEBUG_FLAG_KEY = 'pv:debug:segments';
 const COLD_FLAG_VALUE = 'cold';
 
-export type SegmentDebugMode = 'off' | 'log' | 'cold';
+type SegmentDebugMode = 'off' | 'log' | 'cold';
 
 declare global {
   interface Window {

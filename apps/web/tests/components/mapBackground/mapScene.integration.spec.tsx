@@ -94,7 +94,7 @@ describe('map scene click-through', () => {
     useMapFocusStore.setState(INITIAL_MAP_FOCUS_STORE_STATE);
     useSessionReprocessingStore.setState({ phase: 'done' });
     useSessionsStore.setState({ sessions: [session] });
-    vi.mocked(useSessionSegments).mockReturnValue([{ segment, pass, rank: 1 }]);
+    vi.mocked(useSessionSegments).mockReturnValue([{ segment, pass, best: true }]);
   });
 
   it('S1: a Segments tab card opens its page without all tracks fading back in', async () => {

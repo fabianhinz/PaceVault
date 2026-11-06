@@ -12,9 +12,9 @@ import {
 vi.mock('@/lib/storage/db.ts', () => ({ getSessionRecords: vi.fn() }));
 
 const passes = [
-  createMockStoredSegmentPass({ sessionId: 'a', date: 1, durationSec: 300 }),
-  createMockStoredSegmentPass({ sessionId: 'b', date: 2, durationSec: 280 }),
-  createMockStoredSegmentPass({ sessionId: 'c', date: 3, durationSec: 320 }),
+  createMockStoredSegmentPass({ sessionId: 'a', date: 1, movingSec: 300 }),
+  createMockStoredSegmentPass({ sessionId: 'b', date: 2, movingSec: 280 }),
+  createMockStoredSegmentPass({ sessionId: 'c', date: 3, movingSec: 320 }),
 ];
 const segment = createMockMatchedSegment({ passes });
 const passA = passes[0] ?? createMockStoredSegmentPass();
@@ -26,7 +26,18 @@ describe(useSegmentChartRows.name, () => {
     vi.mocked(getSessionRecords).mockReset();
   });
 
-  it('keeps loading until every pass in the view has its records', async () => {
+  it('loads only the selected and the best pass', async () => {
+    vi.mocked(getSessionRecords).mockResolvedValue([]);
+    const chartRows = renderHookWithProviders(() =>
+      useSegmentChartRows({ segment, selected: passA, best: passB }),
+    );
+
+    await waitFor(() => expect(chartRows.result.current.loading).toBe(false));
+    expect(chartRows.result.current.selectedPass).toEqual(passA);
+    expect(getSessionRecords).not.toHaveBeenCalledWith('c');
+  });
+
+  it('keeps the shown charts until a newly selected pass has loaded', async () => {
     let releaseC: (records: SessionRecord[]) => void = () => undefined;
     vi.mocked(getSessionRecords).mockImplementation((sessionId) => {
       if (sessionId !== 'c') return Promise.resolve([]);
@@ -34,21 +45,6 @@ describe(useSegmentChartRows.name, () => {
         releaseC = resolve;
       });
     });
-    const chartRows = renderHookWithProviders(() =>
-      useSegmentChartRows({ segment, selected: passA, best: passB }),
-    );
-
-    await waitFor(() => expect(getSessionRecords).toHaveBeenCalledWith('c'));
-    expect(chartRows.result.current.loading).toBe(true);
-
-    act(() => releaseC([]));
-
-    await waitFor(() => expect(chartRows.result.current.loading).toBe(false));
-    expect(chartRows.result.current.selectedPass).toEqual(passA);
-  });
-
-  it('loads each pass once, so a newly shown pass needs no load', async () => {
-    vi.mocked(getSessionRecords).mockResolvedValue([]);
     const chartRows = renderHookWithProviders(
       (props: { selected: typeof passA }) =>
         useSegmentChartRows({ segment, selected: props.selected, best: passB }),
@@ -57,8 +53,11 @@ describe(useSegmentChartRows.name, () => {
     await waitFor(() => expect(chartRows.result.current.loading).toBe(false));
 
     chartRows.rerender({ selected: passC });
+    await waitFor(() => expect(getSessionRecords).toHaveBeenCalledWith('c'));
+    expect(chartRows.result.current.selectedPass).toEqual(passA);
 
-    expect(chartRows.result.current.selectedPass).toEqual(passC);
-    expect(getSessionRecords).toHaveBeenCalledTimes(3);
+    act(() => releaseC([]));
+
+    await waitFor(() => expect(chartRows.result.current.selectedPass).toEqual(passC));
   });
 });

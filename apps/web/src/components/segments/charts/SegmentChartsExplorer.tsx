@@ -28,8 +28,8 @@ export const SegmentChartsExplorer: FC<SegmentChartsExplorerProps> = (props) => 
     return <SegmentExplorerFrame sport={props.segment.sport} />;
   }
   const bestSeries = chartSeries.best;
-  let domainSec = shownPass.durationSec;
-  if (bestSeries !== undefined) domainSec = Math.max(domainSec, props.best.durationSec);
+  let domainSec = shownPass.movingSec;
+  if (bestSeries !== undefined) domainSec = Math.max(domainSec, props.best.movingSec);
   const channels = SEGMENT_CHANNELS.filter(
     (channel) =>
       hasChannelValues({ series: selectedSeries, channel }) ||

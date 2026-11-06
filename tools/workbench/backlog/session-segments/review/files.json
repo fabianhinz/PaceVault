@@ -1,6 +1,6 @@
 {
   "item": "session-segments",
-  "generated": "2026-11-05",
+  "generated": "2026-11-06",
   "base": "2a3bfb2cf28ecd80ccbafcbe4c0881d2924c8a6d",
   "ref": "WB_BASE=2a3bfb2",
   "planned": [
@@ -145,6 +145,10 @@
       "status": "added"
     },
     {
+      "path": "apps/web/src/components/segments/CreateSegmentDialog.tsx",
+      "status": "added"
+    },
+    {
       "path": "apps/web/src/components/segments/DeleteSegmentDialog.tsx",
       "status": "added"
     },
@@ -162,10 +166,6 @@
     },
     {
       "path": "apps/web/src/components/segments/PassTile.tsx",
-      "status": "added"
-    },
-    {
-      "path": "apps/web/src/components/segments/ReferenceSegmentDialog.tsx",
       "status": "added"
     },
     {
@@ -245,7 +245,7 @@
       "status": "added"
     },
     {
-      "path": "apps/web/src/components/segments/hooks/useClearPassFocusEffect.ts",
+      "path": "apps/web/src/components/segments/hooks/useClearExplorerMarkersEffect.ts",
       "status": "added"
     },
     {
@@ -385,7 +385,15 @@
       "status": "modified"
     },
     {
+      "path": "apps/web/src/lib/analysis/movingTime.ts",
+      "status": "modified"
+    },
+    {
       "path": "apps/web/src/lib/analysis/segmentMatching.ts",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/lib/analysis/segmentPrefilter.ts",
       "status": "added"
     },
     {
@@ -589,6 +597,10 @@
       "status": "added"
     },
     {
+      "path": "apps/web/tests/lib/analysis/segmentPrefilter.spec.ts",
+      "status": "added"
+    },
+    {
       "path": "apps/web/tests/lib/format/formatters.spec.ts",
       "status": "modified"
     },
@@ -731,11 +743,27 @@
   ],
   "notPlanned": [
     {
+      "path": "apps/web/src/components/errors/NotFoundBanner.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/sessions/session/index.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/studio/index.tsx",
+      "status": "modified"
+    },
+    {
       "path": "apps/web/src/components/trips/hooks/useTripMapFocusEffect.ts",
       "status": "deleted"
     },
     {
       "path": "apps/web/src/index.css",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/lib/analysis/movingTime.spec.ts",
       "status": "modified"
     },
     {

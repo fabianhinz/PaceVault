@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { createMockSessionRecord } from '@pacevault/testing/records.ts';
-import { movingSeconds, sessionMovingTime } from '@/lib/analysis/movingTime.ts';
+import {
+  movingClock,
+  movingSecondsAt,
+  movingSeconds,
+  sessionMovingTime,
+} from '@/lib/analysis/movingTime.ts';
 import type { SessionRecord } from '@pacevault/engine/types.ts';
 
 const ride = (steps: Array<[number, number]>): SessionRecord[] => {
@@ -65,5 +70,22 @@ describe(sessionMovingTime.name, () => {
 
   it('gives nothing for a single record', () => {
     expect(sessionMovingTime([createMockSessionRecord()])).toBeUndefined();
+  });
+});
+
+describe(movingSecondsAt.name, () => {
+  it('reads the moving clock between two records and past the last one', () => {
+    const clock = movingClock(
+      ride([
+        [4, 30],
+        [4, 30],
+        [83, 0],
+        [4, 30],
+      ]),
+    );
+
+    expect(movingSecondsAt({ clock, timestampSec: 6 })).toBe(6);
+    expect(movingSecondsAt({ clock, timestampSec: 95 })).toBe(16);
+    expect(movingSecondsAt({ clock, timestampSec: 200 })).toBe(16);
   });
 });
