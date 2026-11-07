@@ -38,13 +38,13 @@ const stored = createMockSegment({
   encodedPolyline: polylineOf(NORTH_2_KM),
 });
 
-const draftOn = (options: { path: PathWaypoint[]; distanceMeters: number }) =>
-  createMockSegment({
-    id: 'draft',
-    sport: 'running',
-    distanceMeters: options.distanceMeters,
-    encodedPolyline: polylineOf(options.path),
-  });
+const northStretch = (options: { fromMeters: number; toMeters: number }): PathWaypoint[] => [
+  { eastMeters: 0, northMeters: options.fromMeters },
+  { eastMeters: 0, northMeters: options.toMeters },
+];
+
+const draftOn = (path: PathWaypoint[]) =>
+  createMockSegment({ id: 'draft', sport: 'running', encodedPolyline: polylineOf(path) });
 
 describe(segmentDraft.name, () => {
   it('finds the record span of a moving-minute range', () => {
@@ -132,54 +132,47 @@ describe(suggestedSegmentName.name, () => {
 });
 
 describe(similarSegment.name, () => {
-  it('finds a segment of the same sport with both ends 40 m off and 5 % longer', () => {
-    const draft = draftOn({
-      path: [
-        { eastMeters: 40, northMeters: 0 },
-        { eastMeters: 40, northMeters: 2000 },
-      ],
-      distanceMeters: 2100,
-    });
+  it('finds a segment of the same sport along 60 % of the new stretch', () => {
+    const draft = draftOn(northStretch({ fromMeters: 800, toMeters: 2800 }));
 
     expect(similarSegment({ segment: draft, segments: [stored] })?.id).toBe('stored');
   });
 
-  it('finds none with one end 60 m off on a 2 km segment', () => {
-    const draft = draftOn({
-      path: [
-        { eastMeters: 60, northMeters: 0 },
-        { eastMeters: 0, northMeters: 2000 },
-      ],
-      distanceMeters: 2000,
-    });
+  it('finds none along only 40 % of the new stretch', () => {
+    const draft = draftOn(northStretch({ fromMeters: 1200, toMeters: 3200 }));
 
     expect(similarSegment({ segment: draft, segments: [stored] })).toBe(undefined);
   });
 
-  it('finds none when the ends are close but the length differs by 15 %', () => {
-    const draft = draftOn({ path: NORTH_2_KM, distanceMeters: 2300 });
+  it('finds a long segment around a short stretch nested inside it', () => {
+    const draft = draftOn(northStretch({ fromMeters: 500, toMeters: 900 }));
 
-    expect(similarSegment({ segment: draft, segments: [stored] })).toBe(undefined);
+    expect(similarSegment({ segment: draft, segments: [stored] })?.id).toBe('stored');
+  });
+
+  it('finds the segment that overlaps the new stretch most', () => {
+    const further = createMockSegment({
+      id: 'further',
+      sport: 'running',
+      encodedPolyline: polylineOf(northStretch({ fromMeters: 1000, toMeters: 3000 })),
+    });
+    const draft = draftOn(northStretch({ fromMeters: 900, toMeters: 2900 }));
+
+    expect(similarSegment({ segment: draft, segments: [stored, further] })?.id).toBe('further');
   });
 
   it('finds none of another sport', () => {
     const ride = createMockSegment({
       id: 'ride',
       sport: 'cycling',
-      distanceMeters: 2000,
       encodedPolyline: stored.encodedPolyline,
     });
 
-    expect(
-      similarSegment({
-        segment: draftOn({ path: NORTH_2_KM, distanceMeters: 2000 }),
-        segments: [ride],
-      }),
-    ).toBe(undefined);
+    expect(similarSegment({ segment: draftOn(NORTH_2_KM), segments: [ride] })).toBe(undefined);
   });
 
   it('finds none in the reverse direction', () => {
-    const draft = draftOn({ path: [...NORTH_2_KM].reverse(), distanceMeters: 2000 });
+    const draft = draftOn([...NORTH_2_KM].reverse());
 
     expect(similarSegment({ segment: draft, segments: [stored] })).toBe(undefined);
   });

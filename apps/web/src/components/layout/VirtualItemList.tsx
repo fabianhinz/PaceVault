@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useState, type ReactNode } from 'react';
 import { useVirtualizer, useWindowVirtualizer } from '@tanstack/react-virtual';
+import { LIST_ROW_SPACING_CLASS_BY_ACTION_ITEM_SIZE } from '@pacevault/ui/components/pvActionItem/types.ts';
 import { useUnstableSheetScrollContext } from '@pacevault/ui/components/pvBottomSheet/PvBottomSheetProvider.tsx';
 
 interface VirtualItemListProps<T> {
@@ -62,7 +63,9 @@ export const VirtualItemList = <T,>(props: VirtualItemListProps<T>): ReactNode =
               transform: `translateY(${virtualRow.start - scrollMargin}px)`,
             }}
           >
-            <div className="pb-2">{props.renderItem(item)}</div>
+            <div className={LIST_ROW_SPACING_CLASS_BY_ACTION_ITEM_SIZE.md}>
+              {props.renderItem(item)}
+            </div>
           </div>
         );
       })}

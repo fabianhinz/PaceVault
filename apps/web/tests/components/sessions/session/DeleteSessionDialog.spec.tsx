@@ -44,25 +44,60 @@ describe(DeleteSessionDialog.name, () => {
     useSegmentsStore.setState(INITIAL_SEGMENTS_STORE_STATE);
   });
 
+  it('names the session by the title the session list shows', () => {
+    const view = renderWithProviders(
+      <DeleteSessionDialog
+        session={createMockTrainingSession({ id: 's1', name: 'Evening Loop' })}
+        open
+        onOpenChange={vi.fn()}
+      />,
+    );
+
+    expect(
+      view.getByText(/^Delete "Evening Loop" from .+\? This action cannot be undone\.$/),
+    ).toBeInTheDocument();
+  });
+
+  it('names an unnamed session by its sport label, never the raw sport key', () => {
+    const view = renderWithProviders(
+      <DeleteSessionDialog
+        session={createMockTrainingSession({ id: 's1', sport: 'cycling' })}
+        open
+        onOpenChange={vi.fn()}
+      />,
+    );
+
+    expect(view.getByText(/^Delete ".+ Ride" from /)).toBeInTheDocument();
+    expect(view.queryByText(/cycling/)).not.toBeInTheDocument();
+  });
+
   it('shows no segment note without segments', () => {
     const view = renderDialog();
 
-    expect(view.queryByText(/This also removes/)).not.toBeInTheDocument();
+    expect(view.queryByText(/Also removes/)).not.toBeInTheDocument();
   });
 
-  it("names the session's segments and removes them on Delete", async () => {
+  it("lists the session's segments as plain items and removes them on Delete", async () => {
     useSegmentsStore.setState({
       segments: [
-        createMockSegment({ id: 'hill', name: 'Hill', source: sourceOf('s1') }),
+        createMockSegment({
+          id: 'hill',
+          name: 'Hill',
+          distanceMeters: 1400,
+          source: sourceOf('s1'),
+        }),
         createMockSegment({ id: 'other', name: 'Other', source: sourceOf('s2') }),
         createMockSegment({ id: 'loop', name: 'Loop', source: sourceOf('s1') }),
       ],
     });
     const view = renderDialog();
 
-    expect(
-      view.getByText('This also removes 2 segments created from it: "Hill" and "Loop"'),
-    ).toBeInTheDocument();
+    expect(view.getByText('Also removes 2 segments')).toBeInTheDocument();
+    expect(view.getByText('Hill')).toBeInTheDocument();
+    expect(view.getByText('1.4 km')).toBeInTheDocument();
+    expect(view.getByText('Loop')).toBeInTheDocument();
+    expect(view.queryByText('Other')).not.toBeInTheDocument();
+    expect(view.queryByRole('button', { name: 'Hill' })).not.toBeInTheDocument();
     fireEvent.click(view.getByRole('button', { name: 'Delete' }));
 
     await waitFor(() =>

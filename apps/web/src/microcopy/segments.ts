@@ -1,5 +1,5 @@
 import { m } from '@pacevault/i18n/messages.js';
-import { formatList, formatNumber, formatPlural } from '@/lib/format/formatters.ts';
+import { formatNumber, formatPlural } from '@/lib/format/formatters.ts';
 
 const METERS_PER_KM = 1000;
 
@@ -36,13 +36,11 @@ export const segmentRangeName = ({
     to: formatNumber(endMeters / METERS_PER_KM, 'fixed-one-decimal-ungrouped'),
   });
 
-export const sessionSegmentsDeleteNote = (names: string[]): string => {
-  const quoted = formatList(names.map((name) => m.ui_segment_quoted_name({ name })));
-  return formatPlural(names.length, {
-    one: () => m.ui_session_delete_segments_one({ names: quoted }),
-    other: () => m.ui_session_delete_segments_other({ count: String(names.length), names: quoted }),
+export const sessionSegmentsDeleteLabel = (count: number): string =>
+  formatPlural(count, {
+    one: () => m.ui_session_delete_segments_one(),
+    other: () => m.ui_session_delete_segments_other({ count: String(count) }),
   });
-};
 
 export const passTileLabel = ({
   date,

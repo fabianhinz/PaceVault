@@ -14,7 +14,9 @@ import {
 } from '../../../shared/capture';
 import {
   FLAUCHER_EASY,
+  GARDA_TRIP,
   STARNBERGER_LONG_RIDE,
+  TEGERNSEE_LOOP,
 } from '../../../../../apps/web/src/lib/demo/demoSchedule.ts';
 import { DB_NAME } from '../../../../../apps/web/src/lib/storage/db.ts';
 import { exposeMap } from '../../../../../apps/web/e2e/helpers/map.ts';
@@ -622,6 +624,71 @@ test('session menu entries and the delete warning', async ({ page }) => {
     await expect(
       p.getByRole('dialog', { name: t(shot.locale, 'ui_session_delete_title') }),
     ).toBeVisible();
+  });
+});
+
+const expectDialog = async (page: Page, args: { locale: Locale; titleKey: string }) => {
+  await expect(page.getByRole('dialog', { name: t(args.locale, args.titleKey) })).toBeVisible({
+    timeout: 30_000,
+  });
+};
+
+const openThresholdPaceEdit = async (page: Page, locale: Locale) => {
+  await page.goto('/settings');
+  await page
+    .getByRole('button', { name: new RegExp(t(locale, 'ui_thresholds_tile_pace')) })
+    .first()
+    .click();
+  await expect(page.locator('[data-threshold-input]')).toBeVisible({ timeout: 30_000 });
+};
+
+test('other dialogs (R92)', async ({ page }) => {
+  await setUpEmpty(page);
+  const torboleSessionId = await sessionIdByName(page, { name: TORBOLE_RUN, index: 0 });
+
+  await shootAll(page, 'dialog-trip-create', async (p, shot) => {
+    await p.goto('/sessions?tab=trips');
+    await p.getByRole('button', { name: t(shot.locale, 'ui_trips_cta_title') }).click();
+    await expectDialog(p, { locale: shot.locale, titleKey: 'ui_trips_new_title' });
+  });
+
+  await shootAll(page, 'dialog-trip-manage', async (p, shot) => {
+    await p.goto(sessionUrl(torboleSessionId));
+    await openSessionMenu(p, shot.locale);
+    await p.getByRole('menuitem', { name: t(shot.locale, 'ui_trips_manage') }).click();
+    await expectDialog(p, { locale: shot.locale, titleKey: 'ui_trips_dialog_title' });
+  });
+
+  await shootAll(page, 'dialog-trip-delete', async (p, shot) => {
+    await p.goto('/sessions?tab=trips');
+    await p.getByRole('button', { name: GARDA_TRIP }).first().click();
+    await p.getByRole('button', { name: t(shot.locale, 'ui_trips_actions') }).click();
+    await p.getByRole('menuitem', { name: t(shot.locale, 'ui_btn_delete') }).click();
+    await expectDialog(p, { locale: shot.locale, titleKey: 'ui_trips_delete_title' });
+  });
+
+  await shootAll(page, 'dialog-delete-all-data', async (p, shot) => {
+    await p.goto('/settings?tab=data');
+    await p.getByText(t(shot.locale, 'ui_data_delete_all'), { exact: true }).click();
+    await expectDialog(p, { locale: shot.locale, titleKey: 'ui_delete_dialog_title' });
+  });
+
+  await shootAll(page, 'dialog-threshold-edit', async (p, shot) => {
+    await openThresholdPaceEdit(p, shot.locale);
+  });
+
+  await shootAll(page, 'dialog-pace-estimator', async (p, shot) => {
+    await openThresholdPaceEdit(p, shot.locale);
+    await p.getByRole('button', { name: t(shot.locale, 'ui_thresholds_estimate_from_race') }).click();
+    await expectDialog(p, { locale: shot.locale, titleKey: 'ui_pace_est_title' });
+  });
+
+  await shootAll(page, 'dialog-studio-route-edit', async (p, shot) => {
+    await p.goto('/labs?tab=studio');
+    await p.getByRole('button', { name: TEGERNSEE_LOOP }).first().click();
+    await p.getByRole('button', { name: t(shot.locale, 'ui_studio_actions') }).click();
+    await p.getByRole('menuitem', { name: t(shot.locale, 'ui_btn_edit') }).click();
+    await expectDialog(p, { locale: shot.locale, titleKey: 'ui_studio_edit_title' });
   });
 });
 

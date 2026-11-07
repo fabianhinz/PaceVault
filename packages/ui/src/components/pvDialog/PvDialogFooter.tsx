@@ -9,8 +9,8 @@ interface PvDialogFooterProps {
 export const PvDialogFooter: FC<PvDialogFooterProps> = (props) => (
   <div
     className={cn(
-      'grid shrink-0 grid-cols-2 gap-2 px-5 pt-1 pb-5 max-lg:[&>*]:w-full',
-      'lg:mt-4 lg:flex lg:justify-end lg:gap-2 lg:p-0',
+      'grid shrink-0 grid-cols-2 gap-2 px-5 pb-5 max-lg:[&>*]:w-full',
+      'lg:flex lg:justify-end',
       props.className,
     )}
   >

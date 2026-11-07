@@ -13,7 +13,7 @@
          the proposed overlay tokens (research/light-palette.md §4). Each variant redefines the same
          names, as [data-theme] would in theme.css. */
 
-      /* ---------- dark: today (theme.css values, Card.tsx alphas) ---------- */
+      /* ---------- dark: today (theme.css values, surfaces.ts alphas) ---------- */
       .app {
         --color-surface-base: #030712;
         --color-surface-sunken: #0a0b0f;
@@ -47,7 +47,7 @@
         --color-knob: #ffffff;
         --color-knob-border: transparent;
         --shadow-floating: 0 8px 24px rgb(0 0 0 / 0.4);
-        /* surfaces: glassClass bg-surface/55, floatingClass bg-surface/85 (Card.tsx:3,7) */
+        /* surfaces: glassClass bg-surface/55, floatingClass bg-surface/85 (surfaces.ts:1,5) */
         --glass-bg: color-mix(in srgb, var(--color-surface) 55%, transparent);
         --floating-bg: color-mix(in srgb, var(--color-surface) 85%, transparent);
         --sheet-bg: var(--glass-bg);
@@ -66,7 +66,7 @@
         --grid-line: rgb(255 255 255 / 0.06);
         --elev-fill: color-mix(in srgb, var(--color-chart-elevation) 25%, transparent);
       }
-      /* map: dark matter (darkMatter.style.json), additive tracks (trackColors.ts:4-25) */
+      /* map: dark matter (darkMatter.style.json), additive tracks (trackColors.ts:4-40) */
       .app {
         --map-land: #0e0e0e;
         --map-park: #111111;
@@ -584,7 +584,7 @@
         min-width: 0;
       }
 
-      /* dock (Dock.tsx, DockItems.tsx) */
+      /* dock (Dock.tsx, dockItemClasses.ts) */
       .dock {
         position: absolute;
         top: 50%;
@@ -648,7 +648,7 @@
         height: 44px;
       }
 
-      /* stat tiles (StatTile.tsx, tileClass Card.tsx:5) */
+      /* stat tiles (PvStatTile.tsx, tileClass surfaces.ts:3) */
       .tiles {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -722,7 +722,7 @@
         border-radius: 1px;
       }
 
-      /* table (DataTable.tsx) */
+      /* table (PvDataTable.tsx) */
       .tbl {
         width: 100%;
         border-collapse: collapse;
@@ -810,7 +810,7 @@
         flex-shrink: 0;
       }
 
-      /* settings (Tabs.tsx, RadioGroup.tsx, Select.tsx, Switch.tsx) */
+      /* settings (PvTabsTrigger.tsx, PvRadioGroupItem.tsx, PvSelectTrigger.tsx, PvSwitch.tsx) */
       .tabs {
         display: flex;
         gap: 8px;
@@ -918,7 +918,7 @@
         border: 1px solid var(--color-knob-border);
       }
 
-      /* skeletons (ValueSkeleton.tsx, WeatherCard.tsx:135) */
+      /* skeletons (PvValueSkeleton.tsx, WeatherCard.tsx:70) */
       .sk {
         border-radius: 4px;
         background: var(--color-overlay);
@@ -1008,7 +1008,7 @@
         fill: var(--lap-selected);
       }
 
-      /* ---------- 3D terrain (session): today = TERRAIN_HILLSHADE_PAINT (mapStyle.ts:37-41),
+      /* ---------- 3D terrain (session): today = TERRAIN_HILLSHADE_PAINT (mapStyle.ts:37-42),
          white hover/casing (useTerrainLineEffect.ts:64,71), no sky ---------- */
       .app {
         --hs-shadow: #000000;
@@ -1182,7 +1182,7 @@
         stroke-linecap: round;
         stroke-linejoin: round;
       }
-      /* lap dimming: RGB × LAP_DIMMED_BRIGHTNESS 0.8 (trackColors.ts:18, lapPath.ts:9-14) */
+      /* lap dimming: RGB × LAP_DIMMED_BRIGHTNESS 0.8 (trackColors.ts:33, lapPath.ts:16-19) */
       .t-dim {
         stroke: color-mix(in srgb, var(--track-run) 80%, #000000);
         stroke-width: 8;
@@ -1346,7 +1346,7 @@
       </p>
 
       <h3>Today · dark (reference)</h3>
-      <p>Current tokens (<code>theme.css:39-96</code>), glass <code>Card.tsx:3,7</code>, additive tracks (<code>trackColors.ts:4-11</code>), dark-matter map.</p>
+      <p>Current tokens (<code>theme.css:62-129</code>), glass <code>surfaces.ts:1,5</code>, additive tracks (<code>trackColors.ts:4-11</code>), dark-matter map.</p>
       <table>
         <tr><th>Token</th><th>Hex</th><th>Indoor</th><th>Sun</th></tr>
         <tr><td>text-primary</td><td>#e5e7eb</td><td>16.3</td><td>3.5</td></tr>
@@ -1409,11 +1409,11 @@
       <table>
         <tr><th>3D part</th><th>Code</th></tr>
         <tr><td>Base style (2D theme draped on terrain)</td><td><code>mapStyle.ts:9-13</code>, <code>:65-68</code>, <code>:82-83</code> (voyager commented out)</td></tr>
-        <tr><td>DEM terrain, exaggeration 1</td><td><code>hooks/useMapTerrainEffect.ts:9</code>, <code>:42</code></td></tr>
+        <tr><td>DEM terrain, exaggeration 1</td><td><code>hooks/useMapTerrainEffect.ts:9</code>, <code>:42</code> (stale 2026-11-07: <code>TERRAIN_EXAGGERATION</code> is now 3)</td></tr>
         <tr><td>Hillshade layer below the first road layer</td><td><code>hooks/useMapTerrainEffect.ts:33-41</code></td></tr>
-        <tr><td>Hillshade paint (shadow, highlight, accent, exaggeration 0.6)</td><td><code>mapStyle.ts:37-41</code>; tokens <code>packages/ui/src/theme.css:75-77</code>, <code>packages/ui/src/lib/tokens.ts:24-26</code></td></tr>
-        <tr><td>Line widths (12 m, casing × 1.6, min 3 / 9 / 5 px)</td><td><code>SessionTerrain.tsx:18-24</code>, <code>trackColors.ts:14,19</code></td></tr>
-        <tr><td>Lap dimming (RGB × 0.8)</td><td><code>SessionTerrain.tsx:53-54</code>, <code>trackColors.ts:18</code>, <code>lapPath.ts:9-14</code></td></tr>
+        <tr><td>Hillshade paint (shadow, highlight, accent, exaggeration 0.6)</td><td><code>mapStyle.ts:37-42</code>; tokens <code>packages/ui/src/theme.css:113-115</code>, <code>packages/ui/src/lib/tokens.ts:39-41</code></td></tr>
+        <tr><td>Line widths (12 m, casing × 1.6, min 3 / 9 / 5 px)</td><td><code>SessionTerrain.tsx:18-24</code>, <code>trackColors.ts:14,34</code></td></tr>
+        <tr><td>Lap dimming (RGB × 0.8)</td><td><code>SessionTerrain.tsx:64-65</code>, <code>trackColors.ts:33</code>, <code>lapPath.ts:16-19</code></td></tr>
         <tr><td>Hover line (3 px, white) and selected-lap casing (white)</td><td><code>hooks/useTerrainLineEffect.ts:29</code>, <code>:64</code>, <code>:71</code></td></tr>
         <tr><td>Hover point (white dot, #00000050 ring)</td><td><code>hooks/useTerrainHoverPointEffect.ts:6-7</code></td></tr>
         <tr><td>Sky / horizon</td><td>none set; the canvas shows the page, body #030712 (<code>apps/web/index.html:18</code>)</td></tr>
@@ -1442,13 +1442,13 @@
 
       <h3>Component mapping</h3>
       <ul>
-        <li>Tokens: <code>packages/ui/src/theme.css:39-96</code> + JS mirror <code>packages/ui/src/lib/tokens.ts</code>; light values in a <code>[data-theme=light]</code> block.</li>
-        <li>Surfaces: <code>Card.tsx:3</code> glass, <code>:5</code> tile, <code>:7</code> floating, <code>:13</code> scrim → overlay tokens; one edit, 47 sites.</li>
-        <li>Buttons <code>Button.tsx:16-19</code>, tabs <code>Tabs.tsx:29-30</code>, radio ring <code>RadioGroup.tsx:41</code>, switch track/knob <code>Switch.tsx:19,26</code> (knob needs a border on white), grabber <code>SheetGrabber.tsx:1</code>, select <code>Select.tsx:14</code>, table rules <code>DataTable.tsx:33,49</code>.</li>
-        <li>Lap strip white alphas <code>apps/web/src/components/charts/LapBands.tsx:30-36</code> → per-theme lap tokens (re-tuned, not mirrored).</li>
-        <li>Map: <code>mapStyle.ts:9</code> voyager (vendored, unused); blend <code>DeckGLOverlay.tsx:197</code> + <code>trackColors.ts:4-11</code> → multiply on light; alphas <code>trackColors.ts:21-25</code> → floor 140/200/255; sport colours <code>trackColors.ts:32-35</code>; white lap casing <code>DeckGLOverlay.tsx:54</code> → dark hue.</li>
-        <li>Numbers: <code>StatTile.tsx:27</code> uses <code>h3</code> (700, <code>Typography.tsx:7</code>); C's 600 needs a numeric variant or a per-theme weight token.</li>
-        <li>Settings › Display: the existing card at <code>apps/web/src/pages/SettingsPage.tsx:59-91</code> gets the Theme radio group and the Map row.</li>
+        <li>Tokens: <code>packages/ui/src/theme.css:62-129</code> + JS mirror <code>packages/ui/src/lib/tokens.ts</code>; light values in a <code>[data-theme=light]</code> block.</li>
+        <li>Surfaces: <code>packages/ui/src/lib/surfaces.ts:1</code> glass, <code>:3</code> tile, <code>:5</code> floating, <code>:11</code> scrim → overlay tokens; one edit, 28 sites (recounted 2026-11-07).</li>
+        <li>Buttons <code>PvButton.tsx:12-17</code>, tabs <code>PvTabsTrigger.tsx:14-15</code>, radio ring <code>PvRadioGroupItem.tsx:26</code>, switch track/knob <code>PvSwitch.tsx:21,28</code> (knob needs a border on white), grabber <code>PvSheetGrabber.tsx:2</code>, select <code>PvSelectTrigger.tsx:14</code>, table rules <code>PvDataTable.tsx:33,51</code>.</li>
+        <li>Lap strip white alphas <code>apps/web/src/components/charts/LapBandShape.tsx:17-21</code> → per-theme lap tokens (re-tuned, not mirrored).</li>
+        <li>Map: <code>mapStyle.ts:10</code> voyager (vendored, unused); blend <code>hooks/useTrackLayers.ts:100</code>, <code>hooks/useOnboardingPreviewLayer.ts:61</code> + <code>trackColors.ts:4-11</code> → multiply on light; alphas <code>trackColors.ts:36-40</code> → floor 140/200/255; sport colours <code>trackColors.ts:47-50</code>; white lap casing <code>hooks/useLapLayers.ts:13</code> → dark hue.</li>
+        <li>Numbers: <code>PvStatTileReading.tsx:6</code> uses <code>h3</code> (700, <code>PvTypography.tsx:8</code>); C's 600 needs a numeric variant or a per-theme weight token.</li>
+        <li>Settings › Display: the existing card at <code>apps/web/src/components/settings/index.tsx:62-94</code> gets the Theme radio group and the Map row.</li>
         <li>Shell: <code>apps/web/index.html:2,11,12,18</code> (class, theme-color, status bar style, body bg) per theme, set before first paint.</li>
       </ul>
 
@@ -1597,7 +1597,7 @@
         over.push(trk('ride', smooth(wobble(MOTORWAY, 3, 2)), 'faint'));
         over.push(trk('ride', smooth(wobble(MOTORWAY, 3, 2)), 'faint'));
 
-        // session: the one track, highlighted (width 12 → 6 here, casing 1.6×, trackColors.ts:14,19)
+        // session: the one track, highlighted (width 12 → 6 here, casing 1.6×, trackColors.ts:14,34)
         const sd = smooth(SESSION);
         const nss = 'vector-effect="non-scaling-stroke"';
         const sessionTrack = `

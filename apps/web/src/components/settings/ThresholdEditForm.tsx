@@ -43,18 +43,16 @@ export const ThresholdEditForm: FC<ThresholdEditFormProps> = (props) => {
       <PvDialogHeader title={title} icon={ICON_BY_THRESHOLD_TILE[props.field]} />
       <form className="flex min-h-0 flex-col" onSubmit={handleSubmit}>
         <PvDialogBody>
-          <div className="lg:mt-4">
-            <PvInput
-              data-threshold-input
-              aria-label={title}
-              type={paceField ? 'text' : 'number'}
-              value={thresholdDraft.draft}
-              onChange={(e) => thresholdDraft.setDraft(e.target.value)}
-              helperText={helperText}
-              error={thresholdDraft.visibleError !== ''}
-              reserveHelper
-            />
-          </div>
+          <PvInput
+            data-threshold-input
+            aria-label={title}
+            type={paceField ? 'text' : 'number'}
+            value={thresholdDraft.draft}
+            onChange={(e) => thresholdDraft.setDraft(e.target.value)}
+            helperText={helperText}
+            error={thresholdDraft.visibleError !== ''}
+            reserveHelper
+          />
         </PvDialogBody>
         <PvDialogFooter>
           <PvButton type="button" variant="secondary" onClick={props.onClose}>

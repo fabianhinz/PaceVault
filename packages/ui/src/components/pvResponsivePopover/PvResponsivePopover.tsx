@@ -5,8 +5,6 @@ import { PvPopover } from '../pvPopover/PvPopover.tsx';
 import { PvPopoverTrigger } from '../pvPopover/PvPopoverTrigger.tsx';
 import { PvPopoverContent } from '../pvPopover/PvPopoverContent.tsx';
 import { PvDialog } from '../pvDialog/PvDialog.tsx';
-import { PvDialogTrigger } from '../pvDialog/PvDialogTrigger.tsx';
-import { PvDialogContent } from '../pvDialog/PvDialogContent.tsx';
 import { PvDialogHeader } from '../pvDialog/PvDialogHeader.tsx';
 import { PvDialogBody } from '../pvDialog/PvDialogBody.tsx';
 import { PvResponsivePopoverPointAnchor } from './PvResponsivePopoverPointAnchor.tsx';
@@ -50,19 +48,22 @@ export const PvResponsivePopover: FC<PvResponsivePopoverProps> = (props) => {
   }
 
   return (
-    <PvDialog open={props.open} onOpenChange={props.onOpenChange}>
-      {props.trigger !== undefined && <PvDialogTrigger asChild>{props.trigger}</PvDialogTrigger>}
-      <PvDialogContent aria-describedby={undefined} closeLabel={props.closeLabel}>
-        <PvDialogHeader
-          title={props.title}
-          subtitle={props.subtitle}
-          icon={props.icon}
-          chip={props.chip}
-        />
-        <PvDialogBody className={props.bleed ? 'flex flex-col overflow-hidden p-0' : undefined}>
-          {props.children}
-        </PvDialogBody>
-      </PvDialogContent>
+    <PvDialog
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      trigger={props.trigger}
+      aria-describedby={undefined}
+      closeLabel={props.closeLabel}
+    >
+      <PvDialogHeader
+        title={props.title}
+        subtitle={props.subtitle}
+        icon={props.icon}
+        chip={props.chip}
+      />
+      <PvDialogBody className={props.bleed ? 'flex flex-col overflow-hidden p-0' : undefined}>
+        {props.children}
+      </PvDialogBody>
     </PvDialog>
   );
 };

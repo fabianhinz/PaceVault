@@ -12,7 +12,6 @@ import {
   formatTimeHMS,
   toDateString,
 } from '@/lib/format/formatters.ts';
-import { importInLocale } from '@testUtils/locale.ts';
 
 describe('pace formatters print "x:60" when seconds round up to a full minute', () => {
   it('carries the rounded minute instead of printing 60 seconds', () => {
@@ -164,19 +163,5 @@ describe(formatSignedRaceTime.name, () => {
     expect(formatSignedRaceTime(48)).toBe('+0:48');
     expect(formatSignedRaceTime(-72)).toBe('−1:12');
     expect(formatSignedRaceTime(0.2)).toBe('+0:00');
-  });
-});
-
-describe('lists', () => {
-  it('joins English names with commas and "and"', async () => {
-    const english = await importInLocale('en', () => import('@/lib/format/formatters.ts'));
-
-    expect(english.formatList(['Hill', 'Loop', 'Bridge'])).toBe('Hill, Loop, and Bridge');
-  });
-
-  it('joins German names with "und"', async () => {
-    const german = await importInLocale('de', () => import('@/lib/format/formatters.ts'));
-
-    expect(german.formatList(['Hügel', 'Runde'])).toBe('Hügel und Runde');
   });
 });

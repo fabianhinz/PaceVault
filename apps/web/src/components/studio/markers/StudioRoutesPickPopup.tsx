@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
+import { PvActionItemList } from '@pacevault/ui/components/pvActionItem/PvActionItemList.tsx';
 import { MapPickPopup } from '@/components/mapBackground/MapPickPopup.tsx';
 import { StudioRouteItem } from '@/components/studio/StudioRouteItem.tsx';
 import type { StudioRoutesPopupInfo } from '@/components/studio/types.ts';
@@ -22,9 +23,11 @@ export const StudioRoutesPickPopup: FC<StudioRoutesPickPopupProps> = (props) => 
       subtitle={m.ui_map_popup_routes_subtitle()}
       onClose={props.onClose}
     >
-      {props.info.routes.map((route) => (
-        <StudioRouteItem key={route.id} route={route} onNavigate={props.onClose} />
-      ))}
+      <PvActionItemList>
+        {props.info.routes.map((route) => (
+          <StudioRouteItem key={route.id} route={route} onNavigate={props.onClose} />
+        ))}
+      </PvActionItemList>
     </MapPickPopup>
   );
 };

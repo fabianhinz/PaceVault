@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import type { ActionItemSize } from '@pacevault/ui/components/pvActionItem/PvActionItem.tsx';
+import type { ActionItemSize } from '@pacevault/ui/components/pvActionItem/types.ts';
 import { BestCrown } from './BestCrown.tsx';
 
 interface BestHighlightProps {

@@ -42,7 +42,6 @@ export const SegmentActionsMenu: FC<SegmentActionsMenuProps> = (props) => {
         mode="rename"
         title={m.ui_segment_rename_title()}
         initialName={props.segment.name}
-        facts={undefined}
         similarSegment={undefined}
         onSubmit={(name) => {
           useSegmentsStore.getState().renameSegment({ id: props.segment.id, name });

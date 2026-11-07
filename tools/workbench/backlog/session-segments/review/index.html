@@ -4,16 +4,215 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <title>Segments · Review round 9</title>
+    <title>Segments · Review round 10</title>
     <link rel="stylesheet" href="../../../shared/review.css" />
   </head>
   <body class="rv">
     <main class="rv-doc">
       <header class="rv-text">
-        <p class="rv-over">Review · round 9 · replan to user-created segments (Q95)</p>
+        <p class="rv-over">Review · round 10 · replan to user-created segments (Q95)</p>
         <h1>Segments: stretches you save and compare</h1>
         <p>Round 2 replaces the automatic detection (1432 overlapping segments on real data) with segments the user saves: a range from the session charts or a whole session from its ⋯ menu. The app only matches them against the sessions of the same sport; the segment page, Pass times, explorer, Segments tab and session row from round 1 stay. Before shots are the round-1 build.</p>
       </header>
+
+      <h2>Review round 10</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R99</span>One <code>PvDialog</code>, five public parts, like MUI</h3>
+        <div class="rv-text">
+          <p>No UI change. <code>PvDialog</code> and <code>PvDialogContent</code>, always written together, are one <code>PvDialog</code> taking <code>open</code>, <code>onOpenChange</code>, <code>closeLabel</code>, <code>scrim</code>, <code>modal</code> and an optional <code>trigger</code>; <code>PvDialogContent</code> and <code>PvDialogTrigger</code> are deleted and 14 dialogs plus the board's answer dialog write one wrapper. Public: <code>PvDialog</code>, <code>PvDialogHeader</code>, <code>PvDialogBody</code>, <code>PvDialogDescription</code>, <code>PvDialogFooter</code> (MUI: Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions); <code>PvDialogTitle</code>, <code>PvDialogOverlay</code>, <code>PvDialogCard</code> are kit-internal. The phone onboarding heading is a plain <code>h2</code> naming the dialog through <code>aria-labelledby</code>.</p>
+          <p class="rv-refs"><code>packages/ui/src/components/pvDialog/PvDialog.tsx:24</code>, <code>:46</code>, <code>:68</code>; <code>packages/ui/src/components/pvResponsivePopover/PvResponsivePopover.tsx:54</code>; <code>apps/web/src/components/onboarding/OnboardingHeading.tsx:16</code>; <code>packages/ui/CLAUDE.md:27</code>.</p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R98</span>Delete session names the session, not the raw sport key</h3>
+        <div class="rv-text">
+          <p>"Bist du sicher, dass du die running-Einheit … löschen möchtest?" becomes "„Flaucher easy“ vom 10. Sept. 2026 löschen? Diese Aktion lässt sich nicht rückgängig machen.", like the trip, route and segment delete dialogs; the name comes from <code>formatSessionName</code>, the same as the session list, so renamed sessions show their name. <code>packages/i18n/CLAUDE.md</code> gains the rule that a domain value never goes into a placeholder. One more offender exists outside this feature (see Open points).</p>
+          <p class="rv-refs"><code>apps/web/src/components/sessions/session/DeleteSessionDialog.tsx:65</code>; <code>packages/i18n/messages/de.json:117</code>; <code>packages/i18n/CLAUDE.md:22</code>.</p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R97</span>One list gap per item size, owned by the kit</h3>
+        <div class="rv-text">
+          <p>New <code>PvActionItemList</code>: 4 px between small items, 8 px between big ones, with an optional heading 6 px above (shared by both segment dialogs). The virtualized lists read the matching row spacing from the same table. Only the delete-session list changes (6 → 4 px); the Segments tab, session list, trips, the pick popups, the trip picker and the session Segments row keep their pixels.</p>
+          <p class="rv-refs"><code>packages/ui/src/components/pvActionItem/PvActionItemList.tsx:13</code> (new); <code>packages/ui/src/components/pvActionItem/types.ts:3</code>, <code>:10</code> (new); <code>apps/web/src/components/layout/VirtualItemList.tsx:66</code>; <code>apps/web/src/components/sessions/session/SegmentRideRail.tsx:37</code>; <code>apps/web/src/components/sessions/session/DeleteSessionDialog.tsx:70</code>.</p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R95</span><span class="rv-chip">R96</span>Dialogs: header without min height, equal padding in every part (MUI model)</h3>
+        <div class="rv-text">
+          <p>Like MUI's Dialog, the surface has no padding and each part owns the same horizontal padding at every width: header <code>px-5 lg:pt-5</code> (no <code>min-h-11</code>), body <code>px-5 pt-2 pb-5</code> with the R92 gap, footer <code>px-5 pb-5</code>. The desktop card padding goes from 24 to 20 px. The grabber, the filter sheet and the threshold form are as on <code>main</code>; no negative margins. The first R96 (padding on the surface, tuned to the screenshot to the pixel) is replaced. The desktop onboarding card, which borrowed <code>PvDialogFooter</code> inside its own padded card, has a plain button row. Before shots are the round-10 state (<code>-r10</code>).</p>
+          <p class="rv-refs"><code>packages/ui/src/components/pvDialog/PvDialogHeader.tsx:18</code>; <code>packages/ui/src/components/pvDialog/PvDialogBody.tsx:17</code>; <code>packages/ui/src/components/pvDialog/PvDialogFooter.tsx:12</code>; <code>packages/ui/src/components/pvDialog/PvDialog.tsx:8</code>; <code>apps/web/src/components/onboarding/DesktopOnboarding.tsx:19</code>.</p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · delete a session with segments (de) · R92/R93 → R95–R98</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-session-delete-segments-r10.png" alt="R96 Before · Phone · delete session" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-session-delete-segments.png" alt="R96 After · Phone · delete session" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · trip create (en)</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-dialog-trip-create-r10.png" alt="R96 before · Desktop · trip create" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-dialog-trip-create.png" alt="R96 after · Desktop · trip create" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R96 trip create: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · threshold edit (en)</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-dialog-threshold-edit-r10.png" alt="R96 Before · Phone · threshold edit" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-dialog-threshold-edit.png" alt="R96 After · Phone · threshold edit" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R94</span>Name dialog without the facts line</h3>
+        <div class="rv-text">
+          <p>The "Radfahren · 78,0 km · +2 m" line under the title is gone; the dialog opens with the Name field. The <code>facts</code> prop and <code>segmentFactsLine</code> are removed. Settled with the owner in the same round: the session Segments row keeps its how-to in both states, the no-passes note stays, and a sparse track ending at the segment end keeps the current end tolerance (R89 question, a).</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/SegmentNameDialog.tsx:52</code>; <code>apps/web/src/components/segments/CreateSegmentDialog.tsx:13</code>; <code>apps/web/src/components/segments/segmentFacts.ts</code>.</p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Use as reference segment with a similar segment (de), round 9 → round 10</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-segment-name-dialog-similar.png" alt="R94 before · Desktop · name dialog" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-segment-name-dialog-similar.png" alt="R94 after · Desktop · name dialog" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R94 name dialog: before / after split" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R93</span>Delete session: the segments it removes as items, not a sentence</h3>
+        <div class="rv-text">
+          <p>The quoted name list ("Damit werden auch 3 daraus erstellte Segmente entfernt: „…“, „…“ und „…“") becomes a heading with the count ("Entfernt auch 3 Segmente") and one compact segment item per segment with its distance. The items are display only: <code>PvActionItem</code> renders without a button when it has no <code>onClick</code>, so the confirmation can't be left by accident. <code>ui_segment_quoted_name</code> and <code>formatList</code> are gone; the delete-segment dialog keeps "„{name}“ löschen?" like trips and routes.</p>
+          <p class="rv-refs"><code>apps/web/src/components/sessions/session/DeleteSessionDialog.tsx:69</code>; <code>apps/web/src/microcopy/segments.ts:39</code>; <code>packages/ui/src/components/pvActionItem/PvActionItem.tsx:29</code>; <code>packages/ui/src/components/pvActionItem/PvActionItemContent.tsx</code> (new); <code>packages/i18n/messages/de.json:806-807</code>.</p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · delete a session that segments were made from (de)</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-session-delete-segments.png" alt="R93 before · Desktop · delete session with segments" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-session-delete-segments.png" alt="R93 after · Desktop · delete session with segments" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R93 delete session with segments: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · delete a session that segments were made from (de)</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-session-delete-segments.png" alt="R93 Before · Phone · delete session with segments" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-session-delete-segments.png" alt="R93 After · Phone · delete session with segments" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R92</span>Dialogs: the kit body owns the spacing; segment dialogs on the shared pattern</h3>
+        <div class="rv-text">
+          <p><code>PvDialogBody</code> is now a <code>gap-4</code> column with the 8 px desktop header gap, and <code>PvDialogDescription</code> no longer carries its own margin; nine callers dropped their <code>mt-4</code> (trips, settings, studio, the board's answer form). Trip create, trip delete and delete-all-data are pixel-identical; trip manage, studio route and pace estimator differ only by background noise; threshold edit moves its input up 8 px to the shared header gap. The segment name dialog opens with the description, then the Name field, then a <code>subtitle2</code> heading above the similar item; rename gets the header gap instead of a glued label.</p>
+          <p class="rv-refs"><code>packages/ui/src/components/pvDialog/PvDialogBody.tsx:17-18</code>; <code>packages/ui/src/components/pvDialog/PvDialogDescription.tsx:11</code>; <code>apps/web/src/components/segments/SegmentNameDialog.tsx:55</code>, <code>:67</code>; <code>apps/web/src/components/trips/TripFormDialog.tsx:75</code>; <code>apps/web/src/components/settings/ThresholdEditForm.tsx:46</code>.</p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · rename segment (de)</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-segment-rename-dialog.png" alt="R92 before · Desktop · rename segment" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-segment-rename-dialog.png" alt="R92 after · Desktop · rename segment" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R92 rename segment: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · threshold edit (the one existing dialog that moves, 8 px)</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-dialog-threshold-edit.png" alt="R92 before · Desktop · threshold edit" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-dialog-threshold-edit.png" alt="R92 after · Desktop · threshold edit" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R92 threshold edit: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · trip manage (unchanged, flex sections kept)</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-dialog-trip-manage.png" alt="R92 before · Desktop · trip manage" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-dialog-trip-manage.png" alt="R92 after · Desktop · trip manage" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R92 trip manage: before / after split" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R91</span>Similar-segment hint: real overlap, shown as a small segment item</h3>
+        <div class="rv-text">
+          <p>The hint now fires when at least 50 % of the new stretch runs along an existing segment of the same sport in the same direction (30 m corridor, within 60° of its heading), and the segment with the most overlap wins; before, both ends had to sit within 50–200 m and the length within ±10 %, which a zoomed-out 80 km ride could hardly hit (Q108, changed by R91, option b). The hint is a caption plus the small segment item shared with the session Segments row (name, distance; a click opens the segment), without the name in the sentence or the "Open segment" button; the body spacing is one <code>gap-4</code> between two <code>gap-2</code> groups.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/segmentCreation.ts:54</code>, <code>:257</code>; <code>apps/web/src/components/segments/SegmentNameDialog.tsx:53</code>, <code>:75</code>; <code>apps/web/src/components/segments/SegmentCompactItem.tsx:16</code> (new); <code>apps/web/src/components/sessions/session/SessionSegmentItem.tsx:38</code>; <code>packages/i18n/messages/en.json:802</code>.</p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Use as reference segment with a similar segment (de)</span><span>drag to compare</span></p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-de-segment-name-dialog-similar.png" alt="R91 before · Desktop · similar-segment hint" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-de-segment-name-dialog-similar.png" alt="R91 after · Desktop · similar-segment hint" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="R91 similar-segment hint: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · Use as reference segment with a similar segment (de)</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-de-segment-name-dialog-similar.png" alt="R91 Before · Phone · similar-segment hint" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-de-segment-name-dialog-similar.png" alt="R91 After · Phone · similar-segment hint" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R89</span>Matching tests on real-track shapes</h3>
+        <div class="rv-text">
+          <p>No UI change, no screenshots. <code>gpsPathRecordSeries</code> gains a sideways offset, seeded jitter (no <code>Math.random</code>), a sparser record interval and gaps. 16 new synthetic cases: offset 27 m passes, 35 m and a 45 m parallel road do not; 5 m jitter and a small detour pass, a shortcut does not; a loop gives one pass per ride, the faster lap wins; only the outbound leg of an out-and-back counts; a curve and a switchback with legs 20 m apart pass, the neighbouring leg does not count; 10 s recording and a 60 s gap pass; a session starting or stopping 200 m inside a whole-session reference gets no pass. No matcher bug turned up.</p>
+          <p class="rv-refs"><code>packages/testing/src/series.ts:573</code>; <code>packages/engine/tests/segments.spec.ts:191</code>.</p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">R90</span>Delete and reprocess tests with real geometry</h3>
+        <div class="rv-text">
+          <p>No UI change, no screenshots. A reference rebuilt from re-parsed records (2 s sampling, 3 m jitter) finds the same sessions with pass times within 3 s. A new integration spec runs the real engine, reprocess and the fake IndexedDB: after reprocessing, the next match re-checks both sessions under the new keys and keeps both passes. A new e2e deletes a session that rode the segment but is not its source: the segment stays with one pass and one tile less.</p>
+          <p class="rv-refs"><code>packages/engine/tests/segments.spec.ts:431</code>; <code>apps/web/tests/lib/analysis/segmentMatching.integration.spec.ts</code> (new); <code>apps/web/e2e/segments.spec.ts:110</code>.</p>
+        </div>
+      </article>
 
       <h2>Review round 9</h2>
 
@@ -551,7 +750,7 @@
         <h3><span class="rv-chip">R36</span>Pass times list newest first, like the scatter</h3>
         <div class="rv-text">
           <p>The list is sorted by date, newest first, in every state (collapsed with best and origin, expanded, filtered), so it reads like the scatter with the latest pass at the right. The best card keeps its crown and border wherever it falls; gap texts are unchanged.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/segmentPasses.ts:26</code>; <code>apps/web/src/components/segments/PassList.tsx:14</code>. Test: <code>apps/web/tests/components/segments/PassList.spec.tsx:42</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/segmentPasses.ts:26</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · all passes shown</span><span>drag to compare</span></p>
@@ -651,7 +850,7 @@
         <h3><span class="rv-chip">R38</span>Scatter dots and pass cards toggle the selection</h3>
         <div class="rv-text">
           <p>A click selects a pass, a second click on the selected one deselects it; the best is always shown as selected and its click does nothing (dot and card). With nothing selected the explorer plots only the best: one amber line, the legend shows only Best, the rails show the best's values and scrubbing shows only the amber map marker. <code>?from=</code> and the latest-pass default on open stay; a selected best stays selected.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/hooks/useSegmentPassSelection.ts:25</code>; <code>apps/web/src/components/segments/SegmentDetail.tsx:52</code>; <code>apps/web/src/components/segments/charts/SegmentChannelChart.tsx:28-29</code>; <code>apps/web/src/components/segments/charts/segmentExplorerHover.ts:24</code>; <code>apps/web/src/components/segments/PassScatter.tsx:139-144</code>. Tests: <code>apps/web/tests/components/segments/hooks/useSegmentPassSelection.spec.ts</code>, <code>apps/web/tests/components/segments/charts/segmentExplorerHover.spec.ts</code>, <code>apps/web/tests/components/segments/PassTimesRow.spec.tsx</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/charts/SegmentChannelChart.tsx:28-29</code>; <code>apps/web/src/components/segments/charts/segmentExplorerHover.ts:24</code>. Tests: <code>apps/web/tests/components/segments/hooks/useSegmentPassSelection.spec.ts</code>, <code>apps/web/tests/components/segments/charts/segmentExplorerHover.spec.ts</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · latest pass selected on open</span><span>drag to compare</span></p>
@@ -695,7 +894,7 @@
         <h3><span class="rv-chip">R39</span>Card and dot hover without a map marker</h3>
         <div class="rv-text">
           <p>Hovering a pass card or a scatter dot only highlights the card and the dot; markers appear only while the charts are scrubbed. <code>passPositionAt</code>, its geometry helpers and the engine's split durations, which only fed that marker, are removed.</p>
-          <p class="rv-refs"><code>apps/web/src/store/segmentFocus.ts:34</code>; <code>apps/web/src/components/segments/PassScatter.tsx:150-151</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/store/segmentFocus.ts:34</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · second pass card hovered · no before</span></p>
@@ -719,7 +918,6 @@
         <h3><span class="rv-chip">R40</span>Selected scatter dots like the explorer hover dots</h3>
         <div class="rv-text">
           <p>The selected pass's dot is larger and solid with a white ring, the best dot larger and solid amber without a ring (crown above); both carry a thin cursor line across the scatter. All other dots stay small and muted. Replaced by R42: the static lines through the selected and the best dot are gone; the line now follows the pointer.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/PassScatter.tsx:87</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · scatter, latest selected</span><span>drag to compare</span></p>
@@ -793,7 +991,7 @@
         <h3><span class="rv-chip">R44</span>Scatter with a rail, explorer preview, Times and Passes tabs</h3>
         <div class="rv-text">
           <p>The scatter gets a 100 px rail on the left like the chart rails: at rest it shows Best and the trend; while the pointer scrubs, the cursor snaps to the nearest pass and the rail shows its date, time and gap to best. A click toggles that pass (the best is not toggleable). While scrubbing, the charts explorer previews the scrubbed pass and returns to the selection on leave; all passes in the filter are prefetched (sliced) before the explorer shows, with skeletons until then. The page splits into the tabs "Times" / "Zeiten" (the Pass times card and the explorer) and "Passes" / "Durchgänge" (the full filtered pass list, newest first, no show more; a card opens its session), in the URL as <code>?tab=times|passes</code>.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/SegmentDetail.tsx:52</code>, <code>:71</code>, <code>:77</code>; <code>apps/web/src/components/segments/ScatterRail.tsx:18</code>; <code>apps/web/src/components/segments/PassScatter.tsx:114</code>; <code>apps/web/src/components/segments/hooks/useScatterScrub.ts:32</code>; <code>apps/web/src/components/segments/hooks/useScatterPreviewPass.ts:5</code>; <code>apps/web/src/components/segments/PassList.tsx:12</code>; <code>apps/web/src/components/segments/PassItem.tsx:38</code>; <code>apps/web/src/routing/segmentTab.ts:4</code>; <code>apps/web/src/queries/sessions/useSessionRecordSlices.ts:28</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/PassItem.tsx:38</code>; <code>apps/web/src/queries/sessions/useSessionRecordSlices.ts:28</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Times tab, at rest</span><span>drag to compare</span></p>
@@ -843,7 +1041,7 @@
         <h3><span class="rv-chip">R45</span>Passes tab cards at the regular item size</h3>
         <div class="rv-text">
           <p>The cards in the Passes tab are <code>PvActionItem</code> size <code>md</code> with the regular gap and the 18 px crown on the best, instead of the condensed cards of the old in-card list.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/PassItem.tsx:35</code>, <code>:42</code>; <code>apps/web/src/components/segments/PassList.tsx:12</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/PassItem.tsx:35</code>, <code>:42</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Passes tab, scrolled to the third card on phone</span><span>drag to compare</span></p>
@@ -873,7 +1071,7 @@
         <h3><span class="rv-chip">R46</span>Segment dates and numbers through the app's existing formatters</h3>
         <div class="rv-text">
           <p>Every segment date (pass cards, scatter rail readout, "last ridden" in the Segments tab) uses <code>formatDate</code> in its default mode, like the session list item and session header ("Oct 31, 2026" / "31. Okt. 2026"). <code>formatShortDate</code>, the <code>day-month</code> / <code>day-month-two-digit-year</code> modes and the en-GB short-date locale are removed. The segment's net elevation uses the session rail's <code>railGain</code> / <code>railLoss</code> (no thousands grouping, as in the session explorer); the km values in a suggested segment name use the same ungrouped one-decimal mode as <code>formatDistance</code>. Distances (<code>formatDistance</code>), pass times (<code>formatRaceTime</code>) and chart axes (<code>formatChartTime</code>, <code>formatTick</code>) already used the session formatters. The segment header shows no change: distance and elevation look the same below 1000 m.</p>
-          <p class="rv-refs"><code>apps/web/src/lib/format/formatters.ts:35</code>; <code>apps/web/src/components/segments/PassItem.tsx:28</code>; <code>apps/web/src/components/segments/ScatterRail.tsx:43</code>; <code>apps/web/src/components/segments/hooks/useSegmentTitle.ts:18</code>; <code>apps/web/src/components/segments/segmentFacts.ts:6</code>; <code>apps/web/src/microcopy/segments.ts:40</code>. Test: <code>apps/web/tests/lib/format/formatters.spec.ts</code> (short-date cases removed).</p>
+          <p class="rv-refs"><code>apps/web/src/lib/format/formatters.ts:35</code>; <code>apps/web/src/components/segments/PassItem.tsx:28</code>; <code>apps/web/src/components/segments/hooks/useSegmentTitle.ts:18</code>; <code>apps/web/src/components/segments/segmentFacts.ts:6</code>; <code>apps/web/src/microcopy/segments.ts:40</code>. Test: <code>apps/web/tests/lib/format/formatters.spec.ts</code> (short-date cases removed).</p>
         </div>
         <div class="rv-text"><p>Screenshots follow after the feature is agreed.</p></div>
       </article>
@@ -884,7 +1082,7 @@
         <h3><span class="rv-chip">R34</span>Segment page follows the dashboard filter</h3>
         <div class="rv-text">
           <p>Pass count, scatter, list, best (crown), rank, explorer best line and the map best marker now count only passes inside the dashboard filter (Q82), through the same helper the Segments tab uses. The pass of the session the page was opened from (<code>?from=</code>) stays in view although the filter excludes it. With no pass inside the filter the page shows the existing 0-passes state. Under a filter, a single visible pass reads "1 pass" without the "only this session so far" note (agent decision in <code>review/decisions.md</code>). Before: the round-3 page ignored the filter, so its unfiltered shot is what it showed with the filter on; after: "last 30 days" leaves 6 of 39 passes.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/segmentFilter.ts:6</code>, <code>:48</code>; <code>apps/web/src/components/segments/hooks/useSegmentDetail.ts:25</code>, <code>:29</code>; <code>apps/web/src/components/segments/PassTimesRow.tsx:22-23</code>. Tests: <code>apps/web/tests/components/segments/hooks/useSegmentDetail.spec.ts</code>, <code>apps/web/tests/components/segments/segmentFilter.spec.ts</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/segmentFilter.ts:6</code>, <code>:48</code>; <code>apps/web/src/components/segments/hooks/useSegmentDetail.ts:25</code>, <code>:29</code>. Tests: <code>apps/web/tests/components/segments/hooks/useSegmentDetail.spec.ts</code>, <code>apps/web/tests/components/segments/segmentFilter.spec.ts</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · segment page, filter "last 30 days"</span><span>drag to compare</span></p>
@@ -988,7 +1186,7 @@
         <h3><span class="rv-chip">R27</span>Segments tab map equals the dashboard map</h3>
         <div class="rv-text">
           <p>The fade of sessions without a pass on the Segments tab (R20) is gone; the tab draws the same tracks as the dashboard. Hovering a segment item (or a session, as before) still dims the other tracks and previews the stretch.</p>
-          <p class="rv-refs"><code>apps/web/src/components/mapBackground/hooks/useTrackLayers.ts:73</code>; <code>apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts:48</code>; <code>apps/web/src/components/mapBackground/hooks/useSegmentLayers.ts:110</code>. Removed: <code>representedSessionIds</code> (<code>segmentFilter.ts</code>).</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/hooks/useTrackLayers.ts:73</code>. Removed: <code>representedSessionIds</code> (<code>segmentFilter.ts</code>).</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · Segments tab</span><span>drag to compare</span></p>
@@ -1057,7 +1255,7 @@
         <h3><span class="rv-chip">R30</span>Explorer lines in the channel colour</h3>
         <div class="rv-text">
           <p>Each channel chart draws the selected pass in its own colour, the same mapping as the session explorer (heart rate red, speed green, …); no sport-colour lines. R30 first drew the best pass in the same colour, dashed; R33 replaced that dashed line with a solid amber one. The shot shows the dashed R30 state.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/charts/SegmentChannelChart.tsx:75</code>; <code>apps/web/src/components/segments/charts/segmentChannels.ts:103</code>; <code>apps/web/src/components/segments/charts/SegmentExplorerLegend.tsx:21</code>. No spec: look only, no behaviour of its own.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/charts/SegmentChannelChart.tsx:75</code>; <code>apps/web/src/components/segments/charts/segmentChannels.ts:103</code>. No spec: look only, no behaviour of its own.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · explorer hovered, round 2 vs R30 (dashed best)</span><span>drag to compare</span></p>
@@ -1169,7 +1367,7 @@
         <h3><span class="rv-chip">R33</span>Best pass as a solid amber line (replaces R30's dash)</h3>
         <div class="rv-text">
           <p>The best pass is a solid amber line (<code>tokens.best</code>), so its hover dot is amber; the selected pass stays solid in the channel colour. The legend pill shows a neutral swatch for the selected pass's date and an amber one for Best. With only one line (the selected pass is the best) the line is the channel colour and the legend shows the neutral swatch with Best. The rail's crown note (R29) is unchanged.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/charts/SegmentChannelChart.tsx:66</code>; <code>apps/web/src/components/segments/charts/SegmentExplorerLegend.tsx:31</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/charts/SegmentChannelChart.tsx:66</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · explorer hovered, R30 (dashed) vs R33</span><span>drag to compare</span></p>
@@ -1305,7 +1503,7 @@
         <h3><span class="rv-chip">C4</span>Segment page right after Save, single-pass note</h3>
         <div class="rv-text">
           <p>The page reads the segment from the store at once: header with the user's name and facts, an inline "Finding passes…" and skeletons while the worker matches (W7, Q96). With only the source session as a pass the Pass times row reads "1 pass · only this session so far" and notes that new imports are checked automatically.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/index.tsx:12</code>; <code>apps/web/src/components/segments/SegmentHeader.tsx:29</code>; <code>apps/web/src/components/segments/hooks/useSegmentDetail.ts:13</code>; <code>apps/web/src/components/segments/PassTimesRow.tsx:47</code>; <code>apps/web/src/components/segments/SegmentPassesNote.tsx:10</code>; <code>apps/web/src/components/segments/SegmentDetail.tsx:35</code>. Test: <code>apps/web/tests/components/segments/PassTimesRow.spec.tsx</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/index.tsx:12</code>; <code>apps/web/src/components/segments/SegmentHeader.tsx:29</code>; <code>apps/web/src/components/segments/hooks/useSegmentDetail.ts:13</code>; <code>apps/web/src/components/segments/SegmentPassesNote.tsx:10</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · matching in progress (worker held back)</span><span>drag to compare</span></p>
@@ -1581,7 +1779,7 @@
         <h3><span class="rv-chip">C8</span>Segments tab: user segments, empty state</h3>
         <div class="rv-text">
           <p>The tab lists the user's segments by last ridden with their names; without passes no date. The empty state shows "No segments yet" and the shared how-to. The map is the dashboard map; hovering an item previews its stretch and dims the other tracks (R27, R28).</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/SegmentsTab.tsx:14</code>, <code>:36</code>; <code>apps/web/src/components/segments/SegmentsEmpty.tsx:13</code>; <code>apps/web/src/components/segments/hooks/useSegments.ts:7</code>; <code>apps/web/src/components/segments/hooks/useSegmentTitle.ts:18</code>, <code>:136</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/segments/SegmentsTab.tsx:14</code>; <code>apps/web/src/components/segments/SegmentsEmpty.tsx:13</code>; <code>apps/web/src/components/segments/hooks/useSegments.ts:7</code>; <code>apps/web/src/components/segments/hooks/useSegmentTitle.ts:18</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · empty state</span><span>drag to compare</span></p>
@@ -1670,7 +1868,7 @@
         <h3><span class="rv-chip">C9</span>Segment page, kept from round 1</h3>
         <div class="rv-text">
           <p>Pass times, explorer and map as reviewed in round 1; the header now carries the user's name and the <code>SplinePointer</code> tile, and the map draws the segment from its stored polyline at once.</p>
-          <p class="rv-refs"><code>apps/web/src/components/segments/SegmentDetail.tsx:35</code>; <code>apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts:30</code>; <code>apps/web/src/components/segments/SegmentPeek.tsx:16</code>.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/hooks/useSegmentMapTracks.ts:30</code>; <code>apps/web/src/components/segments/SegmentPeek.tsx:16</code>.</p>
         </div>
         <div class="rv-cmp">
           <p class="rv-cmp__head"><span>Desktop · 1280 × 800 · from the Segments tab</span><span>drag to compare</span></p>
@@ -1814,29 +2012,25 @@
 
       <h2>Open points</h2>
       <ol class="rv-text">
-        <li><strong>Owner step (R85, R80 landed): real-data runs</strong> with <code>localStorage["pv:debug:segments"]</code> set, on matcher v2: cold (first load after the version bump), warm (reload), after an import, after a first save, and on the phone including memory. Check <code>readMs</code>/<code>matchMs</code> per segment and that <code>recordsRead</code> dropped against the round-7 run in <code>research/matching-metrics.md</code>.</li>
-        <li><strong>Owner step (R80):</strong> on real data, check that pass times and the best pass moved to moving time (a pass with a stop is now shorter than its elapsed time; the crown may move) and that the segment charts no longer bridge the stops.</li>
-        <li><strong>Owner step (R86):</strong> on a segment page tap a tile whose pass has not loaded yet: the shown charts stay until the new pass has loaded, no skeleton in between.</li>
-        <li><strong>Two new e2e failures that passed on the serial re-run</strong> (not in <code>flaky.md</code>): <code>[chromium] e2e/map.spec.ts:42</code> "track click opens the picker popover at the click point" and <code>[mobile] e2e/mobile/map.spec.ts:249</code> "mobile dock › filter input stays in place while typing". Candidates for <code>flaky.md</code>, the owner&#39;s call.</li>
-        <li><strong>R50:</strong> <code>pvDebug.segmentMetrics()</code> stays (<code>apps/web/src/lib/debug/segmentMetrics.ts:36</code>); measuring with real data is the Real-data check "Matching time on the full history" in <code>plan.md</code>.</li>
-        <li><strong>Agent decisions:</strong> 62 still open in <code>review/decisions.md</code>; the owner postponed the sweep, so none is marked superseded. Round 7 added R49 (<code>:197</code>, <code>:198</code>), R51 (<code>:199-201</code>) and R52 (<code>:202</code>, <code>:203</code>). Candidates for the sweep: <code>:199</code> (single-pass note, removed by R79), <code>:200</code> (strip sticky at every width, changed by R57/R70), <code>:113</code> (pass time is elapsed time, replaced by R80 in round 8), and the scatter and pass-list decisions from rounds 4–6 (<code>:118</code>, <code>:119</code>, <code>:128</code>, <code>:129</code>, <code>:135</code>, <code>:141</code>, <code>:143</code>, <code>:147</code>), whose UI R51 removed.</li>
-        <li><strong>Owner step:</strong> clear the local site data once in every browser that ran the round-1 build (DevTools → Application → Storage → Clear site data); <code>DB_VERSION</code> 5 is redefined, so those browsers never get <code>segment-passes</code> otherwise (Q109).</li>
-        <li><strong>Real-data checks still to do</strong> (all 10 in <code>plan.md</code> § Real-data checks): tolerances keep real passes and drop detours (Q105); chart-range segments find the right passes; whole-session references find repeats; matching time on the full history (desktop, phone); session delete removes passes and the source's segments; passes after reprocessing a source; the similar hint on the same vs. a neighbouring stretch; prefilled names for unnamed and long sessions; pass times and splits on a long whole-session reference; scatter y range and last-10 window with many passes.</li>
-        <li><strong>Stale refs in rounds 1–6</strong> (owner's call): 24 <code>path:line</code> refs in the round 1–6 entries point at files deleted in later rounds (<code>PassList</code>, <code>PassScatter</code>, <code>ScatterRail</code>, <code>PassTimesRow</code>, <code>SegmentExplorerLegend</code>, <code>useScatterScrub</code>, <code>useScatterPreviewPass</code>, <code>routing/segmentTab.ts</code>) or at lines past the end of the current file. Options: (a) leave them as history (recommended); (b) rewrite them to current code; (c) mark them "removed in round N".</li>
-        <li><strong>Debug metrics after R50:</strong> <code>window.pvSegmentMetrics</code>, the console log and <code>pv:debug:segments</code> stay until the real-data runs on matcher v2; whether they go before the merge is a Real-data check in <code>plan.md</code>.</li>
-        <li><strong>Owner step for R26:</strong> segments saved before the fix keep their stored polyline; delete "Marxzell &gt; Neusatz" and save the stretch again.</li>
-      </ol>
+        <li><strong>Question (R99): hidden dialog title.</strong> <code>PvDialog</code> renders an empty hidden Radix title only when <code>aria-labelledby</code> is passed (the phone onboarding), to keep Radix's "requires a DialogTitle" check quiet (<code>packages/ui/src/components/pvDialog/PvDialog.tsx:68</code>). (a) keep it (recommended): kit-internal, no visible or accessibility effect; (b) use <code>PvDialogHeader</code> for the onboarding title: no hidden element, but the title shrinks from 24 px to the 16 px header title; (c) a large title variant on <code>PvDialogHeader</code> for this one caller.</li>
+        <li><strong>Spun off:</strong> the Labs coach text passing raw form-status and injury-risk keys is the backlog item <code>coach-rationale-raw-keys</code>.</li></ol>
 
       <h2>Verification</h2>
       <table>
         <tr><th>Command</th><th>Result</th></tr>
         <tr><td><code>vp run check</code></td><td class="rv-pass">pass · 13/13</td></tr>
-        <tr><td><code>vp run test</code></td><td class="rv-pass">pass · app 1201 · ui 50 · engine 269 · gpx 54 · workbench 87</td></tr>
-        <tr><td><code>vp run e2e</code></td><td class="rv-pass">89 passed · 1 failed (not in <code>flaky.md</code>), passed on <code>vp -C apps/web exec playwright test --last-failed --workers 1</code></td></tr>
+        <tr><td><code>vp run test</code></td><td class="rv-pass">pass · app 1203 and every package (after R97/R98)</td></tr>
+        <tr><td><code>vp run e2e</code></td><td class="rv-pass">91 passed, 0 failed (after R97/R98)</td></tr>
         <tr><td><code>vp run build</code></td><td class="rv-pass">pass</td></tr>
-        <tr><td><code>vp run workbench:deps</code></td><td class="rv-pass">525 modules · 1169 imports drawn (346 added, 0 missing); boundary engine-is-pure, state-no-components: no violations (959 modules, 4014 dependencies)</td></tr>
+        <tr><td><code>vp run workbench:deps</code></td><td class="rv-pass">527 modules · 1176 imports drawn (348 added, 0 missing); boundary engine-is-pure, state-no-components: no violations (960 modules, 4020 dependencies)</td></tr>
       </table>
       <ol class="rv-text">
+        <li><strong>Round 10 suite, after the R96 rework and R99:</strong> check 13/13, test all green (app 1203), e2e 91/91 plus the mobile specs 14/14 with no Radix title warning, build pass; capture tests <code>:408</code>, <code>:594</code>, <code>:645</code>, <code>:695</code> run one at a time, all passed.</li>
+        <li><strong>Round 10 suite, after R95–R98:</strong> check 13/13, test all green, e2e 91/91, build pass. During R95/R96 the first <code>vp run test</code> failed in 23 app spec files while a capture ran in parallel; run alone it passed in full. Capture tests <code>:408</code> (R96) and <code>:450</code> (R97, 60 s wait for <code>segment-item</code>) each failed once and passed on the re-run; not in <code>flaky.md</code>. Before shots: <code>-r10</code> (dialogs, R95/R96) and <code>-r97</code> (lists, R97) beside the older ones.</li>
+        <li><strong>Round 10 suite, after R92–R94:</strong> check 13/13 and build passed. R92/R93 run: test 1202, e2e 90 passed and 1 failed (<code>e2e/upload.spec.ts:40</code>, passed alone). R94 run: test 1 timeout (<code>tests/lib/api/intervalsSync.integration.spec.ts</code> "flags a backlog when the batch hits the cap", passed alone); e2e 83 passed, 8 failed (<code>e2e/labs.spec.ts</code> no-data and mature-data plans, <code>e2e/map.spec.ts:174</code> 2D/3D), all passed on the serial re-run. None is in <code>flaky.md</code> and none touches R89–R94; the parallel-load flakiness is collected in <code>e2e-speed</code>. Shots: test "other dialogs (R92)" (<code>capture.spec.ts:645</code>) added with before shots taken on the unchanged source (<code>WB_SHOTS=before</code>); tests 408, 594, 645 and 695 recaptured.</li>
+        <li><strong>Round 10 suite</strong> (after R89–R91): check, test and build passed on the first run. First e2e run: 89 passed, 2 failed: the new R90 e2e (a reload raced the delete's IndexedDB write; the test now goes back through the Segments tab) and <code>[chromium] e2e/map.spec.ts:42</code>, again not in <code>flaky.md</code> and now failing in rounds 8, 9 and 10 (tracked by <code>e2e-speed</code>). Second full run: 91 passed.</li>
+        <li><strong>Deps round 10</strong> (base <code>2a3bfb2</code>): components 125 · 219 imports; files 184 changed and planned · 15 changed, not planned · 0 planned, untouched; interfaces 179 planned files · 401 exports, 11 not planned files · 8 exports, 0 missing.</li>
+        <li><strong>Shots round 10:</strong> only the test "session menu entries and the delete warning" (<code>capture.spec.ts:592</code>) was recaptured; <code>before/</code> holds the round-9 shots. The C2 entry below now compares round 9 with round 10 for the dialog too. English copies: <code>after/d-en-segment-name-dialog-similar.png</code>, <code>after/p-en-segment-name-dialog-similar.png</code>.</li>
         <li><strong>Round 9 suite</strong> (after R87): check 13/13 and build passed; test passed (app 1201, ui 50, engine 269, gpx 54, workbench 87). e2e: 89 passed, 1 failed: <code>[chromium] e2e/map.spec.ts:42</code> "track click opens the picker popover at the click point", passed on the serial re-run. It is not in <code>flaky.md</code> and also failed in round 8: a candidate for <code>flaky.md</code> (owner).</li>
         <li><strong>Deps round 9</strong> (<code>WB_BASE=2a3bfb2</code>): components 124 · 217 imports; files 184 changed and planned · 10 changed, not planned (see Deviations) · 0 planned, untouched; interfaces 179 planned files · 399 exports, 8 not planned files · 6 exports, 0 missing.</li>
         <li><strong>Shots round 9:</strong> new test "not found pages" in <code>capture.spec.ts</code> (empty library, unknown id) with the scenes <code>segment-not-found</code>, <code>session-not-found</code>, <code>trip-not-found</code> and <code>route-not-found</code>, after only. The capture ran the whole spec (10/10 tests, 22.0 min), so <code>after/</code> holds a fresh round-9 capture of every scene; <code>before/</code> holds the round-8 shots. German copies: <code>after/d-de-segment-not-found.png</code>, <code>after/p-de-segment-not-found.png</code>, <code>after/d-de-session-not-found.png</code>, <code>after/p-de-session-not-found.png</code>, <code>after/d-de-trip-not-found.png</code>, <code>after/p-de-trip-not-found.png</code>, <code>after/d-de-route-not-found.png</code>, <code>after/p-de-route-not-found.png</code>.</li>

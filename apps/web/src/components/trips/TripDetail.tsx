@@ -3,6 +3,7 @@ import { m } from '@pacevault/i18n/messages.js';
 import type { Trip } from '@/store/trips.ts';
 import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
 import { PvCardHeader } from '@pacevault/ui/components/pvCardHeader/PvCardHeader.tsx';
+import { PvActionItemList } from '@pacevault/ui/components/pvActionItem/PvActionItemList.tsx';
 import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { SessionItem } from '@/components/sessions/SessionItem.tsx';
 import { TripHeader } from '@/components/trips/TripHeader.tsx';
@@ -36,11 +37,11 @@ export const TripDetail: FC<TripDetailProps> = (props) => {
 
       <TripStatsGrid sessions={tripSessions} />
 
-      <div className="flex flex-col gap-2">
+      <PvActionItemList>
         {tripSessions.map((session) => (
           <SessionItem key={session.id} session={session} />
         ))}
-      </div>
+      </PvActionItemList>
     </div>
   );
 };

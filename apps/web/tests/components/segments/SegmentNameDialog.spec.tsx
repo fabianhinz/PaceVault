@@ -32,7 +32,6 @@ const renderDialog = (options: {
         mode={options.mode ?? 'create'}
         title="Save as segment"
         initialName="Morning Run · km 2.1–3.5"
-        facts="Running · 1.4 km · +4 m"
         similarSegment={options.similarSegment}
         onSubmit={options.onSubmit ?? vi.fn()}
       />
@@ -74,19 +73,19 @@ describe(SegmentNameDialog.name, () => {
     expect(view.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('names a similar segment, opens it and still saves', async () => {
+  it('shows a similar segment as an item that opens it, and still saves', async () => {
     const onSubmit = vi.fn();
     const onOpenChange = vi.fn();
-    const similar = createMockSegment({ id: 'hill', name: 'Hill' });
+    const similar = createMockSegment({ id: 'hill', name: 'Hill', distanceMeters: 1400 });
     const view = renderDialog({ similarSegment: similar, onSubmit, onOpenChange });
 
-    expect(
-      view.getByText('A segment with nearly the same start and end exists: Hill'),
-    ).toBeInTheDocument();
+    expect(view.getByText('A similar segment already exists')).toBeInTheDocument();
+    expect(view.getByTestId('similar-segment')).toHaveTextContent('1.4 km');
+    expect(view.queryByRole('button', { name: 'Open segment' })).not.toBeInTheDocument();
     fireEvent.click(view.getByRole('button', { name: 'Save' }));
     expect(onSubmit).toHaveBeenCalledWith('Morning Run · km 2.1–3.5');
 
-    fireEvent.click(view.getByRole('button', { name: 'Open segment' }));
+    fireEvent.click(view.getByRole('button', { name: 'Hill' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
     await waitFor(() =>
       expect(view.getByRole('status', { name: 'location', hidden: true })).toHaveTextContent(
@@ -101,6 +100,6 @@ describe(SegmentNameDialog.name, () => {
       similarSegment: createMockSegment({ name: 'Hill' }),
     });
 
-    expect(view.queryByRole('button', { name: 'Open segment' })).not.toBeInTheDocument();
+    expect(view.queryByText('A similar segment already exists')).not.toBeInTheDocument();
   });
 });

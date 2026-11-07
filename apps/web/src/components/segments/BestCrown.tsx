@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import { Crown } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
-import type { ActionItemSize } from '@pacevault/ui/components/pvActionItem/PvActionItem.tsx';
+import type { ActionItemSize } from '@pacevault/ui/components/pvActionItem/types.ts';
 
 const CLASS_BY_CROWN_SIZE: Record<ActionItemSize, string> = {
   md: '-top-2.75 left-0.5 size-4.5',

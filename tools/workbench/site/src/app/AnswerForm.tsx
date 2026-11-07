@@ -35,7 +35,7 @@ export const AnswerForm: FC<AnswerFormProps> = (props) => {
   return (
     <>
       <PvDialogBody>
-        <div className="flex flex-col gap-4 lg:mt-4">
+        <div className="flex flex-col gap-4">
           <PvTypography>
             <Inline markdown={question.question} />
           </PvTypography>

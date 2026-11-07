@@ -201,10 +201,6 @@ export const formatPlural = (
   return forms.other();
 };
 
-const listFmt = new Intl.ListFormat(getLocale(), { style: 'long', type: 'conjunction' });
-
-export const formatList = (values: string[]): string => listFmt.format(values);
-
 const localDateFmt = new Intl.DateTimeFormat('en', {
   year: 'numeric',
   month: '2-digit',

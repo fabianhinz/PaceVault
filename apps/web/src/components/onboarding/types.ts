@@ -13,3 +13,6 @@ export interface StepProps {
   thresholds: ThresholdsForm;
   onDemo: () => void;
 }
+
+/** Names the phone onboarding dialog through `aria-labelledby`; only one shell renders at a time. */
+export const ONBOARDING_HEADING_ID = 'onboarding-heading';

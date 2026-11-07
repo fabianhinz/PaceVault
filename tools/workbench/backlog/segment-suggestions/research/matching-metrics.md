@@ -56,4 +56,4 @@ Each run: open DevTools, then `copy(pvDebug.segmentMetrics())` (`apps/web/src/li
 
 ## 5. Where `coldSegmentMetrics.json` belongs
 
-It is measurement data that no code imports or references, and it is untracked. In `apps/web/src/` it only adds noise next to app code. Move it to the item's research folder, for example `tools/workbench/backlog/session-segments/research/metrics/cold-desktop-v1.json`, and put the warm, import, save and phone runs beside it. The folder is cleaned up with the item after acceptance. If a figure is worth keeping after that, the plan's real-data check line should quote the number instead of keeping the file.
+It is measurement data that no code imports or references, and it is untracked. In `apps/web/src/` it only adds noise next to app code. Move it to the item's research folder, for example `research/metrics/cold-desktop-v1.json`, and put the warm, import, save and phone runs beside it. The folder is cleaned up with the item after acceptance. If a figure is worth keeping after that, the plan's real-data check line should quote the number instead of keeping the file.

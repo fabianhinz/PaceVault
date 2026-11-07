@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { PvActionItemList } from '@pacevault/ui/components/pvActionItem/PvActionItemList.tsx';
 import { VirtualItemList } from '@/components/layout/VirtualItemList.tsx';
 import { SegmentItem } from './SegmentItem.tsx';
 import { SegmentItemSkeleton } from './SegmentItemSkeleton.tsx';
@@ -13,7 +14,13 @@ export const SegmentsTab: FC = () => {
 
   return (
     <div className="flex flex-col gap-2" data-testid="segments-tab">
-      {segments === undefined && SKELETON_ITEMS.map((key) => <SegmentItemSkeleton key={key} />)}
+      {segments === undefined && (
+        <PvActionItemList>
+          {SKELETON_ITEMS.map((key) => (
+            <SegmentItemSkeleton key={key} />
+          ))}
+        </PvActionItemList>
+      )}
       {segments !== undefined && segments.length === 0 && <SegmentsEmpty />}
       {segments !== undefined && (
         <VirtualItemList

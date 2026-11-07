@@ -15,7 +15,7 @@ interface PvDialogHeaderProps {
 export const PvDialogHeader: FC<PvDialogHeaderProps> = (props) => {
   const Icon = props.icon;
   return (
-    <div className="flex min-h-11 shrink-0 items-center gap-2 px-5 lg:min-h-0 lg:p-0">
+    <div className="flex shrink-0 items-center gap-2 px-5 lg:pt-5">
       {Icon && <Icon className="size-4 shrink-0 text-text-tertiary lg:hidden" />}
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">

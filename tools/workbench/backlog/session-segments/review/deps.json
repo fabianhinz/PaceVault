@@ -1,6 +1,6 @@
 {
   "item": "session-segments",
-  "generated": "2026-11-06",
+  "generated": "2026-11-07",
   "command": "depcruise --config tools/workbench/.dependency-cruiser.cjs --output-type json apps/web/e2e apps/web/src apps/web/tests/components/mapBackground apps/web/tests/components/segments apps/web/tests/components/sessions/session apps/web/tests/factories apps/web/tests/lib/analysis apps/web/tests/lib/format apps/web/tests/lib/storage apps/web/tests/lib/workers apps/web/tests/routing apps/web/tests/store packages/engine/src packages/engine/tests packages/testing/src packages/ui/src packages/ui/tests/components/pvPlotStrip packages/ui/tests/components/pvStatRail packages/ui/tests/hooks",
   "roots": [
     "apps/web/e2e",
@@ -210,8 +210,8 @@
     "apps/web/tests/lib/analysis/records.computePbsForSessions.spec.ts"
   ],
   "astro": [],
-  "nodes": 525,
-  "edges": 1169,
+  "nodes": 529,
+  "edges": 1180,
   "added": [
     "apps/web/e2e/dashboard.spec.ts",
     "apps/web/e2e/filters.spec.ts",
@@ -297,6 +297,7 @@
     "apps/web/src/components/metricLabel",
     "apps/web/src/components/onboarding",
     "apps/web/src/components/records",
+    "apps/web/src/components/segments/SegmentCompactItem.tsx",
     "apps/web/src/components/sessions/SessionHeader.tsx",
     "apps/web/src/components/sessions/SessionPeek.tsx",
     "apps/web/src/components/sessions/SessionsPickPopup.tsx",
@@ -433,7 +434,6 @@
     "apps/web/src/lib/storage/recordCodec.ts",
     "apps/web/src/lib/workers/gpsBuild.worker.ts",
     "apps/web/src/lib/workers/personalBests.worker.ts",
-    "apps/web/src/microcopy/sports.ts",
     "apps/web/src/microcopy/studioMarkers.ts",
     "apps/web/src/microcopy/thresholds.ts",
     "apps/web/src/mutations/settings/useClearAllDataMutation.ts",
@@ -501,6 +501,7 @@
     "apps/web/tests/lib/analysis/movingTime.spec.ts",
     "apps/web/tests/lib/analysis/recomputeTrainingLoad.integration.spec.ts",
     "apps/web/tests/lib/analysis/reprocessSessions.integration.spec.ts",
+    "apps/web/tests/lib/analysis/segmentMatching.integration.spec.ts",
     "apps/web/tests/lib/storage/createIngestBatcher.integration.spec.ts",
     "apps/web/tests/lib/storage/db.deleteAllData.integration.spec.ts",
     "apps/web/tests/lib/storage/db.indexeddb.integration.spec.ts",
@@ -531,6 +532,9 @@
     "packages/testing/src/personalBests.ts",
     "packages/testing/src/records.ts",
     "packages/testing/src/sessions.ts",
+    "packages/ui/src/components/pvActionItem/PvActionItemContent.tsx",
+    "packages/ui/src/components/pvActionItem/PvActionItemList.tsx",
+    "packages/ui/src/components/pvActionItem/types.ts",
     "packages/ui/src/components/pvActionsMenu",
     "packages/ui/src/components/pvBottomSheet",
     "packages/ui/src/components/pvButton",
@@ -567,11 +571,11 @@
       "state-no-components"
     ],
     "violations": [],
-    "modules": 959,
-    "dependencies": 4014
+    "modules": 961,
+    "dependencies": 4015
   },
   "components": {
-    "nodes": 124,
-    "edges": 217
+    "nodes": 126,
+    "edges": 220
   }
 }

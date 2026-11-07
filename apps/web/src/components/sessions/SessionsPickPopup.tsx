@@ -1,5 +1,6 @@
 import { useMemo, type FC } from 'react';
 import { SessionItem } from '@/components/sessions/SessionItem.tsx';
+import { PvActionItemList } from '@pacevault/ui/components/pvActionItem/PvActionItemList.tsx';
 import { MapPickPopup } from '@/components/mapBackground/MapPickPopup.tsx';
 import type { PopupInfo } from './types.ts';
 import { m } from '@pacevault/i18n/messages.js';
@@ -23,9 +24,11 @@ export const SessionsPickPopup: FC<SessionsPickPopupProps> = (props) => {
       subtitle={m.ui_map_popup_sessions_subtitle()}
       onClose={props.onClose}
     >
-      {sorted.map((session) => (
-        <SessionItem key={session.id} session={session} onNavigate={props.onClose} />
-      ))}
+      <PvActionItemList>
+        {sorted.map((session) => (
+          <SessionItem key={session.id} session={session} onNavigate={props.onClose} />
+        ))}
+      </PvActionItemList>
     </MapPickPopup>
   );
 };

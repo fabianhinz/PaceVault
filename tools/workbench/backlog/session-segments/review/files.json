@@ -1,8 +1,8 @@
 {
   "item": "session-segments",
-  "generated": "2026-11-06",
+  "generated": "2026-11-07",
   "base": "2a3bfb2cf28ecd80ccbafcbe4c0881d2924c8a6d",
-  "ref": "WB_BASE=2a3bfb2",
+  "ref": "merge-base main HEAD",
   "planned": [
     {
       "path": "apps/web/CLAUDE.md",
@@ -743,15 +743,103 @@
   ],
   "notPlanned": [
     {
+      "path": ".claude/skills/item-review/SKILL.md",
+      "status": "modified"
+    },
+    {
       "path": "apps/web/src/components/errors/NotFoundBanner.tsx",
       "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/mapBackground/hooks/useMapTerrainEffect.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/onboarding/DesktopOnboarding.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/onboarding/OnboardingHeading.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/onboarding/OnboardingStep.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/onboarding/PhoneOnboarding.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/onboarding/types.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/segments/SegmentCompactItem.tsx",
+      "status": "added"
+    },
+    {
+      "path": "apps/web/src/components/sessions/SessionsPickPopup.tsx",
+      "status": "modified"
     },
     {
       "path": "apps/web/src/components/sessions/session/index.tsx",
       "status": "modified"
     },
     {
+      "path": "apps/web/src/components/settings/DeleteAllDataDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/settings/PaceEstimatorDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/settings/ThresholdEditDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/settings/ThresholdEditForm.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/studio/DeleteStudioRouteDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/studio/StudioRouteFormDialog.tsx",
+      "status": "modified"
+    },
+    {
       "path": "apps/web/src/components/studio/index.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/studio/markers/StudioMarkerDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/studio/markers/StudioRoutesPickPopup.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/trips/DeleteTripDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/trips/ManageTripDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/trips/TripDetail.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/trips/TripFormDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/src/components/trips/TripsTab.tsx",
       "status": "modified"
     },
     {
@@ -764,6 +852,74 @@
     },
     {
       "path": "apps/web/tests/lib/analysis/movingTime.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "apps/web/tests/lib/analysis/segmentMatching.integration.spec.ts",
+      "status": "added"
+    },
+    {
+      "path": "docs/conventions/tdr/component-directory-and-file-naming.md",
+      "status": "modified"
+    },
+    {
+      "path": "packages/i18n/CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "packages/testing/CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/CLAUDE.md",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvActionItem/PvActionItemContent.tsx",
+      "status": "added"
+    },
+    {
+      "path": "packages/ui/src/components/pvActionItem/PvActionItemList.tsx",
+      "status": "added"
+    },
+    {
+      "path": "packages/ui/src/components/pvActionItem/types.ts",
+      "status": "added"
+    },
+    {
+      "path": "packages/ui/src/components/pvBanner/PvBanner.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvDialog/PvDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvDialog/PvDialogBody.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvDialog/PvDialogContent.tsx",
+      "status": "deleted"
+    },
+    {
+      "path": "packages/ui/src/components/pvDialog/PvDialogDescription.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvDialog/PvDialogFooter.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvDialog/PvDialogHeader.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "packages/ui/src/components/pvDialog/PvDialogTrigger.tsx",
+      "status": "deleted"
+    },
+    {
+      "path": "packages/ui/src/components/pvResponsivePopover/PvResponsivePopover.tsx",
       "status": "modified"
     },
     {
@@ -780,6 +936,14 @@
     },
     {
       "path": "packages/ui/tests/lib/scrollFade.spec.ts",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/site/src/app/AnswerDialog.tsx",
+      "status": "modified"
+    },
+    {
+      "path": "tools/workbench/site/src/app/AnswerForm.tsx",
       "status": "modified"
     }
   ],

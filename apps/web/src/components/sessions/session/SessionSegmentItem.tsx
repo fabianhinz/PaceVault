@@ -1,7 +1,4 @@
 import { useMemo, type FC } from 'react';
-import { SplinePointer } from 'lucide-react';
-import { PvIconTile } from '@pacevault/ui/components/pvIconTile/PvIconTile.tsx';
-import { PvActionItem } from '@pacevault/ui/components/pvActionItem/PvActionItem.tsx';
 import { cn } from '@pacevault/ui/lib/cn.ts';
 import type { SessionRecord } from '@pacevault/engine/types.ts';
 import { usePageRouting } from '@/routing/usePageRouting.ts';
@@ -9,9 +6,9 @@ import { recordSpanBetween } from '@/lib/analysis/laps.ts';
 import type { StoredSegmentPass } from '@/lib/workers/segmentsContract.ts';
 import { useMapHover } from '@/components/mapBackground/hooks/useMapHover.ts';
 import type { MapHoverTarget } from '@/store/mapFocus.ts';
-import { TEXT_CLASS_BY_SPORT } from '@/components/dashboard/statusColors.ts';
 import type { MatchedSegment } from '@/components/segments/types.ts';
 import { BestHighlight } from '@/components/segments/BestHighlight.tsx';
+import { SegmentCompactItem } from '@/components/segments/SegmentCompactItem.tsx';
 
 interface SessionSegmentItemProps {
   segment: MatchedSegment;
@@ -38,10 +35,9 @@ export const SessionSegmentItem: FC<SessionSegmentItemProps> = (props) => {
   const segmentHover = useMapHover(hoverTarget);
 
   return (
-    <PvActionItem
+    <SegmentCompactItem
       testId="segment-item"
-      size="sm"
-      label={props.segment.name}
+      segment={props.segment}
       onClick={() =>
         pageRouting.open({
           page: 'segmentDetail',
@@ -52,13 +48,6 @@ export const SessionSegmentItem: FC<SessionSegmentItemProps> = (props) => {
       onPointerLeave={segmentHover.onPointerLeave}
       className={cn(props.best && 'border-best/20')}
       decoration={props.best && <BestHighlight size="sm" />}
-      avatar={
-        <PvIconTile
-          icon={SplinePointer}
-          className={cn(TEXT_CLASS_BY_SPORT[props.segment.sport], 'h-7 w-7 rounded-md')}
-        />
-      }
-      primary={props.segment.name}
       value={props.value}
     />
   );

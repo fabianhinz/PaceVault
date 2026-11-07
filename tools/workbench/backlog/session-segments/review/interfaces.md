@@ -1,6 +1,6 @@
 # Interfaces · session-segments
 
-Generated 2026-11-06 by `vp run workbench:deps -- session-segments` from the TypeScript files changed since the base (as `files.json`): 179 planned, 8 not planned. The checker's types; compare with tech.md `## Interfaces`, the planned record.
+Generated 2026-11-07 by `vp run workbench:deps -- session-segments` from the TypeScript files changed since the base (as `files.json`): 179 planned, 42 not planned. The checker's types; compare with tech.md `## Interfaces`, the planned record.
 
 ```ts
 // apps/web/e2e/helpers/seed.ts
@@ -567,7 +567,6 @@ export const similarSegment: ({ segment, segments, }: { segment: Segment; segmen
 ```ts
 // apps/web/src/components/segments/segmentFacts.ts
 export const segmentFacts: (segment: Pick<Segment, "distanceMeters" | "netElevationMeters">) => string[];
-export const segmentFactsLine: (segment: Pick<Segment, "sport" | "distanceMeters" | "netElevationMeters">) => string;
 ```
 
 ```ts
@@ -898,7 +897,6 @@ export const formatUnit: (value: number, mode: UnitFormatMode) => string;
 export const formatUnitRange: (from: number, to: number, mode: UnitFormatMode) => string;
 export const formatMonthName: (date: Date, options: { locale: MonthNameLocale; width: MonthNameWidth; }) => string;
 export const formatPlural: (count: number, forms: { one: () => string; other: () => string; }) => string;
-export const formatList: (values: string[]) => string;
 export const formatBytes: (bytes: number) => string;
 export const toDateString: (timestamp: number) => string;
 export const formatDuration: (seconds: number) => string;
@@ -1053,7 +1051,7 @@ export const segmentRangeName: ({ name, startMeters, endMeters, }: {
   startMeters: number;
   endMeters: number;
 }) => string;
-export const sessionSegmentsDeleteNote: (names: string[]) => string;
+export const sessionSegmentsDeleteLabel: (count: number) => string;
 export const passTileLabel: ({ date, time, best, }: { date: string; time: string; best: boolean; }) => string;
 ```
 
@@ -1621,6 +1619,14 @@ export interface PathWaypoint {
   eastMeters: number;
   northMeters: number;
 }
+export interface PathJitter {
+  meters: number;
+  seed?: number;
+}
+export interface RecordGap {
+  fromSec: number;
+  toSec: number;
+}
 export const cyclingRecordSeries: ({ count, basePowerWatts, baseHrBpm, }: {
   count: number;
   basePowerWatts?: number;
@@ -1641,18 +1647,21 @@ export const sessionSeries: ({ count, startDate, baseTss, tssVariation, }: {
   baseTss: number;
   tssVariation: number;
 }) => TrainingSession[];
-export const gpsPathRecordSeries: ({ path, speedMetersPerSec, legSpeedsMetersPerSec, reverse, gradeRatio, }: {
+export const gpsPathRecordSeries: ({ path, speedMetersPerSec, legSpeedsMetersPerSec, reverse, gradeRatio, recordIntervalSec, lateralOffsetMeters, jitter, gaps, }: {
   path: PathWaypoint[];
   speedMetersPerSec: number;
   legSpeedsMetersPerSec?: number[];
   reverse?: boolean;
   gradeRatio?: number | null;
+  recordIntervalSec?: number;
+  lateralOffsetMeters?: number;
+  jitter?: PathJitter;
+  gaps?: RecordGap[];
 }) => SessionRecord[];
 ```
 
 ```ts
 // packages/ui/src/components/pvActionItem/PvActionItem.tsx
-export type ActionItemSize = 'md' | 'sm';
 export const PvActionItem: FC<PvActionItemProps>;
 ```
 
@@ -1851,8 +1860,88 @@ export const NotFoundBanner: FC<{ children?: ReactNode | undefined; }>;
 ```
 
 ```ts
+// apps/web/src/components/mapBackground/hooks/useMapTerrainEffect.ts · not planned
+export const useMapTerrainEffect: () => void;
+```
+
+```ts
+// apps/web/src/components/onboarding/DesktopOnboarding.tsx · not planned
+export const DesktopOnboarding: FC<ShellProps>;
+```
+
+```ts
+// apps/web/src/components/onboarding/OnboardingHeading.tsx · not planned
+export const OnboardingHeading: FC<OnboardingHeadingProps>;
+```
+
+```ts
+// apps/web/src/components/onboarding/OnboardingStep.tsx · not planned
+export const OnboardingStep: FC<StepProps>;
+```
+
+```ts
+// apps/web/src/components/onboarding/PhoneOnboarding.tsx · not planned
+export const PhoneOnboarding: FC<ShellProps>;
+```
+
+```ts
+// apps/web/src/components/onboarding/types.ts · not planned
+export type OnboardingShell = 'card' | 'dialog';
+export interface ShellProps {
+  thresholds: ThresholdsForm;
+  onDemo: () => void;
+}
+export interface StepProps {
+  shell: OnboardingShell;
+  thresholds: ThresholdsForm;
+  onDemo: () => void;
+}
+export const ONBOARDING_HEADING_ID: "onboarding-heading";
+```
+
+```ts
+// apps/web/src/components/segments/SegmentCompactItem.tsx · not planned
+export const SegmentCompactItem: FC<SegmentCompactItemProps>;
+```
+
+```ts
+// apps/web/src/components/sessions/SessionsPickPopup.tsx · not planned
+export const SessionsPickPopup: FC<SessionsPickPopupProps>;
+```
+
+```ts
 // apps/web/src/components/sessions/session/index.tsx · not planned
 export const Session: FC;
+```
+
+```ts
+// apps/web/src/components/settings/DeleteAllDataDialog.tsx · not planned
+export const DeleteAllDataDialog: FC<DeleteAllDataDialogProps>;
+```
+
+```ts
+// apps/web/src/components/settings/PaceEstimatorDialog.tsx · not planned
+export const PaceEstimatorDialog: FC<PaceEstimatorDialogProps>;
+```
+
+```ts
+// apps/web/src/components/settings/ThresholdEditDialog.tsx · not planned
+export const ThresholdEditDialog: FC<ThresholdEditDialogProps>;
+```
+
+```ts
+// apps/web/src/components/settings/ThresholdEditForm.tsx · not planned
+export const ThresholdEditForm: FC<ThresholdEditFormProps>;
+```
+
+```ts
+// apps/web/src/components/studio/DeleteStudioRouteDialog.tsx · not planned
+export const DeleteStudioRouteDialog: FC<DeleteStudioRouteDialogProps>;
+```
+
+```ts
+// apps/web/src/components/studio/StudioRouteFormDialog.tsx · not planned
+export const StudioRouteFormDialog: FC<StudioRouteFormDialogProps>;
 ```
 
 ```ts
@@ -1861,8 +1950,100 @@ export const Studio: FC;
 ```
 
 ```ts
+// apps/web/src/components/studio/markers/StudioMarkerDialog.tsx · not planned
+export const StudioMarkerDialog: FC<StudioMarkerDialogProps>;
+```
+
+```ts
+// apps/web/src/components/studio/markers/StudioRoutesPickPopup.tsx · not planned
+export const StudioRoutesPickPopup: FC<StudioRoutesPickPopupProps>;
+```
+
+```ts
+// apps/web/src/components/trips/DeleteTripDialog.tsx · not planned
+export const DeleteTripDialog: FC<DeleteTripDialogProps>;
+```
+
+```ts
+// apps/web/src/components/trips/ManageTripDialog.tsx · not planned
+export const ManageTripDialog: FC<ManageTripDialogProps>;
+```
+
+```ts
+// apps/web/src/components/trips/TripDetail.tsx · not planned
+export const TripDetail: FC<TripDetailProps>;
+```
+
+```ts
+// apps/web/src/components/trips/TripFormDialog.tsx · not planned
+export const TripFormDialog: FC<TripFormDialogProps>;
+```
+
+```ts
+// apps/web/src/components/trips/TripsTab.tsx · not planned
+export const TripsTab: FC;
+```
+
+```ts
 // apps/web/tests/lib/analysis/movingTime.spec.ts · not planned
 // no exports
+```
+
+```ts
+// apps/web/tests/lib/analysis/segmentMatching.integration.spec.ts · not planned
+// no exports
+```
+
+```ts
+// packages/ui/src/components/pvActionItem/PvActionItemContent.tsx · not planned
+export const PvActionItemContent: FC<PvActionItemContentProps>;
+```
+
+```ts
+// packages/ui/src/components/pvActionItem/PvActionItemList.tsx · not planned
+export const PvActionItemList: FC<PvActionItemListProps>;
+```
+
+```ts
+// packages/ui/src/components/pvActionItem/types.ts · not planned
+export type ActionItemSize = 'md' | 'sm';
+export const LIST_GAP_CLASS_BY_ACTION_ITEM_SIZE: Record<ActionItemSize, string>;
+export const LIST_ROW_SPACING_CLASS_BY_ACTION_ITEM_SIZE: Record<ActionItemSize, string>;
+```
+
+```ts
+// packages/ui/src/components/pvBanner/PvBanner.tsx · not planned
+export const PvBanner: FC<PvBannerProps>;
+```
+
+```ts
+// packages/ui/src/components/pvDialog/PvDialog.tsx · not planned
+export const PvDialog: FC<PvDialogProps>;
+```
+
+```ts
+// packages/ui/src/components/pvDialog/PvDialogBody.tsx · not planned
+export const PvDialogBody: FC<PvDialogBodyProps>;
+```
+
+```ts
+// packages/ui/src/components/pvDialog/PvDialogDescription.tsx · not planned
+export const PvDialogDescription: FC<DialogPrimitive.DialogDescriptionProps & React.RefAttributes<HTMLParagraphElement>>;
+```
+
+```ts
+// packages/ui/src/components/pvDialog/PvDialogFooter.tsx · not planned
+export const PvDialogFooter: FC<PvDialogFooterProps>;
+```
+
+```ts
+// packages/ui/src/components/pvDialog/PvDialogHeader.tsx · not planned
+export const PvDialogHeader: FC<PvDialogHeaderProps>;
+```
+
+```ts
+// packages/ui/src/components/pvResponsivePopover/PvResponsivePopover.tsx · not planned
+export const PvResponsivePopover: FC<PvResponsivePopoverProps>;
 ```
 
 ```ts
@@ -1884,4 +2065,14 @@ export const horizontalScrollFadeEdges: (metrics: HorizontalScrollMetrics) => { 
 ```ts
 // packages/ui/tests/lib/scrollFade.spec.ts · not planned
 // no exports
+```
+
+```ts
+// tools/workbench/site/src/app/AnswerDialog.tsx · not planned
+export const AnswerDialog: FC<AnswerDialogProps>;
+```
+
+```ts
+// tools/workbench/site/src/app/AnswerForm.tsx · not planned
+export const AnswerForm: FC<AnswerFormProps>;
 ```

@@ -3,7 +3,6 @@ import { usePageRouting } from '@/routing/usePageRouting.ts';
 import { useQueryClient } from '@tanstack/react-query';
 import { m } from '@pacevault/i18n/messages.js';
 import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
-import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
 import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
 import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
 import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
@@ -44,53 +43,51 @@ export const DeleteAllDataDialog: FC<DeleteAllDataDialogProps> = (props) => {
   };
 
   return (
-    <PvDialog open={props.open} onOpenChange={handleOpenChange}>
-      <PvDialogContent
-        closeLabel={m.ui_sheet_drag_close()}
-        onEscapeKeyDown={(e) => {
-          if (clearAllData.isPending) e.preventDefault();
-        }}
-        onPointerDownOutside={(e) => {
-          if (clearAllData.isPending) e.preventDefault();
-        }}
-      >
-        <PvDialogHeader title={m.ui_delete_dialog_title()} />
-        <PvDialogBody>
-          <PvDialogDescription>{m.ui_delete_dialog_desc()}</PvDialogDescription>
+    <PvDialog
+      open={props.open}
+      onOpenChange={handleOpenChange}
+      closeLabel={m.ui_sheet_drag_close()}
+      onEscapeKeyDown={(e) => {
+        if (clearAllData.isPending) e.preventDefault();
+      }}
+      onPointerDownOutside={(e) => {
+        if (clearAllData.isPending) e.preventDefault();
+      }}
+    >
+      <PvDialogHeader title={m.ui_delete_dialog_title()} />
+      <PvDialogBody>
+        <PvDialogDescription>{m.ui_delete_dialog_desc()}</PvDialogDescription>
 
-          <div className="mt-4">
-            <PvTypography variant="body1" color="textSecondary">
-              {m.ui_delete_dialog_count({
-                summary:
-                  formatPlural(sessionCount, {
-                    one: () => m.ui_count_sessions_one(),
-                    other: () => m.ui_count_sessions_other({ count: String(sessionCount) }),
-                  }) + (profilePresent ? ` ${m.ui_delete_dialog_and_profile()}` : ''),
-              })}
-            </PvTypography>
-          </div>
-        </PvDialogBody>
+        <PvTypography variant="body1" color="textSecondary">
+          {m.ui_delete_dialog_count({
+            summary:
+              formatPlural(sessionCount, {
+                one: () => m.ui_count_sessions_one(),
+                other: () => m.ui_count_sessions_other({ count: String(sessionCount) }),
+              }) + (profilePresent ? ` ${m.ui_delete_dialog_and_profile()}` : ''),
+          })}
+        </PvTypography>
+      </PvDialogBody>
 
-        <PvDialogFooter>
-          <PvButton
-            type="button"
-            variant="secondary"
-            onClick={() => props.onOpenChange(false)}
-            disabled={clearAllData.isPending}
-          >
-            {m.ui_btn_cancel()}
-          </PvButton>
-          <PvButton
-            type="button"
-            variant="danger"
-            onClick={() => void handleDelete()}
-            loading={clearAllData.isPending}
-            aria-label={m.ui_delete_dialog_confirm()}
-          >
-            {clearAllData.isPending ? m.ui_delete_dialog_deleting() : m.ui_delete_dialog_confirm()}
-          </PvButton>
-        </PvDialogFooter>
-      </PvDialogContent>
+      <PvDialogFooter>
+        <PvButton
+          type="button"
+          variant="secondary"
+          onClick={() => props.onOpenChange(false)}
+          disabled={clearAllData.isPending}
+        >
+          {m.ui_btn_cancel()}
+        </PvButton>
+        <PvButton
+          type="button"
+          variant="danger"
+          onClick={() => void handleDelete()}
+          loading={clearAllData.isPending}
+          aria-label={m.ui_delete_dialog_confirm()}
+        >
+          {clearAllData.isPending ? m.ui_delete_dialog_deleting() : m.ui_delete_dialog_confirm()}
+        </PvButton>
+      </PvDialogFooter>
     </PvDialog>
   );
 };

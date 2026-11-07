@@ -9,7 +9,19 @@ export interface PathWaypoint {
   northMeters: number;
 }
 
+export interface PathJitter {
+  meters: number;
+  seed?: number;
+}
+
+export interface RecordGap {
+  fromSec: number;
+  toSec: number;
+}
+
 const LAP_DURATION_SEC = 300;
+const UINT32_RANGE = 2 ** 32;
+const MULBERRY32_INCREMENT = 0x6d2b79f5;
 const GPS_SERIES_START_LATITUDE_DEGREES = 48.137;
 const GPS_SERIES_START_LONGITUDE_DEGREES = 11.575;
 const GPS_SERIES_BASE_HR_BPM = 145;
@@ -366,6 +378,61 @@ const pathRecord = ({
   return record;
 };
 
+// Mulberry32: a deterministic PRNG, so a jittered track is the same in every run.
+const seededRandom = (seed: number): (() => number) => {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + MULBERRY32_INCREMENT) >>> 0;
+    let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
+    mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / UINT32_RANGE;
+  };
+};
+
+const legDirection = ({
+  waypoints,
+  legIndex,
+}: {
+  waypoints: PathWaypoint[];
+  legIndex: number;
+}): PathWaypoint => {
+  const from = waypoints[legIndex];
+  const to = waypoints[legIndex + 1];
+  if (from === undefined || to === undefined) return { eastMeters: 0, northMeters: 0 };
+  const eastMeters = to.eastMeters - from.eastMeters;
+  const northMeters = to.northMeters - from.northMeters;
+  const lengthMeters = Math.max(Math.hypot(eastMeters, northMeters), Number.EPSILON);
+  return { eastMeters: eastMeters / lengthMeters, northMeters: northMeters / lengthMeters };
+};
+
+// A positive offset lies to the right of the direction of travel.
+const displacedPosition = ({
+  located,
+  waypoints,
+  lateralOffsetMeters,
+  jitterMeters,
+  nextRandom,
+}: {
+  located: { position: PathWaypoint; legIndex: number };
+  waypoints: PathWaypoint[];
+  lateralOffsetMeters: number;
+  jitterMeters: number;
+  nextRandom: () => number;
+}): PathWaypoint => {
+  const direction = legDirection({ waypoints, legIndex: located.legIndex });
+  const jitterEastMeters = (nextRandom() * 2 - 1) * jitterMeters;
+  const jitterNorthMeters = (nextRandom() * 2 - 1) * jitterMeters;
+  return {
+    eastMeters:
+      located.position.eastMeters + direction.northMeters * lateralOffsetMeters + jitterEastMeters,
+    northMeters:
+      located.position.northMeters - direction.eastMeters * lateralOffsetMeters + jitterNorthMeters,
+  };
+};
+
+const insideGap = ({ timestamp, gaps }: { timestamp: number; gaps: RecordGap[] }): boolean =>
+  gaps.some((gap) => timestamp >= gap.fromSec && timestamp < gap.toSec);
+
 export const cyclingRecordSeries = ({
   count,
   basePowerWatts = 200,
@@ -509,22 +576,41 @@ export const gpsPathRecordSeries = ({
   legSpeedsMetersPerSec = [],
   reverse = false,
   gradeRatio = 0,
+  recordIntervalSec = 1,
+  lateralOffsetMeters = 0,
+  jitter,
+  gaps = [],
 }: {
   path: PathWaypoint[];
   speedMetersPerSec: number;
   legSpeedsMetersPerSec?: number[];
   reverse?: boolean;
   gradeRatio?: number | null;
+  recordIntervalSec?: number;
+  lateralOffsetMeters?: number;
+  jitter?: PathJitter;
+  gaps?: RecordGap[];
 }): SessionRecord[] => {
   let waypoints = path;
   if (reverse) waypoints = [...path].reverse();
   const totalMeters = pathLengthMeters(waypoints);
+  const nextRandom = seededRandom(jitter?.seed ?? 1);
   const records: SessionRecord[] = [];
   let distanceMeters = 0;
-  for (let timestamp = 0; distanceMeters <= totalMeters; timestamp++) {
+  for (let timestamp = 0; distanceMeters <= totalMeters; timestamp += recordIntervalSec) {
     const located = pathPosition({ waypoints, distanceMeters });
-    records.push(pathRecord({ position: located.position, timestamp, distanceMeters, gradeRatio }));
-    distanceMeters += legSpeedsMetersPerSec[located.legIndex] ?? speedMetersPerSec;
+    const position = displacedPosition({
+      located,
+      waypoints,
+      lateralOffsetMeters,
+      jitterMeters: jitter?.meters ?? 0,
+      nextRandom,
+    });
+    if (!insideGap({ timestamp, gaps })) {
+      records.push(pathRecord({ position, timestamp, distanceMeters, gradeRatio }));
+    }
+    distanceMeters +=
+      (legSpeedsMetersPerSec[located.legIndex] ?? speedMetersPerSec) * recordIntervalSec;
   }
   return records;
 };

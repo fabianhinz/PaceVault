@@ -85,9 +85,8 @@ test.describe('Segments', () => {
     await page.goto(sessionUrl);
     await zoomHeartRateChart(page);
     await page.getByRole('button', { name: 'Save as segment' }).click();
-    await expect(
-      page.getByText(`A segment with nearly the same start and end exists: ${name}`),
-    ).toBeVisible();
+    await expect(page.getByText('A similar segment already exists')).toBeVisible();
+    await expect(page.getByTestId('similar-segment')).toContainText(name);
     await page.getByRole('button', { name: 'Cancel' }).click();
 
     await openSegmentsTab(page);
@@ -98,14 +97,60 @@ test.describe('Segments', () => {
     await page.goto(sessionUrl);
     await page.getByRole('button', { name: 'Session actions' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await expect(
-      page.getByText(`This also removes 1 segment created from it: "${name}"`),
-    ).toBeVisible();
+    const deleteDialog = page.getByRole('dialog', { name: 'Delete Session' });
+    await expect(deleteDialog.getByText('Also removes 1 segment')).toBeVisible();
+    await expect(deleteDialog.getByText(name, { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
     await page.waitForURL('/sessions');
 
     await openSegmentsTab(page);
     await expect(page.getByText('No segments yet')).toBeVisible({ timeout: MATCHING_TIMEOUT_MS });
+  });
+
+  test('deleting a session that rode a segment, not its source, leaves the segment with one pass less', async ({
+    page,
+  }) => {
+    test.setTimeout(240_000);
+    await openRunningSession(page);
+    const sourcePath = new URL(page.url()).pathname;
+
+    await zoomHeartRateChart(page);
+    await page.getByRole('button', { name: 'Save as segment' }).click();
+    const name = await page.getByRole('textbox', { name: 'Name' }).inputValue();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page).toHaveURL(/\/segments\//);
+    const segmentUrl = page.url();
+    const header = page.getByTestId('segment-header');
+    const tiles = page
+      .getByRole('group', { name: 'Passes' })
+      .getByRole('button', { name: /pass on/i });
+    await expect(header).toContainText(/\d+ passes/, { timeout: MATCHING_TIMEOUT_MS });
+    const passCount = Number(/(\d+) passes/.exec((await header.textContent()) ?? '')?.[1]);
+    await expect(tiles).toHaveCount(passCount);
+
+    for (let i = 0; i < passCount; i++) {
+      await page.goto(segmentUrl);
+      await tiles.nth(i).click();
+      await page.getByTestId('selected-pass-item').getByRole('button').click();
+      await page.waitForURL(/\/sessions\//);
+      if (new URL(page.url()).pathname !== sourcePath) break;
+    }
+    expect(new URL(page.url()).pathname).not.toBe(sourcePath);
+
+    await page.getByRole('button', { name: 'Session actions' }).click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await expect(page.getByText(/Also removes/)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.waitForURL('/sessions');
+
+    await openSegmentsTab(page);
+    await page.getByTestId('segment-item').filter({ hasText: name }).click();
+    await expect(page).toHaveURL(segmentUrl);
+    const remaining = passCount - 1;
+    await expect(header).toContainText(new RegExp(`\\b${remaining} pass`), {
+      timeout: MATCHING_TIMEOUT_MS,
+    });
+    await expect(tiles).toHaveCount(remaining);
   });
 
   test('a whole session becomes a reference segment, renamed and deleted', async ({ page }) => {

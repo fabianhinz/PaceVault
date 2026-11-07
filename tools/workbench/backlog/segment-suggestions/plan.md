@@ -11,9 +11,11 @@ next: 'Parked until session-segments is accepted; then owner reviews the first w
 
 ## Idea
 
-With user-created segments (session-segments Q95) every segment is made by hand, which gets repetitive. Suggest stretches the user rides often (e.g. from the overlap detection researched in `session-segments/research/` and its `detect-bench`) so they can be saved as segments in one step. Spun off from `session-segments`.
+With user-created segments (session-segments Q95) every segment is made by hand, which gets repetitive. Suggest stretches the user rides often (e.g. from the overlap detection researched in `research/overlap-detection.md` and its `research/detect-bench/`, moved here from `session-segments`) so they can be saved as segments in one step. Spun off from `session-segments`.
 
 Entry point: a primary action button under the Segments tab's empty-state card (`apps/web/src/components/segments/SegmentsEmpty.tsx:7-17`), like "Create tour" under the Tours card (`apps/web/src/components/trips/TripsTab.tsx:22-35`). Owner: "the primary action button i want for the \"segment suggestions\" item in the workbench"
+
+Carried over from `session-segments` R50: measure segment matching on real data (first save, Segments tab after an import, desktop and phone; cold run with `localStorage.setItem('pv:debug:segments','cold')`, warm with `'log'`, read `copy(pvDebug.segmentMetrics())`; method in `research/matching-metrics.md` §4) and decide whether the debug surface (`window.pvSegmentMetrics`, the console log, `pv:debug:segments`) stays. Owner: "lets revisit this once we tackle the segment suggestion item"
 
 Research: `research/suggestions.md`. First wireframes: `mockup/index.html` (variants A review dialog, B map review, C one by one, D inline in tab; extra E: detection in the background).
 

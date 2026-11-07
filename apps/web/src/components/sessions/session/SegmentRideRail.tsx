@@ -1,6 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
 import { cn } from '@pacevault/ui/lib/cn.ts';
+import { PvActionItemList } from '@pacevault/ui/components/pvActionItem/PvActionItemList.tsx';
 
 type RailEdge = 'start' | 'end';
 
@@ -33,7 +34,9 @@ export const SegmentRideRail: FC<SegmentRideRailProps> = (props) => (
       <span className="flex w-3 shrink-0 justify-center">
         <span aria-hidden className="w-0.5 bg-white/10" />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1 py-2">{props.children}</div>
+      <PvActionItemList size="sm" className="min-w-0 flex-1 py-2">
+        {props.children}
+      </PvActionItemList>
     </div>
     {endpoint({ edge: 'end', label: props.endLabel })}
   </div>

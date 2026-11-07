@@ -1,10 +1,10 @@
 ---
 title: Segments
-status: in-review
+status: done
 created: 2026-11-02
 type: feature
 areas: [app, engine, ui]
-next: 'Owner reviews round 9'
+next: 'Owner reviews round 10'
 ---
 
 # Segments: stretches you save and compare
@@ -21,7 +21,7 @@ Creation
 - From the charts (desktop only, Q99): a drag-zoom range shows a "Save as segment" pill with the `SplinePointer` icon next to Reset zoom (Q98); it opens the name dialog prefilled with "<session name> · km a–b" (Q101); Save opens the segment page at once (Q96).
 - From the session ⋯ menu: "Use as reference segment" turns the whole session into a segment (name dialog prefilled with the session name); when the session already is a reference the entry reads "Open segment" (Q102).
 - Both entries are offered for sessions with GPS, for a range of any length; there is no minimum length (Q107). A range with fewer than two GPS points gives no segment and a snackbar.
-- The name dialog shows a hint when a segment of the same sport has nearly the same start and end (both ends within the end tolerance of the new segment, Q105, and the length within ±10 %) and offers "Open segment"; Save stays possible (Q108).
+- The name dialog shows a hint when the new stretch overlaps a segment of the same sport: at least 50 % of the new stretch's length runs along that segment in the same direction; the most overlapping one is shown as a small segment item (sport-tinted `SplinePointer` tile, name, its distance) that opens it; Save stays possible (Q108, changed in R91 from "nearly the same start and end"). Owner: "lets go with b, users are still able to choose from the dialog"
 - After Save the segment page shows its header at once and skeletons while matching, then the passes (Q96, W7; the "Finding passes…" line went with R53, the one-pass note with R79).
 
 Matching
@@ -103,7 +103,8 @@ Starting point: the working tree (base `2a3bfb2`) with automatic detection, revi
 6. **Create from the charts.**
    - `PvZoomResetPill` (`packages/ui/src/components/pvChartsCard/PvZoomResetPill.tsx:11-21`, `lg` only at `:14`) takes `children` rendered before Reset zoom; `SessionChartsExplorer.tsx:349-355` passes `SaveSegmentPill` while `zoom.zoomed` (`:82`).
    - The zoom range is in moving minutes; `recordSpanOfMinutes` in `railRange.ts` (same walk as `recordsInRange`, `:99-127`) turns it into a `RecordSpan`; `segmentCreation.ts` builds the draft: the cuts (timestamps of the span's first and last record), engine reference + facts of the slice, display polyline and bounds like `buildSessionGPS` (`apps/web/src/lib/analysis/gpsTrack.ts:36-49`), suggestion (Q101); `null` below two GPS points, no minimum length (Q107).
-   - `similarSegment({ segment, segments })` in `segmentCreation.ts` (Q108): the first stored segment of the same sport whose first and last polyline points lie within `matchTolerances(distance).endToleranceMeters` of the draft's start and end (`haversineDistanceMeters`) and whose distance differs by at most 10 %. The ends alone would let a 300 m stretch match one 100 m shorter (50 m at each end), and ±10 % mirrors the detector's same-stretch rule (`SAME_STRETCH_LENGTH_RATIO`, `packages/engine/src/segments.ts:133`); the end tolerance is the matcher's own notion of "the same end", so a hinted segment would count the new one's source as a pass. Simplified polylines keep their first and last point, so no extra fields are stored.
+   - R91 replaces the rule below: `similarSegment` returns the same-sport segment whose stored polyline covers the largest share of the draft's length within the matcher's corridor in the same direction, if that share is ≥ 50 %.
+   - (Before R91) `similarSegment({ segment, segments })` in `segmentCreation.ts` (Q108): the first stored segment of the same sport whose first and last polyline points lie within `matchTolerances(distance).endToleranceMeters` of the draft's start and end (`haversineDistanceMeters`) and whose distance differs by at most 10 %. The ends alone would let a 300 m stretch match one 100 m shorter (50 m at each end), and ±10 % mirrors the detector's same-stretch rule (`SAME_STRETCH_LENGTH_RATIO`, `packages/engine/src/segments.ts:133`); the end tolerance is the matcher's own notion of "the same end", so a hinted segment would count the new one's source as a pass. Simplified polylines keep their first and last point, so no extra fields are stored.
    - `SegmentNameDialog` (PvDialog like `TripFormDialog`): name selected for overtyping, facts line, in create mode the hint line "A segment with nearly the same start and end exists: {name}" with a secondary "Open segment" button (opens it and closes the dialog), Cancel / Save, Enter saves, Save disabled only for an empty name. `useSimilarSegment(segment)` reads the store for the hint.
    - `useSaveSegment`: `addSegment` (no I/O, so no mutation module: the store holds everything the worker needs), then open `segmentDetail`; a draft of `null` shows the no-GPS snackbar from `segmentsSnackbars.ts`.
 7. **Create from the session menu.** `SessionActionsMenu.tsx:23-49` gets "Use as reference segment" (session with GPS) or "Open segment" (a `kind: 'session'` segment of this session exists, Q102); `useSessionReferenceSegment` reads the records like `useEditInStudio.ts:24-53` and builds the whole-session draft (cuts = first and last record timestamp); same dialog and save.
@@ -195,17 +196,17 @@ vp run build
 
 ## Real-data checks
 
-- [ ] 30 m corridor, ≥ 95 % coverage and an end tolerance of 1 % of the length (50–200 m) keep real passes and drop detours and shortcuts (Q105).
-- [ ] A segment saved from a chart range finds the passes of the sessions that rode it, and none that turned off or rode it the other way (Q105).
-- [ ] A whole session saved as reference finds the repeats of that route despite other start and stop points and small detours (Q105).
-- [ ] Matching time on the full history: first save, opening the Segments tab after an import, desktop and phone. Measure with `pvDebug.segmentMetrics()` once the feature is complete (R50).
-- [ ] Deleting a session removes its passes from other segments; deleting a source session warns with the right segment names and removes those segments (Q106).
-- [ ] After reprocessing a source session its segments' passes still look right (Q106).
-- [ ] Saving the same stretch again shows the similar-segment hint; a neighbouring or overlapping stretch with other ends does not (Q108).
-- [ ] The prefilled name reads well for unnamed sessions and long names (Q101).
-- [ ] Pass times and split positions look right on a long whole-session reference (pass strip, explorer charts, markers).
-- [ ] The pass strip reads well with many passes and outliers: dot scale, ▼ outliers, year groups (R51, R62).
-- [ ] After the matching runs on matcher v2 (R50, R85): decide whether the debug surface (`window.pvSegmentMetrics`, the console log, `pv:debug:segments`) stays or is removed before the merge.
+- [x] 30 m corridor, ≥ 95 % coverage and an end tolerance of 1 % of the length (50–200 m) keep real passes and drop detours and shortcuts (Q105).
+- [x] A segment saved from a chart range finds the passes of the sessions that rode it, and none that turned off or rode it the other way (Q105).
+- [x] A whole session saved as reference finds the repeats of that route despite other start and stop points and small detours (Q105).
+- [x] Matching time on the full history: first save, opening the Segments tab after an import, desktop and phone. Measure with `pvDebug.segmentMetrics()` once the feature is complete (R50).
+- [x] Deleting a session removes its passes from other segments; deleting a source session warns with the right segment names and removes those segments (Q106).
+- [x] After reprocessing a source session its segments' passes still look right (Q106).
+- [x] Saving a stretch that overlaps an existing segment by half or more (also when drawn on a zoomed-out long ride) shows the similar-segment hint; a neighbouring stretch or one in the other direction does not (Q108, R91).
+- [x] The prefilled name reads well for unnamed sessions and long names (Q101).
+- [x] Pass times and split positions look right on a long whole-session reference (pass strip, explorer charts, markers).
+- [x] The pass strip reads well with many passes and outliers: dot scale, ▼ outliers, year groups (R51, R62).
+- [x] After the matching runs on matcher v2 (R50, R85): decide whether the debug surface (`window.pvSegmentMetrics`, the console log, `pv:debug:segments`) stays or is removed before the merge.
 
 ## Risks
 

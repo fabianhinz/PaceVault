@@ -2,7 +2,6 @@ import { useState, type FC } from 'react';
 import { m } from '@pacevault/i18n/messages.js';
 import type { ThresholdKey } from '@/types.ts';
 import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
-import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
 import type { ThresholdsForm } from './hooks/types.ts';
 import { ThresholdEditForm } from './ThresholdEditForm.tsx';
 
@@ -23,27 +22,24 @@ export const ThresholdEditDialog: FC<ThresholdEditDialogProps> = (props) => {
       onOpenChange={(open) => {
         if (!open) props.onClose();
       }}
+      closeLabel={m.ui_sheet_drag_close()}
+      aria-describedby={undefined}
+      onOpenAutoFocus={(event) => {
+        event.preventDefault();
+        if (event.target instanceof HTMLElement) {
+          event.target.querySelector<HTMLInputElement>('[data-threshold-input]')?.focus();
+        }
+      }}
     >
-      <PvDialogContent
-        closeLabel={m.ui_sheet_drag_close()}
-        aria-describedby={undefined}
-        onOpenAutoFocus={(event) => {
-          event.preventDefault();
-          if (event.target instanceof HTMLElement) {
-            event.target.querySelector<HTMLInputElement>('[data-threshold-input]')?.focus();
-          }
-        }}
-      >
-        {shown !== null && (
-          <ThresholdEditForm
-            key={shown}
-            field={shown}
-            thresholds={props.thresholds}
-            onConfirm={props.onConfirm}
-            onClose={props.onClose}
-          />
-        )}
-      </PvDialogContent>
+      {shown !== null && (
+        <ThresholdEditForm
+          key={shown}
+          field={shown}
+          thresholds={props.thresholds}
+          onConfirm={props.onConfirm}
+          onClose={props.onClose}
+        />
+      )}
     </PvDialog>
   );
 };

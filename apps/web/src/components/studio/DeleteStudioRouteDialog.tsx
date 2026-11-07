@@ -4,7 +4,6 @@ import { useStudioStore } from '@/store/studio.ts';
 import { useDeleteStudioRouteMutation } from '@/mutations/studio/useDeleteStudioRouteMutation.ts';
 import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
-import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
 import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
 import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
 import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
@@ -29,23 +28,25 @@ export const DeleteStudioRouteDialog: FC<DeleteStudioRouteDialogProps> = (props)
   };
 
   return (
-    <PvDialog open={props.open} onOpenChange={() => props.onOpenChange(false)}>
-      <PvDialogContent closeLabel={m.ui_sheet_drag_close()}>
-        <PvDialogHeader title={m.ui_studio_delete_title()} />
-        <PvDialogBody>
-          <PvDialogDescription>
-            {m.ui_studio_delete_desc({ name: props.routeName })}
-          </PvDialogDescription>
-        </PvDialogBody>
-        <PvDialogFooter>
-          <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>
-            {m.ui_btn_cancel()}
-          </PvButton>
-          <PvButton variant="danger" onClick={() => void handleDelete()}>
-            {m.ui_btn_delete()}
-          </PvButton>
-        </PvDialogFooter>
-      </PvDialogContent>
+    <PvDialog
+      open={props.open}
+      onOpenChange={() => props.onOpenChange(false)}
+      closeLabel={m.ui_sheet_drag_close()}
+    >
+      <PvDialogHeader title={m.ui_studio_delete_title()} />
+      <PvDialogBody>
+        <PvDialogDescription>
+          {m.ui_studio_delete_desc({ name: props.routeName })}
+        </PvDialogDescription>
+      </PvDialogBody>
+      <PvDialogFooter>
+        <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>
+          {m.ui_btn_cancel()}
+        </PvButton>
+        <PvButton variant="danger" onClick={() => void handleDelete()}>
+          {m.ui_btn_delete()}
+        </PvButton>
+      </PvDialogFooter>
     </PvDialog>
   );
 };

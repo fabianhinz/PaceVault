@@ -1,8 +1,7 @@
 import type { FC } from 'react';
 import { PvDialogDescription } from '@pacevault/ui/components/pvDialog/PvDialogDescription.tsx';
-import { PvDialogTitle } from '@pacevault/ui/components/pvDialog/PvDialogTitle.tsx';
 import { PvTypography } from '@pacevault/ui/components/pvTypography/PvTypography.tsx';
-import type { OnboardingShell } from '@/components/onboarding/types.ts';
+import { ONBOARDING_HEADING_ID, type OnboardingShell } from '@/components/onboarding/types.ts';
 
 interface OnboardingHeadingProps {
   shell: OnboardingShell;
@@ -14,7 +13,9 @@ export const OnboardingHeading: FC<OnboardingHeadingProps> = (props) => {
   if (props.shell === 'dialog') {
     return (
       <div className="flex flex-col gap-2">
-        <PvDialogTitle className="text-2xl font-bold">{props.title}</PvDialogTitle>
+        <PvTypography variant="h1" as="h2" id={ONBOARDING_HEADING_ID}>
+          {props.title}
+        </PvTypography>
         <PvDialogDescription className="text-text-secondary">{props.subtitle}</PvDialogDescription>
       </div>
     );
