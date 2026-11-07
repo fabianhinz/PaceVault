@@ -6,7 +6,7 @@ import { TERRAIN_HILLSHADE_PAINT, terrainDemSource } from '@/components/mapBackg
 const TERRAIN_SOURCE_ID = 'terrain-dem';
 const HILLSHADE_SOURCE_ID = 'terrain-hillshade-dem';
 const HILLSHADE_LAYER_ID = 'terrain-hillshade';
-const TERRAIN_EXAGGERATION = 3;
+const TERRAIN_EXAGGERATION = 1.5;
 const ROAD_SOURCE_LAYER = 'transportation';
 
 const firstRoadLayerId = (map: MapLibreMap): string | undefined =>
