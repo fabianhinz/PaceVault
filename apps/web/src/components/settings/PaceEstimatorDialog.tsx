@@ -4,7 +4,6 @@ import type { RaceDistance } from '@pacevault/engine/types.ts';
 import { METERS_BY_RACE_DISTANCE, thresholdPaceFromRace } from '@pacevault/engine/vdot.ts';
 import { DISTANCE_OPTIONS, isLongFormat, parseRaceTime } from '@/components/labs/raceTime.ts';
 import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
-import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
 import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
 import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
 import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
@@ -59,54 +58,56 @@ export const PaceEstimatorDialog: FC<PaceEstimatorDialogProps> = (props) => {
   };
 
   return (
-    <PvDialog open={props.open} onOpenChange={handleOpenChange}>
-      <PvDialogContent closeLabel={m.ui_sheet_drag_close()}>
-        <PvDialogHeader title={m.ui_pace_est_title()} />
-        <PvDialogBody>
-          <PvDialogDescription>{m.ui_pace_est_desc()}</PvDialogDescription>
+    <PvDialog
+      open={props.open}
+      onOpenChange={handleOpenChange}
+      closeLabel={m.ui_sheet_drag_close()}
+    >
+      <PvDialogHeader title={m.ui_pace_est_title()} />
+      <PvDialogBody>
+        <PvDialogDescription>{m.ui_pace_est_desc()}</PvDialogDescription>
 
-          <div className="mt-4 flex flex-col gap-3">
-            <div>
-              <PvLabel>{m.ui_pace_est_distance()}</PvLabel>
-              <PvSelect value={distance} onValueChange={handleDistanceChange}>
-                <PvSelectTrigger>
-                  <PvSelectValue />
-                </PvSelectTrigger>
-                <PvSelectContent>
-                  {DISTANCE_OPTIONS.map((opt) => (
-                    <PvSelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </PvSelectItem>
-                  ))}
-                </PvSelectContent>
-              </PvSelect>
-            </div>
-
-            <div>
-              <PvLabel>
-                {m.ui_pace_est_race_time({
-                  format: isLongFormat(distance) ? 'h:mm:ss' : 'mm:ss',
-                })}
-              </PvLabel>
-              <PvInput
-                type="text"
-                placeholder={isLongFormat(distance) ? '1:45:00' : '20:00'}
-                value={timeInput}
-                onChange={(e) => setTimeInput(e.target.value)}
-              />
-            </div>
+        <div className="flex flex-col gap-3">
+          <div>
+            <PvLabel>{m.ui_pace_est_distance()}</PvLabel>
+            <PvSelect value={distance} onValueChange={handleDistanceChange}>
+              <PvSelectTrigger>
+                <PvSelectValue />
+              </PvSelectTrigger>
+              <PvSelectContent>
+                {DISTANCE_OPTIONS.map((opt) => (
+                  <PvSelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </PvSelectItem>
+                ))}
+              </PvSelectContent>
+            </PvSelect>
           </div>
-        </PvDialogBody>
 
-        <PvDialogFooter>
-          <PvButton variant="secondary" onClick={() => handleOpenChange(false)}>
-            {m.ui_btn_cancel()}
-          </PvButton>
-          <PvButton disabled={estimatedPace === undefined} onClick={handleSave}>
-            {m.ui_btn_save()}
-          </PvButton>
-        </PvDialogFooter>
-      </PvDialogContent>
+          <div>
+            <PvLabel>
+              {m.ui_pace_est_race_time({
+                format: isLongFormat(distance) ? 'h:mm:ss' : 'mm:ss',
+              })}
+            </PvLabel>
+            <PvInput
+              type="text"
+              placeholder={isLongFormat(distance) ? '1:45:00' : '20:00'}
+              value={timeInput}
+              onChange={(e) => setTimeInput(e.target.value)}
+            />
+          </div>
+        </div>
+      </PvDialogBody>
+
+      <PvDialogFooter>
+        <PvButton variant="secondary" onClick={() => handleOpenChange(false)}>
+          {m.ui_btn_cancel()}
+        </PvButton>
+        <PvButton disabled={estimatedPace === undefined} onClick={handleSave}>
+          {m.ui_btn_save()}
+        </PvButton>
+      </PvDialogFooter>
     </PvDialog>
   );
 };

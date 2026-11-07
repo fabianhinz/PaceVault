@@ -1,7 +1,6 @@
 import type { FC } from 'react';
 import { useOnboardingStore } from '@/store/onboarding.ts';
 import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
-import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
 import { OnboardingIntro } from '@/components/onboarding/OnboardingIntro.tsx';
 import { OnboardingIntroActions } from '@/components/onboarding/OnboardingIntroActions.tsx';
 import { OnboardingStep } from '@/components/onboarding/OnboardingStep.tsx';
@@ -17,9 +16,9 @@ export const DesktopOnboarding: FC<ShellProps> = (props) => {
         className="fixed top-1/2 left-6 z-10 w-440px -translate-y-1/2 p-6"
       >
         <OnboardingIntro shell="card" />
-        <PvDialogFooter>
+        <div className="mt-4 flex justify-end gap-2">
           <OnboardingIntroActions onDemo={props.onDemo} />
-        </PvDialogFooter>
+        </div>
       </PvCard>
     );
   }

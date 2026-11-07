@@ -3,9 +3,12 @@ import type { Layer, LayersList } from '@deck.gl/core';
 import { PathLayer } from '@deck.gl/layers';
 import type { LapSpan } from '@/lib/analysis/laps.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
+import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { sceneHoveredSpan } from '@/components/mapBackground/mapScene.ts';
 import { lapSubPath } from '@/components/mapBackground/lapPath.ts';
 import type { DetailPath } from '@/components/mapBackground/zoneColoredPath.ts';
 import { LAP_CASING_SCALE, trackModifiers } from '@/components/mapBackground/trackColors.ts';
+import { useMapScene } from './useMapScene.ts';
 
 const LAP_CASING_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 const LAP_HOVER_COLOR: [number, number, number, number] = [255, 255, 255, 255];
@@ -55,10 +58,17 @@ export const useLapLayers = ({
   if (previewLapIndex === selectedLapIndex) {
     previewLapIndex = null;
   }
-  const hoveredLapPath = useMemo(
-    () => lapPathFor({ detailPath, spans: lapSpans, lapIndex: previewLapIndex }),
-    [previewLapIndex, detailPath, lapSpans],
-  );
+  const sceneKey = useMapScene().key;
+  const hoveredSegmentSpan = useMapFocusStore((s) => {
+    if (terrain) return null;
+    return sceneHoveredSpan({ hover: s.mapHover, sceneKey });
+  });
+  const hoveredLapPath = useMemo(() => {
+    if (hoveredSegmentSpan !== null && detailPath) {
+      return lapSubPath({ detail: detailPath, span: hoveredSegmentSpan });
+    }
+    return lapPathFor({ detailPath, spans: lapSpans, lapIndex: previewLapIndex });
+  }, [hoveredSegmentSpan, previewLapIndex, detailPath, lapSpans]);
 
   const lapHoverLayer = useMemo(() => {
     if (!detailPath) return null;

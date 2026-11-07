@@ -14,4 +14,5 @@ export interface StatRailRow {
 export interface StatRailNote {
   text: string;
   color: string;
+  icon?: ReactNode;
 }

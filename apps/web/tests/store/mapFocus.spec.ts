@@ -1,42 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vite-plus/test';
 import { INITIAL_MAP_FOCUS_STORE_STATE, useMapFocusStore } from '@/store/mapFocus.ts';
-import { INITIAL_MAP_CONTROLS_STORE_STATE, useMapControlsStore } from '@/store/mapControls.ts';
-import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 
 describe('useMapFocusStore', () => {
   beforeEach(() => {
     useMapFocusStore.setState(INITIAL_MAP_FOCUS_STORE_STATE);
-    useMapControlsStore.setState(INITIAL_MAP_CONTROLS_STORE_STATE);
-  });
-
-  it('defaults openedSessionId to null', () => {
-    expect(useMapFocusStore.getState().openedSessionId).toBeNull();
-  });
-
-  it('setOpenedSession sets the id', () => {
-    useMapFocusStore.getState().setOpenedSession('abc-123');
-    expect(useMapFocusStore.getState().openedSessionId).toBe('abc-123');
-  });
-
-  it('setOpenedSession(null) clears the id', () => {
-    useMapFocusStore.getState().setOpenedSession('abc-123');
-    useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapFocusStore.getState().openedSessionId).toBeNull();
-  });
-
-  it('defaults hoveredSessionId to null', () => {
-    expect(useMapFocusStore.getState().hoveredSessionId).toBeNull();
-  });
-
-  it('setHoveredSession sets the id', () => {
-    useMapFocusStore.getState().setHoveredSession('xyz-456');
-    expect(useMapFocusStore.getState().hoveredSessionId).toBe('xyz-456');
-  });
-
-  it('setHoveredSession(null) clears the id', () => {
-    useMapFocusStore.getState().setHoveredSession('xyz-456');
-    useMapFocusStore.getState().setHoveredSession(null);
-    expect(useMapFocusStore.getState().hoveredSessionId).toBeNull();
   });
 
   it('defaults pickCircle to null', () => {
@@ -54,38 +21,15 @@ describe('useMapFocusStore', () => {
     expect(useMapFocusStore.getState().pickCircle).toBeNull();
   });
 
-  it('setOpenedSession(null) resets trackColorMode to sport', () => {
-    useMapFocusStore.getState().setOpenedSession('abc-123');
-    useMapControlsStore.getState().setTrackColorMode('wind');
-    useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapControlsStore.getState().trackColorMode).toBe('sport');
-  });
+  it('clearMapHover clears only the hover of the same target', () => {
+    const hover = { target: { kind: 'segment' as const, id: 'b' }, sceneKey: 'segmentTab /' };
+    useMapFocusStore.getState().setMapHover(hover);
 
-  it('opening another session keeps color by and laps preferences but clears the lap selection', () => {
-    useMapFocusStore.getState().setOpenedSession('first');
-    useMapPreferencesStore.getState().setSessionColorMode({ sport: 'running', mode: 'hr' });
-    useMapPreferencesStore.getState().setSessionSplitDistance({ sport: 'running', metres: 2500 });
-    useMapControlsStore.getState().selectLap(3);
-    useMapFocusStore.getState().setOpenedSession('first');
-    expect(useMapControlsStore.getState().selectedLapIndex).toBe(3);
-    useMapFocusStore.getState().setOpenedSession('second');
-    expect(useMapControlsStore.getState().selectedLapIndex).toBeNull();
-    useMapFocusStore.getState().setOpenedSession(null);
-    expect(useMapPreferencesStore.getState().bySport.running).toEqual({
-      colorMode: 'hr',
-      lapSource: 'splits',
-      splitDistance: 2500,
-    });
-  });
+    useMapFocusStore.getState().clearMapHover({ kind: 'segment', id: 'a' });
+    useMapFocusStore.getState().clearMapHover({ kind: 'session', id: 'b' });
+    expect(useMapFocusStore.getState().mapHover).toEqual(hover);
 
-  it('defaults hoveredStudioRouteId to null', () => {
-    expect(useMapFocusStore.getState().hoveredStudioRouteId).toBeNull();
-  });
-
-  it('setHoveredStudioRoute sets the id and null clears it', () => {
-    useMapFocusStore.getState().setHoveredStudioRoute('r1');
-    expect(useMapFocusStore.getState().hoveredStudioRouteId).toBe('r1');
-    useMapFocusStore.getState().setHoveredStudioRoute(null);
-    expect(useMapFocusStore.getState().hoveredStudioRouteId).toBeNull();
+    useMapFocusStore.getState().clearMapHover({ kind: 'segment', id: 'b' });
+    expect(useMapFocusStore.getState().mapHover).toBeNull();
   });
 });

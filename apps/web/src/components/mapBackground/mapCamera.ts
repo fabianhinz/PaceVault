@@ -3,6 +3,7 @@ import type { MapView } from '@/store/mapControls.ts';
 export type MapCameraTarget =
   | { kind: 'overview' }
   | { kind: 'session'; sessionId: string; lapIndex: number | null; view: MapView }
+  | { kind: 'segment'; segmentId: string }
   | { kind: 'trip'; tripKey: string }
   | { kind: 'studioTab' }
   | { kind: 'studioRoute'; routeId: string };
@@ -15,6 +16,7 @@ export type MapCameraFit =
   | 'tilt'
   | 'flatten'
   | 'trip'
+  | 'segment'
   | 'studio';
 
 const SESSION_ZOOM_OUT_LEVELS = 2;
@@ -55,6 +57,7 @@ const isSameSubject = (a: MapCameraTarget | null, b: MapCameraTarget): boolean =
   if (a === null) return false;
   if (a.kind === 'session' && b.kind === 'session') return a.sessionId === b.sessionId;
   if (a.kind === 'trip' && b.kind === 'trip') return a.tripKey === b.tripKey;
+  if (a.kind === 'segment' && b.kind === 'segment') return a.segmentId === b.segmentId;
   if (a.kind === 'studioRoute' && b.kind === 'studioRoute') return a.routeId === b.routeId;
   return a.kind === b.kind;
 };
@@ -85,6 +88,8 @@ const arrivalFit = ({
       return 'session';
     case 'trip':
       return 'trip';
+    case 'segment':
+      return 'segment';
     case 'studioRoute':
       return studioFit(obs);
     case 'studioTab':

@@ -15,6 +15,21 @@ export const trackModifiers = {
   alpha: { default: 80, highlighted: 255 },
 };
 
+export const HOVER_MARKER_RADIUS_PX = 12;
+export const HOVER_MARKER_RING_WIDTH_PX = 4;
+export const HOVER_MARKER_RING_COLOR: [number, number, number, number] = [
+  0,
+  0,
+  0,
+  trackModifiers.alpha.default,
+];
+export const HOVER_MARKER_FILL_COLOR: [number, number, number, number] = [
+  255,
+  255,
+  255,
+  trackModifiers.alpha.highlighted,
+];
+
 export const LAP_DIMMED_BRIGHTNESS = 0.8;
 export const LAP_CASING_SCALE = 1.6;
 
@@ -33,6 +48,9 @@ export const TRACK_COLOR_BY_SPORT: Record<Sport, [number, number, number]> = {
   running: [74, 222, 128],
   cycling: [249, 115, 22],
 };
+
+// Map twin of the theme's --color-best (amber-400), the colour of every best-pass element.
+export const BEST_MARKER_COLOR: [number, number, number] = [255, 185, 0];
 
 // Live "you are here" position. The accuracy disc mirrors the glass surface
 // (translucent white fill + faint white border); the dot is a solid locator

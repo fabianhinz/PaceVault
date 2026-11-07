@@ -11,10 +11,14 @@ import type { MapTrack } from './types.ts';
 import { useStudioMapTracks } from './useStudioMapTracks.ts';
 import { useSessionFitBounds } from './useSessionFitBounds.ts';
 import { useMapCameraTarget } from './useMapCameraTarget.ts';
+import { useSegmentMapTracks } from './useSegmentMapTracks.ts';
+import { useMapScene } from './useMapScene.ts';
+import { sceneSessionId, sceneTripSessionIds } from '@/components/mapBackground/mapScene.ts';
 
 interface MapCameraInputs {
   target: MapCameraTarget;
   studioBounds: GPSBounds | null;
+  segmentBounds: GPSBounds | null;
   tripSessionIds: string[];
   lapCloseCount: number;
   refitRequest: number;
@@ -34,8 +38,9 @@ export const useMapCameraInputs = ({
 }): MapCameraInputs => {
   const target = useMapCameraTarget();
   const studioBounds = useStudioMapTracks().bounds;
-  const tripSessionIds = useMapFocusStore((s) => s.focusedTripSessionIds);
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
+  const segmentBounds = useSegmentMapTracks().bounds;
+  const scene = useMapScene();
+  const tripSessionIds = sceneTripSessionIds(scene);
   const lapCloseCount = useMapControlsStore((s) => s.lapCloseCount);
   const refitRequest = useMapFocusStore((s) => s.mapRefitRequest);
   const filter = useFiltersStore((s) => s.activeFilter);
@@ -43,12 +48,13 @@ export const useMapCameraInputs = ({
   const progressOverlayOpen = useImportProgressStore(
     (s) => s.foreground !== null || s.awaitingTrackBuild,
   );
-  const sessionBounds = useSessionFitBounds({ gpsData, sessionId: openedSessionId });
+  const sessionBounds = useSessionFitBounds({ gpsData, sessionId: sceneSessionId(scene) });
   const visibleKey = useMemo(() => tracks.map((t) => t.sessionId).join(','), [tracks]);
 
   return {
     target,
     studioBounds,
+    segmentBounds,
     tripSessionIds,
     lapCloseCount,
     refitRequest,

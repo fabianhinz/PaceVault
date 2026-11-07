@@ -3,11 +3,14 @@ import { Compass, FileDown, Route, Trash2 } from 'lucide-react';
 import { m } from '@pacevault/i18n/messages.js';
 import { useTripsStore } from '@/store/trips.ts';
 import { PvActionsMenu } from '@pacevault/ui/components/pvActionsMenu/PvActionsMenu.tsx';
+import type { ActionsMenuItem } from '@pacevault/ui/components/pvActionsMenu/types.ts';
 import { DeleteSessionDialog } from '@/components/sessions/session/DeleteSessionDialog.tsx';
 import { ManageTripDialog } from '@/components/trips/ManageTripDialog.tsx';
 import { useSessionExport } from '@/components/sessions/session/hooks/useSessionExport.ts';
 import { useEditInStudio } from '@/components/sessions/session/hooks/useEditInStudio.ts';
 import type { TrainingSession } from '@pacevault/engine/types.ts';
+import { CreateSegmentDialog } from '@/components/segments/CreateSegmentDialog.tsx';
+import { useReferenceSegmentMenuEntry } from '@/components/segments/hooks/useReferenceSegmentMenuEntry.ts';
 
 interface SessionActionsMenuProps {
   session: TrainingSession;
@@ -19,8 +22,9 @@ export const SessionActionsMenu: FC<SessionActionsMenuProps> = (props) => {
   const tripsPresent = useTripsStore((s) => s.trips.length > 0);
   const gpxExport = useSessionExport(props.session);
   const editInStudio = useEditInStudio(props.session);
+  const referenceSegmentMenuEntry = useReferenceSegmentMenuEntry(props.session);
 
-  const items = [
+  const items: ActionsMenuItem[] = [
     {
       id: 'manage-trip',
       icon: Compass,
@@ -38,6 +42,7 @@ export const SessionActionsMenu: FC<SessionActionsMenuProps> = (props) => {
       onSelect: () => void editInStudio.editInStudio(),
     });
   }
+  if (referenceSegmentMenuEntry.item !== null) items.push(referenceSegmentMenuEntry.item);
   if (gpxExport.exportable) {
     items.push({
       id: 'export-gpx',
@@ -69,6 +74,12 @@ export const SessionActionsMenu: FC<SessionActionsMenuProps> = (props) => {
         session={props.session}
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
+      />
+
+      <CreateSegmentDialog
+        draft={referenceSegmentMenuEntry.draft}
+        title={m.ui_segment_use_as_reference()}
+        onClose={referenceSegmentMenuEntry.closeDraft}
       />
 
       <ManageTripDialog

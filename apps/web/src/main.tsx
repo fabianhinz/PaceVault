@@ -14,6 +14,7 @@ import { useUserStore } from './store/user.ts';
 import { useSessionsStore } from './store/sessions.ts';
 import { useTripsStore } from './store/trips.ts';
 import { useStudioStore } from './store/studio.ts';
+import { useSegmentsStore } from './store/segments.ts';
 import { useCoachPlanStore } from './store/coachPlan.ts';
 import { useLayoutStore } from './store/layout.ts';
 import { useFiltersStore } from './store/filters.ts';
@@ -28,6 +29,7 @@ const boot = async (rootEl: HTMLElement) => {
     useSessionsStore.persist.rehydrate(),
     useTripsStore.persist.rehydrate(),
     useStudioStore.persist.rehydrate(),
+    useSegmentsStore.persist.rehydrate(),
     useCoachPlanStore.persist.rehydrate(),
     useLayoutStore.persist.rehydrate(),
     useFiltersStore.persist.rehydrate(),

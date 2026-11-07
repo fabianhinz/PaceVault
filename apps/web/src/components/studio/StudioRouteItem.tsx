@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { startTransition, type FC } from 'react';
 import { usePageRouting } from '@/routing/usePageRouting.ts';
 import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
 import type { StudioRoute } from '@/types.ts';
@@ -15,8 +15,10 @@ export const StudioRouteItem: FC<StudioRouteItemProps> = (props) => {
   const routeHover = useMapHover({ kind: 'studioRoute', id: props.route.id });
 
   const handleNavigate = () => {
-    pageRouting.open({ page: 'studioDetail', params: { routeId: props.route.id } });
-    props.onNavigate?.();
+    startTransition(() => {
+      pageRouting.open({ page: 'studioDetail', params: { routeId: props.route.id } });
+      props.onNavigate?.();
+    });
   };
 
   return (

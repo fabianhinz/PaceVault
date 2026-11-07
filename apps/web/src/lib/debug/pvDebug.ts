@@ -2,10 +2,12 @@ import { tokens } from '@pacevault/ui/lib/tokens.ts';
 import { crashCommands } from './crashCommands.ts';
 import { throwIfBootCrashRequested } from './crashSignal.ts';
 import { migrationCommands } from './migrationCommands.ts';
+import { latestSegmentMetrics } from './segmentMetrics.ts';
 
 const commands = {
   ...crashCommands,
   ...migrationCommands,
+  segmentMetrics: latestSegmentMetrics,
 };
 
 const DOC_BY_COMMAND: Record<keyof typeof commands, string> = {
@@ -15,6 +17,8 @@ const DOC_BY_COMMAND: Record<keyof typeof commands, string> = {
   crashBoot: 'Reload + fail during boot — root card',
   reportUrl: 'GitHub issue URL for an optional error',
   rerunMigration: 'Mark sessions outdated + reload — real reprocess ({ count } = newest N only)',
+  segmentMetrics:
+    'Latest segment matching metrics (copy(pvDebug.segmentMetrics()) to the clipboard)',
 };
 
 type PvDebug = typeof commands & { help: () => void };

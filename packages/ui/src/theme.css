@@ -95,6 +95,7 @@
   --color-banner-warning: var(--color-amber-500);
   --color-banner-warning-text: var(--color-amber-200);
   --color-banner-warning-icon: var(--color-amber-400);
+  --color-best: var(--color-amber-400);
   --color-banner-success: var(--color-emerald-500);
   --color-banner-success-text: var(--color-emerald-200);
   --color-banner-success-icon: var(--color-emerald-400);
@@ -224,5 +225,32 @@
 
   &[data-fade-bottom] {
     --fade-bottom: 32px;
+  }
+}
+
+@utility scroll-fade-x {
+  --fade-left: 0px;
+  --fade-right: 0px;
+  --fade-solid-top: 0px;
+  mask-image:
+    linear-gradient(black, black),
+    linear-gradient(
+      to right,
+      transparent,
+      black var(--fade-left),
+      black calc(100% - var(--fade-right)),
+      transparent
+    );
+  mask-size:
+    100% var(--fade-solid-top),
+    100% 100%;
+  mask-repeat: no-repeat;
+
+  &[data-fade-left] {
+    --fade-left: 24px;
+  }
+
+  &[data-fade-right] {
+    --fade-right: 24px;
   }
 }

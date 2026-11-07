@@ -24,7 +24,7 @@ Every surface takes its background from `src/lib/surfaces.ts`; never hand-copy t
 - **Tile** (a bordered block inside a content surface: stat cells, grid tiles, selectable rows in dialogs): `TILE_CLASS`, padding at the call site.
 - **Scrim** (behind a modal overlay on phone): `SCRIM_CLASS`.
 - Decide by placement, not by component: a `PvCard` over the map is floating, the bottom sheet is content.
-- On phone, modal overlays are an inset floating card built from `PvDialogContent` + `PvDialogHeader`/`PvDialogBody`/`PvDialogFooter`; never hand-build a sheet.
+- On phone, modal overlays are an inset floating card built from `PvDialog` + `PvDialogHeader`/`PvDialogBody`/`PvDialogFooter`; never hand-build a sheet.
 
 ## Tests
 

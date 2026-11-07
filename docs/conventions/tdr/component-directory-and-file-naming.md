@@ -19,7 +19,7 @@ adopted: 2026-10-23
 
 This file carries rules R1, R2, R3, R4, R5, R6 and R7.
 
-`@pacevault/ui` is imported by path (`@pacevault/ui/components/pvDialog/PvDialogContent.tsx`, the package exports `"./*": "./src/*"`), so a mechanical mapping between directory, file and exported symbol is what lets a reader go from an import to its file, or from a directory to its primary component, without searching. The `Pv` prefix marks a kit component at every import site in `apps/web`, `tools/workbench` and `tools/docs`, where kit components sit next to the app's own components and next to the Radix primitives the kit wraps (`PvDialog` is the kit's dialog, `DialogPrimitive.Root` the primitive, `Dialog`-named app components the app's own).
+`@pacevault/ui` is imported by path (`@pacevault/ui/components/pvDialog/PvDialogHeader.tsx`, the package exports `"./*": "./src/*"`), so a mechanical mapping between directory, file and exported symbol is what lets a reader go from an import to its file, or from a directory to its primary component, without searching. The `Pv` prefix marks a kit component at every import site in `apps/web`, `tools/workbench` and `tools/docs`, where kit components sit next to the app's own components and next to the Radix primitives the kit wraps (`PvDialog` is the kit's dialog, `DialogPrimitive.Root` the primitive, `Dialog`-named app components the app's own).
 
 Scope: `packages/ui/src/components/`. It governs directory names, component file names, the names of shared support modules inside a component directory, and the prefix on component exports. What a component module itself looks like (one component per module, `FC<XProps>`, a non-exported props interface) is component-declaration-shape; where a type shared by several modules goes is colocated-types-module (a component directory's own `types.ts`). Specs mirror `src/` under `packages/ui/tests/` (mirrored-spec-layout). There is no index module anywhere (index-modules-are-not-barrels). Hooks (`src/hooks/`) and helpers (`src/lib/`) are not components and are not governed here.
 
@@ -29,7 +29,7 @@ Scope: `packages/ui/src/components/`. It governs directory names, component file
 | :--- | :--- | :--- |
 | R1 | Name a component directory in camelCase as `pv` followed by the PascalCase name of its primary component (`pvDialog`, `pvStatTile`, `pvToastViewport`). | manual |
 | R2 | Name the primary implementation file for the component itself, PascalCase `.tsx`, at the top level of its directory: upper-casing the first letter of the directory name yields the file name exactly (`pvDialog/PvDialog.tsx`). | manual |
-| R3 | Give every component exported from a module under `packages/ui/src/components/` the `Pv` prefix (`PvDialog`, `PvDialogContent`, `PvBottomSheetProvider`). Non-component exports — hooks, helpers, constants, types — take no prefix (`useSheetPeekContext`, `TypographyVariants`). | manual |
+| R3 | Give every component exported from a module under `packages/ui/src/components/` the `Pv` prefix (`PvDialog`, `PvDialogHeader`, `PvBottomSheetProvider`). Non-component exports — hooks, helpers, constants, types — take no prefix (`useSheetPeekContext`, `TypographyVariants`). | manual |
 | R4 | Put a secondary component of the same family — a compound part, a row, an internal piece another module of the directory renders — in the same directory, in its own file named after its exported symbol, carrying the same prefix (`pvDialog/PvDialogHeader.tsx`, `pvStatRail/PvStatRailContent.tsx`), whether or not anything outside the directory imports it. | manual |
 | R5 | The only fixed support-module name inside a component directory is `types.ts` (the directory's shared vocabulary, per colocated-types-module). Any other non-component module there takes a descriptive camelCase name, and a hook module is named for the hook it exports. | manual |
 | R6 | Give a support module the `.ts` extension; use `.tsx` only when the module itself contains JSX. | manual |
@@ -104,7 +104,7 @@ R7:
 packages/ui/src/components/
   pvDialog/
     PvDialog.tsx
-    PvDialogContent.tsx
+    PvDialogBody.tsx
     PvDialogHeader.tsx
     PvDialogCard.tsx
   pvStatRail/
@@ -117,7 +117,7 @@ packages/ui/src/components/
 
 ```tsx
 import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
-import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
+import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 ```
 

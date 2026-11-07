@@ -102,10 +102,13 @@ export const detectIntervals = (laps: SessionLap[]): IntervalPair[] => {
   return pairs;
 };
 
-export interface LapSpan {
-  lapIndex: number;
+export interface RecordSpan {
   startRecord: number;
   endRecord: number;
+}
+
+export interface LapSpan extends RecordSpan {
+  lapIndex: number;
 }
 
 export interface LapBand {
@@ -121,6 +124,23 @@ const firstRecordAtOrAfter = ({
   records: SessionRecord[];
   seconds: number;
 }): number => records.findIndex((record) => record.timestamp >= seconds);
+
+export const recordSpanBetween = ({
+  records,
+  startSec,
+  endSec,
+}: {
+  records: SessionRecord[];
+  startSec: number;
+  endSec: number;
+}): RecordSpan | null => {
+  const startRecord = firstRecordAtOrAfter({ records, seconds: startSec });
+  if (startRecord < 0) return null;
+  let endRecord = firstRecordAtOrAfter({ records, seconds: endSec });
+  if (endRecord < 0) endRecord = records.length - 1;
+  if (endRecord <= startRecord) return null;
+  return { startRecord, endRecord };
+};
 
 export const deviceLapSpans = ({
   records,

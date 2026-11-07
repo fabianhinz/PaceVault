@@ -54,10 +54,10 @@ export const OnboardingStep: FC<StepProps> = (props) => {
         </div>
       </CardBody>
       {screen.primary !== null && (
-        <PvDialogFooter>
+        <div className="mt-4 flex justify-end gap-2">
           <BackButton />
           {screen.primary}
-        </PvDialogFooter>
+        </div>
       )}
     </>
   );

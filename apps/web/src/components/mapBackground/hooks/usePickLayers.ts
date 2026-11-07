@@ -2,7 +2,12 @@ import { useMemo } from 'react';
 import type { Layer } from '@deck.gl/core';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
-import { trackModifiers } from '@/components/mapBackground/trackColors.ts';
+import {
+  HOVER_MARKER_FILL_COLOR,
+  HOVER_MARKER_RADIUS_PX,
+  HOVER_MARKER_RING_COLOR,
+  HOVER_MARKER_RING_WIDTH_PX,
+} from '@/components/mapBackground/trackColors.ts';
 import { PICK_RADIUS } from '@/components/mapBackground/trackPicking.ts';
 
 interface PickLayers {
@@ -50,14 +55,14 @@ export const usePickLayers = (terrain: boolean): PickLayers => {
       data,
       visible: hoveredPoint !== null,
       getPosition: (d) => d.position,
-      getRadius: 12,
+      getRadius: HOVER_MARKER_RADIUS_PX,
       radiusUnits: 'pixels',
-      getFillColor: [255, 255, 255, trackModifiers.alpha.highlighted],
+      getFillColor: HOVER_MARKER_FILL_COLOR,
       filled: true,
       stroked: true,
-      getLineColor: [0, 0, 0, trackModifiers.alpha.default],
+      getLineColor: HOVER_MARKER_RING_COLOR,
       lineWidthUnits: 'pixels' as const,
-      getLineWidth: 4,
+      getLineWidth: HOVER_MARKER_RING_WIDTH_PX,
       pickable: false,
     });
   }, [hoveredPoint]);

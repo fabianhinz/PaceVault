@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import type { LayersList } from '@deck.gl/core';
 import { PathLayer } from '@deck.gl/layers';
-import { useRouteMatch } from '@/routing/useRouteMatch.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
@@ -13,8 +12,19 @@ import {
   trackModifiers,
 } from '@/components/mapBackground/trackColors.ts';
 import { decodeCached } from '@/components/mapBackground/trackPicking.ts';
-import { useStudioMapTracks } from './useStudioMapTracks.ts';
+import { sceneHoveredId, type MapSceneKind } from '@/components/mapBackground/mapScene.ts';
+import { useMapScene } from './useMapScene.ts';
 import type { DeckEventHandlers, MapTrack } from './types.ts';
+
+const TRACKS_SHOWN_BY_SCENE_KIND: Record<MapSceneKind, boolean> = {
+  overview: true,
+  trip: true,
+  session: false,
+  segmentTab: true,
+  segmentPage: false,
+  studioTab: false,
+  studioRoute: false,
+};
 
 interface TrackPickData {
   sessionId: string;
@@ -29,13 +39,16 @@ export const useTrackLayers = ({
   tracks: MapTrack[];
   eventHandlers: DeckEventHandlers;
 }): LayersList | null => {
-  const hoveredSessionId = useMapFocusStore((s) => s.hoveredSessionId);
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
-  const studioActive = useStudioMapTracks().active;
+  const scene = useMapScene();
+  const shown = TRACKS_SHOWN_BY_SCENE_KIND[scene.kind];
+  const hoveredSessionId = useMapFocusStore((s) =>
+    sceneHoveredId({ hover: s.mapHover, sceneKey: scene.key, kind: 'session' }),
+  );
+  const segmentHovered = useMapFocusStore(
+    (s) => sceneHoveredId({ hover: s.mapHover, sceneKey: scene.key, kind: 'segment' }) !== null,
+  );
   const trackIntensity = useMapPreferencesStore((s) => s.trackIntensity);
   const pointerFine = useDevice().pointerFine;
-  const sessionMatch = useRouteMatch('sessionDetail');
-  const highlightedSessionId = hoveredSessionId ?? sessionMatch?.id ?? null;
 
   const trackData = useMemo<TrackPickData[]>(
     () =>
@@ -48,7 +61,7 @@ export const useTrackLayers = ({
   );
 
   return useMemo(() => {
-    if (openedSessionId || studioActive) {
+    if (!shown) {
       return null;
     }
 
@@ -63,16 +76,16 @@ export const useTrackLayers = ({
         getColor: (d) => {
           const [r, g, b] = TRACK_COLOR_BY_SPORT[d.track.sport];
           let alpha = ALPHA_BY_TRACK_INTENSITY[trackIntensity];
-          if (hoveredSessionId && hoveredSessionId !== d.sessionId) {
+          if (segmentHovered || (hoveredSessionId !== null && hoveredSessionId !== d.sessionId)) {
             alpha = 0;
-          } else if (highlightedSessionId === d.sessionId) {
+          } else if (hoveredSessionId === d.sessionId) {
             alpha = trackModifiers.alpha.highlighted;
           }
 
           return [r, g, b, alpha];
         },
         getWidth: (d) => {
-          if (d.sessionId === highlightedSessionId) return trackModifiers.width.highlighted;
+          if (d.sessionId === hoveredSessionId) return trackModifiers.width.highlighted;
           return trackModifiers.width.default;
         },
         widthMinPixels: 1,
@@ -80,8 +93,8 @@ export const useTrackLayers = ({
         capRounded: true,
         pickable: true,
         updateTriggers: {
-          getColor: [highlightedSessionId, hoveredSessionId, trackIntensity],
-          getWidth: [highlightedSessionId],
+          getColor: [hoveredSessionId, trackIntensity, segmentHovered],
+          getWidth: [hoveredSessionId],
         },
         transitions,
         parameters: ADDITIVE_BLEND,
@@ -89,10 +102,9 @@ export const useTrackLayers = ({
       }),
     ];
   }, [
-    openedSessionId,
-    studioActive,
+    shown,
+    segmentHovered,
     trackData,
-    highlightedSessionId,
     hoveredSessionId,
     eventHandlers,
     trackIntensity,

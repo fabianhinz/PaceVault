@@ -1,9 +1,10 @@
 import type { MapRef } from 'react-map-gl/maplibre';
-import { useRouteMatch } from '@/routing/useRouteMatch.ts';
+import { sceneSessionId } from '@/components/mapBackground/mapScene.ts';
 import { useWatchPositionEffect } from './useWatchPositionEffect.ts';
 import { useGeolocationCameraEffect } from './useGeolocationCameraEffect.ts';
 import { useSuppressTapMouseEffect } from './useSuppressTapMouseEffect.ts';
 import { useOpenedSessionEffect } from './useOpenedSessionEffect.ts';
+import { useMapScene } from './useMapScene.ts';
 
 export const useMapBackgroundEffects = ({
   mapRef,
@@ -13,9 +14,8 @@ export const useMapBackgroundEffects = ({
   mapLoaded: boolean;
 }): void => {
   useWatchPositionEffect();
-  useGeolocationCameraEffect(mapRef);
+  const scene = useMapScene();
+  useGeolocationCameraEffect({ mapRef, sessionControls: scene.kind === 'session' });
   useSuppressTapMouseEffect({ mapRef, mapLoaded });
-
-  const sessionMatch = useRouteMatch('sessionDetail');
-  useOpenedSessionEffect(sessionMatch?.id ?? null);
+  useOpenedSessionEffect(sceneSessionId(scene));
 };

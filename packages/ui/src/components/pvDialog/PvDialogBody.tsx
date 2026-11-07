@@ -14,8 +14,7 @@ export const PvDialogBody: FC<PvDialogBodyProps> = (props) => {
     <div
       ref={ref}
       className={cn(
-        'scroll-fade min-h-0 shrink overflow-y-auto overscroll-contain px-5 pt-1 pb-5',
-        'lg:-mx-1 lg:px-1 lg:pt-0 lg:pb-1',
+        'scroll-fade flex min-h-0 shrink flex-col gap-4 overflow-y-auto overscroll-contain px-5 pt-2 pb-5',
         props.className,
       )}
     >

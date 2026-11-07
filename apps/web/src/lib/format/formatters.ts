@@ -7,6 +7,8 @@ export type DateFormatMode =
   | 'date'
   | 'date-time'
   | 'short'
+  | 'day-month'
+  | 'year'
   | 'numeric-day'
   | 'numeric-month'
   | 'month-year'
@@ -22,6 +24,8 @@ const DATE_FORMAT_BY_MODE: Record<DateFormatMode, Intl.DateTimeFormat> = {
     minute: '2-digit',
   }),
   short: new Intl.DateTimeFormat(getLocale(), { dateStyle: 'short' }),
+  'day-month': new Intl.DateTimeFormat(getLocale(), { month: 'short', day: 'numeric' }),
+  year: new Intl.DateTimeFormat(getLocale(), { year: 'numeric' }),
   'numeric-day': new Intl.DateTimeFormat(getLocale(), {
     month: 'numeric',
     day: 'numeric',
@@ -228,19 +232,25 @@ export const formatDuration = (seconds: number): string => {
 };
 
 export const formatRaceTime = (seconds: number): string => {
-  const ms = seconds * MS_PER_SECOND;
+  const ms = Math.round(seconds) * MS_PER_SECOND;
   const h = Math.floor(ms / MS_PER_HOUR);
   const mins = Math.floor((ms % MS_PER_HOUR) / MS_PER_MINUTE);
-  const secs = Math.round((ms % MS_PER_MINUTE) / MS_PER_SECOND);
+  const secs = (ms % MS_PER_MINUTE) / MS_PER_SECOND;
   if (h > 0) return `${h}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
+export const formatSignedRaceTime = (seconds: number): string => {
+  const rounded = Math.round(seconds);
+  if (rounded < 0) return `−${formatRaceTime(-rounded)}`;
+  return `+${formatRaceTime(rounded)}`;
+};
+
 export const formatTimeHMS = (seconds: number): string => {
-  const ms = seconds * MS_PER_SECOND;
+  const ms = Math.round(seconds) * MS_PER_SECOND;
   const h = Math.floor(ms / MS_PER_HOUR);
   const mins = Math.floor((ms % MS_PER_HOUR) / MS_PER_MINUTE);
-  const s = Math.round((ms % MS_PER_MINUTE) / MS_PER_SECOND);
+  const s = (ms % MS_PER_MINUTE) / MS_PER_SECOND;
   return `${h}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 

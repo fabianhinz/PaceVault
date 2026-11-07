@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Segment suggestions · Mockup</title>
+    <link rel="stylesheet" href="../../../shared/mockup-shell.css" />
+    <style>
+      .ms-screen [hidden] {
+        display: none !important;
+      }
+      .app {
+        position: absolute;
+        inset: 0;
+        background: var(--color-surface-base);
+        color: var(--color-text-secondary);
+        font: var(--text-sm) / 1.25rem var(--font-sans);
+        overflow: hidden;
+      }
+      .app p {
+        margin: 0;
+      }
+      [data-device='phone'] .dlgfoot {
+        flex-wrap: wrap;
+      }
+      [data-device='phone'] .dlgfoot > .grow {
+        flex-basis: 100%;
+      }
+      /* PvTypography variants */
+      .t-title {
+        font-size: var(--text-base);
+        line-height: 1.5rem;
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+      .t-sub {
+        font-size: var(--text-sm);
+        line-height: 1.25rem;
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+      .t-body {
+        font-size: var(--text-sm);
+        line-height: 1.25rem;
+        color: var(--color-text-primary);
+      }
+      .t-cap {
+        font-size: var(--text-xs);
+        line-height: 1rem;
+        color: var(--color-text-secondary);
+      }
+      .t-over {
+        font-size: var(--text-xs);
+        line-height: 1rem;
+        font-weight: var(--font-weight-medium);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--color-text-secondary);
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+      .trunc {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: block;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .grow {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* map (MapBackground, fake) */
+      .map {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 60%;
+        height: 100%;
+        background:
+          repeating-linear-gradient(0deg, transparent 0 79px, rgb(255 255 255 / 0.03) 79px 80px),
+          repeating-linear-gradient(90deg, transparent 0 79px, rgb(255 255 255 / 0.03) 79px 80px),
+          #0d1118;
+      }
+      [data-device='phone'] .map {
+        width: 100%;
+        height: 430px;
+      }
+      .map > svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .road {
+        fill: none;
+        stroke: #1e293b;
+        stroke-width: 5;
+      }
+      .heat {
+        fill: none;
+        stroke-width: 5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .sug {
+        fill: none;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: 0;
+        transition: opacity 0.12s;
+      }
+      .case {
+        fill: none;
+        stroke: #fff;
+        stroke-width: 9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: 0;
+      }
+      .run {
+        stroke: var(--color-green-400);
+      }
+      .ride {
+        stroke: var(--color-orange-500);
+      }
+      .mark {
+        opacity: 0;
+      }
+      .mark circle {
+        fill: var(--color-surface);
+        stroke: #fff;
+        stroke-width: 2;
+      }
+      .mark text {
+        fill: #fff;
+        font: 500 12px/1 var(--font-sans);
+        text-anchor: middle;
+        dominant-baseline: central;
+      }
+      /* which suggestion layers show, per variant and state */
+      .showall .sug,
+      .showall .mark {
+        opacity: 1;
+      }
+      .g.hl .sug,
+      .g.hl .case {
+        opacity: 1;
+      }
+      .g.hl .sug {
+        stroke-width: 4;
+      }
+      .gone {
+        display: none !important;
+      }
+      .pick.sel {
+        border-color: rgb(255 255 255 / 0.35);
+      }
+      .g.dim .sug {
+        opacity: 0.25;
+      }
+
+      /* content column / bottom sheet */
+      .col {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 40%;
+        overflow-y: auto;
+        scrollbar-width: none;
+        padding: 24px 24px 24px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      [data-device='phone'] .col {
+        top: 420px;
+        left: 0;
+        width: auto;
+        padding: 0 16px 90px;
+        background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+        backdrop-filter: blur(24px);
+        border-top: 1px solid var(--wb-hairline);
+        border-radius: 16px 16px 0 0;
+      }
+      .grab {
+        display: none;
+      }
+      [data-device='phone'] .grab {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 2px;
+        flex-shrink: 0;
+      }
+      .grab span {
+        width: 40px;
+        height: 4px;
+        border-radius: 9999px;
+        background: var(--color-gray-600);
+      }
+      /* PvTabsList floating + PvTabsTrigger */
+      .tabs {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 16px;
+        border: 1px solid var(--wb-hairline);
+        background: var(--wb-floating-bg);
+        flex-shrink: 0;
+        margin-bottom: 8px;
+      }
+      .tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 12px;
+        border-radius: var(--radius-md);
+        color: var(--color-text-tertiary);
+      }
+      .tab.on {
+        background: rgb(255 255 255 / 0.1);
+        color: var(--color-text-primary);
+      }
+      /* PvCard: GLASS_CLASS rounded-2xl p-4 */
+      .card {
+        border-radius: 16px;
+        border: 1px solid var(--wb-hairline);
+        background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+        backdrop-filter: blur(24px);
+        padding: 16px;
+        flex-shrink: 0;
+      }
+      [data-device='phone'] .card {
+        backdrop-filter: none;
+      }
+      .card.hov:hover {
+        background: rgb(255 255 255 / 0.1);
+        cursor: pointer;
+      }
+      .card.pickrow {
+        padding: 12px 12px 12px 16px;
+      }
+      .card.pickrow.saved {
+        opacity: 0.55;
+      }
+      .card.sel {
+        border-color: rgb(255 255 255 / 0.35);
+      }
+      /* PvIconTile */
+      .tile {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        background: rgb(255 255 255 / 0.05);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .tile svg {
+        width: 18px;
+        height: 18px;
+      }
+      .tile.run {
+        color: var(--color-green-400);
+      }
+      .tile.ride {
+        color: var(--color-orange-500);
+      }
+      .thumb {
+        width: 56px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        background: #0d1118;
+        flex-shrink: 0;
+      }
+      .thumb path {
+        fill: none;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      /* PvButton */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        border-radius: var(--radius-md);
+        font-size: var(--text-sm);
+        line-height: 1.25rem;
+        font-weight: var(--font-weight-medium);
+        padding: 8px 16px;
+        cursor: pointer;
+        border: 0;
+        font-family: inherit;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .btn.sm {
+        padding: 6px 12px;
+      }
+      .btn.icon {
+        padding: 6px;
+        width: 32px;
+        height: 32px;
+      }
+      .btn.primary {
+        background: var(--color-accent);
+        color: #fff;
+      }
+      .btn.primary:hover {
+        background: var(--color-accent-hover);
+      }
+      .btn.secondary {
+        background: rgb(255 255 255 / 0.05);
+        color: var(--color-text-primary);
+        border: 1px solid rgb(255 255 255 / 0.1);
+      }
+      .btn.secondary:hover {
+        background: rgb(255 255 255 / 0.1);
+      }
+      .btn.ghost {
+        background: transparent;
+        color: var(--color-text-secondary);
+      }
+      .btn.ghost:hover {
+        background: rgb(255 255 255 / 0.1);
+        color: var(--color-text-primary);
+      }
+      .btn[disabled] {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .btn.wide {
+        width: 100%;
+      }
+      .spin {
+        width: 16px;
+        height: 16px;
+        border-radius: 9999px;
+        border: 2px solid rgb(255 255 255 / 0.25);
+        border-top-color: #fff;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(1turn);
+        }
+      }
+      /* PvCheckbox */
+      .cb {
+        width: 16px;
+        height: 16px;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgb(255 255 255 / 0.3);
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+      }
+      .on > .cb,
+      .cb.on {
+        background: var(--color-accent);
+        border-color: var(--color-accent);
+      }
+      .cb svg {
+        width: 12px;
+        height: 12px;
+        opacity: 0;
+      }
+      .on > .cb svg,
+      .cb.on svg {
+        opacity: 1;
+      }
+      /* PvInput */
+      .label {
+        display: block;
+        margin-bottom: 6px;
+      }
+      .input {
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: var(--radius-md);
+        border: 1px solid rgb(255 255 255 / 0.1);
+        background: rgb(255 255 255 / 0.05);
+        padding: 8px 12px;
+        color: var(--color-text-primary);
+        font: inherit;
+      }
+      /* progress */
+      .bar {
+        height: 4px;
+        border-radius: 9999px;
+        background: rgb(255 255 255 / 0.1);
+        overflow: hidden;
+        margin-top: 12px;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        width: 39%;
+        background: var(--color-accent);
+      }
+      .sk {
+        height: 10px;
+        border-radius: 9999px;
+        background: rgb(255 255 255 / 0.08);
+      }
+      .skrow {
+        height: 66px;
+      }
+
+      /* dialog (PvDialog): scrim + centered panel; phone: bottom sheet */
+      .scrim {
+        position: absolute;
+        inset: 0;
+        background: var(--wb-scrim-bg);
+        backdrop-filter: blur(4px);
+      }
+      .dlg {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 560px;
+        height: 620px;
+        display: flex;
+        flex-direction: column;
+        border-radius: 16px;
+        border: 1px solid var(--wb-hairline);
+        background: var(--wb-floating-bg);
+        box-shadow: var(--wb-floating-shadow);
+        padding: 24px;
+        gap: 16px;
+        box-sizing: border-box;
+      }
+      [data-device='phone'] .dlg {
+        left: 0;
+        right: 0;
+        top: auto;
+        bottom: 0;
+        transform: none;
+        width: auto;
+        height: 760px;
+        border-radius: 16px 16px 0 0;
+        padding: 16px;
+      }
+      .dlg .list {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .dlgfoot {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        align-items: center;
+        border-top: 1px solid var(--wb-hairline);
+        padding-top: 12px;
+      }
+      .savebtn {
+        min-width: 164px;
+      }
+      .pick {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 12px 8px 8px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--wb-hairline);
+        background: rgb(255 255 255 / 0.03);
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .pick:hover {
+        background: rgb(255 255 255 / 0.08);
+      }
+      /* inline sections (D) */
+      .sect {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 4px 0;
+        flex-shrink: 0;
+      }
+      .dashed {
+        border-style: dashed;
+        border-color: rgb(255 255 255 / 0.2);
+      }
+      .slot {
+        width: 128px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .slot .done {
+        display: none;
+      }
+      .saved .slot .done {
+        display: inline-flex;
+        padding: 6px 0;
+      }
+      .saved .slot .act {
+        display: none;
+      }
+      /* dock (DockRail / DockBar) */
+      .dock {
+        position: absolute;
+        top: 50%;
+        left: 12px;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 9999px;
+        background: var(--wb-floating-bg);
+        border: 1px solid var(--wb-hairline);
+      }
+      .dock i {
+        width: 40px;
+        height: 40px;
+        border-radius: 9999px;
+        display: grid;
+        place-items: center;
+        font-style: normal;
+        color: var(--color-text-tertiary);
+      }
+      .dock i.on {
+        background: var(--color-accent-muted);
+        color: var(--color-accent-hover);
+      }
+      [data-device='phone'] .dock {
+        top: auto;
+        transform: none;
+        left: 12px;
+        right: 12px;
+        bottom: 16px;
+        flex-direction: row;
+        justify-content: space-around;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="application/json" id="mockup-config">
+      {
+        "title": "Segment suggestions",
+        "variants": [
+          { "id": "a", "label": "A · Review dialog" },
+          { "id": "b", "label": "B · Map review" },
+          { "id": "c", "label": "C · One by one" },
+          { "id": "d", "label": "D · Inline in tab" }
+        ],
+        "scenarios": [
+          { "id": "start", "label": "Empty state" },
+          { "id": "finding", "label": "Finding" },
+          { "id": "many", "label": "15 found" },
+          { "id": "few", "label": "2 found" },
+          { "id": "none", "label": "None found" },
+          { "id": "exists", "label": "Segments exist" }
+        ],
+        "extras": [
+          {
+            "id": "place",
+            "type": "choice",
+            "label": "Button with segments",
+            "options": [
+              { "id": "bottom", "label": "Below list" },
+              { "id": "top", "label": "Above list" },
+              { "id": "hidden", "label": "Hidden" }
+            ],
+            "default": "bottom"
+          },
+          {
+            "id": "run",
+            "type": "choice",
+            "label": "Detection runs",
+            "options": [
+              { "id": "press", "label": "On press" },
+              { "id": "bg", "label": "In background" }
+            ],
+            "default": "press"
+          }
+        ],
+        "decisions": [
+          { "id": "Q1", "title": "How suggestions are presented" },
+          { "id": "Q2", "title": "When detection runs" },
+          { "id": "Q3", "title": "The button once segments exist" },
+          { "id": "Q4", "title": "Accepting: batch or one by one, and the name" },
+          { "id": "Q5", "title": "Adjusting start and end before saving" },
+          { "id": "Q6", "title": "Dismissed suggestions" },
+          { "id": "Q7", "title": "Direction" },
+          { "id": "Q8", "title": "Minimums, ranking and how many are shown" },
+          { "id": "Q9", "title": "Stretches at the usual start" },
+          { "id": "Q10", "title": "Overlapping and nested stretches" },
+          { "id": "Q11", "title": "Detect on stored polylines or full records" }
+        ]
+      }
+    </script>
+
+    <template id="mockup-screen"></template>
+
+    <script>
+      (() => {
+        const MON_EN = { 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov' };
+        const MON_DE = { 8: 'Aug.', 9: 'Sept.', 10: 'Okt.', 11: 'Nov.' };
+        const S = [
+          { id: 1, sp: 'run', km: 2.4, gain: 8, passes: 41, d: [4, 11], tod: 'e', from: 0.6, pts: [[300, 520], [360, 500], [420, 470], [480, 455], [540, 440]] },
+          { id: 11, sp: 'ride', km: 12.4, gain: 86, passes: 23, d: [3, 11], tod: 'm', from: 2.1, pts: [[540, 440], [600, 350], [650, 260], [700, 180], [780, 120], [880, 90]] },
+          { id: 2, sp: 'run', km: 1.6, gain: -3, passes: 37, d: [4, 11], tod: 'e', from: 3.0, pts: [[540, 440], [560, 500], [575, 560], [590, 610]] },
+          { id: 3, sp: 'run', km: 3.1, gain: 22, passes: 24, d: [2, 11], tod: 'm', from: 0.4, pts: [[300, 520], [290, 580], [300, 640], [340, 690], [400, 710]] },
+          { id: 4, sp: 'run', km: 1.2, gain: 31, passes: 19, d: [28, 10], tod: 'e', from: 3.5, pts: [[400, 710], [450, 670], [490, 640], [520, 620]] },
+          { id: 12, sp: 'ride', km: 6.8, gain: 142, passes: 17, d: [1, 11], tod: 'a', from: 8.2, pts: [[590, 610], [620, 700], [660, 780], [720, 850], [800, 900]] },
+          { id: 13, sp: 'ride', km: 9.2, gain: -40, passes: 14, d: [25, 10], tod: 'm', from: 1.4, pts: [[190, 470], [130, 400], [90, 320], [60, 220]] },
+          { id: 5, sp: 'run', km: 4.8, gain: 15, passes: 12, d: [30, 10], tod: 'm', from: 2.9, pts: [[540, 440], [600, 400], [660, 380], [720, 390], [760, 430], [770, 500], [740, 560], [680, 590]] },
+          { id: 6, sp: 'run', km: 0.9, gain: 0, passes: 11, d: [21, 10], tod: 'e', from: 5.2, pts: [[420, 470], [410, 410], [400, 360]] },
+          { id: 7, sp: 'run', km: 2.0, gain: -6, passes: 9, d: [12, 10], tod: 'e', from: 4.6, pts: [[590, 610], [640, 640], [700, 650]] },
+          { id: 14, sp: 'ride', km: 4.1, gain: 210, passes: 8, d: [5, 10], tod: 'a', from: 14.6, pts: [[880, 90], [900, 160], [930, 230], [950, 300]] },
+          { id: 8, sp: 'run', km: 1.4, gain: 4, passes: 6, d: [3, 9], tod: 'm', from: 1.1, pts: [[300, 520], [240, 500], [190, 470]] },
+          { id: 15, sp: 'ride', km: 18.6, gain: 65, passes: 5, d: [9, 9], tod: 'm', from: 3.3, pts: [[300, 640], [250, 720], [180, 800], [120, 880], [60, 940]] },
+          { id: 9, sp: 'run', km: 0.8, gain: 18, passes: 4, d: [14, 8], tod: 'e', from: 6.0, pts: [[400, 360], [440, 330], [470, 300]] },
+          { id: 10, sp: 'run', km: 3.6, gain: null, passes: 3, d: [22, 8], tod: 'a', from: 0.2, pts: [[190, 470], [180, 540], [200, 610], [250, 650], [300, 640]] },
+        ];
+        const FEW = new Set([1, 11]);
+        const dec = (n) => n.toFixed(1);
+        const decDe = (n) => n.toFixed(1).replace('.', ',');
+        const gainTxt = (g) => {
+          if (g === null) return '';
+          if (g > 0) return ` · +${g} m`;
+          if (g < 0) return ` · −${-g} m`;
+          return ' · 0 m';
+        };
+        const TOD_EN = { m: 'Morning', a: 'Afternoon', e: 'Evening' };
+        const TOD_DE = { m: 'am Morgen', a: 'am Nachmittag', e: 'am Abend' };
+        const nameEn = (s) => `${TOD_EN[s.tod]} ${s.sp === 'run' ? 'Run' : 'Ride'} · km ${dec(s.from)}–${dec(s.from + s.km)}`;
+        const nameDe = (s) => `${s.sp === 'run' ? 'Lauf' : 'Fahrt'} ${TOD_DE[s.tod]} · km ${decDe(s.from)}–${decDe(s.from + s.km)}`;
+        const factsEn = (s) => `${dec(s.km)} km${gainTxt(s.gain)}`;
+        const factsDe = (s) => `${decDe(s.km)} km${gainTxt(s.gain)}`;
+        const passEn = (s) => `${s.passes} passes · last ${s.d[0]} ${MON_EN[s.d[1]]}`;
+        const passDe = (s) => `${s.passes} Durchgänge · zuletzt ${s.d[0]}. ${MON_DE[s.d[1]]}`;
+        const t = (en, de, cls = '', tag = 'span') => `<${tag} class="${cls}" data-de="${de}">${en}</${tag}>`;
+        const pathD = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]} ${p[1]}`).join(' ');
+        const when = (cond, html) => `<div data-when="${cond}" style="display:contents">${html}</div>`;
+        const fewWhen = (s) => (FEW.has(s.id) ? '' : ' data-when="scenario:many"');
+        const ICON_SPLINE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M5 17C5 9 19 15 19 7"/></svg>';
+        const ICON_X = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+        const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+        const thumb = (s) => {
+          const xs = s.pts.map((p) => p[0]);
+          const ys = s.pts.map((p) => p[1]);
+          const pad = 14;
+          const w = Math.max(...xs) - Math.min(...xs) + 2 * pad;
+          const h = Math.max(...ys) - Math.min(...ys) + 2 * pad;
+          const size = Math.max(w, h * 1.4);
+          const cx = (Math.max(...xs) + Math.min(...xs)) / 2;
+          const cy = (Math.max(...ys) + Math.min(...ys)) / 2;
+          return `<svg class="thumb" viewBox="${cx - size / 2} ${cy - size / 2.8} ${size} ${size / 1.4}"><path class="${s.sp}" d="${pathD(s.pts)}" stroke-width="${size / 18}"/></svg>`;
+        };
+        const label = (s) => `<span class="grow"><span class="t-sub num trunc" data-de="${factsDe(s)}">${factsEn(s)}</span><span class="t-cap num trunc" data-de="${passDe(s)}">${passEn(s)}</span></span>`;
+        window.SUGGESTIONS = S.map((s) => ({ ...s, nameEn: nameEn(s), nameDe: nameDe(s), factsEn: factsEn(s), factsDe: factsDe(s), passEn: passEn(s), passDe: passDe(s) }));
+        window.MOCK_PARTS = { t, when, label, thumb, pathD, fewWhen, ICON_SPLINE, ICON_X, ICON_CHECK, S, FEW };
+      })();
+    </script>
+    <script>
+      (() => {
+        const P = window.MOCK_PARTS;
+        const { t, when, label, thumb, pathD, fewWhen, S } = P;
+        const ROADS = [
+          [[0, 520], [300, 520], [540, 440], [1000, 300]],
+          [[540, 0], [540, 440], [590, 610], [800, 1000]],
+          [[0, 700], [400, 710], [700, 650], [1000, 640]],
+          [[190, 0], [190, 470], [300, 640], [60, 940]],
+          [[400, 0], [400, 360], [420, 470]],
+          [[600, 400], [760, 430], [740, 560], [680, 590]],
+          [[880, 0], [880, 90], [950, 300], [1000, 420]],
+        ];
+        const STRAY = [
+          ['run', [[300, 520], [330, 450], [380, 420], [400, 360]]],
+          ['run', [[540, 440], [620, 470], [680, 520]]],
+          ['ride', [[540, 440], [700, 330], [860, 300], [980, 260]]],
+          ['ride', [[590, 610], [720, 720], [900, 760]]],
+          ['run', [[400, 710], [380, 780], [330, 830]]],
+        ];
+        const map = () => {
+          const roads = ROADS.map((r) => `<path class="road" d="${pathD(r)}"/>`).join('');
+          const stray = STRAY.map(([sp, pts]) => `<path class="heat ${sp}" d="${pathD(pts)}" opacity="0.25"/>`).join('');
+          const heat = S.map((s) => `<path class="heat ${s.sp}" d="${pathD(s.pts)}" opacity="${Math.min(0.75, 0.2 + s.passes / 60).toFixed(2)}"/>`).join('');
+          const groups = S.map((s, i) => {
+            const mid = s.pts[Math.floor(s.pts.length / 2)];
+            return `<g class="g" data-sid="${s.id}"><path class="case" d="${pathD(s.pts)}"/><path class="sug ${s.sp}" d="${pathD(s.pts)}"/><g class="mark"><circle cx="${mid[0]}" cy="${mid[1]}" r="13"/><text x="${mid[0]}" y="${mid[1]}">${i + 1}</text></g></g>`;
+          }).join('');
+          return `<div class="map"><svg viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">${roads}${stray}${heat}${groups}</svg></div>`;
+        };
+        const tabs = `<div class="tabs"><span class="tab t-sub" data-de="Dashboard">Dashboard</span><span class="tab on t-sub" data-de="Segmente">Segments</span></div>`;
+        const emptyCard = `<div class="card row" style="gap:12px"><span class="tile run" style="background:none;width:18px;height:18px;color:var(--color-accent)">${P.ICON_SPLINE}</span><span class="grow">${t('No segments yet', 'Noch keine Segmente', 't-body', 'p')}${t('Select a stretch on the charts or use the menu', 'Wähle einen Abschnitt in den Diagrammen oder nutze das Menü', 't-cap', 'p')}</span></div>`;
+        const suggestBtn = (cls = 'btn primary wide') =>
+          `<button class="${cls}" data-act="open">${when('run:press', t('Suggest segments', 'Segmente vorschlagen'))}${when('run:bg', t('Review 15 suggestions', '15 Vorschläge ansehen'))}</button>`;
+        const progress = (inCard) => `<div ${inCard ? 'class="card"' : ''}><div class="row"><span class="spin"></span>${t('Finding frequent stretches', 'Häufige Abschnitte werden gesucht', 't-sub')}</div>${t('Checked 212 of 547 sessions', '212 von 547 Einheiten geprüft', 't-cap num', 'p')}<div class="bar"><i></i></div></div>`;
+        const noneCard = (inCard) => `<div ${inCard ? 'class="card"' : 'style="padding:24px 0;text-align:center"'}>${t('No suggestions', 'Keine Vorschläge', 't-sub', 'p')}${t('No stretch has 3 or more passes yet. 547 sessions checked.', 'Noch kein Abschnitt hat mindestens 3 Durchgänge. 547 Einheiten geprüft.', 't-cap', 'p')}</div>`;
+        const tile = (s) => `<span class="tile ${s.sp}">${P.ICON_SPLINE}</span>`;
+        const actSlot = `<span class="slot"><span class="act row" style="gap:4px"><button class="btn secondary sm" data-act="save">${t('Save', 'Speichern')}</button><button class="btn ghost icon" data-act="dismiss" aria-label="Dismiss">${P.ICON_X}</button></span><span class="done t-cap">${t('Saved', 'Gespeichert')}</span></span>`;
+
+        const segs = [
+          ['Riverside loop', 'Uferrunde', 'run', '2.4 km · 41 passes · best 9:41', '2,4 km · 41 Durchgänge · Bestzeit 9:41'],
+          ['Castle climb', 'Schlossanstieg', 'run', '1.2 km · 19 passes · best 6:12', '1,2 km · 19 Durchgänge · Bestzeit 6:12'],
+          ['North road', 'Nordstraße', 'ride', '12.4 km · 23 passes · best 21:05', '12,4 km · 23 Durchgänge · Bestzeit 21:05'],
+        ];
+        const segRows = segs
+          .map((g) => `<div class="card hov row" style="gap:8px"><span class="tile ${g[2]}">${P.ICON_SPLINE}</span><span class="grow">${t(g[0], g[1], 't-sub trunc')}${t(g[3], g[4], 't-cap num trunc')}</span></div>`)
+          .join('');
+        const exists = `
+          ${when('place:top', `<div class="row" style="justify-content:space-between;padding:0 4px">${t('3 segments', '3 Segmente', 't-cap')}<span class="row" style="gap:4px"><span data-q="Q3"></span>${suggestBtn('btn secondary sm')}</span></div>`)}
+          ${segRows}
+          ${when('place:bottom', `<div class="row">${suggestBtn('btn primary grow')}<span data-q="Q3"></span></div>`)}
+          ${when('place:hidden', `<div class="row" style="padding:0 4px"><p class="t-cap" data-de="Ohne Knopf: Vorschläge nur im leeren Zustand">Without a button: suggestions only from the empty state</p><span data-q="Q3"></span></div>`)}`;
+
+        /* A · review dialog */
+        const aRows = S.map((s) => `<div class="pick" data-sid="${s.id}"${fewWhen(s)}><span class="cb">${P.ICON_CHECK}</span>${thumb(s)}${label(s)}</div>`).join('');
+        const dialogA = `
+          <div class="scrim"></div>
+          <div class="dlg">
+            <div class="row" style="align-items:flex-start">
+              <span class="grow">${t('Suggested segments', 'Vorgeschlagene Segmente', 't-title', 'p')}
+                ${when('scenario:many|few', t('Stretches with 3 or more passes, most passes first', 'Abschnitte mit mindestens 3 Durchgängen, die häufigsten zuerst', 't-cap', 'p'))}
+              </span>
+              <span data-q="Q1"></span>
+              <button class="btn ghost icon" aria-label="Close">${P.ICON_X}</button>
+            </div>
+            ${when('scenario:finding', `${progress(false)}<div class="list"><div class="pick skrow"><span class="sk" style="width:60%"></span></div><div class="pick skrow"><span class="sk" style="width:45%"></span></div><div class="pick skrow"><span class="sk" style="width:55%"></span></div></div>`)}
+            ${when('scenario:none', `<div class="list">${noneCard(false)}</div>`)}
+            ${when('scenario:many|few', `<div class="pick" data-act="all" style="background:none;border-color:transparent"><span class="cb">${P.ICON_CHECK}</span>${t('Select all', 'Alle auswählen', 't-body')}<span class="grow"></span><span data-q="Q8"></span><span data-q="Q7"></span></div><div class="list">${aRows}</div>`)}
+            <div class="dlgfoot">
+              <span class="grow">${when('scenario:many|few', `<span class="row">${t('Names come from the session; rename later', 'Namen kommen von der Einheit; später umbenennen', 't-cap')}<span data-q="Q4"></span></span>`)}</span>
+              <button class="btn secondary">${t('Cancel', 'Abbrechen')}</button>
+              ${when('scenario:many|few|finding', `<button class="btn primary savebtn" data-role="savecount" disabled>${t('Save segments', 'Segmente speichern')}</button>`)}
+            </div>
+          </div>`;
+        window.MOCK_SCREEN = { map, tabs, emptyCard, suggestBtn, progress, noneCard, tile, actSlot, exists, dialogA };
+      })();
+    </script>
+    <script>
+      (() => {
+        const P = window.MOCK_PARTS;
+        const X = window.MOCK_SCREEN;
+        const { t, when, label, fewWhen, S } = P;
+        const mark = (i) => `<span class="tile" style="width:28px;height:28px;border-radius:9999px;border:2px solid #fff;background:var(--color-surface)"><span class="t-cap" style="color:#fff">${i}</span></span>`;
+
+        /* B · map review */
+        const bRows = S.map((s, i) => `<div class="card pickrow row hov" data-sid="${s.id}"${fewWhen(s)} style="gap:12px">${mark(i + 1)}${label(s)}${X.actSlot}</div>`).join('');
+        const panelB = `
+          ${when('scenario:finding', `${X.progress(true)}`)}
+          ${when('scenario:none', `${X.noneCard(true)}<button class="btn secondary wide">${t('Close', 'Schließen')}</button>`)}
+          ${when('scenario:many|few', `
+            <div class="card row" style="gap:8px">
+              <span class="grow">${t('Suggestions', 'Vorschläge', 't-title', 'p')}
+                ${when('scenario:many', t('15 stretches with 3 or more passes', '15 Abschnitte mit mindestens 3 Durchgängen', 't-cap', 'p'))}
+                ${when('scenario:few', t('2 stretches with 3 or more passes', '2 Abschnitte mit mindestens 3 Durchgängen', 't-cap', 'p'))}
+              </span>
+              <span data-q="Q1"></span><span data-q="Q6"></span>
+              <button class="btn ghost sm">${t('Done', 'Fertig')}</button>
+            </div>
+            ${bRows}`)}`;
+
+        /* C · one by one */
+        const panelC = `
+          ${when('scenario:finding', X.progress(true))}
+          ${when('scenario:none', `${X.noneCard(true)}${X.suggestBtn()}`)}
+          ${when('scenario:many|few', `
+            <div class="card" data-role="cCard">
+              <div class="row"><span class="grow t-over num" data-role="cCount"></span><span data-q="Q1"></span><span data-q="Q5"></span><button class="btn ghost icon" aria-label="Close">${P.ICON_X}</button></div>
+              <div data-role="cBody">
+                <div class="row" style="gap:12px;margin:12px 0 16px"><span class="tile" data-role="cTile">${P.ICON_SPLINE}</span><span class="grow"><span class="t-sub num trunc" data-role="cFacts"></span><span class="t-cap num trunc" data-role="cPass"></span></span></div>
+                <label class="label t-sub" data-de="Name">Name</label>
+                <input class="input t-body" data-role="cName" />
+                <div class="row" style="margin-top:16px;justify-content:flex-end"><span data-q="Q4"></span><button class="btn secondary" data-act="skip">${t('Skip', 'Überspringen')}</button><button class="btn primary" data-act="csave">${t('Save segment', 'Segment speichern')}</button></div>
+              </div>
+              <div data-role="cDone" style="display:none;margin-top:12px">${t('All suggestions reviewed', 'Alle Vorschläge angesehen', 't-sub', 'p')}<p class="t-cap num" data-role="cSum"></p></div>
+            </div>`)}`;
+
+        /* D · inline in the tab */
+        const dRows = S.map((s, i) => `<div class="card pickrow dashed row hov" data-sid="${s.id}"${fewWhen(s)} data-rank="${i}" style="gap:12px">${X.tile(s)}${label(s)}${X.actSlot}</div>`).join('');
+        const panelD = `
+          ${when('scenario:finding', X.progress(true))}
+          ${when('scenario:none', X.noneCard(true))}
+          ${when('scenario:many|few', `
+            <div class="sect"><span class="row" style="gap:4px">${t('Suggestions', 'Vorschläge', 't-over')}<span data-q="Q1"></span><span data-q="Q6"></span></span>
+              ${when('scenario:many', t('15 found', '15 gefunden', 't-cap num'))}${when('scenario:few', t('2 found', '2 gefunden', 't-cap num'))}</div>
+            ${dRows}
+            ${when('scenario:many', `<button class="btn ghost wide" data-act="more">${t('Show 10 more', '10 weitere anzeigen')}</button>`)}`)}`;
+
+        const col = `
+          <div class="col">
+            <div class="grab"><span></span></div>
+            ${X.tabs}
+            ${when('scenario:exists', X.exists)}
+            ${when('scenario:start|finding|many|few|none', X.emptyCard)}
+            ${when('scenario:start', `<div class="row">${X.suggestBtn('btn primary grow')}<span data-q="Q2"></span></div>`)}
+            ${when('variant:a', when('scenario:finding|many|few|none', X.suggestBtn()))}
+            ${when('variant:b', panelB)}
+            ${when('variant:c', panelC)}
+            ${when('variant:d', panelD)}
+          </div>`;
+        const dock = `<nav class="dock"><i class="on">▦</i><i>⚡</i><i>⚗</i><i>⚙</i></nav>`;
+        const screen = `<div class="app">${X.map()}${col}${dock}${when('variant:a', when('scenario:finding|many|few|none', X.dialogA))}<span class="row" style="position:absolute;left:72px;top:16px;gap:4px"><span data-q="Q9"></span><span data-q="Q10"></span><span data-q="Q11"></span></span></div>`;
+        document.getElementById('mockup-screen').innerHTML = screen;
+      })();
+    </script>
+
+    <template id="mockup-notes">
+      <p><strong>What this shows.</strong> First rough wireframes for suggesting frequent stretches as segments. Every variant starts on the Segments tab's empty state with a primary button under the card, like "Create a trip" under the Trips card (<code>apps/web/src/components/trips/TripsTab.tsx:21-35</code>). The scenarios after <em>Empty state</em> are the states after the button press; <em>Segments exist</em> shows where the button could sit once there are segments (extra <em>Button with segments</em>). <em>Detection runs: In background</em> turns the button into "Review 15 suggestions" (detection already ran after the last import).</p>
+      <p><strong>A · Review dialog.</strong> One dialog (PvDialog, bottom sheet on phone) with a checkbox list, a mini map per row and "Save n segments". Fast batch accept; the big map sits behind the scrim, so each row carries its own thumbnail. Hovering a row also lights the stretch on the map behind.</p>
+      <p><strong>B · Map review.</strong> The tab turns into a review list; all suggestions sit on the map with numbered markers. Hovering a row or a track links both; Save or dismiss per row. Best for "where is that?".</p>
+      <p><strong>C · One by one.</strong> A card per suggestion with the prefilled name in a PvInput, Skip and Save segment; the map highlights the current stretch and dims the rest. Most deliberate, slowest with 15.</p>
+      <p><strong>D · Inline in the tab.</strong> Suggestions appear as dashed rows under the empty card, top 5 plus "Show 10 more"; Save or dismiss per row, hover shows the stretch on the map. Least new UI; suggestions and segments share one column.</p>
+      <p><strong>Data.</strong> Distances to 0.1 km, net elevation in whole metres (one row has no elevation and drops it, as <code>apps/web/src/components/segments/segmentFacts.ts:13-19</code> does; one shows a recorded <code>0 m</code>), passes as whole counts, dates as day and month. 352 running + 195 cycling sessions = 547 checked.</p>
+      <p><strong>Parts → components.</strong> Tabs: <code>PvTabsList</code>/<code>PvTabsTrigger</code> (<code>apps/web/src/components/dashboard/index.tsx:27-30</code>); empty card: <code>apps/web/src/components/segments/SegmentsEmpty.tsx:7-17</code>; button: <code>PvButton variant="primary"</code>; segment rows: <code>apps/web/src/components/segments/SegmentItem.tsx:19-37</code>; dialog: <code>PvDialog</code> with header, body and footer as in <code>apps/web/src/components/segments/SegmentNameDialog.tsx:40-80</code>; checkbox: <code>PvCheckbox</code>; name field: <code>PvLabel</code> + <code>PvInput</code>. <strong>New:</strong> a suggestion row (thumbnail or marker + facts + Save/dismiss slot), the map thumbnail (A), numbered map markers (B), a progress card with a bar (the kit has no progress bar).</p>
+      <p>Research: <code>tools/workbench/backlog/segment-suggestions/research/suggestions.md</code>.</p>
+    </template>
+
+    <script src="../../../shared/mockup-shell.js"></script>
+    <script>
+      (() => {
+        const ALL = window.SUGGESTIONS;
+        const FEW = window.MOCK_PARTS.FEW;
+        const wired = new WeakSet();
+        const local = new WeakMap();
+        const visible = (st) => ALL.filter((s) => st.scenario === 'many' || FEW.has(s.id));
+        const de = (screen) => screen.dataset.lang === 'de';
+        const q = (screen, sel) => screen.querySelector(sel);
+        const mapGroups = (screen) => [...screen.querySelectorAll('svg .g')];
+        const link = (screen, sid, on) => {
+          for (const el of screen.querySelectorAll(`[data-sid="${sid}"]`))
+            el.classList.toggle(el.tagName.toLowerCase() === 'g' ? 'hl' : 'sel', on);
+        };
+        const saveCount = (screen) => {
+          const btn = q(screen, '[data-role="savecount"]');
+          if (!btn) return;
+          const n = [...screen.querySelectorAll('.dlg .pick.on[data-sid]')].filter((el) => !el.hidden).length;
+          btn.disabled = n === 0;
+          if (n === 0) btn.textContent = de(screen) ? 'Segmente speichern' : 'Save segments';
+          else if (de(screen)) btn.textContent = n === 1 ? '1 Segment speichern' : `${n} Segmente speichern`;
+          else btn.textContent = n === 1 ? 'Save 1 segment' : `Save ${n} segments`;
+        };
+        const renderC = (screen) => {
+          const st = local.get(screen);
+          const items = visible(screen.dataset);
+          const card = q(screen, '[data-role="cCard"]');
+          if (!card) return;
+          const s = items[st.index];
+          for (const g of mapGroups(screen)) {
+            g.classList.toggle('dim', s !== undefined && g.dataset.sid !== String(s.id));
+            g.classList.toggle('hl', s !== undefined && g.dataset.sid === String(s.id));
+          }
+          q(card, '[data-role="cBody"]').style.display = s ? '' : 'none';
+          q(card, '[data-role="cDone"]').style.display = s ? 'none' : '';
+          const count = q(card, '[data-role="cCount"]');
+          if (!s) {
+            count.textContent = de(screen) ? `${items.length} Vorschläge` : `${items.length} suggestions`;
+            q(card, '[data-role="cSum"]').textContent = de(screen)
+              ? `${st.saved} gespeichert, ${st.skipped} übersprungen`
+              : `${st.saved} saved, ${st.skipped} skipped`;
+            return;
+          }
+          count.textContent = de(screen) ? `Vorschlag ${st.index + 1} von ${items.length}` : `Suggestion ${st.index + 1} of ${items.length}`;
+          q(card, '[data-role="cTile"]').className = `tile ${s.sp}`;
+          q(card, '[data-role="cFacts"]').textContent = de(screen) ? s.factsDe : s.factsEn;
+          q(card, '[data-role="cPass"]').textContent = de(screen) ? s.passDe : s.passEn;
+          q(card, '[data-role="cName"]').value = de(screen) ? s.nameDe : s.nameEn;
+        };
+        const reset = (screen) => {
+          const st = screen.dataset;
+          local.set(screen, { index: 0, saved: 0, skipped: 0 });
+          for (const el of screen.querySelectorAll('.hl,.sel,.on,.saved,.gone,.dim'))
+            el.classList.remove('hl', 'sel', 'on', 'saved', 'gone', 'dim');
+          const listed = st.scenario === 'many' || st.scenario === 'few';
+          q(screen, '.map svg').classList.toggle('showall', listed && (st.variant === 'b' || st.variant === 'c'));
+          for (const g of mapGroups(screen))
+            g.classList.toggle('gone', !listed || (st.scenario === 'few' && !FEW.has(Number(g.dataset.sid))));
+          for (const row of screen.querySelectorAll('[data-rank]'))
+            row.style.display = Number(row.dataset.rank) >= 5 ? 'none' : '';
+          saveCount(screen);
+          if (st.variant === 'c') renderC(screen);
+        };
+        const advance = (screen, key) => {
+          const st = local.get(screen);
+          st[key] += 1;
+          st.index += 1;
+          renderC(screen);
+        };
+        const wire = (screen) => {
+          wired.add(screen);
+          screen.addEventListener('mouseover', (e) => {
+            if (screen.dataset.variant === 'c') return;
+            const el = e.target.closest('[data-sid]');
+            if (el) link(screen, el.dataset.sid, true);
+          });
+          screen.addEventListener('mouseout', (e) => {
+            if (screen.dataset.variant === 'c') return;
+            const el = e.target.closest('[data-sid]');
+            if (el) link(screen, el.dataset.sid, false);
+          });
+          screen.addEventListener('click', (e) => {
+            const act = e.target.closest('[data-act]')?.dataset.act;
+            const row = e.target.closest('[data-sid]');
+            if (act === 'save' && row) row.classList.add('saved');
+            if (act === 'dismiss' && row) {
+              link(screen, row.dataset.sid, false);
+              for (const el of screen.querySelectorAll(`[data-sid="${row.dataset.sid}"]`)) el.classList.add('gone');
+            }
+            if (act === 'more') {
+              for (const r of screen.querySelectorAll('[data-rank]')) r.style.display = '';
+              e.target.closest('[data-act]').style.display = 'none';
+            }
+            if (act === 'skip') advance(screen, 'skipped');
+            if (act === 'csave') advance(screen, 'saved');
+            if (act === 'all') {
+              const all = e.target.closest('[data-act]');
+              all.classList.toggle('on');
+              for (const p of screen.querySelectorAll('.dlg .pick[data-sid]')) p.classList.toggle('on', all.classList.contains('on'));
+              saveCount(screen);
+            }
+            if (!act && row && row.classList.contains('pick')) {
+              row.classList.toggle('on');
+              saveCount(screen);
+            }
+          });
+        };
+        MockupShell.onChange((state, screens) => {
+          for (const screen of screens) {
+            if (!wired.has(screen)) wire(screen);
+            reset(screen);
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

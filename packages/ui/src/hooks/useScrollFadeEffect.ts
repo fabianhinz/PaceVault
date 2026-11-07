@@ -1,5 +1,7 @@
 import { useEffect, type RefObject } from 'react';
-import { scrollFadeEdges } from '../lib/scrollFade.ts';
+import { horizontalScrollFadeEdges, scrollFadeEdges } from '../lib/scrollFade.ts';
+
+type ScrollFadeAxis = 'y' | 'x';
 
 const toggleAttribute = ({
   element,
@@ -17,17 +19,29 @@ const toggleAttribute = ({
   }
 };
 
-export const useScrollFadeEffect = (ref: RefObject<HTMLElement | null>): void => {
+const updateEdges = ({ element, axis }: { element: HTMLElement; axis: ScrollFadeAxis }) => {
+  if (axis === 'x') {
+    const edges = horizontalScrollFadeEdges(element);
+    toggleAttribute({ element, name: 'data-fade-left', on: edges.left });
+    toggleAttribute({ element, name: 'data-fade-right', on: edges.right });
+    return;
+  }
+  const edges = scrollFadeEdges(element);
+  toggleAttribute({ element, name: 'data-fade-top', on: edges.top });
+  toggleAttribute({ element, name: 'data-fade-bottom', on: edges.bottom });
+};
+
+export const useScrollFadeEffect = (
+  ref: RefObject<HTMLElement | null>,
+  options?: { axis?: ScrollFadeAxis },
+): void => {
+  const axis = options?.axis ?? 'y';
   useEffect(() => {
     const element = ref.current;
     if (!element) {
       return;
     }
-    const update = () => {
-      const edges = scrollFadeEdges(element);
-      toggleAttribute({ element, name: 'data-fade-top', on: edges.top });
-      toggleAttribute({ element, name: 'data-fade-bottom', on: edges.bottom });
-    };
+    const update = () => updateEdges({ element, axis });
     const observeChildren = (observer: ResizeObserver) => {
       for (const child of element.children) {
         observer.observe(child);
@@ -50,5 +64,5 @@ export const useScrollFadeEffect = (ref: RefObject<HTMLElement | null>): void =>
       resizeObserver.disconnect();
       mutationObserver.disconnect();
     };
-  }, [ref]);
+  }, [ref, axis]);
 };

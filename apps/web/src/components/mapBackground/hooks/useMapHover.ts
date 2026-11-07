@@ -1,44 +1,35 @@
-import { useCallback, useEffect } from 'react';
-import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { useEffect } from 'react';
+import { useMapFocusStore, type MapHoverTarget } from '@/store/mapFocus.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
-
-const setHovered = {
-  session: (id: string | null) => useMapFocusStore.getState().setHoveredSession(id),
-  studioRoute: (id: string | null) => useMapFocusStore.getState().setHoveredStudioRoute(id),
-};
-
-type MapHoverKind = keyof typeof setHovered;
+import { useMapScene } from './useMapScene.ts';
 
 interface MapHoverHandlers {
   onPointerEnter: () => void;
   onPointerLeave: () => void;
 }
 
-/**
- * Hovering a list item highlights the matching entity on the map (fine
- * pointer only — a tap on touch would leave the highlight stuck); leaving or
- * unmounting clears the highlight.
- */
-export const useMapHover = ({ kind, id }: { kind: MapHoverKind; id: string }): MapHoverHandlers => {
+export const useMapHover = (target: MapHoverTarget | null): MapHoverHandlers => {
   const pointerFine = useDevice().pointerFine;
+  const sceneKey = useMapScene().key;
+  const kind = target?.kind;
+  const id = target?.id;
 
   useEffect(() => {
+    if (kind === undefined || id === undefined) return;
     return () => {
-      setHovered[kind](null);
+      useMapFocusStore.getState().clearMapHover({ kind, id });
     };
-  }, [kind]);
+  }, [kind, id]);
 
-  const onPointerEnter = useCallback(() => {
-    if (pointerFine) {
-      setHovered[kind](id);
-    }
-  }, [kind, id, pointerFine]);
+  const onPointerEnter = () => {
+    if (!pointerFine || target === null) return;
+    useMapFocusStore.getState().setMapHover({ target, sceneKey });
+  };
 
-  const onPointerLeave = useCallback(() => {
-    if (pointerFine) {
-      setHovered[kind](null);
-    }
-  }, [kind, pointerFine]);
+  const onPointerLeave = () => {
+    if (!pointerFine || kind === undefined || id === undefined) return;
+    useMapFocusStore.getState().clearMapHover({ kind, id });
+  };
 
   return { onPointerEnter, onPointerLeave };
 };

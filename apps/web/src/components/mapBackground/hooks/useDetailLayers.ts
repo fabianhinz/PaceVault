@@ -3,6 +3,7 @@ import type { Layer, LayersList, PickingInfo } from '@deck.gl/core';
 import { PathLayer } from '@deck.gl/layers';
 import { lapIndexAtRecord } from '@/lib/analysis/laps.ts';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
+import { sceneHoveredId, sceneSessionId } from '@/components/mapBackground/mapScene.ts';
 import { useMapControlsStore } from '@/store/mapControls.ts';
 import { useSessionsStore } from '@/store/sessions.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
@@ -11,6 +12,7 @@ import type { DetailPath } from '@/components/mapBackground/zoneColoredPath.ts';
 import { LAP_DIMMED_BRIGHTNESS, trackModifiers } from '@/components/mapBackground/trackColors.ts';
 import { useSessionDetailPath } from './useSessionDetailPath.ts';
 import { useLapLayers } from './useLapLayers.ts';
+import { useMapScene } from './useMapScene.ts';
 import type { DeckEventHandlers, PickHandler } from './types.ts';
 
 interface DetailLayers {
@@ -28,8 +30,11 @@ export const useDetailLayers = ({
   terrain: boolean;
   eventHandlers: DeckEventHandlers;
 }): DetailLayers => {
-  const hoveredSessionId = useMapFocusStore((s) => s.hoveredSessionId);
-  const openedSessionId = useMapFocusStore((s) => s.openedSessionId);
+  const scene = useMapScene();
+  const hoveredSessionId = useMapFocusStore((s) =>
+    sceneHoveredId({ hover: s.mapHover, sceneKey: scene.key, kind: 'session' }),
+  );
+  const openedSessionId = sceneSessionId(scene);
   const sessions = useSessionsStore((s) => s.sessions);
   const trackColorMode = useMapControlsStore((s) => s.trackColorMode);
   const pointerFine = useDevice().pointerFine;

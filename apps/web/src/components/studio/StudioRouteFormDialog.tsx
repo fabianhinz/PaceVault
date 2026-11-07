@@ -6,7 +6,6 @@ import { PvButton } from '@pacevault/ui/components/pvButton/PvButton.tsx';
 import { PvInput } from '@pacevault/ui/components/pvInput/PvInput.tsx';
 import { PvLabel } from '@pacevault/ui/components/pvLabel/PvLabel.tsx';
 import { PvDialog } from '@pacevault/ui/components/pvDialog/PvDialog.tsx';
-import { PvDialogContent } from '@pacevault/ui/components/pvDialog/PvDialogContent.tsx';
 import { PvDialogHeader } from '@pacevault/ui/components/pvDialog/PvDialogHeader.tsx';
 import { PvDialogBody } from '@pacevault/ui/components/pvDialog/PvDialogBody.tsx';
 import { PvDialogFooter } from '@pacevault/ui/components/pvDialog/PvDialogFooter.tsx';
@@ -42,34 +41,36 @@ export const StudioRouteFormDialog: FC<StudioRouteFormDialogProps> = (props) => 
   };
 
   return (
-    <PvDialog open={props.open} onOpenChange={() => props.onOpenChange(false)}>
-      <PvDialogContent closeLabel={m.ui_sheet_drag_close()}>
-        <PvDialogHeader title={m.ui_studio_edit_title()} />
-        <PvDialogBody>
-          <PvDialogDescription>{m.ui_studio_edit_desc()}</PvDialogDescription>
+    <PvDialog
+      open={props.open}
+      onOpenChange={() => props.onOpenChange(false)}
+      closeLabel={m.ui_sheet_drag_close()}
+    >
+      <PvDialogHeader title={m.ui_studio_edit_title()} />
+      <PvDialogBody>
+        <PvDialogDescription>{m.ui_studio_edit_desc()}</PvDialogDescription>
 
-          <div className="mt-4 flex flex-col gap-4">
-            <PvInput
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={m.ui_studio_name_placeholder()}
-            />
-            <div>
-              <PvLabel>{m.ui_studio_color_label()}</PvLabel>
-              <StudioColorPicker value={color} onChange={setColor} />
-            </div>
+        <div className="flex flex-col gap-4">
+          <PvInput
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={m.ui_studio_name_placeholder()}
+          />
+          <div>
+            <PvLabel>{m.ui_studio_color_label()}</PvLabel>
+            <StudioColorPicker value={color} onChange={setColor} />
           </div>
-        </PvDialogBody>
+        </div>
+      </PvDialogBody>
 
-        <PvDialogFooter>
-          <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>
-            {m.ui_btn_cancel()}
-          </PvButton>
-          <PvButton disabled={!name.trim()} onClick={handleSave}>
-            {m.ui_btn_save()}
-          </PvButton>
-        </PvDialogFooter>
-      </PvDialogContent>
+      <PvDialogFooter>
+        <PvButton variant="secondary" onClick={() => props.onOpenChange(false)}>
+          {m.ui_btn_cancel()}
+        </PvButton>
+        <PvButton disabled={!name.trim()} onClick={handleSave}>
+          {m.ui_btn_save()}
+        </PvButton>
+      </PvDialogFooter>
     </PvDialog>
   );
 };

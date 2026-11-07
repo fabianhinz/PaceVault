@@ -7,6 +7,9 @@ import {
   formatDuration,
   formatDistance,
   formatSubSport,
+  formatSignedRaceTime,
+  formatRaceTime,
+  formatTimeHMS,
   toDateString,
 } from '@/lib/format/formatters.ts';
 
@@ -15,6 +18,14 @@ describe('pace formatters print "x:60" when seconds round up to a full minute', 
     expect(formatPace(299.7)).toBe('5:00 /km');
     expect(formatPaceTick(4.999)).toBe('5:00');
     expect(formatPaceInput(359.6)).toBe('6:00');
+  });
+});
+
+describe('race time formatters print "x:60" when seconds round up to a full minute', () => {
+  it('carries the rounded minute and hour instead of printing 60 seconds', () => {
+    expect(formatRaceTime(599.6)).toBe('10:00');
+    expect(formatRaceTime(3599.7)).toBe('1:00:00');
+    expect(formatTimeHMS(599.6)).toBe('0:10:00');
   });
 });
 
@@ -144,5 +155,13 @@ describe(toDateString.name, () => {
   it('does not shift to next day for late-night local timestamps', () => {
     const d = new Date(2024, 11, 31, 23, 59); // Dec 31, 11:59 PM local
     expect(toDateString(d.getTime())).toBe('2024-12-31');
+  });
+});
+
+describe(formatSignedRaceTime.name, () => {
+  it('signs a gap and prints a plus for zero', () => {
+    expect(formatSignedRaceTime(48)).toBe('+0:48');
+    expect(formatSignedRaceTime(-72)).toBe('−1:12');
+    expect(formatSignedRaceTime(0.2)).toBe('+0:00');
   });
 });

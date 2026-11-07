@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { startTransition, type FC } from 'react';
 import { usePageRouting } from '@/routing/usePageRouting.ts';
 import { SessionHeader } from './SessionHeader.tsx';
 import { PvCard } from '@pacevault/ui/components/pvCard/PvCard.tsx';
@@ -14,8 +14,10 @@ interface SessionItemProps {
 export const SessionItem: FC<SessionItemProps> = (props) => {
   const pageRouting = usePageRouting();
   const handleNavigate = () => {
-    pageRouting.open({ page: 'sessionDetail', params: { sessionId: props.session.id } });
-    props.onNavigate?.();
+    startTransition(() => {
+      pageRouting.open({ page: 'sessionDetail', params: { sessionId: props.session.id } });
+      props.onNavigate?.();
+    });
   };
 
   const sessionHover = useMapHover({ kind: 'session', id: props.session.id });
