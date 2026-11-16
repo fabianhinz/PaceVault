@@ -30,7 +30,7 @@ export const useTerrainHoverPointEffect = (): void => {
     if (map === undefined) return;
     const element = document.createElement('div');
     element.className = HOVER_POINT_CLASS;
-    const marker = new Marker({ element });
+    const marker = new Marker({ element, opacityWhenCovered: '1' });
     placeMarker({ map, marker, point: useMapFocusStore.getState().hoveredPoint });
     const unsubscribe = useMapFocusStore.subscribe((state, previous) => {
       if (state.hoveredPoint !== previous.hoveredPoint) {
