@@ -41,7 +41,7 @@ const BASE_TOKENS = {
   sportCyclingDeep: '#c2410c',
   mapShadow: '#000000',
   mapHighlight: '#ffffff',
-  mapHillshadeHighlight: '#ffffff1a',
+  mapHillshadeHighlight: '#ffffff40',
   mapDotStroke: '#00000050',
   mapMarker: '#ffffff',
   mapPickArea: '#ffffff',

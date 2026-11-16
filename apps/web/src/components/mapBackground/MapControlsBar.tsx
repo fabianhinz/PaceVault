@@ -38,7 +38,7 @@ export const MapControlsBar: FC<MapControlsBarProps> = (props) => {
     <PvSheetAbove>
       <div
         className={cn(
-          'pointer-events-auto max-w-full touch-pan-x overflow-x-auto overscroll-x-contain px-4',
+          'pointer-events-auto -mt-4 -mb-8 max-w-full touch-pan-x overflow-x-auto overscroll-x-contain px-4 pt-4 pb-8',
           '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         )}
       >

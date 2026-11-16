@@ -142,7 +142,7 @@
 
   --color-map-shadow: #000000;
   --color-map-highlight: #ffffff;
-  --color-map-hillshade-highlight: #ffffff1a;
+  --color-map-hillshade-highlight: #ffffff40;
   --color-map-dot-stroke: #00000050;
   --color-map-marker: var(--color-white);
   --color-map-pick-area: var(--color-white);
