@@ -12,8 +12,8 @@ interface SegmentRideRailProps {
 }
 
 const MARKER_CLASS_BY_EDGE: Record<RailEdge, string> = {
-  start: 'border-2 border-white/30',
-  end: 'bg-white/30',
+  start: 'border-2 border-marker',
+  end: 'bg-marker',
 };
 
 const endpoint = ({ edge, label }: { edge: RailEdge; label: string }): ReactNode => (
@@ -32,7 +32,7 @@ export const SegmentRideRail: FC<SegmentRideRailProps> = (props) => (
     {endpoint({ edge: 'start', label: props.startLabel })}
     <div className="flex gap-3">
       <span className="flex w-3 shrink-0 justify-center">
-        <span aria-hidden className="w-0.5 bg-white/10" />
+        <span aria-hidden className="w-0.5 bg-divider" />
       </span>
       <PvActionItemList size="sm" className="min-w-0 flex-1 py-2">
         {props.children}

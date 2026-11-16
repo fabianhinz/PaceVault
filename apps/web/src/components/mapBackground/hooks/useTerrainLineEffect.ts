@@ -17,16 +17,17 @@ import {
   type LineColor,
   type TerrainLineRun,
 } from '@/components/mapBackground/terrainLine.ts';
+import { TRACK_WIDTH, type LapDim } from '@/components/mapBackground/trackColors.ts';
 
 interface TerrainLineWidths {
   metres: number;
   minPixels: number;
   casingMetres: number;
   casingMinPixels: number;
+  selectedMetres: number;
   selectedMinPixels: number;
 }
 
-const HOVER_WIDTH_PX = 3;
 const ROUND_LINE = { 'line-join': 'round', 'line-cap': 'round' } as const;
 
 type LineOpacity = NonNullable<
@@ -61,14 +62,15 @@ const addTerrainLine = ({ map, id }: { map: MapLibreMap; id: string }) => {
     type: 'line',
     source: terrainLineHoverSourceId(id),
     layout: ROUND_LINE,
-    paint: { 'line-color': tokens.mapHighlight, 'line-width': HOVER_WIDTH_PX },
+    paint: { 'line-color': tokens.mapHighlight, 'line-width': TRACK_WIDTH.terrainHoverLinePixels },
   });
   map.addLayer({
     id: layers.casing,
     type: 'line',
     source: id,
     layout: ROUND_LINE,
-    paint: { 'line-color': tokens.mapHighlight, 'line-opacity': SELECTED_OPACITY },
+    // The selected lap's casing matches the charts' selection frame (chart-highlight).
+    paint: { 'line-color': tokens.chartHighlight, 'line-opacity': SELECTED_OPACITY },
   });
   map.addLayer({
     id: layers.selected,
@@ -116,7 +118,7 @@ const paintWidths = ({
     layers.selected,
     'line-width',
     widthOf({
-      metres: width.metres,
+      metres: width.selectedMetres,
       minPixels: Math.max(width.selectedMinPixels, width.minPixels),
     }),
   );
@@ -156,7 +158,7 @@ export const useTerrainLineEffect = ({
   runs,
   colors,
   width,
-  dimFactor,
+  lapDim,
   dimmed,
   onDrawn,
 }: {
@@ -165,7 +167,7 @@ export const useTerrainLineEffect = ({
   runs: TerrainLineRun[];
   colors: LineColor | LineColor[];
   width: TerrainLineWidths;
-  dimFactor: number;
+  lapDim: LapDim;
   dimmed: boolean;
   onDrawn?: () => void;
 }): void => {
@@ -181,8 +183,8 @@ export const useTerrainLineEffect = ({
   useEffect(() => {
     const source = map?.getSource<GeoJSONSource>(id);
     if (source === undefined) return;
-    source.setData(buildTerrainLineFeatures({ path, runs, colors, dimFactor }));
-  }, [map, id, path, runs, colors, dimFactor]);
+    source.setData(buildTerrainLineFeatures({ path, runs, colors, lapDim }));
+  }, [map, id, path, runs, colors, lapDim]);
 
   useEffect(() => {
     if (map === undefined || onDrawn === undefined || map.getSource(id) === undefined) return;

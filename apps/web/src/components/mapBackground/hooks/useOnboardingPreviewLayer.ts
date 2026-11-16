@@ -6,10 +6,10 @@ import { useOnboardingStore } from '@/store/onboarding.ts';
 import { previewDrawInEnd, slicePath } from '@/lib/demo/previewDrawIn.ts';
 import type { PreviewPass } from '@/types.ts';
 import {
-  ADDITIVE_BLEND,
+  TRACK_BLEND_PARAMETERS,
   TRACK_COLOR_BY_SPORT,
   ALPHA_BY_TRACK_INTENSITY,
-  trackModifiers,
+  TRACK_WIDTH,
 } from '@/components/mapBackground/trackColors.ts';
 import { useOnboardingPreviewRoutes } from '@/queries/onboarding/useOnboardingPreviewRoutes.ts';
 
@@ -53,12 +53,12 @@ export const useOnboardingPreviewLayer = (): PathLayer<PreviewSlice> | null => {
       })),
       getPath: (d) => d.path,
       getColor: (d) => [...TRACK_COLOR_BY_SPORT[d.sport], ALPHA_BY_TRACK_INTENSITY.faint],
-      getWidth: trackModifiers.width.default,
-      widthMinPixels: 1,
+      getWidth: TRACK_WIDTH.onboardingPreviewTrackMetres,
+      widthMinPixels: TRACK_WIDTH.trackMinimumPixels,
       jointRounded: true,
       capRounded: true,
       pickable: false,
-      parameters: ADDITIVE_BLEND,
+      parameters: TRACK_BLEND_PARAMETERS,
     });
   }, [active, passes, elapsed]);
 };

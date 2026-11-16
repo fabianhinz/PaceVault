@@ -7,11 +7,12 @@ import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { sceneHoveredSpan } from '@/components/mapBackground/mapScene.ts';
 import { lapSubPath } from '@/components/mapBackground/lapPath.ts';
 import type { DetailPath } from '@/components/mapBackground/zoneColoredPath.ts';
-import { LAP_CASING_SCALE, trackModifiers } from '@/components/mapBackground/trackColors.ts';
+import {
+  LAP_CASING_COLOR,
+  LAP_HOVER_COLOR,
+  TRACK_WIDTH,
+} from '@/components/mapBackground/trackColors.ts';
 import { useMapScene } from './useMapScene.ts';
-
-const LAP_CASING_COLOR: [number, number, number, number] = [255, 255, 255, 255];
-const LAP_HOVER_COLOR: [number, number, number, number] = [255, 255, 255, 255];
 
 const lapPathFor = ({
   detailPath,
@@ -80,7 +81,7 @@ export const useLapLayers = ({
       visible: hoveredLapPath !== null,
       getPath: (d) => d.path,
       getColor: LAP_HOVER_COLOR,
-      getWidth: 3,
+      getWidth: TRACK_WIDTH.hoveredLapPixels,
       widthUnits: 'pixels',
       jointRounded: true,
       capRounded: true,
@@ -97,8 +98,8 @@ export const useLapLayers = ({
           data: [selectedLapPath],
           getPath: (d) => d.path,
           getColor: LAP_CASING_COLOR,
-          getWidth: trackModifiers.width.highlighted * LAP_CASING_SCALE,
-          widthMinPixels: 9,
+          getWidth: TRACK_WIDTH.selectedLapOutlineMetres,
+          widthMinPixels: TRACK_WIDTH.selectedLapOutlineMinimumPixels,
           jointRounded: true,
           capRounded: true,
           pickable: false,
@@ -108,8 +109,8 @@ export const useLapLayers = ({
           data: [selectedLapPath],
           getPath: (d) => d.path,
           getColor: (d) => d.color,
-          getWidth: trackModifiers.width.highlighted,
-          widthMinPixels: 5,
+          getWidth: TRACK_WIDTH.selectedLapMetres,
+          widthMinPixels: TRACK_WIDTH.selectedLapMinimumPixels,
           jointRounded: true,
           capRounded: true,
           pickable: false,

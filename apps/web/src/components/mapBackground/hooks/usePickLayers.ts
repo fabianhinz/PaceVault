@@ -7,6 +7,8 @@ import {
   HOVER_MARKER_RADIUS_PX,
   HOVER_MARKER_RING_COLOR,
   HOVER_MARKER_RING_WIDTH_PX,
+  PICK_CIRCLE_FILL,
+  PICK_CIRCLE_LINE,
 } from '@/components/mapBackground/trackColors.ts';
 import { PICK_RADIUS } from '@/components/mapBackground/trackPicking.ts';
 
@@ -36,10 +38,10 @@ export const usePickLayers = (terrain: boolean): PickLayers => {
       getPosition: (d) => d.center,
       getRadius: PICK_RADIUS,
       radiusUnits: 'pixels',
-      getFillColor: [255, 255, 255, 13],
+      getFillColor: PICK_CIRCLE_FILL,
       filled: true,
       stroked: true,
-      getLineColor: [255, 255, 255, 25],
+      getLineColor: PICK_CIRCLE_LINE,
       lineWidthUnits: 'pixels' as const,
       getLineWidth: 1,
       pickable: false,

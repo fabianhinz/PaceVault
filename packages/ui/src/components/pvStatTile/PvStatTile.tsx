@@ -33,7 +33,7 @@ export const PvStatTile: FC<PvStatTileProps> = (props) => {
       className={cn(
         TILE_CLASS,
         'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] grid-rows-[16px_28px_32px] gap-y-1 p-2',
-        props.onClick !== undefined && 'cursor-pointer text-left hover:bg-white/10',
+        props.onClick !== undefined && 'cursor-pointer text-left hover:bg-overlay',
       )}
     >
       <div className="flex min-w-0 items-center gap-1.5">

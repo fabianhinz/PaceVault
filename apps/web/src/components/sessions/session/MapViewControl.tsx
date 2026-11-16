@@ -63,7 +63,7 @@ export const MapViewControl: FC = () => {
             key={option}
             value={option}
             aria-label={LABEL_BY_MAP_VIEW[option]()}
-            className="rounded-lg px-2 py-2 hover:bg-white/5 data-[state=checked]:bg-white/5"
+            className="rounded-lg px-2 py-2 hover:bg-overlay-subtle data-[state=checked]:bg-overlay-subtle"
           >
             <span className="min-w-0 flex-1">
               <PvTypography variant="subtitle1" as="span" className="block">

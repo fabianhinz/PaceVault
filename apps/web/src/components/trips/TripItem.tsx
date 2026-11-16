@@ -23,7 +23,7 @@ export const TripItem: FC<TripItemProps> = (props) => {
           pageRouting.open({ page: 'tripDetail', params: { tripId: props.trip.id } });
         }
       }}
-      className="cursor-pointer hover:bg-white/10"
+      className="cursor-pointer hover:bg-surface-glass-hover"
     >
       <TripHeader trip={props.trip} />
     </PvCard>

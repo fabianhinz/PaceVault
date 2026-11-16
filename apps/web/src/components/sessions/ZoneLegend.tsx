@@ -17,7 +17,7 @@ export const ZoneLegend: FC<ZoneLegendProps> = (props) => {
       {props.zones.map((zone) => (
         <span
           key={zone.name}
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 text-xs text-text-secondary whitespace-nowrap"
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-overlay-subtle text-xs text-text-secondary whitespace-nowrap"
         >
           <span
             className="w-2 h-2 rounded-full shrink-0"

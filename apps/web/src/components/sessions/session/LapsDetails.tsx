@@ -30,7 +30,7 @@ export const LapsDetails: FC<LapsDetailsProps> = (props) => {
   return (
     <div className="flex flex-col gap-3">
       <LapStrip set={props.set} size="detail" />
-      <div className="flex flex-col gap-1 border-t border-white/10 pt-2.5">
+      <div className="flex flex-col gap-1 border-t border-divider pt-2.5">
         <LapExtreme
           set={props.set}
           label={m.ui_laps_fastest()}

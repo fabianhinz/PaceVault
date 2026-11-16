@@ -13,7 +13,7 @@ export const PvChip: FC<PvChipProps> = (props) => (
     variant="caption"
     as="span"
     title={props.title}
-    className={cn('rounded bg-white/10 px-1.5 py-0.5', props.className)}
+    className={cn('rounded bg-overlay px-1.5 py-0.5', props.className)}
   >
     {props.children}
   </PvTypography>

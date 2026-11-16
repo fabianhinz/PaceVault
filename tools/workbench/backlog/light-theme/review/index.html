@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Light theme · Review</title>
+    <link rel="stylesheet" href="../../../shared/review.css" />
+  </head>
+  <body class="rv">
+    <main class="rv-doc">
+      <header class="rv-text">
+        <p class="rv-over">Review · round 1 · prototype</p>
+        <h1>A light theme that stays readable outdoors on a phone</h1>
+        <p>
+          Step 1 moves the dark UI onto overlay role tokens (pixel-identical). Step 2a adds palette A
+          light, a Theme select in Settings and lifts the dark greys; step 2b puts the light theme on
+          CARTO Voyager with hillshade and sky; step 2c blends the tracks with plain alpha, keeps
+          deck.gl's render path and the track outlines as on main, gives the lap outline the chart
+          selection colour, raises the maximum tilt to 70° and gathers all track widths in one
+          constant. Built from the answers to Q1–Q23 before a detailed plan exists.
+        </p>
+        <p>
+          <strong>Open points 1–3 are closed</strong> by Q18–Q20 (alpha blend, render path as on main,
+          maximum tilt), the halo is gone (Q21); the <a href="#open-points">open points</a> list what is left.
+        </p>
+      </header>
+
+      <h2>Changes</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C1</span>Palette A light theme (step 2a)</h3>
+        <div class="rv-text">
+          <p>A <code>[data-theme='light']</code> block gives every role token a light value: white page and cards, #111318 text, light dividers, black overlays instead of white ones, and a near-black selected tile (Q1 palette A).</p>
+          <p><code>tokens.ts</code> holds three sets (base for board and banner, dark and light for the app) and picks the one the page loaded with.</p>
+          <p class="rv-refs"><code>packages/ui/src/theme.css:266-413</code>; <code>packages/ui/src/lib/tokens.ts:250-267</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · sessions · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-sessions-light.png" alt="C1 before · Desktop · sessions" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-sessions-light.png" alt="C1 after · Desktop · sessions light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C1 desktop sessions light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · sessions · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-sessions-light.png" alt="C1 before · Phone · sessions" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-sessions-light.png" alt="C1 after · Phone · sessions light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · settings · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-settings-light.png" alt="C1 before · Desktop · settings" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-settings-light.png" alt="C1 after · Desktop · settings light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C1 desktop settings light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · settings · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-settings-light.png" alt="C1 before · Phone · settings" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-settings-light.png" alt="C1 after · Phone · settings light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C2</span>Opaque surfaces over the map in light</h3>
+        <div class="rv-text">
+          <p>Glass and floating surfaces are opaque white in light (Q8); dark keeps its 55 % / 85 % glass. Scrim and dialog over the session map shown below.</p>
+          <p class="rv-refs"><code>packages/ui/src/theme.css:308-311</code> (dark: <code>packages/ui/src/theme.css:87</code>, <code>:92</code>); <code>packages/ui/src/lib/surfaces.ts:1</code>, <code>:5</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · dialog · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-dialog-light.png" alt="C2 before · Desktop · dialog" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-dialog-light.png" alt="C2 after · Desktop · dialog light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C2 desktop dialog light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · dialog · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-dialog-light.png" alt="C2 before · Phone · dialog" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-dialog-light.png" alt="C2 after · Phone · dialog light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C3</span>Sport, zone, chart, precipitation and wind colours for light</h3>
+        <div class="rv-text">
+          <p>Running #16a34a and cycling #ea580c (Q13); zones, charts, precipitation and wind take the palette A research values (Q16). Zone crimson moves one step darker (#991b1b) to stay apart from red.</p>
+          <p class="rv-refs"><code>packages/ui/src/theme.css:354-392</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · labs · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-labs-light.png" alt="C3 before · Desktop · labs" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-labs-light.png" alt="C3 after · Desktop · labs light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C3 desktop labs light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · labs · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-labs-light.png" alt="C3 before · Phone · labs" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-labs-light.png" alt="C3 after · Phone · labs light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · records · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-records-light.png" alt="C3 before · Desktop · records" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-records-light.png" alt="C3 after · Desktop · records light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C3 desktop records light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · records · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-records-light.png" alt="C3 before · Phone · records" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-records-light.png" alt="C3 after · Phone · records light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C4</span>Dark theme greys one step lighter</h3>
+        <div class="rv-text">
+          <p>In dark, secondary / tertiary / quaternary text move to gray-200 / 300 / 400 (Q7, Q15). Only under the app's <code>[data-theme='dark']</code>; board and README banner keep the old greys (Q14).</p>
+          <p class="rv-refs"><code>packages/ui/src/theme.css:261-263</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · settings · today → dark after the grey lift</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-settings-dark.png" alt="C4 before · Desktop · settings" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-settings-dark.png" alt="C4 after · Desktop · settings dark" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C4 desktop settings dark: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · settings · today → dark after the grey lift</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-settings-dark.png" alt="C4 before · Phone · settings" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-settings-dark.png" alt="C4 after · Phone · settings dark" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · session-detail · today → dark after the grey lift</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-detail-dark.png" alt="C4 before · Desktop · session-detail" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-detail-dark.png" alt="C4 after · Desktop · session-detail dark" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C4 desktop session-detail dark: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · session-detail · today → dark after the grey lift</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-detail-dark.png" alt="C4 before · Phone · session-detail" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-detail-dark.png" alt="C4 after · Phone · session-detail dark" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C5</span>Theme select in Settings, first-paint script, reload on switch</h3>
+        <div class="rv-text">
+          <p>Settings › General gets a Theme row (System / Light / Dark) next to the language row; System is the default (Q3, Q4). An inline script sets <code>data-theme</code>, <code>theme-color</code> and the iOS status bar style from <code>localStorage['pacevault-theme']</code> before first paint.</p>
+          <p>Choosing a theme, or a system change while System is chosen and the shown theme would change, reloads the page (Q17). The row sits below the fold in the shots; the shot shows the settings page in light.</p>
+          <p class="rv-refs"><code>apps/web/index.html:17-35</code>; <code>apps/web/src/lib/theme/theme.ts:46</code>, <code>:56</code>; <code>apps/web/src/main.tsx:27</code>; <code>apps/web/src/components/settings/ThemeListItem.tsx:18</code>; <code>apps/web/src/components/settings/index.tsx:83</code>; <code>apps/web/src/microcopy/theme.ts:4</code>; <code>packages/i18n/messages/en.json:17-21</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C6</span>Banner base and control thumbs</h3>
+        <div class="rv-text">
+          <p>Banners sit on an opaque white base in light so map labels do not run through the text (transparent in dark); switch and slider thumbs get a 1 px edge (black 15 % in light, transparent in dark); the selected action tile inverts.</p>
+          <p class="rv-refs"><code>packages/ui/src/components/pvBanner/PvBanner.tsx:12</code>; <code>packages/ui/src/theme.css:121</code>, <code>:340</code>; <code>packages/ui/src/components/pvSwitch/PvSwitch.tsx:28</code>; <code>packages/ui/src/components/pvSlider/PvSlider.tsx:39</code>; <code>packages/ui/src/components/pvActionTile/PvActionTile.tsx:52</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · trips · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-trips-light.png" alt="C6 before · Desktop · trips" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-trips-light.png" alt="C6 after · Desktop · trips light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C6 desktop trips light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · trips · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-trips-light.png" alt="C6 before · Phone · trips" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-trips-light.png" alt="C6 after · Phone · trips light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C7</span>CARTO Voyager basemap in light (step 2b)</h3>
+        <div class="rv-text">
+          <p>The basemap follows the theme: Dark Matter in dark, Voyager in light (Q2). The theme is read once at load; a switch reloads (C5).</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/mapStyle.ts:102-108</code>; <code>apps/web/src/components/mapBackground/mapTheme.ts:11</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · segment · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-segment-light.png" alt="C7 before · Desktop · segment" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-segment-light.png" alt="C7 after · Desktop · segment light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C7 desktop segment light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · segment · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-segment-light.png" alt="C7 before · Phone · segment" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-segment-light.png" alt="C7 after · Phone · segment light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C8</span>Light track heat: a20-deep</h3>
+        <div class="rv-text">
+          <p>On Voyager the tracks blend with plain alpha inside deck.gl, the light counterpart of dark's additive blend (Q18, Q19), with the values the owner picked live (Q24, Q25): one colour step darker than the UI's sport colours (running #15803d, cycling #c2410c) at faint / warm / hot alphas 64 / 128 / 204. deck.gl draws the track layers at its default layer opacity 1, so a pass covers about 25 % / 50 % / 80 % of the map. At faint, one pass reaches 1.41:1 / 1.44:1 on #fbf8f3, four 2.76:1 / 2.94:1 and ten 4.30:1 / 4.50:1, so overlaps keep building instead of saturating after 2–3 passes as at 160 / 210 / 255. Joints, caps and widths stay as in dark.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/trackColors.ts:97-111</code>; <code>packages/ui/src/theme.css:139-141</code>; <code>apps/web/src/components/mapBackground/hooks/useTrackLayers.ts:93-101</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · dashboard · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-dashboard-light.png" alt="C8 before · Desktop · dashboard" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-dashboard-light.png" alt="C8 after · Desktop · dashboard light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C8 desktop dashboard light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · dashboard · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-dashboard-light.png" alt="C8 before · Phone · dashboard" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-dashboard-light.png" alt="C8 after · Phone · dashboard light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · dense centre · light 160 / 210 / 255 (current) → a20-deep</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="variants/d-en-dashboard-dense-current.png" alt="C8 light dense centre with the 2c alphas" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="variants/d-en-dashboard-dense-a20-deep.png" alt="C8 light dense centre with a20-deep" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">current</span><span class="rv-tag rv-tag--after">a20-deep</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C8 dense centre: current / a20-deep split" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C9</span>Opened session track as in dark, no halo</h3>
+        <div class="rv-text">
+          <p>The opened session draws exactly like dark: one sport-coloured line at the same width, no halo and no edge (Q21 replaces Q9). Light changes only its colour.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/hooks/useDetailLayers.ts:80-95</code>; <code>apps/web/src/components/mapBackground/trackColors.ts:59-62</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · session-detail · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-detail-light.png" alt="C9 before · Desktop · session-detail" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-detail-light.png" alt="C9 after · Desktop · session-detail light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C9 desktop session-detail light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · session-detail · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-detail-light.png" alt="C9 before · Phone · session-detail" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-detail-light.png" alt="C9 after · Phone · session-detail light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C10</span>Selected lap: outline in the chart selection colour, the rest fades to 0.45</h3>
+        <div class="rv-text">
+          <p>While a lap is selected, the rest of the session drops to 0.45 opacity in light instead of darkening (Q11); dark keeps RGB × 0.8. The selected lap's outline reads <code>chart-highlight</code>, the colour of the charts' selection frame: white in dark (unchanged), gray-900 in light (Q22); the 3D casing reads the same token. The 2D lap hover line is near-black #1c1917 in light.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/trackColors.ts:120</code>, <code>:145-147</code>; <code>apps/web/src/components/mapBackground/hooks/useTerrainLineEffect.ts:72-73</code>; <code>apps/web/src/components/mapBackground/lapPath.ts:10-15</code>; <code>packages/ui/src/theme.css:170</code>, <code>:371</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · session-lap · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-lap-light.png" alt="C10 before · Desktop · session-lap" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-lap-light.png" alt="C10 after · Desktop · session-lap light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C10 desktop session-lap light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · session-lap · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-lap-light.png" alt="C10 before · Phone · session-lap" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-lap-light.png" alt="C10 after · Phone · session-lap light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C11</span>Warm brown hillshade on the light 3D map</h3>
+        <div class="rv-text">
+          <p>Shadow and accent #5a4a3a, highlight #ffffff59, exaggeration 0.35 in light (Q10); dark keeps black at 0.6. The before shots were taken with terrain exaggeration 3; the base now uses 1.5 (ea6b31c), so before and after differ in relief height for that reason, not because of the theme.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/mapStyle.ts:39-49</code>; <code>apps/web/src/components/mapBackground/hooks/useMapTerrainEffect.ts:39-47</code>; <code>packages/ui/src/theme.css:394</code>, <code>:396</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · session-3d · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-3d-light.png" alt="C11 before · Desktop · session-3d" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-3d-light.png" alt="C11 after · Desktop · session-3d light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C11 desktop session-3d light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · session-3d · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-3d-light.png" alt="C11 before · Phone · session-3d" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-3d-light.png" alt="C11 after · Phone · session-3d light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C12</span>Sky per theme in 3D</h3>
+        <div class="rv-text">
+          <p>Light: sky #d3e3eb, horizon and fog #f4f1ea; dark: sky #030712, horizon #1a1d24, fog #0e0e0e (Q12). Set only while 3D is on and restored when leaving it. The shots are taken at the maximum tilt of 70° (C15), where the sky barely shows: only a fog strip on the phone.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/mapStyle.ts:51-64</code>; <code>apps/web/src/components/mapBackground/hooks/useMapTerrainEffect.ts:22-23</code>, <code>:49</code>; <code>packages/ui/src/theme.css:150-152</code>, <code>:399-401</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · session-3d · today → dark after the grey lift</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-session-3d-dark.png" alt="C12 before · Desktop · session-3d" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-session-3d-dark.png" alt="C12 after · Desktop · session-3d dark" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C12 desktop session-3d dark: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · session-3d · today → dark after the grey lift</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-session-3d-dark.png" alt="C12 before · Phone · session-3d" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-session-3d-dark.png" alt="C12 after · Phone · session-3d dark" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C13</span>Light map details: route colours, attribution, markers</h3>
+        <div class="rv-text">
+          <p>Studio routes take the 600-step colours, the attribution chip is white 80 % with grey text, pick circle and accuracy disc turn dark, the best-pass marker is #d97706 (agent decision, decisions.md).</p>
+          <p class="rv-refs"><code>packages/ui/src/theme.css:394-412</code>; <code>apps/web/src/components/mapBackground/map-attribution.css:2-12</code>; <code>apps/web/src/components/mapBackground/trackColors.ts:110</code>, <code>:140-141</code>, <code>:150-151</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · studio · today (dark) → light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="before/d-en-studio-light.png" alt="C13 before · Desktop · studio" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="after/d-en-studio-light.png" alt="C13 after · Desktop · studio light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C13 desktop studio light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head"><span>Phone · 390 × 844 · studio · today (dark) → light</span></p>
+          <div class="rv-pair" style="--w: 390px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="before/p-en-studio-light.png" alt="C13 before · Phone · studio" width="390" height="844" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="after/p-en-studio-light.png" alt="C13 after · Phone · studio light" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C15</span>Maximum tilt 70°</h3>
+        <div class="rv-text">
+          <p>MapLibre's default maximum tilt of 60° never reaches the horizon (Q20); the map now allows 70° in both themes (Q30, lowered from 75°). The capture tilts to the maximum and holds it once the app's own terrain fit has eased back to the entry tilt. At 70° the desktop 3D shots show no sky: the terrain fills the view to the top edge. On the phone a thin pale strip of fog shows above the ridges, and the tilt around the centre moves the track behind the bottom sheet. At 75° both showed a clear band of sky.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/mapStyle.ts:20</code>; <code>apps/web/src/components/mapBackground/index.tsx:46</code>; <code>tools/workbench/backlog/light-theme/review/capture.spec.ts:207-224</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C17</span>Hover keeps items over the map opaque</h3>
+        <div class="rv-text">
+          <p>Hovering a session, segment, studio route or trip item (and a studio marker pin) replaced its opaque light surface with the 6 % black overlay, so the item turned see-through and showed the blurred map. These six now hover to <code>surface-glass-hover</code>: opaque black 6 % on white in light, the old overlay value in dark (0 changed pixels in the three dark hover shots). The studio marker pins also press to <code>surface-glass-pressed</code> (black 10 % on white in light, the old overlay-strong in dark; Q29, changed by the coordinator). The other 22 <code>hover:bg-overlay*</code> uses sit inside opaque cards, menus or dialogs and keep theirs (list in decisions.md).</p>
+          <p class="rv-refs"><code>packages/ui/src/theme.css:90-91</code>, <code>:309-310</code>; <code>packages/ui/src/components/pvActionItem/PvActionItem.tsx:60</code>; <code>apps/web/src/components/sessions/SessionItem.tsx:29</code>; <code>apps/web/src/components/segments/SegmentItem.tsx:25</code>; <code>apps/web/src/components/studio/StudioRouteItem.tsx:38</code>; <code>apps/web/src/components/trips/TripItem.tsx:26</code>; <code>apps/web/src/components/studio/markers/StudioMarkerPins.tsx:56</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · hovered session item · light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="hover/session-light-before.png" alt="C17 before · hovered session item · light" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="hover/session-light-after.png" alt="C17 after · hovered session item · light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C17 hovered session item light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · hovered studio item · light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="hover/studio-light-before.png" alt="C17 before · hovered studio item · light" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="hover/studio-light-after.png" alt="C17 after · hovered studio item · light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C17 hovered studio item light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · hovered segment item · light</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="hover/segment-light-before.png" alt="C17 before · hovered segment item · light" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="hover/segment-light-after.png" alt="C17 after · hovered segment item · light" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C17 hovered segment item light: before / after split" />
+            </div>
+          </div>
+          <p class="rv-cmp__head">
+            <span>Desktop · 1280 × 800 · hovered session item · dark</span><span>drag to compare</span>
+          </p>
+          <div class="rv-scroll">
+            <div class="rv-stage rv-swipe" style="--w: 1280px">
+              <img src="hover/session-dark-before.png" alt="C17 before · hovered session item · dark" width="1280" height="800" loading="lazy" />
+              <img class="rv-after" src="hover/session-dark-after.png" alt="C17 after · hovered session item · dark" width="1280" height="800" loading="lazy" />
+              <span class="rv-tag rv-tag--before">Before</span><span class="rv-tag rv-tag--after">After</span>
+              <input type="range" min="0" max="100" value="50" aria-label="C17 hovered session item dark: before / after split" />
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C18</span>Theme-neutral track-intensity copy</h3>
+        <div class="rv-text">
+          <p>The Faint / Warm / Hot descriptions no longer describe dark's additive glow, which light never shows; one wording serves both themes (Q26), e.g. "Single passes stay subtle – your regular routes stand out." Changed by the coordinator.</p>
+          <p class="rv-refs"><code>packages/i18n/messages/en.json:724-726</code>; <code>packages/i18n/messages/de.json:724-726</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C19</span>No logo watermark on error cards</h3>
+        <div class="rv-text">
+          <p>The root error card's logo watermark turned into a light-grey block in light, because <code>logo.svg</code> has its own dark square. The <code>branded</code> prop and its only use are removed, in both themes (Q27). Changed by the coordinator.</p>
+          <p class="rv-refs"><code>packages/ui/src/components/pvActionPromptCard/PvActionPromptCard.tsx:16</code>; <code>apps/web/src/components/errors/RootErrorFallback.tsx:15-19</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C20</span>Intensity swatch blends like the map</h3>
+        <div class="rv-text">
+          <p>The ramp in the intensity picker now blends each pass onto the basemap's own background colour (#fbf8f3 on Voyager, #0e0e0e on Dark Matter), read from the active map style, so it shows what the tracks do on the map (Q28). Changed by the coordinator.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/RampSwatch.tsx:16-24</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C21</span>Map attribution "i" visible in light</h3>
+        <div class="rv-text">
+          <p>The compact attribution's "i" button was inverted in both themes, so in light it turned white on the white chip and vanished. The invert now applies only under <code>[data-theme='dark']</code>; light shows MapLibre's own black icon. Dark is unchanged (crops of the desktop dashboard's bottom-right corner, enlarged 3×).</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/map-attribution.css:15-18</code></p>
+        </div>
+        <div class="rv-cmp">
+          <p class="rv-cmp__head"><span>Light · attribution button</span></p>
+          <div class="rv-pair" style="--w: 480px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="attribution/light-before.png" alt="C21 Light · attribution button · Before" width="480" height="240" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="attribution/light-after.png" alt="C21 Light · attribution button · After" width="480" height="240" loading="lazy" />
+            </figure>
+          </div>
+          <p class="rv-cmp__head"><span>Dark · attribution button</span></p>
+          <div class="rv-pair" style="--w: 480px">
+            <figure>
+              <figcaption>Before</figcaption>
+              <img src="attribution/dark-before.png" alt="C21 Dark · attribution button · Before" width="480" height="240" loading="lazy" />
+            </figure>
+            <figure>
+              <figcaption>After</figcaption>
+              <img src="attribution/dark-after.png" alt="C21 Dark · attribution button · After" width="480" height="240" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </article>
+
+      <h2>Changes without UI</h2>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C14</span>Overlay role tokens, dark pixel-identical (step 1)</h3>
+        <div class="rv-text">
+          <p>The ~111 raw <code>white/N</code> classes in the kit and the app now read role tokens (<code>overlay*</code>, <code>divider*</code>, <code>control-outline*</code>, <code>marker*</code>, <code>thumb*</code>, <code>scrim</code>), and <code>white4</code>…<code>white95</code> became <code>lap-strip-*</code>, <code>lap-swatch-*</code>, <code>lap-baseline</code>, <code>lap-placeholder</code>, <code>lap-avatar</code> with the same values (Q6). Pixel check of 48 dark shots: 38 identical, 10 differ by capture or map noise only.</p>
+          <p class="rv-refs"><code>packages/ui/src/theme.css:36-48</code>, <code>:53</code></p>
+        </div>
+      </article>
+
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C16</span>One track-width constant, one entry per place a track appears</h3>
+        <div class="rv-text">
+          <p><code>TRACK_WIDTH</code> holds every track width on the map under the owner's per-purpose names, with main's values (Q23): dashboard, onboarding preview, studio, opened session, segment, selected lap and its outline, lap hover, the 3D line and its hover. It replaces <code>trackModifiers.width</code>, <code>studioRouteModifiers.width</code>, <code>LAP_137-139_SCALE</code> and the inline pixel values; the 3D line gets its own <code>selectedMetres</code> field. Hover marker, geo accuracy circle, pick circle and the basemap style's own widths stay outside. The dark map areas of the dashboard, session-detail and session-lap shots are pixel-identical to before; the studio route differs only by its highlight width transition caught mid-way.</p>
+          <p class="rv-refs"><code>apps/web/src/components/mapBackground/trackColors.ts:64-81</code>; <code>apps/web/src/components/mapBackground/SessionTerrain.tsx:18-25</code>; <code>apps/web/src/components/mapBackground/hooks/useTerrainLineEffect.ts:27</code>, <code>:121</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C22</span>E2E and review captures emulate a dark system</h3>
+        <div class="rv-text">
+          <p>Without a stored theme the app follows the system, and Playwright emulates a light system by default, so the e2e suite and every future review capture rendered light while "before" shots taken on main are dark. Both configs now set <code>colorScheme: 'dark'</code>. The capture helper's <code>prepare</code> takes <code>{ theme: 'light' }</code> for a capture that needs light; this item's capture and the theme e2e (now in its own <code>Theme setting</code> describe) set their theme explicitly. The e2e suite passed in dark (92).</p>
+          <p class="rv-refs"><code>apps/web/playwright.config.ts:24-25</code>; <code>tools/workbench/playwright.review.config.ts:32-33</code>; <code>tools/workbench/shared/capture.ts:59-74</code>; <code>apps/web/e2e/onboarding.spec.ts:191</code></p>
+        </div>
+      </article>
+
+      <article class="rv-entry">
+        <h3><span class="rv-chip">C23</span>Docs, comments and small code fixes for both themes</h3>
+        <div class="rv-text">
+          <p>The kit README now describes light and dark with three token sets. The styled-API convention record covers the <code>[data-theme]</code> blocks, the three <code>tokens.ts</code> sets, today's <code>TokenColor</code>, and the deck.gl colours (now in scope, read from <code>tokens</code>). Two convention records show today's token classes in their examples. Code comments on the geo-accuracy disc, the glass hover/press tokens and the dark best-pass marker are corrected. One shared <code>rgbChannels</code> helper replaces four copies; <code>TrackBlend</code> is module-local; <code>saveThemePreference</code> keeps the page when storage fails. The CLAUDE.md files and the skill and agent texts that still say "dark mode only" are not changed (open point).</p>
+          <p class="rv-refs"><code>packages/ui/README.md:3</code>; <code>docs/conventions/tdr/styled-api-over-sx.md:30-32</code>; <code>apps/web/src/components/mapBackground/trackColors.ts:10-14</code>; <code>apps/web/src/lib/theme/theme.ts:41-53</code></p>
+        </div>
+      </article>
+
+      <h2>Deviations</h2>
+      <ol class="rv-text">
+        <li><strong>Prototype before the plan.</strong> Built from the owner's answers to Q1–Q17 while the item is at <code>exploring</code>; there is no approach, files or tests section to compare against.</li>
+        <li><strong>"Before" for light is today's dark.</strong> The theme key did not exist yet, so <code>before/*-light.png</code> renders the dark app: light comparisons read "today (dark) → light", dark ones "today → dark after the grey lift".</li>
+        <li><strong>Only the en shots are shown.</strong> The de shots exist under the same names with <code>-de-</code> in <code>before/</code> and <code>after/</code>.</li>
+        <li><strong>Dark shots not shown:</strong> only settings, session-detail and session-3d show dark (C4, C12). The other nine dark scenes (<code>dashboard</code>, <code>dialog</code>, <code>labs</code>, <code>records</code>, <code>segment</code>, <code>session-lap</code>, <code>sessions</code>, <code>studio</code>, <code>trips</code>, <code>*-dark.png</code> in both folders) are unused here and show the same grey lift.</li>
+      </ol>
+
+      <h2 id="open-points">Open points</h2>
+      <ol class="rv-text">
+        <li><strong>Still saying "dark mode only":</strong> <code>apps/web/CLAUDE.md</code> (lines 4, 15 and §3), <code>packages/ui/CLAUDE.md:4</code>, <code>.claude/skills/item-explore/references/research-prompt.md</code> and <code>mockup-prompt.md</code>, <code>.claude/agents/item-worker.md</code>, and the capture note for <code>.claude/skills/item-review/SKILL.md</code>. A worker changes CLAUDE.md and Claude configuration only on the owner's own instruction; proposed wording is in the step 2f report.</li>
+        <li><strong>Closed · dense overlaps (Q18).</strong> The light tracks blend with plain alpha; overlaps keep the sport colour (C8).</li>
+        <li><strong>Closed · desktop hover flash (Q19).</strong> deck.gl's render path is as on main (own canvas on desktop, interleaved only on touch); light changes only the blend inside deck.gl.</li>
+        <li><strong>3D sky (Q20, Q30).</strong> Maximum tilt is now 70° (C15); at 70° the desktop shots show no sky and the phone only a fog strip. At 75° both showed it.</li>
+        <li><strong>The board's <code>astro dev</code> fails to start in this worktree</strong>, so the capture ran with a scratchpad Playwright config without the board.</li>
+        <li><strong>The production build minifies overlay tokens to hex:</strong> 5 % becomes about 5.1 %, at most one colour level.</li>
+        <li><strong><code>apps/web/CLAUDE.md</code> still says dark-only, Dark Matter and additive blending</strong>; it needs updating once the direction is accepted.</li>
+        <li><strong>The installed PWA's launch splash stays dark</strong> (#030712): the manifest is static and cannot follow the per-device choice.</li>
+        <li><strong>No plan, tech.md or <code>workbench:deps</code> run yet.</strong> This is a prototype from the answers to Q1–Q17; the plan's approach, files and tests are still to be written.</li>
+        <li><strong>Owner steps:</strong> review the agent decisions on the board (Review tab); try the app on the phone at <code>http://192.168.178.81:5291</code>; bring the worktree changes over yourself, nothing was committed.</li>
+      </ol>
+
+      <h2>Verification</h2>
+      <p class="rv-text">From the worker reports; this doc's build ran no suite.</p>
+      <table>
+        <tr>
+          <th>Command</th>
+          <th>Result</th>
+        </tr>
+        <tr>
+          <td>Step 1 · <code>vp run check</code></td>
+          <td class="rv-pass">13/13</td>
+        </tr>
+        <tr>
+          <td>Step 1 · <code>vp run test</code></td>
+          <td class="rv-pass">all unit tests</td>
+        </tr>
+        <tr>
+          <td>Step 1 · <code>vp run e2e</code></td>
+          <td class="rv-pass">91 passed</td>
+        </tr>
+        <tr>
+          <td>Step 1 · <code>vp run build</code></td>
+          <td class="rv-pass">OK</td>
+        </tr>
+        <tr>
+          <td>Step 1 · pixel check, 48 dark shots</td>
+          <td class="rv-pass">38 identical, 10 capture or map noise only</td>
+        </tr>
+        <tr>
+          <td>Step 2a · <code>vp run check</code></td>
+          <td class="rv-pass">13/13</td>
+        </tr>
+        <tr>
+          <td>Step 2a · <code>vp run test</code></td>
+          <td class="rv-pass">50 + 286 + 54 + 87 + 1210</td>
+        </tr>
+        <tr>
+          <td>Step 2a · <code>vp run e2e</code></td>
+          <td class="rv-pass">92 passed</td>
+        </tr>
+        <tr>
+          <td>Step 2a · <code>vp run build</code></td>
+          <td class="rv-pass">OK</td>
+        </tr>
+        <tr>
+          <td>Step 2b · <code>vp run check</code></td>
+          <td class="rv-pass">13/13 (first run failed with i18n module type errors, re-run clean)</td>
+        </tr>
+        <tr>
+          <td>Step 2b · <code>vp run test</code></td>
+          <td class="rv-pass">50 + 286 + 54 + 87 + 1219</td>
+        </tr>
+        <tr>
+          <td>Step 2b · <code>vp run e2e</code></td>
+          <td class="rv-pass">92 passed</td>
+        </tr>
+        <tr>
+          <td>Step 2b · <code>vp run build</code></td>
+          <td class="rv-pass">OK</td>
+        </tr>
+        <tr>
+          <td>Step 2c · <code>vp run check</code></td>
+          <td class="rv-pass">13/13</td>
+        </tr>
+        <tr>
+          <td>Step 2c · <code>vp run test</code></td>
+          <td class="rv-pass">50 + 286 + 54 + 87 + 1216</td>
+        </tr>
+        <tr>
+          <td>Step 2c · <code>vp run e2e</code></td>
+          <td class="rv-pass">92 passed</td>
+        </tr>
+        <tr>
+          <td>Step 2c · <code>vp run build</code></td>
+          <td class="rv-pass">OK</td>
+        </tr>
+        <tr>
+          <td>Step 2d (variants, hover fix) · <code>vp run e2e</code></td>
+          <td class="rv-pass">92 passed</td>
+        </tr>
+        <tr>
+          <td>Step 2e · <code>vp run check</code></td>
+          <td class="rv-pass">13/13</td>
+        </tr>
+        <tr>
+          <td>Step 2e · <code>vp run test</code></td>
+          <td class="rv-pass">50 + 286 + 54 + 87 + 1216</td>
+        </tr>
+        <tr>
+          <td>Step 2e · <code>vp run build</code></td>
+          <td class="rv-pass">OK</td>
+        </tr>
+        <tr>
+          <td>Step 2e · <code>vp run e2e</code></td>
+          <td class="rv-pass">91 passed, 1 failed (map.spec.ts:174, 2D/3D tilt; not in flaky.md, passed on the single re-run)</td>
+        </tr>
+        <tr>
+          <td>Step 2f · <code>vp run check</code></td>
+          <td class="rv-pass">13/13</td>
+        </tr>
+        <tr>
+          <td>Step 2f · <code>vp run test</code></td>
+          <td class="rv-pass">50 + 286 + 54 + 87 + 1217</td>
+        </tr>
+        <tr>
+          <td>Step 2f · <code>vp run e2e</code> (dark system)</td>
+          <td class="rv-pass">92 passed</td>
+        </tr>
+        <tr>
+          <td>Step 2f · <code>vp run build</code></td>
+          <td class="rv-pass">OK</td>
+        </tr>
+        <tr>
+          <td><code>vp run workbench:deps</code></td>
+          <td>not run: no tech.md yet</td>
+        </tr>
+      </table>
+
+      <h2>How to check</h2>
+      <ol class="rv-text">
+        <li>Open <code>http://192.168.178.81:5291</code> on the phone; with the phone in light mode the app opens light (System default).</li>
+        <li>Settings › General › Theme: switch Light → Dark → System; each choice reloads into that theme without a dark flash.</li>
+        <li>Outdoors in sunlight, compare the dashboard and a session in light and dark.</li>
+        <li>Dashboard in light: dense overlaps around the centre keep the sport colour at Faint, Warm and Hot (C8).</li>
+        <li>Open a session, select a lap: the lap's outline has the chart frame's colour, the rest fades (C10).</li>
+        <li>Switch the session to 3D and tilt to the maximum: hillshade and sky in both themes (C11, C12, C15).</li>
+      </ol>
+    </main>
+    <script>
+      // swipe compare: the range value drives --pos (1 listener)
+      addEventListener('input', (e) =>
+        e.target.closest('.rv-swipe')?.style.setProperty('--pos', `${e.target.value}%`),
+      );
+    </script>
+  </body>
+</html>

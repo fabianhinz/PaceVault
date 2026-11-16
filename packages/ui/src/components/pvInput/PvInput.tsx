@@ -6,7 +6,8 @@ import { PvHelperText } from '../pvHelperText/PvHelperText.tsx';
 type InputVariant = 'field' | 'bare';
 
 const CLASSES_BY_INPUT_VARIANT: Record<InputVariant, string> = {
-  field: 'h-10 rounded-lg border bg-white/5 px-3 py-2 lg:text-sm focus:ring-2 focus:ring-accent',
+  field:
+    'h-10 rounded-lg border bg-overlay-subtle px-3 py-2 lg:text-sm focus:ring-2 focus:ring-accent',
   bare: 'h-12 border-0 bg-transparent p-0',
 };
 
@@ -35,7 +36,7 @@ export const PvInput: FC<PvInputProps> = (props) => {
         CLASSES_BY_INPUT_VARIANT[props.variant ?? 'field'],
         props.error
           ? 'border-status-danger-strong focus:ring-status-danger-strong'
-          : 'border-white/10',
+          : 'border-divider',
         props.className,
       )}
       {...rest}

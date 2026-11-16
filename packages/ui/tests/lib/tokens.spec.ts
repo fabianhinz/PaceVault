@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { fontSizes, tokens } from '../../src/lib/tokens.ts';
+import { TOKENS_BY_THEME, fontSizes } from '../../src/lib/tokens.ts';
 
 const themeVariables = (source: string): Map<string, string> => {
   const variables = new Map<string, string>();
@@ -22,17 +22,30 @@ const resolveVariable = (variables: Map<string, string>, name: string): string |
   return variables.get(reference);
 };
 
-const variables = themeVariables(
-  readFileSync(resolve(import.meta.dirname, '../../src/theme.css'), 'utf8'),
-);
+const source = readFileSync(resolve(import.meta.dirname, '../../src/theme.css'), 'utf8');
+
+const blockSource = (selector: string): string => {
+  const start = source.indexOf(`${selector} {`);
+  return source.slice(start, source.indexOf('}', start));
+};
+
+const variables = themeVariables(blockSource('@theme'));
+const variablesUnder = (selector: string): Map<string, string> =>
+  new Map([...variables, ...themeVariables(blockSource(selector))]);
+
+const variablesByTheme = {
+  base: variables,
+  dark: variablesUnder("[data-theme='dark']"),
+  light: variablesUnder("[data-theme='light']"),
+};
 
 describe('tokens', () => {
-  it('every colour token has a CSS theme variable', () => {
-    for (const [key, hex] of Object.entries(tokens)) {
-      expect({ key, value: resolveVariable(variables, `color-${kebab(key)}`) }).toEqual({
-        key,
-        value: hex,
-      });
+  it('every colour token mirrors its CSS variable in each theme', () => {
+    for (const theme of ['base', 'dark', 'light'] as const) {
+      for (const [key, hex] of Object.entries(TOKENS_BY_THEME[theme])) {
+        const value = resolveVariable(variablesByTheme[theme], `color-${kebab(key)}`);
+        expect({ theme, key, value }).toEqual({ theme, key, value: hex });
+      }
     }
   });
 

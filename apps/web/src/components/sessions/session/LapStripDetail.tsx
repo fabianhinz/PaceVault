@@ -50,7 +50,7 @@ export const LapStripDetail: FC<LapStripDetailProps> = (props) => {
             x2={DETAIL_WIDTH}
             y1={DETAIL_HEIGHT / 2}
             y2={DETAIL_HEIGHT / 2}
-            stroke={tokens.white25}
+            stroke={tokens.lapBaseline}
             strokeDasharray="2 3"
             vectorEffect="non-scaling-stroke"
           />
@@ -61,7 +61,7 @@ export const LapStripDetail: FC<LapStripDetailProps> = (props) => {
               y={0}
               width={hoveredSpan.width}
               height={DETAIL_HEIGHT}
-              className="fill-white"
+              className="fill-chart-highlight"
               fillOpacity={0.1}
             />
           )}
@@ -73,7 +73,7 @@ export const LapStripDetail: FC<LapStripDetailProps> = (props) => {
               width={Math.max(0.5, selectedSpan.width - 1.5)}
               height={DETAIL_HEIGHT - 1.5}
               rx={2}
-              className="fill-white stroke-white"
+              className="fill-chart-highlight stroke-chart-highlight"
               fillOpacity={0.06}
               strokeWidth={1.5}
               vectorEffect="non-scaling-stroke"

@@ -30,7 +30,7 @@ export const PvCard: FC<PvCardProps> = (props) => {
       )}
     >
       {props.children}
-      {props.footer && <div className="border-t border-white/10 mt-4 pt-3">{props.footer}</div>}
+      {props.footer && <div className="border-t border-divider mt-4 pt-3">{props.footer}</div>}
     </div>
   );
 };

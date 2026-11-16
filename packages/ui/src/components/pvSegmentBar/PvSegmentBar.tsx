@@ -17,7 +17,7 @@ export const PvSegmentBar: FC<PvSegmentBarProps> = (props) => {
   for (const segment of props.segments) total += segment.value;
 
   return (
-    <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+    <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-overlay-subtle">
       {total > 0 &&
         props.segments.map((segment) => (
           <div

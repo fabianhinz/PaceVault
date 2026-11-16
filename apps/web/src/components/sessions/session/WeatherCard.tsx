@@ -67,7 +67,7 @@ export const WeatherCard: FC<WeatherCardProps> = (props) => {
   const rose = useWindRose({ records: props.records, weather, sessionStartMs: props.session.date });
 
   if (sessionWeather.isLoading) {
-    return <div className="h-52px animate-pulse bg-white/5" />;
+    return <div className="h-52px animate-pulse bg-overlay-subtle" />;
   }
   if (weather === null) return null;
   const summary = summarizeWeather(weather.snapshots);

@@ -75,7 +75,7 @@ export const TrainingEffectCard: FC<TrainingEffectCardProps> = (props) => {
         <TrainingEffectGauge value={te.aerobic} metricId="aerobicTE" />
         <TrainingEffectGauge value={te.anaerobic} metricId="anaerobicTE" />
       </div>
-      <div className="border-t border-white/10 mt-4 pt-3">
+      <div className="border-t border-divider mt-4 pt-3">
         <PvTypography variant="caption" as="p">
           {localizedTESummary(
             trainingEffectSummary({ aerobic: te.aerobic, anaerobic: te.anaerobic }),

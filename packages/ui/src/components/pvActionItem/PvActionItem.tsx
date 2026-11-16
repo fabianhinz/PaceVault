@@ -57,7 +57,7 @@ export const PvActionItem: FC<PvActionItemProps> = (props) => {
       className={cn(
         GLASS_CLASS,
         'relative flex flex-row items-center',
-        props.onClick !== undefined && 'hover:bg-white/10',
+        props.onClick !== undefined && 'hover:bg-surface-glass-hover',
         ROOT_CLASS_BY_ACTION_ITEM_RADIUS[props.radius ?? RADIUS_BY_ACTION_ITEM_SIZE[size]],
         props.className,
       )}

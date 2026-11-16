@@ -9,18 +9,19 @@ import { useTerrainTrackPickingEffect } from './hooks/useTerrainTrackPickingEffe
 import { useTerrainOrbitEffect } from './hooks/useTerrainOrbitEffect.ts';
 import { lapVertexBreaks } from './lapPath.ts';
 import { terrainLineLayerIds, terrainLineRuns, type LineColor } from './terrainLine.ts';
-import { LAP_CASING_SCALE, LAP_DIMMED_BRIGHTNESS, trackModifiers } from './trackColors.ts';
+import { LAP_DIM, TRACK_WIDTH } from './trackColors.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
 
 const SESSION_LINE_ID = 'session-terrain';
 const NO_PATH: [number, number][] = [];
 const NO_COLORS: LineColor[] = [];
 const SESSION_LINE_WIDTH = {
-  metres: trackModifiers.width.highlighted,
-  minPixels: 3,
-  casingMetres: trackModifiers.width.highlighted * LAP_CASING_SCALE,
-  casingMinPixels: 9,
-  selectedMinPixels: 5,
+  metres: TRACK_WIDTH.openedSessionTrackMetres,
+  minPixels: TRACK_WIDTH.terrainTrackMinimumPixels,
+  selectedMetres: TRACK_WIDTH.selectedLapMetres,
+  selectedMinPixels: TRACK_WIDTH.selectedLapMinimumPixels,
+  casingMetres: TRACK_WIDTH.selectedLapOutlineMetres,
+  casingMinPixels: TRACK_WIDTH.selectedLapOutlineMinimumPixels,
 };
 
 const sessionLineBreaks = ({
@@ -61,7 +62,7 @@ export const SessionTerrain: FC<SessionTerrainProps> = (props) => {
     runs,
     colors,
     width: SESSION_LINE_WIDTH,
-    dimFactor: LAP_DIMMED_BRIGHTNESS,
+    lapDim: LAP_DIM,
     dimmed: lapSelected,
     onDrawn: props.onDrawn,
   });

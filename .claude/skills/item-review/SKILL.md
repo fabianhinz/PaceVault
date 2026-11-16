@@ -33,7 +33,7 @@ The owner checks the result on the item's Review tab: the review doc, the agent 
 
 ## Screenshots per item type
 
-- **PWA screens** (`apps/web`): `review/capture.spec.ts` from `references/capture-spec-template.ts` (`shootAll`, desktop and phone, en and de; app dev server on port 5176).
+- **PWA screens** (`apps/web`): `review/capture.spec.ts` from `references/capture-spec-template.ts` (`shootAll`, desktop and phone, en and de; app dev server on port 5176). Shots are dark: the review config emulates a dark system and the app follows it; a scene that needs the light theme passes `prepare(page, locale, { theme: 'light' })`.
 - **The board** (`tools/workbench/site`): `review/capture.spec.ts` from `references/board-capture-template.ts` (`shoot`, one 1280×800 shot per scene (the board laid out at 1600×1000, saved at 0.8 scale), an element or the page; the board on port 4321, a running one is reused).
 - **No UI change**: no spec and no shots; the doc says "No UI change, no screenshots" under Changes without UI.
 

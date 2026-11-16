@@ -14,7 +14,7 @@ export const PassStripSkeleton: FC = () => (
         {SKELETON_TILE_KEYS.map((key) => (
           <span
             key={key}
-            className="flex size-18 shrink-0 flex-col items-center gap-0.5 rounded-lg border border-white/10 p-2"
+            className="flex size-18 shrink-0 flex-col items-center gap-0.5 rounded-lg border border-divider p-2"
           >
             <PvInlineSkeleton className="h-3 w-8" />
             <span className="block h-10" />
@@ -23,7 +23,7 @@ export const PassStripSkeleton: FC = () => (
       </div>
     </div>
     <div className={cn(GLASS_CLASS, 'flex items-center gap-2 rounded-lg p-4')}>
-      <span className="size-10 shrink-0 animate-pulse rounded-lg bg-white/10" />
+      <span className="size-10 shrink-0 animate-pulse rounded-lg bg-overlay" />
       <span className="flex flex-1 flex-col">
         <span className="flex h-5 items-center">
           <PvInlineSkeleton className="w-24" />

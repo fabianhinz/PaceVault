@@ -8,6 +8,7 @@ import {
   terrainLineWidthExpression,
   type LineColor,
 } from '@/components/mapBackground/terrainLine.ts';
+import { TRACK_STYLE_BY_MAP_THEME } from '@/components/mapBackground/trackColors.ts';
 
 const path: [number, number][] = [
   [8.4, 49],
@@ -56,7 +57,12 @@ describe(terrainLineRuns.name, () => {
 describe(buildTerrainLineFeatures.name, () => {
   it('builds one feature per run, keyed by the run index, carrying its vertex range', () => {
     const runs = terrainLineRuns({ path, colors: red, breaks: [2] });
-    const lines = buildTerrainLineFeatures({ path, runs, colors: red, dimFactor: 0.8 });
+    const lines = buildTerrainLineFeatures({
+      path,
+      runs,
+      colors: red,
+      lapDim: TRACK_STYLE_BY_MAP_THEME.dark.lapDim,
+    });
     expect(lines.features.map((feature) => feature.id)).toEqual([0, 1]);
     expect(lines.features[1]?.geometry.coordinates).toEqual([
       [8.402, 49.001],
@@ -79,11 +85,27 @@ describe(buildTerrainLineFeatures.name, () => {
       [100, 50, 0, 51],
     ];
     const runs = terrainLineRuns({ path, colors, breaks: [] });
-    const lines = buildTerrainLineFeatures({ path, runs, colors, dimFactor: 0.5 });
+    const lines = buildTerrainLineFeatures({
+      path,
+      runs,
+      colors,
+      lapDim: { brightness: 0.5, opacity: 1 },
+    });
     expect(lines.features.map((feature) => feature.properties)).toEqual([
       { c: 'rgba(10,20,30,1.000)', d: 'rgba(5,10,15,1.000)', v: 0, e: 1 },
       { c: 'rgba(100,50,0,0.200)', d: 'rgba(50,25,0,0.200)', v: 1, e: 4 },
     ]);
+  });
+
+  it('fades the dimmed runs on the light map instead of darkening them', () => {
+    const runs = terrainLineRuns({ path, colors: red, breaks: [] });
+    const lines = buildTerrainLineFeatures({
+      path,
+      runs,
+      colors: red,
+      lapDim: TRACK_STYLE_BY_MAP_THEME.light.lapDim,
+    });
+    expect(lines.features[0]?.properties.d).toBe('rgba(255,0,0,0.451)');
   });
 });
 

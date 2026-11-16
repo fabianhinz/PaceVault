@@ -13,7 +13,7 @@ export const LapStripAvatar: FC<LapStripAvatarProps> = (props) => {
   if (!props.set || props.set.analysis.length < MIN_SUMMARY_LAPS) {
     return (
       <AvatarFrame>
-        <line x1="4" x2="26" y1="15" y2="15" stroke={tokens.white30} strokeDasharray="2 2" />
+        <line x1="4" x2="26" y1="15" y2="15" stroke={tokens.lapPlaceholder} strokeDasharray="2 2" />
       </AvatarFrame>
     );
   }
@@ -21,7 +21,7 @@ export const LapStripAvatar: FC<LapStripAvatarProps> = (props) => {
   return (
     <AvatarFrame>
       <g transform="translate(2 3)">
-        <line x1="0" x2="26" y1="12" y2="12" stroke={tokens.white25} strokeWidth={0.6} />
+        <line x1="0" x2="26" y1="12" y2="12" stroke={tokens.lapBaseline} strokeWidth={0.6} />
         <Bars bars={layout.bars} />
       </g>
     </AvatarFrame>

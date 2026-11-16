@@ -17,7 +17,7 @@ interface SessionSummaryCardProps {
 export const SessionSummaryCard: FC<SessionSummaryCardProps> = (props) => (
   <div
     data-testid="session-summary"
-    className={cn(GLASS_CLASS, 'divide-y divide-white/10 overflow-hidden rounded-2xl empty:hidden')}
+    className={cn(GLASS_CLASS, 'divide-y divide-divider overflow-hidden rounded-2xl empty:hidden')}
   >
     <WeatherCard session={props.session} records={props.records} />
     <TrainingEffectCard session={props.session} records={props.records} />

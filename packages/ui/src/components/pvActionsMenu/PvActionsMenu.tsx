@@ -69,7 +69,7 @@ export const PvActionsMenu: FC<PvActionsMenuProps> = (props) => {
           <PvActionsMenuSheetRow key={item.id} item={item} onSelect={() => select(item)} />
         ))}
         {danger.length > 0 && regular.length > 0 && (
-          <div role="separator" className="my-1 h-px bg-white/10" />
+          <div role="separator" className="my-1 h-px bg-divider" />
         )}
         {danger.map((item) => (
           <PvActionsMenuSheetRow key={item.id} item={item} onSelect={() => select(item)} />

@@ -106,8 +106,8 @@ interface ButtonProps {
 }
 
 const CLASSES_BY_BUTTON_VARIANT: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-white',
-  secondary: 'bg-white/5 text-text-primary',
+  primary: 'bg-accent text-on-accent',
+  secondary: 'bg-overlay-subtle text-text-primary',
   ghost: 'bg-transparent text-text-secondary',
   danger: 'bg-status-danger-strong/10 text-status-danger',
 };

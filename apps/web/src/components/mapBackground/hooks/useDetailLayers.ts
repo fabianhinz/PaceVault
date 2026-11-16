@@ -9,7 +9,7 @@ import { useSessionsStore } from '@/store/sessions.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import { dimmedColor, nearestRecordIndex } from '@/components/mapBackground/lapPath.ts';
 import type { DetailPath } from '@/components/mapBackground/zoneColoredPath.ts';
-import { LAP_DIMMED_BRIGHTNESS, trackModifiers } from '@/components/mapBackground/trackColors.ts';
+import { LAP_DIM, TRACK_WIDTH } from '@/components/mapBackground/trackColors.ts';
 import { useSessionDetailPath } from './useSessionDetailPath.ts';
 import { useLapLayers } from './useLapLayers.ts';
 import { useMapScene } from './useMapScene.ts';
@@ -82,11 +82,11 @@ export const useDetailLayers = ({
       data: [detailPath],
       getPath: (d) => d.path,
       getColor: (d) => {
-        if (dimmed) return dimmedColor(d.color, LAP_DIMMED_BRIGHTNESS);
+        if (dimmed) return dimmedColor({ color: d.color, lapDim: LAP_DIM });
         return d.color;
       },
-      getWidth: trackModifiers.width.highlighted,
-      widthMinPixels: 1,
+      getWidth: TRACK_WIDTH.openedSessionTrackMetres,
+      widthMinPixels: TRACK_WIDTH.trackMinimumPixels,
       jointRounded: true,
       capRounded: true,
       pickable: true,

@@ -110,7 +110,7 @@ export const PvBottomSheet: FC<PvBottomSheetProps> = (props) => {
           <div
             data-sheet-divider
             className={cn(
-              'h-px bg-white/10 transition-opacity duration-200',
+              'h-px bg-divider transition-opacity duration-200',
               scrolled ? 'opacity-100' : 'opacity-0',
             )}
           />

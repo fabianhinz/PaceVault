@@ -25,6 +25,7 @@ import { AboutSection } from '@/components/settings/AboutSection.tsx';
 import { IntegrationsCard } from '@/components/settings/IntegrationsCard.tsx';
 import { FitFilesCard } from '@/components/settings/FitFilesCard.tsx';
 import { SettingsPeek } from '@/components/settings/SettingsPeek.tsx';
+import { ThemeListItem } from '@/components/settings/ThemeListItem.tsx';
 
 const LABEL_BY_LOCALE: Record<Locale, string> = {
   en: 'English',
@@ -79,6 +80,7 @@ export const Settings: FC = () => {
                   </PvSelectContent>
                 </PvSelect>
               </PvListItem>
+              <ThemeListItem />
               <PvListItem
                 primary={m.ui_settings_metric_help()}
                 secondary={m.ui_settings_metric_help_desc()}

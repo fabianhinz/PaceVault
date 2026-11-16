@@ -15,7 +15,6 @@ export const RootErrorFallback: FC<RootErrorFallbackProps> = (props) => (
     <PvActionPromptCard
       title={m.ui_error_root_title()}
       description={m.ui_error_root_desc()}
-      branded
       className="w-full max-w-2xl p-5"
     >
       <FallbackActions>

@@ -107,7 +107,7 @@ const layoutBar = ({
         width: geometry.width,
         y: context.mid - 0.6,
         height: 1.2,
-        fill: tokens.white30,
+        fill: tokens.lapPlaceholder,
         opacity: 1,
       },
     };

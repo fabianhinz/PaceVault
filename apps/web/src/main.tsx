@@ -9,6 +9,7 @@ import { App } from './App.tsx';
 import { createQueryClient } from './queries/queryClient.ts';
 import { AppRouter } from './routing/AppRouter.tsx';
 import { installDebugTools } from './lib/debug/debug.ts';
+import { reloadOnSystemThemeChange } from './lib/theme/theme.ts';
 import { DebugCrashTrigger } from './lib/debug/DebugCrashTrigger.tsx';
 import { useUserStore } from './store/user.ts';
 import { useSessionsStore } from './store/sessions.ts';
@@ -23,6 +24,7 @@ import { useMapPreferencesStore } from './store/mapPreferences.ts';
 import './index.css';
 
 const boot = async (rootEl: HTMLElement) => {
+  reloadOnSystemThemeChange();
   await installDebugTools();
   await Promise.all([
     useUserStore.persist.rehydrate(),

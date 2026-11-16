@@ -29,7 +29,7 @@ declare global {
   }
 }
 
-const BADGE_STYLE = `background:${tokens.accent};color:${tokens.white};font-weight:700;padding:2px 8px;border-radius:4px`;
+const BADGE_STYLE = `background:${tokens.accent};color:${tokens.onAccent};font-weight:700;padding:2px 8px;border-radius:4px`;
 const TITLE_STYLE = `color:${tokens.accent};font-weight:700`;
 const COMMAND_STYLE = `color:${tokens.accent};font-family:monospace;font-weight:600`;
 const DESCRIPTION_STYLE = `color:${tokens.textSecondary}`;

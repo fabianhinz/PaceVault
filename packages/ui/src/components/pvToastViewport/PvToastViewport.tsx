@@ -8,7 +8,7 @@ import type { ToastItem, ToastVariant } from './types.ts';
 const TOAST_DURATION_MS = 4000;
 
 const CLASSES_BY_TOAST_VARIANT: Record<ToastVariant, string> = {
-  default: 'border-white/10',
+  default: 'border-divider',
   success: 'border-status-success-strong/30',
   error: 'border-status-danger-strong/30',
   warning: 'border-status-warning-strong/30',

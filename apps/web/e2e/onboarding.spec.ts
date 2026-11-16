@@ -188,6 +188,31 @@ test.describe('Onboarding flow', () => {
   });
 });
 
+test.describe('Theme setting', () => {
+  test('a stored light theme renders the light page; choosing Dark reloads into dark', async ({
+    page,
+  }) => {
+    await seedOnboardingComplete(page);
+    await page.addInitScript(() => {
+      if (sessionStorage.getItem('theme-seeded') !== null) return;
+      sessionStorage.setItem('theme-seeded', '1');
+      localStorage.setItem('pacevault-theme', 'light');
+    });
+    await page.goto('/settings');
+
+    const html = page.locator('html');
+    await expect(html).toHaveAttribute('data-theme', 'light');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#ffffff');
+
+    await page.getByRole('combobox', { name: 'Theme' }).click();
+    await page.getByRole('option', { name: 'Dark' }).click();
+
+    await expect(html).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(3, 7, 18)');
+  });
+});
+
 test.describe('Thresholds editor on phone', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 

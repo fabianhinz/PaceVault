@@ -19,8 +19,10 @@ export const WorkoutCard: FC<WorkoutCardProps> = (props) => {
     <div
       className={cn(
         'relative flex flex-col items-center gap-1.5 p-3 rounded-xl flex-1 min-w-5rem transition-colors border',
-        restDay ? 'opacity-50 bg-white/5' : 'bg-white/5 hover:bg-white/10 cursor-pointer',
-        props.expanded ? 'border-accent' : 'border-white/10',
+        restDay
+          ? 'opacity-50 bg-overlay-subtle'
+          : 'bg-overlay-subtle hover:bg-overlay cursor-pointer',
+        props.expanded ? 'border-accent' : 'border-divider',
       )}
       onClick={restDay ? undefined : props.onToggle}
     >

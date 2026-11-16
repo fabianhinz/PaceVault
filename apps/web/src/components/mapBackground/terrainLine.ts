@@ -1,5 +1,6 @@
 import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl';
 import { dimmedColor } from './lapPath.ts';
+import type { LapDim } from './trackColors.ts';
 
 export type LineColor = [number, number, number, number];
 
@@ -58,8 +59,8 @@ const colorAt = ({
   return colors;
 };
 
-const dimmedLineColor = (color: LineColor, dimFactor: number): LineColor => {
-  const dimmed = dimmedColor(color, dimFactor);
+const dimmedLineColor = ({ color, lapDim }: { color: LineColor; lapDim: LapDim }): LineColor => {
+  const dimmed = dimmedColor({ color, lapDim });
   if (isColorList(dimmed)) return color;
   return dimmed;
 };
@@ -114,12 +115,12 @@ export const buildTerrainLineFeatures = ({
   path,
   runs,
   colors,
-  dimFactor,
+  lapDim,
 }: {
   path: [number, number][];
   runs: TerrainLineRun[];
   colors: LineColor | LineColor[];
-  dimFactor: number;
+  lapDim: LapDim;
 }): TerrainLineFeatureCollection => {
   const features: TerrainLineFeature[] = [];
   runs.forEach((run, id) => {
@@ -130,7 +131,7 @@ export const buildTerrainLineFeatures = ({
       id,
       properties: {
         c: toCss(color),
-        d: toCss(dimmedLineColor(color, dimFactor)),
+        d: toCss(dimmedLineColor({ color, lapDim })),
         v: run.first,
         e: run.last,
       },

@@ -1,6 +1,6 @@
 # @pacevault/ui
 
-PaceVault's UI kit: the Radix-based components (cards, dialogs, the bottom sheet family, tiles, charts cards, toasts, …), the theme tokens, and the generic UI hooks and helpers they need (`cn`, device and media queries, sheet drag and position, dock geometry, scroll fade, sliding highlight). Dark mode only, styled with Tailwind v4. Rules: [`CLAUDE.md`](./CLAUDE.md).
+PaceVault's UI kit: the Radix-based components (cards, dialogs, the bottom sheet family, tiles, charts cards, toasts, …), the theme tokens, and the generic UI hooks and helpers they need (`cn`, device and media queries, sheet drag and position, dock geometry, scroll fade, sliding highlight). Light and dark themes (three token sets: base for the repo tools, dark and light for the app), styled with Tailwind v4. Rules: [`CLAUDE.md`](./CLAUDE.md).
 
 ## Use
 

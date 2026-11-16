@@ -1,4 +1,5 @@
-export const tokens = {
+// Without the app's data-theme (workbench board, README banner, Node tools).
+const BASE_TOKENS = {
   surfaceBase: '#030712',
   surfaceSunken: '#0a0b0f',
   surface: '#111318',
@@ -36,10 +37,18 @@ export const tokens = {
   tileSelectedMuted: 'oklch(55.2% 0.016 285.938)',
   sportRunning: '#4ade80',
   sportCycling: '#f97316',
+  sportRunningDeep: '#15803d',
+  sportCyclingDeep: '#c2410c',
   mapShadow: '#000000',
   mapHighlight: '#ffffff',
   mapHillshadeHighlight: '#ffffff1a',
   mapDotStroke: '#00000050',
+  mapMarker: '#ffffff',
+  mapPickArea: '#ffffff',
+  mapGeoAccuracy: '#ffffff',
+  mapSky: '#030712',
+  mapSkyHorizon: '#1a1d24',
+  mapFog: '#0e0e0e',
   chartFitness: '#3b82f6',
   chartFatigue: '#ec4899',
   chartForm: '#eab308',
@@ -52,6 +61,7 @@ export const tokens = {
   chartClimb: '#c4b5fd',
   chartPace: '#06b6d4',
   chartGap: '#ec4899',
+  chartHighlight: '#ffffff',
 
   precipRain: '#60a5fa',
   precipFreezing: '#67e8f9',
@@ -86,22 +96,174 @@ export const tokens = {
   typeBug: '#fb7185',
   typeChore: '#a3e635',
 
-  white: '#ffffff',
-  white4: 'rgb(255 255 255 / 0.04)',
-  white10: 'rgb(255 255 255 / 0.1)',
-  white18: 'rgb(255 255 255 / 0.18)',
-  white22: 'rgb(255 255 255 / 0.22)',
-  white25: 'rgb(255 255 255 / 0.25)',
-  white30: 'rgb(255 255 255 / 0.3)',
-  white32: 'rgb(255 255 255 / 0.32)',
-  white35: 'rgb(255 255 255 / 0.35)',
-  white45: 'rgb(255 255 255 / 0.45)',
-  white50: 'rgb(255 255 255 / 0.5)',
-  white60: 'rgb(255 255 255 / 0.6)',
-  white75: 'rgb(255 255 255 / 0.75)',
-  white95: 'rgb(255 255 255 / 0.95)',
+  onAccent: '#ffffff',
+
+  lapStripSelected: 'rgb(255 255 255 / 0.95)',
+  lapStripHovered: 'rgb(255 255 255 / 0.6)',
+  lapStripActive: 'rgb(255 255 255 / 0.32)',
+  lapStripAlternate: 'rgb(255 255 255 / 0.22)',
+  lapStripInactive: 'rgb(255 255 255 / 0.1)',
+  lapBandHover: 'rgb(255 255 255 / 0.1)',
+  lapSwatchActive: 'rgb(255 255 255 / 0.75)',
+  lapSwatchAlternate: 'rgb(255 255 255 / 0.5)',
+  lapSwatchSteady: 'rgb(255 255 255 / 0.45)',
+  lapSwatchEasy: 'rgb(255 255 255 / 0.35)',
+  lapSwatchPartial: 'rgb(255 255 255 / 0.3)',
+  lapSwatchRest: 'rgb(255 255 255 / 0.18)',
+  lapBaseline: 'rgb(255 255 255 / 0.25)',
+  lapPlaceholder: 'rgb(255 255 255 / 0.3)',
+  lapAvatar: 'rgb(255 255 255 / 0.04)',
 } as const;
 
-export type TokenColor = (typeof tokens)[keyof typeof tokens];
+const DARK_TOKENS = {
+  ...BASE_TOKENS,
+  textSecondary: '#d1d5db',
+  textTertiary: '#b0b4be',
+  textQuaternary: '#8b8f9a',
+} as const;
+
+const LIGHT_TOKENS = {
+  surfaceBase: '#ffffff',
+  surfaceSunken: '#f3f4f6',
+  surface: '#ffffff',
+  surfaceElevated: '#ffffff',
+  surfaceOverlay: '#f3f4f6',
+  border: '#e5e7eb',
+  borderStrong: '#d1d5db',
+  textPrimary: '#111318',
+  textSecondary: '#3a3e48',
+  textTertiary: '#5c616e',
+  textQuaternary: '#8b8f9a',
+  accent: '#2563eb',
+  accentHover: '#1d4ed8',
+  accentStrong: '#1e40af',
+  accentPressed: '#1e40af',
+  statusSuccess: '#15803d',
+  statusSuccessStrong: '#16a34a',
+  statusWarning: '#854d0e',
+  statusWarningStrong: '#a16207',
+  statusWarningMuted: '#a162071f',
+  statusDanger: '#dc2626',
+  statusDangerStrong: '#ef4444',
+  statusInfo: '#2563eb',
+  statusNeutral: '#5c616e',
+  bannerWarning: '#d97706',
+  bannerWarningText: '#92400e',
+  bannerWarningIcon: '#d97706',
+  best: '#d97706',
+  bannerSuccess: '#059669',
+  bannerSuccessText: '#065f46',
+  bannerSuccessIcon: '#059669',
+  bannerInfoText: '#1e40af',
+  bannerErrorText: '#991b1b',
+  tileSelectedText: '#ffffff',
+  tileSelectedMuted: '#b0b4be',
+  sportRunning: '#16a34a',
+  sportCycling: '#ea580c',
+  sportRunningDeep: '#15803d',
+  sportCyclingDeep: '#c2410c',
+  mapShadow: '#5a4a3a',
+  mapHighlight: '#1c1917',
+  mapHillshadeHighlight: '#ffffff59',
+  mapDotStroke: '#00000050',
+  mapMarker: '#ffffff',
+  mapPickArea: '#000000',
+  mapGeoAccuracy: '#2563eb',
+  mapSky: '#d3e3eb',
+  mapSkyHorizon: '#f4f1ea',
+  mapFog: '#f4f1ea',
+  chartFitness: '#2563eb',
+  chartFatigue: '#db2777',
+  chartForm: '#a16207',
+  chartHr: '#dc2626',
+  chartPower: '#2563eb',
+  chartSpeed: '#16a34a',
+  chartGrade: '#7c3aed',
+  chartCadence: '#d97706',
+  chartElevation: '#6d28d9',
+  chartClimb: '#8b5cf6',
+  chartPace: '#0891b2',
+  chartGap: '#db2777',
+  chartHighlight: '#111318',
+
+  precipRain: '#2563eb',
+  precipFreezing: '#0891b2',
+  precipSnow: '#64748b',
+  precipThunderstorm: '#d97706',
+
+  windTail: '#059669',
+  windCross: '#d97706',
+  windHead: '#dc2626',
+
+  routeFuchsia: '#c026d3',
+  routeEmerald: '#059669',
+  routeAmber: '#d97706',
+  routeViolet: '#7c3aed',
+  routeOrange: '#ea580c',
+  routeRose: '#e11d48',
+
+  zoneSlate: '#64748b',
+  zoneBlue: '#2563eb',
+  zoneEmerald: '#059669',
+  zoneAmber: '#d97706',
+  zoneOrange: '#ea580c',
+  zoneRed: '#dc2626',
+  zoneCrimson: '#991b1b',
+  zoneUnknown: '#888888',
+
+  guideBaseline: '#0000001a',
+  guideHover: '#00000040',
+  guideToday: '#00000014',
+
+  typeFeature: '#38bdf8',
+  typeBug: '#fb7185',
+  typeChore: '#a3e635',
+
+  onAccent: '#ffffff',
+
+  lapStripSelected: 'rgb(0 0 0 / 0.8)',
+  lapStripHovered: 'rgb(0 0 0 / 0.5)',
+  lapStripActive: 'rgb(0 0 0 / 0.28)',
+  lapStripAlternate: 'rgb(0 0 0 / 0.18)',
+  lapStripInactive: 'rgb(0 0 0 / 0.08)',
+  lapBandHover: 'rgb(0 0 0 / 0.06)',
+  lapSwatchActive: 'rgb(0 0 0 / 0.6)',
+  lapSwatchAlternate: 'rgb(0 0 0 / 0.4)',
+  lapSwatchSteady: 'rgb(0 0 0 / 0.36)',
+  lapSwatchEasy: 'rgb(0 0 0 / 0.28)',
+  lapSwatchPartial: 'rgb(0 0 0 / 0.24)',
+  lapSwatchRest: 'rgb(0 0 0 / 0.14)',
+  lapBaseline: 'rgb(0 0 0 / 0.2)',
+  lapPlaceholder: 'rgb(0 0 0 / 0.24)',
+  lapAvatar: 'rgb(0 0 0 / 0.03)',
+} as const satisfies Record<keyof typeof BASE_TOKENS, string>;
+
+type TokenName = keyof typeof BASE_TOKENS;
+
+export type TokenColor =
+  | (typeof BASE_TOKENS)[TokenName]
+  | (typeof DARK_TOKENS)[TokenName]
+  | (typeof LIGHT_TOKENS)[TokenName];
+
+export type ThemeName = 'base' | 'dark' | 'light';
+
+export const TOKENS_BY_THEME: Record<ThemeName, Record<TokenName, TokenColor>> = {
+  base: BASE_TOKENS,
+  dark: DARK_TOKENS,
+  light: LIGHT_TOKENS,
+};
+
+// The app sets data-theme before first paint and reloads on a theme change, so reading it once at
+// module load is enough.
+const themeAtLoad = (): ThemeName => {
+  if (typeof document === 'undefined') return 'base';
+  const theme = document.documentElement.dataset.theme;
+  if (theme === 'light' || theme === 'dark') return theme;
+  return 'base';
+};
+
+export const activeTheme = themeAtLoad();
+
+export const tokens = TOKENS_BY_THEME[activeTheme];
 
 export const fontSizes = { '2xs': 11, '3xs': 9 } as const;

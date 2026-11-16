@@ -1,6 +1,6 @@
 import { useDeferredValue, useRef, useState, type FC } from 'react';
 import MapGL from 'react-map-gl/maplibre';
-import { MAP_MAXZOOM, STYLE_BY_MAP_STYLE } from './mapStyle.ts';
+import { MAP_MAX_PITCH, MAP_MAXZOOM, MAP_STYLE } from './mapStyle.ts';
 import { useMapTracks } from './hooks/useMapTracks.ts';
 import { useSessionGpsTracks } from '@/queries/sessions/useSessionGpsTracks.ts';
 import { useStudioMapTracks } from './hooks/useStudioMapTracks.ts';
@@ -41,8 +41,9 @@ export const MapBackground: FC = () => {
       <MapGL
         ref={mapRef}
         onLoad={() => setMapLoaded(true)}
-        mapStyle={STYLE_BY_MAP_STYLE.dark}
+        mapStyle={MAP_STYLE}
         maxZoom={MAP_MAXZOOM}
+        maxPitch={MAP_MAX_PITCH}
         initialViewState={{
           longitude: 10,
           latitude: 50,

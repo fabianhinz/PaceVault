@@ -28,7 +28,7 @@ export const WindRose: FC<WindRoseProps> = (props) => {
           cy={center}
           r={inner + fraction * (outer - inner)}
           fill="none"
-          className="stroke-white/10"
+          className="stroke-divider"
         />
       ))}
       <Wedges shares={props.shares} center={center} inner={inner} outer={outer} />

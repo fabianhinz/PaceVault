@@ -16,7 +16,7 @@ export const SegmentsRow: FC<SegmentsRowProps> = (props) => {
   const sessionSegments = useSessionSegments(props.session.id);
 
   if (sessionSegments === undefined) {
-    return <div className="h-52px animate-pulse bg-white/5" />;
+    return <div className="h-52px animate-pulse bg-overlay-subtle" />;
   }
 
   const count = sessionSegments.length;

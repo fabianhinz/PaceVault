@@ -14,7 +14,7 @@ import { useLapsPickerSets } from './hooks/useLapsPickerSets.ts';
 import type { LapsControlProps } from './types.ts';
 
 const rowClass =
-  'rounded-lg px-2 py-2 hover:bg-white/5 group-data-[checked]/row:hover:bg-transparent';
+  'rounded-lg px-2 py-2 hover:bg-overlay-subtle group-data-[checked]/row:hover:bg-transparent';
 
 interface LapsPickerProps extends LapsControlProps {
   source: LapSource;
@@ -87,7 +87,7 @@ export const LapsPicker: FC<LapsPickerProps> = (props) => {
         <div
           key={item.value}
           data-checked={source === item.value ? '' : undefined}
-          className="group/row rounded-lg data-[checked]:bg-white/5"
+          className="group/row rounded-lg data-[checked]:bg-overlay-subtle"
         >
           <PvRadioGroupItem
             value={item.value}
@@ -113,7 +113,7 @@ export const LapsPicker: FC<LapsPickerProps> = (props) => {
       <div
         data-checked={source === 'efforts' ? '' : undefined}
         data-testid="laps-efforts-row"
-        className="group/row relative rounded-lg hover:bg-white/5 data-[checked]:bg-white/5"
+        className="group/row relative rounded-lg hover:bg-overlay-subtle data-[checked]:bg-overlay-subtle"
       >
         <PvRadioGroupItem
           value="efforts"
