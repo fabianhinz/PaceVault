@@ -77,7 +77,7 @@ export const TRACK_WIDTH = {
   hoveredLapPixels: 3,
   terrainTrackMinimumPixels: 3,
   terrainHoverLinePixels: 3,
-  trackMinimumPixels: 2,
+  trackMinimumPixels: 1,
 } as const;
 
 export const trackModifiers = {
