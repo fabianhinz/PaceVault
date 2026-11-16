@@ -1,6 +1,6 @@
 ---
 title: Light theme
-status: exploring
+status: done
 created: 2026-10-25
 type: feature
 areas: [ui, app]
