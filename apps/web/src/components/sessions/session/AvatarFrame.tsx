@@ -11,7 +11,7 @@ export const AvatarFrame: FC<PropsWithChildren> = (props) => (
     aria-hidden="true"
     data-testid="lap-strip-avatar"
   >
-    <rect width="30" height="30" rx="6" fill={tokens.white4} />
+    <rect width="30" height="30" rx="6" fill={tokens.lapAvatar} />
     {props.children}
   </svg>
 );

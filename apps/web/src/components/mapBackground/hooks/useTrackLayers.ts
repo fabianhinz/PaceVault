@@ -5,10 +5,11 @@ import { useMapFocusStore } from '@/store/mapFocus.ts';
 import { useMapPreferencesStore } from '@/store/mapPreferences.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import {
-  ADDITIVE_BLEND,
   HIGHLIGHT_TRANSITIONS,
+  TRACK_BLEND_PARAMETERS,
   TRACK_COLOR_BY_SPORT,
   ALPHA_BY_TRACK_INTENSITY,
+  TRACK_WIDTH,
   trackModifiers,
 } from '@/components/mapBackground/trackColors.ts';
 import { decodeCached } from '@/components/mapBackground/trackPicking.ts';
@@ -85,10 +86,10 @@ export const useTrackLayers = ({
           return [r, g, b, alpha];
         },
         getWidth: (d) => {
-          if (d.sessionId === hoveredSessionId) return trackModifiers.width.highlighted;
-          return trackModifiers.width.default;
+          if (d.sessionId === hoveredSessionId) return TRACK_WIDTH.dashboardHoveredTrackMetres;
+          return TRACK_WIDTH.dashboardTrackMetres;
         },
-        widthMinPixels: 1,
+        widthMinPixels: TRACK_WIDTH.trackMinimumPixels,
         jointRounded: true,
         capRounded: true,
         pickable: true,
@@ -97,7 +98,7 @@ export const useTrackLayers = ({
           getWidth: [hoveredSessionId],
         },
         transitions,
-        parameters: ADDITIVE_BLEND,
+        parameters: TRACK_BLEND_PARAMETERS,
         ...eventHandlers,
       }),
     ];

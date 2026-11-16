@@ -6,6 +6,7 @@ import { sceneHoveredId } from '@/components/mapBackground/mapScene.ts';
 import { useDevice } from '@pacevault/ui/hooks/useDevice.ts';
 import {
   HIGHLIGHT_TRANSITIONS,
+  TRACK_WIDTH,
   studioRouteModifiers,
 } from '@/components/mapBackground/trackColors.ts';
 import { decodeCached } from '@/components/mapBackground/trackPicking.ts';
@@ -59,10 +60,10 @@ export const useStudioRouteLayer = (eventHandlers: DeckEventHandlers): Layer | n
         return [d.color[0], d.color[1], d.color[2], alpha];
       },
       getWidth: (d) => {
-        if (d.routeId === highlightedRouteId) return studioRouteModifiers.width.highlighted;
-        return studioRouteModifiers.width.default;
+        if (d.routeId === highlightedRouteId) return TRACK_WIDTH.studioHighlightedRouteMetres;
+        return TRACK_WIDTH.studioRouteMetres;
       },
-      widthMinPixels: 1,
+      widthMinPixels: TRACK_WIDTH.trackMinimumPixels,
       jointRounded: true,
       capRounded: true,
       pickable: studioTracks.active,

@@ -17,7 +17,7 @@ export const PvDropdownMenuItem: FC<PvDropdownMenuItemProps> = (props) => {
         as="div"
         variant="body1"
         className={cn(
-          'flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 outline-none transition-colors hover:bg-white/10 focus:bg-white/10 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+          'flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 outline-none transition-colors hover:bg-overlay focus:bg-overlay data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
           props.variant === 'danger' && 'text-status-danger focus:text-status-danger',
           props.className,
         )}

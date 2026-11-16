@@ -22,7 +22,7 @@ export const SegmentItem: FC<SegmentItemProps> = (props) => {
       role="button"
       tabIndex={0}
       aria-label={props.segment.name}
-      className="cursor-pointer hover:bg-white/10"
+      className="cursor-pointer hover:bg-surface-glass-hover"
       onClick={open}
       onKeyDown={(event) => {
         if (event.key !== 'Enter' && event.key !== ' ') return;

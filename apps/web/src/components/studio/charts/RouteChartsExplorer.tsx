@@ -135,6 +135,7 @@ export const RouteChartsExplorer: FC<RouteChartsExplorerProps> = (props) => {
           label={m.ui_chart_reset_zoom()}
           zoomed={zoom.zoomed}
           onReset={zoom.resetZoom}
+          pinning="belowFloatingTabs"
         />
       }
     >

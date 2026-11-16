@@ -17,7 +17,7 @@ interface StepRowProps {
 export const StepRow: FC<StepRowProps> = (props) => {
   const zone = props.zones.find((z) => z.name === props.step.zone);
   return (
-    <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-white/5">
+    <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-overlay-subtle">
       <span
         className="w-2.5 h-2.5 rounded-full shrink-0"
         style={{ backgroundColor: zone ? COLOR_BY_RUNNING_ZONE[zone.name] : tokens.zoneUnknown }}

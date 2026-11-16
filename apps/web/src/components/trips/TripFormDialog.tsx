@@ -88,7 +88,7 @@ export const TripFormDialog: FC<TripFormDialogProps> = (props) => {
           />
         </div>
 
-        <PvActionItemList className="border-t border-white/10 pt-4">
+        <PvActionItemList className="border-t border-divider pt-4">
           {picker.visibleSessions.map((session) => {
             const selected = draft.selectedIds.has(session.id);
             return (
@@ -99,14 +99,16 @@ export const TripFormDialog: FC<TripFormDialogProps> = (props) => {
                 onClick={() => toggle(session.id)}
                 className={cn(
                   TILE_CLASS,
-                  'flex cursor-pointer items-center gap-3 p-3 text-left transition-colors hover:bg-white/10',
-                  selected && 'bg-white/10',
+                  'flex cursor-pointer items-center gap-3 p-3 text-left transition-colors hover:bg-overlay',
+                  selected && 'bg-overlay',
                 )}
               >
                 <span
                   className={cn(
                     'flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors',
-                    selected ? 'border-transparent bg-accent text-white' : 'border-white/30',
+                    selected
+                      ? 'border-transparent bg-accent text-on-accent'
+                      : 'border-control-outline-strong',
                   )}
                 >
                   {selected && <Check size={14} />}

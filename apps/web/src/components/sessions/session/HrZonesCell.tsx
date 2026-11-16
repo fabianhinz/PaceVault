@@ -34,7 +34,10 @@ export const HrZonesCell: FC<HrZonesCellProps> = (props) => {
       value={pick.zone.zone}
       note={note}
     >
-      <div className="flex h-4 w-full overflow-hidden rounded-md bg-white/5" {...rail.railProps}>
+      <div
+        className="flex h-4 w-full overflow-hidden rounded-md bg-overlay-subtle"
+        {...rail.railProps}
+      >
         {props.zones.zones.map((zone, i) => (
           <span
             key={zone.zone}

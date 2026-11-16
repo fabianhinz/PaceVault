@@ -21,8 +21,8 @@ export const PvCheckbox: FC<PvCheckboxProps> = (props) => (
     disabled={props.disabled}
     aria-label={props['aria-label']}
     className={cn(
-      'grid size-4 shrink-0 cursor-pointer place-items-center rounded border border-white/20 text-white transition-colors',
-      'hover:border-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+      'grid size-4 shrink-0 cursor-pointer place-items-center rounded border border-control-outline text-on-accent transition-colors',
+      'hover:border-control-outline-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
       'data-[state=checked]:border-accent data-[state=checked]:bg-accent',
       'disabled:pointer-events-none disabled:opacity-40',
       props.className,

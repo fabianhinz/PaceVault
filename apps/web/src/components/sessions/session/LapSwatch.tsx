@@ -12,12 +12,12 @@ const cellColor = ({
   lap: LapAnalysis | undefined;
   position: number;
 }): string => {
-  if (lap?.partial) return tokens.white30;
-  if (lap?.intensity === 'warmup' || lap?.intensity === 'cooldown') return tokens.white35;
-  if (lap?.intensity === 'steady') return tokens.white45;
-  if (lap && lap.intensity !== 'active') return tokens.white18;
-  if (position % 2 === 0) return tokens.white75;
-  return tokens.white50;
+  if (lap?.partial) return tokens.lapSwatchPartial;
+  if (lap?.intensity === 'warmup' || lap?.intensity === 'cooldown') return tokens.lapSwatchEasy;
+  if (lap?.intensity === 'steady') return tokens.lapSwatchSteady;
+  if (lap && lap.intensity !== 'active') return tokens.lapSwatchRest;
+  if (position % 2 === 0) return tokens.lapSwatchActive;
+  return tokens.lapSwatchAlternate;
 };
 
 interface LapSwatchProps {
@@ -34,7 +34,7 @@ export const LapSwatch: FC<LapSwatchProps> = (props) => {
     props.muted && 'opacity-30 grayscale',
   );
   if (!props.set || !first || !last || last.to <= first.from) {
-    return <span aria-hidden className={cn(className, 'bg-white/12')} />;
+    return <span aria-hidden className={cn(className, 'bg-lap-swatch-empty')} />;
   }
   const byIndex = new Map(props.set.analysis.map((lap) => [lap.lapIndex, lap]));
   return (

@@ -108,7 +108,7 @@ export const WeatherHourlyTable: FC<WeatherHourlyTableProps> = (props) => {
           return (
             <div
               key={row.key}
-              className="flex h-8 items-center gap-1.5 whitespace-nowrap border-t border-white/5"
+              className="flex h-8 items-center gap-1.5 whitespace-nowrap border-t border-divider-subtle"
             >
               <Icon size={12} />
               {row.label}
@@ -142,7 +142,7 @@ export const WeatherHourlyTable: FC<WeatherHourlyTableProps> = (props) => {
                 {props.snapshots.map((snapshot) => (
                   <td
                     key={snapshot.time}
-                    className={cn(cellClass, 'border-t border-white/5 text-text-primary')}
+                    className={cn(cellClass, 'border-t border-divider-subtle text-text-primary')}
                   >
                     {row.cell(snapshot)}
                   </td>

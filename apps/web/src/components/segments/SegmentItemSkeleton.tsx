@@ -4,7 +4,7 @@ import { PvInlineSkeleton } from '@pacevault/ui/components/pvInlineSkeleton/PvIn
 
 export const SegmentItemSkeleton: FC = () => (
   <PvCard className="flex-row items-center gap-2">
-    <span className="size-10 shrink-0 animate-pulse rounded-lg bg-white/10" />
+    <span className="size-10 shrink-0 animate-pulse rounded-lg bg-overlay" />
     <span className="flex flex-1 flex-col gap-2">
       <PvInlineSkeleton className="w-20" />
       <PvInlineSkeleton className="w-32" />

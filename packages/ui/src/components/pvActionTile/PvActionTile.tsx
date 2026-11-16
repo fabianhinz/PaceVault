@@ -5,8 +5,8 @@ import { PvActionTileContent } from './PvActionTileContent.tsx';
 import type { ActionTileLook } from './types.ts';
 
 const CLASSES_BY_ACTION_TILE_LOOK: Record<ActionTileLook, string> = {
-  solid: 'border-white/10 bg-white/5 hover:bg-white/10',
-  dashed: 'border-dashed border-white/20 bg-transparent hover:bg-white/5',
+  solid: 'border-divider bg-overlay-subtle hover:bg-overlay',
+  dashed: 'border-dashed border-control-outline bg-transparent hover:bg-overlay-subtle',
   accent: 'border-accent/55 bg-accent/16 hover:bg-accent/24',
   hint: 'border-dashed border-accent/45 bg-transparent',
 };
@@ -48,7 +48,9 @@ export const PvActionTile: FC<PvActionTileProps> = (props) => {
         ROW_CLASS,
         'transition-all cursor-pointer [-webkit-touch-callout:none]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-        props.selected ? 'bg-white border-white/20' : CLASSES_BY_ACTION_TILE_LOOK[look],
+        props.selected
+          ? 'bg-tile-selected border-control-outline'
+          : CLASSES_BY_ACTION_TILE_LOOK[look],
         props.className,
       )}
       onClick={props.onClick}

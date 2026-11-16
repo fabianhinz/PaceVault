@@ -9,10 +9,10 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 const CLASSES_BY_BUTTON_VARIANT: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-white hover:bg-accent-strong active:bg-accent-pressed',
+  primary: 'bg-accent text-on-accent hover:bg-accent-strong active:bg-accent-pressed',
   secondary:
-    'bg-white/5 text-text-primary hover:bg-white/10 active:bg-white/15 border border-white/10',
-  ghost: 'bg-transparent text-text-secondary hover:bg-white/10 hover:text-text-primary',
+    'bg-overlay-subtle text-text-primary hover:bg-overlay active:bg-overlay-strong border border-divider',
+  ghost: 'bg-transparent text-text-secondary hover:bg-overlay hover:text-text-primary',
   danger:
     'bg-status-danger-strong/10 text-status-danger hover:bg-status-danger-strong/20 active:bg-status-danger-strong/30',
 };

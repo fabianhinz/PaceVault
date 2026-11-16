@@ -4,24 +4,27 @@ import { cn } from '../../lib/cn.ts';
 
 type BannerVariant = 'info' | 'warning' | 'success' | 'error';
 
+// The tint is a gradient so it can sit on bg-banner-base: see-through on dark, opaque white on
+// light, where a banner over the map must not let the map show through its text.
 const CLASSES_BY_BANNER_VARIANT: Record<BannerVariant, { container: string; icon: string }> = {
   warning: {
     container:
-      'backdrop-blur-xl bg-banner-warning/10 border-banner-warning/20 text-banner-warning-text',
+      'backdrop-blur-xl bg-banner-base bg-linear-to-r from-banner-warning/10 to-banner-warning/10 border-banner-warning/20 text-banner-warning-text',
     icon: 'text-banner-warning-icon',
   },
   info: {
-    container: 'backdrop-blur-xl bg-accent/10 border-accent/20 text-banner-info-text',
+    container:
+      'backdrop-blur-xl bg-banner-base bg-linear-to-r from-accent/10 to-accent/10 border-accent/20 text-banner-info-text',
     icon: 'text-status-info',
   },
   success: {
     container:
-      'backdrop-blur-xl bg-banner-success/10 border-banner-success/20 text-banner-success-text',
+      'backdrop-blur-xl bg-banner-base bg-linear-to-r from-banner-success/10 to-banner-success/10 border-banner-success/20 text-banner-success-text',
     icon: 'text-banner-success-icon',
   },
   error: {
     container:
-      'backdrop-blur-xl bg-status-danger-strong/10 border-status-danger-strong/20 text-banner-error-text',
+      'backdrop-blur-xl bg-banner-base bg-linear-to-r from-status-danger-strong/10 to-status-danger-strong/10 border-status-danger-strong/20 text-banner-error-text',
     icon: 'text-status-danger',
   },
 };

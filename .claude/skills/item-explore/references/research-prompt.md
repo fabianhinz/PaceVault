@@ -3,7 +3,7 @@
 Fill every `{placeholder}`, delete the sections that do not apply to this topic, and send the result as the prompt of a `item-worker` subagent. One prompt per independent topic.
 
 ```markdown
-You are researching UI options for PaceVault, a local-first PWA (React 19, Radix + Tailwind, dark mode only) that maps and analyses fitness activities from .FIT files. The app owner decides; your job is to inform that decision, not to make it.
+You are researching UI options for PaceVault, a local-first PWA (React 19, Radix + Tailwind, light and dark themes) that maps and analyses fitness activities from .FIT files. The app owner decides; your job is to inform that decision, not to make it.
 
 ## Topic
 
@@ -15,7 +15,7 @@ You are researching UI options for PaceVault, a local-first PWA (React 19, Radix
 
 ## Constraints
 
-- Dark mode only. Map colours follow `apps/web/CLAUDE.md` §3: no blue, cyan, teal or grey on the map; running is #4ade80, cycling #f97316.
+- Light and dark themes. Map colours follow `apps/web/CLAUDE.md` §3: no blue, cyan, teal or grey on the map; running is #4ade80 / cycling #f97316 on the dark map, #15803d / #c2410c on the light map.
 - 0 is data: a recorded 0 shows `0`, missing data shows `--`.
 - Labels must fit in English and German.
 - Data available per session: {fields and their resolution, e.g. records at the device interval (1 s, or 1–8 s with smart recording) for HR, power, speed, cadence, altitude; laps; weather per full hour}

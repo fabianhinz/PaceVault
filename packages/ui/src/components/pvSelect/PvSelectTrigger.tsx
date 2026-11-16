@@ -11,7 +11,7 @@ export const PvSelectTrigger: FC<ComponentProps<typeof SelectPrimitive.Trigger>>
       as={SelectPrimitive.Trigger}
       variant="body1"
       className={cn(
-        'flex h-10 w-full items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 cursor-pointer placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-10 w-full items-center justify-between rounded-lg border border-divider bg-overlay-subtle px-3 py-2 cursor-pointer placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50',
         props.className,
       )}
       {...rest}

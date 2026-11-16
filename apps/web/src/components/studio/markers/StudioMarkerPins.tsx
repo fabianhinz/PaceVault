@@ -53,7 +53,7 @@ export const StudioMarkerPins: FC<StudioMarkerPinsProps> = (props) => {
           type="button"
           className={cn(
             FLOATING_CLASS,
-            'flex size-9 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-white/10 active:bg-white/15',
+            'flex size-9 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-surface-glass-hover active:bg-surface-glass-pressed',
           )}
           style={{ color: hex }}
         >

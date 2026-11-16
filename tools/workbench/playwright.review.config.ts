@@ -29,6 +29,8 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     baseURL: ORIGIN,
     timezoneId: 'Europe/Berlin',
+    // The app follows the system theme when none is stored; shots are dark unless a scene sets one.
+    colorScheme: 'dark',
     contextOptions: { reducedMotion: 'reduce' },
     launchOptions: mapLaunchOptions(),
   },

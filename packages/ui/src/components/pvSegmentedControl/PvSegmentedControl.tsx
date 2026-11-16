@@ -57,7 +57,7 @@ export const PvSegmentedControl: FC<PvSegmentedControlProps> = (props) => {
             variant="subtitle1"
             color="textTertiary"
             className={cn(
-              'inline-flex items-center justify-center transition-colors cursor-pointer hover:bg-white/10 hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent data-[state=on]:bg-white/10 data-[state=on]:text-text-primary disabled:cursor-not-allowed disabled:opacity-50',
+              'inline-flex items-center justify-center transition-colors cursor-pointer hover:bg-overlay hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent data-[state=on]:bg-overlay data-[state=on]:text-text-primary disabled:cursor-not-allowed disabled:opacity-50',
               ITEM_CLASSES_BY_SEGMENTED_CONTROL_SIZE[size],
             )}
           >

@@ -35,7 +35,7 @@ export const StudioRouteItem: FC<StudioRouteItemProps> = (props) => {
           handleNavigate();
         }
       }}
-      className="cursor-pointer hover:bg-white/10"
+      className="cursor-pointer hover:bg-surface-glass-hover"
     >
       <StudioRouteHeader route={props.route} />
     </PvCard>

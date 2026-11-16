@@ -132,10 +132,10 @@ export const SHEET_DRAG_ELASTIC = 0.08;
 ```
 
 ```ts
-const FLOATING_SURFACE = 'bg-surface/85 backdrop-blur-xl border border-white/10';
+const FLOATING_SURFACE = 'bg-surface-floating backdrop-blur-xl border border-divider';
 
-export const GLASS_CLASS = 'bg-surface/55 backdrop-blur-xl border border-white/10';
-export const FLOATING_CLASS = `${FLOATING_SURFACE} shadow-[0_8px_24px_rgb(0_0_0/0.4)]`;
+export const GLASS_CLASS = 'bg-surface-glass backdrop-blur-xl border border-divider';
+export const FLOATING_CLASS = `${FLOATING_SURFACE} shadow-floating`;
 ```
 
 ```tsx

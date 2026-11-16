@@ -17,7 +17,7 @@ export const WindRoseGlyph: FC<WindRoseGlyphProps> = (props) => {
       aria-hidden
       className="shrink-0"
     >
-      <circle cx={center} cy={center} r={outer} className="fill-white/5" />
+      <circle cx={center} cy={center} r={outer} className="fill-overlay-subtle" />
       <Wedges shares={props.shares} center={center} inner={0} outer={outer} />
     </svg>
   );

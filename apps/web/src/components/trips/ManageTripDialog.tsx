@@ -47,7 +47,7 @@ export const ManageTripDialog: FC<ManageTripDialogProps> = (props) => {
       <PvDialogBody>
         <PvDialogDescription className="shrink-0">{m.ui_trips_dialog_desc()}</PvDialogDescription>
 
-        <div className="border-t border-white/10 pt-4">
+        <div className="border-t border-divider pt-4">
           <PvRadioGroup value={currentTrip?.id} onValueChange={handleSelect}>
             {trips.map((trip) => (
               <PvRadioGroupItem
@@ -56,7 +56,7 @@ export const ManageTripDialog: FC<ManageTripDialogProps> = (props) => {
                 aria-label={trip.name}
                 className={cn(
                   TILE_CLASS,
-                  'cursor-pointer p-3 transition-colors hover:bg-white/10 data-[state=checked]:bg-white/10',
+                  'cursor-pointer p-3 transition-colors hover:bg-overlay data-[state=checked]:bg-overlay',
                 )}
               >
                 <TripHeader trip={trip} />

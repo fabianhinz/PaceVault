@@ -34,7 +34,7 @@ export const PrecipitationDots: FC<PrecipitationDotsProps> = (props) => {
           cy={2}
           r={1.6}
           fill={index < dots ? color : undefined}
-          className={cn(index >= dots && 'fill-white/15')}
+          className={cn(index >= dots && 'fill-overlay-strong')}
         />
       ))}
     </svg>

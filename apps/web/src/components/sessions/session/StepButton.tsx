@@ -25,7 +25,7 @@ export const StepButton: FC<StepButtonProps> = (props) => (
     <span
       className={cn(
         'inline-flex size-9 items-center justify-center rounded-full transition-colors',
-        'group-hover:bg-white/10 group-disabled:bg-transparent',
+        'group-hover:bg-overlay group-disabled:bg-transparent',
         'group-focus-visible:ring-2 group-focus-visible:ring-accent',
       )}
     >

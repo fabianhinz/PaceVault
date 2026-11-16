@@ -10,6 +10,7 @@ export const DashboardZoomReset: FC = () => {
     <PvZoomResetPill
       label={m.ui_chart_reset_zoom()}
       zoomed={zoomed}
+      pinning="belowFloatingTabs"
       onReset={() => useFiltersStore.getState().clearActiveFilter()}
     />
   );

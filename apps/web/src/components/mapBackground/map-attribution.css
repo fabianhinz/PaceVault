@@ -1,17 +1,18 @@
 .maplibregl-ctrl-attrib {
-  background-color: rgb(0 0 0 / 0.6) !important;
-  color: rgb(255 255 255 / 0.6) !important;
+  background-color: var(--color-map-attribution) !important;
+  color: var(--color-map-attribution-text) !important;
   border-radius: 4px;
 }
 
 .maplibregl-ctrl-attrib a {
-  color: rgb(255 255 255 / 0.5);
+  color: var(--color-map-attribution-link);
 }
 
 .maplibregl-ctrl-attrib a:hover {
-  color: rgb(255 255 255 / 0.8);
+  color: var(--color-map-attribution-link-hover);
 }
 
-.maplibregl-ctrl-attrib-button {
+/* MapLibre's icon is black: invert it for the dark chip only, the light chip is white. */
+[data-theme='dark'] .maplibregl-ctrl-attrib-button {
   filter: invert(1);
 }

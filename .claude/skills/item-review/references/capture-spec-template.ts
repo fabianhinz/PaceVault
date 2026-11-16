@@ -1,6 +1,8 @@
 // Copied to tools/workbench/backlog/<f>/review/capture.spec.ts. One test per review entry; the shot name
 // is the entry's image name: <d|p>-<en|de>-<name>.png in review/after/ (review/before/ with
 // WB_SHOTS=before). Run: vp run workbench:capture -- tools/workbench/backlog/<f>/review
+// Shots are dark (the config emulates a dark system); a light scene passes
+// prepare(page, locale, { theme: 'light' }).
 import { loadDemoData, prepare, seedSessions, shootAll, test } from '../../../shared/capture';
 
 test('dashboard with two sessions', async ({ page }) => {

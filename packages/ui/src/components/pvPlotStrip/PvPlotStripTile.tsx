@@ -8,8 +8,8 @@ import type { PlotStripPosition, PlotStripTone } from './types.ts';
 type PlotStripTileState = 'idle' | 'pressed' | 'bestPressed';
 
 const SURFACE_CLASS_BY_PLOT_STRIP_TILE_STATE: Record<PlotStripTileState, string> = {
-  idle: 'cursor-pointer border-white/10 hover:bg-white/10',
-  pressed: 'cursor-default border-white/10 bg-white/15',
+  idle: 'cursor-pointer border-divider hover:bg-overlay',
+  pressed: 'cursor-default border-divider bg-overlay-strong',
   bestPressed: 'cursor-default border-best/20 bg-best/10',
 };
 

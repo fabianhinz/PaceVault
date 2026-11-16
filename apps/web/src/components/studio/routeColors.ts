@@ -1,4 +1,5 @@
 import { tokens } from '@pacevault/ui/lib/tokens.ts';
+import { rgbChannels } from '@/components/mapBackground/trackColors.ts';
 import type { StudioRouteColor } from '@/types.ts';
 
 interface RouteColorValue {
@@ -6,13 +7,15 @@ interface RouteColorValue {
   hex: string;
 }
 
+const routeColor = (hex: string): RouteColorValue => ({ rgb: rgbChannels(hex), hex });
+
 export const COLORS_BY_STUDIO_ROUTE_COLOR: Record<StudioRouteColor, RouteColorValue> = {
-  fuchsia: { rgb: [232, 121, 249], hex: tokens.routeFuchsia },
-  emerald: { rgb: [52, 211, 153], hex: tokens.routeEmerald },
-  amber: { rgb: [251, 191, 36], hex: tokens.routeAmber },
-  violet: { rgb: [167, 139, 250], hex: tokens.routeViolet },
-  orange: { rgb: [249, 115, 22], hex: tokens.routeOrange },
-  rose: { rgb: [251, 113, 133], hex: tokens.routeRose },
+  fuchsia: routeColor(tokens.routeFuchsia),
+  emerald: routeColor(tokens.routeEmerald),
+  amber: routeColor(tokens.routeAmber),
+  violet: routeColor(tokens.routeViolet),
+  orange: routeColor(tokens.routeOrange),
+  rose: routeColor(tokens.routeRose),
 };
 
 export const routeColorOrder = Object.keys(COLORS_BY_STUDIO_ROUTE_COLOR) as StudioRouteColor[];

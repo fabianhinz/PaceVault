@@ -48,7 +48,7 @@ export const LoadBucketBand: FC<LoadBucketBandProps> = (props) => {
             y={shape.y}
             width={Math.max(0, shape.width - left - right)}
             height={shape.height}
-            className="fill-white"
+            className="fill-chart-highlight"
             fillOpacity={0.1}
           />
         );

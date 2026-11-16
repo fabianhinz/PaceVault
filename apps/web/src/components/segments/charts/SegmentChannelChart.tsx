@@ -27,7 +27,7 @@ export const SegmentChannelChart: FC<SegmentChannelChartProps> = (props) => {
   );
   const paired = props.best !== undefined;
   let selectedColor: string = tokens.best;
-  if (paired) selectedColor = tokens.white;
+  if (paired) selectedColor = tokens.chartHighlight;
   const onHover = (movingSec: number | null) =>
     hoverSegmentExplorer({ movingSec, selected: props.selected, best: props.best });
 

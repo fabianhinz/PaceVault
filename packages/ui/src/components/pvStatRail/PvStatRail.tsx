@@ -42,7 +42,7 @@ export const PvStatRail: FC<PvStatRailProps> = (props) => {
     return (
       <div
         data-testid="stat-rail"
-        className="flex h-full flex-col justify-center overflow-hidden border-r border-white/10 pr-2"
+        className="flex h-full flex-col justify-center overflow-hidden border-r border-divider pr-2"
       >
         <PvStatRailContent
           header={props.header}
@@ -57,7 +57,7 @@ export const PvStatRail: FC<PvStatRailProps> = (props) => {
   return (
     <div
       data-testid="stat-rail"
-      className="grid h-full grid-rows-[2rem_minmax(0,1fr)_2rem] overflow-hidden border-r border-white/10 pr-2"
+      className="grid h-full grid-rows-[2rem_minmax(0,1fr)_2rem] overflow-hidden border-r border-divider pr-2"
     >
       {placement === 'top' ? (
         <div className="flex min-w-0 flex-col justify-end">{noteContent(props.note)}</div>

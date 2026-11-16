@@ -28,7 +28,7 @@ export const ProgressRing: FC<ProgressRingProps> = (props) => {
           r={RADIUS}
           fill="none"
           strokeWidth={STROKE}
-          className="stroke-white/10"
+          className="stroke-overlay"
         />
         <circle
           cx={SIZE / 2}

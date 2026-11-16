@@ -26,7 +26,7 @@ export const SessionItem: FC<SessionItemProps> = (props) => {
     <PvCard
       data-testid="session-item"
       role="button"
-      className={cn('hover:bg-white/10 cursor-pointer', props.className)}
+      className={cn('hover:bg-surface-glass-hover cursor-pointer', props.className)}
       onClick={handleNavigate}
       onPointerEnter={sessionHover.onPointerEnter}
       onPointerLeave={sessionHover.onPointerLeave}

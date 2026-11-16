@@ -45,7 +45,7 @@ export const Filters: FC<FiltersProps> = (props) => {
     >
       <div
         className={cn(
-          'shrink-0 border-b border-white/10 py-1',
+          'shrink-0 border-b border-divider py-1',
           props.sizing === 'fill' && 'px-3',
           props.sizing === 'content' && 'px-5',
         )}

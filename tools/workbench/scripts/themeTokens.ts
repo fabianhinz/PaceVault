@@ -23,7 +23,6 @@ const SCANNED_EXTENSIONS = ['.ts', '.tsx', '.css'];
 const ALLOWED_FILES = new Set([
   'packages/ui/src/theme.css',
   'packages/ui/src/lib/tokens.ts',
-  'apps/web/src/components/mapBackground/map-attribution.css',
 ]);
 
 export const findThemeLiterals = (source: string): ThemeLiteral[] => {

@@ -1,9 +1,8 @@
 import { isValidCoordinate } from '@pacevault/engine/geodesy.ts';
 import type { SessionRecord } from '@pacevault/engine/types.ts';
-import { rgb } from 'd3-color';
 import { windColorAt, type ColorScale, type ZoneMetric } from '@/lib/colors/zoneColors.ts';
 import { rollingMean, TRACK_SMOOTHING_SEC } from '@/components/mapBackground/trackSmoothing.ts';
-import { trackModifiers } from './trackColors.ts';
+import { rgbChannels, trackModifiers } from './trackColors.ts';
 
 type Color = [number, number, number, number];
 
@@ -19,8 +18,7 @@ export interface DetailPath {
 const FALLBACK_COLOR: Color = [160, 160, 160, 80];
 
 const toColor = (css: string): Color => {
-  const c = rgb(css);
-  return [Math.round(c.r), Math.round(c.g), Math.round(c.b), trackModifiers.alpha.highlighted];
+  return [...rgbChannels(css), trackModifiers.alpha.highlighted];
 };
 
 const ZONE_VALUE_BY_METRIC: Record<TrackMetric, (record: SessionRecord) => number | undefined> = {

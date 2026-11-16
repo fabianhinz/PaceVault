@@ -1,21 +1,28 @@
 import type { LapSpan, RecordSpan } from '@/lib/analysis/laps.ts';
 import type { DetailPath } from './zoneColoredPath.ts';
 import type { GPSBounds } from '@pacevault/engine/types.ts';
+import type { LapDim } from './trackColors.ts';
 
 type Color = [number, number, number, number];
 
 const isColorList = (color: Color | Color[]): color is Color[] => Array.isArray(color[0]);
 
-const darken = (color: Color, factor: number): Color => [
-  Math.round(color[0] * factor),
-  Math.round(color[1] * factor),
-  Math.round(color[2] * factor),
-  color[3],
+const dim = ({ color, lapDim }: { color: Color; lapDim: LapDim }): Color => [
+  Math.round(color[0] * lapDim.brightness),
+  Math.round(color[1] * lapDim.brightness),
+  Math.round(color[2] * lapDim.brightness),
+  Math.round(color[3] * lapDim.opacity),
 ];
 
-export const dimmedColor = (color: Color | Color[], factor: number): Color | Color[] => {
-  if (isColorList(color)) return color.map((item) => darken(item, factor));
-  return darken(color, factor);
+export const dimmedColor = ({
+  color,
+  lapDim,
+}: {
+  color: Color | Color[];
+  lapDim: LapDim;
+}): Color | Color[] => {
+  if (isColorList(color)) return color.map((item) => dim({ color: item, lapDim }));
+  return dim({ color, lapDim });
 };
 
 export const nearestRecordIndex = ({

@@ -10,7 +10,7 @@ interface ExplanationBodyProps {
 }
 
 export const ExplanationBody: FC<ExplanationBodyProps> = (props) => (
-  <div className={cn('space-y-2', !props.primary && 'border-t border-white/10 pt-3')}>
+  <div className={cn('space-y-2', !props.primary && 'border-t border-divider pt-3')}>
     <div className={cn('flex items-baseline gap-2', props.primary && 'max-lg:hidden')}>
       <PvTypography variant="subtitle1" className="font-semibold">
         {props.explanation.friendlyName}
@@ -24,7 +24,7 @@ export const ExplanationBody: FC<ExplanationBodyProps> = (props) => (
       variant="caption"
       as="p"
       color="textTertiary"
-      className="border-t border-white/10 pt-2"
+      className="border-t border-divider pt-2"
     >
       {props.explanation.range}
     </PvTypography>

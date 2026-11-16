@@ -41,7 +41,7 @@ export const WorkoutExpansionPanel: FC<WorkoutExpansionPanelProps> = (props) => 
             ) : (
               <fieldset
                 key={gi}
-                className="rounded-xl border border-white/10 px-3 pb-3 pt-1 space-y-1"
+                className="rounded-xl border border-divider px-3 pb-3 pt-1 space-y-1"
               >
                 <PvTypography variant="caption" color="textSecondary" as="legend" className="px-2">
                   {group.repeat}×

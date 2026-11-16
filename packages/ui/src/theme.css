@@ -33,19 +33,39 @@
   --color-cyan-400: #22d3ee;
 
   --color-white: #ffffff;
-  --color-white4: rgb(255 255 255 / 0.04);
-  --color-white10: rgb(255 255 255 / 0.1);
-  --color-white18: rgb(255 255 255 / 0.18);
-  --color-white22: rgb(255 255 255 / 0.22);
-  --color-white25: rgb(255 255 255 / 0.25);
-  --color-white30: rgb(255 255 255 / 0.3);
-  --color-white32: rgb(255 255 255 / 0.32);
-  --color-white35: rgb(255 255 255 / 0.35);
-  --color-white45: rgb(255 255 255 / 0.45);
-  --color-white50: rgb(255 255 255 / 0.5);
-  --color-white60: rgb(255 255 255 / 0.6);
-  --color-white75: rgb(255 255 255 / 0.75);
-  --color-white95: rgb(255 255 255 / 0.95);
+  --color-overlay-subtle: color-mix(in oklab, var(--color-white) 5%, transparent);
+  --color-overlay: color-mix(in oklab, var(--color-white) 10%, transparent);
+  --color-overlay-strong: color-mix(in oklab, var(--color-white) 15%, transparent);
+  --color-divider: color-mix(in oklab, var(--color-white) 10%, transparent);
+  --color-divider-subtle: color-mix(in oklab, var(--color-white) 5%, transparent);
+  --color-control-outline: color-mix(in oklab, var(--color-white) 20%, transparent);
+  --color-control-outline-strong: color-mix(in oklab, var(--color-white) 30%, transparent);
+  --color-control-outline-hover: color-mix(in oklab, var(--color-white) 40%, transparent);
+  --color-marker: color-mix(in oklab, var(--color-white) 30%, transparent);
+  --color-marker-strong: color-mix(in oklab, var(--color-white) 40%, transparent);
+  --color-on-accent: var(--color-white);
+  --color-thumb: var(--color-white);
+  --color-thumb-edge: transparent;
+  --color-tile-selected: var(--color-white);
+  --color-black: #000000;
+  --color-scrim: color-mix(in oklab, var(--color-black) 40%, transparent);
+
+  --color-lap-strip-selected: rgb(255 255 255 / 0.95);
+  --color-lap-strip-hovered: rgb(255 255 255 / 0.6);
+  --color-lap-strip-active: rgb(255 255 255 / 0.32);
+  --color-lap-strip-alternate: rgb(255 255 255 / 0.22);
+  --color-lap-strip-inactive: rgb(255 255 255 / 0.1);
+  --color-lap-band-hover: rgb(255 255 255 / 0.1);
+  --color-lap-swatch-active: rgb(255 255 255 / 0.75);
+  --color-lap-swatch-alternate: rgb(255 255 255 / 0.5);
+  --color-lap-swatch-steady: rgb(255 255 255 / 0.45);
+  --color-lap-swatch-easy: rgb(255 255 255 / 0.35);
+  --color-lap-swatch-partial: rgb(255 255 255 / 0.3);
+  --color-lap-swatch-rest: rgb(255 255 255 / 0.18);
+  --color-lap-swatch-empty: color-mix(in oklab, var(--color-white) 12%, transparent);
+  --color-lap-baseline: rgb(255 255 255 / 0.25);
+  --color-lap-placeholder: rgb(255 255 255 / 0.3);
+  --color-lap-avatar: rgb(255 255 255 / 0.04);
 
   --color-amber-200: oklch(92.4% 0.12 95.746);
   --color-amber-400: oklch(82.8% 0.189 84.429);
@@ -64,6 +84,12 @@
   --color-surface: var(--color-gray-900);
   --color-surface-elevated: var(--color-gray-800);
   --color-surface-overlay: var(--color-gray-700);
+  --color-surface-glass: color-mix(in oklab, var(--color-surface) 55%, transparent);
+  /* Hover and press on a glass surface over the map replace its background. Dark keeps the
+     translucent overlay; light sets an opaque value so the item does not turn see-through. */
+  --color-surface-glass-hover: var(--color-overlay);
+  --color-surface-glass-pressed: var(--color-overlay-strong);
+  --color-surface-floating: color-mix(in oklab, var(--color-surface) 85%, transparent);
 
   --color-border: var(--color-gray-700);
   --color-border-strong: var(--color-gray-600);
@@ -92,6 +118,7 @@
   --color-status-neutral: var(--color-gray-400);
   --color-status-neutral-muted: #5c616e33;
 
+  --color-banner-base: transparent;
   --color-banner-warning: var(--color-amber-500);
   --color-banner-warning-text: var(--color-amber-200);
   --color-banner-warning-icon: var(--color-amber-400);
@@ -109,11 +136,24 @@
   --color-sport-running-muted: #22c55e33;
   --color-sport-cycling: var(--color-orange-500);
   --color-sport-cycling-muted: #f9731633;
+  /* One step darker sport colours for tracks on the light basemap. */
+  --color-sport-running-deep: #15803d;
+  --color-sport-cycling-deep: #c2410c;
 
   --color-map-shadow: #000000;
   --color-map-highlight: #ffffff;
   --color-map-hillshade-highlight: #ffffff1a;
   --color-map-dot-stroke: #00000050;
+  --color-map-marker: var(--color-white);
+  --color-map-pick-area: var(--color-white);
+  --color-map-geo-accuracy: var(--color-white);
+  --color-map-sky: #030712;
+  --color-map-sky-horizon: #1a1d24;
+  --color-map-fog: #0e0e0e;
+  --color-map-attribution: rgb(0 0 0 / 0.6);
+  --color-map-attribution-text: rgb(255 255 255 / 0.6);
+  --color-map-attribution-link: rgb(255 255 255 / 0.5);
+  --color-map-attribution-link-hover: rgb(255 255 255 / 0.8);
 
   --color-chart-fitness: var(--color-blue-500);
   --color-chart-fatigue: var(--color-pink-500);
@@ -127,6 +167,7 @@
   --color-chart-climb: #c4b5fd;
   --color-chart-pace: #06b6d4;
   --color-chart-gap: var(--color-pink-500);
+  --color-chart-highlight: var(--color-white);
 
   --color-precip-rain: var(--color-blue-400);
   --color-precip-freezing: #67e8f9;
@@ -174,6 +215,8 @@
   --spacing-50px: 50px;
   --spacing-52px: 52px;
   --spacing-80px: 80px;
+  /* Bottom edge of a sticky floating PvTabsList (lg:top-6 plus its height). */
+  --spacing-90px: 90px;
   --spacing-104px: 104px;
   --spacing-140px: 140px;
   --spacing-160px: 160px;
@@ -191,7 +234,8 @@
   --text-3xs: 9px;
   --text-3xs--line-height: 1.5;
 
-  --shadow-floating: 0 8px 24px rgb(0 0 0 / 0.4);
+  --color-shadow-floating: rgb(0 0 0 / 0.4);
+  --shadow-floating: 0 8px 24px var(--color-shadow-floating);
 
   --grid-template-columns-chart-rail: 100px minmax(0, 1fr);
 
@@ -206,6 +250,167 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
   --radius-10px: 10px;
+}
+
+/* The app sets data-theme on <html> before first paint (apps/web/index.html). The workbench board
+   and the README banner never set it, so they keep the dark values above. */
+@layer base {
+  [data-theme='dark'] {
+    color-scheme: dark;
+
+    --color-text-secondary: var(--color-gray-200);
+    --color-text-tertiary: var(--color-gray-300);
+    --color-text-quaternary: var(--color-gray-400);
+  }
+
+  [data-theme='light'] {
+    color-scheme: light;
+
+    --color-overlay-subtle: rgb(0 0 0 / 0.04);
+    --color-overlay: rgb(0 0 0 / 0.06);
+    --color-overlay-strong: rgb(0 0 0 / 0.1);
+    --color-divider: var(--color-gray-100);
+    --color-divider-subtle: rgb(0 0 0 / 0.05);
+    --color-control-outline: rgb(0 0 0 / 0.2);
+    --color-control-outline-strong: rgb(0 0 0 / 0.3);
+    --color-control-outline-hover: rgb(0 0 0 / 0.4);
+    --color-marker: rgb(0 0 0 / 0.3);
+    --color-marker-strong: rgb(0 0 0 / 0.4);
+    --color-on-accent: var(--color-white);
+    --color-thumb: var(--color-white);
+    --color-thumb-edge: rgb(0 0 0 / 0.15);
+    --color-tile-selected: var(--color-gray-900);
+    --color-scrim: rgb(0 0 0 / 0.4);
+    --color-shadow-floating: rgb(0 0 0 / 0.12);
+
+    --color-lap-strip-selected: rgb(0 0 0 / 0.8);
+    --color-lap-strip-hovered: rgb(0 0 0 / 0.5);
+    --color-lap-strip-active: rgb(0 0 0 / 0.28);
+    --color-lap-strip-alternate: rgb(0 0 0 / 0.18);
+    --color-lap-strip-inactive: rgb(0 0 0 / 0.08);
+    --color-lap-band-hover: rgb(0 0 0 / 0.06);
+    --color-lap-swatch-active: rgb(0 0 0 / 0.6);
+    --color-lap-swatch-alternate: rgb(0 0 0 / 0.4);
+    --color-lap-swatch-steady: rgb(0 0 0 / 0.36);
+    --color-lap-swatch-easy: rgb(0 0 0 / 0.28);
+    --color-lap-swatch-partial: rgb(0 0 0 / 0.24);
+    --color-lap-swatch-rest: rgb(0 0 0 / 0.14);
+    --color-lap-swatch-empty: rgb(0 0 0 / 0.08);
+    --color-lap-baseline: rgb(0 0 0 / 0.2);
+    --color-lap-placeholder: rgb(0 0 0 / 0.24);
+    --color-lap-avatar: rgb(0 0 0 / 0.03);
+
+    --color-surface-base: var(--color-white);
+    --color-surface-sunken: var(--color-gray-50);
+    --color-surface: var(--color-white);
+    --color-surface-elevated: var(--color-white);
+    --color-surface-overlay: var(--color-gray-50);
+    --color-surface-glass: var(--color-white);
+    --color-surface-glass-hover: color-mix(in srgb, var(--color-black) 6%, var(--color-white));
+    --color-surface-glass-pressed: color-mix(in srgb, var(--color-black) 10%, var(--color-white));
+    --color-surface-floating: var(--color-white);
+
+    --color-border: var(--color-gray-100);
+    --color-border-strong: var(--color-gray-200);
+
+    --color-text-primary: var(--color-gray-900);
+    --color-text-secondary: var(--color-gray-600);
+    --color-text-tertiary: var(--color-gray-500);
+    --color-text-quaternary: var(--color-gray-400);
+
+    --color-accent: var(--color-blue-600);
+    --color-accent-hover: #1d4ed8;
+    --color-accent-strong: #1e40af;
+    --color-accent-muted: #2563eb1f;
+    --color-accent-pressed: #1e40af;
+
+    --color-status-success: #15803d;
+    --color-status-success-strong: #16a34a;
+    --color-status-success-muted: #16a34a1f;
+    --color-status-warning: #854d0e;
+    --color-status-warning-strong: #a16207;
+    --color-status-warning-muted: #a162071f;
+    --color-status-danger: #dc2626;
+    --color-status-danger-strong: var(--color-red-500);
+    --color-status-danger-muted: #dc26261f;
+    --color-status-info: var(--color-blue-600);
+    --color-status-neutral: var(--color-gray-500);
+    --color-status-neutral-muted: #5c616e1f;
+
+    --color-banner-base: var(--color-white);
+    --color-banner-warning: #d97706;
+    --color-banner-warning-text: #92400e;
+    --color-banner-warning-icon: #d97706;
+    --color-best: #d97706;
+    --color-banner-success: #059669;
+    --color-banner-success-text: #065f46;
+    --color-banner-success-icon: #059669;
+    --color-banner-info-text: #1e40af;
+    --color-banner-error-text: #991b1b;
+
+    --color-tile-selected-text: var(--color-white);
+    --color-tile-selected-muted: var(--color-gray-300);
+
+    --color-sport-running: #16a34a;
+    --color-sport-running-muted: #16a34a1f;
+    --color-sport-cycling: #ea580c;
+    --color-sport-cycling-muted: #ea580c1f;
+
+    --color-chart-fitness: var(--color-blue-600);
+    --color-chart-fatigue: #db2777;
+    --color-chart-form: #a16207;
+    --color-chart-hr: #dc2626;
+    --color-chart-power: var(--color-blue-600);
+    --color-chart-speed: #16a34a;
+    --color-chart-grade: #7c3aed;
+    --color-chart-cadence: #d97706;
+    --color-chart-elevation: #6d28d9;
+    --color-chart-climb: #8b5cf6;
+    --color-chart-pace: #0891b2;
+    --color-chart-gap: #db2777;
+    --color-chart-highlight: var(--color-gray-900);
+
+    --color-precip-rain: var(--color-blue-600);
+    --color-precip-freezing: #0891b2;
+    --color-precip-snow: #64748b;
+    --color-precip-thunderstorm: #d97706;
+
+    --color-wind-tail: #059669;
+    --color-wind-cross: #d97706;
+    --color-wind-head: #dc2626;
+
+    --color-zone-slate: #64748b;
+    --color-zone-blue: var(--color-blue-600);
+    --color-zone-emerald: #059669;
+    --color-zone-amber: #d97706;
+    --color-zone-orange: #ea580c;
+    --color-zone-red: #dc2626;
+    --color-zone-crimson: #991b1b;
+
+    --color-guide-baseline: #0000001a;
+    --color-guide-hover: #00000040;
+    --color-guide-today: #00000014;
+
+    --color-map-shadow: #5a4a3a;
+    --color-map-highlight: #1c1917;
+    --color-map-hillshade-highlight: #ffffff59;
+    --color-map-pick-area: #000000;
+    --color-map-geo-accuracy: var(--color-blue-600);
+    --color-map-sky: #d3e3eb;
+    --color-map-sky-horizon: #f4f1ea;
+    --color-map-fog: #f4f1ea;
+    --color-map-attribution: rgb(255 255 255 / 0.8);
+    --color-map-attribution-text: var(--color-gray-600);
+    --color-map-attribution-link: var(--color-gray-500);
+    --color-map-attribution-link-hover: var(--color-gray-900);
+
+    --color-route-fuchsia: #c026d3;
+    --color-route-emerald: #059669;
+    --color-route-amber: #d97706;
+    --color-route-violet: #7c3aed;
+    --color-route-orange: #ea580c;
+    --color-route-rose: #e11d48;
+  }
 }
 
 @utility scroll-fade {

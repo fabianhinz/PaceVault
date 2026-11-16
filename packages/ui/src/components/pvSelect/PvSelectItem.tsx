@@ -10,7 +10,7 @@ export const PvSelectItem: FC<ComponentProps<typeof SelectPrimitive.Item>> = (pr
       as={SelectPrimitive.Item}
       variant="body1"
       className={cn(
-        'relative flex w-full cursor-pointer items-center rounded-md px-3 py-2 outline-none hover:bg-white/10 focus:bg-white/10 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex w-full cursor-pointer items-center rounded-md px-3 py-2 outline-none hover:bg-overlay focus:bg-overlay data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         props.className,
       )}
       {...rest}

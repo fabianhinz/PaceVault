@@ -4,7 +4,7 @@ import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 import { useMapFocusStore } from '@/store/mapFocus.ts';
 
 const HOVER_POINT_CLASS =
-  'pointer-events-none size-7 rounded-full border-4 border-map-dot-stroke bg-map-highlight bg-clip-padding';
+  'pointer-events-none size-7 rounded-full border-4 border-map-dot-stroke bg-map-marker bg-clip-padding';
 
 const placeMarker = ({
   map,

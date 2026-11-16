@@ -21,6 +21,8 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:5174',
     trace: 'on-first-retry',
+    // The app follows the system theme when none is stored; specs that need light set it.
+    colorScheme: 'dark',
   },
 
   projects: [

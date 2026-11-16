@@ -31,12 +31,12 @@ export const PvSlider: FC<PvSliderProps> = (props) => {
         props.className,
       )}
     >
-      <SliderPrimitive.Track className="relative h-1.5 w-full grow rounded-full bg-white/10">
+      <SliderPrimitive.Track className="relative h-1.5 w-full grow rounded-full bg-overlay">
         <SliderPrimitive.Range className="absolute h-full rounded-full bg-accent" />
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
         aria-label={props['aria-label']}
-        className="block h-4 w-4 rounded-full bg-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="block h-4 w-4 rounded-full border border-thumb-edge bg-thumb transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       />
     </SliderPrimitive.Root>
   );

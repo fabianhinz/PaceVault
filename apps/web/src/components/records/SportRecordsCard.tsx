@@ -43,7 +43,7 @@ export const SportRecordsCard: FC<SportRecordsCardProps> = (props) => {
 
           const row = (
             <div
-              className={`flex items-center gap-3 rounded-lg px-3 py-2${pb ? ' transition-colors hover:bg-white/10' : ''}`}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2${pb ? ' transition-colors hover:bg-overlay' : ''}`}
             >
               <div className="flex-1 min-w-0">
                 <PvTypography variant="body1" color={pb ? 'textPrimary' : 'textSecondary'}>

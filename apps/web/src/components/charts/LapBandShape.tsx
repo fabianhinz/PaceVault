@@ -14,11 +14,11 @@ interface StripFillState {
 }
 
 const stripFill = (state: StripFillState): string => {
-  if (state.selected) return tokens.white95;
-  if (state.hovered) return tokens.white60;
-  if (!state.active) return tokens.white10;
-  if (state.alternate) return tokens.white22;
-  return tokens.white32;
+  if (state.selected) return tokens.lapStripSelected;
+  if (state.hovered) return tokens.lapStripHovered;
+  if (!state.active) return tokens.lapStripInactive;
+  if (state.alternate) return tokens.lapStripAlternate;
+  return tokens.lapStripActive;
 };
 
 interface LapBandShapeProps extends AreaShapeProps {
@@ -40,7 +40,7 @@ export const LapBandShape: FC<LapBandShapeProps> = (props) => {
   return (
     <g data-testid="lap-band">
       {hovered && !selected && (
-        <rect x={x} y={y} width={width} height={height} fill={tokens.white10} />
+        <rect x={x} y={y} width={width} height={height} fill={tokens.lapBandHover} />
       )}
       {selected && (
         <rect
@@ -50,7 +50,7 @@ export const LapBandShape: FC<LapBandShapeProps> = (props) => {
           width={width}
           height={Math.max(0, height - 1.5)}
           rx={2}
-          className="fill-white stroke-white"
+          className="fill-chart-highlight stroke-chart-highlight"
           fillOpacity={0.06}
           strokeWidth={1.5}
         />

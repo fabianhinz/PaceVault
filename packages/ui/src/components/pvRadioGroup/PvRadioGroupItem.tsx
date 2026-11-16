@@ -23,7 +23,7 @@ export const PvRadioGroupItem: FC<PvRadioGroupItemProps> = (props) => (
       props.className,
     )}
   >
-    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/30 transition-colors">
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-control-outline-strong transition-colors">
       <RadioGroupPrimitive.Indicator className="block h-2.5 w-2.5 rounded-full bg-accent" />
     </span>
     {props.children}

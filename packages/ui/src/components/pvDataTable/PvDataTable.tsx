@@ -30,7 +30,7 @@ export const PvDataTable = <T,>(props: PvDataTableProps<T>) => {
     <div className={cn('@container', props.className)}>
       <table className="hidden w-full tabular-nums @[500px]:table">
         <thead>
-          <tr className="border-b border-white/10 text-left">
+          <tr className="border-b border-divider text-left">
             {props.rowLabel && (
               <PvTypography as="th" variant="caption" className="px-3 py-2 font-medium">
                 #
@@ -48,7 +48,7 @@ export const PvDataTable = <T,>(props: PvDataTableProps<T>) => {
             <tr
               key={props.rowKey(row)}
               className={cn(
-                'border-b border-white/5 transition-colors last:border-b-0',
+                'border-b border-divider-subtle transition-colors last:border-b-0',
                 props.rowClassName?.(row),
               )}
               onPointerEnter={() => props.onRowHover?.(row)}
@@ -74,7 +74,7 @@ export const PvDataTable = <T,>(props: PvDataTableProps<T>) => {
           <div
             key={props.rowKey(row)}
             className={cn(
-              'rounded-xl bg-white/5 p-3 tabular-nums transition-colors',
+              'rounded-xl bg-overlay-subtle p-3 tabular-nums transition-colors',
               props.rowClassName?.(row),
             )}
             onPointerEnter={() => props.onRowHover?.(row)}

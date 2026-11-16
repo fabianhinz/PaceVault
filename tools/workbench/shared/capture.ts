@@ -27,6 +27,7 @@ export { expect, test, type Locator, type Page } from '../../../apps/web/e2e/hel
 export type Locale = 'en' | 'de';
 export type Device = 'd' | 'p';
 export type Shot = { device: Device; locale: Locale };
+export type Theme = 'dark' | 'light';
 
 const LOCALES: Locale[] = ['en', 'de'];
 const VIEWPORTS: Record<Device, { width: number; height: number }> = {
@@ -35,6 +36,7 @@ const VIEWPORTS: Record<Device, { width: number; height: number }> = {
 };
 const ANCHOR = new Date('2026-09-16T12:00:00+02:00'); // as tools/docs/banner/capture.ts
 const LOCALE_KEY = 'wb-locale'; // sessionStorage override, so shootAll can switch per shot
+const THEME_KEY = 'pacevault-theme'; // the app's stored theme choice (apps/web/src/lib/theme/theme.ts)
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const messages = (locale: Locale) =>
@@ -54,16 +56,21 @@ const t = (locale: Locale, key: string) => {
 const pageLocale = new WeakMap<Page, Locale>();
 const currentLocale = (page: Page) => pageLocale.get(page) ?? 'en';
 
-/** Fixed clock, app locale, Open-Meteo answered from the e2e fixture. Call once, before seeding. */
-export const prepare = async (page: Page, locale: Locale) => {
+/**
+ * Fixed clock, app locale, Open-Meteo answered from the e2e fixture. Call once, before seeding.
+ * Shots are dark (the review config emulates a dark system); `theme: 'light'` stores the app's
+ * light choice before every load.
+ */
+export const prepare = async (page: Page, locale: Locale, options: { theme?: Theme } = {}) => {
   pageLocale.set(page, locale);
   await page.clock.setFixedTime(ANCHOR);
   await page.addInitScript(
     (args) => {
       const override = sessionStorage.getItem(args.key);
       localStorage.setItem('PARAGLIDE_LOCALE', override ?? args.locale);
+      if (args.theme !== undefined) localStorage.setItem(args.themeKey, args.theme);
     },
-    { key: LOCALE_KEY, locale },
+    { key: LOCALE_KEY, locale, themeKey: THEME_KEY, theme: options.theme },
   );
   await page.route('**/*open-meteo.com/**', (route) =>
     route.fulfill({ json: openMeteoFixture(new URL(route.request().url())) }),

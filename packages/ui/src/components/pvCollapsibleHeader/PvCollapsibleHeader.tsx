@@ -24,7 +24,7 @@ export const PvCollapsibleHeader: FC<PvCollapsibleHeaderProps> = (props) => (
     )}
   >
     {props.children}
-    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg p-1.5 text-text-secondary transition-colors group-hover:bg-white/10 group-hover:text-text-primary">
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg p-1.5 text-text-secondary transition-colors group-hover:bg-overlay group-hover:text-text-primary">
       {props.trailing}
       <ChevronRight
         aria-hidden

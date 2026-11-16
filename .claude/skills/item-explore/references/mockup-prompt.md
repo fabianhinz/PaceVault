@@ -3,7 +3,7 @@
 Fill every `{placeholder}` and send the result as the first prompt of a `item-worker` subagent. Later rounds go to the same agent with SendMessage: prune first, then add.
 
 ```markdown
-You are building an interactive design mockup for PaceVault, a local-first PWA (React 19, Radix + Tailwind v4, dark mode only) that maps and analyses fitness activities. You have no access to the conversation that led here; this brief is everything. The app owner decides between variants; you build them so the owner can compare.
+You are building an interactive design mockup for PaceVault, a local-first PWA (React 19, Radix + Tailwind v4, light and dark themes) that maps and analyses fitness activities. You have no access to the conversation that led here; this brief is everything. The app owner decides between variants; you build them so the owner can compare.
 
 ## Topic
 
@@ -69,7 +69,7 @@ The page is `tools/workbench/backlog/{item}/mockup/index.html`. Start from the w
 ## Rules for the screen content
 
 - No build step. External scripts only from cdnjs.cloudflare.com, cdn.jsdelivr.net or unpkg.com; fonts only from Google Fonts.
-- Dark mode only. Anything on the map follows `apps/web/CLAUDE.md` §3. A recorded 0 shows `0`, missing data shows `--`.
+- Light and dark themes; anything on the map follows `apps/web/CLAUDE.md` §3. A recorded 0 shows `0`, missing data shows `--`.
 - Variants: one `variants[]` entry each, each coherent on its own; its one-line rationale goes in the notes.
 - Scenarios: {scenarios}, plus missing data, loading and many items.
 - Desktop frame content: the app shell with the map as background, the dock on the left, the content column on the right at 40 % width. Hover interactions.
